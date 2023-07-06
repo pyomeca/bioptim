@@ -72,7 +72,7 @@ def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
     )
 
     for i in range(n):
-        q_v_i = bio_model.compute_q_v_numeric(sol.states["q_u"][:, i]).toarray()
+        q_v_i = bio_model.compute_q_v(sol.states["q_u"][:, i]).toarray()
         q[:, i] = bio_model.state_from_partition(sol.states["q_u"][:, i][:, np.newaxis], q_v_i).toarray().squeeze()
         qdot[:, i] = bio_model.compute_qdot(q[:, i], sol.states["qdot_u"][:, i]).toarray().squeeze()
         qddot_u_i = (
@@ -185,10 +185,10 @@ def prepare_ocp(
             dynamics,
             n_shooting,
             final_time,
-            x_init=x_init,
-            u_init=u_init,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
             objective_functions=objective_functions,
             assume_phase_dynamics=True,
             variable_mappings=variable_bimapping,

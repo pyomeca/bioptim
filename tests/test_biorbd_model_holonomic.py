@@ -115,7 +115,7 @@ def test_model_holonomic():
     TestUtils.assert_equal(model.compute_qdot(q, qdot_u), [4.0, 23.18039172, -1.4066566], expand=False)
 
     np.testing.assert_almost_equal(
-        model.compute_q_v_numeric(DM([0.0]), q_v_init=[1, 1]).toarray().squeeze(),
+        model.compute_q_v(DM([0.0]), q_v_init=[1, 1]).toarray().squeeze(),
         np.array([2 * np.pi / 3, 2 * np.pi / 3]),
         decimal=6,
     )

@@ -29,11 +29,18 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
     def __init__(
         self,
         bio_model: VariationalBioModel,
+        n_shooting: int,
         final_time: float,
         q_init: InitialGuessList = None,
         q_bounds: BoundsList = None,
         qdot_init: InitialGuessList = None,
         qdot_bounds: BoundsList = None,
+        parameters: ParameterList = None,
+        parameter_bounds: BoundsList = None,
+        parameter_init: InitialGuessList = None,
+        parameter_objectives: ParameterObjectiveList = None,
+        parameter_constraints: ParameterConstraintList = None,
+        multinode_constraints: MultinodeConstraintList = None,
         **kwargs,
     ):
         if type(bio_model) != VariationalBiorbdModel:
@@ -57,9 +64,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     "VariationalOptimalControlProgram. Please use final_time argument and use one float to"
                     " define it."
                 )
-
-        if "n_shooting" not in kwargs:
-            raise ValueError("n_shooting must be defined in VariationalOptimalControlProgram")
 
         if "ode_solver" in kwargs:
             raise ValueError(
@@ -111,75 +115,76 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 qdot_init.add(key, [0] * n_q)
 
         # Declare parameters for the initial and final velocities
-        if "parameters" not in kwargs.keys() or kwargs["parameters"] is None:
-            kwargs["parameters"] = ParameterList()
-        if not isinstance(kwargs["parameters"], ParameterList):
+        if parameters is None:
+            parameters = ParameterList()
+        if not isinstance(parameters, ParameterList):
             raise ValueError("parameters must be a ParameterList")
 
-        if "parameter_init" not in kwargs.keys() or kwargs["parameter_init"] is None:
-            kwargs["parameter_init"] = InitialGuessList()
-        if not isinstance(kwargs["parameter_init"], InitialGuessList):
+        if parameter_init is None:
+            parameter_init = InitialGuessList()
+        if not isinstance(parameter_init, InitialGuessList):
             raise ValueError("parameter_init must be a InitialGuessList")
 
-        if "parameter_bounds" not in kwargs.keys() or kwargs["parameter_bounds"] is None:
-            kwargs["parameter_bounds"] = BoundsList()
-        if not isinstance(kwargs["parameter_bounds"], BoundsList):
+        if parameter_bounds is None:
+            parameter_bounds = BoundsList()
+        if not isinstance(parameter_bounds, BoundsList):
             raise ValueError("parameter_bounds must be a BoundsList")
 
-        if "parameter_constraints" not in kwargs.keys() or kwargs["parameter_constraints"] is None:
-            kwargs["parameter_constraints"] = ParameterConstraintList()
-        if not isinstance(kwargs["parameter_constraints"], ParameterConstraintList):
+        if parameter_constraints is None:
+            parameter_constraints = ParameterConstraintList()
+        if not isinstance(parameter_constraints, ParameterConstraintList):
             raise ValueError("parameter_constraints must be a ParameterConstraintList")
 
-        if "parameter_objectives" not in kwargs.keys() or kwargs["parameter_objectives"] is None:
-            kwargs["parameter_objectives"] = ParameterObjectiveList()
-        if not isinstance(kwargs["parameter_objectives"], ParameterObjectiveList):
+        if parameter_objectives is None:
+            parameter_objectives = ParameterObjectiveList()
+        if not isinstance(parameter_objectives, ParameterObjectiveList):
             raise ValueError("parameter_objectives must be a ParameterObjectiveList")
 
-        if "qdot_start" in kwargs["parameters"].keys() or "qdot_end" in kwargs["parameters"].keys():
+        if "qdot_start" in parameters.keys() or "qdot_end" in parameters.keys():
             raise KeyError(
                 "'qdot_start' and 'qdot_end' cannot be declared in parameters as they are reserved words in "
                 "VariationalOptimalControlProgram. To define the initial and final velocities, please use "
                 "`qdot_init` and `qdot_bounds` instead."
             )
-        kwargs["parameters"].add(
+        parameters.add(
             "qdot_start",  # The name of the parameter
             function=self.qdot_function,  # The function that modifies the biorbd model
             size=n_qdot,  # The number of elements this particular parameter vector has
         )
-        kwargs["parameters"].add(
+        parameters.add(
             "qdot_end",  # The name of the parameter
             function=self.qdot_function,  # The function that modifies the biorbd model
             size=n_qdot,  # The number of elements this particular parameter vector has
         )
 
         for key in qdot_bounds.keys():
-            if key in kwargs["parameter_bounds"].keys():
+            if key in parameter_bounds.keys():
                 raise KeyError(
                     f"{key} cannot be declared in parameters_bounds as it is a reserved word in "
                     f"VariationalOptimalControlProgram. To define the initial and final velocities, please use "
                     f"`qdot_bounds` instead."
                 )
-            kwargs["parameter_bounds"].add(key, qdot_bounds[key], phase=0)
+            parameter_bounds.add(key, qdot_bounds[key], phase=0)
 
         for init in qdot_init.keys():
-            if key in kwargs["parameter_init"].keys():
+            if key in parameter_init.keys():
                 raise KeyError(
                     f"{key} cannot be declared in parameters_init as it is a reserved word in "
                     f"VariationalOptimalControlProgram. To define the initial and final velocities, please use "
                     f"`qdot_init` instead."
                 )
-            kwargs["parameter_init"].add(init, qdot_init[key], phase=0)
+            parameter_init.add(init, qdot_init[key], phase=0)
 
-        if "multinode_constraints" not in kwargs.keys() or kwargs["multinode_constraints"] is None:
-            kwargs["multinode_constraints"] = MultinodeConstraintList()
-        if not isinstance(kwargs["multinode_constraints"], MultinodeConstraintList):
+        if multinode_constraints is None:
+            multinode_constraints = MultinodeConstraintList()
+        if not isinstance(multinode_constraints, MultinodeConstraintList):
             raise ValueError("multinode_constraints must be a MultinodeConstraintList")
-        self.variational_continuity(kwargs["multinode_constraints"], kwargs["n_shooting"], n_q)
+        self.variational_continuity(multinode_constraints, n_shooting, n_q)
 
         super().__init__(
             self.bio_model,
             dynamics,
+            n_shooting=n_shooting,
             phase_time=final_time,
             x_init=q_init,
             x_bounds=q_bounds,

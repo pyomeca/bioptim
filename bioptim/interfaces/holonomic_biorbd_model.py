@@ -295,25 +295,31 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return q
 
-    def compute_q_v(self, q_u: MX, q_v_init: MX = None) -> MX:
-        q_v_init = MX.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
+    def compute_q_v(self, q_u: MX | DM, q_v_init: MX | DM = None) -> MX | DM:
+        ifcn_input = type(q_u).zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
         decision_variables = MX.sym("decision_variables", self.nb_dependent_joints)
         q = self.state_from_partition(q_u, decision_variables)
         mx_residuals = self.holonomic_constraints(q)
 
-        residuals = Function(
-            "final_states_residuals",
-            [decision_variables, q_u],
-            [mx_residuals],
-        ).expand()
+        if isinstance(q_u, MX):
+            ifcn_input = (ifcn_input, q_u)
+            residuals = Function(
+                "final_states_residuals",
+                [decision_variables, q_u],
+                [mx_residuals],
+            ).expand()
+        else:
+            ifcn_input = (ifcn_input,)
+            residuals = Function(
+                "final_states_residuals",
+                [decision_variables],
+                [mx_residuals],
+            ).expand()
 
         # Create an implicit function instance to solve the system of equations
         opts = {"abstol": self._newton_tol}
         ifcn = rootfinder("ifcn", "newton", residuals, opts)
-        v_opt = ifcn(
-            q_v_init,
-            q_u,
-        )
+        v_opt = ifcn(*ifcn_input)
 
         return v_opt
 
@@ -353,26 +359,6 @@ class HolonomicBiorbdModel(BiorbdModel):
         qddot_v = self.compute_qddot_v(q, qdot, qddot_u)
         return self.state_from_partition(qddot_u, qddot_v)
 
-    def compute_q_v_numeric(self, q_u: DM, q_v_init=None):
-        q_v_init = DM.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
-        decision_variables = MX.sym("decision_variables", self.nb_dependent_joints)
-        q = self.state_from_partition(q_u, decision_variables)
-        mx_residuals = self.holonomic_constraints(q)
-
-        residuals = Function(
-            "final_states_residuals",
-            [decision_variables],
-            [mx_residuals],
-        ).expand()
-
-        # Create an implicit function instance to solve the system of equations
-        opts = {"abstol": self._newton_tol}
-        ifcn = rootfinder("ifcn", "newton", residuals, opts)
-        v_opt = ifcn(
-            q_v_init,
-        )
-
-        return v_opt
 
     def compute_the_lagrangian_multipliers(
         self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None

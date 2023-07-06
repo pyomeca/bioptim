@@ -348,7 +348,7 @@ class HolonomicBioModel(BioModel, Protocol):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
 
-    def compute_q_v(self, q_u: MX, q_v_init: MX = None) -> MX:
+    def compute_q_v(self, q_u: MX | DM, q_v_init: MX | DM = None) -> MX | DM:
         """
         Compute the dependent joint from the independent joint,
         This is done by solving the system of equations given by the holonomic constraints
@@ -358,14 +358,14 @@ class HolonomicBioModel(BioModel, Protocol):
 
         Parameters
         ----------
-        q_u: MX
+        q_u: MX | DM
             The generalized coordinates
-        q_v_init: MX
+        q_v_init: MX | DM
             The initial guess for the dependent joint coordinates
 
         Returns
         -------
-        MX
+        MX | DM
             The dependent joint
         """
 
@@ -471,27 +471,6 @@ class HolonomicBioModel(BioModel, Protocol):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         Equation (17) in the paper.
-        """
-
-    def compute_q_v_numeric(self, q_u: DM, q_v_init=None) -> DM:
-        """
-        Compute the dependent joint from the independent joint,
-        This is done by solving the system of equations given by the holonomic constraints
-        At the end of this step, we get admissible generalized coordinates w.r.t. the holonomic constraints
-
-        !! Numeric version of the function
-
-        Parameters
-        ----------
-        q_u: DM
-            The generalized coordinates
-       q_v_init: DM
-            The initial guess for the dependent joint
-
-        Returns
-        -------
-        DM
-            The numerical values of the dependent q_v for a given independent q_u
         """
 
     def compute_the_lagrangian_multipliers(
