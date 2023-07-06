@@ -362,13 +362,13 @@ class BiorbdModel:
     def marker_velocities(self, q, qdot, reference_index=None) -> list[MX]:
         if reference_index is None:
             return [
-                    m.to_mx()
-                    for m in self.model.markersVelocity(
-                        GeneralizedCoordinates(q),
-                        GeneralizedVelocity(qdot),
-                        True,
-                    )
-                ]
+                m.to_mx()
+                for m in self.model.markersVelocity(
+                    GeneralizedCoordinates(q),
+                    GeneralizedVelocity(qdot),
+                    True,
+                )
+            ]
 
         else:
             out = []
