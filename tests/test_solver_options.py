@@ -3,9 +3,10 @@ from bioptim.misc.enums import SolverType
 
 
 class FakeSolver:
-    def __init__(self,
-                 options_common: dict = None,
-                 ):
+    def __init__(
+        self,
+        options_common: dict = None,
+    ):
         self.options_common = options_common
 
 
@@ -119,5 +120,3 @@ def test_ipopt_solver_options():
     assert not "type" in solver_dict
     assert not "show_online_optim" in solver_dict
     assert not "show_options" in solver_dict
-
-

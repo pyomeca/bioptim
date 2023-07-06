@@ -899,6 +899,3 @@ class Solver:
                 "_nlp_solver_tol_ineq",
                 "_nlp_solver_tol_stat",
             ]
-
-
-
