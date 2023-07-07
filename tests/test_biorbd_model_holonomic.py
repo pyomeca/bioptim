@@ -6,7 +6,8 @@ from casadi import DM, MX, Function
 
 from bioptim import (
     HolonomicBiorbdModel,
-    HolonomicConstraintFcn,
+    HolonomicConstraintsFcn,
+    HolonomicConstraintsList,
     Solver,
 )
 
@@ -20,44 +21,50 @@ def test_model_holonomic():
     biorbd_model_path = bioptim_folder + "/models/triple_pendulum.bioMod"
     model = HolonomicBiorbdModel(biorbd_model_path)
 
+    (
+        y_constraint_fun,
+        y_constraint_jac_fun,
+        y_constraint_double_derivative_fun,
+    ) = HolonomicConstraintsFcn.superimpose_markers(model, "marker_1", "marker_6", index=slice(1, 2))
+    (
+        z_constraint_fun,
+        z_constraint_jac_fun,
+        z_constraint_double_derivative_fun,
+    ) = HolonomicConstraintsFcn.superimpose_markers(model, "marker_1", "marker_6", index=slice(2, 3))
+    holonomic_constrains = HolonomicConstraintsList()
+    holonomic_constrains.add("y", y_constraint_fun, y_constraint_jac_fun, y_constraint_double_derivative_fun)
+    holonomic_constrains.add("z", z_constraint_fun, z_constraint_jac_fun, z_constraint_double_derivative_fun)
+
+    with pytest.raises(
+        ValueError,
+        match="You need to specify both dependent_joint_index and independent_joint_index or none of them.",
+    ):
+        model.set_dependencies(holonomic_constrains, [1])
+
     with pytest.raises(
         ValueError,
         match="The sum of the number of dependent and independent joints should be equal to the number of DoF of the"
         " model",
     ):
-        model.set_dependencies([1], [2])
+        model.set_dependencies(holonomic_constrains, [1], [2])
 
     with pytest.raises(
         ValueError,
         match="Joint 1 is both dependant and independent. You need to specify this index in "
         "only one of these arguments: dependent_joint_index: independent_joint_index.",
     ):
-        model.set_dependencies([1, 2], [1])
+        model.set_dependencies(holonomic_constrains, [1, 2], [1])
 
     with pytest.raises(
         ValueError,
         match="Joint index 3 is not a valid joint index since the model has 3 DoF",
     ):
-        model.set_dependencies([1, 2], [3])
+        model.set_dependencies(holonomic_constrains, [1, 2], [3])
 
-    model.set_dependencies([1, 2], [0])
+    model.set_dependencies(holonomic_constrains, [1, 2], [0])
 
     np.testing.assert_equal(model.nb_independent_joints, 1)
     np.testing.assert_equal(model.nb_dependent_joints, 2)
-
-    (
-        y_constraint_fun,
-        y_constraint_jac_fun,
-        y_constraint_double_derivative_fun,
-    ) = HolonomicConstraintFcn.superimpose_markers(model, "marker_1", "marker_6", index=slice(1, 2))
-    model.add_holonomic_constraint(y_constraint_fun, y_constraint_jac_fun, y_constraint_double_derivative_fun)
-    (
-        z_constraint_fun,
-        z_constraint_jac_fun,
-        z_constraint_double_derivative_fun,
-    ) = HolonomicConstraintFcn.superimpose_markers(model, "marker_1", "marker_6", index=slice(2, 3))
-    model.add_holonomic_constraint(z_constraint_fun, z_constraint_jac_fun, z_constraint_double_derivative_fun)
-
     np.testing.assert_equal(model.nb_holonomic_constraints, 2)
 
     # symbolic variables
@@ -115,7 +122,7 @@ def test_model_holonomic():
     TestUtils.assert_equal(model.compute_qdot(q, qdot_u), [4.0, 23.18039172, -1.4066566], expand=False)
 
     np.testing.assert_almost_equal(
-        model.compute_q_v(DM([0.0]), q_v_init=[1, 1]).toarray().squeeze(),
+        model.compute_q_v(DM([0.0]), q_v_init=DM([1.0, 1.0])).toarray().squeeze(),
         np.array([2 * np.pi / 3, 2 * np.pi / 3]),
         decimal=6,
     )

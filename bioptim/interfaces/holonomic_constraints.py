@@ -3,17 +3,18 @@ This class contains different holonomic constraint function.
 """
 from casadi import MX, Function, jacobian, vertcat
 
-from bioptim import HolonomicBiorbdModel
+from .biorbd_model import BiorbdModel
+from ..misc.options import OptionDict
 
 
-class HolonomicConstraintFcn:
+class HolonomicConstraintsFcn:
     """
     This class contains different holonomic constraint.
     """
 
     @staticmethod
     def superimpose_markers(
-        biorbd_model: HolonomicBiorbdModel,
+        biorbd_model: BiorbdModel,
         marker_1: str,
         marker_2: str = None,
         index: slice = slice(0, 3),
@@ -33,6 +34,8 @@ class HolonomicConstraintFcn:
             origin.
         index: slice
             The index of the markers to superimpose.
+        local_frame_index: int
+            The index of the frame in which the markers are expressed. If None, the markers are expressed in the global.
 
 
         Returns
@@ -62,35 +65,77 @@ class HolonomicConstraintFcn:
         # the constraint is the distance between the two markers, set to zero
         constraint = (marker_1_sym - marker_2_sym)[index]
         # the jacobian of the constraint
-        constraint_jacobian = jacobian(constraint, q_sym)
+        constraints_jacobian = jacobian(constraint, q_sym)
 
-        constraint_func = Function(
-            "holonomic_constraint",
+        constraints_func = Function(
+            "holonomic_constraints",
             [q_sym],
             [constraint],
             ["q"],
             ["holonomic_constraint"],
         ).expand()
 
-        constraint_jacobian_func = Function(
-            "holonomic_constraint_jacobian",
+        constraints_jacobian_func = Function(
+            "holonomic_constraints_jacobian",
             [q_sym],
-            [constraint_jacobian],
+            [constraints_jacobian],
             ["q"],
-            ["holonomic_constraint_jacobian"],
+            ["holonomic_constraints_jacobian"],
         ).expand()
 
         # the double derivative of the constraint
-        constraint_double_derivative = (
-            constraint_jacobian_func(q_sym) @ q_ddot_sym + constraint_jacobian_func(q_dot_sym) @ q_dot_sym
+        constraints_double_derivative = (
+            constraints_jacobian_func(q_sym) @ q_ddot_sym + constraints_jacobian_func(q_dot_sym) @ q_dot_sym
         )
 
-        constraint_double_derivative_func = Function(
-            "holonomic_constraint_double_derivative",
+        constraints_double_derivative_func = Function(
+            "holonomic_constraints_double_derivative",
             [q_sym, q_dot_sym, q_ddot_sym],
-            [constraint_double_derivative],
+            [constraints_double_derivative],
             ["q", "q_dot", "q_ddot"],
-            ["holonomic_constraint_double_derivative"],
+            ["holonomic_constraints_double_derivative"],
         ).expand()
 
-        return constraint_func, constraint_jacobian_func, constraint_double_derivative_func
+        return constraints_func, constraints_jacobian_func, constraints_double_derivative_func
+
+
+class HolonomicConstraintsList(OptionDict):
+    """
+    A list of holonomic constraints to be sent to HolonomicBiorbdModel.set_dependencies()
+
+    Methods
+    -------
+    add(self, key: str, constraints: Function, constraints_jacobian: Function, constraints_double_derivative: Function)
+        Add a new holonomic constraint to the dict
+    """
+
+    def __init__(self):
+        super(HolonomicConstraintsList, self).__init__(sub_type=dict)
+
+    def add(
+        self,
+        key: str,
+        constraints: Function,
+        constraints_jacobian: Function,
+        constraints_double_derivative: Function,
+    ):
+        """
+        Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
+
+        Parameters
+        ----------
+        key: str
+            The name of the optimization variable
+        constraints: Function
+            The holonomic constraints function
+        constraints_jacobian: Function
+            The jacobian of the holonomic constraints function
+        constraints_double_derivative: Function
+            The double derivative of the holonomic constraints function
+        """
+        super(HolonomicConstraintsList, self)._add(
+            key=key,
+            constraints=constraints,
+            constraints_jacobian=constraints_jacobian,
+            constraints_double_derivative=constraints_double_derivative,
+        )

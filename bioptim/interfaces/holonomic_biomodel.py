@@ -2,11 +2,17 @@ from typing import Protocol, Callable
 
 from biorbd_casadi import GeneralizedCoordinates
 from casadi import MX, DM, Function
-from ..interfaces.biomodel import BioModel
+from .biomodel import BioModel
+from .holonomic_constraints import HolonomicConstraintsList
 
 
 class HolonomicBioModel(BioModel, Protocol):
-    def set_dependencies(self, dependent_joint_index: list, independent_joint_index: list):
+    def set_dependencies(
+        self,
+        constraints_list: HolonomicConstraintsList,
+        dependent_joint_index: list = None,
+        independent_joint_index: list = None,
+    ):
         """
         Set the dependencies between the joints of the model
 
@@ -16,6 +22,8 @@ class HolonomicBioModel(BioModel, Protocol):
             The list of the index of the dependent joints
         independent_joint_index: list
             The list of the index of the independent joints
+        constraints_list: HolonomicConstraintsList
+            The list of the holonomic constraints
         """
 
     @property
@@ -66,22 +74,22 @@ class HolonomicBioModel(BioModel, Protocol):
         """
         return []
 
-    def add_holonomic_constraint(
+    def _add_holonomic_constraint(
         self,
-        constraint: Function | Callable[[GeneralizedCoordinates], MX],
-        constraint_jacobian: Function | Callable[[GeneralizedCoordinates], MX],
-        constraint_double_derivative: Function | Callable[[GeneralizedCoordinates], MX],
+        constraints: Function | Callable[[GeneralizedCoordinates], MX],
+        constraints_jacobian: Function | Callable[[GeneralizedCoordinates], MX],
+        constraints_double_derivative: Function | Callable[[GeneralizedCoordinates], MX],
     ):
         """
         Add a holonomic constraint to the model
 
         Parameters
         ----------
-        constraint: Function | Callable[[GeneralizedCoordinates], MX]
+        constraints: Function | Callable[[GeneralizedCoordinates], MX]
             The holonomic constraint
-        constraint_jacobian: Function | Callable[[GeneralizedCoordinates], MX]
+        constraints_jacobian: Function | Callable[[GeneralizedCoordinates], MX]
             The jacobian of the holonomic constraint
-        constraint_double_derivative: Function | Callable[[GeneralizedCoordinates], MX]
+        constraints_double_derivative: Function | Callable[[GeneralizedCoordinates], MX]
             The double derivative of the holonomic constraint
         """
 

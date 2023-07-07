@@ -6,7 +6,8 @@ The behaviour of the pendulum should be the same as the one in bioptim/examples/
 """
 from bioptim import (
     BoundsList,
-    HolonomicConstraintFcn,
+    HolonomicConstraintsFcn,
+    HolonomicConstraintsList,
     InitialGuessList,
     InterpolationType,
     Objective,
@@ -46,11 +47,15 @@ def prepare_ocp(
     bio_model = VariationalBiorbdModel(bio_model_path)
     # Holonomic constraints: The pendulum must not move on the z axis
     (
-        constraint_func,
-        constraint_jacobian_func,
-        constraint_double_derivative_func,
-    ) = HolonomicConstraintFcn.superimpose_markers(bio_model, marker_1="marker_1", index=slice(2, 3))
-    bio_model.add_holonomic_constraint(constraint_func, constraint_jacobian_func, constraint_double_derivative_func)
+        constraints_func,
+        constraints_jacobian_func,
+        constraints_double_derivative_func,
+    ) = HolonomicConstraintsFcn.superimpose_markers(bio_model, marker_1="marker_1", index=slice(2, 3))
+    holonomic_constraints = HolonomicConstraintsList()
+    holonomic_constraints.add(
+        "holonomic_constraints", constraints_func, constraints_jacobian_func, constraints_double_derivative_func
+    )
+    bio_model.set_dependencies(holonomic_constraints)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")

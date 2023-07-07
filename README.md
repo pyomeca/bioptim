@@ -752,10 +752,12 @@ defined by the independents DoF and the holonomic constraint(s)). You can add so
 For this, you can use one of the functions of `HolonomicConstraintFcn` or add a custom one. You can refer to the
 examples in `bioptim/examples/holonomic_constraints` to see how to use it.
 Some methods may not be interfaced yet, it is accessible through:
+
 ```python
 bio_model = HolonomicBiorbdModel("path/to/model.bioMod")
-bio_model.set_dependencies(independent_joint_index, dependent_joint_index)
-bio_model.add_holonomic_constraint(constraint, constraint_jacobian, constraint_double_derivative)
+holonomic_constraints = HolonomicConstraintsList()
+holonomic_constraints.add("holonomic_constraints", constraints, constraints_jacobian, constraints_double_derivative)
+bio_model.set_dependencies(holonomic_constraints, independent_joint_index, dependent_joint_index)
 ```
 Two dynamics are implemented in the differential algebraic equations handling constraints at acceleration-level in
 constrained_forward_dynamics(...). And the other was inspired by Robotran which uses index reduction methods to satisfy
@@ -767,10 +769,12 @@ Since the class inherits from `HolonomicBiorbdModel`, all the methods of `Holono
 available. This class is used in `VariationalOptimalControlProgram`. You can refer to the examples in
 `bioptim/examples/discrete_mechanics_and_optimal_control` to see how to use it.
 Some methods may not be interfaced yet, it is accessible through:
+
 ```python
 bio_model = VariationalBiorbdModel("path/to/model.bioMod")
-bio_model.set_dependencies(independent_joint_index, dependent_joint_index)
-bio_model.add_holonomic_constraint(constraint, constraint_jacobian, constraint_double_derivative)
+holonomic_constraints = HolonomicConstraintsList()
+holonomic_constraints.add("holonomic_constraints", constraints, constraints_jacobian, constraints_double_derivative)
+bio_model.set_dependencies(holonomic_constraints, independent_joint_index, dependent_joint_index)
 VariationalOptimalControlProgram(bio_model, ...)
 ```
 

@@ -8,6 +8,7 @@ from biorbd_casadi import (
 from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv
 
 from .biorbd_model import BiorbdModel
+from .holonomic_constraints import HolonomicConstraintsList
 
 
 class HolonomicBiorbdModel(BiorbdModel):
@@ -31,7 +32,20 @@ class HolonomicBiorbdModel(BiorbdModel):
     def set_newton_tol(self, newton_tol: float):
         self._newton_tol = newton_tol
 
-    def set_dependencies(self, dependent_joint_index: list, independent_joint_index: list):
+    def set_dependencies(
+        self,
+        constraints_list: HolonomicConstraintsList,
+        dependent_joint_index: list = None,
+        independent_joint_index: list = None,
+    ):
+        if dependent_joint_index is None and independent_joint_index is None:
+            dependent_joint_index = []
+            independent_joint_index = [i for i in range(self.nb_q)]
+        elif dependent_joint_index is None or independent_joint_index is None:
+            raise ValueError(
+                "You need to specify both dependent_joint_index and independent_joint_index or none of them."
+            )
+
         if len(dependent_joint_index) + len(independent_joint_index) != self.nb_q:
             raise ValueError(
                 "The sum of the number of dependent and independent joints should be equal to the number of DoF of the"
@@ -54,6 +68,13 @@ class HolonomicBiorbdModel(BiorbdModel):
         self._dependent_joint_index = dependent_joint_index
         self._independent_joint_index = independent_joint_index
 
+        for constraints_name in constraints_list.keys():
+            self._add_holonomic_constraint(
+                constraints_list[constraints_name]["constraints"],
+                constraints_list[constraints_name]["constraints_jacobian"],
+                constraints_list[constraints_name]["constraints_double_derivative"],
+            )
+
     @property
     def nb_independent_joints(self):
         return len(self._independent_joint_index)
@@ -70,15 +91,15 @@ class HolonomicBiorbdModel(BiorbdModel):
     def independent_joint_index(self) -> list:
         return self._independent_joint_index
 
-    def add_holonomic_constraint(
+    def _add_holonomic_constraint(
         self,
-        constraint: Function | Callable[[GeneralizedCoordinates], MX],
-        constraint_jacobian: Function | Callable[[GeneralizedCoordinates], MX],
-        constraint_double_derivative: Function | Callable[[GeneralizedCoordinates], MX],
+        constraints: Function | Callable[[GeneralizedCoordinates], MX],
+        constraints_jacobian: Function | Callable[[GeneralizedCoordinates], MX],
+        constraints_double_derivative: Function | Callable[[GeneralizedCoordinates], MX],
     ):
-        self._holonomic_constraints.append(constraint)
-        self._holonomic_constraints_jacobians.append(constraint_jacobian)
-        self._holonomic_constraints_double_derivatives.append(constraint_double_derivative)
+        self._holonomic_constraints.append(constraints)
+        self._holonomic_constraints_jacobians.append(constraints_jacobian)
+        self._holonomic_constraints_double_derivatives.append(constraints_double_derivative)
 
     @property
     def nb_holonomic_constraints(self):
@@ -110,16 +131,16 @@ class HolonomicBiorbdModel(BiorbdModel):
         qdot_biorbd = GeneralizedVelocity(qdot)
 
         mass_matrix = self.model.massMatrix(q_biorbd).to_mx()
-        constraint_jacobian = self.holonomic_constraints_jacobian(q)
-        constraint_jacobian_transpose = constraint_jacobian.T
+        constraints_jacobian = self.holonomic_constraints_jacobian(q)
+        constraints_jacobian_transpose = constraints_jacobian.T
 
         # compute the matrix DAE
-        mass_matrix_augmented = horzcat(mass_matrix, constraint_jacobian_transpose)
+        mass_matrix_augmented = horzcat(mass_matrix, constraints_jacobian_transpose)
         mass_matrix_augmented = vertcat(
             mass_matrix_augmented,
             horzcat(
-                constraint_jacobian,
-                MX.zeros((constraint_jacobian_transpose.shape[1], constraint_jacobian_transpose.shape[1])),
+                constraints_jacobian,
+                MX.zeros((constraints_jacobian_transpose.shape[1], constraints_jacobian_transpose.shape[1])),
             ),
         )
 
@@ -296,20 +317,21 @@ class HolonomicBiorbdModel(BiorbdModel):
         return q
 
     def compute_q_v(self, q_u: MX | DM, q_v_init: MX | DM = None) -> MX | DM:
-        ifcn_input = type(q_u).zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
         decision_variables = MX.sym("decision_variables", self.nb_dependent_joints)
         q = self.state_from_partition(q_u, decision_variables)
         mx_residuals = self.holonomic_constraints(q)
 
         if isinstance(q_u, MX):
-            ifcn_input = (ifcn_input, q_u)
+            q_v_init = MX.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
+            ifcn_input = (q_v_init, q_u)
             residuals = Function(
                 "final_states_residuals",
                 [decision_variables, q_u],
                 [mx_residuals],
             ).expand()
         else:
-            ifcn_input = (ifcn_input,)
+            q_v_init = DM.zeros(self.nb_dependent_joints) if q_v_init is None else q_v_init
+            ifcn_input = (q_v_init,)
             residuals = Function(
                 "final_states_residuals",
                 [decision_variables],
@@ -358,7 +380,6 @@ class HolonomicBiorbdModel(BiorbdModel):
         """
         qddot_v = self.compute_qddot_v(q, qdot, qddot_u)
         return self.state_from_partition(qddot_u, qddot_v)
-
 
     def compute_the_lagrangian_multipliers(
         self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None

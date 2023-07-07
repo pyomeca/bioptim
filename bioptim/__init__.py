@@ -178,7 +178,7 @@ from .interfaces.holonomic_biomodel import HolonomicBioModel
 from .interfaces.variational_biomodel import VariationalBioModel
 from .interfaces.holonomic_biorbd_model import HolonomicBiorbdModel
 from .interfaces.variational_biorbd_model import VariationalBiorbdModel
-from .interfaces.holonomic_constraints import HolonomicConstraintFcn
+from .interfaces.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint

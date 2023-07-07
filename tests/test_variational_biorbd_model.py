@@ -3,7 +3,7 @@ from casadi import MX, Function
 
 from bioptim import (
     ControlType,
-    HolonomicConstraintFcn,
+    HolonomicConstraintsFcn,
     QuadratureRule,
     VariationalBiorbdModel,
 )
@@ -121,12 +121,12 @@ def test_variational_model():
     biorbd_model_path = bioptim_folder + "/models/pendulum_holonomic.bioMod"
     holonomic_model = VariationalBiorbdModel(biorbd_model_path)
     (
-        constraint_func,
-        constraint_jacobian_func,
-        constraint_double_derivative_func,
-    ) = HolonomicConstraintFcn.superimpose_markers(holonomic_model, marker_1="marker_1", index=slice(2, 3))
-    holonomic_model.add_holonomic_constraint(
-        constraint_func, constraint_jacobian_func, constraint_double_derivative_func
+        constraints_func,
+        constraints_jacobian_func,
+        constraints_double_derivative_func,
+    ) = HolonomicConstraintsFcn.superimpose_markers(holonomic_model, marker_1="marker_1", index=slice(2, 3))
+    holonomic_model._add_holonomic_constraint(
+        constraints_func, constraints_jacobian_func, constraints_double_derivative_func
     )
 
     q_prev = MX([1.0, 2.0, 3.0])

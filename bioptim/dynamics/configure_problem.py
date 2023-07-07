@@ -599,13 +599,13 @@ class ConfigureProblem:
         """
 
         name = "q_u"
-        names_u = [nlp.model.name_dof[i] for i in nlp.variable_mappings['q'].to_first.map_idx]
+        names_u = [nlp.model.name_dof[i] for i in nlp.variable_mappings["q"].to_first.map_idx]
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(name, names_u, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
         name = "qdot_u"
         names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
-        names_udot = [names_qdot[i] for i in nlp.variable_mappings['qdot'].to_first.map_idx]
+        names_udot = [names_qdot[i] for i in nlp.variable_mappings["qdot"].to_first.map_idx]
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(name, names_udot, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
