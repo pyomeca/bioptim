@@ -1,6 +1,8 @@
 """
 This class contains different holonomic constraint function.
 """
+from typing import Any, Callable
+
 from casadi import MX, Function, jacobian, vertcat
 
 from .biorbd_model import BiorbdModel
@@ -101,7 +103,7 @@ class HolonomicConstraintsFcn:
 
 class HolonomicConstraintsList(OptionDict):
     """
-    A list of holonomic constraints to be sent to HolonomicBiorbdModel.set_dependencies()
+    A list of holonomic constraints to be sent to HolonomicBiorbdModel.set_holonomic_configuration()
 
     Methods
     -------
@@ -112,13 +114,7 @@ class HolonomicConstraintsList(OptionDict):
     def __init__(self):
         super(HolonomicConstraintsList, self).__init__(sub_type=dict)
 
-    def add(
-        self,
-        key: str,
-        constraints: Function,
-        constraints_jacobian: Function,
-        constraints_double_derivative: Function,
-    ):
+    def add(self, key: str, constraints_fcn: Callable, **kwargs: Any):
         """
         Add a new bounds to the list, either [min_bound AND max_bound] OR [bounds] should be defined
 
@@ -126,13 +122,10 @@ class HolonomicConstraintsList(OptionDict):
         ----------
         key: str
             The name of the optimization variable
-        constraints: Function
-            The holonomic constraints function
-        constraints_jacobian: Function
-            The jacobian of the holonomic constraints function
-        constraints_double_derivative: Function
-            The double derivative of the holonomic constraints function
+        constraints_fcn: HolonomicConstraintsFcn
+            The function that generates the holonomic constraints
         """
+        constraints, constraints_jacobian, constraints_double_derivative = constraints_fcn(**kwargs)
         super(HolonomicConstraintsList, self)._add(
             key=key,
             constraints=constraints,

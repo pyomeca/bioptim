@@ -756,8 +756,8 @@ Some methods may not be interfaced yet, it is accessible through:
 ```python
 bio_model = HolonomicBiorbdModel("path/to/model.bioMod")
 holonomic_constraints = HolonomicConstraintsList()
-holonomic_constraints.add("holonomic_constraints", constraints, constraints_jacobian, constraints_double_derivative)
-bio_model.set_dependencies(holonomic_constraints, independent_joint_index, dependent_joint_index)
+holonomic_constraints.add("holonomic_constraints", HolonomicConstraintsFcn.function, **kwargs)
+bio_model.set_holonomic_configuration(holonomic_constraints, independent_joint_index, dependent_joint_index)
 ```
 Two dynamics are implemented in the differential algebraic equations handling constraints at acceleration-level in
 constrained_forward_dynamics(...). And the other was inspired by Robotran which uses index reduction methods to satisfy
@@ -773,8 +773,8 @@ Some methods may not be interfaced yet, it is accessible through:
 ```python
 bio_model = VariationalBiorbdModel("path/to/model.bioMod")
 holonomic_constraints = HolonomicConstraintsList()
-holonomic_constraints.add("holonomic_constraints", constraints, constraints_jacobian, constraints_double_derivative)
-bio_model.set_dependencies(holonomic_constraints, independent_joint_index, dependent_joint_index)
+holonomic_constraints.add("holonomic_constraints", HolonomicConstraintsFcn.function, **kwargs)
+bio_model.set_holonomic_configuration(holonomic_constraints)
 VariationalOptimalControlProgram(bio_model, ...)
 ```
 

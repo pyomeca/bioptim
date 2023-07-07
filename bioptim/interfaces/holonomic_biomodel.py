@@ -7,14 +7,16 @@ from .holonomic_constraints import HolonomicConstraintsList
 
 
 class HolonomicBioModel(BioModel, Protocol):
-    def set_dependencies(
+    def set_holonomic_configuration(
         self,
         constraints_list: HolonomicConstraintsList,
         dependent_joint_index: list = None,
         independent_joint_index: list = None,
     ):
         """
-        Set the dependencies between the joints of the model
+        Set the holonomic constraints of the model and if necessary the partitioned dynamics.
+        The joint indexes are not mandatory because a HolonomicBiorbdModel can be used without the partitioned dynamics,
+        for instance in VariationalOptimalControlProgram.
 
         Parameters
         ----------
@@ -330,8 +332,6 @@ class HolonomicBioModel(BioModel, Protocol):
         Compute the dependent joint from the independent joint,
         This is done by solving the system of equations given by the holonomic constraints
         At the end of this step, we get admissible generalized coordinates w.r.t. the holonomic constraints
-
-        !! Symbolic version of the function
 
         Parameters
         ----------

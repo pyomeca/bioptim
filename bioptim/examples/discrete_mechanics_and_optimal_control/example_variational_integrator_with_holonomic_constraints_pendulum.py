@@ -46,16 +46,15 @@ def prepare_ocp(
 
     bio_model = VariationalBiorbdModel(bio_model_path)
     # Holonomic constraints: The pendulum must not move on the z axis
-    (
-        constraints_func,
-        constraints_jacobian_func,
-        constraints_double_derivative_func,
-    ) = HolonomicConstraintsFcn.superimpose_markers(bio_model, marker_1="marker_1", index=slice(2, 3))
     holonomic_constraints = HolonomicConstraintsList()
     holonomic_constraints.add(
-        "holonomic_constraints", constraints_func, constraints_jacobian_func, constraints_double_derivative_func
+        "holonomic_constraints",
+        HolonomicConstraintsFcn.superimpose_markers,
+        biorbd_model=bio_model,
+        marker_1="marker_1",
+        index=slice(2, 3),
     )
-    bio_model.set_dependencies(holonomic_constraints)
+    bio_model.set_holonomic_configuration(holonomic_constraints)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")

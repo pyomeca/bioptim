@@ -21,47 +21,63 @@ def test_model_holonomic():
     biorbd_model_path = bioptim_folder + "/models/triple_pendulum.bioMod"
     model = HolonomicBiorbdModel(biorbd_model_path)
 
-    (
-        y_constraint_fun,
-        y_constraint_jac_fun,
-        y_constraint_double_derivative_fun,
-    ) = HolonomicConstraintsFcn.superimpose_markers(model, "marker_1", "marker_6", index=slice(1, 2))
-    (
-        z_constraint_fun,
-        z_constraint_jac_fun,
-        z_constraint_double_derivative_fun,
-    ) = HolonomicConstraintsFcn.superimpose_markers(model, "marker_1", "marker_6", index=slice(2, 3))
     holonomic_constrains = HolonomicConstraintsList()
-    holonomic_constrains.add("y", y_constraint_fun, y_constraint_jac_fun, y_constraint_double_derivative_fun)
-    holonomic_constrains.add("z", z_constraint_fun, z_constraint_jac_fun, z_constraint_double_derivative_fun)
+    holonomic_constrains.add(
+        "y",
+        HolonomicConstraintsFcn.superimpose_markers,
+        biorbd_model=model,
+        marker_1="marker_1",
+        marker_2="marker_6",
+        index=slice(1, 2),
+    )
+    holonomic_constrains.add(
+        "z",
+        HolonomicConstraintsFcn.superimpose_markers,
+        biorbd_model=model,
+        marker_1="marker_1",
+        marker_2="marker_6",
+        index=slice(2, 3),
+    )
 
     with pytest.raises(
         ValueError,
         match="You need to specify both dependent_joint_index and independent_joint_index or none of them.",
     ):
-        model.set_dependencies(holonomic_constrains, [1])
+        model.set_holonomic_configuration(holonomic_constrains, [1])
 
     with pytest.raises(
         ValueError,
         match="The sum of the number of dependent and independent joints should be equal to the number of DoF of the"
         " model",
     ):
-        model.set_dependencies(holonomic_constrains, [1], [2])
+        model.set_holonomic_configuration(holonomic_constrains, [1], [2])
 
     with pytest.raises(
         ValueError,
         match="Joint 1 is both dependant and independent. You need to specify this index in "
         "only one of these arguments: dependent_joint_index: independent_joint_index.",
     ):
-        model.set_dependencies(holonomic_constrains, [1, 2], [1])
+        model.set_holonomic_configuration(holonomic_constrains, [1, 2], [1])
 
     with pytest.raises(
         ValueError,
         match="Joint index 3 is not a valid joint index since the model has 3 DoF",
     ):
-        model.set_dependencies(holonomic_constrains, [1, 2], [3])
+        model.set_holonomic_configuration(holonomic_constrains, [1, 2], [3])
 
-    model.set_dependencies(holonomic_constrains, [1, 2], [0])
+    with pytest.raises(
+        ValueError,
+        match="The dependent_joint_index should be sorted in ascending order.",
+    ):
+        model.set_holonomic_configuration(holonomic_constrains, [2, 1], [0])
+
+    with pytest.raises(
+        ValueError,
+        match="The independent_joint_index should be sorted in ascending order.",
+    ):
+        model.set_holonomic_configuration(holonomic_constrains, [0], [2, 1])
+
+    model.set_holonomic_configuration(holonomic_constrains, [1, 2], [0])
 
     np.testing.assert_equal(model.nb_independent_joints, 1)
     np.testing.assert_equal(model.nb_dependent_joints, 2)

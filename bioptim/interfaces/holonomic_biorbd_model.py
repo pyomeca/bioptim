@@ -32,12 +32,16 @@ class HolonomicBiorbdModel(BiorbdModel):
     def set_newton_tol(self, newton_tol: float):
         self._newton_tol = newton_tol
 
-    def set_dependencies(
+    def set_holonomic_configuration(
         self,
         constraints_list: HolonomicConstraintsList,
-        dependent_joint_index: list = None,
-        independent_joint_index: list = None,
+        dependent_joint_index: list[int] = None,
+        independent_joint_index: list[int] = None,
     ):
+        """
+        The joint indexes are not mandatory because a HolonomicBiorbdModel can be used without the partitioned dynamics,
+        for instance in VariationalOptimalControlProgram.
+        """
         if dependent_joint_index is None and independent_joint_index is None:
             dependent_joint_index = []
             independent_joint_index = [i for i in range(self.nb_q)]
@@ -64,6 +68,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         for joint in independent_joint_index:
             if joint >= self.nb_q:
                 raise ValueError(f"Joint index {joint} is not a valid joint index since the model has {self.nb_q} DoF")
+
+        if sorted(dependent_joint_index) != dependent_joint_index:
+            raise ValueError("The dependent_joint_index should be sorted in ascending order.")
+        if sorted(independent_joint_index) != independent_joint_index:
+            raise ValueError("The independent_joint_index should be sorted in ascending order.")
 
         self._dependent_joint_index = dependent_joint_index
         self._independent_joint_index = independent_joint_index
