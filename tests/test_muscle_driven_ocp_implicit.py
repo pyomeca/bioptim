@@ -5,28 +5,25 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver
+from bioptim import OdeSolver, DefectType
 
 from .utils import TestUtils
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
-def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
+@pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION, OdeSolver.IRK])
+def test_muscle_driven_ocp_implicit(ode_solver, assume_phase_dynamics):
     from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
-
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
-        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    ode_solver_obj = ode_solver(defects_type=DefectType.IMPLICIT)
     ocp = ocp_module.prepare_ocp(
         bioptim_folder + "/models/arm26.bioMod",
         final_time=0.1,
         n_shooting=5,
         weight=1,
-        ode_solver=ode_solver(),
+        ode_solver=ode_solver_obj,
         assume_phase_dynamics=assume_phase_dynamics,
     )
     sol = ocp.solve()
@@ -47,28 +44,7 @@ def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
     # Check some of the results
     q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
 
-    if ode_solver == OdeSolver.RK4:
-        np.testing.assert_almost_equal(f[0, 0], 0.1264429986075503)
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([-0.19992514, 2.65885447]))
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.31428464, 14.18136011]))
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([0.00799549, 0.02025832]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([0.00228285, 0.00281159]))
-        np.testing.assert_almost_equal(
-            mus[:, 0],
-            np.array([7.16894451e-06, 6.03295625e-01, 3.37029285e-01, 1.08379171e-05, 1.14087135e-05, 3.66744227e-01]),
-        )
-        np.testing.assert_almost_equal(
-            mus[:, -2],
-            np.array([5.46687138e-05, 6.60562511e-03, 3.77597977e-03, 4.92824218e-04, 5.09440179e-04, 9.08091234e-03]),
-        )
-
-    elif ode_solver == OdeSolver.IRK:
+    if ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(f[0, 0], 0.12644299285122357)
 
         # initial and final position
@@ -97,7 +73,7 @@ def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
         np.testing.assert_almost_equal(q[:, -1], np.array([-0.19992534, 2.65884909]))
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.31430927, 14.18129464]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3143106, 14.1812974]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([0.00799575, 0.02025812]))
         np.testing.assert_almost_equal(tau[:, -2], np.array([0.00228286, 0.00281158]))
@@ -107,7 +83,7 @@ def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
         )
         np.testing.assert_almost_equal(
             mus[:, -2],
-            np.array([5.46652642e-05, 6.57077193e-03, 3.72595814e-03, 4.73887187e-04, 4.89821189e-04, 9.06067240e-03]),
+            np.array([5.4664028e-05, 6.5610959e-03, 3.7092411e-03, 4.6592962e-04, 4.8159442e-04, 9.0543847e-03]),
         )
     else:
         raise ValueError("Test not ready")
