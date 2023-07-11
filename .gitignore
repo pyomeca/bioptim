@@ -114,3 +114,6 @@ c_generated_code
 # Bioptim files
 bioptim/sandbox/
 *.pkl
+
+# Mac dev
+*.DS_store

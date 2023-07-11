@@ -42,7 +42,7 @@ class DynamicsFunctions:
     """
 
     @staticmethod
-    def custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, nlp) -> DynamicsEvaluation:
+    def custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, stochastic_variables: MX.sym, nlp) -> DynamicsEvaluation:
         """
         Interface to custom dynamic function provided by the user.
 
@@ -65,7 +65,7 @@ class DynamicsFunctions:
             The defects of the implicit dynamics
         """
 
-        return nlp.dynamics_type.dynamic_function(states, controls, parameters, nlp)
+        return nlp.dynamics_type.dynamic_function(states, controls, parameters, stochastic_variables, nlp)
 
     @staticmethod
     def torque_driven(
