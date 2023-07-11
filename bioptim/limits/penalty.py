@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian, DM
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
@@ -100,6 +100,27 @@ class PenaltyFunctionAbstract:
 
             # TODO: We should scale the target here!
             return controller.controls[key].cx_start
+
+        @staticmethod
+        def minimize_stochastic_variables(penalty: PenaltyOption, controller: PenaltyController, key: str):
+            """
+            Minimize a stochastic variable.
+            By default, this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            key: str
+                The name of the controls to minimize
+            """
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
+
+            return controller.stochastic_variables[key].cx_start
 
         @staticmethod
         def minimize_fatigue(penalty: PenaltyOption, controller: PenaltyController, key: str):
@@ -974,6 +995,30 @@ class PenaltyFunctionAbstract:
             penalty.multi_thread = True
 
             return continuity
+
+        @staticmethod
+        def covariance_matrix_continuity_implicit(penalty: PenaltyOption, controller: PenaltyController, wM_magnitude: DM, wS_magnitude: DM):
+
+            nx = controller.states.cx_start.shape[0]
+            P_matrix = controller.integrated_values["cov"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "cov")
+            A_matrix = controller.stochastic_variables["a"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "a")
+            C_matrix = controller.stochastic_variables["c"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "c")
+            M_matrix = controller.stochastic_variables["m"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "m")
+
+            sigma_w = vertcat(wS_magnitude, wM_magnitude)
+            dt = 1 / controller.ns
+            dg_dw = - dt * C_matrix
+            dg_dx = - MX_eye(A_matrix.shape[0]) - dt / 2 * A_matrix
+
+            p_next = M_matrix @ (dg_dx @ P_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
+            p_implicit_deffect = p_next - P_matrix
+
+            penalty.expand = controller.get_nlp.dynamics_type.expand
+            penalty.explicit_derivative = True
+            penalty.multi_thread = True
+
+            out_vector = controller.integrated_values["cov"].reshape_to_vector(p_implicit_deffect)
+            return out_vector
 
         @staticmethod
         def custom(penalty: PenaltyOption, controller: PenaltyController | list, **parameters: Any):

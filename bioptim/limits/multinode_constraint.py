@@ -100,6 +100,7 @@ class MultinodeConstraintFcn(FcnEnum):
     COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
     COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
     TIME_CONSTRAINT = (MultinodeConstraintFunctions.Functions.time_equality,)
+    M_EQUALS_INVERSE_OF_DG_DZ = (MultinodeConstraintFunctions.Functions.m_equals_inverse_of_dg_dz,)
 
     @staticmethod
     def get_type():

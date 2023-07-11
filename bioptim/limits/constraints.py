@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, DM, horzcat
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -619,6 +619,7 @@ class ConstraintFcn(FcnEnum):
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
     TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,)
     TRACK_PARAMETER = (PenaltyFunctionAbstract.Functions.minimize_parameter,)
+    COVARIANCE_MATRIX_CONINUITY_IMPLICIT = (PenaltyFunctionAbstract.Functions.covariance_matrix_continuity_implicit,)
 
     @staticmethod
     def get_type():

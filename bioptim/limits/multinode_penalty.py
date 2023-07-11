@@ -1,4 +1,5 @@
 from typing import Callable, Any
+from casadi import DM, horzcat, MX_eye, jacobian, Function, MX
 
 from .constraints import PenaltyOption
 from .objective_functions import ObjectiveFunction
@@ -302,6 +303,47 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 out += time_0 - time_i
 
             return out
+
+        @staticmethod
+        def m_equals_inverse_of_dg_dz(penalty, controllers: list[PenaltyController, PenaltyController], dynamics: Callable, wM_magnitude: DM, wS_magnitude: DM, **unused_param):
+            """
+            ...
+            """
+            if controllers[0].phase_idx != controllers[1].phase_idx:
+                raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
+
+            dt = controllers[0].tf / controllers[0].ns
+
+            wM = MX.sym("wM", wM_magnitude.shape[0], 1)
+            wS = MX.sym("wS", wS_magnitude.shape[0], 1)
+
+            nx = controllers[0].states.cx.shape[0]
+            M_matrix = controllers[0].stochastic_variables["m"].reshape_to_matrix(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
+
+            dx = dynamics(controllers[0].states.cx_start, controllers[0].controls.cx_start,
+                                    controllers[0].parameters.cx_start, controllers[0].stochastic_variables.cx_start,
+                                    controllers[0].get_nlp, wM, wS,
+                                    with_gains=True)
+
+            DdZ_DX_fun = Function("DdZ_DX_fun", [controllers[0].states.cx_start,
+                                                 controllers[0].controls.cx_start,
+                                                 controllers[0].parameters.cx_start,
+                                                 controllers[0].stochastic_variables.cx_start,
+                                                 wM, wS],
+                                    [jacobian(dx.dxdt, controllers[0].states.cx_start)])
+
+            DdZ_DX = DdZ_DX_fun(controllers[1].states.cx_start,
+                                controllers[1].controls.cx_start,
+                                controllers[1].parameters.cx_start,
+                                controllers[1].stochastic_variables.cx_start,
+                                wM_magnitude, wS_magnitude)
+
+            DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
+
+            val = M_matrix @ DG_DZ - MX_eye(nx)
+
+            out_vector = controllers[0].stochastic_variables["m"].reshape_to_vector(val)
+            return out_vector
 
         @staticmethod
         def custom(penalty, controllers: list[PenaltyController, PenaltyController], **extra_params):
