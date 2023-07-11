@@ -22,8 +22,7 @@ import scipy.io as sio
 from bioptim import (
     OptimalControlProgram,
     StochasticOptimalControlProgram,
-    Bounds,
-    InitialGuess,
+    InitialGuessList,
     ObjectiveFcn,
     Solver,
     ObjectiveList,
@@ -622,12 +621,14 @@ def prepare_socp(
     states_max = np.ones((n_states, n_shooting+1)) * cas.inf
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=Bounds(states_min, states_max, interpolation=InterpolationType.EACH_FRAME))
+    x_bounds.add("q", min_bound=states_min[:n_q, :], max_bound=states_max[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
+    x_bounds.add("qdot", min_bound=states_min[n_q:n_q+n_qdot, :], max_bound=states_max[n_q:n_q+n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
+    x_bounds.add("muscles", min_bound=states_min[n_q+n_qdot:, :], max_bound=states_max[n_q+n_qdot:, :], interpolation=InterpolationType.EACH_FRAME)
 
     u_bounds = BoundsList()
     controls_min = np.ones((n_muscles, 3)) * -cas.inf
     controls_max = np.ones((n_muscles, 3)) * cas.inf
-    u_bounds.add(bounds=Bounds(controls_min, controls_max))
+    u_bounds.add("muscles", min_bound=controls_min, max_bound=controls_max)
 
     input_sol_FLAG = False  # True
     if input_sol_FLAG:
@@ -654,35 +655,59 @@ def prepare_socp(
         states_init[n_q + n_qdot:, :] = 0.01
     else:
         states_init = cas.vertcat(q_sol, qdot_sol, activations_sol)
-    x_init = InitialGuess(states_init, interpolation=InterpolationType.EACH_FRAME)
+    x_init = InitialGuessList()
+    x_init.add("q", initial_guess=states_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("qdot", initial_guess=states_init[n_q:n_q+n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("muscles", initial_guess=states_init[n_q+n_qdot:, :], interpolation=InterpolationType.EACH_FRAME)
 
     if not input_sol_FLAG:
         controls_init = np.ones((n_muscles, n_shooting)) * 0.01
     else:
         controls_init = excitations_sol[:, :-1]
-    u_init = InitialGuess(controls_init, interpolation=InterpolationType.EACH_FRAME)
+    u_init = InitialGuessList()
+    u_init.add("muscles", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
 
     # TODO: This should probably be done automatically, not defined by the user
     n_stochastic = n_muscles*(n_q + n_qdot) + n_q+n_qdot + n_states*n_states  # K(6x4) + ee_ref(4x1) + M(10x10)
+    s_init = InitialGuessList()
+    s_bounds = BoundsList()
+    stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
+    stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
     if not input_sol_FLAG:
         stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
         curent_index = 0
         stochastic_init[:n_muscles * (n_q + n_qdot), :] = 0.01  # K
+        s_init.add("k", initial_guess=stochastic_init[:n_muscles * (n_q + n_qdot), :], interpolation=InterpolationType.EACH_FRAME)
+        s_bounds.add("k", min_bound=stochastic_min[:n_muscles * (n_q + n_qdot), :], max_bound=stochastic_max[:n_muscles * (n_q + n_qdot), :])
         curent_index += n_muscles * (n_q + n_qdot)
         stochastic_init[curent_index: curent_index + n_q + n_qdot, :] = 0.01  # ee_ref
         # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
         # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
+        s_init.add("ee_ref", initial_guess=stochastic_init[curent_index: curent_index + n_q + n_qdot, :],
+                   interpolation=InterpolationType.EACH_FRAME)
+        s_bounds.add("ee_ref", min_bound=stochastic_min[curent_index: curent_index + n_q + n_qdot, :], max_bound=stochastic_max[curent_index: curent_index + n_q + n_qdot, :])
         curent_index += n_q + n_qdot
         stochastic_init[curent_index: curent_index + n_states * n_states, :] = 0.01  # M
+        s_init.add("m", initial_guess=stochastic_init[curent_index: curent_index + n_states * n_states, :], interpolation=InterpolationType.EACH_FRAME)
+        s_bounds.add("m", min_bound=stochastic_min[curent_index: curent_index + n_states * n_states, :],
+                 max_bound=stochastic_max[curent_index: curent_index + n_states * n_states, :])
     else:
         stochastic_init = stochastic_variables_sol
-    s_init = InitialGuess(stochastic_init, interpolation=InterpolationType.EACH_FRAME)
-
-    s_bounds = BoundsList()
-    stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
-    stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
-    s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
-    # TODO: we should probably change the name stochastic_variables -> helper_variables ?
+        curent_index = 0
+        s_init.add("k", initial_guess=stochastic_init[:n_muscles * (n_q + n_qdot), :], interpolation=InterpolationType.EACH_FRAME)
+        s_bounds.add("k", min_bound=stochastic_min[:n_muscles * (n_q + n_qdot), :],
+                     max_bound=stochastic_max[:n_muscles * (n_q + n_qdot), :])
+        curent_index += n_muscles * (n_q + n_qdot)
+        s_init.add("ee_ref", initial_guess=stochastic_init[curent_index: curent_index + n_q + n_qdot, :],
+                   interpolation=InterpolationType.EACH_FRAME)
+        s_bounds.add("ee_ref", min_bound=stochastic_min[curent_index: curent_index + n_q + n_qdot, :],
+                     max_bound=stochastic_max[curent_index: curent_index + n_q + n_qdot, :])
+        curent_index += n_q + n_qdot
+        s_init.add("m", initial_guess=stochastic_init[curent_index: curent_index + n_states * n_states, :],
+                   interpolation=InterpolationType.EACH_FRAME)
+        s_bounds.add("m", min_bound=stochastic_min[curent_index: curent_index + n_states * n_states, :],
+                     max_bound=stochastic_max[curent_index: curent_index + n_states * n_states, :])
+        # TODO: we should probably change the name stochastic_variables -> helper_variables ?
 
     integrated_value_functions = {"cov": lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude)}
 
