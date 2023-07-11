@@ -210,8 +210,7 @@ class PenaltyFunctionAbstract:
             q_mx = controller.states["q"].mx
             qdot_mx = controller.states["qdot"].mx
 
-            # todo: return all MX, shouldn't it be a list of MX, I think there is an inconsistency here
-            markers = controller.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs)
+            markers = horzcat(*controller.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs))
 
             markers_objective = controller.mx_to_cx(
                 "markers_velocity", markers, controller.states["q"], controller.states["qdot"]
@@ -307,8 +306,8 @@ class PenaltyFunctionAbstract:
             marker_velocity = controller.model.marker_velocities(
                 controller.states["q"].mx, controller.states["qdot"].mx
             )
-            marker_1 = marker_velocity[:, first_marker_idx]
-            marker_2 = marker_velocity[:, second_marker_idx]
+            marker_1 = marker_velocity[first_marker_idx][:]
+            marker_2 = marker_velocity[second_marker_idx][:]
 
             diff_markers = marker_2 - marker_1
 

@@ -310,7 +310,7 @@ class BiorbdModel:
         qdot_biorbd = GeneralizedVelocity(qdot)
         return self.model.muscularJointTorque(muscles_states, q_biorbd, qdot_biorbd).to_mx()
 
-    def markers(self, q) -> Any | list[MX]:
+    def markers(self, q) -> list[MX]:
         return [m.to_mx() for m in self.model.markers(GeneralizedCoordinates(q))]
 
     @property
@@ -359,21 +359,19 @@ class BiorbdModel:
         """
         return self.model.rigidContactAxisIdx(contact_index)
 
-    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
+    def marker_velocities(self, q, qdot, reference_index=None) -> list[MX]:
         if reference_index is None:
-            return horzcat(
-                *[
-                    m.to_mx()
-                    for m in self.model.markersVelocity(
-                        GeneralizedCoordinates(q),
-                        GeneralizedVelocity(qdot),
-                        True,
-                    )
-                ]
-            )
+            return [
+                m.to_mx()
+                for m in self.model.markersVelocity(
+                    GeneralizedCoordinates(q),
+                    GeneralizedVelocity(qdot),
+                    True,
+                )
+            ]
 
         else:
-            out = MX()
+            out = []
             homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
                 GeneralizedCoordinates(q),
                 reference_index,
@@ -381,7 +379,7 @@ class BiorbdModel:
             )
             for m in self.model.markersVelocity(GeneralizedCoordinates(q), GeneralizedVelocity(qdot)):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
-                    out = horzcat(out, m.to_mx())
+                    out.append(m.to_mx())
 
             return out
 
@@ -977,16 +975,15 @@ class MultiBiorbdModel:
             # Note: may not work if the contact_index is not in the first model
         return model_selected.rigid_contact_index(contact_index)
 
-    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
+    def marker_velocities(self, q, qdot, reference_index=None) -> list[MX]:
         if reference_index is not None:
             raise RuntimeError("marker_velocities is not implemented yet with reference_index for MultiBiorbdModel")
 
-        out = MX()
+        out = []
         for i, model in enumerate(self.models):
             q_model = q[self.variable_index("q", i)]
             qdot_model = qdot[self.variable_index("qdot", i)]
-            out = vertcat(
-                out,
+            out.extend(
                 model.marker_velocities(q_model, qdot_model, reference_index),
             )
         return out
