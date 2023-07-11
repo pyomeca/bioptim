@@ -3,7 +3,7 @@ from copy import deepcopy
 
 import numpy as np
 from scipy import interpolate as sci_interp
-from casadi import vertcat, DM, Function
+from casadi import vertcat, DM, Function, MX
 from matplotlib import pyplot as plt
 
 from ..limits.objective_functions import ObjectiveFcn
@@ -70,6 +70,10 @@ class Solution:
         The data structure that holds the controls
     parameters: dict
         The data structure that holds the parameters
+    _stochastic_variables: list
+        The data structure that holds the stochastic variables
+    _integrated_values: list
+        The data structure that holds the update values
     phase_time: list
         The total time for each phases
 
@@ -215,6 +219,8 @@ class Solution:
             self.states = nlp.states
             self.states_dot = nlp.states_dot
             self.controls = nlp.controls
+            self.stochastic_variables = nlp.stochastic_variables
+            self.integrated_values = nlp.integrated_values
             self.dynamics = nlp.dynamics
             self.dynamics_func = nlp.dynamics_func
             self.ode_solver = nlp.ode_solver
@@ -311,7 +317,44 @@ class Solution:
         self._states = {}
         self._controls = {}
         self.parameters = {}
+        self._stochastic_variables = {}
+        self._integrated_values = {}
         self.phase_time = []
+
+        def get_integrated_values(states, controls, parameters, stochastic_variables):
+            integrated_values_num = [{} for _ in self.ocp.nlp]
+            for i_phase, nlp in enumerate(self.ocp.nlp):
+                for key in nlp.integrated_values:
+                    states_cx = nlp.states.cx_start
+                    controls_cx = nlp.controls.cx_start
+                    stochastic_variables_cx = nlp.stochastic_variables.cx_start
+                    integrated_values_cx = nlp.integrated_values[key].cx_start
+                    states_num = states[i_phase]['all'][:, 0]
+                    controls_num = controls[i_phase]['all'][:, 0]
+                    stochastic_variables_num = stochastic_variables[i_phase]['all'][:, 0]
+                    for i_node in range(1, nlp.ns):
+                        nlp.states.node_index = i_node
+                        nlp.controls.node_index = i_node
+                        nlp.stochastic_variables.node_index = i_node
+                        nlp.integrated_values.node_index = i_node
+                        states_cx = vertcat(states_cx, nlp.states.cx_start)
+                        controls_cx = vertcat(controls_cx, nlp.controls.cx_start)
+                        stochastic_variables_cx = vertcat(stochastic_variables_cx, nlp.stochastic_variables.cx_start)
+                        integrated_values_cx = vertcat(integrated_values_cx, nlp.integrated_values[key].cx_start)
+                        states_num = vertcat(states_num, states[i_phase]['all'][:, i_node])
+                        controls_num = vertcat(controls_num, controls[i_phase]['all'][:, i_node])
+                        stochastic_variables_num = vertcat(stochastic_variables_num, stochastic_variables[i_phase]['all'][:, i_node])
+                    casadi_func = Function("integrate_values", [states_cx,
+                                                             controls_cx,
+                                                             nlp.parameters.cx_start,
+                                                             stochastic_variables_cx], [integrated_values_cx])
+                    integrated_values_this_time = casadi_func(states_num, controls_num, parameters["all"], stochastic_variables_num)
+                    nb_elements = nlp.integrated_values[key].cx_start.shape[0]
+                    integrated_values_data = np.zeros((nb_elements, nlp.ns))
+                    for i_node in range(nlp.ns):
+                        integrated_values_data[:, i_node] = np.reshape(integrated_values_this_time[i_node * nb_elements : (i_node + 1) * nb_elements], (nb_elements,))
+                    integrated_values_num[i_phase][key] = integrated_values_data
+                return integrated_values_num
 
         def init_from_dict(_sol: dict):
             """
@@ -344,6 +387,7 @@ class Solution:
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
+                self._stochastic_variables,
             ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
@@ -351,6 +395,7 @@ class Solution:
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
+            self._integrated_values = get_integrated_values(self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables)
 
         def init_from_initial_guess(_sol: list):
             """
@@ -387,7 +432,8 @@ class Solution:
                     )
 
             self.vector = np.ndarray((0, 1))
-            sol_states, sol_controls = _sol[0], _sol[1]
+            sol_states, sol_controls, sol_stochastic_variables = _sol[0], _sol[1], _sol[3]
+            # For states
             for p, s in enumerate(sol_states):
                 for key in s.keys():
                     ns = (
@@ -401,6 +447,7 @@ class Solution:
                     for key in s.keys():
                         self.vector = np.concatenate((self.vector, s[key].init.evaluate_at(i)[:, np.newaxis]))
 
+            # For controls
             for p, s in enumerate(sol_controls):
                 control_type = self.ocp.nlp[p].control_type
                 if control_type == ControlType.CONSTANT:
@@ -418,15 +465,27 @@ class Solution:
                     for key in s.keys():
                         self.vector = np.concatenate((self.vector, s[key].init.evaluate_at(i)[:, np.newaxis]))
 
+            # For parameters
             if n_param:
                 sol_params = _sol[2]
                 for p, s in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(s.init, self.ns[p] + 1)[:, np.newaxis]))
 
+            # For stochastic variables
+            for p, s in enumerate(sol_stochastic_variables):
+                for key in s.keys():
+                    self.ocp.nlp[p].stochastic_variables[key].node_index = 0
+                    s[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].stochastic_variables[key]), self.ns[p], "stochastic_variables")
+
+                for i in range(self.ns[p] + 1):
+                    for key in s.keys():
+                        self.vector = np.concatenate((self.vector, s[key].init.evaluate_at(i)[:, np.newaxis]))
+
             (
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
+                self._stochastic_variables,
             ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
@@ -434,6 +493,7 @@ class Solution:
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
+            self._integrated_values = get_integrated_values(self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables)
 
         def init_from_vector(_sol: np.ndarray | DM):
             """
@@ -450,12 +510,14 @@ class Solution:
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
+                self._stochastic_variables,
             ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
             self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"]
             )
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
+            self._integrated_values = get_integrated_values(self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables)
 
         if isinstance(sol, dict):
             init_from_dict(sol)
@@ -544,13 +606,14 @@ class Solution:
 
         if skip_data:
             new._states["unscaled"], new._controls["unscaled"] = [], []
-            new._states["scaled"], new._controls["scaled"], new.parameters = [], [], {}
+            new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables = [], [], {}, []
         else:
             new._states["scaled"] = deepcopy(self._states["scaled"])
             new._controls["scaled"] = deepcopy(self._controls["scaled"])
             new.parameters = deepcopy(self.parameters)
             new._states["unscaled"] = deepcopy(self._states["unscaled"])
             new._controls["unscaled"] = deepcopy(self._controls["unscaled"])
+            new._stochastic_variables = deepcopy(self._stochastic_variables)
 
         return new
 
@@ -703,6 +766,28 @@ class Solution:
         """
 
         return self._controls["scaled"] if len(self._controls["scaled"]) > 1 else self._controls["scaled"][0]
+
+    @property
+    def stochastic_variables(self) -> list | dict:
+        """
+        Returns the stochastic variables in list if more than one phases, otherwise it returns the only dict
+        Returns
+        -------
+        The stochastic variables data
+        """
+
+        return self._stochastic_variables if len(self._stochastic_variables) > 1 else self._stochastic_variables[0]
+
+    @property
+    def integrated_values(self) -> list | dict:
+        """
+        Returns the update values in list if more than one phases, otherwise it returns the only dict
+        Returns
+        -------
+        The update values data
+        """
+
+        return self._integrated_values if len(self._integrated_values) > 1 else self._integrated_values[0]
 
     @property
     def time(self) -> list | dict | np.ndarray:
@@ -1065,12 +1150,14 @@ class Solution:
                     ]
                 )
             )
+            s = self.ocp.nlp[p].stochastic_variables
             if integrator == SolutionIntegrator.OCP:
                 integrated_sol = solve_ivp_bioptim_interface(
                     dynamics_func=nlp.dynamics,
                     keep_intermediate_points=keep_intermediate_points,
                     x0=x0,
                     u=u,
+                    s=s,
                     params=params,
                     param_scaling=param_scaling,
                     shooting_type=shooting_type,
@@ -1083,6 +1170,7 @@ class Solution:
                     t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
                     x0=x0,
                     u=u,
+                    s=s,
                     params=params,
                     method=integrator.value,
                     control_type=nlp.control_type,
