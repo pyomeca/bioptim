@@ -1,42 +1,40 @@
 """
 Optimal control program with the variational integrator for the dynamics.
 """
-from bioptim import (
-    BoundsList,
-    ConfigureProblem,
-    DynamicsEvaluation,
-    DynamicsFunctions,
-    DynamicsList,
-    InitialGuessList,
-    MultinodeConstraintList,
-    NonLinearProgram,
-    OptimalControlProgram,
-    ParameterList,
-    PenaltyController,
-    ParameterConstraintList,
-    ParameterObjectiveList,
-)
-from casadi import MX, vertcat, Function
+import numpy as np
 
-from bioptim.examples.discrete_mechanics_and_optimal_control.biorbd_model_holonomic import BiorbdModelCustomHolonomic
+from casadi import MX, Function, vertcat
+
+from .optimal_control_program import OptimalControlProgram
+from ..dynamics.configure_problem import ConfigureProblem, DynamicsList
+from ..dynamics.dynamics_evaluation import DynamicsEvaluation
+from ..dynamics.dynamics_functions import DynamicsFunctions
+from ..interfaces.variational_biomodel import VariationalBioModel
+from ..interfaces.variational_biorbd_model import VariationalBiorbdModel
+from ..limits.constraints import ParameterConstraintList
+from ..limits.multinode_constraint import MultinodeConstraintList
+from ..limits.objective_functions import ParameterObjectiveList
+from ..limits.path_conditions import BoundsList, InitialGuessList
+from ..limits.penalty_controller import PenaltyController
+from ..optimization.non_linear_program import NonLinearProgram
+from ..optimization.parameters import ParameterList
 
 
 class VariationalOptimalControlProgram(OptimalControlProgram):
     """
-    q_init and q_bounds only the positions initial guess and bounds since there are no velocities in the variational integrator.
+    q_init and q_bounds only the positions initial guess and bounds since there are no velocities in the variational
+    integrator.
     """
 
     def __init__(
         self,
-        bio_model: BiorbdModelCustomHolonomic,
+        bio_model: VariationalBioModel,
         n_shooting: int,
         final_time: float,
         q_init: InitialGuessList = None,
         q_bounds: BoundsList = None,
         qdot_init: InitialGuessList = None,
         qdot_bounds: BoundsList = None,
-        holonomic_constraints: Function = None,
-        holonomic_constraints_jacobian: Function = None,
         parameters: ParameterList = None,
         parameter_bounds: BoundsList = None,
         parameter_init: InitialGuessList = None,
@@ -45,6 +43,28 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         multinode_constraints: MultinodeConstraintList = None,
         **kwargs,
     ):
+        if type(bio_model) != VariationalBiorbdModel:
+            raise TypeError("bio_model must be of type VariationalBiorbdModel")
+
+        if "phase_time" in kwargs:
+            raise NotImplementedError(
+                "Multiphase problems have not been implemented yet with VariationalOptimalControlProgram. Please use "
+                "final_time argument instead of phase_time."
+            )
+
+        if not isinstance(final_time, (float, int)):
+            if (
+                isinstance(final_time, (tuple, list))
+                and len(final_time) != 1
+                or isinstance(final_time, np.ndarray)
+                and final_time.size != 1
+            ):
+                raise ValueError(
+                    "Multiphase problems have not been implemented yet with "
+                    "VariationalOptimalControlProgram. Please use final_time argument and use one float to"
+                    " define it."
+                )
+
         if "ode_solver" in kwargs:
             raise ValueError(
                 "ode_solver cannot be defined in VariationalOptimalControlProgram since the integration is"
@@ -59,10 +79,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         self.bio_model = bio_model
         n_qdot = n_q = self.bio_model.nb_q
-
-        self.holonomic_constraints = holonomic_constraints
-        self.holonomic_constraints_jacobian = holonomic_constraints_jacobian
-        self.has_holonomic_constraints = self.holonomic_constraints is not None
 
         # Dynamics
         dynamics = DynamicsList()
@@ -90,7 +106,8 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             # Make sure only these keys are defined
             if key not in ("qdot_start", "qdot_end"):
                 raise ValueError(
-                    "qdot_init must be a InitialGuessList, moreover they can only contain 'qdot_start' and 'qdot_end' keys"
+                    "qdot_init must be a InitialGuessList, moreover they can only contain 'qdot_start' and 'qdot_end' "
+                    "keys"
                 )
         # Make sure all are declared
         for key in ("qdot_start", "qdot_end"):
@@ -123,7 +140,12 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         if not isinstance(parameter_objectives, ParameterObjectiveList):
             raise ValueError("parameter_objectives must be a ParameterObjectiveList")
 
-        # TODO Check if already done?
+        if "qdot_start" in parameters.keys() or "qdot_end" in parameters.keys():
+            raise KeyError(
+                "'qdot_start' and 'qdot_end' cannot be declared in parameters as they are reserved words in "
+                "VariationalOptimalControlProgram. To define the initial and final velocities, please use "
+                "`qdot_init` and `qdot_bounds` instead."
+            )
         parameters.add(
             "qdot_start",  # The name of the parameter
             function=self.qdot_function,  # The function that modifies the biorbd model
@@ -138,14 +160,16 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         for key in qdot_bounds.keys():
             if key in parameter_bounds.keys():
                 raise KeyError(
-                    f"{key} cannot be declared in parameters_bounds as it is a reserved word in VariationalOptimalControlProgram"
+                    f"{key} cannot be declared in parameters_bounds as it is a reserved word in "
+                    f"VariationalOptimalControlProgram"
                 )
             parameter_bounds.add(key, qdot_bounds[key], phase=0)
 
         for init in qdot_init.keys():
             if key in parameter_init.keys():
                 raise KeyError(
-                    f"{key} cannot be declared in parameters_init as it is a reserved word in VariationalOptimalControlProgram"
+                    f"{key} cannot be declared in parameters_init as it is a reserved word in "
+                    f"VariationalOptimalControlProgram"
                 )
             parameter_init.add(init, qdot_init[key], phase=0)
 
@@ -158,8 +182,8 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         super().__init__(
             self.bio_model,
             dynamics,
-            n_shooting,
-            final_time,
+            n_shooting=n_shooting,
+            phase_time=final_time,
             x_init=q_init,
             x_bounds=q_bounds,
             assume_phase_dynamics=True,
@@ -240,23 +264,13 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         two_first_nodes_input = [dt, q0, qdot0, q1, control0, control1]
         two_last_nodes_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
 
-        if self.has_holonomic_constraints:
-            lambdas = MX.sym("lambda", self.holonomic_constraints.nnz_out(), 1)
+        if self.bio_model.has_holonomic_constraints:
+            lambdas = MX.sym("lambda", self.bio_model.nb_holonomic_constraints, 1)
             three_nodes_input.append(lambdas)
             two_first_nodes_input.append(lambdas)
             two_last_nodes_input.append(lambdas)
-            holonomic_discrete_constraints_jacobian = Function(
-                "HolonomicDiscreteConstraintsJacobian",
-                [dt, q_cur],
-                [
-                    self.bio_model.compute_holonomic_discrete_constraints_jacobian(
-                        self.holonomic_constraints_jacobian, dt, q_cur
-                    )
-                ],
-            )
         else:
             lambdas = None
-            holonomic_discrete_constraints_jacobian = None
 
         nlp.implicit_dynamics_func = Function(
             "ThreeNodesIntegration",
@@ -270,8 +284,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     control_prev,
                     control_cur,
                     control_next,
-                    self.holonomic_constraints,
-                    holonomic_discrete_constraints_jacobian,
                     lambdas,
                 )
             ],
@@ -288,8 +300,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     q1,
                     control0,
                     control1,
-                    self.holonomic_constraints,
-                    holonomic_discrete_constraints_jacobian,
                     lambdas,
                 )
             ],
@@ -306,8 +316,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     qdot_ultimate,
                     controlN_minus_1,
                     controlN,
-                    self.holonomic_constraints,
-                    holonomic_discrete_constraints_jacobian,
                     lambdas,
                 )
             ],
@@ -337,9 +345,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-        if self.has_holonomic_constraints:
+        if self.bio_model.has_holonomic_constraints:
             lambdas = []
-            for i in range(self.holonomic_constraints.nnz_out()):
+            for i in range(self.bio_model.nb_holonomic_constraints):
                 lambdas.append(f"lambda_{i}")
             ConfigureProblem.configure_new_variable(
                 "lambdas",
@@ -368,7 +376,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         -------
 
         """
-        if self.has_holonomic_constraints:
+        if self.bio_model.has_holonomic_constraints:
             return controllers[0].get_nlp.implicit_dynamics_func(
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
@@ -407,7 +415,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         -------
 
         """
-        if self.has_holonomic_constraints:
+        if self.bio_model.has_holonomic_constraints:
             return controllers[0].get_nlp.implicit_dynamics_func_first_node(
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
@@ -445,7 +453,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         -------
 
         """
-        if self.has_holonomic_constraints:
+        if self.bio_model.has_holonomic_constraints:
             return controllers[0].get_nlp.implicit_dynamics_func_last_node(
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,

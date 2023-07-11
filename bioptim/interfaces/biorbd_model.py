@@ -507,6 +507,11 @@ class BiorbdModel:
     def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
 
+    def lagrangian(self, q: MX | SX, qdot: MX | SX) -> MX | SX:
+        q_biorbd = GeneralizedCoordinates(q)
+        qdot_biorbd = GeneralizedVelocity(qdot)
+        return self.model.Lagrangian(q_biorbd, qdot_biorbd).to_mx()
+
 
 class MultiBiorbdModel:
     """
@@ -1082,3 +1087,6 @@ class MultiBiorbdModel:
 
     def _qddot_mapping(self, mapping: BiMapping = None) -> dict:
         return _qddot_mapping(self, mapping)
+
+    def lagrangian(self):
+        raise NotImplementedError("lagrangian is not implemented yet for MultiBiorbdModel")
