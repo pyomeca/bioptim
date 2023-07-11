@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import numpy as np
 from scipy import interpolate as sci_interp
+from scipy.interpolate import interp1d
 from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
@@ -1350,7 +1351,7 @@ class Solution:
             plt.show()
 
     def animate(
-        self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any
+        self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, show_tracked_markers: bool = False, **kwargs: Any
     ) -> None | list:
         """
         Animate the simulation
@@ -1364,6 +1365,8 @@ class Solution:
             The Shooting type to animate
         show_now: bool
             If the bioviz exec() function should be called automatically. This is blocking method
+        show_tracked_markers: bool
+            If the tracked markers should be displayed
         kwargs: Any
             Any parameters to pass to bioviz
 
@@ -1372,74 +1375,66 @@ class Solution:
             A list of bioviz structures (one for each phase). So one can call exec() by hand
         """
 
-        try:
-            import bioviz
-        except ModuleNotFoundError:
-            raise RuntimeError("bioviz must be install to animate the model")
-
-        from ..interfaces.biorbd_model import BiorbdModel
-
-        check_version(bioviz, "2.3.0", "2.4.0")
-
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
             try:
-                data_to_animate = data_to_animate.interpolate(sum(self.ns))
+                data_to_animate = data_to_animate.interpolate(sum(self.ns) + 1)
             except RuntimeError:
                 pass
 
         elif n_frames > 0:
             data_to_animate = data_to_animate.interpolate(n_frames)
 
-        states = data_to_animate.states
-        if not isinstance(states, (list, tuple)):
-            states = [states]
-
-        all_bioviz = []
-        for idx_phase, data in enumerate(states):
-            if not isinstance(self.ocp.nlp[idx_phase].model, BiorbdModel):
-                raise NotImplementedError("Animation is only implemented for biorbd models")
-
-            # This calls each of the function that modify the internal dynamic model based on the parameters
-            nlp = self.ocp.nlp[idx_phase]
-
-            # noinspection PyTypeChecker
-            biorbd_model: BiorbdModel = nlp.model
-
-            all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
-            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
-
-            tracked_markers = self._prepare_tracked_markers_for_animation(biorbd_model, idx_phase)
-            if tracked_markers is not None:
-                all_bioviz[-1].load_experimental_markers(tracked_markers)
-
-        if show_now:
-            b_is_visible = [True] * len(all_bioviz)
-            while sum(b_is_visible):
-                for i, b in enumerate(all_bioviz):
-                    if b.vtk_window.is_active:
-                        b.update()
-                    else:
-                        b_is_visible[i] = False
-            return None
+        if show_tracked_markers and len(self.ocp.nlp) == 1:
+            tracked_markers = self._prepare_tracked_markers_for_animation(n_shooting=n_frames)
+        elif show_tracked_markers and len(self.ocp.nlp) > 1:
+            raise NotImplementedError("Tracking markers is not implemented for multiple phases. "
+                                      "Set show_tracked_markers to False such that sol.animate(show_tracked_markers=False).")
         else:
-            return all_bioviz
+            tracked_markers = [None for _ in range(len(self.ocp.nlp))]
 
-    def _prepare_tracked_markers_for_animation(self, biorbd_model, idx_phase: int) -> None | np.ndarray:
+        # assuming that all the models or the same type.
+        self.ocp.nlp[0].model.animate(
+            solution=data_to_animate,
+            show_now=show_now,
+            tracked_markers=tracked_markers,
+            **kwargs,
+        )
+
+    def _prepare_tracked_markers_for_animation(self, n_shooting: int = None) -> list:
         """Prepare the markers which are tracked to the animation"""
-        tracked_markers = None
-        for objective in self.ocp.nlp[idx_phase].J:
-            if objective.target is not None:
-                if objective.type in (
-                    ObjectiveFcn.Mayer.TRACK_MARKERS,
-                    ObjectiveFcn.Lagrange.TRACK_MARKERS,
-                ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                    tracked_markers = np.full(
-                        (objective.rows.size, biorbd_model.nb_markers, self.ns[idx_phase] + 1), np.nan
-                    )
-                    tracked_markers[:, objective.cols, :] = objective.target[0]
 
-        return tracked_markers
+        n_frames = sum(self.ns) + 1 if n_shooting is None else n_shooting + 1
+
+        all_tracked_markers = []
+
+        for phase, nlp in enumerate(self.ocp.nlp):
+            tracked_markers = None
+            for objective in nlp.J:
+                if objective.target is not None:
+                    if objective.type in (
+                            ObjectiveFcn.Mayer.TRACK_MARKERS,
+                            ObjectiveFcn.Lagrange.TRACK_MARKERS,
+                    ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
+                        tracked_markers = np.full(
+                            (3, nlp.model.nb_markers, self.ns[phase] + 1), np.nan
+                        )
+                        for i in range(len(objective.rows)):
+                            tracked_markers[objective.rows[i], objective.cols, :] = objective.target[0][i, :, :]
+                        missing_row = np.where(np.isnan(tracked_markers))[0]
+                        if missing_row.size > 0:
+                            tracked_markers[missing_row, :, :] = 0
+
+            # interpolation
+            if n_frames > 0 and tracked_markers is not None:
+                x = np.linspace(0, self.ns[phase], self.ns[phase] + 1)
+                xnew = np.linspace(0, self.ns[phase], n_frames)
+                f = interp1d(x, tracked_markers, kind='cubic')
+                tracked_markers = f(xnew)
+
+            all_tracked_markers.append(tracked_markers)
+
+        return all_tracked_markers
 
     def _get_penalty_cost(self, nlp, penalty):
         phase_idx = nlp.phase_idx
