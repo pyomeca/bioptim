@@ -214,5 +214,5 @@ from .optimization.solution import Solution
 from .optimization.optimization_variable import OptimizationVariableList
 from .optimization.variable_scaling import VariableScalingList, VariableScaling
 from .optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
-
+from .optimization.problem_type import OcpType
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero
