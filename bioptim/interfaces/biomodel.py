@@ -6,6 +6,11 @@ from ..interfaces.biorbd_model import Bounds
 
 
 class BioModel(Protocol):
+    """
+    This protocol defines the minimal set of attributes and methods a model should possess to access every feature of
+    bioptim.
+    As a reminder for developers: only necessary attributes and methods should appear here.
+    """
     def copy(self):
         """copy the model by reloading one"""
 
