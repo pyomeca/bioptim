@@ -410,8 +410,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, assume_phase_dynamic
         tracked_markers[0][1:, :, 0], np.array([[0.82873751, 0.5612772], [0.22793516, 0.24205527]])
     )
     np.testing.assert_almost_equal(
-        tracked_markers[0][1:, :, 5], np.array([[0.80219698, 0.02541913],
-       [0.5107473 , 0.36778313]])
+        tracked_markers[0][1:, :, 5], np.array([[0.80219698, 0.02541913], [0.5107473, 0.36778313]])
     )
     np.testing.assert_almost_equal(
         tracked_markers[0][1:, :, -1], np.array([[0.76078505, 0.11005192], [0.98565045, 0.65998405]])

@@ -514,8 +514,9 @@ class BiorbdModel:
         return self.model.Lagrangian(q_biorbd, qdot_biorbd).to_mx()
 
     @staticmethod
-    def animate(solution: Any, show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any) -> None | list:
-
+    def animate(
+        solution: Any, show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
+    ) -> None | list:
         try:
             import bioviz
         except ModuleNotFoundError:

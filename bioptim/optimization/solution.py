@@ -1351,7 +1351,12 @@ class Solution:
             plt.show()
 
     def animate(
-        self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, show_tracked_markers: bool = False, **kwargs: Any
+        self,
+        n_frames: int = 0,
+        shooting_type: Shooting = None,
+        show_now: bool = True,
+        show_tracked_markers: bool = False,
+        **kwargs: Any,
     ) -> None | list:
         """
         Animate the simulation
@@ -1388,8 +1393,10 @@ class Solution:
         if show_tracked_markers and len(self.ocp.nlp) == 1:
             tracked_markers = self._prepare_tracked_markers_for_animation(n_shooting=n_frames)
         elif show_tracked_markers and len(self.ocp.nlp) > 1:
-            raise NotImplementedError("Tracking markers is not implemented for multiple phases. "
-                                      "Set show_tracked_markers to False such that sol.animate(show_tracked_markers=False).")
+            raise NotImplementedError(
+                "Tracking markers is not implemented for multiple phases. "
+                "Set show_tracked_markers to False such that sol.animate(show_tracked_markers=False)."
+            )
         else:
             tracked_markers = [None for _ in range(len(self.ocp.nlp))]
 
@@ -1413,12 +1420,10 @@ class Solution:
             for objective in nlp.J:
                 if objective.target is not None:
                     if objective.type in (
-                            ObjectiveFcn.Mayer.TRACK_MARKERS,
-                            ObjectiveFcn.Lagrange.TRACK_MARKERS,
+                        ObjectiveFcn.Mayer.TRACK_MARKERS,
+                        ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        tracked_markers = np.full(
-                            (3, nlp.model.nb_markers, self.ns[phase] + 1), np.nan
-                        )
+                        tracked_markers = np.full((3, nlp.model.nb_markers, self.ns[phase] + 1), np.nan)
                         for i in range(len(objective.rows)):
                             tracked_markers[objective.rows[i], objective.cols, :] = objective.target[0][i, :, :]
                         missing_row = np.where(np.isnan(tracked_markers))[0]
@@ -1429,7 +1434,7 @@ class Solution:
             if n_frames > 0 and tracked_markers is not None:
                 x = np.linspace(0, self.ns[phase], self.ns[phase] + 1)
                 xnew = np.linspace(0, self.ns[phase], n_frames)
-                f = interp1d(x, tracked_markers, kind='cubic')
+                f = interp1d(x, tracked_markers, kind="cubic")
                 tracked_markers = f(xnew)
 
             all_tracked_markers.append(tracked_markers)
