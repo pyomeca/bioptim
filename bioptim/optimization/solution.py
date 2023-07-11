@@ -1408,13 +1408,10 @@ class Solution:
 
             all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
             all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
-            for objective in self.ocp.nlp[idx_phase].J:
-                if objective.target is not None:
-                    if objective.type in (
-                        ObjectiveFcn.Mayer.TRACK_MARKERS,
-                        ObjectiveFcn.Lagrange.TRACK_MARKERS,
-                    ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        all_bioviz[-1].load_experimental_markers(objective.target[0])
+
+            tracked_markers = self._prepare_tracked_markers_for_animation(biorbd_model, idx_phase)
+            if tracked_markers is not None:
+                all_bioviz[-1].load_experimental_markers(tracked_markers)
 
         if show_now:
             b_is_visible = [True] * len(all_bioviz)
@@ -1427,6 +1424,22 @@ class Solution:
             return None
         else:
             return all_bioviz
+
+    def _prepare_tracked_markers_for_animation(self, biorbd_model, idx_phase: int) -> None | np.ndarray:
+        """Prepare the markers which are tracked to the animation"""
+        tracked_markers = None
+        for objective in self.ocp.nlp[idx_phase].J:
+            if objective.target is not None:
+                if objective.type in (
+                    ObjectiveFcn.Mayer.TRACK_MARKERS,
+                    ObjectiveFcn.Lagrange.TRACK_MARKERS,
+                ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
+                    tracked_markers = np.full(
+                        (objective.rows.size, biorbd_model.nb_markers, self.ns[idx_phase] + 1), np.nan
+                    )
+                    tracked_markers[:, objective.cols, :] = objective.target[0]
+
+        return tracked_markers
 
     def _get_penalty_cost(self, nlp, penalty):
         phase_idx = nlp.phase_idx
