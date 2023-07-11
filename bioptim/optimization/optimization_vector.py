@@ -226,7 +226,7 @@ class OptimizationVectorHelper:
         for i_phase in range(ocp.n_phases):
             nlp = ocp.nlp[i_phase]
             OptimizationVectorHelper._set_node_index(nlp, 0)
-            for key in nlp.stochastic_states.keys():
+            for key in nlp.stochastic_variables.keys():
                 if key in nlp.s_bounds.keys():
                     nlp.s_bounds[key].check_and_adjust_dimensions(nlp.stochastic_variables[key].cx.shape[0], nlp.ns)
 
@@ -346,7 +346,7 @@ class OptimizationVectorHelper:
             nlp = ocp.nlp[i_phase]
             OptimizationVectorHelper._set_node_index(nlp, 0)
 
-            for key in nlp.stochastoc_variables.keys():
+            for key in nlp.stochastic_variables.keys():
                 if key in nlp.s_init.keys():
                     nlp.s_init[key].check_and_adjust_dimensions(nlp.stochastic_variables[key].cx.shape[0], nlp.ns)
 

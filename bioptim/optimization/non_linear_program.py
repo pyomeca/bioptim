@@ -93,6 +93,13 @@ class NonLinearProgram:
         The casadi variables for the integration at each node of the phase
     states: OptimizationVariableContainer
         A list of all the state variables
+    s_bounds = Bounds()
+        The bounds for the stochastic variables
+    s_init = InitialGuess()
+        The initial guess for the stochastic variables
+    S: list[MX | SX]
+        The casadi variables for the stochastic variables
+
 
     Methods
     -------
@@ -154,6 +161,9 @@ class NonLinearProgram:
         self.X_scaled = None
         self.x_scaling = None
         self.X = None
+        self.s_bounds = BoundsList()
+        self.s_init = InitialGuessList()
+        self.S = None
         self.assume_phase_dynamics = assume_phase_dynamics
         self.states = OptimizationVariableContainer(assume_phase_dynamics)
         self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
