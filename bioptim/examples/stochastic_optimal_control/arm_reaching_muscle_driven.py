@@ -22,6 +22,7 @@ import scipy.io as sio
 # sys.path.append("/home/charbie/Documents/Programmation/BiorbdOptim")
 from bioptim import (
     OptimalControlProgram,
+    StochasticOptimalControlProgram,
     Bounds,
     InitialGuess,
     ObjectiveFcn,
@@ -688,7 +689,7 @@ def prepare_socp(
 
     integrated_value_functions = {"cov": lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude)}
 
-    return OptimalControlProgram(
+    return StochasticOptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,

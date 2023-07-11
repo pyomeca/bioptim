@@ -72,6 +72,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
+        stochastic_variables: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
