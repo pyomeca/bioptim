@@ -4,7 +4,7 @@ from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, Node
 
 
 class PenaltyController:
@@ -134,6 +134,32 @@ class PenaltyController:
         """
         self._nlp.states_dot.node_index = self.node_index
         out = self._nlp.states_dot.unscaled
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
+    def stochastic_variables(self) -> OptimizationVariableList:
+        """
+        Return the stochastic_variables associated with the current node index
+        Returns
+        -------
+        The stochastic_variables at node node_index
+        """
+        self._nlp.stochastic_variables.node_index = self.node_index
+        out = self._nlp.stochastic_variables.unscaled
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
+    def integrated_values(self) -> OptimizationVariableList:
+        """
+        Return the values associated with the current node index
+        Returns
+        -------
+        The integrated_values at node node_index
+        """
+        self._nlp.integrated_values.node_index = self.node_index
+        out = self._nlp.integrated_values.unscaled
         out.current_cx_to_get = self.cx_index_to_get
         return out
 
