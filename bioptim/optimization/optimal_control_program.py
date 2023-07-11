@@ -248,21 +248,134 @@ class OptimalControlProgram:
             If the dynamics of for each shooting node in phases are assumed to be the same
         """
 
+        self.check_bioptim_version()
+
+        bio_model = self.initialize_model(bio_model)
+
+        self.set_original_values(bio_model,
+                            dynamics,
+                            n_shooting,
+                            phase_time,
+                            x_init,
+                            u_init,
+                            s_init,
+                            x_bounds,
+                            u_bounds,
+                            s_bounds,
+                            x_scaling,
+                            xdot_scaling,
+                            u_scaling,
+                            external_forces,
+                            ode_solver,
+                            control_type,
+                            variable_mappings,
+                            time_phase_mapping,
+                            node_mappings,
+                            plot_mappings,
+                            phase_transitions,
+                            multinode_constraints,
+                            multinode_objectives,
+                            parameter_bounds,
+                            parameter_init,
+                            parameter_constraints,
+                            parameter_objectives,
+                            state_continuity_weight,
+                            n_threads,
+                            use_sx,
+                            assume_phase_dynamics,
+                            integrated_value_functions,)
+
+        constraints, objective_functions, parameter_constraints, parameter_objectives, multinode_constraints, multinode_objectives = self.check_arguments_and_build_nlp(
+                                          dynamics,
+                                          n_threads,
+                                          n_shooting,
+                                          phase_time,
+                                          x_bounds,
+                                          u_bounds,
+                                          s_bounds,
+                                          x_init,
+                                          u_init,
+                                          s_init,
+                                          x_scaling,
+                                          xdot_scaling,
+                                          u_scaling,
+                                          objective_functions,
+                                          constraints,
+                                          parameters,
+                                          phase_transitions,
+                                          multinode_constraints,
+                                          multinode_objectives,
+                                          parameter_bounds,
+                                          parameter_init,
+                                          parameter_constraints,
+                                          parameter_objectives,
+                                          ode_solver,
+                                          use_sx,
+                                          assume_phase_dynamics,
+                                          bio_model,
+                                          external_forces,
+                                          plot_mappings,
+                                          time_phase_mapping,
+                                          control_type,
+                                          variable_mappings,
+                                          integrated_value_functions,
+                                          node_mappings,
+                                          state_continuity_weight)
+
+        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
+
+        self.finalize_penalties(skip_continuity,
+                                state_continuity_weight,
+                                constraints,
+                                parameter_constraints,
+                                objective_functions,
+                                parameter_objectives)
+
+    def check_bioptim_version(self):
+        self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
+        return
+
+    def initialize_model(self, bio_model):
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
-
         bio_model = self._check_quaternions_hasattr(bio_model)
-
-        self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         self.n_phases = len(bio_model)
+        return bio_model
 
-        if isinstance(dynamics, Dynamics):
-            dynamics_type_tp = DynamicsList()
-            dynamics_type_tp.add(dynamics)
-            dynamics = dynamics_type_tp
-        elif not isinstance(dynamics, DynamicsList):
-            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
-
+    def set_original_values(self,
+                            bio_model,
+                            dynamics,
+                            n_shooting,
+                            phase_time,
+                            x_init,
+                            u_init,
+                            s_init,
+                            x_bounds,
+                            u_bounds,
+                            s_bounds,
+                            x_scaling,
+                            xdot_scaling,
+                            u_scaling,
+                            external_forces,
+                            ode_solver,
+                            control_type,
+                            variable_mappings,
+                            time_phase_mapping,
+                            node_mappings,
+                            plot_mappings,
+                            phase_transitions,
+                            multinode_constraints,
+                            multinode_objectives,
+                            parameter_bounds,
+                            parameter_init,
+                            parameter_constraints,
+                            parameter_objectives,
+                            state_continuity_weight,
+                            n_threads,
+                            use_sx,
+                            assume_phase_dynamics,
+                            integrated_value_functions,
+                            ):
         self.original_values = {
             "bio_model": [m.serialize() for m in bio_model],
             "dynamics": dynamics,
@@ -300,8 +413,52 @@ class OptimalControlProgram:
             "assume_phase_dynamics": assume_phase_dynamics,
             "integrated_value_functions": integrated_value_functions,
         }
+        return
 
-        # Check integrity of arguments
+    def check_arguments_and_build_nlp(self,
+                                      dynamics,
+                                      n_threads,
+                                      n_shooting,
+                                      phase_time,
+                                      x_bounds,
+                                      u_bounds,
+                                      s_bounds,
+                                      x_init,
+                                      u_init,
+                                      s_init,
+                                      x_scaling,
+                                      xdot_scaling,
+                                      u_scaling,
+                                      objective_functions,
+                                      constraints,
+                                      parameters,
+                                      phase_transitions,
+                                      multinode_constraints,
+                                      multinode_objectives,
+                                      parameter_bounds,
+                                      parameter_init,
+                                      parameter_constraints,
+                                      parameter_objectives,
+                                      ode_solver,
+                                      use_sx,
+                                      assume_phase_dynamics,
+                                      bio_model,
+                                      external_forces,
+                                      plot_mappings,
+                                      time_phase_mapping,
+                                      control_type,
+                                      variable_mappings,
+                                      integrated_value_functions,
+                                      node_mappings,
+                                      state_continuity_weight):
+
+        if isinstance(dynamics, Dynamics):
+            dynamics_type_tp = DynamicsList()
+            dynamics_type_tp.add(dynamics)
+            dynamics = dynamics_type_tp
+        elif not isinstance(dynamics, DynamicsList):
+            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
+
         if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
             raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
 
@@ -309,7 +466,8 @@ class OptimalControlProgram:
         if not isinstance(ns, int) or ns < 2:
             if isinstance(ns, (tuple, list)):
                 if sum([True for i in ns if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
-                    raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
+                    raise RuntimeError(
+                        "n_shooting should be a positive integer (or a list of) greater or equal than 2")
             else:
                 raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
 
@@ -499,7 +657,8 @@ class OptimalControlProgram:
         self.time_phase_mapping = time_phase_mapping
 
         # Add any time related parameters to the parameters list before declaring it
-        self._define_time(phase_time, objective_functions, constraints, parameters, parameter_init, parameter_bounds)
+        self._define_time(phase_time, objective_functions, constraints, parameters, parameter_init,
+                          parameter_bounds)
 
         # Declare and fill the parameters
         self.parameters = ParameterList()
@@ -555,7 +714,16 @@ class OptimalControlProgram:
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
-        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
+
+        return constraints, objective_functions, parameter_constraints, parameter_objectives, multinode_constraints, multinode_objectives
+
+    def finalize_penalties(self,
+                           skip_continuity,
+                           state_continuity_weight,
+                            constraints,
+                            parameter_constraints,
+                            objective_functions,
+                            parameter_objectives):
 
         # Skipping creates an OCP without built-in continuity constraints, make sure you declared constraints elsewhere
         if not skip_continuity:
@@ -569,6 +737,7 @@ class OptimalControlProgram:
         # Prepare objectives
         self.update_objectives(objective_functions)
         self.update_parameter_objectives(parameter_objectives)
+        return
 
     @property
     def variables_vector(self):
@@ -951,6 +1120,7 @@ class OptimalControlProgram:
         x_init: InitialGuessList = None,
         u_init: InitialGuessList = None,
         parameter_init: InitialGuessList = None,
+        s_init: InitialGuessList = None,
     ):
         """
         The main user interface to add initial guesses in the ocp
@@ -963,6 +1133,8 @@ class OptimalControlProgram:
             The control initial guess to add
         parameter_init: BoundsList
             The parameters initial guess to add
+        s_init: BoundsList
+            The stochastic variable initial guess to add
         """
 
         for i in range(self.n_phases):
@@ -989,6 +1161,13 @@ class OptimalControlProgram:
                     ):
                         raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
                     self.nlp[i].u_init.add(key, u_init[origin_phase][key], phase=0)
+
+            if s_init:
+                if not isinstance(s_init, InitialGuessList):
+                    raise RuntimeError("s_init should be built from a InitialGuessList")
+                origin_phase = 0 if len(s_init) == 1 else i
+                for key in s_init[origin_phase].keys():
+                    self.nlp[i].s_init.add(key, s_init[origin_phase][key], phase=0)
 
         if parameter_init is not None:
             if not isinstance(parameter_init, InitialGuessList):
