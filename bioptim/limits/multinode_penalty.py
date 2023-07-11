@@ -318,7 +318,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             wS = MX.sym("wS", wS_magnitude.shape[0], 1)
 
             nx = controllers[0].states.cx.shape[0]
-            M_matrix = controllers[0].restore_matrix_from_vector(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
+            M_matrix = controllers[0].stochastic_variables["m"].reshape_to_matrix(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
 
             dx = dynamics(controllers[0].states.cx_start, controllers[0].controls.cx_start,
                                     controllers[0].parameters.cx_start, controllers[0].stochastic_variables.cx_start,
@@ -342,7 +342,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             val = M_matrix @ DG_DZ - MX_eye(nx)
 
-            out_vector = controllers[0].restore_vector_from_matrix(val)
+            out_vector = controllers[0].stochastic_variables["m"].reshape_to_vector(val)
             return out_vector
 
         @staticmethod

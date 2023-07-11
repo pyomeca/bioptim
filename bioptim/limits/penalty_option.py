@@ -94,7 +94,6 @@ class PenaltyOption(OptionGeneric):
         weight: float = 1,
         derivative: bool = False,
         explicit_derivative: bool = False,
-        # depends_on_all_nodes: bool = False,
         integrate: bool = False,
         integration_rule: IntegralApproximation = IntegralApproximation.DEFAULT,
         index: list = None,
@@ -201,7 +200,6 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function_non_threaded: list[Function | None, ...] = []
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
-        # self.depends_on_all_nodes = depends_on_all_nodes
         self.integrate = integrate
         self.transition = False
         self.multinode_penalty = False

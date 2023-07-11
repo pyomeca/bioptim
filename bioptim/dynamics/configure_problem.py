@@ -1128,7 +1128,7 @@ class ConfigureProblem:
                 nlp.stochastic_variables.append(name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index)
 
     @staticmethod
-    def configure_new_value(
+    def configure_integrated_value(
         name: str,
         name_elements: list,
         ocp,
@@ -1136,7 +1136,9 @@ class ConfigureProblem:
         initial_matrix: DM,
     ):
         """
-        Add a new update value
+        Add a new integrated value. This creates an MX (not an optimization variable) that is integrated using the
+        integrated_value_functions function provided. This integrated_value can be used in the constraints and objectives
+        without having to recompute them over and over again.
 
         Parameters
         ----------
@@ -1148,22 +1150,24 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
+        initial_matrix: DM
+            The initial value of the integrated value
         """
 
-        # TODO: if go down that path, we sould also be able to compute values at collocation points
+        # TODO: compute values at collocation points
         # but for now only cx_start can be used
         n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
         if n_cx < 3:
             n_cx = 3
 
         dummy_mapping = Mapping(list(range(len(name_elements))))
-        initial_vector = nlp.restore_vector_from_matrix(initial_matrix)
+        initial_vector = nlp.integrated_values.reshape_to_vector(initial_matrix)
         cx_scaled_next_formatted = [initial_vector for _ in range(n_cx)]
-        nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0)
+        nlp.integrated_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0)
         for node_index in range(1, nlp.ns + 1):  # cannot use assume_phase_dynamics = True
-            cx_scaled_next = nlp.update_value_functions[name](nlp, node_index)
+            cx_scaled_next = nlp.integrated_value_functions[name](nlp, node_index)
             cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
-            nlp.update_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next, dummy_mapping, node_index)
+            nlp.integrated_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next, dummy_mapping, node_index)
 
 
     @staticmethod
@@ -1259,7 +1263,7 @@ class ConfigureProblem:
 
 
     @staticmethod
-    def configure_k(ocp, nlp, n_noised_controls: int, n_feedbacks: int):
+    def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_feedbacks: int):
         """
         Configure the optimal feedback gain matrix K.
 
@@ -1293,7 +1297,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_c(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_c(ocp, nlp, n_noised_states: int):
         """
         Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
 
@@ -1326,7 +1330,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_a(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_a(ocp, nlp, n_noised_states: int):
         """
         Configure the stochastic variable matrix A representing the propagation of motor noise (df/dx).
 
@@ -1359,7 +1363,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_cov(ocp, nlp, n_noised_states: int, initial_matrix: DM):
+    def configure_stochastic_cov(ocp, nlp, n_noised_states: int, initial_matrix: DM):
         """
         Configure the covariance matrix P representing the motor noise.
 
@@ -1378,7 +1382,7 @@ class ConfigureProblem:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_cov += [name_1 + "_&_" + name_2]
         nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
-        ConfigureProblem.configure_new_value(
+        ConfigureProblem.configure_integrated_value(
             name,
             name_cov,
             ocp,
@@ -1387,7 +1391,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_ee_ref(ocp, nlp, n_references: int):
+    def configure_stochastic_ee_ref(ocp, nlp, n_references: int):
         """
         Configure the reference kinematics.
 
@@ -1416,7 +1420,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_m(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_m(ocp, nlp, n_noised_states: int):
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
 
@@ -1709,8 +1713,8 @@ class Dynamics(OptionGeneric):
 
         dynamic_function = None
         if "dynamic_function" in params:
-            dynamic_function = params["dynamic_function"]  # TODO: Pariterre, is this OK ?
-            # del params["dynamic_function"]
+            dynamic_function = params["dynamic_function"]
+            del params["dynamic_function"]
 
         super(Dynamics, self).__init__(type=dynamics_type, **params)
         self.dynamic_function = dynamic_function

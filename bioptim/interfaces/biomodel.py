@@ -6,6 +6,11 @@ from ..interfaces.biorbd_model import Bounds
 
 
 class BioModel(Protocol):
+    """
+    This protocol defines the minimal set of attributes and methods a model should possess to access every feature of
+    bioptim.
+    As a reminder for developers: only necessary attributes and methods should appear here.
+    """
     def copy(self):
         """copy the model by reloading one"""
 
@@ -143,12 +148,6 @@ class BioModel(Protocol):
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
         """reorder the qddot, from the root dof and the joints dof"""
 
-    def mass_matrix(self, q) -> MX:
-        """returns the mass matrix"""
-
-    def non_linear_effects(self, q, qdot) -> MX:
-        """returns the non-linear effects"""
-
     def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
         """compute the forward dynamics"""
 
@@ -191,9 +190,6 @@ class BioModel(Protocol):
 
     def marker_velocities(self, q, qdot, reference_index=None) -> MX:
         """Get the marker velocities of the model"""
-
-    def markers_jacobian(self, q) -> MX:
-        """Get the jacobian of the marker constraint"""
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         """Get the maximum torque"""

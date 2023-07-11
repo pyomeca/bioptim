@@ -16,18 +16,16 @@ import biorbd_casadi as biorbd
 import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
-from IPython import embed
 import scipy.io as sio
 
-import sys
-sys.path.append("/home/charbie/Documents/Programmation/BiorbdOptim")
+# import sys
+# sys.path.append("/home/charbie/Documents/Programmation/BiorbdOptim")
 from bioptim import (
     OptimalControlProgram,
     Bounds,
     InitialGuess,
     ObjectiveFcn,
     Solver,
-    BiorbdModel,
     ObjectiveList,
     NonLinearProgram,
     DynamicsEvaluation,
@@ -315,7 +313,7 @@ def stochastic_forward_dynamics(
 
     return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dactivations_computed), defects=None)
 
-def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamic_function: callable, wM, wS):
+def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, wM, wS):
 
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
@@ -323,14 +321,14 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_muscles(ocp, nlp, True, True)  # Muscles activations as states + muscles excitations as controls
 
     # Stochastic variables
-    ConfigureProblem.configure_k(ocp, nlp, n_noised_controls=6, n_feedbacks=4)
-    ConfigureProblem.configure_ee_ref(ocp, nlp, n_references=4)
-    ConfigureProblem.configure_m(ocp, nlp, n_noised_states=10)
+    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=6, n_feedbacks=4)
+    ConfigureProblem.configure_stochastic_ee_ref(ocp, nlp, n_references=4)
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=10)
     mat_p_init = cas.DM_eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
-    ConfigureProblem.configure_cov(ocp, nlp, n_noised_states=10, initial_matrix=mat_p_init)
+    ConfigureProblem.configure_stochastic_cov(ocp, nlp, n_noised_states=10, initial_matrix=mat_p_init)
     ConfigureProblem.configure_dynamics_function(ocp, nlp,
                                                  dyn_func=lambda states, controls, parameters,
-                                                                stochastic_variables, nlp, wM, wS: dynamic_function(states,
+                                                                stochastic_variables, nlp, wM, wS: nlp.dynamics_type.dynamic_function(states,
                                                                                             controls,
                                                                                             parameters,
                                                                                             stochastic_variables,
@@ -347,7 +345,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     dt = controllers[0].tf / controllers[0].ns
     out = 0
     for i, ctrl in enumerate(controllers):
-        P_matrix = ctrl.restore_matrix_from_vector(ctrl.update_values, ctrl.states.cx.shape[0],
+        P_matrix = ctrl.integrated_values["cov"].reshape_to_matrix(ctrl.integrated_values, ctrl.states.cx.shape[0],
                                                          ctrl.states.cx.shape[0], Node.START, "cov")
         P_partial = P_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(P_partial) * dt
@@ -374,18 +372,18 @@ def get_p_mat(nlp, node_index, force_field_magnitude, wM_magnitude, wS_magnitude
     nlp.states.node_index = node_index - 1
     nlp.controls.node_index = node_index - 1
     nlp.stochastic_variables.node_index = node_index - 1
-    nlp.update_values.node_index = node_index - 1
+    nlp.integrated_values.node_index = node_index - 1
 
     nx = nlp.states.cx_start.shape[0]
-    M_matrix = nlp.restore_matrix_from_vector(nlp.stochastic_variables, nx, nx, Node.START, "m")
+    M_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(nlp.stochastic_variables, nx, nx, Node.START, "m")
 
     wM = cas.MX.sym("wM", nlp.states['q'].cx_start.shape[0])
     wS = cas.MX.sym("wS", nlp.states['q'].cx_start.shape[0]*2)
     sigma_w = cas.vertcat(wS, wM) * cas.MX_eye(6)
-    cov_sym = cas.MX.sym("cov", nlp.update_values.cx_start.shape[0])
+    cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
     cov_sym_dict = {"cov": cov_sym}
     cov_sym_dict["cov"].cx_start = cov_sym
-    cov_matrix = nlp.restore_matrix_from_vector(cov_sym_dict, nx, nx, Node.START, "cov")
+    cov_matrix = nlp.integrated_values.reshape_to_matrix(cov_sym_dict, nx, nx, Node.START, "cov")
 
     dx = stochastic_forward_dynamics(nlp.states.cx_start, nlp.controls.cx_start,
                                      nlp.parameters, nlp.stochastic_variables.cx_start,
@@ -403,10 +401,10 @@ def get_p_mat(nlp, node_index, force_field_magnitude, wM_magnitude, wS_magnitude
                                                                           nlp.controls.cx_start,
                                                                           nlp.parameters,
                                                                           nlp.stochastic_variables.cx_start,
-                                                                          nlp.update_values["cov"].cx_start,  # Should be the right shape to work
+                                                                          nlp.integrated_values["cov"].cx_start,  # Should be the right shape to work
                                                                           wM_magnitude,
                                                                           wS_magnitude)
-    p_vector = nlp.restore_vector_from_matrix(func_eval)
+    p_vector = nlp.integrated_values.reshape_to_vector(func_eval)
     return p_vector
 
 def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
@@ -418,10 +416,10 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
 
     Q = cas.MX.sym("q_sym", controllers[-1].states["q"].cx_start.shape[0])
     Qdot = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx_start.shape[0])
-    cov_sym = cas.MX.sym("cov", controllers[-1].update_values.cx_start.shape[0])
+    cov_sym = cas.MX.sym("cov", controllers[-1].integrated_values.cx_start.shape[0])
     cov_sym_dict = {"cov": cov_sym}
     cov_sym_dict["cov"].cx_start = cov_sym
-    cov_matrix = controllers[-1].restore_matrix_from_vector(cov_sym_dict, controllers[-1].states.cx_start.shape[0], controllers[-1].states.cx_start.shape[0], Node.START, "cov")
+    cov_matrix = controllers[-1].integrated_values["cov"].reshape_to_matrix(cov_sym_dict, controllers[-1].states.cx_start.shape[0], controllers[-1].states.cx_start.shape[0], Node.START, "cov")
 
     hand_pos = controllers[0].model.end_effector_position(Q)
     hand_vel = controllers[0].model.end_effector_velocity(Q, Qdot)
@@ -438,7 +436,7 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     out = cas.vertcat(pos_constraint[0, 0], pos_constraint[1, 1], vel_constraint[0, 0], vel_constraint[1, 1])
 
     fun = cas.Function("reach_target_consistantly", [Q, Qdot, cov_sym], [out])
-    val = fun(controllers[-1].states["q"].cx_start, controllers[-1].states["qdot"].cx_start, controllers[-1].update_values.cx_start)
+    val = fun(controllers[-1].states["q"].cx_start, controllers[-1].states["qdot"].cx_start, controllers[-1].integrated_values.cx_start)
     # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
 
     return val
@@ -453,10 +451,10 @@ def expected_feedback_effort(controllers: list[PenaltyController], wS_magnitude:
     # create the casadi function to be evaluated
     # Get the symbolic variables
     ee_ref = controllers[0].stochastic_variables["ee_ref"].cx_start
-    cov_sym = cas.MX.sym("cov", controllers[0].update_values.cx_start.shape[0])
+    cov_sym = cas.MX.sym("cov", controllers[0].integrated_values.cx_start.shape[0])
     cov_sym_dict = {"cov": cov_sym}
     cov_sym_dict["cov"].cx_start = cov_sym
-    cov_matrix = controllers[0].restore_matrix_from_vector(cov_sym_dict, controllers[0].states.cx_start.shape[0], controllers[0].states.cx_start.shape[0], Node.START, "cov")
+    cov_matrix = controllers[0].integrated_values["cov"].reshape_to_matrix(cov_sym_dict, controllers[0].states.cx_start.shape[0], controllers[0].states.cx_start.shape[0], Node.START, "cov")
 
     k = controllers[0].stochastic_variables["k"].cx_start
     K_matrix = cas.MX(4, 6)
@@ -480,7 +478,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], wS_magnitude:
 
     f_expectedEffort_fb = 0
     for i, ctrl in enumerate(controllers):
-        P_vector = ctrl.update_values.cx_start
+        P_vector = ctrl.integrated_values.cx_start
         out = func(ctrl.states.cx_start, ctrl.stochastic_variables.cx_start, P_vector)
         f_expectedEffort_fb += out * dt
 
@@ -688,7 +686,7 @@ def prepare_socp(
     s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
     # TODO: we should probably change the name stochastic_variables -> helper_variables ?
 
-    update_value_functions = {"cov": lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude)}
+    integrated_value_functions = {"cov": lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude)}
 
     return OptimalControlProgram(
         bio_model,
@@ -710,7 +708,7 @@ def prepare_socp(
         n_threads=1,
         assume_phase_dynamics=False,
         problem_type=OcpType.SOCP_EXPLICIT(wM_magnitude, wS_magnitude),
-        update_value_functions=update_value_functions
+        integrated_value_functions=integrated_value_functions
     )
 
 def main():
@@ -784,7 +782,7 @@ def main():
         k_sol = sol_socp.stochastic_variables["k"]
         ee_ref_sol = sol_socp.stochastic_variables["ee_ref"]
         m_sol = sol_socp.stochastic_variables["m"]
-        cov_sol_vect = sol_socp.update_values["cov"]
+        cov_sol_vect = sol_socp.integrated_values["cov"]
         cov_sol = np.zeros((10, 10, n_shooting))
         for i in range(n_shooting):
             for j in range(10):

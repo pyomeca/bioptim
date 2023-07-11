@@ -71,7 +71,7 @@ class Solution:
         The data structure that holds the parameters
     _stochastic_variables: list
         The data structure that holds the stochastic variables
-    _update_values: list
+    _integrated_values: list
         The data structure that holds the update values
     phase_time: list
         The total time for each phases
@@ -218,7 +218,7 @@ class Solution:
             self.states_dot = nlp.states_dot
             self.controls = nlp.controls
             self.stochastic_variables = nlp.stochastic_variables
-            self.update_values = nlp.update_values
+            self.integrated_values = nlp.integrated_values
             self.dynamics = nlp.dynamics
             self.dynamics_func = nlp.dynamics_func
             self.ode_solver = nlp.ode_solver
@@ -314,17 +314,17 @@ class Solution:
         self._controls = {}
         self.parameters = {}
         self._stochastic_variables = {}
-        self._update_values = {}
+        self._integrated_values = {}
         self.phase_time = []
 
-        def get_updated_values(states, controls, parameters, stochastic_variables):
-            update_values_num = [{} for _ in self.ocp.nlp]
+        def get_integrated_values(states, controls, parameters, stochastic_variables):
+            integrated_values_num = [{} for _ in self.ocp.nlp]
             for i_phase, nlp in enumerate(self.ocp.nlp):
-                for key in nlp.update_values:
+                for key in nlp.integrated_values:
                     states_cx = nlp.states.cx_start
                     controls_cx = nlp.controls.cx_start
                     stochastic_variables_cx = nlp.stochastic_variables.cx_start
-                    update_values_cx = nlp.update_values[key].cx_start
+                    integrated_values_cx = nlp.integrated_values[key].cx_start
                     states_num = states[i_phase]['all'][:, 0]
                     controls_num = controls[i_phase]['all'][:, 0]
                     stochastic_variables_num = stochastic_variables[i_phase]['all'][:, 0]
@@ -332,25 +332,25 @@ class Solution:
                         nlp.states.node_index = i_node
                         nlp.controls.node_index = i_node
                         nlp.stochastic_variables.node_index = i_node
-                        nlp.update_values.node_index = i_node
+                        nlp.integrated_values.node_index = i_node
                         states_cx = vertcat(states_cx, nlp.states.cx_start)
                         controls_cx = vertcat(controls_cx, nlp.controls.cx_start)
                         stochastic_variables_cx = vertcat(stochastic_variables_cx, nlp.stochastic_variables.cx_start)
-                        update_values_cx = vertcat(update_values_cx, nlp.update_values[key].cx_start)
+                        integrated_values_cx = vertcat(integrated_values_cx, nlp.integrated_values[key].cx_start)
                         states_num = vertcat(states_num, states[i_phase]['all'][:, i_node])
                         controls_num = vertcat(controls_num, controls[i_phase]['all'][:, i_node])
                         stochastic_variables_num = vertcat(stochastic_variables_num, stochastic_variables[i_phase]['all'][:, i_node])
-                    casadi_func = Function("update_values", [states_cx,
+                    casadi_func = Function("integrate_values", [states_cx,
                                                              controls_cx,
                                                              nlp.parameters.cx_start,
-                                                             stochastic_variables_cx], [update_values_cx])
-                    update_values_this_time = casadi_func(states_num, controls_num, parameters["all"], stochastic_variables_num)
-                    nb_elements = nlp.update_values[key].cx_start.shape[0]
-                    update_values_data = np.zeros((nb_elements, nlp.ns))
+                                                             stochastic_variables_cx], [integrated_values_cx])
+                    integrated_values_this_time = casadi_func(states_num, controls_num, parameters["all"], stochastic_variables_num)
+                    nb_elements = nlp.integrated_values[key].cx_start.shape[0]
+                    integrated_values_data = np.zeros((nb_elements, nlp.ns))
                     for i_node in range(nlp.ns):
-                        update_values_data[:, i_node] = np.reshape(update_values_this_time[i_node * nb_elements : (i_node + 1) * nb_elements], (nb_elements,))
-                    update_values_num[i_phase][key] = update_values_data
-                return update_values_num
+                        integrated_values_data[:, i_node] = np.reshape(integrated_values_this_time[i_node * nb_elements : (i_node + 1) * nb_elements], (nb_elements,))
+                    integrated_values_num[i_phase][key] = integrated_values_data
+                return integrated_values_num
 
         def init_from_dict(_sol: dict):
             """
@@ -386,7 +386,7 @@ class Solution:
             self._complete_control()
             self.phase_time = self.ocp.v.extract_phase_time(self.vector)
             self._time_vector = self._generate_time()
-            self._update_values = get_updated_values(self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables)
+            self._integrated_values = get_integrated_values(self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables)
 
         def init_from_initial_guess(_sol: list):
             """
@@ -574,7 +574,7 @@ class Solution:
             new._controls["scaled"] = deepcopy(self._controls["scaled"])
             new.parameters = deepcopy(self.parameters)
             new._stochastic_variables = deepcopy(self._stochastic_variables)
-            new._update_values = deepcopy(self._update_values)
+            new._integrated_values = deepcopy(self._integrated_values)
             new._states["unscaled"] = deepcopy(self._states["unscaled"])
             new._controls["unscaled"] = deepcopy(self._controls["unscaled"])
 
@@ -743,7 +743,7 @@ class Solution:
         return self._stochastic_variables if len(self._stochastic_variables) > 1 else self._stochastic_variables[0]
 
     @property
-    def update_values(self) -> list | dict:
+    def integrated_values(self) -> list | dict:
         """
         Returns the update values in list if more than one phases, otherwise it returns the only dict
 
@@ -752,7 +752,7 @@ class Solution:
         The update values data
         """
 
-        return self._update_values if len(self._update_values) > 1 else self._update_values[0]
+        return self._integrated_values if len(self._integrated_values) > 1 else self._integrated_values[0]
 
     @property
     def time(self) -> list | dict | np.ndarray:

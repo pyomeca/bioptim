@@ -159,7 +159,7 @@ class NonLinearProgram:
         self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
         self.controls = OptimizationVariableContainer(assume_phase_dynamics)
         self.stochastic_variables = OptimizationVariableContainer(assume_phase_dynamics)
-        self.update_values = OptimizationVariableContainer(assume_phase_dynamics)
+        self.integrated_values = OptimizationVariableContainer(assume_phase_dynamics)
 
     def initialize(self, cx: Callable = None):
         """
@@ -183,7 +183,7 @@ class NonLinearProgram:
         self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.stochastic_variables.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
-        self.update_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+        self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
@@ -397,38 +397,3 @@ class NonLinearProgram:
         if node_idx < 0 or node_idx > self.ns:
             return ValueError(f"node_index out of range [0:{self.ns}]")
         return self.tf / self.ns * node_idx
-
-
-    ##### TODO: to be removed !!!!
-    def restore_matrix_from_vector(self, variable, shape_0, shape_1, node: Node, key: str = "all"):
-        """
-        ...
-        """
-        matrix = MX(shape_0, shape_1)
-        i = 0
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                if node == Node.START:
-                    matrix[s0, s1] = variable[key].cx_start[i]
-                elif node == Node.MID:
-                    matrix[s0, s1] = variable[key].cx_mid[i]
-                elif node == Node.END:
-                    matrix[s0, s1] = variable[key].cx_end[i]
-                else:
-                    raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
-                i += 1
-        return matrix
-
-    ##### TODO: to be removed !!!!
-    def restore_vector_from_matrix(self, matrix):
-        """
-        ...
-
-        """
-        shape_0 = matrix.shape[0]
-        shape_1 = matrix.shape[1]
-        vector = MX.zeros(shape_0 * shape_1)
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                vector[shape_0 * s0 + s1] = matrix[s0, s1]
-        return vector

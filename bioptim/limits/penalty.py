@@ -1000,10 +1000,10 @@ class PenaltyFunctionAbstract:
         def covariance_matrix_continuity_implicit(penalty: PenaltyOption, controller: PenaltyController, wM_magnitude: DM, wS_magnitude: DM):
 
             nx = controller.states.cx_start.shape[0]
-            P_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "cov")
-            A_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "a")
-            C_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "c")
-            M_matrix = controller.restore_matrix_from_vector(controller.stochastic_variables, nx, nx, Node.START, "m")
+            P_matrix = controller.integrated_values["cov"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "cov")
+            A_matrix = controller.stochastic_variables["a"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "a")
+            C_matrix = controller.stochastic_variables["c"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "c")
+            M_matrix = controller.stochastic_variables["m"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "m")
 
             sigma_w = vertcat(wS_magnitude, wM_magnitude)
             dt = 1 / controller.ns
@@ -1017,7 +1017,7 @@ class PenaltyFunctionAbstract:
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            out_vector = controller.restore_vector_from_matrix(p_implicit_deffect)
+            out_vector = controller.integrated_values["cov"].reshape_to_vector(p_implicit_deffect)
             return out_vector
 
         @staticmethod
@@ -1071,10 +1071,6 @@ class PenaltyFunctionAbstract:
                 penalty.min_bound = val[0]
                 penalty.max_bound = val[2]
                 val = val[1]
-
-                # # Shouldn't it be the same for explicit derivative ?
-                # if "depends_on_all_nodes" in parameters.keys():
-                #     penalty.depends_on_all_nodes = parameters["depends_on_all_nodes"]
 
             return val
 
