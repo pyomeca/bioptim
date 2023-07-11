@@ -711,7 +711,7 @@ class MultiBiorbdModel:
             qdot_model = qdot[self.variable_index("qdot", i)]
             out += [model.non_linear_effects(q_model, qdot_model)]
         return out
-    
+
     def angular_momentum(self, q, qdot) -> MX:
         out = MX()
         for i, model in enumerate(self.models):

@@ -159,6 +159,7 @@ class Solver:
         _bound_frac: float = 0.01
         _print_level: int = 5
         _c_compile: bool = False
+        _nlp_scaling_method: str = "gradient-based"
 
         @property
         def tol(self):
@@ -252,6 +253,10 @@ class Solver:
         def c_compile(self):
             return self._c_compile
 
+        @property
+        def nlp_scaling_method(self):
+            return self._nlp_scaling_method
+
         def set_tol(self, val: float):
             self._tol = val
 
@@ -320,6 +325,9 @@ class Solver:
 
         def set_c_compile(self, val: bool):
             self._c_compile = val
+
+        def set_nlp_scaling_method(self, val: str):
+            self._nlp_scaling_method = val
 
         def set_convergence_tolerance(self, val: float):
             self._tol = val
