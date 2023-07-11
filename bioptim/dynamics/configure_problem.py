@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from casadi import MX, vertcat, Function
+from casadi import MX, vertcat, Function, DM
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
@@ -609,6 +609,7 @@ class ConfigureProblem:
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
+            nlp.stochastic_variables.mx,
             nlp,
             **extra_params,
         )
@@ -622,9 +623,10 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
+                nlp.stochastic_variables.mx,
             ],
             [dynamics_dxdt],
-            ["x", "u", "p"],
+            ["x", "u", "p", "s"],
             ["xdot"],
         )
         if expand:
@@ -637,12 +639,15 @@ class ConfigureProblem:
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
+                    nlp.stochastic_variables.mx,
                     nlp.states_dot.scaled.mx_reduced,
                 ],
                 [dynamics_eval.defects],
-                ["x", "u", "p", "xdot"],
+                ["x", "u", "p", "s", "xdot"],
                 ["defects"],
-            ).expand()
+            )
+            if expand:
+                nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -880,6 +885,7 @@ class ConfigureProblem:
         as_states: bool,
         as_controls: bool,
         as_states_dot: bool = False,
+        as_stochastic: bool = False,
         fatigue: FatigueList = None,
         combine_name: str = None,
         combine_state_control_plot: bool = False,
@@ -905,6 +911,8 @@ class ConfigureProblem:
             If the new variable should be added to the state_dot variable set
         as_controls: bool
             If the new variable should be added to the control variable set
+        as_stochastic: bool
+            If the new variable should be added to the stochastic variable set
         fatigue: FatigueList
             The list of fatigable item
         combine_name: str
@@ -1003,6 +1011,7 @@ class ConfigureProblem:
             [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0][name].mx]
         )
         mx_controls = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[0][name].mx]
+        mx_stochastic = []
 
         # todo: if mapping on variables, what do we do with mapping on the nodes
         for i in nlp.variable_mappings[name].to_second.map_idx:
@@ -1017,23 +1026,27 @@ class ConfigureProblem:
             if not copy_controls:
                 mx_controls.append(MX.sym(var_name, 1, 1))
 
+            mx_stochastic.append(MX.sym(var_name, 1, 1))
+
         mx_states = vertcat(*mx_states)
         mx_states_dot = vertcat(*mx_states_dot)
         mx_controls = vertcat(*mx_controls)
+        mx_stochastic = vertcat(*mx_stochastic)
 
         if not axes_idx:
             axes_idx = BiMapping(to_first=range(len(name_elements)), to_second=range(len(name_elements)))
 
-        legend = []
-        for idx, name_el in enumerate(name_elements):
-            if idx is not None and idx in axes_idx.to_first.map_idx:
-                current_legend = f"{name}_{name_el}"
-                for i in range(ocp.n_phases):
-                    if as_states:
-                        current_legend += f"-{ocp.nlp[i].use_states_from_phase_idx}"
-                    if as_controls:
-                        current_legend += f"-{ocp.nlp[i].use_controls_from_phase_idx}"
-                legend += [current_legend]
+        if not skip_plot:
+            legend = []
+            for idx, name_el in enumerate(name_elements):
+                if idx is not None and idx in axes_idx.to_first.map_idx:
+                    current_legend = f"{name}_{name_el}"
+                    for i in range(ocp.n_phases):
+                        if as_states:
+                            current_legend += f"-{ocp.nlp[i].use_states_from_phase_idx}"
+                        if as_controls:
+                            current_legend += f"-{ocp.nlp[i].use_controls_from_phase_idx}"
+                    legend += [current_legend]
 
         if as_states:
             for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
@@ -1104,6 +1117,55 @@ class ConfigureProblem:
                     else define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
                 )
                 nlp.states_dot.append(name, cx[0], cx_scaled[0], mx_states_dot, nlp.variable_mappings[name], node_index)
+
+        if as_stochastic:
+            for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
+                n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+                if n_cx < 3:
+                    n_cx = 3
+                cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
+                nlp.stochastic_variables.append(name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index)
+
+    @staticmethod
+    def configure_integrated_value(
+        name: str,
+        name_elements: list,
+        ocp,
+        nlp,
+        initial_matrix: DM,
+    ):
+        """
+        Add a new integrated value. This creates an MX (not an optimization variable) that is integrated using the
+        integrated_value_functions function provided. This integrated_value can be used in the constraints and objectives
+        without having to recompute them over and over again.
+        Parameters
+        ----------
+        name: str
+            The name of the new variable to add
+        name_elements: list[str]
+            The name of each element of the vector
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        initial_matrix: DM
+            The initial value of the integrated value
+        """
+
+        # TODO: compute values at collocation points
+        # but for now only cx_start can be used
+        n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+        if n_cx < 3:
+            n_cx = 3
+
+        dummy_mapping = Mapping(list(range(len(name_elements))))
+        initial_vector = nlp.integrated_values.reshape_to_vector(initial_matrix)
+        cx_scaled_next_formatted = [initial_vector for _ in range(n_cx)]
+        nlp.integrated_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0)
+        for node_index in range(1, nlp.ns + 1):  # cannot use assume_phase_dynamics = True
+            cx_scaled_next = nlp.integrated_value_functions[name](nlp, node_index)
+            cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
+            nlp.integrated_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next, dummy_mapping, node_index)
 
     @staticmethod
     def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
@@ -1195,6 +1257,190 @@ class ConfigureProblem:
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+
+
+    @staticmethod
+    def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_feedbacks: int):
+        """
+        Configure the optimal feedback gain matrix K.
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "k"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
+        name_k = []
+        control_names = [f"control_{i}" for i in range(n_noised_controls)]
+        feedback_names = [f"feedback_{i}" for i in range(n_feedbacks)]
+        for name_1 in control_names:
+            for name_2 in feedback_names:
+                name_k += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(len(control_names)*len(feedback_names))), list(range(len(control_names)*len(feedback_names))))
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_k,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
+    def configure_stochastic_c(ocp, nlp, n_noised_states: int):
+        """
+        Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "c"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
+        name_c = []
+        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
+                name_c += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_c,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
+    def configure_stochastic_a(ocp, nlp, n_noised_states: int):
+        """
+        Configure the stochastic variable matrix A representing the propagation of motor noise (df/dx).
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "a"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
+        name_a = []
+        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
+                name_a += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_a,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
+    def configure_stochastic_cov(ocp, nlp, n_noised_states: int, initial_matrix: DM):
+        """
+        Configure the covariance matrix P representing the motor noise.
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "cov"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
+        name_cov = []
+        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
+                name_cov += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
+        ConfigureProblem.configure_integrated_value(
+            name,
+            name_cov,
+            ocp,
+            nlp,
+            initial_matrix=initial_matrix,
+        )
+
+    @staticmethod
+    def configure_stochastic_ee_ref(ocp, nlp, n_references: int):
+        """
+        Configure the reference kinematics.
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "ee_ref"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
+        name_ee_ref = [f"reference_{i}" for i in range(n_references)]
+        nlp.variable_mappings[name] = BiMapping(list(range(n_references)), list(range(n_references)))
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_ee_ref,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
+    def configure_stochastic_m(ocp, nlp, n_noised_states: int):
+        """
+        Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "m"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
+        name_m = []
+        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
+                name_m += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_m,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
 
     @staticmethod
     def configure_tau(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
