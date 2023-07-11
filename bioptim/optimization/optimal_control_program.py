@@ -29,7 +29,7 @@ from ..limits.constraints import (
     ParameterConstraint,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
-from ..limits.multinode_constraint import MultinodeConstraintList
+from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraint, MultinodeConstraintFcn
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import (
     ObjectiveFcn,
@@ -147,8 +147,10 @@ class OptimalControlProgram:
         phase_time: int | float | list | tuple,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
+        s_bounds: BoundsList = None,
         x_init: InitialGuessList | None = None,
         u_init: InitialGuessList | None = None,
+        s_init: InitialGuessList | None = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
         parameters: ParameterList = None,
@@ -174,6 +176,7 @@ class OptimalControlProgram:
         use_sx: bool = False,
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
+        integrated_value_functions: dict[Callable] = None,
     ):
         """
         Parameters
@@ -190,10 +193,14 @@ class OptimalControlProgram:
             The initial guesses for the states
         u_init: InitialGuess | InitialGuessList
             The initial guesses for the controls
+        s_init: InitialGuess | InitialGuessList
+            The initial guesses for the stochastic variables
         x_bounds: Bounds | BoundsList
             The bounds for the states
         u_bounds: Bounds | BoundsList
             The bounds for the controls
+        s_bounds: Bounds | BoundsList
+            The bounds for the stochastic variables
         x_scaling: VariableScalingList
             The scaling for the states at each phase, if only one is sent, then the scaling is copied over the phases
         xdot_scaling: VariableScalingList
@@ -263,8 +270,10 @@ class OptimalControlProgram:
             "phase_time": phase_time,
             "x_init": x_init,
             "u_init": u_init,
+            "s_init": s_init,
             "x_bounds": x_bounds,
             "u_bounds": u_bounds,
+            "s_bounds": s_bounds,
             "x_scaling": x_scaling,
             "xdot_scaling": xdot_scaling,
             "u_scaling": u_scaling,
@@ -289,6 +298,7 @@ class OptimalControlProgram:
             "n_threads": n_threads,
             "use_sx": use_sx,
             "assume_phase_dynamics": assume_phase_dynamics,
+            "integrated_value_functions": integrated_value_functions,
         }
 
         # Check integrity of arguments
@@ -320,6 +330,11 @@ class OptimalControlProgram:
         elif not isinstance(u_bounds, BoundsList):
             raise RuntimeError("u_bounds should be built from a BoundsList")
 
+        if s_bounds is None:
+            s_bounds = BoundsList()
+        elif not isinstance(s_bounds, BoundsList):
+            raise RuntimeError("s_bounds should be built from a BoundsList")
+
         if x_init is None:
             x_init = InitialGuessList()
         if not isinstance(x_init, InitialGuessList):
@@ -330,15 +345,23 @@ class OptimalControlProgram:
         if not isinstance(u_init, InitialGuessList):
             raise RuntimeError("u_init should be built from a InitialGuessList")
 
+        if s_init is None:
+            s_init = InitialGuessList()
+        if not isinstance(s_init, InitialGuessList):
+            raise RuntimeError("s_init should be built from a InitialGuessList")
+
         x_bounds = self._prepare_option_dict_for_phase("x_bounds", x_bounds, BoundsList)
         u_bounds = self._prepare_option_dict_for_phase("u_bounds", u_bounds, BoundsList)
+        s_bounds = self._prepare_option_dict_for_phase("s_bounds", s_bounds, BoundsList)
 
         x_init = self._prepare_option_dict_for_phase("x_init", x_init, InitialGuessList)
         u_init = self._prepare_option_dict_for_phase("u_init", u_init, InitialGuessList)
+        s_init = self._prepare_option_dict_for_phase("s_init", s_init, InitialGuessList)
 
         x_scaling = self._prepare_option_dict_for_phase("x_scaling", x_scaling, VariableScalingList)
         xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
         u_scaling = self._prepare_option_dict_for_phase("u_scaling", u_scaling, VariableScalingList)
+        # TODO: add scaling for s
 
         if objective_functions is None:
             objective_functions = ObjectiveList()
@@ -499,6 +522,8 @@ class OptimalControlProgram:
         NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)
 
+        NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
+
         # Prepare the node mappings
         if node_mappings is None:
             node_mappings = NodeMappingList()
@@ -521,8 +546,8 @@ class OptimalControlProgram:
         self.parameter_bounds = BoundsList()
         self.parameter_init = InitialGuessList()
 
-        self.update_bounds(x_bounds, u_bounds, parameter_bounds)
-        self.update_initial_guess(x_init, u_init, parameter_init)
+        self.update_bounds(x_bounds, u_bounds, parameter_bounds, s_bounds)
+        self.update_initial_guess(x_init, u_init, parameter_init, s_init)
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
@@ -530,8 +555,7 @@ class OptimalControlProgram:
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
-        multinode_constraints.add_or_replace_to_penalty_pool(self)
-        multinode_objectives.add_or_replace_to_penalty_pool(self)
+        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
 
         # Skipping creates an OCP without built-in continuity constraints, make sure you declared constraints elsewhere
         if not skip_continuity:
@@ -738,6 +762,10 @@ class OptimalControlProgram:
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 
+    def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
+        multinode_constraints.add_or_replace_to_penalty_pool(self)
+        multinode_objectives.add_or_replace_to_penalty_pool(self)
+
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """
         The main user interface to add or modify objective functions in the ocp
@@ -866,7 +894,7 @@ class OptimalControlProgram:
             offset += param.size
 
     def update_bounds(
-        self, x_bounds: BoundsList = None, u_bounds: BoundsList = None, parameter_bounds: BoundsList = None
+        self, x_bounds: BoundsList = None, u_bounds: BoundsList = None, parameter_bounds: BoundsList = None, s_bounds: BoundsList = None
     ):
         """
         The main user interface to add bounds in the ocp
@@ -879,6 +907,8 @@ class OptimalControlProgram:
             The control bounds to add
         parameter_bounds: BoundsList
             The parameters bounds to add
+        s_bounds: BoundsList
+            The stochastic variable bounds to add
         """
         for i in range(self.n_phases):
             if x_bounds is not None:
@@ -894,6 +924,13 @@ class OptimalControlProgram:
                 for key in u_bounds.keys():
                     origin_phase = 0 if len(u_bounds) == 1 else i
                     self.nlp[i].u_bounds.add(key, u_bounds[origin_phase][key], phase=0)
+
+            if s_bounds is not None:
+                if not isinstance(s_bounds, BoundsList):
+                    raise RuntimeError("s_bounds should be built from a BoundsList")
+                for key in s_bounds.keys():
+                    origin_phase = 0 if len(s_bounds) == 1 else i
+                    self.nlp[i].s_bounds.add(key, s_bounds[origin_phase][key], phase=0)
 
         if parameter_bounds is not None:
             if not isinstance(parameter_bounds, BoundsList):
