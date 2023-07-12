@@ -75,7 +75,7 @@ class Integrator:
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
-        self.S_sym = ode["s_scaled"]
+        self.s_sym = ode["stochastic_variables"]
         self.stochastic_variables_sym = ode["stochastic_variables"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]

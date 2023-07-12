@@ -421,6 +421,8 @@ class OptimizationVectorHelper:
         data_stochastic_variables = []
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
+            nlp.controls.node_index = 0
+
             n_points = nlp.ns * (1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.polynomial_degree + 1)) + 1
             data_states.append({key: np.ndarray((nlp.states[key].shape, n_points)) for key in nlp.states})
             data_controls.append(
@@ -485,9 +487,9 @@ class OptimizationVectorHelper:
                 p_idx += 1
 
         # For parameters
-        offset = v_array.shape[0] - ocp.parameters.shape
         for param in ocp.parameters:
             data_parameters[param.name] = v_array[[offset + i for i in param.index], np.newaxis] * param.scaling
+        offset += len(ocp.parameters)
 
         # For stochastic variables
         p_idx = 0
@@ -497,9 +499,9 @@ class OptimizationVectorHelper:
             if nstochastic > 0:
                 for k in range(nlp.ns + 1):
                     nlp.stochastic_variables.node_index = k
-                    u_array = v_array[offset : offset + nstochastic].reshape((nlp.stochastic_variables.shape, -1), order="F")  # @pariterre "F" seems like an interpolation?
+                    s_array = v_array[offset : offset + nstochastic].reshape((nlp.stochastic_variables.shape, -1), order="F")  # @pariterre "F" seems like an interpolation?
                     for key in nlp.stochastic_variables:
-                        data_stochastic_variables[p_idx][key][:, k : k + 1] = u_array[nlp.stochastic_variables[key].index, :]
+                        data_stochastic_variables[p_idx][key][:, k : k + 1] = s_array[nlp.stochastic_variables[key].index, :].reshape(nlp.stochastic_variables[key].shape, 1)
                     offset += nstochastic
                 p_idx += 1
 

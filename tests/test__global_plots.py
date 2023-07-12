@@ -220,6 +220,7 @@ def test_console_objective_functions(assume_phase_dynamics):
                     nlp.states.node_index = node_index
                     nlp.states_dot.node_index = node_index
                     nlp.controls.node_index = node_index
+                    nlp.stochastic_variables.node_index = node_index
 
                     name = (
                         p.name.replace("->", "_")

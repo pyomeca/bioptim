@@ -697,17 +697,19 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
+                nlp.stochastic_variables.mx,
             ],
             [
                 dyn_func(
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
+                    nlp.stochastic_variables.mx,
                     nlp,
                     **extra_params,
                 )
             ],
-            ["x", "u", "p"],
+            ["x", "u", "p", "s"],
             ["contact_forces"],
         ).expand()
 

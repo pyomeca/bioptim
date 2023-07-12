@@ -122,6 +122,7 @@ class RK(OdeSolverBase):
         nlp.states.node_index = node_index
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
+        nlp.stochastic_variables.node_index = node_index
 
         ode_opt = {
             "t0": 0,
@@ -290,6 +291,7 @@ class OdeSolver:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
+            nlp.stochastic_variables.node_index = node_index
 
             if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
@@ -421,6 +423,7 @@ class OdeSolver:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
+            nlp.stochastic_variables.node_index = node_index
 
             if not isinstance(ocp.cx(), MX):
                 raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")

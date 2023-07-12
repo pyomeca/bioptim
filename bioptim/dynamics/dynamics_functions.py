@@ -374,6 +374,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic variables of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
