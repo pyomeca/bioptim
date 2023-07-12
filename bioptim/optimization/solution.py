@@ -450,10 +450,10 @@ class Solution:
                     for _ in range(len(self.ns)):
                         tp.add(deepcopy(_sol[i].init), interpolation=_sol[i].init.type)
                     _sol[i] = tp
-            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 2:
+            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 3:
                 raise ValueError(
                     "solution must be a solution dict, "
-                    "an InitialGuess[List] of len 2 or 3 (states, controls, parameters), "
+                    "an InitialGuess[List] of len 3 or 4 (states, controls, parameters, stochastic_variables), "
                     "or a None"
                 )
             if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
@@ -562,7 +562,7 @@ class Solution:
         elif sol is None:
             self.ns = []
         else:
-            raise ValueError("Solution called with unknown initializer")
+            raise ValueError("Solution called with unknown initializer")  # @ Pariterre this seems weird, since it is used in test_initial_conditions
 
     def _to_unscaled_values(self, states_scaled, controls_scaled) -> tuple:
         """
@@ -1103,9 +1103,14 @@ class Solution:
             if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
                 u0 = vertcat(u0, u0)
             params = []
+            s0 = []
+            if len(self.ocp.nlp[phase - 1].stochastic_variables) > 0:
+                s0 = np.concatenate(
+                    [self.stochastic_variables[phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].stochastic_variables]
+                )
             if self.parameters.keys():
                 params = np.vstack([self.parameters[key] for key in self.parameters])
-            val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params)
+            val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params, s0)
             if val.shape[0] != x0.shape[0]:
                 raise RuntimeError(
                     f"Phase transition must have the same number of states ({val.shape[0]}) "

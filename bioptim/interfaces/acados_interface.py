@@ -158,6 +158,7 @@ class AcadosInterface(SolverInterface):
         x = ocp.nlp[0].states.cx_start
         u = ocp.nlp[0].controls.cx_start
         p = ocp.nlp[0].parameters.cx
+        s = ocp.nlp[0].stochastic_variables.cx_start
         if ocp.parameters:
             for param in ocp.parameters:
                 if str(param.cx)[:11] == f"time_phase_":
@@ -168,7 +169,7 @@ class AcadosInterface(SolverInterface):
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
-        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(x[self.nparams :, :], u, p))
+        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(x[self.nparams :, :], u, p, s))
         f_impl = x_dot - f_expl
 
         self.acados_model.f_impl_expr = f_impl

@@ -31,7 +31,6 @@ def test_arm_reaching_muscle_driven():
             final_time=final_time,
             n_shooting=n_shooting,
             ee_final_position=ee_final_position,
-            ee_initial_position=ee_initial_position,
             problem_type=problem_type,
             force_field_magnitude=force_field_magnitude
         )
