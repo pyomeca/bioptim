@@ -378,6 +378,15 @@ class OptimalControlProgram:
                             assume_phase_dynamics,
                             integrated_value_functions,
                             ):
+
+        # Placed here because of MHE
+        if isinstance(dynamics, Dynamics):
+            dynamics_type_tp = DynamicsList()
+            dynamics_type_tp.add(dynamics)
+            dynamics = dynamics_type_tp
+        elif not isinstance(dynamics, DynamicsList):
+            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
+
         self.original_values = {
             "bio_model": [m.serialize() for m in bio_model],
             "dynamics": dynamics,
@@ -453,13 +462,6 @@ class OptimalControlProgram:
                                       integrated_value_functions,
                                       node_mappings,
                                       state_continuity_weight):
-
-        if isinstance(dynamics, Dynamics):
-            dynamics_type_tp = DynamicsList()
-            dynamics_type_tp.add(dynamics)
-            dynamics = dynamics_type_tp
-        elif not isinstance(dynamics, DynamicsList):
-            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
 
         if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
             raise RuntimeError("n_threads should be a positive integer greater or equal than 1")

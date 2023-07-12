@@ -1170,6 +1170,8 @@ class Solution:
         params = vertcat(*[self.parameters[key] for key in self.parameters])
 
         for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
+            self.ocp.nlp[p].controls.node_index = 0
+
             states_phase_idx = self.ocp.nlp[p].use_states_from_phase_idx
             controls_phase_idx = self.ocp.nlp[p].use_controls_from_phase_idx
             param_scaling = nlp.parameters.scaling

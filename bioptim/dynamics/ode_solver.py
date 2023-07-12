@@ -441,6 +441,7 @@ class OdeSolver:
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
+                    nlp.stochastic_variables.cx_start,
                 ),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
@@ -454,13 +455,14 @@ class OdeSolver:
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.cx,
+                        nlp.stochastic_variables.cx_start,
                     ],
                     self._adapt_integrator_output(
                         integrator_func,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                     ),
-                    ["x0", "p", "params"],
+                    ["x0", "p", "params", "s"],
                     ["xf", "xall"],
                 )
             ]
