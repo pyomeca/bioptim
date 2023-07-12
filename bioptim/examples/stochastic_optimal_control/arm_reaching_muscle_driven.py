@@ -318,6 +318,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
     ConfigureProblem.configure_muscles(ocp, nlp, True, True)  # Muscles activations as states + muscles excitations as controls
+    ocp.nlp[0].controls = nlp.controls  # Seems like I broke the link between nlp and ocp :(   @ Pariterre ?
 
     # Stochastic variables
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=6, n_feedbacks=4)
@@ -520,7 +521,7 @@ def prepare_socp(
     wS_magnitude: cas.DM,
     force_field_magnitude: float = 0,
     problem_type: str = "CIRCLE",
-) -> OptimalControlProgram:
+) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
     Parameters
