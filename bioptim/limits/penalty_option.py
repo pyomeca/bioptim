@@ -488,8 +488,9 @@ class PenaltyOption(OptionGeneric):
             control_cx_scaled = horzcat(controller.controls_scaled.cx_end, controller.controls_scaled.cx_start)
             self.function[node] = biorbd.to_casadi_func(
                 f"{name}",
-                self.function[node](controller.states_scaled.cx_end, controller.controls_scaled.cx_end, param_cx, stochastic_cx_scaled.cx_end)
-                - self.function[node](controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx, stochastic_cx_scaled.cx_end),
+                # TODO: Charbie -> this is Flase, add stochastic_variables for start, mid AND end
+                self.function[node](controller.states_scaled.cx_end, controller.controls_scaled.cx_end, param_cx, controller.stochastic_variables.cx_start)
+                - self.function[node](controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx, controller.stochastic_variables.cx_start),
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,

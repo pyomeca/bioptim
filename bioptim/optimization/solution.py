@@ -1570,11 +1570,13 @@ class Solution:
         for idx in penalty.node_idx:
             x = []
             u = []
+            s = []
             target = []
             if nlp is not None:
                 if penalty.multinode_penalty or penalty.transition:
                     x = np.array(())
                     u = np.array(())
+                    s = np.array(())
                     for i in range(len(penalty.nodes_phase)):
                         node_idx = penalty.multinode_idx[i]
                         phase_idx = penalty.nodes_phase[i]
@@ -1584,7 +1586,9 @@ class Solution:
                         for key in nlp.controls:
                             # Make an exception to the fact that U is not available for the last node
                             u = np.concatenate((u, self._controls["scaled"][phase_idx][key][:, node_idx]))
-
+                        for key in nlp.stochastic_variables:
+                            s = np.concatenate((s, self.stochastic_variables[phase_idx][key][:, node_idx])
+                                               )
                 elif (
                     "Lagrange" not in penalty.type.__str__()
                     and "Mayer" not in penalty.type.__str__()
@@ -1596,6 +1600,7 @@ class Solution:
                 else:
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
+                    col_s_idx = [idx]
                     if (
                         penalty.derivative
                         or penalty.explicit_derivative
@@ -1631,6 +1636,11 @@ class Solution:
                             if nlp.control_type == ControlType.NONE
                             else self._controls["scaled"][phase_idx][key][:, col_u_idx]
                         )
+
+                    s = np.ndarray((nlp.stochastic_variables.shape, len(col_s_idx)))
+                    for key in nlp.stochastic_variables:
+                        s[nlp.stochastic_variables[key].index, :] = self.stochastic_variables["scaled"][phase_idx][key][:, col_s_idx]
+
                     if penalty.target is None:
                         target = []
                     elif (
@@ -1650,8 +1660,8 @@ class Solution:
             # casadi function
             if not self.ocp.assume_phase_dynamics and ((isinstance(u, list) and u != []) or isinstance(u, np.ndarray)):
                 u = u[:, ~np.isnan(np.sum(u, axis=0))]
-            val.append(penalty.function[idx](x, u, p))
-            val_weighted.append(penalty.weighted_function[idx](x, u, p, penalty.weight, target, dt))
+            val.append(penalty.function[idx](x, u, p, s))
+            val_weighted.append(penalty.weighted_function[idx](x, u, p, s, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)

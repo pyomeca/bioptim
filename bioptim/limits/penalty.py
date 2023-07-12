@@ -657,7 +657,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             contact_force = controller.get_nlp.contact_forces_func(
-                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
+                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx, controller.stochastic_variables.cx_start
             )
             return contact_force
 
