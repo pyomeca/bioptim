@@ -431,7 +431,7 @@ class OptimizationVectorHelper:
                             nlp.ns + (1 if nlp.control_type in (ControlType.LINEAR_CONTINUOUS,) else 0),
                         )
                     )
-                    for key in nlp.controls.keys()
+                    for key in ocp.nlp[p].controls
                 }
             )
             data_stochastic_variables.append(
@@ -480,7 +480,7 @@ class OptimizationVectorHelper:
                     nlp.controls.node_index = k
                     u_array = v_array[offset : offset + nu].reshape((nlp.controls.scaled.shape, -1), order="F")
                     for key in nlp.controls:
-                        data_controls[p_idx][key][:, k: k + 1] = u_array[nlp.controls[key].index, :]
+                        data_controls[p_idx][key][:, k : k + 1] = u_array[nlp.controls[key].index, :]
                     offset += nu
                 p_idx += 1
 
@@ -494,13 +494,14 @@ class OptimizationVectorHelper:
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
             nstochastic = nlp.stochastic_variables.shape
-            for k in range(nlp.ns + 1):
-                nlp.stochastic_variables.node_index = k
-                u_array = v_array[offset : offset + nstochastic].reshape((nlp.stochastic_variables.shape, -1), order="F")  # @pariterre "F" seems like an interpolation?
-                for key in nlp.stochastic_variables:
-                    data_stochastic_variables[p_idx][key][:, k : k + 1] = u_array[nlp.stochastic_variables[key].index, :]
-                offset += nstochastic
-            p_idx += 1
+            if nstochastic > 0:
+                for k in range(nlp.ns + 1):
+                    nlp.stochastic_variables.node_index = k
+                    u_array = v_array[offset : offset + nstochastic].reshape((nlp.stochastic_variables.shape, -1), order="F")  # @pariterre "F" seems like an interpolation?
+                    for key in nlp.stochastic_variables:
+                        data_stochastic_variables[p_idx][key][:, k : k + 1] = u_array[nlp.stochastic_variables[key].index, :]
+                    offset += nstochastic
+                p_idx += 1
 
         return data_states, data_controls, data_parameters, data_stochastic_variables
 

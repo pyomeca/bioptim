@@ -1150,7 +1150,10 @@ class Solution:
                     ]
                 )
             )
-            s = self.ocp.nlp[p].stochastic_variables
+            if self.ocp.nlp[p].stochastic_variables.keys():
+                s = np.concatenate([self._stochastic_variables[p][key] for key in self.ocp.nlp[p].stochastic_variables])
+            else:
+                s = np.array([])
             if integrator == SolutionIntegrator.OCP:
                 integrated_sol = solve_ivp_bioptim_interface(
                     dynamics_func=nlp.dynamics,

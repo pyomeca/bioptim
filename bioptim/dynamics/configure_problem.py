@@ -729,7 +729,7 @@ class ConfigureProblem:
             )
 
         nlp.plot["contact_forces"] = CustomPlot(
-            lambda t, x, u, p: nlp.contact_forces_func(x, u, p),
+            lambda t, x, u, p, s: nlp.contact_forces_func(x, u, p, s),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
             legend=all_contact_names,
@@ -792,7 +792,7 @@ class ConfigureProblem:
                     to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
-                lambda t, x, u, p: nlp.soft_contact_forces_func(x, u, p)[(i_sc * 6) : ((i_sc + 1) * 6), :],
+                lambda t, x, u, p, s: nlp.soft_contact_forces_func(x, u, p, s)[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
                 legend=all_soft_contact_names,
@@ -836,14 +836,14 @@ class ConfigureProblem:
         legend = [f"{name}_{i}" for i in name_elements]
         fatigue_plot_name = f"fatigue_{name}"
         nlp.plot[fatigue_plot_name] = CustomPlot(
-            lambda t, x, u, p: x[:n_elements, :] * np.nan,
+            lambda t, x, u, p, s: x[:n_elements, :] * np.nan,
             plot_type=PlotType.INTEGRATED,
             legend=legend,
             bounds=Bounds(None, -1, 1),
         )
         control_plot_name = f"{name}_controls" if not multi_interface and split_controls else f"{name}"
         nlp.plot[control_plot_name] = CustomPlot(
-            lambda t, x, u, p: u[:n_elements, :] * np.nan, plot_type=PlotType.STEP, legend=legend
+            lambda t, x, u, p, s: u[:n_elements, :] * np.nan, plot_type=PlotType.STEP, legend=legend
         )
 
         var_names_with_suffix = []
@@ -858,7 +858,7 @@ class ConfigureProblem:
                     var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
                 )
                 nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
-                    lambda t, x, u, p, key: u[nlp.controls[key].index, :],
+                    lambda t, x, u, p, s, key: u[nlp.controls[key].index, :],
                     plot_type=PlotType.STEP,
                     combine_to=control_plot_name,
                     key=var_names_with_suffix[-1],
@@ -869,7 +869,7 @@ class ConfigureProblem:
                     f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
                 )
                 nlp.plot[f"{name}_controls"] = CustomPlot(
-                    lambda t, x, u, p, key: u[nlp.controls[key].index, :],
+                    lambda t, x, u, p, s, key: u[nlp.controls[key].index, :],
                     plot_type=PlotType.STEP,
                     combine_to=control_plot_name,
                     key=f"{name}",
@@ -880,7 +880,7 @@ class ConfigureProblem:
                 name_tp = f"{var_names_with_suffix[-1]}_{params}"
                 ConfigureProblem.configure_new_variable(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
                 nlp.plot[name_tp] = CustomPlot(
-                    lambda t, x, u, p, key, mod: mod * x[nlp.states[key].index, :],
+                    lambda t, x, u, p, s, key, mod: mod * x[nlp.states[key].index, :],
                     plot_type=PlotType.INTEGRATED,
                     combine_to=fatigue_plot_name,
                     key=name_tp,
@@ -1091,7 +1091,7 @@ class ConfigureProblem:
                 nlp.states.append(name, cx[0], cx_scaled[0], mx_states, nlp.variable_mappings[name], node_index)
                 if not skip_plot:
                     nlp.plot[f"{name}_states"] = CustomPlot(
-                        lambda t, x, u, p: x[nlp.states[name].index, :],
+                        lambda t, x, u, p, s: x[nlp.states[name].index, :],
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=axes_idx,
                         legend=legend,
@@ -1121,7 +1121,7 @@ class ConfigureProblem:
                 plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not skip_plot:
                     nlp.plot[f"{name}_controls"] = CustomPlot(
-                        lambda t, x, u, p: u[nlp.controls[name].index, :],
+                        lambda t, x, u, p, s: u[nlp.controls[name].index, :],
                         plot_type=plot_type,
                         axes_idx=axes_idx,
                         legend=legend,

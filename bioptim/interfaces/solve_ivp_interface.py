@@ -11,7 +11,7 @@ def solve_ivp_interface(
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
-    s: dict[str, np.ndarray],
+    s: np.ndarray,
     method: str | Any = "RK45",
     keep_intermediate_points: bool = False,
     control_type: ControlType = ControlType.CONSTANT,
@@ -32,7 +32,7 @@ def solve_ivp_interface(
     params : np.ndarray
         array of parameters
     s : np.ndarray
-        dictionary of arrays of stochastic variables
+        array of arrays of stochastic variables
     method : str, optional
         method to use for the integration, by default "RK45"
     keep_intermediate_points : bool
@@ -135,7 +135,7 @@ def run_solve_ivp(
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
-    s: dict[str, np.ndarray],
+    s: np.ndarray,
     method: str | Any = "RK45",
     keep_intermediate_points: bool = False,
     control_type: ControlType = ControlType.CONSTANT,
@@ -155,8 +155,8 @@ def run_solve_ivp(
         arrays of controls u evaluated at t_eval
     params : np.ndarray
         array of parameters
-    s : dict[str, np.ndarray]
-        dictionary of arrays of the stochastic variables
+    s : np.ndarray
+        array of arrays of the stochastic variables
     method : str, optional
         method to use for the integration, by default "RK45"
     keep_intermediate_points : bool
@@ -314,7 +314,7 @@ def solve_ivp_bioptim_interface(
     u: np.ndarray,
     params: np.ndarray,
     param_scaling: np.ndarray,
-    s: dict[str, np.ndarray],
+    s: np.ndarray,
     shooting_type: Shooting,
     control_type: ControlType,
 ):
@@ -335,8 +335,8 @@ def solve_ivp_bioptim_interface(
         array of parameters
     param_scaling : np.ndarray
         array of scaling factors for the parameters
-    s : dict[str, np.ndarray]
-        dictionary of the stochastic variables of the system
+    s : np.ndarray
+        array of the stochastic variables of the system
     shooting_type : Shooting
         The way we integrate the solution such as SINGLE, SINGLE_CONTINUOUS, MULTIPLE
     control_type : ControlType

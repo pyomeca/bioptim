@@ -1266,7 +1266,7 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def compute_penalty_values(t, x, u, p, penalty, dt: int | Callable):
+        def compute_penalty_values(t, x, u, p, s, penalty, dt: int | Callable):
             """
             Compute the penalty value for the given time, state, control, parameters, penalty and time step
 
@@ -1280,6 +1280,8 @@ class OptimalControlProgram:
                 Control vector with starting control (and sometimes final control)
             p: ndarray
                 Parameters vector
+            s: ndarray
+                Stochastic variables vector
             penalty: Penalty
                 The penalty object containing details on how to compute it
             dt: float, Callable
@@ -1294,6 +1296,9 @@ class OptimalControlProgram:
 
             if len(u.shape) < 2:
                 u = u.reshape((-1, 1))
+
+            if len(s.shape) < 2:
+                s = s.reshape((-1, 1))
 
             # if time is parameter of the ocp, we need to evaluate with current parameters
             if isinstance(dt, Function):
@@ -1331,7 +1336,7 @@ class OptimalControlProgram:
             if penalty.transition or penalty.multinode_penalty:
                 out.append(
                     penalty.weighted_function_non_threaded[t](
-                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, penalty.weight, _target, dt
+                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, s, penalty.weight, _target, dt
                     )
                 )
 
@@ -1345,17 +1350,17 @@ class OptimalControlProgram:
                         (x.shape[0], int(penalty.weighted_function_non_threaded[t].nnz_in(0) / x.shape[0]))
                     )
 
-                out.append(penalty.weighted_function_non_threaded[t](state_value, u, p, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded[t](state_value, u, p, s, penalty.weight, _target, dt))
             elif (
                 penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
             ):
                 out = [
-                    penalty.weighted_function_non_threaded[t](x[:, [i, i + 1]], u[:, i], p, penalty.weight, _target, dt)
+                    penalty.weighted_function_non_threaded[t](x[:, [i, i + 1]], u[:, i], p, s, penalty.weight, _target, dt)
                     for i in range(x.shape[1] - 1)
                 ]
             else:
-                out.append(penalty.weighted_function_non_threaded[t](x, u, p, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded[t](x, u, p, s, penalty.weight, _target, dt))
             return sum1(horzcat(*out))
 
         def add_penalty(_penalties):
