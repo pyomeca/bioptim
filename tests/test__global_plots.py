@@ -237,16 +237,17 @@ def test_console_objective_functions(assume_phase_dynamics):
                     if p.weighted_function[node_index].sparsity_in("i1").shape == (0, 0):
                         u = MX.sym("u", 3, 1)
                     param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("i2").shape)
-                    weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i3").shape)
-                    target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i4").shape)
-                    dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i5").shape)
+                    s = MX.sym("s", *p.weighted_function[node_index].sparsity_in("i3").shape)
+                    weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i4").shape)
+                    target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i5").shape)
+                    dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i6").shape)
 
                     p.function[node_index] = Function(
-                        name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T]
+                        name, [x, u, param, s], [np.array([range(cmp, len(p.rows) + cmp)]).T]
                     )
                     p.function_non_threaded[node_index] = p.function[node_index]
                     p.weighted_function[node_index] = Function(
-                        name, [x, u, param, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]
+                        name, [x, u, param, s, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]
                     )
                     p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]
 

@@ -568,6 +568,7 @@ class PenaltyOption(OptionGeneric):
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
+                stochastic_cx_scaled,
                 target_cx,
                 dt_cx,
             )
