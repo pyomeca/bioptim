@@ -123,24 +123,24 @@ def test_add_new_plot(assume_phase_dynamics):
     ocp.save(sol, save_name)
 
     # Test 1 - Working plot
-    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 2 - Combine using combine_to is not allowed
     ocp, sol = OptimalControlProgram.load(save_name)
     with pytest.raises(RuntimeError):
-        ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :], combine_to="NotAllowed")
+        ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :], combine_to="NotAllowed")
 
     # Test 3 - Create a completely new plot
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
-    ocp.add_plot("My Second New Plot", lambda t, x, p, u: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My Second New Plot", lambda t, x, p, u, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 4 - Combine to the first using fig_name
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
-    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Add the plot of objectives and constraints to this mess
