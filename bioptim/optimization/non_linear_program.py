@@ -11,6 +11,8 @@ from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..interfaces.biomodel import BioModel
+from ..interfaces.holonomic_biomodel import HolonomicBioModel
+from ..interfaces.variational_biomodel import VariationalBioModel
 
 
 class NonLinearProgram:
@@ -134,7 +136,7 @@ class NonLinearProgram:
         self.g_implicit = []
         self.J = []
         self.J_internal = []
-        self.model: BioModel | None = None
+        self.model: BioModel | HolonomicBioModel | VariationalBioModel | None = None
         self.n_threads = None
         self.ns = None
         self.ode_solver = OdeSolver.RK4()

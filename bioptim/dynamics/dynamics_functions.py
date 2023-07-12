@@ -894,3 +894,36 @@ class DynamicsFunctions:
             else:
                 activations.append(muscle_activations[k])
         return nlp.model.muscle_joint_torque(activations, q, qdot)
+
+    @staticmethod
+    def holonomic_torque_driven(
+        states: MX | SX,
+        controls: MX | SX,
+        parameters: MX | SX,
+        nlp: NonLinearProgram,
+    ) -> DynamicsEvaluation:
+        """
+        The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
+
+        Parameters
+        ----------
+        states: MX | SX
+            The state of the system
+        controls: MX | SX
+            The controls of the system
+        parameters: MX | SX
+            The parameters acting on the system
+        nlp: NonLinearProgram
+            A reference to the phase
+
+        Returns
+        -------
+        The derivative of the states in the tuple[MX | SX] format
+        """
+
+        q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
+        qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        qddot_u = nlp.model.partitioned_forward_dynamics(q_u, qdot_u, tau)
+
+        return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)
