@@ -136,7 +136,6 @@ class OptimizationVariable:
             )
         return self.parent_list.cx_end[self.index, :]
 
-
     def reshape_to_vector(self, matrix):
         """
         Restore the vector form of the matrix
@@ -148,7 +147,6 @@ class OptimizationVariable:
             for s1 in range(shape_1):
                 vector[shape_0 * s0 + s1] = matrix[s0, s1]
         return vector
-
 
     def reshape_to_matrix(self, variable, shape_0, shape_1, node: Node, key: str):
         """
@@ -165,9 +163,12 @@ class OptimizationVariable:
                 elif node == Node.END:
                     matrix[s0, s1] = variable[key].cx_end[i]
                 else:
-                    raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
+                    raise RuntimeError(
+                        "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
+                    )
                 i += 1
         return matrix
+
 
 class OptimizationVariableList:
     """
@@ -675,7 +676,6 @@ class OptimizationVariableContainer:
             raise StopIteration
         return self.unscaled[self._iter_idx - 1].name
 
-
     def reshape_to_vector(self, matrix):
         """
         Restore the vector form of the matrix
@@ -687,7 +687,6 @@ class OptimizationVariableContainer:
             for s1 in range(shape_1):
                 vector[shape_0 * s0 + s1] = matrix[s0, s1]
         return vector
-
 
     def reshape_to_matrix(self, variable, shape_0, shape_1, node: Node, key: str):
         """
@@ -704,6 +703,8 @@ class OptimizationVariableContainer:
                 elif node == Node.END:
                     matrix[s0, s1] = variable[key].cx_end[i]
                 else:
-                    raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
+                    raise RuntimeError(
+                        "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
+                    )
                 i += 1
         return matrix

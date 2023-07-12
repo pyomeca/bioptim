@@ -1153,7 +1153,9 @@ class ConfigureProblem:
                 if n_cx < 3:
                     n_cx = 3
                 cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
-                nlp.stochastic_variables.append(name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index)
+                nlp.stochastic_variables.append(
+                    name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
+                )
 
     @staticmethod
     def configure_integrated_value(
@@ -1190,11 +1192,15 @@ class ConfigureProblem:
         dummy_mapping = Mapping(list(range(len(name_elements))))
         initial_vector = nlp.integrated_values.reshape_to_vector(initial_matrix)
         cx_scaled_next_formatted = [initial_vector for _ in range(n_cx)]
-        nlp.integrated_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0)
+        nlp.integrated_values.append(
+            name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0
+        )
         for node_index in range(1, nlp.ns + 1):  # cannot use assume_phase_dynamics = True
             cx_scaled_next = nlp.integrated_value_functions[name](nlp, node_index)
             cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
-            nlp.integrated_values.append(name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next, dummy_mapping, node_index)
+            nlp.integrated_values.append(
+                name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next, dummy_mapping, node_index
+            )
 
     @staticmethod
     def configure_q(ocp, nlp, as_states: bool, as_controls: bool, as_states_dot: bool = False):
@@ -1287,7 +1293,6 @@ class ConfigureProblem:
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
-
     @staticmethod
     def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_feedbacks: int):
         """
@@ -1308,7 +1313,9 @@ class ConfigureProblem:
         for name_1 in control_names:
             for name_2 in feedback_names:
                 name_k += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(len(control_names)*len(feedback_names))), list(range(len(control_names)*len(feedback_names))))
+        nlp.variable_mappings[name] = BiMapping(
+            list(range(len(control_names) * len(feedback_names))), list(range(len(control_names) * len(feedback_names)))
+        )
         ConfigureProblem.configure_new_variable(
             name,
             name_k,
@@ -1339,7 +1346,7 @@ class ConfigureProblem:
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_c += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
 
         ConfigureProblem.configure_new_variable(
             name,
@@ -1371,7 +1378,7 @@ class ConfigureProblem:
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_a += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
 
         ConfigureProblem.configure_new_variable(
             name,

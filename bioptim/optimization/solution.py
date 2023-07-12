@@ -344,7 +344,9 @@ class Solution:
 
                     stochastic_variables_num = np.array([])
                     for key_tempo in stochastic_variables[i_phase].keys():
-                        stochastic_variables_num = np.concatenate((stochastic_variables_num, stochastic_variables[i_phase][key_tempo][:, 0]))
+                        stochastic_variables_num = np.concatenate(
+                            (stochastic_variables_num, stochastic_variables[i_phase][key_tempo][:, 0])
+                        )
 
                     for i_node in range(1, nlp.ns):
                         nlp.states.node_index = i_node
@@ -363,30 +365,41 @@ class Solution:
 
                         controls_num_tempo = np.array([])
                         for key_tempo in controls[i_phase].keys():
-                            controls_num_tempo = np.concatenate((controls_num_tempo, controls[i_phase][key_tempo][:, i_node]))
+                            controls_num_tempo = np.concatenate(
+                                (controls_num_tempo, controls[i_phase][key_tempo][:, i_node])
+                            )
                         controls_num = vertcat(controls_num, controls_num_tempo)
 
                         stochastic_variables_num_tempo = np.array([])
                         if len(stochastic_variables[i_phase]) > 0:
                             for key_tempo in stochastic_variables[i_phase].keys():
                                 stochastic_variables_num_tempo = np.concatenate(
-                                    (stochastic_variables_num_tempo, stochastic_variables[i_phase][key_tempo][:, i_node]))
-                            stochastic_variables_num = vertcat(stochastic_variables_num,
-                                                                   stochastic_variables_num_tempo)
+                                    (
+                                        stochastic_variables_num_tempo,
+                                        stochastic_variables[i_phase][key_tempo][:, i_node],
+                                    )
+                                )
+                            stochastic_variables_num = vertcat(stochastic_variables_num, stochastic_variables_num_tempo)
 
                     parameters_tempo = np.array([])
                     if len(parameters) > 0:
                         for key_tempo in parameters[i_phase].keys():
                             parameters_tempo = np.concatenate((parameters_tempo, parameters[i_phase][key_tempo]))
-                    casadi_func = Function("integrate_values", [states_cx,
-                                                             controls_cx,
-                                                             nlp.parameters.cx_start,
-                                                             stochastic_variables_cx], [integrated_values_cx])
-                    integrated_values_this_time = casadi_func(states_num, controls_num, parameters_tempo, stochastic_variables_num)
+                    casadi_func = Function(
+                        "integrate_values",
+                        [states_cx, controls_cx, nlp.parameters.cx_start, stochastic_variables_cx],
+                        [integrated_values_cx],
+                    )
+                    integrated_values_this_time = casadi_func(
+                        states_num, controls_num, parameters_tempo, stochastic_variables_num
+                    )
                     nb_elements = nlp.integrated_values[key].cx_start.shape[0]
                     integrated_values_data = np.zeros((nb_elements, nlp.ns))
                     for i_node in range(nlp.ns):
-                        integrated_values_data[:, i_node] = np.reshape(integrated_values_this_time[i_node * nb_elements : (i_node + 1) * nb_elements], (nb_elements,))
+                        integrated_values_data[:, i_node] = np.reshape(
+                            integrated_values_this_time[i_node * nb_elements : (i_node + 1) * nb_elements],
+                            (nb_elements,),
+                        )
                     integrated_values_num[i_phase][key] = integrated_values_data
                 return integrated_values_num
 
@@ -429,7 +442,9 @@ class Solution:
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
-            self._integrated_values = get_integrated_values(self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables)
+            self._integrated_values = get_integrated_values(
+                self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
+            )
 
         def init_from_initial_guess(_sol: list):
             """
@@ -509,7 +524,9 @@ class Solution:
             for p, ss in enumerate(sol_stochastic_variables):
                 for key in ss.keys():
                     self.ocp.nlp[p].stochastic_variables[key].node_index = 0
-                    ss[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].stochastic_variables[key]), self.ns[p], "stochastic_variables")
+                    ss[key].init.check_and_adjust_dimensions(
+                        len(self.ocp.nlp[p].stochastic_variables[key]), self.ns[p], "stochastic_variables"
+                    )
 
                 for i in range(self.ns[p] + 1):
                     for key in ss.keys():
@@ -527,7 +544,9 @@ class Solution:
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
-            self._integrated_values = get_integrated_values(self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables)
+            self._integrated_values = get_integrated_values(
+                self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
+            )
 
         def init_from_vector(_sol: np.ndarray | DM):
             """
@@ -551,7 +570,9 @@ class Solution:
             )
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
-            self._integrated_values = get_integrated_values(self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables)
+            self._integrated_values = get_integrated_values(
+                self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
+            )
 
         if isinstance(sol, dict):
             init_from_dict(sol)
@@ -562,7 +583,9 @@ class Solution:
         elif sol is None:
             self.ns = []
         else:
-            raise ValueError("Solution called with unknown initializer")  # @ Pariterre this seems weird, since it is used in test_initial_conditions
+            raise ValueError(
+                "Solution called with unknown initializer"
+            )  # @ Pariterre this seems weird, since it is used in test_initial_conditions
 
     def _to_unscaled_values(self, states_scaled, controls_scaled) -> tuple:
         """
@@ -1106,7 +1129,10 @@ class Solution:
             s0 = []
             if len(self.ocp.nlp[phase - 1].stochastic_variables) > 0:
                 s0 = np.concatenate(
-                    [self.stochastic_variables[phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].stochastic_variables]
+                    [
+                        self.stochastic_variables[phase - 1][key][:, -1]
+                        for key in self.ocp.nlp[phase - 1].stochastic_variables
+                    ]
                 )
             if self.parameters.keys():
                 params = np.vstack([self.parameters[key] for key in self.parameters])
@@ -1594,8 +1620,7 @@ class Solution:
                             # Make an exception to the fact that U is not available for the last node
                             u = np.concatenate((u, self._controls["scaled"][phase_idx][key][:, node_idx]))
                         for key in nlp.stochastic_variables:
-                            s = np.concatenate((s, self.stochastic_variables[phase_idx][key][:, node_idx])
-                                               )
+                            s = np.concatenate((s, self.stochastic_variables[phase_idx][key][:, node_idx]))
                 elif (
                     "Lagrange" not in penalty.type.__str__()
                     and "Mayer" not in penalty.type.__str__()
@@ -1646,7 +1671,9 @@ class Solution:
 
                     s = np.ndarray((nlp.stochastic_variables.shape, len(col_s_idx)))
                     for key in nlp.stochastic_variables:
-                        s[nlp.stochastic_variables[key].index, :] = self.stochastic_variables["scaled"][phase_idx][key][:, col_s_idx]
+                        s[nlp.stochastic_variables[key].index, :] = self.stochastic_variables["scaled"][phase_idx][key][
+                            :, col_s_idx
+                        ]
 
                     if penalty.target is None:
                         target = []

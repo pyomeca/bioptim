@@ -11,6 +11,7 @@ class BioModel(Protocol):
     bioptim.
     As a reminder for developers: only necessary attributes and methods should appear here.
     """
+
     def copy(self):
         """copy the model by reloading one"""
 

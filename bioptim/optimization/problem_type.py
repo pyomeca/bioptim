@@ -1,9 +1,11 @@
 from casadi import DM
 
+
 class OcpType:
     """
     Selection of the type of optimization problem to be solved.
     """
+
     def __init__(self):
         pass
 

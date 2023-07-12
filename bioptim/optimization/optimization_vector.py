@@ -350,7 +350,7 @@ class OptimizationVectorHelper:
                 if key in nlp.s_init.keys():
                     nlp.s_init[key].check_and_adjust_dimensions(nlp.stochastic_variables[key].cx.shape[0], nlp.ns)
 
-            for k in range(nlp.ns+1):
+            for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
                 collapsed_values = np.ndarray((nlp.stochastic_variables.shape, 1))
                 for key in nlp.stochastic_variables:
@@ -499,9 +499,13 @@ class OptimizationVectorHelper:
             if nstochastic > 0:
                 for k in range(nlp.ns + 1):
                     nlp.stochastic_variables.node_index = k
-                    s_array = v_array[offset : offset + nstochastic].reshape((nlp.stochastic_variables.shape, -1), order="F")  # @pariterre "F" seems like an interpolation?
+                    s_array = v_array[offset : offset + nstochastic].reshape(
+                        (nlp.stochastic_variables.shape, -1), order="F"
+                    )  # @pariterre "F" seems like an interpolation?
                     for key in nlp.stochastic_variables:
-                        data_stochastic_variables[p_idx][key][:, k : k + 1] = s_array[nlp.stochastic_variables[key].index, :].reshape(nlp.stochastic_variables[key].shape, 1)
+                        data_stochastic_variables[p_idx][key][:, k : k + 1] = s_array[
+                            nlp.stochastic_variables[key].index, :
+                        ].reshape(nlp.stochastic_variables[key].shape, 1)
                     offset += nstochastic
                 p_idx += 1
 

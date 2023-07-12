@@ -748,7 +748,7 @@ class PlotOcp:
                             state[:, step_size * idx : step_size * (idx + 1) + x_mod],
                             control[:, idx : idx + u_mod + 1],
                             data_params_in_dyn,
-                            stochastic[:, idx: idx + 1 + 1],
+                            stochastic[:, idx : idx + 1 + 1],
                             **self.plot_func[key][i].parameters,
                         )
 
@@ -878,7 +878,7 @@ class PlotOcp:
                                     control_tp = control[:, node_idx : node_idx + 1 + u_mod]
                                     if np.isnan(control_tp).any():
                                         control_tp = np.array(())
-                                    stochastic_tp = stochastic[:, node_idx: node_idx + 1 + 1]
+                                    stochastic_tp = stochastic[:, node_idx : node_idx + 1 + 1]
                                     val = self.plot_func[key][i].function(
                                         node_idx,
                                         states,
@@ -902,7 +902,7 @@ class PlotOcp:
                                 state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
                                 control[:, node_idx : node_idx + 1 + 1],
                                 data_params_in_dyn,
-                                stochastic[:, node_idx: node_idx + 1 + 1],
+                                stochastic[:, node_idx : node_idx + 1 + 1],
                                 **self.plot_func[key][i].parameters,
                             )
                             for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):

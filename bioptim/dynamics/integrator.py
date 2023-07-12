@@ -127,7 +127,15 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling, stochastic_variables: MX | SX) -> tuple:
+    def dxdt(
+        self,
+        h: float,
+        states: MX | SX,
+        controls: MX | SX,
+        params: MX | SX,
+        param_scaling,
+        stochastic_variables: MX | SX,
+    ) -> tuple:
         """
         The dynamics of the system
 
@@ -161,7 +169,9 @@ class Integrator:
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym, self.stochastic_variables_sym],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym),
+            self.dxdt(
+                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
+            ),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
@@ -229,7 +239,15 @@ class RK(Integrator):
 
         raise RuntimeError("RK is abstract, please select a specific RK")
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling, stochastic_variables: MX | SX) -> tuple:
+    def dxdt(
+        self,
+        h: float,
+        states: MX | SX,
+        controls: MX | SX,
+        params: MX | SX,
+        param_scaling,
+        stochastic_variables: MX | SX,
+    ) -> tuple:
         """
         The dynamics of the system
 
@@ -481,23 +499,27 @@ class RK8(RK4):
         k7 = self.fun(
             x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
             self.get_u(u, t + self.h_norm * (1 / 6)),
-            p, s,
+            p,
+            s,
         )[:, self.idx]
         k8 = self.fun(
             x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
             self.get_u(u, t + self.h_norm),
-            p, s,
+            p,
+            s,
         )[:, self.idx]
         k9 = self.fun(
             x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
             self.get_u(u, t + self.h_norm * (5 / 6)),
-            p, s,
+            p,
+            s,
         )[:, self.idx]
         k10 = self.fun(
             x_prev
             + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
             self.get_u(u, t + self.h_norm),
-            p, s,
+            p,
+            s,
         )[:, self.idx]
 
         return x_prev + h / 840 * (41 * k1 + 27 * k4 + 272 * k5 + 27 * k6 + 216 * k7 + 216 * k9 + 41 * k10)
@@ -597,7 +619,15 @@ class COLLOCATION(Integrator):
         else:
             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling, stochastic_variables: MX | SX) -> tuple:
+    def dxdt(
+        self,
+        h: float,
+        states: MX | SX,
+        controls: MX | SX,
+        params: MX | SX,
+        param_scaling,
+        stochastic_variables: MX | SX,
+    ) -> tuple:
         """
         The dynamics of the system
 
@@ -631,12 +661,18 @@ class COLLOCATION(Integrator):
                 xp_j += self._c[r, j] * states[r]
 
             if self.defects_type == DefectType.EXPLICIT:
-                f_j = self.fun(states[j], self.get_u(controls, self.step_time[j]), params * param_scaling, stochastic_variables)[:, self.idx]
+                f_j = self.fun(
+                    states[j], self.get_u(controls, self.step_time[j]), params * param_scaling, stochastic_variables
+                )[:, self.idx]
                 defects.append(h * f_j - xp_j)
             elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(
                     self.implicit_fun(
-                        states[j], self.get_u(controls, self.step_time[j]), params * param_scaling, stochastic_variables, xp_j / h,
+                        states[j],
+                        self.get_u(controls, self.step_time[j]),
+                        params * param_scaling,
+                        stochastic_variables,
+                        xp_j / h,
                     )
                 )
             else:
@@ -657,7 +693,9 @@ class COLLOCATION(Integrator):
         self.function = Function(
             "integrator",
             [horzcat(*self.x_sym), self.u_sym, self.param_sym, self.stochastic_variables_sym],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym),
+            self.dxdt(
+                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
+            ),
             ["x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
         )
@@ -687,7 +725,15 @@ class IRK(COLLOCATION):
 
         super(IRK, self).__init__(ode, ode_opt)
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling, stochastic_variables: MX | SX) -> tuple:
+    def dxdt(
+        self,
+        h: float,
+        states: MX | SX,
+        controls: MX | SX,
+        params: MX | SX,
+        param_scaling,
+        stochastic_variables: MX | SX,
+    ) -> tuple:
         """
         The dynamics of the system
 
@@ -715,7 +761,9 @@ class IRK(COLLOCATION):
         _, _, defect = super(IRK, self).dxdt(h, states, controls, params, param_scaling, stochastic_variables)
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
-        vfcn = Function("vfcn", [vertcat(*states[1:]), states[0], controls, params, stochastic_variables], [defect]).expand()
+        vfcn = Function(
+            "vfcn", [vertcat(*states[1:]), states[0], controls, params, stochastic_variables], [defect]
+        ).expand()
 
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
@@ -737,7 +785,9 @@ class IRK(COLLOCATION):
         self.function = Function(
             "integrator",
             [self.x_sym[0], self.u_sym, self.param_sym, self.stochastic_variables_sym],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym),
+            self.dxdt(
+                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
+            ),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )

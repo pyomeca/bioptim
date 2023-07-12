@@ -78,8 +78,14 @@ def get_penalty_value(ocp, penalty, t, x, u, p, s):
     states = ocp.nlp[0].states.cx_start if ocp.nlp[0].states.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     controls = ocp.nlp[0].controls.cx_start if ocp.nlp[0].controls.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
-    stochastic_variables = ocp.nlp[0].stochastic_variables.cx_start if ocp.nlp[0].stochastic_variables.cx_start.shape != (0, 0) else ocp.cx(0, 0)
-    return ocp.nlp[0].to_casadi_func("penalty", val, states, controls, parameters, stochastic_variables)(x[0], u[0], p, s)
+    stochastic_variables = (
+        ocp.nlp[0].stochastic_variables.cx_start
+        if ocp.nlp[0].stochastic_variables.cx_start.shape != (0, 0)
+        else ocp.cx(0, 0)
+    )
+    return ocp.nlp[0].to_casadi_func("penalty", val, states, controls, parameters, stochastic_variables)(
+        x[0], u[0], p, s
+    )
 
 
 def test_penalty_targets_shapes():

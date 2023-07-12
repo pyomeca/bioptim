@@ -478,8 +478,7 @@ class PenaltyOption(OptionGeneric):
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
         self.function[node] = controller.to_casadi_func(
-            name, sub_fcn, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled,
-            expand=self.expand
+            name, sub_fcn, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, expand=self.expand
         )
         self.function_non_threaded[node] = self.function[node]
 
@@ -489,8 +488,18 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = biorbd.to_casadi_func(
                 f"{name}",
                 # TODO: Charbie -> this is Flase, add stochastic_variables for start, mid AND end
-                self.function[node](controller.states_scaled.cx_end, controller.controls_scaled.cx_end, param_cx, controller.stochastic_variables.cx_start)
-                - self.function[node](controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx, controller.stochastic_variables.cx_start),
+                self.function[node](
+                    controller.states_scaled.cx_end,
+                    controller.controls_scaled.cx_end,
+                    param_cx,
+                    controller.stochastic_variables.cx_start,
+                )
+                - self.function[node](
+                    controller.states_scaled.cx_start,
+                    controller.controls_scaled.cx_start,
+                    param_cx,
+                    controller.stochastic_variables.cx_start,
+                ),
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
@@ -556,12 +565,18 @@ class PenaltyOption(OptionGeneric):
                 (
                     (
                         self.function[node](
-                            controller.states_scaled.cx_start, controller.controls_scaled.cx_start, param_cx, controller.stochastic_variables.cx_start
+                            controller.states_scaled.cx_start,
+                            controller.controls_scaled.cx_start,
+                            param_cx,
+                            controller.stochastic_variables.cx_start,
                         )
                         - target_cx[:, 0]
                     )
                     ** exponent
-                    + (self.function[node](state_cx_end_scaled, control_cx_end_scaled, param_cx, stochastic_cx_scaled) - target_cx[:, 1])
+                    + (
+                        self.function[node](state_cx_end_scaled, control_cx_end_scaled, param_cx, stochastic_cx_scaled)
+                        - target_cx[:, 1]
+                    )
                     ** exponent
                 )
                 / 2,
@@ -572,16 +587,22 @@ class PenaltyOption(OptionGeneric):
                 target_cx,
                 dt_cx,
             )
-            modified_fcn = modified_function(state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, target_cx, dt_cx)
+            modified_fcn = modified_function(
+                state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, target_cx, dt_cx
+            )
         else:
-            modified_fcn = (self.function[node](state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled) - target_cx) ** exponent
+            modified_fcn = (
+                self.function[node](state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled) - target_cx
+            ) ** exponent
 
         # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
         modified_fcn = weight_cx * modified_fcn * dt_cx if self.weight else modified_fcn * dt_cx
 
         # Do not use nlp.add_casadi_func because all of them must be registered
         self.weighted_function[node] = Function(
-            name, [state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, weight_cx, target_cx, dt_cx], [modified_fcn]
+            name,
+            [state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, weight_cx, target_cx, dt_cx],
+            [modified_fcn],
         )
         self.weighted_function_non_threaded[node] = self.weighted_function[node]
 

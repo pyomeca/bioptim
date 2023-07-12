@@ -1,4 +1,3 @@
-
 import os
 import pickle
 import re
@@ -27,20 +26,20 @@ def test_arm_reaching_muscle_driven():
     force_field_magnitude = 0
 
     ocp = ocp_module.prepare_socp(
-            biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
-            final_time=final_time,
-            n_shooting=n_shooting,
-            ee_final_position=ee_final_position,
-            problem_type=problem_type,
-            force_field_magnitude=force_field_magnitude
-        )
+        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+        final_time=final_time,
+        n_shooting=n_shooting,
+        ee_final_position=ee_final_position,
+        problem_type=problem_type,
+        force_field_magnitude=force_field_magnitude,
+    )
 
     # ocp.print(to_console=True, to_graph=False)  #TODO: check to adjust the print method
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False)
     solver.set_maximum_iterations(4)
-    solver.set_nlp_scaling_method('none')
+    solver.set_nlp_scaling_method("none")
 
     sol = ocp.solve(solver)
 
@@ -68,14 +67,18 @@ def test_arm_reaching_muscle_driven():
     np.testing.assert_almost_equal(q[:, -2], np.array([0.95993109, 1.15939485]))
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(qdot[:, -2], np.array((0, 0)))
-    np.testing.assert_almost_equal(mus_activations[:, 0], np.array([0.03414132, 0.03292284, 0.0126227 , 0.01565839, 0.00676471,
-       0.02404206]))
-    np.testing.assert_almost_equal(mus_activations[:, -2], np.array([0.04160946, 0.07306185, 0.01894845, 0.02188286, 0.00068182,
-       0.0253038]))
-    np.testing.assert_almost_equal(mus_excitations[:, 0], np.array([0.02816048, 0.0712188 , 0.04627442, 0.0034365 , 0.00025384,
-       0.03239987]))
-    np.testing.assert_almost_equal(mus_excitations[:, -2], np.array([0.01826304, 0.04932192, 0.02884916, 0.01225839, 0.00113569,
-       0.00867345]))
+    np.testing.assert_almost_equal(
+        mus_activations[:, 0], np.array([0.03414132, 0.03292284, 0.0126227, 0.01565839, 0.00676471, 0.02404206])
+    )
+    np.testing.assert_almost_equal(
+        mus_activations[:, -2], np.array([0.04160946, 0.07306185, 0.01894845, 0.02188286, 0.00068182, 0.0253038])
+    )
+    np.testing.assert_almost_equal(
+        mus_excitations[:, 0], np.array([0.02816048, 0.0712188, 0.04627442, 0.0034365, 0.00025384, 0.03239987])
+    )
+    np.testing.assert_almost_equal(
+        mus_excitations[:, -2], np.array([0.01826304, 0.04932192, 0.02884916, 0.01225839, 0.00113569, 0.00867345])
+    )
 
     # TODO: test the stochastic variables + update values
 
@@ -83,7 +86,7 @@ def test_arm_reaching_muscle_driven():
     # TestUtils.simulate(sol)  # TODO: check to adjust the simulate method
 
 
-#iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
+# iter    objective    inf_pr   inf_du lg(mu)  ||d||  lg(rg) alpha_du alpha_pr  ls
 # 0  5.2443422e-01 2.05e+03 1.19e+00  -1.0 0.00e+00    -  0.00e+00 0.00e+00   0
 # 1  1.7949339e+00 1.99e+03 1.29e+03  -1.0 3.73e+01   2.0 1.08e-02 2.98e-02h  1
 # 2  1.9623501e+00 1.98e+03 1.29e+03  -1.0 4.68e+00   3.3 1.13e-01 4.06e-03h  1

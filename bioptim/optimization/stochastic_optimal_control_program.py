@@ -16,16 +16,12 @@ from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList, ParameterObjective
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
-from ..misc.enums import (
-    Node,
-    ControlType
-)
+from ..misc.enums import Node, ControlType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.problem_type import OcpType
 from ..optimization.optimal_control_program import OptimalControlProgram
-from .. optimization.variable_scaling import VariableScalingList, VariableScaling
-
+from ..optimization.variable_scaling import VariableScalingList, VariableScaling
 
 
 class StochasticOptimalControlProgram(OptimalControlProgram):
@@ -75,8 +71,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         problem_type: OcpType = OcpType.SOCP_EXPLICIT,
         **kwargs,
     ):
-        """
-        """
+        """ """
 
         if "n_thread" in kwargs:
             if kwargs["n_thread"] != 1:
@@ -100,86 +95,97 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         bio_model = self.initialize_model(bio_model)
 
-        self.set_original_values(bio_model,
-                            dynamics,
-                            n_shooting,
-                            phase_time,
-                            x_init,
-                            u_init,
-                            s_init,
-                            x_bounds,
-                            u_bounds,
-                            s_bounds,
-                            x_scaling,
-                            xdot_scaling,
-                            u_scaling,
-                            external_forces,
-                            ode_solver,
-                            control_type,
-                            variable_mappings,
-                            time_phase_mapping,
-                            node_mappings,
-                            plot_mappings,
-                            phase_transitions,
-                            multinode_constraints,
-                            multinode_objectives,
-                            parameter_bounds,
-                            parameter_init,
-                            parameter_constraints,
-                            parameter_objectives,
-                            state_continuity_weight,
-                            n_threads,
-                            use_sx,
-                            assume_phase_dynamics,
-                            integrated_value_functions,)
+        self.set_original_values(
+            bio_model,
+            dynamics,
+            n_shooting,
+            phase_time,
+            x_init,
+            u_init,
+            s_init,
+            x_bounds,
+            u_bounds,
+            s_bounds,
+            x_scaling,
+            xdot_scaling,
+            u_scaling,
+            external_forces,
+            ode_solver,
+            control_type,
+            variable_mappings,
+            time_phase_mapping,
+            node_mappings,
+            plot_mappings,
+            phase_transitions,
+            multinode_constraints,
+            multinode_objectives,
+            parameter_bounds,
+            parameter_init,
+            parameter_constraints,
+            parameter_objectives,
+            state_continuity_weight,
+            n_threads,
+            use_sx,
+            assume_phase_dynamics,
+            integrated_value_functions,
+        )
 
-        constraints, objective_functions, parameter_constraints, parameter_objectives, multinode_constraints, multinode_objectives = self.check_arguments_and_build_nlp(
-                                          dynamics,
-                                          n_threads,
-                                          n_shooting,
-                                          phase_time,
-                                          x_bounds,
-                                          u_bounds,
-                                          s_bounds,
-                                          x_init,
-                                          u_init,
-                                          s_init,
-                                          x_scaling,
-                                          xdot_scaling,
-                                          u_scaling,
-                                          objective_functions,
-                                          constraints,
-                                          parameters,
-                                          phase_transitions,
-                                          multinode_constraints,
-                                          multinode_objectives,
-                                          parameter_bounds,
-                                          parameter_init,
-                                          parameter_constraints,
-                                          parameter_objectives,
-                                          ode_solver,
-                                          use_sx,
-                                          assume_phase_dynamics,
-                                          bio_model,
-                                          external_forces,
-                                          plot_mappings,
-                                          time_phase_mapping,
-                                          control_type,
-                                          variable_mappings,
-                                          integrated_value_functions,
-                                          node_mappings,
-                                          state_continuity_weight)
+        (
+            constraints,
+            objective_functions,
+            parameter_constraints,
+            parameter_objectives,
+            multinode_constraints,
+            multinode_objectives,
+        ) = self.check_arguments_and_build_nlp(
+            dynamics,
+            n_threads,
+            n_shooting,
+            phase_time,
+            x_bounds,
+            u_bounds,
+            s_bounds,
+            x_init,
+            u_init,
+            s_init,
+            x_scaling,
+            xdot_scaling,
+            u_scaling,
+            objective_functions,
+            constraints,
+            parameters,
+            phase_transitions,
+            multinode_constraints,
+            multinode_objectives,
+            parameter_bounds,
+            parameter_init,
+            parameter_constraints,
+            parameter_objectives,
+            ode_solver,
+            use_sx,
+            assume_phase_dynamics,
+            bio_model,
+            external_forces,
+            plot_mappings,
+            time_phase_mapping,
+            control_type,
+            variable_mappings,
+            integrated_value_functions,
+            node_mappings,
+            state_continuity_weight,
+        )
 
         self.problem_type = problem_type
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
 
-        self.finalize_penalties(skip_continuity,
-                                state_continuity_weight,
-                                constraints,
-                                parameter_constraints,
-                                objective_functions,
-                                parameter_objectives)
-
+        self.finalize_penalties(
+            skip_continuity,
+            state_continuity_weight,
+            constraints,
+            parameter_constraints,
+            objective_functions,
+            parameter_objectives,
+        )
 
     def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
         multinode_constraints.add_or_replace_to_penalty_pool(self)
@@ -187,12 +193,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         # Add the internal multi-node constraints for the stochastic ocp
         if isinstance(self.problem_type, OcpType.SOCP_EXPLICIT):
-            self._prepare_stochastic_dynamics_explicit(wM_magnitude=self.problem_type.wM_magnitude,
-                                                       wS_magnitude=self.problem_type.wS_magnitude)
+            self._prepare_stochastic_dynamics_explicit(
+                wM_magnitude=self.problem_type.wM_magnitude, wS_magnitude=self.problem_type.wS_magnitude
+            )
         elif isinstance(self.problem_type, OcpType.SOCP_IMPLICIT):
-            self._prepare_stochastic_dynamics_implicit(wM_magnitude=self.problem_type.wM_magnitude,
-                                                       wS_magnitude=self.problem_type.wS_magnitude)
-
+            self._prepare_stochastic_dynamics_implicit(
+                wM_magnitude=self.problem_type.wM_magnitude, wS_magnitude=self.problem_type.wS_magnitude
+            )
 
     def _prepare_stochastic_dynamics_explicit(self, wM_magnitude, wS_magnitude):
         """
@@ -202,24 +209,23 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         for i_phase, nlp in enumerate(self.nlp):
             for i_node in range(nlp.ns - 1):
                 penalty_m_dg_dz_list.add(
-                        MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
-                        nodes_phase=(i_phase, i_phase),
-                        nodes=(i_node, i_node+1),
-                        dynamics=nlp.dynamics_type.dynamic_function,
-                        wM_magnitude=wM_magnitude,
-                        wS_magnitude=wS_magnitude,
-                    )
+                    MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                    nodes_phase=(i_phase, i_phase),
+                    nodes=(i_node, i_node + 1),
+                    dynamics=nlp.dynamics_type.dynamic_function,
+                    wM_magnitude=wM_magnitude,
+                    wS_magnitude=wS_magnitude,
+                )
             if i_phase > 0:  # TODO: verify with Friedl, but should be OK
                 penalty_m_dg_dz_list.add(
-                        MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
-                        nodes_phase=(i_phase-1, i_phase),
-                        nodes=(-1, 0),
-                        dynamics=nlp.dynamics_type.dynamic_function,
-                        wM_magnitude=wM_magnitude,
-                        wS_magnitude=wS_magnitude,
-                    )
+                    MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                    nodes_phase=(i_phase - 1, i_phase),
+                    nodes=(-1, 0),
+                    dynamics=nlp.dynamics_type.dynamic_function,
+                    wM_magnitude=wM_magnitude,
+                    wS_magnitude=wS_magnitude,
+                )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
-
 
     def _prepare_stochastic_dynamics_implicit(self, wM_magnitude, wS_magnitude):
         """
@@ -232,50 +238,59 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         for i_phase, nlp in enumerate(self.nlp):
             for i_node in range(nlp.ns - 1):
                 multi_node_penalties.add(
-                        MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
-                        nodes_phase=(i_phase, i_phase),
-                        nodes=(i_node, i_node+1),
-                        dynamics=nlp.dynamics_type.dynamic_function,
-                        wM_magnitude=wM_magnitude,
-                        wS_magnitude=wS_magnitude,
-                    )
+                    MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                    nodes_phase=(i_phase, i_phase),
+                    nodes=(i_node, i_node + 1),
+                    dynamics=nlp.dynamics_type.dynamic_function,
+                    wM_magnitude=wM_magnitude,
+                    wS_magnitude=wS_magnitude,
+                )
             if i_phase > 0:  # TODO: verify with Friedl, but should be OK
                 multi_node_penalties.add(
-                        MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
-                        nodes_phase=(i_phase-1, i_phase),
-                        nodes=(-1, 0),
-                        dynamics=nlp.dynamics_type.dynamic_function,
-                        wM_magnitude=wM_magnitude,
-                        wS_magnitude=wS_magnitude,
-                    )
+                    MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                    nodes_phase=(i_phase - 1, i_phase),
+                    nodes=(-1, 0),
+                    dynamics=nlp.dynamics_type.dynamic_function,
+                    wM_magnitude=wM_magnitude,
+                    wS_magnitude=wS_magnitude,
+                )
 
         # Constrain P
         for i_phase, nlp in enumerate(self.nlp):
-            single_node_penalties.add(ConstraintFcn.COVARIANCE_MATRIX_CONINUITY_IMPLICIT, node=Node.ALL, phase=i_phase,
-                        wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude)
+            single_node_penalties.add(
+                ConstraintFcn.COVARIANCE_MATRIX_CONINUITY_IMPLICIT,
+                node=Node.ALL,
+                phase=i_phase,
+                wM_magnitude=wM_magnitude,
+                wS_magnitude=wS_magnitude,
+            )
             if i_phase > 0:
-                multi_node_penalties.add( # TODO: check
-                        MultinodeConstraintFcn.COVARIANCE_MATRIX_CONINUITY_IMPLICIT,  # TODO: to be continued in penalty
-                        nodes_phase=(i_phase-1, i_phase),
-                        nodes=(-1, 0),
-                        wM_magnitude=wM_magnitude,
-                        wS_magnitude=wS_magnitude,
-                    )
+                multi_node_penalties.add(  # TODO: check
+                    MultinodeConstraintFcn.COVARIANCE_MATRIX_CONINUITY_IMPLICIT,  # TODO: to be continued in penalty
+                    nodes_phase=(i_phase - 1, i_phase),
+                    nodes=(-1, 0),
+                    wM_magnitude=wM_magnitude,
+                    wS_magnitude=wS_magnitude,
+                )
         # Constrain A
         for i_phase, nlp in enumerate(self.nlp):
-            single_node_penalties.add(ConstraintFcn.A_EQUALS_DF_DX,
-                        node=Node.ALL, phase=i_phase,
-                        wM_magnitude=wM_magnitude,
-                        wS_magnitude=wS_magnitude,
-                    )
+            single_node_penalties.add(
+                ConstraintFcn.A_EQUALS_DF_DX,
+                node=Node.ALL,
+                phase=i_phase,
+                wM_magnitude=wM_magnitude,
+                wS_magnitude=wS_magnitude,
+            )
 
         # Constrain C
         for i_phase, nlp in enumerate(self.nlp):
-            single_node_penalties.add(ConstraintFcn.C_EQUALS_DF_DW,
-                                      node=Node.ALL, phase=i_phase,
-                                      wM_magnitude=wM_magnitude,
-                                      wS_magnitude=wS_magnitude,
-                                      )
+            single_node_penalties.add(
+                ConstraintFcn.C_EQUALS_DF_DW,
+                node=Node.ALL,
+                phase=i_phase,
+                wM_magnitude=wM_magnitude,
+                wS_magnitude=wS_magnitude,
+            )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)
         single_node_penalties.add_or_replace_to_penalty_pool(self)

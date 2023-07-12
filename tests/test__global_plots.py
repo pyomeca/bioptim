@@ -247,7 +247,9 @@ def test_console_objective_functions(assume_phase_dynamics):
                     )
                     p.function_non_threaded[node_index] = p.function[node_index]
                     p.weighted_function[node_index] = Function(
-                        name, [x, u, param, s, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]
+                        name,
+                        [x, u, param, s, weight, target, dt],
+                        [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T],
                     )
                     p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]
 

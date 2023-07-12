@@ -42,7 +42,9 @@ class DynamicsFunctions:
     """
 
     @staticmethod
-    def custom(states: MX.sym, controls: MX.sym, parameters: MX.sym, stochastic_variables: MX.sym, nlp) -> DynamicsEvaluation:
+    def custom(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, stochastic_variables: MX.sym, nlp
+    ) -> DynamicsEvaluation:
         """
         Interface to custom dynamic function provided by the user.
 

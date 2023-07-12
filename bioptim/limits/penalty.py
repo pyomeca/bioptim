@@ -657,7 +657,10 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             contact_force = controller.get_nlp.contact_forces_func(
-                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx, controller.stochastic_variables.cx_start
+                controller.states.cx_start,
+                controller.controls.cx_start,
+                controller.parameters.cx,
+                controller.stochastic_variables.cx_start,
             )
             return contact_force
 
@@ -997,18 +1000,27 @@ class PenaltyFunctionAbstract:
             return continuity
 
         @staticmethod
-        def covariance_matrix_continuity_implicit(penalty: PenaltyOption, controller: PenaltyController, wM_magnitude: DM, wS_magnitude: DM):
-
+        def covariance_matrix_continuity_implicit(
+            penalty: PenaltyOption, controller: PenaltyController, wM_magnitude: DM, wS_magnitude: DM
+        ):
             nx = controller.states.cx_start.shape[0]
-            P_matrix = controller.integrated_values["cov"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "cov")
-            A_matrix = controller.stochastic_variables["a"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "a")
-            C_matrix = controller.stochastic_variables["c"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "c")
-            M_matrix = controller.stochastic_variables["m"].reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "m")
+            P_matrix = controller.integrated_values["cov"].reshape_to_matrix(
+                controller.stochastic_variables, nx, nx, Node.START, "cov"
+            )
+            A_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
+                controller.stochastic_variables, nx, nx, Node.START, "a"
+            )
+            C_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
+                controller.stochastic_variables, nx, nx, Node.START, "c"
+            )
+            M_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
+                controller.stochastic_variables, nx, nx, Node.START, "m"
+            )
 
             sigma_w = vertcat(wS_magnitude, wM_magnitude)
             dt = 1 / controller.ns
-            dg_dw = - dt * C_matrix
-            dg_dx = - MX_eye(A_matrix.shape[0]) - dt / 2 * A_matrix
+            dg_dw = -dt * C_matrix
+            dg_dx = -MX_eye(A_matrix.shape[0]) - dt / 2 * A_matrix
 
             p_next = M_matrix @ (dg_dx @ P_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
             p_implicit_deffect = p_next - P_matrix

@@ -79,8 +79,10 @@ def check_conditioning(ocp):
                     list_constraints.append(
                         jacobian(
                             constraints.function[constraints.node_idx[0]](
-                                nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx,
-                                nlp.stochastic_variables.cx_start
+                                nlp.states.cx_start,
+                                nlp.controls.cx_start,
+                                nlp.parameters.cx,
+                                nlp.stochastic_variables.cx_start,
                             )[axis],
                             vertcat_obj,
                         )
@@ -124,7 +126,9 @@ def check_conditioning(ocp):
                 nlp.s_init[key].check_and_adjust_dimensions(len(nlp.stochastic_variables[key]), nlp.ns)
                 for node_index in range(nlp.ns):
                     nlp.stochastic_variables.node_index = node_index
-                    s_init[node_index, nlp.stochastic_variables[key].index] = np.array(nlp.s_init[key].init.evaluate_at(node_index))
+                    s_init[node_index, nlp.stochastic_variables[key].index] = np.array(
+                        nlp.s_init[key].init.evaluate_at(node_index)
+                    )
 
             x_init = x_init.reshape((x_init.size, 1))
             u_init = u_init.reshape((u_init.size, 1))
@@ -424,7 +428,9 @@ def check_conditioning(ocp):
                 nlp.s_init[key].check_and_adjust_dimensions(len(nlp.stochastic_variables[key]), nlp.ns)
                 for node_index in range(nlp.ns):
                     nlp.stochastic_variables.node_index = node_index
-                    s_init[node_index, nlp.stochastic_variables[key].index] = np.array(nlp.s_init[key].init.evaluate_at(node_index))
+                    s_init[node_index, nlp.stochastic_variables[key].index] = np.array(
+                        nlp.s_init[key].init.evaluate_at(node_index)
+                    )
 
             x_init = x_init.reshape((x_init.size, 1))
             u_init = u_init.reshape((u_init.size, 1))
