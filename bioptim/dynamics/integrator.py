@@ -27,6 +27,8 @@ class Integrator:
         The parameters variables
     param_scaling: MX | SX
         The parameters variables scaling factor
+    s_sym: MX | SX
+        The stochastic variables
     fun: Callable
         The dynamic function which provides the derivative of the states
     implicit_fun: Callable
@@ -48,7 +50,7 @@ class Integrator:
         Get the multithreaded CasADi graph of the integration
     get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     _finish_init(self)
         Prepare the CasADi function from dxdt
@@ -73,6 +75,7 @@ class Integrator:
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
+        self.S_sym = ode["s_scaled"]
         self.stochastic_variables_sym = ode["stochastic_variables"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
@@ -124,7 +127,7 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling, stochastic_variables: MX | SX) -> tuple:
         """
         The dynamics of the system
 
@@ -138,6 +141,10 @@ class Integrator:
             The controls of the system
         params: MX | SX
             The parameters of the system
+        param_scaling
+            The parameters scaling factor
+        stochastic_variables: MX | SX
+            The stochastic variables of the system
 
         Returns
         -------
@@ -175,9 +182,9 @@ class RK(Integrator):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX)
+    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
-    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -196,7 +203,7 @@ class RK(Integrator):
         self.h_norm = 1 / self.n_step
         self.h = self.step_time * self.h_norm
 
-    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX):
+    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
         """
         Compute the next integrated state (abstract)
 
@@ -212,6 +219,8 @@ class RK(Integrator):
             The control of the system
         p: MX | SX
             The parameters of the system
+        s: MX | SX
+            The stochastic variables of the system
 
         Returns
         -------
@@ -234,6 +243,10 @@ class RK(Integrator):
             The controls of the system
         params: MX | SX
             The parameters of the system
+        param_scaling
+            The parameters scaling factor
+        stochastic_variables: MX | SX
+            The stochastic variables of the system
 
         Returns
         -------
@@ -262,7 +275,7 @@ class RK1(RK):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX)
+    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -279,7 +292,7 @@ class RK1(RK):
         super(RK1, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX):
+    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
         """
         Compute the next integrated state
 
@@ -295,13 +308,15 @@ class RK1(RK):
             The control of the system
         p: MX | SX
             The parameters of the system
+        s: MX | SX
+            The stochastic variables of the system
 
         Returns
         -------
         The next integrate states
         """
 
-        return x_prev + h * self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
+        return x_prev + h * self.fun(x_prev, self.get_u(u, t), p, s)[:, self.idx]
 
 
 class RK2(RK):
@@ -310,7 +325,7 @@ class RK2(RK):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX)
+    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -360,7 +375,7 @@ class RK4(RK):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX)
+    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -414,7 +429,7 @@ class RK8(RK4):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX)
+    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -501,7 +516,7 @@ class COLLOCATION(Integrator):
     -------
     get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -672,7 +687,7 @@ class IRK(COLLOCATION):
 
         super(IRK, self).__init__(ode, ode_opt)
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling, stochastic_variables: MX | SX) -> tuple:
         """
         The dynamics of the system
 
@@ -686,6 +701,10 @@ class IRK(COLLOCATION):
             The controls of the system
         params: MX | SX
             The parameters of the system
+        param_scaling
+            The parameters scaling of the system
+        stochastic_variables: MX | SX
+            The stochastic variables of the system
 
         Returns
         -------
@@ -693,14 +712,14 @@ class IRK(COLLOCATION):
         """
 
         nx = states[0].shape[0]
-        _, _, defect = super(IRK, self).dxdt(h, states, controls, params, param_scaling)
+        _, _, defect = super(IRK, self).dxdt(h, states, controls, params, param_scaling, stochastic_variables)
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
-        vfcn = Function("vfcn", [vertcat(*states[1:]), states[0], controls, params], [defect]).expand()
+        vfcn = Function("vfcn", [vertcat(*states[1:]), states[0], controls, params, stochastic_variables], [defect]).expand()
 
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
-        x_irk_points = ifcn(self.cx(), states[0], controls, params)
+        x_irk_points = ifcn(self.cx(), states[0], controls, params, stochastic_variables)
         x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
