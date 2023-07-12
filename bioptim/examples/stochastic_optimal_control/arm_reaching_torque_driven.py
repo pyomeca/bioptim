@@ -17,8 +17,6 @@ import sys
 from bioptim import (
     OptimalControlProgram,
     StochasticOptimalControlProgram,
-    Bounds,
-    InitialGuess,
     ObjectiveFcn,
     Solver,
     BiorbdModel,
@@ -37,6 +35,7 @@ from bioptim import (
     ConstraintFcn,
     MultinodeConstraintList,
     MultinodeObjectiveList,
+    InitialGuessList,
 )
 
 def get_force_field(q, force_field_magnitude):
@@ -342,7 +341,7 @@ def prepare_socp(
     wS_magnitude: cas.DM,
     force_field_magnitude: float = 0,
     problem_type: str = "CIRCLE",
-) -> OptimalControlProgram:
+) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
     Parameters
@@ -435,18 +434,22 @@ def prepare_socp(
                                                                              stochastic_variables, nlp, wM, wS,
                                                                              force_field_magnitude=force_field_magnitude,
                                                                              with_gains=with_gains),
-                 wM=np.zeros((n_tau, 1)), wS=np.zeros((n_q+n_qdot, 1)), expand=False)
+                 wM=np.zeros((n_tau, 1)), wS=np.zeros((n_q+n_qdot, 1)))  # expand=False
 
     states_min = np.ones((n_states, n_shooting+1)) * -cas.inf
     states_max = np.ones((n_states, n_shooting+1)) * cas.inf
 
     x_bounds = BoundsList()
-    x_bounds.add(bounds=Bounds(states_min, states_max, interpolation=InterpolationType.EACH_FRAME))
+    x_bounds.add("q", min_bound=states_min[:n_q, :], max_bound=states_max[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
+    x_bounds.add("qdot", min_bound=states_min[n_q:n_q+n_qdot, :], max_bound=states_max[n_q:n_q+n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
+    x_bounds.add("qddot", min_bound=states_min[n_q+n_qdot:n_q+n_qdot*2, :], max_bound=states_max[n_q+n_qdot:n_q+n_qdot*2, :], interpolation=InterpolationType.EACH_FRAME)
 
-    u_bounds = BoundsList()
     controls_min = np.ones((n_controls, 3)) * -cas.inf
     controls_max = np.ones((n_controls, 3)) * cas.inf
-    u_bounds.add(bounds=Bounds(controls_min, controls_max))
+
+    u_bounds = BoundsList()
+    u_bounds.add("qdddot", min_bound=controls_min[:n_q, :], max_bound=controls_max[:n_q, :])
+    u_bounds.add("tau", min_bound=controls_min[n_q:, :], max_bound=controls_max[n_q:, :])
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
@@ -456,30 +459,38 @@ def prepare_socp(
     states_init[1, -1] = elbow_pos_final
     states_init[n_states:, :] = 0.01
 
-    x_init = InitialGuess(states_init, interpolation=InterpolationType.EACH_FRAME)
+    x_init = InitialGuessList()
+    x_init.add("q", initial_guess=states_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("qdot", initial_guess=states_init[n_q:n_q+n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("qddot", initial_guess=states_init[n_q+n_qdot:n_q+n_qdot*2, :], interpolation=InterpolationType.EACH_FRAME)
 
     controls_init = np.ones((n_controls, n_shooting)) * 0.01
 
-    u_init = InitialGuess(controls_init, interpolation=InterpolationType.EACH_FRAME)
+    u_init = InitialGuessList()
+    u_init.add("qdddot", initial_guess=controls_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
+    u_init.add("tau", initial_guess=controls_init[n_q:, :], interpolation=InterpolationType.EACH_FRAME)
 
     # TODO: This should probably be done automatically, not defined by the user
+    s_init = InitialGuessList()
+    s_bounds = BoundsList()
     n_stochastic = n_tau*(n_q+n_qdot) + n_q+n_qdot + n_states*n_states  # K(2x4) + ee_ref(4x1) + M(6x6)
     stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
+    stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
+    stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
     curent_index = 0
     stochastic_init[:n_tau*(n_q+n_qdot), :] = 0.01  # K
+    s_init.add("k", initial_guess=stochastic_init[:n_tau*(n_q+n_qdot), :], interpolation=InterpolationType.EACH_FRAME)
+    s_bounds.add("k", min_bound=stochastic_min[:n_tau*(n_q+n_qdot), :], max_bound=stochastic_max[:n_tau*(n_q+n_qdot), :])
     curent_index += n_tau*(n_q+n_qdot)
     stochastic_init[curent_index: curent_index + n_q + n_qdot, :] = 0.01  # ee_ref
     # stochastic_init[curent_index : curent_index + n_q+n_qdot, 0] = np.array([ee_initial_position[0], ee_initial_position[1], 0, 0])  # ee_ref
     # stochastic_init[curent_index : curent_index + n_q+n_qdot, 1] = np.array([ee_final_position[0], ee_final_position[1], 0, 0])
+    s_init.add("ee_ref", initial_guess=stochastic_init[curent_index: curent_index + n_q + n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
+    s_bounds.add("ee_ref", min_bound=stochastic_min[curent_index: curent_index + n_q + n_qdot, :], max_bound=stochastic_max[curent_index: curent_index + n_q + n_qdot, :])
     curent_index += n_q + n_qdot
     stochastic_init[curent_index: curent_index + n_states * n_states, :] = 0.01  # M
-
-    s_init = InitialGuess(stochastic_init, interpolation=InterpolationType.EACH_FRAME)
-
-    s_bounds = BoundsList()
-    stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
-    stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
-    s_bounds.add(bounds=Bounds(stochastic_min, stochastic_max))
+    s_init.add("m", initial_guess=stochastic_init[curent_index: curent_index + n_states * n_states, :], interpolation=InterpolationType.EACH_FRAME)
+    s_bounds.add("m", min_bound=stochastic_min[curent_index: curent_index + n_states * n_states, :], max_bound=stochastic_max[curent_index: curent_index + n_states * n_states, :])
 
     integrated_value_functions = {"cov": lambda nlp, node_index: get_p_mat(nlp, node_index, force_field_magnitude=force_field_magnitude, wM_magnitude=wM_magnitude, wS_magnitude=wS_magnitude)}
 
