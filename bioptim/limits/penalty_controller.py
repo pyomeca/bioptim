@@ -146,7 +146,7 @@ class PenaltyController:
         The stochastic_variables at node node_index
         """
         self._nlp.stochastic_variables.node_index = self.node_index
-        out = self._nlp.stochastic_variables.unscaled
+        out = self._nlp.stochastic_variables
         out.current_cx_to_get = self.cx_index_to_get
         return out
 
@@ -159,7 +159,7 @@ class PenaltyController:
         The integrated_values at node node_index
         """
         self._nlp.integrated_values.node_index = self.node_index
-        out = self._nlp.integrated_values.unscaled
+        out = self._nlp.integrated_values
         out.current_cx_to_get = self.cx_index_to_get
         return out
 

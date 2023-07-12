@@ -442,7 +442,7 @@ class PenaltyOption(OptionGeneric):
             for ctrl in controllers:
                 state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
                 control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
-                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables.cx)
+                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables.unscaled.cx)
 
         else:
             ocp = controller.ocp

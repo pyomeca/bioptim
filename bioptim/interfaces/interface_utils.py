@@ -265,7 +265,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     _u = []
                 else:
                     _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
-                _s = nlp.S[_idx][:, 0]
+            _s = nlp.S[_idx][:, 0]
 
         if _penalty.derivative or _penalty.explicit_derivative:
             if _idx < nlp.ns:

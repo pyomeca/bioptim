@@ -71,7 +71,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         use_sx: bool = False,
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
-        integrated_value_functions: dict[Callable] = None,
+        integrated_value_functions: dict[str, Callable] = None,
         problem_type: OcpType = OcpType.SOCP_EXPLICIT,
         **kwargs,
     ):

@@ -538,7 +538,7 @@ class Solution:
         ocp = self.ocp
 
         states = [{} for _ in range(len(states_scaled))]
-        controls = [{} for _ in range(len(states_scaled))]
+        controls = [{} for _ in range(len(controls_scaled))]
         for phase in range(len(states_scaled)):
             states[phase] = {}
             controls[phase] = {}

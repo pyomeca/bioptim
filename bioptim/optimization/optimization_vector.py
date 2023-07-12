@@ -243,8 +243,8 @@ class OptimizationVectorHelper:
                         value_max = np.inf
 
                     # Organize the stochastic variables according to the correct indices
-                    collapsed_values_min[nlp.states[key].index, :] = value_min
-                    collapsed_values_max[nlp.states[key].index, :] = value_max
+                    collapsed_values_min[nlp.stochastic_variables[key].index, :] = np.reshape(value_min, (-1, 1))
+                    collapsed_values_max[nlp.stochastic_variables[key].index, :] = np.reshape(value_max, (-1, 1))
 
                 v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
                 v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
@@ -431,12 +431,12 @@ class OptimizationVectorHelper:
                             nlp.ns + (1 if nlp.control_type in (ControlType.LINEAR_CONTINUOUS,) else 0),
                         )
                     )
-                    for key in ocp.nlp[p].controls
+                    for key in nlp.controls.keys()
                 }
             )
             data_stochastic_variables.append(
                 {
-                    key: np.ndarray((nlp.controls[key].shape, nlp.ns + 1))
+                    key: np.ndarray((nlp.stochastic_variables[key].shape, nlp.ns + 1))
                     for key in ocp.nlp[p].stochastic_variables
                 }
             )
@@ -480,7 +480,7 @@ class OptimizationVectorHelper:
                     nlp.controls.node_index = k
                     u_array = v_array[offset : offset + nu].reshape((nlp.controls.scaled.shape, -1), order="F")
                     for key in nlp.controls:
-                        data_controls[p_idx][key][:, k : k + 1] = u_array[nlp.controls[key].index, :]
+                        data_controls[p_idx][key][:, k: k + 1] = u_array[nlp.controls[key].index, :]
                     offset += nu
                 p_idx += 1
 
