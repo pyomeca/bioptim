@@ -1401,17 +1401,29 @@ class Solution:
         else:
             tracked_markers = [None for _ in range(len(self.ocp.nlp))]
 
-        # detect this is the same instance over each phase
-        if not all([isinstance(nlp.model, BiorbdModel) for nlp in self.ocp.nlp]):
-            raise RuntimeError("The animation is only available for the same model type that imported your model.")
-
         # assuming that all the models or the same type.
+        self._check_models_comes_from_same_super_class()
         self.ocp.nlp[0].model.animate(
             solution=data_to_animate,
             show_now=show_now,
             tracked_markers=tracked_markers,
             **kwargs,
         )
+
+    def _check_models_comes_from_same_super_class(self):
+        """Check that all the models comes from the same super class"""
+        for i, nlp in enumerate(self.ocp.nlp):
+            model_super_classes = nlp.model.__class__.mro()[:-1]  # remove object class
+            nlps = self.ocp.nlp.copy()
+            del nlps[i]
+            for j, sub_nlp in enumerate(nlps):
+                if not any([isinstance(sub_nlp.model, super_class) for super_class in model_super_classes]):
+                    raise RuntimeError(
+                        f"The animation is only available for compatible models. "
+                        f"Here, the model of phase {i} is of type {nlp.model.__class__.__name__} and the model of "
+                        f"phase {j + 1 if i < j else j} is of type {sub_nlp.model.__class__.__name__} and "
+                        f"they don't share the same super class."
+                    )
 
     def _prepare_tracked_markers_for_animation(self, n_shooting: int = None) -> list:
         """Prepare the markers which are tracked to the animation"""

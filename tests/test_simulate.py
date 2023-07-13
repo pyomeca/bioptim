@@ -646,6 +646,38 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
         _ = sol_integrated.controls
 
 
+def test_check_models_comes_from_same_super_class():
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=True,
+    )
+
+    solver = Solver.IPOPT()
+    solver.set_maximum_iterations(0)
+    solver.set_print_level(0)
+    sol = ocp.solve(solver)
+
+    sol._check_models_comes_from_same_super_class()
+
+    class FakeModel:
+        def __init__(self):
+            self.nothing = 0
+
+    sol.ocp.nlp[0].model = FakeModel()
+
+    with pytest.raises(
+        RuntimeError,
+        match="The animation is only available for compatible models. "
+        "Here, the model of phase 0 is of type FakeModel "
+        "and the model of phase 0 is of type BiorbdModel and they don't share the same super class.",
+    ):
+        sol._check_models_comes_from_same_super_class()
+
+
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
