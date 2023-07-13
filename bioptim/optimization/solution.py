@@ -1400,6 +1400,14 @@ class Solution:
         else:
             tracked_markers = [None for _ in range(len(self.ocp.nlp))]
 
+        # detect this is the same instance over each phase
+
+        first_phase_model_type = type(self.nlp[0].model)
+        if not all([type(nlp.model) == first_phase_model_type for nlp in self.nlp]):
+            raise RuntimeError(
+                "The animation is only available for the same model type that imported your model."
+            )
+
         # assuming that all the models or the same type.
         self.ocp.nlp[0].model.animate(
             solution=data_to_animate,
