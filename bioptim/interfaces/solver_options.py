@@ -105,6 +105,8 @@ class Solver:
             Maximum number of iterations.
         _hessian_approximation: str
             Indicates what Hessian information is to be used.
+        _nlp_scaling_method: str
+            Indicates the method used by IPOPT to scale the nlp
         _limited_memory_max_history: int
             Maximum size of the history for the limited quasi-Newton Hessian approximation.
         _linear_solver: str
@@ -146,6 +148,7 @@ class Solver:
         _acceptable_compl_inf_tol: float = 1e-2
         _max_iter: int = 1000
         _hessian_approximation: str = "exact"  # "exact", "limited-memory"
+        _nlp_scaling_method: str = "gradient-based"  # "none"
         _limited_memory_max_history: int = 50
         _linear_solver: str = "mumps"  # "ma57", "ma86", "mumps"
         _mu_init: float = 0.1
@@ -159,7 +162,6 @@ class Solver:
         _bound_frac: float = 0.01
         _print_level: int = 5
         _c_compile: bool = False
-        _nlp_scaling_method: str = "gradient-based"
 
         @property
         def tol(self):
@@ -200,6 +202,10 @@ class Solver:
         @property
         def hessian_approximation(self):
             return self._hessian_approximation
+
+        @property
+        def nlp_scaling_method(self):
+            return self._nlp_scaling_method
 
         @property
         def limited_memory_max_history(self):
@@ -253,10 +259,6 @@ class Solver:
         def c_compile(self):
             return self._c_compile
 
-        @property
-        def nlp_scaling_method(self):
-            return self._nlp_scaling_method
-
         def set_tol(self, val: float):
             self._tol = val
 
@@ -286,6 +288,9 @@ class Solver:
 
         def set_hessian_approximation(self, val: str):
             self._hessian_approximation = val
+
+        def set_nlp_scaling_method(self, val: str):
+            self._nlp_scaling_method = val
 
         def set_limited_memory_max_history(self, num: int):
             self._limited_memory_max_history = num
@@ -325,9 +330,6 @@ class Solver:
 
         def set_c_compile(self, val: bool):
             self._c_compile = val
-
-        def set_nlp_scaling_method(self, val: str):
-            self._nlp_scaling_method = val
 
         def set_convergence_tolerance(self, val: float):
             self._tol = val
