@@ -25,6 +25,7 @@ from ..optimization.optimization_variable import OptimizationVariableList, Optim
 from ..optimization.optimization_vector import OptimizationVectorHelper
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
+from ..interfaces.biorbd_model import BiorbdModel
 
 
 class Solution:
@@ -1401,12 +1402,8 @@ class Solution:
             tracked_markers = [None for _ in range(len(self.ocp.nlp))]
 
         # detect this is the same instance over each phase
-
-        first_phase_model_type = type(self.nlp[0].model)
-        if not all([type(nlp.model) == first_phase_model_type for nlp in self.nlp]):
-            raise RuntimeError(
-                "The animation is only available for the same model type that imported your model."
-            )
+        if not all([isinstance(nlp.model, BiorbdModel) for nlp in self.ocp.nlp]):
+            raise RuntimeError("The animation is only available for the same model type that imported your model.")
 
         # assuming that all the models or the same type.
         self.ocp.nlp[0].model.animate(

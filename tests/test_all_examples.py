@@ -230,10 +230,10 @@ def test__getting_started__example_multinode_objective():
     )
 
     with pytest.raises(
-        ValueError,
-        match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
-        "add more penalties than available in a multinode constraint. You can try to split the constraints "
-        "into more penalties or use assume_phase_dynamics=False.",
+            ValueError,
+            match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
+                  "add more penalties than available in a multinode constraint. You can try to split the constraints "
+                  "into more penalties or use assume_phase_dynamics=False.",
     ):
         ocp_module.prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -255,7 +255,7 @@ def test__getting_started__example_save_and_load(assume_phase_dynamics):
 
     if not assume_phase_dynamics:
         with pytest.raises(
-            RuntimeError, match="n_threads is greater than 1 is not compatible with assume_phase_dynamics=False"
+                RuntimeError, match="n_threads is greater than 1 is not compatible with assume_phase_dynamics=False"
         ):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -610,3 +610,61 @@ def test__inverse_optimal_control__double_pendulum_torque_driven_IOCP(assume_pha
         coefficients=[1, 1, 1],
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
     )
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [False])
+def test__contact_and_muscle_forces_example(assume_phase_dynamics):
+    from bioptim.examples.muscle_driven_with_contact import contact_forces_inequality_constraint_muscle as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        phase_time=0.3,
+        n_shooting=10,
+        min_bound=50,
+        max_bound=np.inf,
+    )
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [False])
+def test__contact_and_muscle_forces_example(assume_phase_dynamics):
+    from bioptim.examples.muscle_driven_with_contact import contact_forces_inequality_constraint_muscle as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        phase_time=0.3,
+        n_shooting=10,
+        min_bound=50,
+        max_bound=np.inf,
+    )
+
+
+def test__contact_and_muscle_forces_example():
+    from bioptim.examples.muscle_driven_with_contact import contact_forces_inequality_constraint_muscle as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        phase_time=0.3,
+        n_shooting=10,
+        min_bound=50,
+        max_bound=np.inf,
+    )
+
+
+def test__contact_and_muscle_forces_example_excitation():
+    from bioptim.examples.muscle_driven_with_contact import contact_forces_inequality_constraint_muscle_excitations as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        phase_time=0.3,
+        n_shooting=10,
+        min_bound=50,
+    )
+
