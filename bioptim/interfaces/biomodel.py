@@ -1,4 +1,5 @@
-from typing import Protocol, Callable
+import numpy as np
+from typing import Protocol, Callable, Any
 
 from casadi import MX, SX
 from ..misc.mapping import BiMapping, BiMappingList
@@ -302,4 +303,27 @@ class BioModel(Protocol):
         Docquier, N., Poncelet, A., and Fisette, P.:
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
+        """
+
+    @staticmethod
+    def animate(
+        solution: Any, show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
+    ) -> None | list:
+        """
+        Animate a solution
+
+        Parameters
+        ----------
+        solution: Any
+            The solution to animate
+        show_now: bool
+            If the animation should be shown immediately or not
+        tracked_markers: list[np.ndarray, ...]
+            The tracked markers (3, n_markers, n_frames)
+        kwargs: dict
+            The options to pass to the animator
+
+        Returns
+        -------
+        The animator object or None if show_now
         """

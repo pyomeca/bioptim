@@ -8,6 +8,7 @@ from biorbd_casadi import (
     GeneralizedAcceleration,
 )
 from casadi import SX, MX, vertcat, horzcat, norm_fro
+import numpy as np
 
 from ..misc.utils import check_version
 from ..limits.path_conditions import Bounds
@@ -511,6 +512,53 @@ class BiorbdModel:
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         return self.model.Lagrangian(q_biorbd, qdot_biorbd).to_mx()
+
+    @staticmethod
+    def animate(
+        solution: Any, show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
+    ) -> None | list:
+        try:
+            import bioviz
+        except ModuleNotFoundError:
+            raise RuntimeError("bioviz must be install to animate the model")
+
+        check_version(bioviz, "2.3.0", "2.4.0")
+
+        states = solution.states
+        if not isinstance(states, (list, tuple)):
+            states = [states]
+
+        if tracked_markers is None:
+            tracked_markers = [None] * len(states)
+
+        all_bioviz = []
+        for idx_phase, data in enumerate(states):
+            if not isinstance(solution.ocp.nlp[idx_phase].model, BiorbdModel):
+                raise NotImplementedError("Animation is only implemented for biorbd models")
+
+            # This calls each of the function that modify the internal dynamic model based on the parameters
+            nlp = solution.ocp.nlp[idx_phase]
+
+            # noinspection PyTypeChecker
+            biorbd_model: BiorbdModel = nlp.model
+
+            all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
+            all_bioviz[-1].load_movement(solution.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
+
+            if tracked_markers[idx_phase] is not None:
+                all_bioviz[-1].load_experimental_markers(tracked_markers[idx_phase])
+
+        if show_now:
+            b_is_visible = [True] * len(all_bioviz)
+            while sum(b_is_visible):
+                for i, b in enumerate(all_bioviz):
+                    if b.vtk_window.is_active:
+                        b.update()
+                    else:
+                        b_is_visible[i] = False
+            return None
+        else:
+            return all_bioviz
 
 
 class MultiBiorbdModel:
@@ -1090,3 +1138,7 @@ class MultiBiorbdModel:
 
     def lagrangian(self):
         raise NotImplementedError("lagrangian is not implemented yet for MultiBiorbdModel")
+
+    @staticmethod
+    def animate(solution: Any, show_now: bool = True, tracked_markers: list = [], **kwargs: Any) -> None | list:
+        raise NotImplementedError("animate is not implemented yet for MultiBiorbdModel")

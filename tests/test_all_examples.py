@@ -610,3 +610,62 @@ def test__inverse_optimal_control__double_pendulum_torque_driven_IOCP(assume_pha
         coefficients=[1, 1, 1],
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
     )
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [False])
+def test__contact_and_muscle_forces_example(assume_phase_dynamics):
+    from bioptim.examples.muscle_driven_with_contact import contact_forces_inequality_constraint_muscle as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        phase_time=0.3,
+        n_shooting=10,
+        min_bound=50,
+        max_bound=np.inf,
+    )
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [False])
+def test__contact_and_muscle_forces_example(assume_phase_dynamics):
+    from bioptim.examples.muscle_driven_with_contact import contact_forces_inequality_constraint_muscle as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        phase_time=0.3,
+        n_shooting=10,
+        min_bound=50,
+        max_bound=np.inf,
+    )
+
+
+def test__contact_and_muscle_forces_example():
+    from bioptim.examples.muscle_driven_with_contact import contact_forces_inequality_constraint_muscle as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        phase_time=0.3,
+        n_shooting=10,
+        min_bound=50,
+        max_bound=np.inf,
+    )
+
+
+def test__contact_and_muscle_forces_example_excitation():
+    from bioptim.examples.muscle_driven_with_contact import (
+        contact_forces_inequality_constraint_muscle_excitations as ocp_module,
+    )
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        phase_time=0.3,
+        n_shooting=10,
+        min_bound=50,
+    )
