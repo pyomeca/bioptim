@@ -684,7 +684,12 @@ class PlotOcp:
                 else nlp.ode_solver.steps + 1
             )
 
-            n_elements = data_time[i].shape[0]
+            if isinstance(data_states, dict):
+                n_elements = data_states[list(data_states.keys())[0]].shape[1]
+            elif isinstance(data_states, list):
+                n_elements = data_states[i][list(data_states[i].keys())[0]].shape[1]
+            else:
+                raise RuntimeError("Invalid data_states type")
             state = np.ndarray((0, n_elements))
             for ss in nlp.states:
                 if nlp.use_states_from_phase_idx == nlp.phase_idx:

@@ -806,6 +806,7 @@ def main():
     )
 
     sol_socp = socp.solve(solver)
+    # sol_socp.graphs()
 
     q_sol = sol_socp.states["q"]
     qdot_sol = sol_socp.states["qdot"]
