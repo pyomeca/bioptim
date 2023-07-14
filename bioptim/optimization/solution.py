@@ -3,6 +3,7 @@ from copy import deepcopy
 
 import numpy as np
 from scipy import interpolate as sci_interp
+from scipy.interpolate import interp1d
 from casadi import vertcat, DM, Function, MX
 from matplotlib import pyplot as plt
 
@@ -24,6 +25,7 @@ from ..optimization.optimization_variable import OptimizationVariableList, Optim
 from ..optimization.optimization_vector import OptimizationVectorHelper
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
+from ..interfaces.biorbd_model import BiorbdModel
 
 
 class Solution:
@@ -1506,7 +1508,12 @@ class Solution:
             plt.show()
 
     def animate(
-        self, n_frames: int = 0, shooting_type: Shooting = None, show_now: bool = True, **kwargs: Any
+        self,
+        n_frames: int = 0,
+        shooting_type: Shooting = None,
+        show_now: bool = True,
+        show_tracked_markers: bool = False,
+        **kwargs: Any,
     ) -> None | list:
         """
         Animate the simulation
@@ -1520,6 +1527,8 @@ class Solution:
             The Shooting type to animate
         show_now: bool
             If the bioviz exec() function should be called automatically. This is blocking method
+        show_tracked_markers: bool
+            If the tracked markers should be displayed
         kwargs: Any
             Any parameters to pass to bioviz
 
@@ -1528,61 +1537,82 @@ class Solution:
             A list of bioviz structures (one for each phase). So one can call exec() by hand
         """
 
-        try:
-            import bioviz
-        except ModuleNotFoundError:
-            raise RuntimeError("bioviz must be install to animate the model")
-
-        from ..interfaces.biorbd_model import BiorbdModel
-
-        check_version(bioviz, "2.3.0", "2.4.0")
-
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
             try:
-                data_to_animate = data_to_animate.interpolate(sum(self.ns))
+                data_to_animate = data_to_animate.interpolate(sum(self.ns) + 1)
             except RuntimeError:
                 pass
 
         elif n_frames > 0:
             data_to_animate = data_to_animate.interpolate(n_frames)
 
-        states = data_to_animate.states
-        if not isinstance(states, (list, tuple)):
-            states = [states]
+        if show_tracked_markers and len(self.ocp.nlp) == 1:
+            tracked_markers = self._prepare_tracked_markers_for_animation(n_shooting=n_frames)
+        elif show_tracked_markers and len(self.ocp.nlp) > 1:
+            raise NotImplementedError(
+                "Tracking markers is not implemented for multiple phases. "
+                "Set show_tracked_markers to False such that sol.animate(show_tracked_markers=False)."
+            )
+        else:
+            tracked_markers = [None for _ in range(len(self.ocp.nlp))]
 
-        all_bioviz = []
-        for idx_phase, data in enumerate(states):
-            if not isinstance(self.ocp.nlp[idx_phase].model, BiorbdModel):
-                raise NotImplementedError("Animation is only implemented for biorbd models")
+        # assuming that all the models or the same type.
+        self._check_models_comes_from_same_super_class()
+        self.ocp.nlp[0].model.animate(
+            solution=data_to_animate,
+            show_now=show_now,
+            tracked_markers=tracked_markers,
+            **kwargs,
+        )
 
-            # This calls each of the function that modify the internal dynamic model based on the parameters
-            nlp = self.ocp.nlp[idx_phase]
+    def _check_models_comes_from_same_super_class(self):
+        """Check that all the models comes from the same super class"""
+        for i, nlp in enumerate(self.ocp.nlp):
+            model_super_classes = nlp.model.__class__.mro()[:-1]  # remove object class
+            nlps = self.ocp.nlp.copy()
+            del nlps[i]
+            for j, sub_nlp in enumerate(nlps):
+                if not any([isinstance(sub_nlp.model, super_class) for super_class in model_super_classes]):
+                    raise RuntimeError(
+                        f"The animation is only available for compatible models. "
+                        f"Here, the model of phase {i} is of type {nlp.model.__class__.__name__} and the model of "
+                        f"phase {j + 1 if i < j else j} is of type {sub_nlp.model.__class__.__name__} and "
+                        f"they don't share the same super class."
+                    )
 
-            # noinspection PyTypeChecker
-            biorbd_model: BiorbdModel = nlp.model
+    def _prepare_tracked_markers_for_animation(self, n_shooting: int = None) -> list:
+        """Prepare the markers which are tracked to the animation"""
 
-            all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
-            all_bioviz[-1].load_movement(self.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
-            for objective in self.ocp.nlp[idx_phase].J:
+        n_frames = sum(self.ns) + 1 if n_shooting is None else n_shooting + 1
+
+        all_tracked_markers = []
+
+        for phase, nlp in enumerate(self.ocp.nlp):
+            tracked_markers = None
+            for objective in nlp.J:
                 if objective.target is not None:
                     if objective.type in (
                         ObjectiveFcn.Mayer.TRACK_MARKERS,
                         ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        all_bioviz[-1].load_experimental_markers(objective.target[0])
+                        tracked_markers = np.full((3, nlp.model.nb_markers, self.ns[phase] + 1), np.nan)
+                        for i in range(len(objective.rows)):
+                            tracked_markers[objective.rows[i], objective.cols, :] = objective.target[0][i, :, :]
+                        missing_row = np.where(np.isnan(tracked_markers))[0]
+                        if missing_row.size > 0:
+                            tracked_markers[missing_row, :, :] = 0
 
-        if show_now:
-            b_is_visible = [True] * len(all_bioviz)
-            while sum(b_is_visible):
-                for i, b in enumerate(all_bioviz):
-                    if b.vtk_window.is_active:
-                        b.update()
-                    else:
-                        b_is_visible[i] = False
-            return None
-        else:
-            return all_bioviz
+            # interpolation
+            if n_frames > 0 and tracked_markers is not None:
+                x = np.linspace(0, self.ns[phase], self.ns[phase] + 1)
+                xnew = np.linspace(0, self.ns[phase], n_frames)
+                f = interp1d(x, tracked_markers, kind="cubic")
+                tracked_markers = f(xnew)
+
+            all_tracked_markers.append(tracked_markers)
+
+        return all_tracked_markers
 
     def _get_penalty_cost(self, nlp, penalty):
         phase_idx = nlp.phase_idx

@@ -32,7 +32,7 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
     tau_min, tau_max, tau_init = -500.0, 500.0, 0.0
     activation_min, activation_max, activation_init = 0.0, 1.0, 0.5
     dof_mapping = BiMappingList()
-    dof_mapping.add("tau", [None, None, None, 0], [3])
+    dof_mapping.add("tau", bimapping=None, to_second=[None, None, None, 0], to_first=[3])
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -66,22 +66,24 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, 0] = pose_at_first_node
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, 0] = 0
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * n_qdot)
+    x_init["q"] = pose_at_first_node
+    x_init["qdot"] = np.zeros((n_qdot,))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [tau_min] * len(dof_mapping["tau"].to_first) + [activation_min] * bio_model.nb_muscles,
-        [tau_max] * len(dof_mapping["tau"].to_first) + [activation_max] * bio_model.nb_muscles,
-    )
+    u_bounds["tau"] = [tau_min] * len(dof_mapping["tau"].to_first), [tau_max] * len(dof_mapping["tau"].to_first)
+    u_bounds["muscles"] = [activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * len(dof_mapping["tau"].to_first) + [activation_init] * bio_model.nb_muscles)
+    u_init["tau"] = [tau_init] * len(dof_mapping["tau"].to_first)
+    u_init["muscles"] = [activation_init] * bio_model.nb_muscles
     # ------------- #
 
     return OptimalControlProgram(
@@ -89,11 +91,11 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound)
         dynamics,
         n_shooting,
         phase_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        objective_functions,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
+        objective_functions=objective_functions,
         constraints=constraints,
         variable_mappings=dof_mapping,
         assume_phase_dynamics=True,

@@ -22,7 +22,6 @@ from bioptim import (
     SelectionMapping,
     Dependency,
     BoundsList,
-    Bounds,
     InitialGuessList,
     OdeSolver,
     Solver,
@@ -38,12 +37,9 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
     # adds a bimapping to bimappinglist
     # dof_mapping.add("tau", [None, None, None, 0], [3])
     # easier way is to use SelectionMapping which is a subclass of biMapping
-    bimap = SelectionMapping(
-        nb_elements=bio_model.nb_dof,
-        independent_indices=(3,),
-        dependencies=(Dependency(dependent_index=None, reference_index=None, factor=None),),
-    )
-    dof_mapping.add(name="tau", bimapping=bimap)
+    dof_mapping = BiMappingList()
+    dof_mapping.add("tau", bimapping=None, to_second=[None, None, None, 0], to_first=[3])
+
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT, weight=-1)
@@ -77,23 +73,27 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0].concatenate(Bounds([activation_min] * n_mus, [activation_max] * n_mus))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot + [0.5] * n_mus
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, 0] = pose_at_first_node
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, 0] = np.zeros((n_qdot,))
+    x_bounds["muscles"] = [[activation_min] * n_mus, [activation_max] * n_mus]
+    x_bounds["muscles"][:, 0] = np.zeros((n_mus,))
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * n_qdot + [0.5] * n_mus)
+    x_init["q"] = pose_at_first_node
+    x_init["qdot"] = np.zeros((n_qdot,))
+    x_init["muscles"] = np.zeros((n_mus,))
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [torque_min] * len(dof_mapping["tau"].to_first) + [activation_min] * bio_model.nb_muscles,
-        [torque_max] * len(dof_mapping["tau"].to_first) + [activation_max] * bio_model.nb_muscles,
-    )
+    u_bounds["tau"] = [torque_min] * len(dof_mapping["tau"].to_first), [torque_max] * len(dof_mapping["tau"].to_first)
+    u_bounds["muscles"] = [activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles
 
     u_init = InitialGuessList()
-    u_init.add([torque_init] * len(dof_mapping["tau"].to_first) + [activation_init] * bio_model.nb_muscles)
+    u_init["tau"] = [torque_init] * len(dof_mapping["tau"].to_first)
+    u_init["muscles"] = [activation_init] * bio_model.nb_muscles
     # ------------- #
 
     return OptimalControlProgram(
@@ -101,10 +101,10 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, ode_solver
         dynamics,
         n_shooting,
         phase_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
+        x_init=x_init,
+        u_init=u_init,
         objective_functions=objective_functions,
         constraints=constraints,
         variable_mappings=dof_mapping,
