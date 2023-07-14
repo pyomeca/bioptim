@@ -41,6 +41,16 @@ from bioptim import (
 
 
 def get_force_field(q, force_field_magnitude):
+    """
+    Get the effect of the force field.
+
+    Parameters
+    ----------
+    q: MX.sym
+        The generalized coordinates
+    force_field_magnitude: float
+        The magnitude of the force field
+    """
     l1 = 0.3
     l2 = 0.33
     f_force_field = force_field_magnitude * (l1 * cas.cos(q[0]) + l2 * cas.cos(q[0] + q[1]))
@@ -52,6 +62,20 @@ def get_force_field(q, force_field_magnitude):
 
 
 def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
+    """
+    Get the effect of the feedback.
+
+    Parameters
+    ----------
+    k: MX.sym
+        The feedback gains
+    hand_pos_velo: MX.sym
+        The position and velocity of the hand
+    ref: MX.sym
+        The reference position and velocity of the hand
+    sensory_noise: MX.sym
+        The sensory noise
+    """
     return k @ ((hand_pos_velo - ref) + sensory_noise)
 
 
@@ -66,6 +90,30 @@ def stochastic_forward_dynamics(
     force_field_magnitude,
     with_gains,
 ) -> DynamicsEvaluation:
+    """
+    The dynamic function of the states including feedback gains.
+
+    Parameters
+    ----------
+    states: MX.sym
+        The states
+    controls: MX.sym
+        The controls
+    parameters: MX.sym
+        The parameters
+    stochastic_variables: MX.sym
+        The stochastic variables
+    nlp: NonLinearProgram
+        The current non-linear program
+    motor_noise: MX.sym
+        The motor noise
+    sensory_noise: MX.sym
+        The sensory noise
+    force_field_magnitude: float
+        The magnitude of the force field
+    with_gains: bool
+        If the feedback gains are included or not to the torques
+    """
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
@@ -112,6 +160,9 @@ def stochastic_forward_dynamics(
 
 
 def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, motor_noise, sensory_noise):
+    """
+    Configure the stochastic optimal control problem.
+    """
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_qddot(ocp, nlp, True, False, True)
@@ -141,7 +192,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
 
 def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.MX:
     """
-    Minimize the uncertainty (covariance matrix) of the states.
+    Minimize the uncertainty (covariance matrix) of the states "key".
     """
     dt = controllers[0].tf / controllers[0].ns
     out = 0
@@ -155,6 +206,18 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
 
 
 def get_ref(controller: PenaltyController, q, qdot) -> cas.MX:
+    """
+    Get the reference had position and velocity.
+
+    Parameters
+    ----------
+    controller: PenaltyController
+        The controller.
+    q: cas.MX
+        The current joint position.
+    qdot: cas.MX
+        The current joint velocity.
+    """
     hand_pos = controller.model.markers(q)[2][:2]
     hand_vel = controller.model.marker_velocities(q, qdot)[2][:2]
     ee = cas.vertcat(hand_pos, hand_vel)
@@ -162,6 +225,9 @@ def get_ref(controller: PenaltyController, q, qdot) -> cas.MX:
 
 
 def hand_equals_ref(controller: PenaltyController) -> cas.MX:
+    """
+    Get the error between the hand position and the reference.
+    """
     q = controller.states["q"].cx_start
     qdot = controller.states["qdot"].cx_start
     ref = controller.stochastic_variables["ref"].cx_start
@@ -170,6 +236,24 @@ def hand_equals_ref(controller: PenaltyController) -> cas.MX:
 
 
 def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, sensory_noise_magnitude):
+    """
+    Perform a trapezoidal integration to get the covariance matrix at the next node.
+    It is conputed as:
+    P_k+1 = M_k(dg/dx @ P_k @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
+
+    Parameters
+    ----------
+    nlp: NonLinearProgram
+        The current non-linear program.
+    node_index: int
+        The node index at hich we want to compute the covariance matrix.
+    force_field_magnitude: float
+        The magnitude of the force field.
+    motor_noise_magnitude: DM
+        The magnitude of the motor noise.
+    sensory_noise_magnitude: DM
+        The magnitude of the sensory noise.
+    """
     dt = nlp.tf / nlp.ns
 
     nlp.states.node_index = node_index - 1
@@ -286,7 +370,17 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
 
 def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise_magnitude: cas.DM) -> cas.MX:
     """
-    ...
+    This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
+    magnitude.
+    It is computed as Jacobian(effort, states) @ cov @ Jacobian(effort, states) +
+                        Jacobian(efforst, motor_noise) @ sigma_w @ Jacobian(efforst, motor_noise)
+
+    Parameters
+    ----------
+    controllers : list[PenaltyController]
+        List of controllers to be used to compute the expected effort.
+    sensory_noise_magnitude : cas.DM
+        Magnitude of the sensory noise.
     """
     n_tau = controllers[0].controls["tau"].cx_start.shape[0]
     n_q = controllers[0].states["q"].cx_start.shape[0]
@@ -349,6 +443,9 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
 def zero_acceleration(
     controller: PenaltyController, motor_noise: np.ndarray, sensory_noise: np.ndarray, force_field_magnitude: float
 ) -> cas.MX:
+    """
+    No acceleration of the joints at the beginning and end of the movement.
+    """
     dx = stochastic_forward_dynamics(
         controller.states.cx_start,
         controller.controls.cx_start,
@@ -364,12 +461,20 @@ def zero_acceleration(
 
 
 def track_final_marker(controller: PenaltyController) -> cas.MX:
+    """
+    Track the hand position.
+    """
     q = controller.states["q"].cx_start
     ee_pos = controller.model.markers(q)[2][:2]
     return ee_pos
 
 
 def trapezoidal_integration_continuity_constraint(controllers: list[PenaltyController], force_field_magnitude) -> cas.MX:
+    """
+    This function computes the continuity constraint for the trapezoidal integration scheme.
+    It is computed as:
+        x_i_plus - x_i - dt/2 * (f(x_i, u_i) + f(x_i_plus, u_i_plus)) = 0
+    """
     n_q = controllers[0].model.nb_q
     n_qdot = controllers[0].model.nb_qdot
     n_tau = controllers[0].model.nb_tau

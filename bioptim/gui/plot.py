@@ -22,7 +22,7 @@ class CustomPlot:
 
     Attributes
     ----------
-    function: Callable[states, controls, parameters, stochasti_variables]
+    function: Callable[states, controls, parameters, stochastic_variables]
         The function to call to update the graph
     type: PlotType
         Type of plot to use

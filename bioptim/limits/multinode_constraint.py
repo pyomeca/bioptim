@@ -100,7 +100,8 @@ class MultinodeConstraintFcn(FcnEnum):
     COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
     COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
     TIME_CONSTRAINT = (MultinodeConstraintFunctions.Functions.time_equality,)
-    M_EQUALS_INVERSE_OF_DG_DZ = (MultinodeConstraintFunctions.Functions.m_equals_inverse_of_dg_dz,)
+    STOCHASTIC_HELPER_MATRIX_IMPLICIT = (MultinodeConstraintFunctions.Functions.stochastic_helper_matrix_implicit,)
+    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (MultinodeConstraintFunctions.Functions.stochastic_covariance_matrix_continuity_implicit,)
 
     @staticmethod
     def get_type():

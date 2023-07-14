@@ -267,7 +267,17 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
 
 def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise_magnitude: cas.DM) -> cas.MX:
     """
-    ...
+    This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
+    magnitude.
+    It is computed as Jacobian(effort, states) @ cov @ Jacobian(effort, states) +
+                        Jacobian(effort, motor_noise) @ sigma_w @ Jacobian(effort, motor_noise)
+
+    Parameters
+    ----------
+    controllers : list[PenaltyController]
+        List of controllers to be used to compute the expected effort.
+    sensory_noise_magnitude : cas.DM
+        Magnitude of the sensory noise.
     """
     dt = controllers[0].tf / controllers[0].ns
     sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
@@ -326,6 +336,9 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
 def zero_acceleration(
     controller: PenaltyController, motor_noise: np.ndarray, sensory_noise: np.ndarray, force_field_magnitude: float
 ) -> cas.MX:
+    """
+    No acceleration of the joints at the beginning and end of the movement.
+    """
     dx = stochastic_forward_dynamics(
         controller.states.cx_start,
         controller.controls.cx_start,
@@ -341,12 +354,20 @@ def zero_acceleration(
 
 
 def track_final_marker(controller: PenaltyController) -> cas.MX:
+    """
+    Track the hand position.
+    """
     q = controller.states["q"].cx_start
     ee_pos = controller.model.end_effector_position(q)
     return ee_pos
 
 
 def trapezoidal_integration_continuity_constraint(controllers: list[PenaltyController], force_field_magnitude) -> cas.MX:
+    """
+    This function computes the continuity constraint for the trapezoidal integration scheme.
+    It is computed as:
+        x_i_plus - x_i - dt/2 * (f(x_i, u_i) + f(x_i_plus, u_i_plus)) = 0
+    """
     motor_noise = np.zeros((2, 1))
     sensory_noise = np.zeros((4, 1))
     dt = controllers[0].tf / controllers[0].ns
@@ -392,8 +413,6 @@ def prepare_socp(
     The initialization of an ocp
     Parameters
     ----------
-    biorbd_model_path: str
-        The path to the biorbd model
     final_time: float
         The time in second required to perform the task
     n_shooting: int

@@ -203,13 +203,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
     def _prepare_stochastic_dynamics_explicit(self, motor_noise_magnitude, sensory_noise_magnitude):
         """
-        ...
+        Adds the internal constraint needed for the explicit formulation of the stochastic ocp.
         """
         penalty_m_dg_dz_list = MultinodeConstraintList()
         for i_phase, nlp in enumerate(self.nlp):
             for i_node in range(nlp.ns - 1):
                 penalty_m_dg_dz_list.add(
-                    MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                    MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
                     dynamics=nlp.dynamics_type.dynamic_function,
@@ -218,7 +218,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 )
             if i_phase > 0:  # TODO: verify with Friedl, but should be OK
                 penalty_m_dg_dz_list.add(
-                    MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                    MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
                     dynamics=nlp.dynamics_type.dynamic_function,
@@ -229,25 +229,25 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
     def _prepare_stochastic_dynamics_implicit(self, motor_noise_magnitude, sensory_noise_magnitude):
         """
-        ...
+        Adds the internal constraint needed for the implicit formulation of the stochastic ocp.
         """
-        # constrain A, C, P, M TODO: some are missing
+        # constrain A, C, P, M TODO: Charbie -> some are missing
         multi_node_penalties = MultinodeConstraintList()
         single_node_penalties = ConstraintList()
         # constrain M
         for i_phase, nlp in enumerate(self.nlp):
             for i_node in range(nlp.ns - 1):
                 multi_node_penalties.add(
-                    MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                    MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
                     dynamics=nlp.dynamics_type.dynamic_function,
                     motor_noise_magnitude=motor_noise_magnitude,
                     sensory_noise_magnitude=sensory_noise_magnitude,
                 )
-            if i_phase > 0:  # TODO: verify with Friedl, but should be OK
+            if i_phase > 0:
                 multi_node_penalties.add(
-                    MultinodeConstraintFcn.M_EQUALS_INVERSE_OF_DG_DZ,
+                    MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
                     dynamics=nlp.dynamics_type.dynamic_function,
@@ -258,7 +258,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         # Constrain P
         for i_phase, nlp in enumerate(self.nlp):
             single_node_penalties.add(
-                ConstraintFcn.COVARIANCE_MATRIX_CONINUITY_IMPLICIT,
+                MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
                 motor_noise_magnitude=motor_noise_magnitude,
@@ -266,7 +266,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             )
             if i_phase > 0:
                 multi_node_penalties.add(  # TODO: check
-                    MultinodeConstraintFcn.COVARIANCE_MATRIX_CONINUITY_IMPLICIT,  # TODO: to be continued in penalty
+                    MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,  # TODO: to be continued in penalty
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
                     motor_noise_magnitude=motor_noise_magnitude,
@@ -275,7 +275,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         # Constrain A
         for i_phase, nlp in enumerate(self.nlp):
             single_node_penalties.add(
-                ConstraintFcn.A_EQUALS_DF_DX,
+                ConstraintFcn.STOCHASTIC_DF_DX_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
                 motor_noise_magnitude=motor_noise_magnitude,
@@ -285,7 +285,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         # Constrain C
         for i_phase, nlp in enumerate(self.nlp):
             single_node_penalties.add(
-                ConstraintFcn.C_EQUALS_DF_DW,
+                ConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
                 motor_noise_magnitude=motor_noise_magnitude,
