@@ -221,5 +221,5 @@ from .optimization.variable_scaling import VariableScalingList, VariableScaling
 from .optimization.variational_optimal_control_program import VariationalOptimalControlProgram
 
 from .optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
-from .optimization.problem_type import OcpType
+from .optimization.problem_type import SocpType
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero

@@ -160,6 +160,7 @@ class PenaltyController:
         -------
         The stochastic_variables at node node_index
         """
+        # TODO: This variables should be scaled and renamed to "algebraic"
         self._nlp.stochastic_variables.node_index = self.node_index
         out = self._nlp.stochastic_variables
         out.current_cx_to_get = self.cx_index_to_get

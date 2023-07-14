@@ -19,7 +19,7 @@ from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..misc.enums import Node, ControlType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
 from ..optimization.parameters import ParameterList, Parameter
-from ..optimization.problem_type import OcpType
+from ..optimization.problem_type import SocpType
 from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.variable_scaling import VariableScalingList, VariableScaling
 
@@ -68,7 +68,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
-        problem_type: OcpType.SOCP_EXPLICIT | OcpType.SOCP_IMPLICIT = OcpType.SOCP_EXPLICIT,
+        problem_type: SocpType.SOCP_EXPLICIT | SocpType.SOCP_IMPLICIT = SocpType.SOCP_EXPLICIT,
         **kwargs,
     ):
         """ """
@@ -192,11 +192,11 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
         # Add the internal multi-node constraints for the stochastic ocp
-        if isinstance(self.problem_type, OcpType.SOCP_EXPLICIT):
+        if isinstance(self.problem_type, SocpType.SOCP_EXPLICIT):
             self._prepare_stochastic_dynamics_explicit(
                 motor_noise_magnitude=self.problem_type.motor_noise_magnitude, sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude
             )
-        elif isinstance(self.problem_type, OcpType.SOCP_IMPLICIT):
+        elif isinstance(self.problem_type, SocpType.SOCP_IMPLICIT):
             self._prepare_stochastic_dynamics_implicit(
                 motor_noise_magnitude=self.problem_type.motor_noise_magnitude, sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude
             )
@@ -231,10 +231,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         """
         Adds the internal constraint needed for the implicit formulation of the stochastic ocp.
         """
-        # constrain A, C, P, M TODO: Charbie -> some are missing
+        # constraint A, C, P, M TODO: Charbie -> some are missing
         multi_node_penalties = MultinodeConstraintList()
         single_node_penalties = ConstraintList()
-        # constrain M
+        # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
             for i_node in range(nlp.ns - 1):
                 multi_node_penalties.add(
@@ -255,7 +255,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     sensory_noise_magnitude=sensory_noise_magnitude,
                 )
 
-        # Constrain P
+        # Constraints for P
         for i_phase, nlp in enumerate(self.nlp):
             single_node_penalties.add(
                 MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
@@ -272,7 +272,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     motor_noise_magnitude=motor_noise_magnitude,
                     sensory_noise_magnitude=sensory_noise_magnitude,
                 )
-        # Constrain A
+        # Constraints for A
         for i_phase, nlp in enumerate(self.nlp):
             single_node_penalties.add(
                 ConstraintFcn.STOCHASTIC_DF_DX_IMPLICIT,
@@ -282,7 +282,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 sensory_noise_magnitude=sensory_noise_magnitude,
             )
 
-        # Constrain C
+        # Constraints for C
         for i_phase, nlp in enumerate(self.nlp):
             single_node_penalties.add(
                 ConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,

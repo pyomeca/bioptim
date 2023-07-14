@@ -1,7 +1,7 @@
 from casadi import DM
 
 
-class OcpType:
+class SocpType:
     """
     Selection of the type of optimization problem to be solved.
     """

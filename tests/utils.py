@@ -60,9 +60,8 @@ class TestUtils:
         TestUtils.deep_assert(controls, sol.controls)
         TestUtils.deep_assert(parameters, sol.parameters)
 
-        # @ Pariterre, merge problem ?
-        # os.remove(f"{file_path}.bo")
-        # os.remove(f"{file_path}_sa.bo")
+        os.remove(f"{file_path}.bo")
+        os.remove(f"{file_path}_sa.bo")
 
     @staticmethod
     def deep_assert(first_elem, second_elem):

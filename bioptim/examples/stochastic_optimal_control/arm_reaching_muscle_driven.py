@@ -31,7 +31,7 @@ from bioptim import (
     DynamicsList,
     BoundsList,
     InterpolationType,
-    OcpType,
+    SocpType,
     PenaltyController,
     Node,
     ConstraintList,
@@ -655,7 +655,7 @@ def prepare_socp(
         skip_continuity=True,
         n_threads=1,
         assume_phase_dynamics=False,
-        problem_type=OcpType.SOCP_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
+        problem_type=SocpType.SOCP_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
         integrated_value_functions=integrated_value_functions,
     )
 

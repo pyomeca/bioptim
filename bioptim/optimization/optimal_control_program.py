@@ -141,6 +141,8 @@ class OptimalControlProgram:
         overrides an objective only the latter is preserved when saved
     """
 
+    # TODO: OCP should not be aware of s (s_init, s_bounds...)
+
     def __init__(
         self,
         bio_model: list | tuple | BioModel,
