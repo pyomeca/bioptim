@@ -388,10 +388,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             out_vector = controllers[0].stochastic_variables["m"].reshape_to_vector(val)
             return out_vector
 
-
         @staticmethod
         def stochastic_covariance_matrix_continuity_implicit(
-            penalty: PenaltyOption, controller: PenaltyController, motor_noise_magnitude: DM, sensory_noise_magnitude: DM
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            motor_noise_magnitude: DM,
+            sensory_noise_magnitude: DM,
         ):
             """
             This functions constrain the covariance matrix to its actual value as in Gillis 2013.

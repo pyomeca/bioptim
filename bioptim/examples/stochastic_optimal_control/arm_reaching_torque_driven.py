@@ -159,7 +159,9 @@ def stochastic_forward_dynamics(
     return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dqddot_computed), defects=defects)
 
 
-def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, motor_noise, sensory_noise):
+def configure_stochastic_optimal_control_problem(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, motor_noise, sensory_noise
+):
     """
     Configure the stochastic optimal control problem.
     """
@@ -469,7 +471,9 @@ def track_final_marker(controller: PenaltyController) -> cas.MX:
     return ee_pos
 
 
-def trapezoidal_integration_continuity_constraint(controllers: list[PenaltyController], force_field_magnitude) -> cas.MX:
+def trapezoidal_integration_continuity_constraint(
+    controllers: list[PenaltyController], force_field_magnitude
+) -> cas.MX:
     """
     This function computes the continuity constraint for the trapezoidal integration scheme.
     It is computed as:
@@ -635,9 +639,10 @@ def prepare_socp(
     )
     for i in range(n_shooting):
         multinode_constraints.add(
-            trapezoidal_integration_continuity_constraint, 
-            nodes_phase=[0, 0], nodes=[i, i + 1], 
-            force_field_magnitude=force_field_magnitude
+            trapezoidal_integration_continuity_constraint,
+            nodes_phase=[0, 0],
+            nodes=[i, i + 1],
+            force_field_magnitude=force_field_magnitude,
         )
 
     # Dynamics
@@ -708,7 +713,6 @@ def prepare_socp(
     u_init = InitialGuessList()
     u_init.add("qdddot", initial_guess=controls_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
     u_init.add("tau", initial_guess=controls_init[n_q:, :], interpolation=InterpolationType.EACH_FRAME)
-
 
     s_init = InitialGuessList()
     s_bounds = BoundsList()
@@ -797,7 +801,7 @@ def main():
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
-    n_shooting = int(final_time/dt) + 1
+    n_shooting = int(final_time / dt) + 1
     final_time += dt
 
     # --- Noise constants --- #
@@ -868,8 +872,7 @@ def main():
     # --- Save the results --- #
     with open(f"leuvenarm_torque_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "wb") as file:
         pickle.dump(data, file)
-    
-    
+
     # --- Visualize the results --- #
     if vizualize_sol_flag:
         import bioviz

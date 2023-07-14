@@ -194,11 +194,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         # Add the internal multi-node constraints for the stochastic ocp
         if isinstance(self.problem_type, SocpType.SOCP_EXPLICIT):
             self._prepare_stochastic_dynamics_explicit(
-                motor_noise_magnitude=self.problem_type.motor_noise_magnitude, sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude
+                motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
+                sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
             )
         elif isinstance(self.problem_type, SocpType.SOCP_IMPLICIT):
             self._prepare_stochastic_dynamics_implicit(
-                motor_noise_magnitude=self.problem_type.motor_noise_magnitude, sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude
+                motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
+                sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
             )
 
     def _prepare_stochastic_dynamics_explicit(self, motor_noise_magnitude, sensory_noise_magnitude):

@@ -42,6 +42,7 @@ from bioptim import (
 
 from bioptim.examples.stochastic_optimal_control.LeuvenArmModel import LeuvenArmModel
 
+
 def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
@@ -53,7 +54,6 @@ def stochastic_forward_dynamics(
     force_field_magnitude,
     with_gains,
 ) -> DynamicsEvaluation:
-
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     mus_activations = DynamicsFunctions.get(nlp.states["muscles"], states)
@@ -106,7 +106,9 @@ def stochastic_forward_dynamics(
     return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dactivations_computed), defects=None)
 
 
-def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, motor_noise, sensory_noise):
+def configure_stochastic_optimal_control_problem(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, motor_noise, sensory_noise
+):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
@@ -145,6 +147,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
         p_partial = cov_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(p_partial) * dt
     return out
+
 
 def hand_equals_ref(controller: PenaltyController) -> cas.MX:
     q = controller.states["q"].cx_start
@@ -362,7 +365,9 @@ def track_final_marker(controller: PenaltyController) -> cas.MX:
     return ee_pos
 
 
-def trapezoidal_integration_continuity_constraint(controllers: list[PenaltyController], force_field_magnitude) -> cas.MX:
+def trapezoidal_integration_continuity_constraint(
+    controllers: list[PenaltyController], force_field_magnitude
+) -> cas.MX:
     """
     This function computes the continuity constraint for the trapezoidal integration scheme.
     It is computed as:
@@ -512,7 +517,10 @@ def prepare_socp(
     )
     for i in range(n_shooting - 1):
         multinode_constraints.add(
-            trapezoidal_integration_continuity_constraint, nodes_phase=[0, 0], nodes=[i, i + 1], force_field_magnitude=force_field_magnitude
+            trapezoidal_integration_continuity_constraint,
+            nodes_phase=[0, 0],
+            nodes=[i, i + 1],
+            force_field_magnitude=force_field_magnitude,
         )
 
     # Dynamics
@@ -625,7 +633,7 @@ def prepare_socp(
         min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
         max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
     )
-    
+
     integrated_value_functions = {
         "cov": lambda nlp, node_index: get_cov_mat(
             nlp,
@@ -673,7 +681,7 @@ def main():
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
-    n_shooting = int(final_time/dt) + 1
+    n_shooting = int(final_time / dt) + 1
     final_time += dt
 
     # --- Noise constants --- #
@@ -742,10 +750,10 @@ def main():
     with open(f"leuvenarm_muscle_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "wb") as file:
         pickle.dump(data, file)
 
-
     # --- Visualize the solution --- #
     if vizualise_sol_flag:
         import bioviz
+
         b = bioviz.Viz(model_path=biorbd_model_path)
         b.load_movement(q_sol[:, :-1])
         b.exec()
@@ -777,7 +785,9 @@ def main():
             with_gains=True,
         )
         dyn_fun = cas.Function(
-            "dyn_fun", [states, controls, parameters, stochastic_variables, motor_noise_sym, sensory_noise_sym], [out.dxdt]
+            "dyn_fun",
+            [states, controls, parameters, stochastic_variables, motor_noise_sym, sensory_noise_sym],
+            [out.dxdt],
         )
 
         fig, axs = plt.subplots(3, 2)
@@ -808,7 +818,9 @@ def main():
                 u = excitations_sol[:, i_node]
                 s = stochastic_variables_sol[:, i_node]
                 k1 = dyn_fun(x_prev, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node])
-                x_next = x_prev + dt * dyn_fun(x_prev + dt / 2 * k1, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node])
+                x_next = x_prev + dt * dyn_fun(
+                    x_prev + dt / 2 * k1, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node]
+                )
                 q_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[:2], (2,))
                 qdot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[2:4], (2,))
                 mus_activation_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[4:], (6,))
@@ -850,6 +862,7 @@ def main():
         plt.tight_layout()
         plt.savefig("simulated_results.png", dpi=300)
         plt.show()
+
 
 if __name__ == "__main__":
     main()

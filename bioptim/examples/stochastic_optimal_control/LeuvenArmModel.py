@@ -6,6 +6,7 @@ from typing import Callable
 import casadi as cas
 import numpy as np
 
+
 class LeuvenArmModel:
     """
     This allows to generate the same model as in the paper.
