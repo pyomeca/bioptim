@@ -8,7 +8,6 @@ import pytest
 import numpy as np
 from bioptim import Solver, MultiCyclicCycleSolutions
 
-
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 def test_multi_cyclic_nmpc_get_final(assume_phase_dynamics):
     if platform.system() != "Linux":

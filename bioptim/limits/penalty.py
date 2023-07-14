@@ -444,7 +444,8 @@ class PenaltyFunctionAbstract:
 
             if "qddot" not in controller.states and "qddot" not in controller.controls:
                 return controller.dynamics(
-                    controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
+                    controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx,
+                    controller.stochastic_variables.cx_start,
                 )[controller.states["qdot"].index, :]
             elif "qddot" in controller.states:
                 return controller.states["qddot"].cx_start
@@ -550,7 +551,8 @@ class PenaltyFunctionAbstract:
                 com_ddot = controller.model.center_of_mass_acceleration(
                     controller.states["q"].mx,
                     controller.states["qdot"].mx,
-                    controller.dynamics(controller.states.mx, controller.controls.mx, controller.parameters.mx)[
+                    controller.dynamics(controller.states.mx, controller.controls.mx, controller.parameters.mx,
+                                        controller.stochastic_variables.cx_start)[
                         controller.states["qdot"].index, :
                     ],
                 )

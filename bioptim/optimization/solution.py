@@ -465,7 +465,7 @@ class Solution:
                     for _ in range(len(self.ns)):
                         tp.add(deepcopy(_sol[i].init), interpolation=_sol[i].init.type)
                     _sol[i] = tp
-            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 3:
+            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 4:
                 raise ValueError(
                     "solution must be a solution dict, "
                     "an InitialGuess[List] of len 3 or 4 (states, controls, parameters, stochastic_variables), "
@@ -576,7 +576,7 @@ class Solution:
 
         if isinstance(sol, dict):
             init_from_dict(sol)
-        elif isinstance(sol, (list, tuple)) and len(sol) in (2, 3):
+        elif isinstance(sol, (list, tuple)) and len(sol) == 4:
             init_from_initial_guess(sol)
         elif isinstance(sol, (np.ndarray, DM)):
             init_from_vector(sol)
@@ -585,7 +585,7 @@ class Solution:
         else:
             raise ValueError(
                 "Solution called with unknown initializer"
-            )  # @ Pariterre this seems weird, since it is used in test_initial_conditions
+            )
 
     def _to_unscaled_values(self, states_scaled, controls_scaled) -> tuple:
         """
@@ -1589,6 +1589,7 @@ class Solution:
     def _get_penalty_cost(self, nlp, penalty):
         phase_idx = nlp.phase_idx
         steps = nlp.ode_solver.steps + 1 if nlp.ode_solver.is_direct_collocation else 1
+        nlp.controls.node_index = 0
 
         val = []
         val_weighted = []
@@ -1620,7 +1621,7 @@ class Solution:
                             # Make an exception to the fact that U is not available for the last node
                             u = np.concatenate((u, self._controls["scaled"][phase_idx][key][:, node_idx]))
                         for key in nlp.stochastic_variables:
-                            s = np.concatenate((s, self.stochastic_variables[phase_idx][key][:, node_idx]))
+                            s = np.concatenate((s, self._stochastic_variables[phase_idx][key][:, node_idx]))
                 elif (
                     "Lagrange" not in penalty.type.__str__()
                     and "Mayer" not in penalty.type.__str__()
@@ -1671,7 +1672,7 @@ class Solution:
 
                     s = np.ndarray((nlp.stochastic_variables.shape, len(col_s_idx)))
                     for key in nlp.stochastic_variables:
-                        s[nlp.stochastic_variables[key].index, :] = self.stochastic_variables["scaled"][phase_idx][key][
+                        s[nlp.stochastic_variables[key].index, :] = self.stochastic_variables[phase_idx][key][
                             :, col_s_idx
                         ]
 

@@ -935,7 +935,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value, assume_phase_dynami
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], [], 0))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], [], [], 0))
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -973,6 +973,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, assume_phase_dynamics):
     nlp.U = np.linspace(10, 19, ns)
     nlp.X_scaled = nlp.X
     nlp.U_scaled = nlp.U
+    nlp.S = np.linspace(0, 0, ns + 1)
     tp = OptimizationVariableList(MX, assume_phase_dynamics=assume_phase_dynamics)
     tp.append("param", [MX(), MX(), MX()], MX(), BiMapping([], []))
     nlp.parameters = tp["param"]
