@@ -177,7 +177,7 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=6)
     mat_p_init = cas.DM_eye(6) * np.array(
         [1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6]
-    )  # P, the oise on the acceleration should be chosen carefully (here arbitrary)
+    )  # P, the noise on the acceleration should be chosen carefully (here arbitrary)
     ConfigureProblem.configure_stochastic_cov(ocp, nlp, n_noised_states=6, initial_matrix=mat_p_init)
     ConfigureProblem.configure_dynamics_function(
         ocp,
@@ -441,27 +441,6 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
 
     return f_expectedEffort_fb
 
-
-def zero_acceleration(
-    controller: PenaltyController, motor_noise: np.ndarray, sensory_noise: np.ndarray, force_field_magnitude: float
-) -> cas.MX:
-    """
-    No acceleration of the joints at the beginning and end of the movement.
-    """
-    dx = stochastic_forward_dynamics(
-        controller.states.cx_start,
-        controller.controls.cx_start,
-        controller.parameters.cx_start,
-        controller.stochastic_variables.cx_start,
-        controller.get_nlp,
-        motor_noise,
-        sensory_noise,
-        force_field_magnitude=force_field_magnitude,
-        with_gains=False,
-    )
-    return dx.dxdt[2:4]
-
-
 def track_final_marker(controller: PenaltyController) -> cas.MX:
     """
     Track the hand position.
@@ -602,22 +581,10 @@ def prepare_socp(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
-    constraints.add(
-        zero_acceleration,
-        node=Node.START,
-        motor_noise=np.zeros((n_tau, 1)),
-        sensory_noise=np.zeros((n_q + n_qdot, 1)),
-        force_field_magnitude=force_field_magnitude,
-    )
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.START, target=0)
     constraints.add(track_final_marker, node=Node.PENULTIMATE, target=ee_final_position)
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
-    constraints.add(
-        zero_acceleration,
-        node=Node.PENULTIMATE,
-        motor_noise=np.zeros((n_tau, 1)),
-        sensory_noise=np.zeros((n_q + n_qdot, 1)),
-        force_field_magnitude=force_field_magnitude,
-    )  # Not possible sice the control on the last node is NaN
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.PENULTIMATE, target=0)
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
@@ -795,7 +762,6 @@ def main():
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 
-    ee_initial_position = np.array([0.0, 0.2742])  # Directly from Tom's version
     ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 
     # --- Prepare the ocp --- #

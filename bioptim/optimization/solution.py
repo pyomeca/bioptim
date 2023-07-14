@@ -1700,7 +1700,7 @@ class Solution:
 
                     s = np.ndarray((nlp.stochastic_variables.shape, len(col_s_idx)))
                     for key in nlp.stochastic_variables:
-                        s[nlp.stochastic_variables[key].index, :] = self.stochastic_variables[phase_idx][key][
+                        s[nlp.stochastic_variables[key].index, :] = self._stochastic_variables[phase_idx][key][
                             :, col_s_idx
                         ]
 
