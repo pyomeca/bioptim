@@ -14,27 +14,27 @@ class OcpType:
         The class used to declare a stochastic problem with explicit stochastic dynamics
         Attributes
         ----------
-        wM_magnitude: DM
+        motor_noise_magnitude: DM
             The magnitude of the motor noise
-        wS_magnitude: DM
+        sensory_noise_magnitude: DM
             The magnitude of the sensory noise
         """
 
-        def __init__(self, wM_magnitude: DM, wS_magnitude: DM):
-            self.wM_magnitude = wM_magnitude
-            self.wS_magnitude = wS_magnitude
+        def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM):
+            self.motor_noise_magnitude = motor_noise_magnitude
+            self.sensory_noise_magnitude = sensory_noise_magnitude
 
     class SOCP_IMPLICIT:
         """
         The class used to declare a stochastic problem with implicit stochastic dynamics
         Attributes
         ----------
-        wM_magnitude: DM
+        motor_noise_magnitude: DM
             The magnitude of the motor noise
-        wS_magnitude: DM
+        sensory_noise_magnitude: DM
             The magnitude of the sensory noise
         """
 
-        def __init__(self, wM_magnitude: DM, wS_magnitude: DM):
-            self.wM_magnitude = wM_magnitude
-            self.wS_magnitude = wS_magnitude
+        def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM):
+            self.motor_noise_magnitude = motor_noise_magnitude
+            self.sensory_noise_magnitude = sensory_noise_magnitude

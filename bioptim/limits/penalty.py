@@ -1007,7 +1007,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def covariance_matrix_continuity_implicit(
-            penalty: PenaltyOption, controller: PenaltyController, wM_magnitude: DM, wS_magnitude: DM
+            penalty: PenaltyOption, controller: PenaltyController, motor_noise_magnitude: DM, sensory_noise_magnitude: DM
         ):
             nx = controller.states.cx_start.shape[0]
             P_matrix = controller.integrated_values["cov"].reshape_to_matrix(
@@ -1023,7 +1023,7 @@ class PenaltyFunctionAbstract:
                 controller.stochastic_variables, nx, nx, Node.START, "m"
             )
 
-            sigma_w = vertcat(wS_magnitude, wM_magnitude)
+            sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude)
             dt = 1 / controller.ns
             dg_dw = -dt * C_matrix
             dg_dx = -MX_eye(A_matrix.shape[0]) - dt / 2 * A_matrix

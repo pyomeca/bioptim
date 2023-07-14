@@ -309,8 +309,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             penalty,
             controllers: list[PenaltyController, PenaltyController],
             dynamics: Callable,
-            wM_magnitude: DM,
-            wS_magnitude: DM,
+            motor_noise_magnitude: DM,
+            sensory_noise_magnitude: DM,
             **unused_param,
         ):
             """
@@ -321,8 +321,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             dt = controllers[0].tf / controllers[0].ns
 
-            wM = MX.sym("wM", wM_magnitude.shape[0], 1)
-            wS = MX.sym("wS", wS_magnitude.shape[0], 1)
+            motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
+            sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
 
             nx = controllers[0].states.cx.shape[0]
             M_matrix = (
@@ -337,8 +337,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
                 controllers[0].get_nlp,
-                wM,
-                wS,
+                motor_noise,
+                sensory_noise,
                 with_gains=True,
             )
 
@@ -349,8 +349,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].controls.cx_start,
                     controllers[0].parameters.cx_start,
                     controllers[0].stochastic_variables.cx_start,
-                    wM,
-                    wS,
+                    motor_noise,
+                    sensory_noise,
                 ],
                 [jacobian(dx.dxdt, controllers[0].states.cx_start)],
             )
@@ -360,8 +360,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[1].controls.cx_start,
                 controllers[1].parameters.cx_start,
                 controllers[1].stochastic_variables.cx_start,
-                wM_magnitude,
-                wS_magnitude,
+                motor_noise_magnitude,
+                sensory_noise_magnitude,
             )
 
             DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2

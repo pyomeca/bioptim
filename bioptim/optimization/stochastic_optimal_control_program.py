@@ -68,7 +68,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
-        problem_type: OcpType = OcpType.SOCP_EXPLICIT,
+        problem_type: OcpType.SOCP_EXPLICIT | OcpType.SOCP_IMPLICIT = OcpType.SOCP_EXPLICIT,
         **kwargs,
     ):
         """ """
@@ -194,14 +194,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         # Add the internal multi-node constraints for the stochastic ocp
         if isinstance(self.problem_type, OcpType.SOCP_EXPLICIT):
             self._prepare_stochastic_dynamics_explicit(
-                wM_magnitude=self.problem_type.wM_magnitude, wS_magnitude=self.problem_type.wS_magnitude
+                motor_noise_magnitude=self.problem_type.motor_noise_magnitude, sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude
             )
         elif isinstance(self.problem_type, OcpType.SOCP_IMPLICIT):
             self._prepare_stochastic_dynamics_implicit(
-                wM_magnitude=self.problem_type.wM_magnitude, wS_magnitude=self.problem_type.wS_magnitude
+                motor_noise_magnitude=self.problem_type.motor_noise_magnitude, sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude
             )
 
-    def _prepare_stochastic_dynamics_explicit(self, wM_magnitude, wS_magnitude):
+    def _prepare_stochastic_dynamics_explicit(self, motor_noise_magnitude, sensory_noise_magnitude):
         """
         ...
         """
@@ -213,8 +213,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
                     dynamics=nlp.dynamics_type.dynamic_function,
-                    wM_magnitude=wM_magnitude,
-                    wS_magnitude=wS_magnitude,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
             if i_phase > 0:  # TODO: verify with Friedl, but should be OK
                 penalty_m_dg_dz_list.add(
@@ -222,12 +222,12 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
                     dynamics=nlp.dynamics_type.dynamic_function,
-                    wM_magnitude=wM_magnitude,
-                    wS_magnitude=wS_magnitude,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
-    def _prepare_stochastic_dynamics_implicit(self, wM_magnitude, wS_magnitude):
+    def _prepare_stochastic_dynamics_implicit(self, motor_noise_magnitude, sensory_noise_magnitude):
         """
         ...
         """
@@ -242,8 +242,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
                     dynamics=nlp.dynamics_type.dynamic_function,
-                    wM_magnitude=wM_magnitude,
-                    wS_magnitude=wS_magnitude,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
             if i_phase > 0:  # TODO: verify with Friedl, but should be OK
                 multi_node_penalties.add(
@@ -251,8 +251,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
                     dynamics=nlp.dynamics_type.dynamic_function,
-                    wM_magnitude=wM_magnitude,
-                    wS_magnitude=wS_magnitude,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
 
         # Constrain P
@@ -261,16 +261,16 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.COVARIANCE_MATRIX_CONINUITY_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
-                wM_magnitude=wM_magnitude,
-                wS_magnitude=wS_magnitude,
+                motor_noise_magnitude=motor_noise_magnitude,
+                sensory_noise_magnitude=sensory_noise_magnitude,
             )
             if i_phase > 0:
                 multi_node_penalties.add(  # TODO: check
                     MultinodeConstraintFcn.COVARIANCE_MATRIX_CONINUITY_IMPLICIT,  # TODO: to be continued in penalty
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
-                    wM_magnitude=wM_magnitude,
-                    wS_magnitude=wS_magnitude,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
         # Constrain A
         for i_phase, nlp in enumerate(self.nlp):
@@ -278,8 +278,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.A_EQUALS_DF_DX,
                 node=Node.ALL,
                 phase=i_phase,
-                wM_magnitude=wM_magnitude,
-                wS_magnitude=wS_magnitude,
+                motor_noise_magnitude=motor_noise_magnitude,
+                sensory_noise_magnitude=sensory_noise_magnitude,
             )
 
         # Constrain C
@@ -288,8 +288,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.C_EQUALS_DF_DW,
                 node=Node.ALL,
                 phase=i_phase,
-                wM_magnitude=wM_magnitude,
-                wS_magnitude=wS_magnitude,
+                motor_noise_magnitude=motor_noise_magnitude,
+                sensory_noise_magnitude=sensory_noise_magnitude,
             )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)

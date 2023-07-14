@@ -1420,7 +1420,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_ee_ref(ocp, nlp, n_references: int):
+    def configure_stochastic_ref(ocp, nlp, n_references: int):
         """
         Configure the reference kinematics.
         Parameters
@@ -1428,16 +1428,16 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         """
-        name = "ee_ref"
+        name = "ref"
 
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
-        name_ee_ref = [f"reference_{i}" for i in range(n_references)]
+        name_ref = [f"reference_{i}" for i in range(n_references)]
         nlp.variable_mappings[name] = BiMapping(list(range(n_references)), list(range(n_references)))
         ConfigureProblem.configure_new_variable(
             name,
-            name_ee_ref,
+            name_ref,
             ocp,
             nlp,
             as_states=False,

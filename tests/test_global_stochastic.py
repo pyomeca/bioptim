@@ -18,20 +18,20 @@ def test_arm_reaching_muscle_driven():
     force_field_magnitude = 0
 
     dt = 0.01
-    wM_std = 0.05
+    motor_noise_std = 0.05
     wPq_std = 3e-4
     wPqdot_std = 0.0024
-    wM_magnitude = DM(np.array([wM_std**2 / dt, wM_std**2 / dt]))
+    motor_noise_magnitude = DM(np.array([motor_noise_std**2 / dt, motor_noise_std**2 / dt]))
     wPq_magnitude = DM(np.array([wPq_std**2 / dt, wPq_std**2 / dt]))
     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
-    wS_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
+    sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
 
     ocp = ocp_module.prepare_socp(
         final_time=final_time,
         n_shooting=n_shooting,
         ee_final_position=ee_final_position,
-        wM_magnitude=wM_magnitude,
-        wS_magnitude=wS_magnitude,
+        motor_noise_magnitude=motor_noise_magnitude,
+        sensory_noise_magnitude=sensory_noise_magnitude,
         force_field_magnitude=force_field_magnitude,
         problem_type=problem_type,
     )
@@ -67,7 +67,7 @@ def test_arm_reaching_muscle_driven():
     )
     q, qdot, mus_activations = states["q"], states["qdot"], states["muscles"]
     mus_excitations = controls["muscles"]
-    k, ee_ref, m = stochastic_variables["k"], stochastic_variables["ee_ref"], stochastic_variables["m"]
+    k, ref, m = stochastic_variables["k"], stochastic_variables["ref"], stochastic_variables["m"]
     cov = integrated_values["cov"]
 
     # initial and final position
@@ -120,7 +120,7 @@ def test_arm_reaching_muscle_driven():
             ]
         ),
     )
-    np.testing.assert_almost_equal(ee_ref[:, 0], np.array([0.00812868, 0.05943125, 0.00812868, 0.00812868]))
+    np.testing.assert_almost_equal(ref[:, 0], np.array([0.00812868, 0.05943125, 0.00812868, 0.00812868]))
     np.testing.assert_almost_equal(
         m[:, 0],
         np.array(

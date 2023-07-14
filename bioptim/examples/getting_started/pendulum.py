@@ -93,9 +93,6 @@ def prepare_ocp(
     u_init = InitialGuessList()
     u_init["tau"] = [0] * n_tau
 
-    s_bounds = BoundsList()
-    s_init = InitialGuessList()
-
     return OptimalControlProgram(
         bio_model,
         dynamics,
@@ -103,10 +100,8 @@ def prepare_ocp(
         final_time,
         x_init=x_init,
         u_init=u_init,
-        s_init=s_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        s_bounds=s_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         use_sx=use_sx,
