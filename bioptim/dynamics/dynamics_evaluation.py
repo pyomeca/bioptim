@@ -6,9 +6,9 @@ class DynamicsEvaluation:
     Attributes
     ----------
     dxdt: MX | SX
-        The derivative of the states xdot = f(x,u,p)
+        The derivative of the states xdot = f(x,u,p,t)
     defects: MX | SX
-        defects of the dynamics for implicit transcription  f(xdot,x,u,p) = 0
+        defects of the dynamics for implicit transcription  f(xdot,x,u,p,t) = 0
     """
 
     def __init__(self, dxdt: MX | SX = None, defects: MX | SX = None):

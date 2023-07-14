@@ -636,6 +636,7 @@ class ConfigureProblem:
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
+            nlp.time,
             nlp,
             **extra_params,
         )
@@ -649,9 +650,10 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
+                nlp.time,
             ],
             [dynamics_dxdt],
-            ["x", "u", "p"],
+            ["x", "u", "p", "t"],
             ["xdot"],
         )
         if expand:

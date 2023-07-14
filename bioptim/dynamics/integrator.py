@@ -48,7 +48,7 @@ class Integrator:
         Get the multithreaded CasADi graph of the integration
     get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, time: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     _finish_init(self)
         Prepare the CasADi function from dxdt
@@ -123,7 +123,7 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling, time: MX | SX) -> tuple:
         """
         The dynamics of the system
 
@@ -394,7 +394,11 @@ class RK4(RK):
         -------
         The next integrate states
         """
-
+        # # f(x,u, p, t2)
+        # k1 = self.fun(x_prev, self.get_u(u, t), p, t)[:, self.idx]   # f2(x,u,p,t2)   # f20(x,u,p)
+        # k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm/2)[:, self.idx] # f2(x + h / 2 * k1,u,p, t2 + dt/2)  # f21(x,u, p)
+        # k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm/2)[:, self.idx] # f2(x + h / 2 * k2,u,p, t2 + dt/2)  # f22(x,u, p)
+        # k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, t + self.h_norm)[:, self.idx] # f2(x + h * k3,u,p, t2 + dt) # f23(x,u,p)
         k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
         k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
         k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]

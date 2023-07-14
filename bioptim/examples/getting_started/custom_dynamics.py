@@ -9,7 +9,7 @@ More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE
 
 import platform
 
-from casadi import MX, SX, vertcat
+from casadi import MX, SX, vertcat, horzcat
 from bioptim import (
     BiorbdModel,
     Node,
@@ -35,11 +35,13 @@ def custom_dynamic(
     states: MX | SX,
     controls: MX | SX,
     parameters: MX | SX,
+    t: MX | SX,
     nlp: NonLinearProgram,
     my_additional_factor=1,
+
 ) -> DynamicsEvaluation:
     """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
+    The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p, t)
 
     Parameters
     ----------
@@ -61,7 +63,7 @@ def custom_dynamic(
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+    tau = vertcat(*[DynamicsFunctions.get(nlp.controls["tau"], controls) + 10 * t for t in range(t.shape[1])])
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
@@ -71,7 +73,7 @@ def custom_dynamic(
     # as the first argument of DynamicsEvaluation or
     # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
     # which may be useful for IRK or COLLOCATION integrators
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
+    return DynamicsEvaluation(dxdt=vertcat(dq, ddq, t), defects=None)
 
 
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1):
