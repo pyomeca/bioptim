@@ -402,6 +402,8 @@ class Solver:
             Armijo condition, coefficient of decrease in merit
         set_hessian_approximation(hessian_approximation: str):
             Hessian approximation method
+        set_nlp_scaling_method(scaling_method: str):
+            Method used to scale the NLP
         set_lbfgs_memory(lbfgs_memory: int):
             Size of L-BFGS memory.
         set_maximum_iterations(max_iter: int):
@@ -527,6 +529,9 @@ class Solver:
 
         def set_hessian_approximation(self, hessian_approximation: str):
             self._hessian_approximation = hessian_approximation
+
+        def set_nlp_scaling_method(self, nlp_scaling_metod: str):
+            self._nlp_scaling_metod = nlp_scaling_metod
 
         def set_lbfgs_memory(self, lbfgs_memory: int):
             """
