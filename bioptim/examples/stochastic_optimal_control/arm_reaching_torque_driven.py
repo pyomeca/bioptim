@@ -441,6 +441,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
 
     return f_expectedEffort_fb
 
+
 def track_final_marker(controller: PenaltyController) -> cas.MX:
     """
     Track the hand position.
