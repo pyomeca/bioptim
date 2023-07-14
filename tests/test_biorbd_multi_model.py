@@ -255,10 +255,22 @@ def test_biorbd_model():
     for i in range(3):
         for j in range(3):
             np.testing.assert_almost_equal(
-                mass_matrix["o0"][i, j], DM(np.array([[8.99991, 5.14091, 1.44319], [5.14091, 4.23625, 1.61812], [1.44319, 1.61812, 0.954331]])[i, j]), decimal=5
+                mass_matrix["o0"][i, j],
+                DM(
+                    np.array([[8.99991, 5.14091, 1.44319], [5.14091, 4.23625, 1.61812], [1.44319, 1.61812, 0.954331]])[
+                        i, j
+                    ]
+                ),
+                decimal=5,
             )
             np.testing.assert_almost_equal(
-                mass_matrix["o1"][i, j], DM(np.array([[13.3131, 7.56109, 2.76416], [7.56109, 4.75431, 1.87716], [2.76416, 1.87716, 0.945231]])[i, j]), decimal=5
+                mass_matrix["o1"][i, j],
+                DM(
+                    np.array([[13.3131, 7.56109, 2.76416], [7.56109, 4.75431, 1.87716], [2.76416, 1.87716, 0.945231]])[
+                        i, j
+                    ]
+                ),
+                decimal=5,
             )
 
     for j in range(3):
