@@ -236,7 +236,12 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         # Note: useless but needed to run bioptim as it need to test the size of xdot
         nlp.dynamics_func = Function(
             "ForwardDyn",
-            [nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced, nlp.parameters.mx, nlp.stochastic_variables.mx],
+            [
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.mx,
+                nlp.stochastic_variables.mx,
+            ],
             [dynamics_dxdt],
             ["x", "u", "p", "s"],
             ["xdot"],

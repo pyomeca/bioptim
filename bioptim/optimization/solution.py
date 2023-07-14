@@ -583,9 +583,7 @@ class Solution:
         elif sol is None:
             self.ns = []
         else:
-            raise ValueError(
-                "Solution called with unknown initializer"
-            )
+            raise ValueError("Solution called with unknown initializer")
 
     def _to_unscaled_values(self, states_scaled, controls_scaled) -> tuple:
         """
