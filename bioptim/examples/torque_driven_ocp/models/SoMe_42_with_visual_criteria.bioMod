@@ -1,0 +1,680 @@
+version 4
+
+root_actuated 0
+external_forces 0
+
+gravity 0 0 -9.81
+
+segment Trampo_bed
+endsegment
+
+marker Trampo_corner_1
+	parent Trampo_bed
+	position -1.07 -2.14 -0.83
+endmarker
+
+marker Trampo_corner_2
+	parent Trampo_bed
+	position -1.07 2.14 -0.83
+endmarker
+
+marker Trampo_corner_3
+	parent Trampo_bed
+	position 1.07 -2.14 -0.83
+endmarker
+
+marker Trampo_corner_4
+	parent Trampo_bed
+	position 1.07 2.14 -0.83
+endmarker
+
+marker fixation_front
+	parent Trampo_bed
+	position 0 -1.07 -0.83
+endmarker
+
+marker fixation_center
+	parent Trampo_bed
+	position 0 0 -0.83
+endmarker
+
+	
+segment Pelvis
+	rt 0.0 0.0 0.0 xyz 0.0 0.0 0.0
+	translations xyz
+	rotations xyz
+	rangesQ
+		-0.5 0.5
+		-0.5 0.5
+		0 5
+		-10*3.14 10*3.14
+		-10*3.14 10*3.14
+		-10*3.14 10*3.14
+	com 0.0 0.0 0.0
+	mass 7.675025110374424
+	inertia
+		0.03779648711896561 0.0 0.0
+		0.0 0.07082405858190183 0.0
+		0.0 0.0 0.06049873913533803
+endsegment
+
+segment Thorax
+	parent Pelvis
+	rt 0.0 0.0 0.0 xyz 0.0 0.0 0.10691934707592193
+	com 0.0 0.0 0.16964581895320646
+	mass 16.761753111614897
+	inertia
+		0.1695723294081144 0.0 0.0
+		0.0 0.24777379453235931 0.0
+		0.0 0.0 0.16817009906757605
+endsegment
+
+segment Head
+	parent Thorax
+	rt 0.0 0.0 0.0 xyz 0.0 0.0 0.322
+	rotations zx
+	rangesQ
+		-3.14/2 3.14/2
+		-3.14/4 3.14/4
+	com 0.0 0.0 0.1169371541218166
+	mass 3.9436452215486697
+	inertia
+		0.019654858975982244 0.0 0.0
+		0.0 0.019654858975982244 0.0
+		0.0 0.0 0.01093028555984711
+endsegment
+
+segment Eyes
+	parent Head
+	rt 0.0 0.0 0.0 xyz 0.0 -0.055 0.085
+	rotations zx
+	rangesQ
+		-3.14/4 3.14/4
+		-3.14/4 3.14/4
+	com 0.01 0.0 0.0
+	mass 0.0000001 
+	inertia
+		0.000001 0.0 0.0
+		0.0 0.000001 0.0
+		0.0 0.0 0.000001
+endsegment
+
+
+marker eyes_vect_start
+	parent Eyes
+	position 0 0 0
+endmarker
+
+marker eyes_vect_end
+	parent Eyes
+	position 0 -3 0
+endmarker
+
+marker cone_approx_0_0
+	parent Eyes
+	position 0.0 -3 0.0
+endmarker
+marker cone_approx_0_1
+	parent Eyes
+	position 0.0 -3 0.0
+endmarker
+marker cone_approx_0_2
+	parent Eyes
+	position 0.0 -3 0.0
+endmarker
+marker cone_approx_0_3
+	parent Eyes
+	position -0.0 -3 0.0
+endmarker
+marker cone_approx_0_4
+	parent Eyes
+	position -0.0 -3 0.0
+endmarker
+marker cone_approx_0_5
+	parent Eyes
+	position -0.0 -3 0.0
+endmarker
+marker cone_approx_0_6
+	parent Eyes
+	position -0.0 -3 -0.0
+endmarker
+marker cone_approx_0_7
+	parent Eyes
+	position -0.0 -3 -0.0
+endmarker
+marker cone_approx_0_8
+	parent Eyes
+	position 0.0 -3 -0.0
+endmarker
+marker cone_approx_0_9
+	parent Eyes
+	position 0.0 -3 -0.0
+endmarker
+marker cone_approx_1_0
+	parent Eyes
+	position 0.12426406871192852 -3 0.0
+endmarker
+marker cone_approx_1_1
+	parent Eyes
+	position 0.10053174337812636 -3 0.07304058697873013
+endmarker
+marker cone_approx_1_2
+	parent Eyes
+	position 0.0383997090221621 -3 0.11818215228982833
+endmarker
+marker cone_approx_1_3
+	parent Eyes
+	position -0.03839970902216209 -3 0.11818215228982834
+endmarker
+marker cone_approx_1_4
+	parent Eyes
+	position -0.10053174337812634 -3 0.07304058697873014
+endmarker
+marker cone_approx_1_5
+	parent Eyes
+	position -0.12426406871192852 -3 1.5217959399709002e-17
+endmarker
+marker cone_approx_1_6
+	parent Eyes
+	position -0.10053174337812637 -3 -0.07304058697873012
+endmarker
+marker cone_approx_1_7
+	parent Eyes
+	position -0.038399709022162117 -3 -0.11818215228982833
+endmarker
+marker cone_approx_1_8
+	parent Eyes
+	position 0.038399709022162075 -3 -0.11818215228982834
+endmarker
+marker cone_approx_1_9
+	parent Eyes
+	position 0.10053174337812634 -3 -0.07304058697873016
+endmarker
+marker cone_approx_2_0
+	parent Eyes
+	position 0.24852813742385704 -3 0.0
+endmarker
+marker cone_approx_2_1
+	parent Eyes
+	position 0.2010634867562527 -3 0.14608117395746026
+endmarker
+marker cone_approx_2_2
+	parent Eyes
+	position 0.0767994180443242 -3 0.23636430457965665
+endmarker
+marker cone_approx_2_3
+	parent Eyes
+	position -0.07679941804432418 -3 0.23636430457965668
+endmarker
+marker cone_approx_2_4
+	parent Eyes
+	position -0.20106348675625269 -3 0.1460811739574603
+endmarker
+marker cone_approx_2_5
+	parent Eyes
+	position -0.24852813742385704 -3 3.0435918799418003e-17
+endmarker
+marker cone_approx_2_6
+	parent Eyes
+	position -0.20106348675625274 -3 -0.14608117395746023
+endmarker
+marker cone_approx_2_7
+	parent Eyes
+	position -0.07679941804432423 -3 -0.23636430457965665
+endmarker
+marker cone_approx_2_8
+	parent Eyes
+	position 0.07679941804432415 -3 -0.23636430457965668
+endmarker
+marker cone_approx_2_9
+	parent Eyes
+	position 0.20106348675625269 -3 -0.14608117395746031
+endmarker
+marker cone_approx_3_0
+	parent Eyes
+	position 0.37279220613578556 -3 0.0
+endmarker
+marker cone_approx_3_1
+	parent Eyes
+	position 0.30159523013437906 -3 0.21912176093619037
+endmarker
+marker cone_approx_3_2
+	parent Eyes
+	position 0.1151991270664863 -3 0.354546456869485
+endmarker
+marker cone_approx_3_3
+	parent Eyes
+	position -0.11519912706648626 -3 0.354546456869485
+endmarker
+marker cone_approx_3_4
+	parent Eyes
+	position -0.30159523013437906 -3 0.2191217609361904
+endmarker
+marker cone_approx_3_5
+	parent Eyes
+	position -0.37279220613578556 -3 4.565387819912701e-17
+endmarker
+marker cone_approx_3_6
+	parent Eyes
+	position -0.3015952301343791 -3 -0.21912176093619032
+endmarker
+marker cone_approx_3_7
+	parent Eyes
+	position -0.11519912706648634 -3 -0.354546456869485
+endmarker
+marker cone_approx_3_8
+	parent Eyes
+	position 0.11519912706648622 -3 -0.354546456869485
+endmarker
+marker cone_approx_3_9
+	parent Eyes
+	position 0.30159523013437906 -3 -0.21912176093619046
+endmarker
+marker cone_approx_4_0
+	parent Eyes
+	position 0.4970562748477141 -3 0.0
+endmarker
+marker cone_approx_4_1
+	parent Eyes
+	position 0.4021269735125054 -3 0.2921623479149205
+endmarker
+marker cone_approx_4_2
+	parent Eyes
+	position 0.1535988360886484 -3 0.4727286091593133
+endmarker
+marker cone_approx_4_3
+	parent Eyes
+	position -0.15359883608864836 -3 0.47272860915931336
+endmarker
+marker cone_approx_4_4
+	parent Eyes
+	position -0.40212697351250537 -3 0.2921623479149206
+endmarker
+marker cone_approx_4_5
+	parent Eyes
+	position -0.4970562748477141 -3 6.087183759883601e-17
+endmarker
+marker cone_approx_4_6
+	parent Eyes
+	position -0.4021269735125055 -3 -0.29216234791492046
+endmarker
+marker cone_approx_4_7
+	parent Eyes
+	position -0.15359883608864847 -3 -0.4727286091593133
+endmarker
+marker cone_approx_4_8
+	parent Eyes
+	position 0.1535988360886483 -3 -0.47272860915931336
+endmarker
+marker cone_approx_4_9
+	parent Eyes
+	position 0.40212697351250537 -3 -0.29216234791492063
+endmarker
+marker cone_approx_5_0
+	parent Eyes
+	position 0.6213203435596426 -3 0.0
+endmarker
+marker cone_approx_5_1
+	parent Eyes
+	position 0.5026587168906318 -3 0.36520293489365063
+endmarker
+marker cone_approx_5_2
+	parent Eyes
+	position 0.1919985451108105 -3 0.5909107614491417
+endmarker
+marker cone_approx_5_3
+	parent Eyes
+	position -0.19199854511081044 -3 0.5909107614491417
+endmarker
+marker cone_approx_5_4
+	parent Eyes
+	position -0.5026587168906317 -3 0.3652029348936507
+endmarker
+marker cone_approx_5_5
+	parent Eyes
+	position -0.6213203435596426 -3 7.608979699854502e-17
+endmarker
+marker cone_approx_5_6
+	parent Eyes
+	position -0.5026587168906319 -3 -0.3652029348936505
+endmarker
+marker cone_approx_5_7
+	parent Eyes
+	position -0.19199854511081058 -3 -0.5909107614491417
+endmarker
+marker cone_approx_5_8
+	parent Eyes
+	position 0.19199854511081035 -3 -0.5909107614491417
+endmarker
+marker cone_approx_5_9
+	parent Eyes
+	position 0.5026587168906317 -3 -0.36520293489365074
+endmarker
+marker cone_approx_6_0
+	parent Eyes
+	position 0.7455844122715711 -3 0.0
+endmarker
+marker cone_approx_6_1
+	parent Eyes
+	position 0.6031904602687581 -3 0.43824352187238075
+endmarker
+marker cone_approx_6_2
+	parent Eyes
+	position 0.2303982541329726 -3 0.70909291373897
+endmarker
+marker cone_approx_6_3
+	parent Eyes
+	position -0.23039825413297252 -3 0.70909291373897
+endmarker
+marker cone_approx_6_4
+	parent Eyes
+	position -0.6031904602687581 -3 0.4382435218723808
+endmarker
+marker cone_approx_6_5
+	parent Eyes
+	position -0.7455844122715711 -3 9.130775639825402e-17
+endmarker
+marker cone_approx_6_6
+	parent Eyes
+	position -0.6031904602687582 -3 -0.43824352187238064
+endmarker
+marker cone_approx_6_7
+	parent Eyes
+	position -0.23039825413297269 -3 -0.70909291373897
+endmarker
+marker cone_approx_6_8
+	parent Eyes
+	position 0.23039825413297244 -3 -0.70909291373897
+endmarker
+marker cone_approx_6_9
+	parent Eyes
+	position 0.6031904602687581 -3 -0.4382435218723809
+endmarker
+marker cone_approx_7_0
+	parent Eyes
+	position 0.8698484809834997 -3 0.0
+endmarker
+marker cone_approx_7_1
+	parent Eyes
+	position 0.7037222036468845 -3 0.5112841088511109
+endmarker
+marker cone_approx_7_2
+	parent Eyes
+	position 0.2687979631551347 -3 0.8272750660287983
+endmarker
+marker cone_approx_7_3
+	parent Eyes
+	position -0.2687979631551346 -3 0.8272750660287984
+endmarker
+marker cone_approx_7_4
+	parent Eyes
+	position -0.7037222036468844 -3 0.511284108851111
+endmarker
+marker cone_approx_7_5
+	parent Eyes
+	position -0.8698484809834997 -3 1.0652571579796301e-16
+endmarker
+marker cone_approx_7_6
+	parent Eyes
+	position -0.7037222036468846 -3 -0.5112841088511108
+endmarker
+marker cone_approx_7_7
+	parent Eyes
+	position -0.26879796315513477 -3 -0.8272750660287983
+endmarker
+marker cone_approx_7_8
+	parent Eyes
+	position 0.2687979631551345 -3 -0.8272750660287984
+endmarker
+marker cone_approx_7_9
+	parent Eyes
+	position 0.7037222036468844 -3 -0.5112841088511111
+endmarker
+marker cone_approx_8_0
+	parent Eyes
+	position 0.9941125496954282 -3 0.0
+endmarker
+marker cone_approx_8_1
+	parent Eyes
+	position 0.8042539470250109 -3 0.584324695829841
+endmarker
+marker cone_approx_8_2
+	parent Eyes
+	position 0.3071976721772968 -3 0.9454572183186266
+endmarker
+marker cone_approx_8_3
+	parent Eyes
+	position -0.3071976721772967 -3 0.9454572183186267
+endmarker
+marker cone_approx_8_4
+	parent Eyes
+	position -0.8042539470250107 -3 0.5843246958298411
+endmarker
+marker cone_approx_8_5
+	parent Eyes
+	position -0.9941125496954282 -3 1.2174367519767201e-16
+endmarker
+marker cone_approx_8_6
+	parent Eyes
+	position -0.804253947025011 -3 -0.5843246958298409
+endmarker
+marker cone_approx_8_7
+	parent Eyes
+	position -0.30719767217729693 -3 -0.9454572183186266
+endmarker
+marker cone_approx_8_8
+	parent Eyes
+	position 0.3071976721772966 -3 -0.9454572183186267
+endmarker
+marker cone_approx_8_9
+	parent Eyes
+	position 0.8042539470250107 -3 -0.5843246958298413
+endmarker
+marker cone_approx_9_0
+	parent Eyes
+	position 1.1183766184073567 -3 0.0
+endmarker
+marker cone_approx_9_1
+	parent Eyes
+	position 0.9047856904031373 -3 0.6573652828085711
+endmarker
+marker cone_approx_9_2
+	parent Eyes
+	position 0.3455973811994589 -3 1.063639370608455
+endmarker
+marker cone_approx_9_3
+	parent Eyes
+	position -0.34559738119945876 -3 1.063639370608455
+endmarker
+marker cone_approx_9_4
+	parent Eyes
+	position -0.9047856904031372 -3 0.6573652828085712
+endmarker
+marker cone_approx_9_5
+	parent Eyes
+	position -1.1183766184073567 -3 1.3696163459738104e-16
+endmarker
+marker cone_approx_9_6
+	parent Eyes
+	position -0.9047856904031374 -3 -0.657365282808571
+endmarker
+marker cone_approx_9_7
+	parent Eyes
+	position -0.34559738119945904 -3 -1.063639370608455
+endmarker
+marker cone_approx_9_8
+	parent Eyes
+	position 0.34559738119945865 -3 -1.063639370608455
+endmarker
+marker cone_approx_9_9
+	parent Eyes
+	position 0.9047856904031372 -3 -0.6573652828085713
+endmarker
+marker cone_approx_10_0
+	parent Eyes
+	position 1.2426406871192852 -3 0.0
+endmarker
+marker cone_approx_10_1
+	parent Eyes
+	position 1.0053174337812636 -3 0.7304058697873013
+endmarker
+marker cone_approx_10_2
+	parent Eyes
+	position 0.383997090221621 -3 1.1818215228982833
+endmarker
+marker cone_approx_10_3
+	parent Eyes
+	position -0.3839970902216209 -3 1.1818215228982833
+endmarker
+marker cone_approx_10_4
+	parent Eyes
+	position -1.0053174337812634 -3 0.7304058697873014
+endmarker
+marker cone_approx_10_5
+	parent Eyes
+	position -1.2426406871192852 -3 1.5217959399709003e-16
+endmarker
+marker cone_approx_10_6
+	parent Eyes
+	position -1.0053174337812638 -3 -0.730405869787301
+endmarker
+marker cone_approx_10_7
+	parent Eyes
+	position -0.38399709022162115 -3 -1.1818215228982833
+endmarker
+marker cone_approx_10_8
+	parent Eyes
+	position 0.3839970902216207 -3 -1.1818215228982833
+endmarker
+marker cone_approx_10_9
+	parent Eyes
+	position 1.0053174337812634 -3 -0.7304058697873015
+endmarker
+
+
+segment RightUpperArm
+	parent Thorax
+	rt 0 0.17 0.1 xyz -0.18 0.0 0.25999999999999995
+	rotations zy
+	rangesQ
+		-0.65 2
+		-0.05 3
+	com 0.0 0.0 -0.11579539469552311
+	mass 1.569290839009084
+	inertia
+		0.008572587015903282 0.0 0.0
+		0.0 0.008572587015903282 0.0
+		0.0 0.0 0.0015458844507023558
+endsegment
+
+segment RightForearm
+	parent RightUpperArm
+	rt 0.0 0.0 0.0 xyz 0.0 0.0 -0.24350000000000002
+	com 0.0 0.0 -0.09478305833450895
+	mass 0.8754802725163806
+	inertia
+		0.0034417004296885077 0.0 0.0
+		0.0 0.0034850839826728753 0.0
+		0.0 0.0 0.0005205672999114934
+endsegment
+
+segment RightHand
+	parent RightForearm
+	rt 0.0 0.0 0.0 xyz 0.0 0.0 -0.22349999999999998
+	com 0.0 0.0 -0.06033342208442053
+	mass 0.2444923481642268
+	inertia
+		0.00038077991636840285 0.0 0.0
+		0.0 0.00043171611747488926 0.0
+		0.0 0.0 0.00010085370145929663
+endsegment
+
+	marker MidMainD
+		parent RightHand
+		position 0 0 -0.1
+	endmarker
+
+segment LeftUpperArm
+	parent Thorax
+	rt 0 -0.17 -0.1 xyz 0.18 0.0 0.25999999999999995
+	rotations zy
+	rangesQ
+		-2 0.65
+		-3 0.05
+	com 0.0 0.0 -0.11579539469552311
+	mass 1.569290839009084
+	inertia
+		0.008572587015903282 0.0 0.0
+		0.0 0.008572587015903282 0.0
+		0.0 0.0 0.0015458844507023558
+endsegment
+
+segment LeftForearm
+	parent LeftUpperArm
+	rt 0.0 0.0 0.0 xyz 0.0 0.0 -0.24350000000000002
+	com 0.0 0.0 -0.09478305833450895
+	mass 0.8754802725163806
+	inertia
+		0.0034417004296885077 0.0 0.0
+		0.0 0.0034850839826728753 0.0
+		0.0 0.0 0.0005205672999114934
+endsegment
+
+segment LeftHand
+	parent LeftForearm
+	rt 0.0 0.0 0.0 xyz 0.0 0.0 -0.22349999999999998
+	com 0.0 0.0 -0.06033342208442053
+	mass 0.2444923481642268
+	inertia
+		0.00038077991636840285 0.0 0.0
+		0.0 0.00043171611747488926 0.0
+		0.0 0.0 0.00010085370145929663
+endsegment
+
+	marker MidMainG
+		parent LeftHand
+		position 0 0 -0.1
+	endmarker
+
+segment Thighs
+	parent Pelvis
+	rt 0.0 0.0 0.0 xyz 0.0 0.0 -0.08608065292407807
+	com 0.0 0.0 -0.17089938491274764
+	mass 16.759868032417362
+	inertia
+		0.22636667008666034 0.0 0.0
+		0.0 0.32703062745636713 0.0
+		0.0 0.0 0.1605173999990793
+endsegment
+
+segment Shanks
+	parent Thighs
+	rt 0.0 0.0 0.0 xyz 0.0 0.0 -0.3775
+	com 0.0 0.0 -0.17877624969815803
+	mass 6.025039072122063
+	inertia
+		0.08169790576444133 0.0 0.0
+		0.0 0.11788579669137447 0.0
+		0.0 0.0 0.04385448191981976
+endsegment
+
+	marker CibleMainD
+		parent Shanks
+		position -0.1 0 -0.22
+	endmarker
+
+	marker CibleMainG
+		parent Shanks
+		position 0.1 0 -0.22
+	endmarker
+
+segment Feet
+	parent Shanks
+	rt -0.35 0 0 xyz 0.0 0.0 -0.36400000000000005
+	com 3.6956449538576916e-18 0.0 -0.06243250494552888
+	mass 1.0561425325432152
+	inertia
+		0.002054330685841803 1.4423761698259375e-20 -5.421010862427522e-20
+		1.4423761698259372e-20 0.008273648337148215 0.0
+		-5.421010862427522e-20 0.0 0.007111905908612709
+endsegment
