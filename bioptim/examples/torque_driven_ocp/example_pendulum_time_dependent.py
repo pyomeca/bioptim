@@ -80,6 +80,9 @@ def prepare_ocp(
     # dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
     dynamics.add(custom_configure, dynamic_function=custom_dynamic, expand=expand)
 
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
+
     # Path constraint
     x_bounds = BoundsList()
     x_bounds["q"] = bio_model.bounds_from_ranges("q")
@@ -103,6 +106,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         ode_solver=ode_solver,
+        # objective_functions=objective_functions,
         assume_phase_dynamics=assume_phase_dynamics,
     )
 

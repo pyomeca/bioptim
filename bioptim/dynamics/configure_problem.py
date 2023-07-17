@@ -613,7 +613,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven, expand=False)
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra_params):
+    def configure_dynamics_function(ocp, nlp, dyn_func, t, expand: bool = True, **extra_params):
         """
         Configure the dynamics of the system
 
@@ -636,7 +636,7 @@ class ConfigureProblem:
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
-            nlp.time,
+            t,
             nlp,
             **extra_params,
         )
@@ -650,7 +650,8 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
-                nlp.time,
+                t
+                # nlp.time,
             ],
             [dynamics_dxdt],
             ["x", "u", "p", "t"],

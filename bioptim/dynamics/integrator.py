@@ -395,14 +395,16 @@ class RK4(RK):
         The next integrate states
         """
         # # f(x,u, p, t2)
-        # k1 = self.fun(x_prev, self.get_u(u, t), p, t)[:, self.idx]   # f2(x,u,p,t2)   # f20(x,u,p)
-        # k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm/2)[:, self.idx] # f2(x + h / 2 * k1,u,p, t2 + dt/2)  # f21(x,u, p)
-        # k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm/2)[:, self.idx] # f2(x + h / 2 * k2,u,p, t2 + dt/2)  # f22(x,u, p)
-        # k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, t + self.h_norm)[:, self.idx] # f2(x + h * k3,u,p, t2 + dt) # f23(x,u,p)
-        k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
-        k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
-        k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
-        k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p)[:, self.idx]
+        # Todo : comfirm [:4]
+        k1 = self.fun(x_prev, self.get_u(u, t), p, t)[:, self.idx][self.idx:self.idx+4]   # f2(x,u,p,t2)   # f20(x,u,p)
+        k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm/2)[:, self.idx][self.idx:self.idx+4]   # f2(x + h / 2 * k1,u,p, t2 + dt/2)  # f21(x,u, p)
+        k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm/2)[:, self.idx][self.idx:self.idx+4]   # f2(x + h / 2 * k2,u,p, t2 + dt/2)  # f22(x,u, p)
+        k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, t + self.h_norm)[:, self.idx][self.idx:self.idx+4]   # f2(x + h * k3,u,p, t2 + dt) # f23(x,u,p)
+
+        # k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
+        # k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
+        # k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
+        # k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p)[:, self.idx]
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 

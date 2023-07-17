@@ -63,7 +63,7 @@ def custom_dynamic(
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = vertcat(*[DynamicsFunctions.get(nlp.controls["tau"], controls) + 10 * t for t in range(t.shape[1])])
+    tau = vertcat(*[DynamicsFunctions.get(nlp.controls["tau"], controls) + 10 * t for t in range(t.shape[1])])  # same method as fatigable tau
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
@@ -94,7 +94,11 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_addit
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, my_additional_factor=my_additional_factor)
+    t = (
+        MX.sym("t") if nlp.cx.type_name() == "MX" else SX.sym("t")
+    )  # t needs a symbolic value to start computing in custom_configure_dynamics_function
+
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, t=t, my_additional_factor=my_additional_factor)
 
 
 def prepare_ocp(

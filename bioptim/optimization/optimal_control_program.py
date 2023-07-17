@@ -344,12 +344,14 @@ class OptimalControlProgram:
         xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
         u_scaling = self._prepare_option_dict_for_phase("u_scaling", u_scaling, VariableScalingList)
 
-        time = horzcat()
+
+        # WHY DM ?
+        time = vertcat()
         if isinstance(ode_solver, OdeSolver.RK4):
             for i in range(ns):
                 for j in range(ode_solver.steps):
                     for k in range(2):
-                        time = horzcat(time, (i*phase_time/ns)+((j*(phase_time/ns))/ode_solver.steps)+((k/2)*(phase_time/ns/ode_solver.steps)))
+                        time = vertcat(time, (i*phase_time/ns)+((j*(phase_time/ns))/ode_solver.steps)+((k/2)*(phase_time/ns/ode_solver.steps)))
 
         # time = self._prepare_option_dict_for_phase("time", time, DM) ?
 
