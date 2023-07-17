@@ -959,7 +959,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value, assume_phase_dynami
         RuntimeError,
         match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
     ):
-        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], [], 0))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], [], [], 0))
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])

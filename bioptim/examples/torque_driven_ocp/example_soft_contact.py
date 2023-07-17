@@ -75,8 +75,10 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     x["qdot"] = [1e-10, 1e-10, 1e-10]
     u = InitialGuessList()
     u["tau"] = [0, 0, 0]
+    p = InitialGuessList()
+    s = InitialGuessList()
 
-    sol_from_initial_guess = Solution(ocp, [x, u])
+    sol_from_initial_guess = Solution(ocp, [x, u, p, s])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
 
@@ -87,8 +89,10 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     x["qdot"] = np.array([0] * 3)
     u = InitialGuessList()
     u["tau"] = [0, 0, -10]
+    p = InitialGuessList()
+    s = InitialGuessList()
 
-    sol_from_initial_guess = Solution(ocp, [x, u])
+    sol_from_initial_guess = Solution(ocp, [x, u, p, s])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
 

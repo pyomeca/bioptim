@@ -557,7 +557,7 @@ class PenaltyFunctionAbstract:
                         controller.states.mx,
                         controller.controls.mx,
                         controller.parameters.mx,
-                        controller.stochastic_variables.cx_start,
+                        controller.stochastic_variables.mx,
                     )[controller.states["qdot"].index, :],
                 )
                 # TODO scaled?
