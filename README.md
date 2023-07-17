@@ -40,6 +40,8 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [From the sources](#installing-from-the-sources-for-linux-mac-and-windows)
 - [Installation complete](#installation-complete)
 
+[Defining our optimal control problems](#defining-our-optimal-control-problems)
+
 [A first practical example](#a-first-practical-example)
 - [The import](#the-import)
 - [Building the ocp](#building-the-ocp)
@@ -235,6 +237,18 @@ python setup.py install
 ```
 Assuming everything went well, that is it! 
 You can already enjoy bioptimizing!
+
+# Defining our optimal control problems
+Here we will detail our implementation of optimal control problems and some definitions.
+The mathematical transcription of the OCP is as follows:
+![](OCP_equation.png)
+The optimization variables are the states (x = variables that represent the state of the system at each node and that 
+are subject to continuity constraints), controls (u = decision variables defined at each node that have an effect on the system),
+algebraic states (s = optimization variables that are defined at each node, but that are not subject to the 
+built-in continuity constraints), and parameters (p = optimization variables that are defined once per phase).
+The state continuity constraints implementation may vary depending on the transcription of the problem (implicit vs explicit, direct multiple shooting vs direct collocations).
+
+The cost function can include Mayer terms (function evaluated at one node) and Lagrange terms (functions integrated over the duration of the phase).
 
 # A first practical example
 The easiest way to learn `bioptim` is to dive into it.
