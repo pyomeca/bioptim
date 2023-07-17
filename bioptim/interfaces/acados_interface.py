@@ -98,6 +98,9 @@ class AcadosInterface(SolverInterface):
         if not ocp.assume_phase_dynamics:
             raise RuntimeError("ACADOS necessitate assume_phase_dynamics=True")
 
+        if ocp.nlp[0].stochastic_variables.cx_start.shape[0] != 0:
+            raise RuntimeError("ACADOS does not support stochastic variables yet")
+
         super().__init__(ocp)
 
         # solver_options = solver_options.__dict__
