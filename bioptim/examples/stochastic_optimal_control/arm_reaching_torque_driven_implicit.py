@@ -260,7 +260,6 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
         )
     )
 
-
     hand_pos = controllers[0].model.markers(q_sym)[2][:2]
     hand_vel = controllers[0].model.marker_velocities(q_sym, qdot_sym)[2][:2]
 
@@ -309,15 +308,12 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     # create the casadi function to be evaluated
     # Get the symbolic variables
     ref = controller.stochastic_variables["ref"].cx_start
-    cov_matrix = (
-        controller.stochastic_variables["cov"]
-        .reshape_to_matrix(
-            controller.stochastic_variables,
-            controller.states.cx_start.shape[0],
-            controller.states.cx_start.shape[0],
-            Node.START,
-            "cov",
-        )
+    cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
+        controller.stochastic_variables,
+        controller.states.cx_start.shape[0],
+        controller.states.cx_start.shape[0],
+        Node.START,
+        "cov",
     )
 
     k = controller.stochastic_variables["k"].cx_start
@@ -329,9 +325,9 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
 
     # Compute the expected effort
     hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
-    hand_vel = controller.model.marker_velocities(
-        controller.states["q"].cx_start, controller.states["qdot"].cx_start
-    )[2][:2]
+    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[
+        2
+    ][:2]
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
     ee = cas.vertcat(hand_pos, hand_vel)
     e_fb = k_matrix @ ((ee - ref) + sensory_noise_magnitude)
@@ -340,8 +336,7 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     func = cas.Function(
         "f_expectedEffort_fb",
-        [controller.states.cx_start,
-         controller.stochastic_variables.cx_start],
+        [controller.states.cx_start, controller.stochastic_variables.cx_start],
         [expectedEffort_fb_mx],
     )
 
@@ -471,7 +466,7 @@ def prepare_socp(
         key="qddot",
         weight=1e3 / 2,
         quadratic=False,
-        phase=0
+        phase=0,
     )
     objective_functions.add(
         expected_feedback_effort,
@@ -480,7 +475,7 @@ def prepare_socp(
         sensory_noise_magnitude=sensory_noise_magnitude,
         weight=1e3 / 2,
         quadratic=False,
-        phase=0
+        phase=0,
     )
 
     # Constraints

@@ -578,7 +578,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             return controller.mx_to_cx("forward_dynamics", controller.controls["fext"].mx - soft_contact_force, *var)
 
-
         @staticmethod
         def stochastic_covariance_matrix_continuity_implicit(
             penalty: PenaltyOption,
@@ -605,7 +604,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.stochastic_variables, nx, nx, Node.START, "m"
             )
 
-            sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude) * MX_eye(vertcat(sensory_noise_magnitude, motor_noise_magnitude).shape[0])
+            sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude) * MX_eye(
+                vertcat(sensory_noise_magnitude, motor_noise_magnitude).shape[0]
+            )
             dt = controller.tf / controller.ns
             dg_dw = -dt * c_matrix
             dg_dx = -MX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
@@ -620,13 +621,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             out_vector = controller.stochastic_variables["cov"].reshape_to_vector(cov_implicit_deffect)
             return out_vector
 
-
         @staticmethod
-        def stochastic_dg_dx_implicit(penalty: Constraint,
-                                      controller: PenaltyController,
-                                      dynamics: Callable,
-                                      motor_noise_magnitude: DM,
-                                      sensory_noise_magnitude: DM,):
+        def stochastic_dg_dx_implicit(
+            penalty: Constraint,
+            controller: PenaltyController,
+            dynamics: Callable,
+            motor_noise_magnitude: DM,
+            sensory_noise_magnitude: DM,
+        ):
             """
             This function constrains the stochastic matrix A to its actual value which is
             A = dG/dx
@@ -635,10 +637,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             dt = controller.tf / controller.ns
 
             nx = controller.states.cx.shape[0]
-            a_matrix = (
-                controller
-                .stochastic_variables["a"]
-                .reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "a")
+            a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
+                controller.stochastic_variables, nx, nx, Node.START, "a"
             )
 
             motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
@@ -683,11 +683,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return out_vector
 
         @staticmethod
-        def stochastic_dg_dw_implicit(penalty: Constraint,
-                                      controller: PenaltyController,
-                                      dynamics: Callable,
-                                      motor_noise_magnitude: DM,
-                                      sensory_noise_magnitude: DM,):
+        def stochastic_dg_dw_implicit(
+            penalty: Constraint,
+            controller: PenaltyController,
+            dynamics: Callable,
+            motor_noise_magnitude: DM,
+            sensory_noise_magnitude: DM,
+        ):
             """
             This function constrains the stochastic matrix C to its actual value which is
             A = dG/dw
@@ -696,10 +698,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             dt = controller.tf / controller.ns
 
             nx = controller.states.cx.shape[0]
-            c_matrix = (
-                controller
-                .stochastic_variables["c"]
-                .reshape_to_matrix(controller.stochastic_variables, nx, nx, Node.START, "c")
+            c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
+                controller.stochastic_variables, nx, nx, Node.START, "c"
             )
 
             motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
@@ -726,7 +726,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     motor_noise,
                     sensory_noise,
                 ],
-                [jacobian(dx.dxdt, vertcat(motor_noise, sensory_noise))]
+                [jacobian(dx.dxdt, vertcat(motor_noise, sensory_noise))],
             )
 
             DF_DW = DF_DW_fun(
@@ -738,7 +738,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 sensory_noise_magnitude,
             )
 
-            out = c_matrix - (- DF_DW * dt)
+            out = c_matrix - (-DF_DW * dt)
 
             out_vector = controller.stochastic_variables["c"].reshape_to_vector(out)
             return out_vector
@@ -792,7 +792,6 @@ class ConstraintFcn(FcnEnum):
     )
     STOCHASTIC_DG_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_dg_dx_implicit,)
     STOCHASTIC_DG_DW_IMPLICIT = (ConstraintFunction.Functions.stochastic_dg_dw_implicit,)
-
 
     @staticmethod
     def get_type():

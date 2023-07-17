@@ -176,9 +176,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         )
 
         self.problem_type = problem_type
-        self._declare_multi_node_penalties(multinode_constraints,
-                                           multinode_objectives,
-                                           constraints)
+        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints)
 
         self.finalize_penalties(
             skip_continuity,
@@ -189,7 +187,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_objectives,
         )
 
-    def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList, constraints: ConstraintList):
+    def _declare_multi_node_penalties(
+        self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList, constraints: ConstraintList
+    ):
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 

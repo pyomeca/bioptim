@@ -388,7 +388,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             out_vector = controllers[0].stochastic_variables["m"].reshape_to_vector(val)
             return out_vector
 
-
         @staticmethod
         def stochastic_helper_matrix_implicit(
             penalty,
@@ -452,20 +451,30 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
             nx = controllers[0].states.cx_start.shape[0]
-            cov_matrix = controllers[0].stochastic_variables["cov"].reshape_to_matrix(
-                controllers[0].stochastic_variables, nx, nx, Node.START, "cov"
+            cov_matrix = (
+                controllers[0]
+                .stochastic_variables["cov"]
+                .reshape_to_matrix(controllers[0].stochastic_variables, nx, nx, Node.START, "cov")
             )
-            cov_matrix_next = controllers[1].stochastic_variables["cov"].reshape_to_matrix(
-                controllers[1].stochastic_variables, nx, nx, Node.START, "cov"
+            cov_matrix_next = (
+                controllers[1]
+                .stochastic_variables["cov"]
+                .reshape_to_matrix(controllers[1].stochastic_variables, nx, nx, Node.START, "cov")
             )
-            a_matrix = controllers[0].stochastic_variables["a"].reshape_to_matrix(
-                controllers[0].stochastic_variables, nx, nx, Node.START, "a"
+            a_matrix = (
+                controllers[0]
+                .stochastic_variables["a"]
+                .reshape_to_matrix(controllers[0].stochastic_variables, nx, nx, Node.START, "a")
             )
-            c_matrix = controllers[0].stochastic_variables["c"].reshape_to_matrix(
-                controllers[0].stochastic_variables, nx, nx, Node.START, "c"
+            c_matrix = (
+                controllers[0]
+                .stochastic_variables["c"]
+                .reshape_to_matrix(controllers[0].stochastic_variables, nx, nx, Node.START, "c")
             )
-            m_matrix = controllers[0].stochastic_variables["m"].reshape_to_matrix(
-                controllers[0].stochastic_variables, nx, nx, Node.START, "m"
+            m_matrix = (
+                controllers[0]
+                .stochastic_variables["m"]
+                .reshape_to_matrix(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
             )
 
             sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude)
