@@ -1,4 +1,3 @@
-
 """
 The goal of this program is to test the computational speed of bioptim with a more complex problem.
 """
@@ -23,6 +22,7 @@ from bioptim import (
     BiorbdModel,
 )
 
+
 def custom_trampoline_bed_in_peripheral_vision(controller: PenaltyController) -> cas.MX:
     """
     This function aims to encourage the avatar to keep the trampoline bed in his peripheral vision.
@@ -35,26 +35,29 @@ def custom_trampoline_bed_in_peripheral_vision(controller: PenaltyController) ->
     n = 6  # order of the polynomial for the trampoline bed rectangle equation
 
     # Get the gaze vector
-    eyes_vect_start_marker_idx = controller.model.marker_index(f'eyes_vect_start')
-    eyes_vect_end_marker_idx = controller.model.marker_index(f'eyes_vect_end')
-    gaze_vector = controller.model.markers(controller.states["q"].mx)[eyes_vect_end_marker_idx] - controller.model.markers(controller.states["q"].mx)[eyes_vect_start_marker_idx]
+    eyes_vect_start_marker_idx = controller.model.marker_index(f"eyes_vect_start")
+    eyes_vect_end_marker_idx = controller.model.marker_index(f"eyes_vect_end")
+    gaze_vector = (
+        controller.model.markers(controller.states["q"].mx)[eyes_vect_end_marker_idx]
+        - controller.model.markers(controller.states["q"].mx)[eyes_vect_start_marker_idx]
+    )
 
     point_in_the_plane = np.array([1, 2, -0.83])
     vector_normal_to_the_plane = np.array([0, 0, 1])
     obj = 0
     for i_r in range(11):
         for i_th in range(10):
-
             # Get this vector from the vision cone
-            marker_idx = controller.model.marker_index(f'cone_approx_{i_r}_{i_th}')
+            marker_idx = controller.model.marker_index(f"cone_approx_{i_r}_{i_th}")
             vector_origin = controller.model.markers(controller.states["q"].mx)[eyes_vect_start_marker_idx]
             vector_end = controller.model.markers(controller.states["q"].mx)[marker_idx]
             vector = vector_end - vector_origin
 
             # Get the intersection between the vector and the trampoline plane
-            t = (cas.dot(point_in_the_plane, vector_normal_to_the_plane) - cas.dot(vector_normal_to_the_plane, vector_origin)) / cas.dot(
-                vector, vector_normal_to_the_plane
-            )
+            t = (
+                cas.dot(point_in_the_plane, vector_normal_to_the_plane)
+                - cas.dot(vector_normal_to_the_plane, vector_origin)
+            ) / cas.dot(vector, vector_normal_to_the_plane)
             point_projection = vector_origin + vector * cas.fabs(t)
 
             # Determine if the point is inside the trampoline bed
@@ -64,18 +67,29 @@ def custom_trampoline_bed_in_peripheral_vision(controller: PenaltyController) ->
             # 2. Not encourage to look to the middle of the trampoline bed
             # 3. Largely penalized when outside the trampoline bed
             # 4. Equaly penalized when looking upward
-            obj += cas.tanh(((point_projection[0]/a)**n + (point_projection[1]/b)**n) - 1) + 1
+            obj += cas.tanh(((point_projection[0] / a) ** n + (point_projection[1] / b) ** n) - 1) + 1
 
-    val = cas.if_else(gaze_vector[2] > -0.01, 2*10*11,
-                cas.if_else(cas.fabs(gaze_vector[0]/gaze_vector[2]) > np.tan(3*np.pi/8), 2*10*11,
-                            cas.if_else(cas.fabs(gaze_vector[1]/gaze_vector[2]) > np.tan(3*np.pi/8), 2*10*11, obj)))
+    val = cas.if_else(
+        gaze_vector[2] > -0.01,
+        2 * 10 * 11,
+        cas.if_else(
+            cas.fabs(gaze_vector[0] / gaze_vector[2]) > np.tan(3 * np.pi / 8),
+            2 * 10 * 11,
+            cas.if_else(cas.fabs(gaze_vector[1] / gaze_vector[2]) > np.tan(3 * np.pi / 8), 2 * 10 * 11, obj),
+        ),
+    )
     out = controller.mx_to_cx("peripheral_vision", val, controller.states["q"])
 
     return out
 
 
 def prepare_ocp(
-    biorbd_model_path: str, n_shooting: tuple, num_twists: int, n_threads: int, ode_solver: OdeSolver = OdeSolver.RK4(), WITH_VISUAL_CRITERIA: bool = False
+    biorbd_model_path: str,
+    n_shooting: tuple,
+    num_twists: int,
+    n_threads: int,
+    ode_solver: OdeSolver = OdeSolver.RK4(),
+    WITH_VISUAL_CRITERIA: bool = False,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -101,7 +115,6 @@ def prepare_ocp(
     nb_q = biorbd_model[0].nb_q
     nb_qdot = biorbd_model[0].nb_qdot
     nb_qddot_joints = nb_q - biorbd_model[0].nb_root
-
 
     # for lisibility
     if not WITH_VISUAL_CRITERIA:
@@ -168,10 +181,20 @@ def prepare_ocp(
 
     # Min control derivative
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qddot_joints", node=Node.ALL_SHOOTING, weight=1, phase=0, derivative=True,
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+        key="qddot_joints",
+        node=Node.ALL_SHOOTING,
+        weight=1,
+        phase=0,
+        derivative=True,
     )
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="qddot_joints", node=Node.ALL_SHOOTING, weight=1, phase=1, derivative=True,
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+        key="qddot_joints",
+        node=Node.ALL_SHOOTING,
+        weight=1,
+        phase=1,
+        derivative=True,
     )
 
     objective_functions.add(
@@ -183,62 +206,84 @@ def prepare_ocp(
 
     # aligning with the FIG regulations
     objective_functions.add(
-         ObjectiveFcn.Lagrange.MINIMIZE_STATE,
-         key="q",
-         node=Node.ALL_SHOOTING,
-         index=[YrotRightUpperArm, YrotLeftUpperArm],
-         weight=100,
-         phase=0,
+        ObjectiveFcn.Lagrange.MINIMIZE_STATE,
+        key="q",
+        node=Node.ALL_SHOOTING,
+        index=[YrotRightUpperArm, YrotLeftUpperArm],
+        weight=100,
+        phase=0,
     )
 
-
     if WITH_VISUAL_CRITERIA:
-
         # Spotting
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_SEGMENT_VELOCITY, segment="Head", weight=10000, phase=1)
 
         # Self-motion detection
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key='qdot', index=[ZrotEyes, XrotEyes], weight=100, phase=0)
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", index=[ZrotEyes, XrotEyes], weight=100, phase=0
+        )
 
         # Keeping the trampoline bed in the peripheral vision
-        objective_functions.add(custom_trampoline_bed_in_peripheral_vision, custom_type=ObjectiveFcn.Lagrange, weight=100, phase=0)
+        objective_functions.add(
+            custom_trampoline_bed_in_peripheral_vision, custom_type=ObjectiveFcn.Lagrange, weight=100, phase=0
+        )
 
         # Quiet eye
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS,
-                                vector_0_marker_0="eyes_vect_start",
-                                vector_0_marker_1="eyes_vect_end",
-                                vector_1_marker_0="eyes_vect_start",
-                                vector_1_marker_1="fixation_front",
-                                weight=1, phase=0)
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS,
-                                vector_0_marker_0="eyes_vect_start",
-                                vector_0_marker_1="eyes_vect_end",
-                                vector_1_marker_0="eyes_vect_start",
-                                vector_1_marker_1="fixation_front",
-                                weight=10000, phase=1)
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS,
+            vector_0_marker_0="eyes_vect_start",
+            vector_0_marker_1="eyes_vect_end",
+            vector_1_marker_0="eyes_vect_start",
+            vector_1_marker_1="fixation_front",
+            weight=1,
+            phase=0,
+        )
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS,
+            vector_0_marker_0="eyes_vect_start",
+            vector_0_marker_1="eyes_vect_end",
+            vector_1_marker_0="eyes_vect_start",
+            vector_1_marker_1="fixation_front",
+            weight=10000,
+            phase=1,
+        )
 
         # Avoid extreme eye and neck angles
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", index=[ZrotHead, XrotHead, ZrotEyes, XrotEyes], weight=10, phase=0)
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", index=[ZrotHead, XrotHead, ZrotEyes, XrotEyes], weight=10, phase=1)
-
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.MINIMIZE_STATE,
+            key="q",
+            index=[ZrotHead, XrotHead, ZrotEyes, XrotEyes],
+            weight=10,
+            phase=0,
+        )
+        objective_functions.add(
+            ObjectiveFcn.Lagrange.MINIMIZE_STATE,
+            key="q",
+            index=[ZrotHead, XrotHead, ZrotEyes, XrotEyes],
+            weight=10,
+            phase=1,
+        )
 
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN)
     dynamics.add(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN)
 
-
     # Bounds
     qddot_joints_min, qddot_joints_max, qddot_joints_init = -1000, 1000, 0
     u_bounds = BoundsList()
-    u_bounds.add("qddot_joints",
-                 min_bound=[qddot_joints_min] * nb_qddot_joints,
-                 max_bound=[qddot_joints_max] * nb_qddot_joints,
-                 phase=0)
-    u_bounds.add("qddot_joints",
-                 min_bound=[qddot_joints_min] * nb_qddot_joints,
-                 max_bound=[qddot_joints_max] * nb_qddot_joints,
-                 phase=1)
+    u_bounds.add(
+        "qddot_joints",
+        min_bound=[qddot_joints_min] * nb_qddot_joints,
+        max_bound=[qddot_joints_max] * nb_qddot_joints,
+        phase=0,
+    )
+    u_bounds.add(
+        "qddot_joints",
+        min_bound=[qddot_joints_min] * nb_qddot_joints,
+        max_bound=[qddot_joints_max] * nb_qddot_joints,
+        phase=1,
+    )
 
     u_init = InitialGuessList()
     u_init.add("qddot_joints", initial_guess=[qddot_joints_init] * nb_qddot_joints, phase=0)
@@ -274,7 +319,7 @@ def prepare_ocp(
     # Somersault
     q_bounds_0_min[Xrot, START] = 0
     q_bounds_0_max[Xrot, START] = 0
-    q_bounds_0_min[Xrot, MIDDLE:] = -3/2 * np.pi
+    q_bounds_0_min[Xrot, MIDDLE:] = -3 / 2 * np.pi
     q_bounds_0_max[Xrot, MIDDLE:] = 0.5
     # Tilt
     q_bounds_0_min[Yrot, START] = 0
@@ -308,8 +353,8 @@ def prepare_ocp(
         q_bounds_0_max[XrotHead, START] = 0.1
         q_bounds_0_min[ZrotEyes, START] = -0.1
         q_bounds_0_max[ZrotEyes, START] = 0.1
-        q_bounds_0_min[XrotEyes, START] = np.pi/4 - 0.1
-        q_bounds_0_max[XrotEyes, START] = np.pi/4 + 0.1
+        q_bounds_0_min[XrotEyes, START] = np.pi / 4 - 0.1
+        q_bounds_0_max[XrotEyes, START] = np.pi / 4 + 0.1
 
     vzinit = 9.81 / 2 * final_time
 
@@ -394,7 +439,7 @@ def prepare_ocp(
 
     # Somersault
     q_bounds_1_min[Xrot, :] = -0.5 - 2 * np.pi - 0.1
-    q_bounds_1_max[Xrot, :] = -3/2 * np.pi + 0.2 + 0.2
+    q_bounds_1_max[Xrot, :] = -3 / 2 * np.pi + 0.2 + 0.2
     q_bounds_1_min[Xrot, END] = 0.5 - 2 * np.pi - 0.1
     q_bounds_1_max[Xrot, END] = 0.5 - 2 * np.pi + 0.1
     # Tilt
@@ -405,15 +450,15 @@ def prepare_ocp(
     q_bounds_1_max[Zrot, :] = 2 * np.pi * num_twists + np.pi / 8
 
     # Right arm
-    q_bounds_1_min[YrotRightUpperArm, START] = - 0.1
-    q_bounds_1_max[YrotRightUpperArm, START] = + 0.1
+    q_bounds_1_min[YrotRightUpperArm, START] = -0.1
+    q_bounds_1_max[YrotRightUpperArm, START] = +0.1
     q_bounds_1_min[YrotRightUpperArm, END] = 2.9 - 0.1
     q_bounds_1_max[YrotRightUpperArm, END] = 2.9 + 0.1
     q_bounds_1_min[ZrotRightUpperArm, END] = -0.1
     q_bounds_1_max[ZrotRightUpperArm, END] = 0.1
     # Left arm
-    q_bounds_1_min[YrotLeftUpperArm, START] = - 0.1
-    q_bounds_1_max[YrotLeftUpperArm, START] = + 0.1
+    q_bounds_1_min[YrotLeftUpperArm, START] = -0.1
+    q_bounds_1_max[YrotLeftUpperArm, START] = +0.1
     q_bounds_1_min[YrotLeftUpperArm, END] = -2.9 - 0.1
     q_bounds_1_max[YrotLeftUpperArm, END] = -2.9 + 0.1
     q_bounds_1_min[ZrotLeftUpperArm, END] = -0.1
@@ -442,7 +487,6 @@ def prepare_ocp(
     qdot_bounds_1_min[vZrotLeftUpperArm : vYrotLeftUpperArm + 1, :] = -100
     qdot_bounds_1_max[vZrotLeftUpperArm : vYrotLeftUpperArm + 1, :] = 100
 
-
     # ------------------------------- Initial guesses ------------------------------- #
 
     q_0 = np.zeros((nb_q, 2))
@@ -450,15 +494,15 @@ def prepare_ocp(
     q_1 = np.zeros((nb_q, 2))
     qdot_1 = np.zeros((nb_qdot, 2))
 
-    q_0[Xrot] = np.array([0, -3/2 * np.pi])
+    q_0[Xrot] = np.array([0, -3 / 2 * np.pi])
     q_0[Zrot] = np.array([0, 2 * np.pi * num_twists])
     q_0[ZrotLeftUpperArm] = -0.75
     q_0[ZrotRightUpperArm] = 0.75
     q_0[YrotLeftUpperArm, 0] = -2.9
     q_0[YrotRightUpperArm, 0] = 2.9
-    qdot_0[vXrot] = - 2 * np.pi
+    qdot_0[vXrot] = -2 * np.pi
 
-    q_1[Xrot] = np.array([-3/2 * np.pi, -2 * np.pi])
+    q_1[Xrot] = np.array([-3 / 2 * np.pi, -2 * np.pi])
     q_1[Zrot] = np.array([2 * np.pi * num_twists, 2 * np.pi * num_twists])
 
     x_init = InitialGuessList()
@@ -466,7 +510,6 @@ def prepare_ocp(
     x_init.add("q", initial_guess=q_1, interpolation=InterpolationType.LINEAR, phase=1)
     x_init.add("qdot", initial_guess=qdot_0, interpolation=InterpolationType.LINEAR, phase=0)
     x_init.add("qdot", initial_guess=qdot_1, interpolation=InterpolationType.LINEAR, phase=1)
-
 
     return OptimalControlProgram(
         biorbd_model,
@@ -498,7 +541,13 @@ def main():
 
     n_shooting = (100, 40)
     num_twists = 1
-    ocp = prepare_ocp(biorbd_model_path, n_shooting=n_shooting, num_twists=num_twists, n_threads=7, WITH_VISUAL_CRITERIA=WITH_VISUAL_CRITERIA)
+    ocp = prepare_ocp(
+        biorbd_model_path,
+        n_shooting=n_shooting,
+        num_twists=num_twists,
+        n_threads=7,
+        WITH_VISUAL_CRITERIA=WITH_VISUAL_CRITERIA,
+    )
 
     solver = Solver.IPOPT(show_online_optim=False)
     solver.set_maximum_iterations(10)
@@ -507,7 +556,8 @@ def main():
     tic = time.time()
     sol = ocp.solve(solver)
     toc = time.time() - tic
-    print(toc)  
+    print(toc)
+
 
 if __name__ == "__main__":
     main()
