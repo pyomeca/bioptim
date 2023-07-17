@@ -100,6 +100,7 @@ class MultinodeConstraintFcn(FcnEnum):
     COM_EQUALITY = (MultinodeConstraintFunctions.Functions.com_equality,)
     COM_VELOCITY_EQUALITY = (MultinodeConstraintFunctions.Functions.com_velocity_equality,)
     TIME_CONSTRAINT = (MultinodeConstraintFunctions.Functions.time_equality,)
+    STOCHASTIC_HELPER_MATRIX_EXPLICIT = (MultinodeConstraintFunctions.Functions.stochastic_helper_matrix_explicit,)
     STOCHASTIC_HELPER_MATRIX_IMPLICIT = (MultinodeConstraintFunctions.Functions.stochastic_helper_matrix_implicit,)
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         MultinodeConstraintFunctions.Functions.stochastic_covariance_matrix_continuity_implicit,
