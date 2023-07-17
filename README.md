@@ -249,6 +249,7 @@ built-in continuity constraints), and parameters (p = optimization variables tha
 The state continuity constraints implementation may vary depending on the transcription of the problem (implicit vs explicit, direct multiple shooting vs direct collocations).
 
 The cost function can include Mayer terms (function evaluated at one node) and Lagrange terms (functions integrated over the duration of the phase).
+The optimization variables can be subject to equality and/or inequality constraints.
 
 # A first practical example
 The easiest way to learn `bioptim` is to dive into it.
