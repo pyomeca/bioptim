@@ -499,7 +499,9 @@ class AcadosInterface(SolverInterface):
                 )
                 x = x if objectives.function[0].sparsity_in("i0").shape != (0, 0) else []
                 u = u if objectives.function[0].sparsity_in("i1").shape != (0, 0) else []
-                acados.mayer_costs_e = vertcat(acados.mayer_costs_e, objectives.function[0](x, u, p, s).reshape((-1, 1)))
+                acados.mayer_costs_e = vertcat(
+                    acados.mayer_costs_e, objectives.function[0](x, u, p, s).reshape((-1, 1))
+                )
 
                 if objectives.target is not None:
                     acados.y_ref_end.append(objectives.target[0][..., -1].T.reshape((-1, 1)))
