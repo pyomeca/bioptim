@@ -12,9 +12,6 @@ import casadi as cas
 import numpy as np
 import scipy.io as sio
 
-import sys
-
-# sys.path.append("/home/charbie/Documents/Programmation/BiorbdOptim")
 from bioptim import (
     OptimalControlProgram,
     StochasticOptimalControlProgram,
