@@ -1291,11 +1291,11 @@ Minimizes the difference between a state at a node and the same state at the nex
 The extra parameter `coordinates_system_idx` can be specified to compute the marker position in that coordinate system. 
 Otherwise, it is computed in the global reference frame. 
 
-#### MINIMIZE_MARKERS_VELOCITY (Lagrange and Mayer)
-Minimizes the skin marker velocities towards zero (or a target)
+#### MINIMIZE_MARKERS_VELOCITY and MINIMIZE_MARKERS_ACCELERATION (Lagrange and Mayer)
+Minimizes the skin marker velocities or accelerations towards zero (or a target)
 
-#### TRACK_MARKERS_VELOCITY (Lagrange and Mayer)
-Tracks the skin marker velocities towards a target.
+#### TRACK_MARKERS_VELOCITY and TRACK_MARKERS_ACCELERATION (Lagrange and Mayer)
+Tracks the skin marker velocities or accelerations towards a target.
 
 #### SUPERIMPOSE_MARKERS (Lagrange and Mayer)
 Tracks one marker with another one.
