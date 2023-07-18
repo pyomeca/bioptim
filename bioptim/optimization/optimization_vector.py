@@ -501,7 +501,7 @@ class OptimizationVectorHelper:
                     nlp.stochastic_variables.node_index = k
                     s_array = v_array[offset : offset + nstochastic].reshape(
                         (nlp.stochastic_variables.shape, -1), order="F"
-                    )  # @pariterre "F" seems like an interpolation?
+                    )
                     for key in nlp.stochastic_variables:
                         data_stochastic_variables[p_idx][key][:, k : k + 1] = s_array[
                             nlp.stochastic_variables[key].index, :
