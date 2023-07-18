@@ -600,6 +600,7 @@ class ConstraintFcn(FcnEnum):
     TRACK_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
     TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
     TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+    TRACK_MARKERS_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_markers_acceleration,)
     SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
     SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
     PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)

@@ -218,6 +218,53 @@ class PenaltyFunctionAbstract:
             return markers_objective
 
         @staticmethod
+        def minimize_markers_acceleration(
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            marker_index: tuple | list | int | str = None,
+            axes: tuple | list = None,
+            reference_jcs: str | int = None,
+        ):
+            """
+            Minimize a marker set acecleration by computing the actual acceleration of the markers
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            marker_index: tuple | list | int | str
+                The index of markers to minimize, can be int or str.
+                penalty.cols should not be defined if marker_index is defined
+            axes: tuple | list
+                The axes to project on. Default is all axes
+            reference_jcs: int | str
+                The index or name of the segment to use as reference. Default [None] is the global coordinate system
+            """
+
+            # Adjust the cols and rows
+            PenaltyFunctionAbstract.set_idx_columns(penalty, controller, marker_index, "marker")
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            # Add the penalty in the requested reference frame. None for global
+            q_mx = controller.states["q"].mx
+            qdot_mx = controller.states["qdot"].mx
+            qddot_mx = controller.states["qddot"].mx
+
+            markers = horzcat(*controller.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs))
+
+            markers_objective = controller.mx_to_cx(
+                "markers_acceleration", markers, controller.states["q"], controller.states["qdot"],
+                controller.states["qddot"],
+            )
+            return markers_objective
+
+        @staticmethod
         def superimpose_markers(
             penalty: PenaltyOption,
             controller: PenaltyController,
