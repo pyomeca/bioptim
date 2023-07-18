@@ -63,7 +63,7 @@ def custom_dynamic(
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = vertcat(*[DynamicsFunctions.get(nlp.controls["tau"], controls) + 10 * t for t in range(t.shape[1])])  # same method as fatigable tau
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * t
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor

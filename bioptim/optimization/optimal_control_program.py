@@ -345,13 +345,16 @@ class OptimalControlProgram:
         u_scaling = self._prepare_option_dict_for_phase("u_scaling", u_scaling, VariableScalingList)
 
 
-        # WHY DM ?
+        # # WHY DM ?
         time = vertcat()
+        phase_time_list = phase_time if isinstance(phase_time, list) else [phase_time]
+        ns = ns[0] if isinstance(ns, list) else ns
         if isinstance(ode_solver, OdeSolver.RK4):
-            for i in range(ns):
-                for j in range(ode_solver.steps):
-                    for k in range(2):
-                        time = vertcat(time, (i*phase_time/ns)+((j*(phase_time/ns))/ode_solver.steps)+((k/2)*(phase_time/ns/ode_solver.steps)))
+            for h in range(len(bio_model)):
+                for i in range(ns):
+                    for j in range(ode_solver.steps):
+                        for k in range(2):
+                            time = vertcat(time, (i*phase_time_list[h]/ns)+((j*(phase_time_list[h]/ns))/ode_solver.steps)+((k/2)*(phase_time_list[h]/ns/ode_solver.steps)))
 
         # time = self._prepare_option_dict_for_phase("time", time, DM) ?
 
