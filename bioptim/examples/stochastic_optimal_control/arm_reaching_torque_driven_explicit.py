@@ -1,6 +1,7 @@
 """
-This example is adapted from arm_reaching_muscle_driven.py to make it torque driven and to add the stochastic and
-continuity constraints implicitly.
+This example is adapted from arm_reaching_muscle_driven.py to make it torque driven.
+The states dynamics is implicit. which allows to minimize the uncertainty on the acceleration of joints.
+The stochastic variables dynamics is explicit.
 """
 
 import platform
@@ -175,7 +176,7 @@ def configure_stochastic_optimal_control_problem(
     mat_p_init = cas.DM_eye(6) * np.array(
         [1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6]
     )  # P, the noise on the acceleration should be chosen carefully (here arbitrary)
-    ConfigureProblem.configure_stochastic_cov(ocp, nlp, n_noised_states=6, initial_matrix=mat_p_init)
+    ConfigureProblem.configure_stochastic_cov_explicit(ocp, nlp, n_noised_states=6, initial_matrix=mat_p_init)
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,

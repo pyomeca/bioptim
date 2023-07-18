@@ -246,7 +246,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
                 )
-            if i_phase > 0:
+            if i_phase > 0 and i_phase < len(self.nlp)-1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
@@ -262,7 +262,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 motor_noise_magnitude=motor_noise_magnitude,
                 sensory_noise_magnitude=sensory_noise_magnitude,
             )
-            if i_phase > 0:
+            if i_phase > 0 and i_phase < len(self.nlp)-1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
@@ -293,7 +293,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     motor_noise_magnitude=motor_noise_magnitude,
                     sensory_noise_magnitude=sensory_noise_magnitude,
                 )
-            if i_phase > 0:
+            if i_phase > 0 and i_phase < len(self.nlp)-1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase+1),

@@ -343,7 +343,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
 
             # TODO: Charbie -> This is only True for not mapped variables (have to think on how to generalize it)
-            nx = len(controllers[0].states.cx_start.shape[0])
+            nx = controllers[0].states.cx_start.shape[0]
 
             M_matrix = (
                 controllers[0]
@@ -536,8 +536,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 with_gains=True,
             )
 
-            non_root_index = list(range(nb_root, nb_root + nu)) + list(
-                range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu))
+            non_root_index = list(range(nb_root, nb_root + nu)) + \
+                             list(range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu))
+
             DF_DW_fun = Function(
                 "DF_DW_fun",
                 [

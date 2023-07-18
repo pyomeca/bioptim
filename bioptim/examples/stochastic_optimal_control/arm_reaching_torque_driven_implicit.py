@@ -1,6 +1,8 @@
 """
-This example is adapted from arm_reaching_muscle_driven.py to make it torque driven and to add the stochastic and
-continuity constraints implicitly.
+This example is adapted from arm_reaching_muscle_driven.py to make it torque driven.
+The states dynamics is explicit, while the stochastic variables dynamics is implicit.
+This formulation allow to decouple the covariance matrix with the previous states reducing the comlexity of resolution,
+but increases largely the number of variables to optimize.
 """
 
 import platform
@@ -113,8 +115,6 @@ def stochastic_forward_dynamics(
     """
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
-    qdddot = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
     n_q = q.shape[0]
     n_qdot = qdot.shape[0]
@@ -139,21 +139,15 @@ def stochastic_forward_dynamics(
     tau_force_field = get_force_field(q, force_field_magnitude)
 
     torques_computed = tau_fb + motor_noise + tau_force_field
-    dq_computed = qdot
 
     friction = np.array([[0.05, 0.025], [0.025, 0.05]])
 
     mass_matrix = nlp.model.mass_matrix(q)
     non_linear_effects = nlp.model.non_linear_effects(q, qdot)
 
-    dqdot_computed = qddot
-    dqddot_computed = qdddot
+    dqdot_computed = cas.inv(mass_matrix) @ (torques_computed - non_linear_effects - friction @ qdot)
 
-    dqdot_constraint = cas.inv(mass_matrix) @ (torques_computed - non_linear_effects - friction @ qdot)
-
-    defects = cas.vertcat(dqdot_constraint - qddot)
-
-    return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dqddot_computed), defects=defects)
+    return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_computed))
 
 
 def configure_stochastic_optimal_control_problem(
@@ -164,20 +158,16 @@ def configure_stochastic_optimal_control_problem(
     """
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-    ConfigureProblem.configure_qddot(ocp, nlp, True, False, True)
-    ConfigureProblem.configure_qdddot(ocp, nlp, False, True)
+    ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
     ConfigureProblem.configure_tau(ocp, nlp, False, True)
 
     # Stochastic variables
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=6)
-    mat_p_init = cas.DM_eye(6) * np.array(
-        [1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6]
-    )  # P, the noise on the acceleration should be chosen carefully (here arbitrary)
-    ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=6)
-    ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=6)
-    ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=6)
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
+    ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
+    ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
+    ConfigureProblem.configure_stochastic_c(ocp, nlp, n_feedbacks=4, n_noise=6)
 
     ConfigureProblem.configure_dynamics_function(
         ocp,
@@ -190,18 +180,6 @@ def configure_stochastic_optimal_control_problem(
         expand=False,
     )
     return
-
-
-def minimize_uncertainty(controller: PenaltyController, key: str) -> cas.MX:
-    """
-    Minimize the uncertainty (covariance matrix) of the states "key".
-    """
-    cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-        controller.stochastic_variables, controller.states.cx.shape[0], controller.states.cx.shape[0], Node.START, "cov"
-    )
-    p_partial = cov_matrix[controller.states[key].index, controller.states[key].index]
-    out = cas.trace(p_partial)
-    return out
 
 
 def get_ref(controller: PenaltyController, q, qdot) -> cas.MX:
@@ -383,27 +361,22 @@ def trapezoidal_integration_continuity_constraint(
     )
     dx_i = dyn.dxdt
 
-    if controllers[1].node_index != controllers[0].ns:
-        dx_i_plus = stochastic_forward_dynamics(
-            controllers[1].states.cx_start,
-            controllers[1].controls.cx_start,
-            controllers[1].parameters.cx_start,
-            controllers[1].stochastic_variables.cx_start,
-            controllers[1].get_nlp,
-            motor_noise,
-            sensory_noise,
-            force_field_magnitude=force_field_magnitude,
-            with_gains=False,
-        ).dxdt
+    dx_i_plus = stochastic_forward_dynamics(
+        controllers[1].states.cx_start,
+        controllers[1].controls.cx_start,
+        controllers[1].parameters.cx_start,
+        controllers[1].stochastic_variables.cx_start,
+        controllers[1].get_nlp,
+        motor_noise,
+        sensory_noise,
+        force_field_magnitude=force_field_magnitude,
+        with_gains=False,
+    ).dxdt
 
-        continuity = controllers[1].states.cx_start - (controllers[0].states.cx_start + (dx_i + dx_i_plus) / 2 * dt)
-        continuity *= 1e3
-    else:
-        continuity = 0
+    continuity = controllers[1].states.cx_start - (controllers[0].states.cx_start + (dx_i + dx_i_plus) / 2 * dt)
+    continuity *= 1e3
 
-    implicit_dynamics = dyn.defects
-
-    return cas.vertcat(continuity, implicit_dynamics)
+    return continuity
 
 
 def prepare_socp(
@@ -446,8 +419,7 @@ def prepare_socp(
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q
     n_qdot = bio_model.nb_qdot
-    n_states = n_q * 3
-    n_controls = n_q * 2
+    n_states = n_q * 2
 
     shoulder_pos_initial = 0.349065850398866
     shoulder_pos_final = 0.959931088596881
@@ -459,15 +431,7 @@ def prepare_socp(
     objective_functions.add(
         ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL_SHOOTING, key="tau", weight=1e3 / 2, quadratic=True
     )
-    objective_functions.add(
-        minimize_uncertainty,
-        custom_type=ObjectiveFcn.Lagrange,
-        node=Node.ALL_SHOOTING,
-        key="qddot",
-        weight=1e3 / 2,
-        quadratic=False,
-        phase=0,
-    )
+
     objective_functions.add(
         expected_feedback_effort,
         custom_type=ObjectiveFcn.Lagrange,
@@ -485,10 +449,8 @@ def prepare_socp(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.START, target=0)
     constraints.add(track_final_marker, node=Node.PENULTIMATE, target=ee_final_position)
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.PENULTIMATE, target=0)
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
@@ -508,7 +470,7 @@ def prepare_socp(
         min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
         max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
     )
-    for i in range(n_shooting):
+    for i in range(n_shooting-1):
         multinode_constraints.add(
             trapezoidal_integration_continuity_constraint,
             nodes_phase=[0, 0],
@@ -548,18 +510,11 @@ def prepare_socp(
         max_bound=states_max[n_q : n_q + n_qdot, :],
         interpolation=InterpolationType.EACH_FRAME,
     )
-    x_bounds.add(
-        "qddot",
-        min_bound=states_min[n_q + n_qdot : n_q + n_qdot * 2, :],
-        max_bound=states_max[n_q + n_qdot : n_q + n_qdot * 2, :],
-        interpolation=InterpolationType.EACH_FRAME,
-    )
 
-    controls_min = np.ones((n_controls, 3)) * -cas.inf
-    controls_max = np.ones((n_controls, 3)) * cas.inf
+    controls_min = np.ones((n_tau, 3)) * -cas.inf
+    controls_max = np.ones((n_tau, 3)) * cas.inf
 
     u_bounds = BoundsList()
-    u_bounds.add("qdddot", min_bound=controls_min[:n_q, :], max_bound=controls_max[:n_q, :])
     u_bounds.add("tau", min_bound=controls_min[n_q:, :], max_bound=controls_max[n_q:, :])
 
     # Initial guesses
@@ -573,16 +528,10 @@ def prepare_socp(
     x_init = InitialGuessList()
     x_init.add("q", initial_guess=states_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
     x_init.add("qdot", initial_guess=states_init[n_q : n_q + n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
-    x_init.add(
-        "qddot",
-        initial_guess=states_init[n_q + n_qdot : n_q + n_qdot * 2, :],
-        interpolation=InterpolationType.EACH_FRAME,
-    )
 
-    controls_init = np.ones((n_controls, n_shooting)) * 0.01
+    controls_init = np.ones((n_tau, n_shooting)) * 0.01
 
     u_init = InitialGuessList()
-    u_init.add("qdddot", initial_guess=controls_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
     u_init.add("tau", initial_guess=controls_init[n_q:, :], interpolation=InterpolationType.EACH_FRAME)
 
     s_init = InitialGuessList()
@@ -702,8 +651,6 @@ def main():
 
     q_sol = sol_socp.states["q"]
     qdot_sol = sol_socp.states["qdot"]
-    qddot_sol = sol_socp.states["qddot"]
-    qdddot_sol = sol_socp.controls["qdddot"]
     tau_sol = sol_socp.controls["tau"]
     k_sol = sol_socp.stochastic_variables["k"]
     ref_sol = sol_socp.stochastic_variables["ref"]
@@ -715,8 +662,6 @@ def main():
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
-        "qddot_sol": qddot_sol,
-        "qdddot_sol": qdddot_sol,
         "tau_sol": tau_sol,
         "k_sol": k_sol,
         "ref_sol": ref_sol,
