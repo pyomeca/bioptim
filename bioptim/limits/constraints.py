@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, DM, horzcat
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -244,7 +244,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.max_bound = np.array([np.inf, np.inf])
 
             contact = controller.get_nlp.contact_forces_func(
-                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
+                controller.states.cx_start,
+                controller.controls.cx_start,
+                controller.parameters.cx,
+                controller.stochastic_variables.cx_start,
             )
             normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
             if len(tangential_component_idx) == 1:
