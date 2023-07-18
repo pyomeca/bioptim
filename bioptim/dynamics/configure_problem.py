@@ -1329,7 +1329,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_c(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_c(ocp, nlp, n_feedbacks: int, n_noise: int):
         """
         Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
         Parameters
@@ -1343,10 +1343,10 @@ class ConfigureProblem:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
         name_c = []
-        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
-            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
+        for name_1 in [f"X_{i}" for i in range(n_feedbacks)]:
+            for name_2 in [f"X_{i}" for i in range(n_noise)]:
                 name_c += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_feedbacks * n_noise)), list(range(n_feedbacks * n_noise)))
 
         ConfigureProblem.configure_new_variable(
             name,

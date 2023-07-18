@@ -591,17 +591,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
             nx = controller.states.cx_start.shape[0]
+            nx_a = int(np.sqrt(controller.stochastic_variables["a"].cx.shape[0]))
+            nx_c = int(controller.stochastic_variables["c"].cx.shape[0] / nx_a)
             cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-                controller.stochastic_variables, nx, nx, Node.START, "cov"
+                controller.stochastic_variables, nx_a, nx_a, Node.START, "cov"
             )
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
-                controller.stochastic_variables, nx, nx, Node.START, "a"
+                controller.stochastic_variables, nx_a, nx_a, Node.START, "a"
             )
             c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
-                controller.stochastic_variables, nx, nx, Node.START, "c"
+                controller.stochastic_variables, nx_a, nx_c, Node.START, "c"
             )
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
-                controller.stochastic_variables, nx, nx, Node.START, "m"
+                controller.stochastic_variables, nx_a, nx_a, Node.START, "m"
             )
 
             sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude) * MX_eye(
@@ -637,8 +639,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             dt = controller.tf / controller.ns
 
             nx = controller.states.cx.shape[0]
+            nx_a = int(np.sqrt(controller.stochastic_variables["a"].cx.shape[0]))
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
-                controller.stochastic_variables, nx, nx, Node.START, "a"
+                controller.stochastic_variables, nx_a, nx_a, Node.START, "a"
             )
 
             motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
@@ -697,9 +700,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             dt = controller.tf / controller.ns
 
-            nx = controller.states.cx.shape[0]
+            nx_a = int(np.sqrt(controller.stochastic_variables["a"].cx.shape[0]))
             c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
-                controller.stochastic_variables, nx, nx, Node.START, "c"
+                controller.stochastic_variables, nx_a, nx_a, Node.START, "c"
             )
 
             motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
