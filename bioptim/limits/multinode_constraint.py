@@ -105,6 +105,7 @@ class MultinodeConstraintFcn(FcnEnum):
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         MultinodeConstraintFunctions.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
+    STOCHASTIC_DG_DW_IMPLICIT = (MultinodeConstraintFunctions.Functions.stochastic_dg_dw_implicit,)
 
     @staticmethod
     def get_type():

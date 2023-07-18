@@ -444,7 +444,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
         @staticmethod
         def stochastic_covariance_matrix_continuity_implicit(
-            penalty: PenaltyOption,
+            penalty,
             controllers: list[PenaltyController, PenaltyController],
             motor_noise_magnitude: DM,
             sensory_noise_magnitude: DM,
@@ -493,6 +493,93 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             cov_implicit_deffect = cov_next_computed - cov_matrix_next
 
             out_vector = controllers[0].integrated_values["cov"].reshape_to_vector(cov_implicit_deffect)
+            return out_vector
+
+        @staticmethod
+        def stochastic_dg_dw_implicit(
+            penalty,
+            controllers: list[PenaltyController],
+            dynamics: Callable,
+            motor_noise_magnitude: DM,
+            sensory_noise_magnitude: DM,
+        ):
+            """
+            This function constrains the stochastic matrix C to its actual value which is
+            A = dG/dw
+            TODO: Charbie -> This is only true for trapezoidal integration
+            """
+            dt = controllers[0].tf / controllers[0].ns
+
+            nb_root = controllers[0].model.nb_root
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
+            nu = len(controllers[0].get_nlp.variable_mappings["tau"].to_first.map_idx)
+
+            c_matrix = controllers[0].stochastic_variables["c"].reshape_to_matrix(
+                controllers[0].stochastic_variables, 2*nu, 3*nu, Node.START, "c"
+            )
+
+            q_root = MX.sym("q_root", nb_root, 1)
+            q_joints = MX.sym("q_joints", nu, 1)
+            qdot_root = MX.sym("qdot_root", nb_root, 1)
+            qdot_joints = MX.sym("qdot_joints", nu, 1)
+            motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
+            sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
+
+            dx = dynamics(
+                vertcat(q_root, q_joints, qdot_root, qdot_joints),
+                controllers[0].controls.cx_start,
+                controllers[0].parameters.cx_start,
+                controllers[0].stochastic_variables.cx_start,
+                controllers[0].get_nlp,
+                motor_noise,
+                sensory_noise,
+                with_gains=True,
+            )
+
+            non_root_index = list(range(nb_root, nb_root + nu)) + list(
+                range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu))
+            DF_DW_fun = Function(
+                "DF_DW_fun",
+                [
+                    q_root,
+                    q_joints,
+                    qdot_root,
+                    qdot_joints,
+                    controllers[0].controls.cx_start,
+                    controllers[0].parameters.cx_start,
+                    controllers[0].stochastic_variables.cx_start,
+                    motor_noise,
+                    sensory_noise,
+                ],
+                [jacobian(dx.dxdt[non_root_index], vertcat(motor_noise, sensory_noise))],
+            )
+
+            DF_DW = DF_DW_fun(
+                controllers[0].states["q"].cx_start[:nb_root],
+                controllers[0].states["q"].cx_start[nb_root:],
+                controllers[0].states["qdot"].cx_start[:nb_root],
+                controllers[0].states["qdot"].cx_start[nb_root:],
+                controllers[0].controls.cx_start,
+                controllers[0].parameters.cx_start,
+                controllers[0].stochastic_variables.cx_start,
+                motor_noise_magnitude,
+                sensory_noise_magnitude,
+            )
+            DF_DW_plus = DF_DW_fun(
+                controllers[1].states["q"].cx_start[:nb_root],
+                controllers[1].states["q"].cx_start[nb_root:],
+                controllers[1].states["qdot"].cx_start[:nb_root],
+                controllers[1].states["qdot"].cx_start[nb_root:],
+                controllers[1].controls.cx_start,
+                controllers[1].parameters.cx_start,
+                controllers[1].stochastic_variables.cx_start,
+                motor_noise_magnitude,
+                sensory_noise_magnitude,
+            )
+
+            out = c_matrix - (-(DF_DW + DF_DW_plus)/2 * dt)
+
+            out_vector = controllers[0].stochastic_variables["c"].reshape_to_vector(out)
             return out_vector
 
         @staticmethod

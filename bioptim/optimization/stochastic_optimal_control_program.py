@@ -284,13 +284,23 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         # Constraints for C
         for i_phase, nlp in enumerate(self.nlp):
-            constraints.add(
-                ConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
-                node=Node.ALL_SHOOTING,
-                phase=i_phase,
-                dynamics=nlp.dynamics_type.dynamic_function,
-                motor_noise_magnitude=motor_noise_magnitude,
-                sensory_noise_magnitude=sensory_noise_magnitude,
-            )
+            for i_node in range(nlp.ns - 1):
+                multi_node_penalties.add(
+                    MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
+                    nodes_phase=(i_phase, i_phase),
+                    nodes=(i_node, i_node + 1),
+                    dynamics=nlp.dynamics_type.dynamic_function,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
+                )
+            if i_phase > 0:
+                multi_node_penalties.add(
+                    MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
+                    nodes_phase=(i_phase, i_phase+1),
+                    nodes=(-1, 0),
+                    dynamics=nlp.dynamics_type.dynamic_function,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
+                )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)

@@ -699,82 +699,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             out_vector = controller.stochastic_variables["a"].reshape_to_vector(out)
             return out_vector
 
-        @staticmethod
-        def stochastic_dg_dw_implicit(
-            penalty: Constraint,
-            controller: PenaltyController,
-            dynamics: Callable,
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
-        ):
-            """
-            This function constrains the stochastic matrix C to its actual value which is
-            A = dG/dw
-            TODO: Charbie -> This is only true for trapezoidal integration
-            """
-            dt = controller.tf / controller.ns
-
-            nb_root = controller.model.nb_root
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
-
-            c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
-                controller.stochastic_variables, 2*nu, 3*nu, Node.START, "c"
-            )
-
-            q_root = MX.sym("q_root", nb_root, 1)
-            q_joints = MX.sym("q_joints", nu, 1)
-            qdot_root = MX.sym("qdot_root", nb_root, 1)
-            qdot_joints = MX.sym("qdot_joints", nu, 1)
-            motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
-            sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
-
-            dx = dynamics(
-                vertcat(q_root, q_joints, qdot_root, qdot_joints),
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-                controller.get_nlp,
-                motor_noise,
-                sensory_noise,
-                with_gains=True,
-            )
-
-            non_root_index = list(range(nb_root, nb_root + nu)) + list(
-                range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu))
-            DF_DW_fun = Function(
-                "DF_DW_fun",
-                [
-                    q_root,
-                    q_joints,
-                    qdot_root,
-                    qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    motor_noise,
-                    sensory_noise,
-                ],
-                [jacobian(dx.dxdt[non_root_index], vertcat(motor_noise, sensory_noise))],
-            )
-
-            DF_DW = DF_DW_fun(
-                controller.states["q"].cx_start[:nb_root],
-                controller.states["q"].cx_start[nb_root:],
-                controller.states["qdot"].cx_start[:nb_root],
-                controller.states["qdot"].cx_start[nb_root:],
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
-            )
-
-            out = c_matrix - (-DF_DW * dt)
-
-            out_vector = controller.stochastic_variables["c"].reshape_to_vector(out)
-            return out_vector
-
     @staticmethod
     def get_dt(_):
         return 1
@@ -823,7 +747,6 @@ class ConstraintFcn(FcnEnum):
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
     STOCHASTIC_DG_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_dg_dx_implicit,)
-    STOCHASTIC_DG_DW_IMPLICIT = (ConstraintFunction.Functions.stochastic_dg_dw_implicit,)
 
     @staticmethod
     def get_type():
