@@ -515,7 +515,7 @@ def prepare_socp(
     controls_max = np.ones((n_tau, 3)) * cas.inf
 
     u_bounds = BoundsList()
-    u_bounds.add("tau", min_bound=controls_min[n_q:, :], max_bound=controls_max[n_q:, :])
+    u_bounds.add("tau", min_bound=controls_min, max_bound=controls_max)
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
@@ -532,7 +532,7 @@ def prepare_socp(
     controls_init = np.ones((n_tau, n_shooting)) * 0.01
 
     u_init = InitialGuessList()
-    u_init.add("tau", initial_guess=controls_init[n_q:, :], interpolation=InterpolationType.EACH_FRAME)
+    u_init.add("tau", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
 
     s_init = InitialGuessList()
     s_bounds = BoundsList()
