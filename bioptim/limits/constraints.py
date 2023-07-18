@@ -595,16 +595,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
 
             cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-                controller.stochastic_variables, 2*nu, 2*nu, Node.START, "cov"
+                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov"
             )
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
-                controller.stochastic_variables, 2*nu, 2*nu, Node.START, "a"
+                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "a"
             )
             c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
-                controller.stochastic_variables, 2*nu, 3*nu, Node.START, "c"
+                controller.stochastic_variables, 2 * nu, 3 * nu, Node.START, "c"
             )
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
-                controller.stochastic_variables, 2*nu, 2*nu, Node.START, "m"
+                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "m"
             )
 
             sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude) * MX_eye(
@@ -644,7 +644,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
 
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
-                controller.stochastic_variables, 2*nu, 2*nu, Node.START, "a"
+                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "a"
             )
 
             q_root = MX.sym("q_root", nb_root, 1)
@@ -665,7 +665,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 with_gains=True,
             )
 
-            non_root_index = list(range(nb_root, nb_root+nu)) + list(range(nb_root+nu+nb_root, nb_root+nu+nb_root+nu))
+            non_root_index = list(range(nb_root, nb_root + nu)) + list(
+                range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu)
+            )
             DF_DX_fun = Function(
                 "DF_DX_fun",
                 [

@@ -470,7 +470,7 @@ def prepare_socp(
         min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
         max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
     )
-    for i in range(n_shooting-1):
+    for i in range(n_shooting - 1):
         multinode_constraints.add(
             trapezoidal_integration_continuity_constraint,
             nodes_phase=[0, 0],

@@ -427,17 +427,17 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             m_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2*nu, 2*nu, Node.START, "m")
+                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 2 * nu, Node.START, "m")
             )
             a_plus_matrix = (
                 controllers[1]
                 .stochastic_variables["a"]
-                .reshape_to_matrix(controllers[1].stochastic_variables, 2*nu, 2*nu, Node.START, "a")
+                .reshape_to_matrix(controllers[1].stochastic_variables, 2 * nu, 2 * nu, Node.START, "a")
             )
 
             DG_DZ = MX_eye(a_plus_matrix.shape[0]) - a_plus_matrix * dt / 2
 
-            val = m_matrix @ DG_DZ - MX_eye(2*nu)
+            val = m_matrix @ DG_DZ - MX_eye(2 * nu)
 
             out_vector = controllers[0].stochastic_variables["m"].reshape_to_vector(val)
             return out_vector
@@ -461,27 +461,27 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             cov_matrix = (
                 controllers[0]
                 .stochastic_variables["cov"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2*nu, 2*nu, Node.START, "cov")
+                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov")
             )
             cov_matrix_next = (
                 controllers[1]
                 .stochastic_variables["cov"]
-                .reshape_to_matrix(controllers[1].stochastic_variables, 2*nu, 2*nu, Node.START, "cov")
+                .reshape_to_matrix(controllers[1].stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov")
             )
             a_matrix = (
                 controllers[0]
                 .stochastic_variables["a"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2*nu, 2*nu, Node.START, "a")
+                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 2 * nu, Node.START, "a")
             )
             c_matrix = (
                 controllers[0]
                 .stochastic_variables["c"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2*nu, 3*nu, Node.START, "c")
+                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 3 * nu, Node.START, "c")
             )
             m_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2*nu, 2*nu, Node.START, "m")
+                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 2 * nu, Node.START, "m")
             )
 
             sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude)
@@ -514,8 +514,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = len(controllers[0].get_nlp.variable_mappings["tau"].to_first.map_idx)
 
-            c_matrix = controllers[0].stochastic_variables["c"].reshape_to_matrix(
-                controllers[0].stochastic_variables, 2*nu, 3*nu, Node.START, "c"
+            c_matrix = (
+                controllers[0]
+                .stochastic_variables["c"]
+                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 3 * nu, Node.START, "c")
             )
 
             q_root = MX.sym("q_root", nb_root, 1)
@@ -536,8 +538,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 with_gains=True,
             )
 
-            non_root_index = list(range(nb_root, nb_root + nu)) + \
-                             list(range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu))
+            non_root_index = list(range(nb_root, nb_root + nu)) + list(
+                range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu)
+            )
 
             DF_DW_fun = Function(
                 "DF_DW_fun",
@@ -578,7 +581,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 sensory_noise_magnitude,
             )
 
-            out = c_matrix - (-(DF_DW + DF_DW_plus)/2 * dt)
+            out = c_matrix - (-(DF_DW + DF_DW_plus) / 2 * dt)
 
             out_vector = controllers[0].stochastic_variables["c"].reshape_to_vector(out)
             return out_vector
