@@ -303,6 +303,8 @@ def test_penalty_track_markers_velocity(penalty_origin, value, assume_phase_dyna
         )
 
 
+#TODO: add test for track_marker_acceleration and minimize_marker_acceleration
+
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
