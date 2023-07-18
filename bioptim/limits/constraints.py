@@ -590,20 +590,21 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
-            nx = controller.states.cx_start.shape[0]
-            nx_a = int(np.sqrt(controller.stochastic_variables["a"].cx.shape[0]))
-            nx_c = int(controller.stochastic_variables["c"].cx.shape[0] / nx_a)
+
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
+            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+
             cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-                controller.stochastic_variables, nx_a, nx_a, Node.START, "cov"
+                controller.stochastic_variables, 2*nu, 2*nu, Node.START, "cov"
             )
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
-                controller.stochastic_variables, nx_a, nx_a, Node.START, "a"
+                controller.stochastic_variables, 2*nu, 2*nu, Node.START, "a"
             )
             c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
-                controller.stochastic_variables, nx_a, nx_c, Node.START, "c"
+                controller.stochastic_variables, 2*nu, 3*nu, Node.START, "c"
             )
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
-                controller.stochastic_variables, nx_a, nx_a, Node.START, "m"
+                controller.stochastic_variables, 2*nu, 2*nu, Node.START, "m"
             )
 
             sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude) * MX_eye(
@@ -638,17 +639,23 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             dt = controller.tf / controller.ns
 
-            nx = controller.states.cx.shape[0]
-            nx_a = int(np.sqrt(controller.stochastic_variables["a"].cx.shape[0]))
+            nb_root = controller.model.nb_root
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
+            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
-                controller.stochastic_variables, nx_a, nx_a, Node.START, "a"
+                controller.stochastic_variables, 2*nu, 2*nu, Node.START, "a"
             )
 
+            q_root = MX.sym("q_root", nb_root, 1)
+            q_joints = MX.sym("q_joints", nu, 1)
+            qdot_root = MX.sym("qdot_root", nb_root, 1)
+            qdot_joints = MX.sym("qdot_joints", nu, 1)
             motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
             sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
 
             dx = dynamics(
-                controller.states.cx_start,
+                vertcat(q_root, q_joints, qdot_root, qdot_joints),
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
@@ -658,21 +665,28 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 with_gains=True,
             )
 
+            non_root_index = list(range(nb_root, nb_root+nu)) + list(range(nb_root+nu+nb_root, nb_root+nu+nb_root+nu))
             DF_DX_fun = Function(
                 "DF_DX_fun",
                 [
-                    controller.states.cx_start,
+                    q_root,
+                    q_joints,
+                    qdot_root,
+                    qdot_joints,
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
                     motor_noise,
                     sensory_noise,
                 ],
-                [jacobian(dx.dxdt, controller.states.cx_start)],
+                [jacobian(dx.dxdt[non_root_index], vertcat(q_joints, qdot_joints))],
             )
 
             DF_DX = DF_DX_fun(
-                controller.states.cx_start,
+                controller.states["q"].cx_start[:nb_root],
+                controller.states["q"].cx_start[nb_root:],
+                controller.states["qdot"].cx_start[:nb_root],
+                controller.states["qdot"].cx_start[nb_root:],
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
@@ -700,16 +714,23 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             dt = controller.tf / controller.ns
 
-            nx_a = int(np.sqrt(controller.stochastic_variables["a"].cx.shape[0]))
+            nb_root = controller.model.nb_root
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
+            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+
             c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
-                controller.stochastic_variables, nx_a, nx_a, Node.START, "c"
+                controller.stochastic_variables, 2*nu, 3*nu, Node.START, "c"
             )
 
+            q_root = MX.sym("q_root", nb_root, 1)
+            q_joints = MX.sym("q_joints", nu, 1)
+            qdot_root = MX.sym("qdot_root", nb_root, 1)
+            qdot_joints = MX.sym("qdot_joints", nu, 1)
             motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
             sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
 
             dx = dynamics(
-                controller.states.cx_start,
+                vertcat(q_root, q_joints, qdot_root, qdot_joints),
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
@@ -719,21 +740,29 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 with_gains=True,
             )
 
+            non_root_index = list(range(nb_root, nb_root + nu)) + list(
+                range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu))
             DF_DW_fun = Function(
                 "DF_DW_fun",
                 [
-                    controller.states.cx_start,
+                    q_root,
+                    q_joints,
+                    qdot_root,
+                    qdot_joints,
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
                     motor_noise,
                     sensory_noise,
                 ],
-                [jacobian(dx.dxdt, vertcat(motor_noise, sensory_noise))],
+                [jacobian(dx.dxdt[non_root_index], vertcat(motor_noise, sensory_noise))],
             )
 
             DF_DW = DF_DW_fun(
-                controller.states.cx_start,
+                controller.states["q"].cx_start[:nb_root],
+                controller.states["q"].cx_start[nb_root:],
+                controller.states["qdot"].cx_start[:nb_root],
+                controller.states["qdot"].cx_start[nb_root:],
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
