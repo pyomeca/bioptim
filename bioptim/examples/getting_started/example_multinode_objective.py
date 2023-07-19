@@ -125,7 +125,7 @@ def main():
     # --- Show the results in a bioviz animation --- #
     sol.animate(n_frames=100)
     # sol.graphs()
-
+    # sol.print_cost()
 
 if __name__ == "__main__":
     main()

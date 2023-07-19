@@ -1377,9 +1377,9 @@ class OptimalControlProgram:
             if penalty.transition or penalty.multinode_penalty:
                 out.append(
                     penalty.weighted_function_non_threaded[t](
-                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), penalty.weight, _target, dt
+                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), penalty.weight, _target, 1
                     )
-                )
+                )  # dt=1 because multinode penalties behave like Mayer functions
 
             elif penalty.derivative or penalty.explicit_derivative:
                 if not np.all(

@@ -804,9 +804,7 @@ class PlotOcp:
                             for state_key in data_states.keys():
                                 if sol.ocp.n_phases == 1:
                                     data_states[state_key] = [data_states[state_key]]
-                                #     node_idx_tp = penalty.all_nodes_index[0]
-                                #     x_phase_tp = data_states[state_key][:, node_idx_tp * i : node_idx_tp * (i + 1)][:, np.newaxis],
-                                # else:
+
                                 x_phase_tp = np.ndarray((data_states[state_key][i].shape[0], 0))
                                 for tp in range(len(penalty.nodes_phase)):
                                     phase_tp = penalty.nodes_phase[tp]
