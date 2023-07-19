@@ -347,18 +347,21 @@ class PlotOcp:
 
                         casadi_function = nlp.plot[key].parameters["penalty"].weighted_function_non_threaded[0]
                         if nlp.plot[key].parameters["penalty"].multinode_penalty:
-                            size = (
-                                nlp.plot[key]
-                                .function(
-                                    node_index,
-                                    np.zeros((len(casadi_function.nominal_in(0)), 1)),
-                                    np.zeros((len(casadi_function.nominal_in(1)), 1)),
-                                    np.zeros((len(casadi_function.nominal_in(2)), 1)),
-                                    np.zeros((len(casadi_function.nominal_in(3)), 1)),
-                                    **nlp.plot[key].parameters,
+                            if casadi_function is None:
+                                size = 0
+                            else:
+                                size = (
+                                    nlp.plot[key]
+                                    .function(
+                                        node_index,
+                                        np.zeros((len(casadi_function.nominal_in(0)), 1)),
+                                        np.zeros((len(casadi_function.nominal_in(1)), 1)),
+                                        np.zeros((len(casadi_function.nominal_in(2)), 1)),
+                                        np.zeros((len(casadi_function.nominal_in(3)), 1)),
+                                        **nlp.plot[key].parameters,
+                                    )
+                                    .shape[0]
                                 )
-                                .shape[0]
-                            )
                         else:
                             size = (
                                 nlp.plot[key]
