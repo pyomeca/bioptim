@@ -27,6 +27,7 @@ def test_ipopt_solver_options():
     assert solver.hessian_approximation == "exact"
     assert solver.limited_memory_max_history == 50
     assert solver.linear_solver == "mumps"
+    assert solver.nlp_scaling_method == "gradient-based"
     assert solver.mu_init == 0.1
     assert solver.warm_start_init_point == "no"
     assert solver.warm_start_mult_bound_push == 0.001
@@ -122,3 +123,7 @@ def test_ipopt_solver_options():
     assert not "type" in solver_dict
     assert not "show_online_optim" in solver_dict
     assert not "show_options" in solver_dict
+
+    solver.set_nlp_scaling_method("gradient-fiesta")
+    assert solver.nlp_scaling_method == "gradient-fiesta"
+    
