@@ -19,7 +19,7 @@ def test_pendulum_show_bounds():
         assume_phase_dynamics=True,
     )
     # Test the keys in the dict ocp.nlp[0].plot
-    assert ['q_states', 'qdot_states', 'tau_controls'] == list(ocp.nlp[0].plot.keys())
+    assert ["q_states", "qdot_states", "tau_controls"] == list(ocp.nlp[0].plot.keys())
 
     for key, plot in ocp.nlp[0].plot.items():
         assert isinstance(plot.bounds, Bounds)
