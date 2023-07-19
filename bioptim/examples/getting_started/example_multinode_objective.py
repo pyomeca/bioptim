@@ -117,7 +117,7 @@ def main():
     # --- Prepare the ocp --- #
     n_shooting = 30
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=n_shooting)
-    # ocp.add_plot_penalty(CostType.ALL)
+    ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the ocp --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
