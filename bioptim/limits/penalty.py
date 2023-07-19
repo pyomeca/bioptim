@@ -958,18 +958,16 @@ class PenaltyFunctionAbstract:
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-                # continuity -= controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["xf"]
-                # continuity = vertcat(
-                #     continuity,
-                #     controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["defects"],
-                # )
-                continuity -= controller.integrate(t0=controller.ocp.time(phase_index=controller.get_nlp.phase_idx, node=controller.node_index), x0=cx, p=u, params=controller.parameters.cx)["xf"]
+                continuity -= controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["xf"]
                 continuity = vertcat(
                     continuity,
-                    controller.integrate(t0=controller.ocp.time(phase_index=controller.get_nlp.phase_idx, node=controller.node_index), x0=cx, p=u, params=controller.parameters.cx)["defects"],
+                    controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["defects"],
                 )
-
-                
+                # continuity -= controller.integrate(t0=controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index), x0=cx, p=u, params=controller.parameters.cx)["xf"]
+                # continuity = vertcat(
+                #     continuity,
+                #     controller.integrate(t0=controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index), x0=cx, p=u, params=controller.parameters.cx)["defects"],
+                # )
 
                 penalty.integrate = True
 
@@ -977,6 +975,10 @@ class PenaltyFunctionAbstract:
                 continuity -= controller.integrate(x0=controller.states.cx_start, p=u, params=controller.parameters.cx)[
                     "xf"
                 ]
+                # continuity -= controller.integrate(
+                #     t0=controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index),
+                #     x0=controller.states.cx_start, p=u, params=controller.parameters.cx)[
+                #     "xf"]
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True

@@ -344,20 +344,6 @@ class OptimalControlProgram:
         xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
         u_scaling = self._prepare_option_dict_for_phase("u_scaling", u_scaling, VariableScalingList)
 
-
-        # # WHY DM ?
-        time = vertcat()
-        phase_time_list = phase_time if isinstance(phase_time, list) else [phase_time]
-        ns = ns[0] if isinstance(ns, list) else ns
-        if isinstance(ode_solver, OdeSolver.RK4):
-            for h in range(len(bio_model)):
-                for i in range(ns):
-                    for j in range(ode_solver.steps):
-                        for k in range(2):
-                            time = vertcat(time, (i*phase_time_list[h]/ns)+((j*(phase_time_list[h]/ns))/ode_solver.steps)+((k/2)*(phase_time_list[h]/ns/ode_solver.steps)))
-
-        # time = self._prepare_option_dict_for_phase("time", time, DM) ?
-
         if objective_functions is None:
             objective_functions = ObjectiveList()
         elif isinstance(objective_functions, Objective):
@@ -516,8 +502,6 @@ class OptimalControlProgram:
         NLP.add(self, "x_scaling", x_scaling, True)
         NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)
-
-        NLP.add(self, "time", time, True)
 
         # Prepare the node mappings
         if node_mappings is None:

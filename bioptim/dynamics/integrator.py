@@ -79,6 +79,9 @@ class Integrator:
         self.control_type = ode_opt["control_type"]
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
+
+        self.t = ode["time"]
+
         self.function = None
 
     def __call__(self, *args, **kwargs):
@@ -123,7 +126,7 @@ class Integrator:
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 
-    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling, time: MX | SX) -> tuple:
+    def dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, param_scaling) -> tuple:
         """
         The dynamics of the system
 
@@ -195,7 +198,7 @@ class RK(Integrator):
         self.h_norm = 1 / self.n_step
         self.h = self.step_time * self.h_norm
 
-    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX):
+    def next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX):
         """
         Compute the next integrated state (abstract)
 
@@ -245,9 +248,9 @@ class RK(Integrator):
         x[:, 0] = states
 
         for i in range(1, self.n_step + 1):
-            t_norm_init = (i - 1) / self.n_step
+            t_norm_init = self.t if 't' in self.fun.name_in() else (i - 1) / self.n_step
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
-
+            # x[:, i] = self.next_x(h, self.t, x[:, i - 1], u, p)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
 
@@ -394,17 +397,12 @@ class RK4(RK):
         -------
         The next integrate states
         """
-        # # f(x,u, p, t2)
-        # Todo : comfirm [:4]
-        k1 = self.fun(x_prev, self.get_u(u, t), p, t)[:, self.idx][self.idx:self.idx+4]   # f2(x,u,p,t2)   # f20(x,u,p)
-        k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm/2)[:, self.idx][self.idx:self.idx+4]   # f2(x + h / 2 * k1,u,p, t2 + dt/2)  # f21(x,u, p)
-        k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm/2)[:, self.idx][self.idx:self.idx+4]   # f2(x + h / 2 * k2,u,p, t2 + dt/2)  # f22(x,u, p)
-        k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, t + self.h_norm)[:, self.idx][self.idx:self.idx+4]   # f2(x + h * k3,u,p, t2 + dt) # f23(x,u,p)
 
-        # k1 = self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
-        # k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
-        # k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p)[:, self.idx]
-        # k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p)[:, self.idx]
+        k1 = self.fun(x_prev, self.get_u(u, t), p, t)[:, self.idx] if 't' in self.fun.name_in() else self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
+        k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm / 2)[:,self.idx] if 't' in self.fun.name_in() else self.fun(x_prev + h / 2 * k1,self.get_u(u, t + self.h_norm / 2), p)[:,self.idx]
+        k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm / 2)[:,self.idx] if 't' in self.fun.name_in() else self.fun(x_prev + h / 2 * k2,self.get_u(u, t + self.h_norm / 2), p)[:,self.idx]
+        k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, t + self.h_norm)[:,self.idx] if 't' in self.fun.name_in() else self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p)[:, self.idx]
+
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 

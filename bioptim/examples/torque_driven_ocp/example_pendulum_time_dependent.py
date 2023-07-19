@@ -103,8 +103,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         ode_solver=ode_solver,
-        # objective_functions=objective_functions,
-        assume_phase_dynamics=assume_phase_dynamics,
+        assume_phase_dynamics=False,
     )
 
 

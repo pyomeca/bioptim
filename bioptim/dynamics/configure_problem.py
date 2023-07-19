@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from casadi import MX, vertcat, Function
+from casadi import MX, SX, vertcat, Function
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions
@@ -613,7 +613,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven, expand=False)
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, t, expand: bool = True, **extra_params):
+    def configure_dynamics_function(ocp, nlp, dyn_func, t: MX | SX = None, expand: bool = True, **extra_params):
         """
         Configure the dynamics of the system
 
@@ -636,10 +636,17 @@ class ConfigureProblem:
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
+            nlp,
+            **extra_params,
+        ) if t is None else dyn_func(
+            nlp.states.scaled.mx_reduced,
+            nlp.controls.scaled.mx_reduced,
+            nlp.parameters.mx,
             t,
             nlp,
             **extra_params,
         )
+
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
@@ -650,13 +657,24 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
-                t
-                # nlp.time,
+            ],
+            [dynamics_dxdt],
+            ["x", "u", "p"],
+            ["xdot"],
+        ) if t is None else Function(
+            "ForwardDyn",
+            [
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.mx,
+                t,
             ],
             [dynamics_dxdt],
             ["x", "u", "p", "t"],
             ["xdot"],
         )
+
+
         if expand:
             nlp.dynamics_func = nlp.dynamics_func.expand()
 

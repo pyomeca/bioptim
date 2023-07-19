@@ -73,7 +73,7 @@ def custom_dynamic(
     # as the first argument of DynamicsEvaluation or
     # the implicit dynamics f(x,u,p,xdot)=0 as the second argument
     # which may be useful for IRK or COLLOCATION integrators
-    return DynamicsEvaluation(dxdt=vertcat(dq, ddq, t), defects=None)
+    return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
 def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1):
@@ -99,7 +99,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_addit
     )  # t needs a symbolic value to start computing in custom_configure_dynamics_function
 
     ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, t=t, my_additional_factor=my_additional_factor)
-
+    # ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, my_additional_factor=my_additional_factor)
 
 def prepare_ocp(
     biorbd_model_path: str,
