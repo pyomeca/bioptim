@@ -490,12 +490,7 @@ class ConfigureProblem:
             "qddot_joints", name_qddot_joints, ocp, nlp, as_states=False, as_controls=True, as_states_dot=True
         )
 
-        ConfigureProblem.configure_dynamics_function(
-            ocp,
-            nlp,
-            DynamicsFunctions.joints_acceleration_driven,
-            expand=False,
-        )
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.joints_acceleration_driven)
 
     @staticmethod
     def muscle_driven(
@@ -610,10 +605,10 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, names_udot, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven, expand=False)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra_params):
+    def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
         """
         Configure the dynamics of the system
 
@@ -656,7 +651,7 @@ class ConfigureProblem:
             ["x", "u", "p", "s"],
             ["xdot"],
         )
-        if expand:
+        if nlp.dynamics_type.expand:
             nlp.dynamics_func = nlp.dynamics_func.expand()
 
         if dynamics_eval.defects is not None:
@@ -673,7 +668,7 @@ class ConfigureProblem:
                 ["x", "u", "p", "s", "xdot"],
                 ["defects"],
             )
-            if expand:
+            if nlp.dynamics_type.expand:
                 nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
 
     @staticmethod
@@ -1747,7 +1742,7 @@ class Dynamics(OptionGeneric):
     def __init__(
         self,
         dynamics_type: Callable | DynamicsFcn,
-        expand: bool = False,
+        expand: bool = True,
         **params: Any,
     ):
         """
