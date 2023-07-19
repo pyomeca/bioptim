@@ -1352,9 +1352,7 @@ class OptimalControlProgram:
                 len_x = sum(self.nlp[penalty.phase].states[key].shape for key in self.nlp[penalty.phase].states)
                 complete_scaling = np.array(x_scaling)
                 number_of_repeat = x.shape[0] // len_x
-                x_scaling = np.repeat(complete_scaling,
-                                      number_of_repeat,
-                                      axis=0)
+                x_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
             x /= x_scaling
 
             if u.size != 0:
@@ -1368,9 +1366,7 @@ class OptimalControlProgram:
                     len_u = sum(self.nlp[penalty.phase].controls[key].shape for key in self.nlp[penalty.phase].controls)
                     complete_scaling = np.array(u_scaling)
                     number_of_repeat = u.shape[0] // len_u
-                    u_scaling = np.repeat(complete_scaling,
-                                          number_of_repeat,
-                                          axis=0)
+                    u_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
                 u /= u_scaling
 
             out = []

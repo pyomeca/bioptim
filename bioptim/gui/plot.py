@@ -846,9 +846,7 @@ class PlotOcp:
                                     s_phase_tp = np.hstack(
                                         (
                                             s_phase_tp,
-                                            data_stochastic[stochastic_key][phase_tp][
-                                                :, node_idx_tp
-                                            ][:, np.newaxis],
+                                            data_stochastic[stochastic_key][phase_tp][:, node_idx_tp][:, np.newaxis],
                                         )
                                     )
                                 s_phase = np.vstack((s_phase, s_phase_tp))
