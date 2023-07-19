@@ -126,4 +126,3 @@ def test_ipopt_solver_options():
 
     solver.set_nlp_scaling_method("gradient-fiesta")
     assert solver.nlp_scaling_method == "gradient-fiesta"
-    
