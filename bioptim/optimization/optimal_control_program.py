@@ -1138,10 +1138,10 @@ class OptimalControlProgram:
 
         for nlp in self.nlp:
             for key in nlp.states.keys():
-                if f"{key}_states" in nlp.plot and key in nlp.x_bounds.keys():
+                if f"{key}_states" in nlp.plot and key in nlp.x_bounds:
                     nlp.plot[f"{key}_states"].bounds = nlp.x_bounds[key]
-            for key in nlp.controls.keys():
-                if f"{key}_controls" in nlp.plot and key in nlp.u_bounds.keys():
+            for key in nlp.controls:
+                if f"{key}_controls" in nlp.plot and key in nlp.u_bounds:
                     nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[key]
 
     def update_initial_guess(
