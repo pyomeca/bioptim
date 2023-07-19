@@ -9,7 +9,7 @@ More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE
 
 import platform
 
-from casadi import MX, SX, vertcat, horzcat
+from casadi import MX, SX, vertcat
 from bioptim import (
     BiorbdModel,
     Node,
