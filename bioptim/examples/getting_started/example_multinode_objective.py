@@ -17,6 +17,7 @@ from bioptim import (
     BiorbdModel,
     PenaltyController,
     MultinodeObjectiveList,
+    CostType,
 )
 
 
@@ -116,12 +117,14 @@ def main():
     # --- Prepare the ocp --- #
     n_shooting = 30
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=n_shooting)
+    # ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))  # show_online_optim=platform.system() == "Linux"
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show the results in a bioviz animation --- #
     sol.animate(n_frames=100)
+    # sol.graphs()
 
 
 if __name__ == "__main__":
