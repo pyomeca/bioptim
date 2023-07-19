@@ -748,6 +748,30 @@ class DynamicsFunctions:
         return q_nlp.mapping.to_first.map(nlp.model.reshape_qdot(q, qdot))
 
     @staticmethod
+    def compute_qddot(nlp: NonLinearProgram, qdot: MX | SX, qddot: MX | SX):
+        """
+        Easy accessor to derivative of q
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The phase of the program
+        q: MX | SX
+            The value of q from "get"
+        qdot: MX | SX
+            The value of qdot from "get"
+        qddot: MX | SX
+            The value of qddot from "get"
+        Returns
+        -------
+        The derivative of qdot
+        """
+
+        qdot_nlp = nlp.states["qdot"] if "qdot" in nlp.states else nlp.controls["qdot"]
+        return qdot_nlp.mapping.to_first.map(nlp.model.reshape_qdot(qdot, qddot))
+
+
+    @staticmethod
     def forward_dynamics(
         nlp: NonLinearProgram,
         q: MX | SX,
