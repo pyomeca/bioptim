@@ -241,7 +241,7 @@ You can already enjoy bioptimizing!
 # Defining our optimal control problems
 Here we will detail our implementation of optimal control problems and some definitions.
 The mathematical transcription of the OCP is as follows:
-![](OCP_equation.png)
+![](OCP_equation.jpg)
 The optimization variables are the states (x = variables that represent the state of the system at each node and that 
 are subject to continuity constraints), controls (u = decision variables defined at each node that have an effect on the system),
 algebraic states (s = optimization variables that are defined at each node, but that are not subject to the 

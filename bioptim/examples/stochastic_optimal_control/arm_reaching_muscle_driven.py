@@ -40,7 +40,7 @@ from bioptim import (
     MultinodeObjectiveList,
 )
 
-from bioptim.examples.stochastic_optimal_control.LeuvenArmModel import LeuvenArmModel
+from bioptim.examples.stochastic_optimal_control.leuven_arm_model import LeuvenArmModel
 
 
 def stochastic_forward_dynamics(
