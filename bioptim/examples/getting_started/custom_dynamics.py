@@ -31,7 +31,7 @@ from bioptim import (
 )
 
 
-def custom_dynamic(
+def custom_dynamics(
     states: MX | SX,
     controls: MX | SX,
     parameters: MX | SX,
@@ -93,7 +93,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_addit
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, my_additional_factor=my_additional_factor)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, my_additional_factor=my_additional_factor)
 
 
 def prepare_ocp(
