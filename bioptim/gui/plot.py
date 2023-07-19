@@ -801,34 +801,33 @@ class PlotOcp:
                             penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
 
                             x_phase = np.ndarray((0, len(penalty.nodes_phase)))
-                            for state_key in data_states.keys():
-                                if sol.ocp.n_phases == 1:
-                                    data_states[state_key] = [data_states[state_key]]
-
-                                x_phase_tp = np.ndarray((data_states[state_key][i].shape[0], 0))
+                            if sol.ocp.n_phases == 1:
+                                data_states = [data_states]
+                            for state_key in data_states[i].keys():
+                                x_phase_tp = np.ndarray((data_states[i][state_key].shape[0], 0))
                                 for tp in range(len(penalty.nodes_phase)):
                                     phase_tp = penalty.nodes_phase[tp]
                                     node_idx_tp = penalty.all_nodes_index[tp]
                                     x_phase_tp = np.hstack(
                                         (
                                             x_phase_tp,
-                                            data_states[state_key][phase_tp][:, node_idx_tp * step_size][:, np.newaxis],
+                                            data_states[phase_tp][state_key][:, node_idx_tp * step_size][:, np.newaxis],
                                         )
                                     )
                                 x_phase = np.vstack((x_phase, x_phase_tp))
 
                             u_phase = np.ndarray((0, len(penalty.nodes_phase)))
-                            for control_key in data_controls.keys():
-                                if sol.ocp.n_phases == 1:
-                                    data_controls[control_key] = [data_controls[control_key]]
-                                u_phase_tp = np.ndarray((data_controls[control_key][i].shape[0], 0))
+                            if sol.ocp.n_phases == 1:
+                                data_controls = [data_controls]
+                            for control_key in data_controls[i].keys():
+                                u_phase_tp = np.ndarray((data_controls[i][control_key].shape[0], 0))
                                 for tp in range(len(penalty.nodes_phase)):
                                     phase_tp = penalty.nodes_phase[tp]
                                     node_idx_tp = penalty.all_nodes_index[tp]
                                     u_phase_tp = np.hstack(
                                         (
                                             u_phase_tp,
-                                            data_controls[control_key][phase_tp][
+                                            data_controls[phase_tp][control_key][
                                                 :, node_idx_tp - (1 if node_idx_tp == nlp.ns else 0)
                                             ][:, np.newaxis],
                                         )
@@ -836,17 +835,17 @@ class PlotOcp:
                                 u_phase = np.vstack((u_phase, u_phase_tp))
 
                             s_phase = np.ndarray((0, len(penalty.nodes_phase)))
-                            for stochastic_key in data_stochastic.keys():
-                                if sol.ocp.n_phases == 1:
-                                    data_stochastic[stochastic_key] = [data_stochastic[stochastic_key]]
-                                s_phase_tp = np.ndarray((data_stochastic[stochastic_key][i].shape[0], 0))
+                            if sol.ocp.n_phases == 1:
+                                data_stochastic = [data_stochastic]
+                            for stochastic_key in data_stochastic[i].keys():
+                                s_phase_tp = np.ndarray((data_stochastic[i][stochastic_key].shape[0], 0))
                                 for tp in range(len(penalty.nodes_phase)):
                                     phase_tp = penalty.nodes_phase[tp]
                                     node_idx_tp = penalty.all_nodes_index[tp]
                                     s_phase_tp = np.hstack(
                                         (
                                             s_phase_tp,
-                                            data_stochastic[stochastic_key][phase_tp][:, node_idx_tp][:, np.newaxis],
+                                            data_stochastic[phase_tp][stochastic_key][:, node_idx_tp][:, np.newaxis],
                                         )
                                     )
                                 s_phase = np.vstack((s_phase, s_phase_tp))
