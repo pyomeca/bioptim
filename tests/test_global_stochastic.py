@@ -342,8 +342,8 @@ def test_arm_reaching_muscle_driven():
     # for now, it does not match because the integration is done in the multinode_constraint
 
 
-def test_arm_reaching_torque_driven():
-    from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven as ocp_module
+def test_arm_reaching_torque_driven_explicit():
+    from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_explicit as ocp_module
 
     final_time = 0.8
     n_shooting = 4
@@ -521,6 +521,137 @@ def test_arm_reaching_torque_driven():
                 4.00000000e-07,
                 -3.78659436e-18,
                 1.00000000e-06,
+            ]
+        ),
+    )
+
+
+
+def test_arm_reaching_torque_driven_implicit():
+    from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
+
+    final_time = 0.8
+    n_shooting = 4
+    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+    problem_type = "CIRCLE"
+    force_field_magnitude = 0
+
+    dt = 0.01
+    motor_noise_std = 0.05
+    wPq_std = 3e-4
+    wPqdot_std = 0.0024
+    motor_noise_magnitude = DM(np.array([motor_noise_std**2 / dt, motor_noise_std**2 / dt]))
+    wPq_magnitude = DM(np.array([wPq_std**2 / dt, wPq_std**2 / dt]))
+    wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
+    sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_socp(
+        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+        final_time=final_time,
+        n_shooting=n_shooting,
+        ee_final_position=ee_final_position,
+        motor_noise_magnitude=motor_noise_magnitude,
+        sensory_noise_magnitude=sensory_noise_magnitude,
+        force_field_magnitude=force_field_magnitude,
+        problem_type=problem_type,
+    )
+
+    # Solver parameters
+    solver = Solver.IPOPT(show_online_optim=False)
+    solver.set_maximum_iterations(4)
+    solver.set_nlp_scaling_method("none")
+
+    sol = ocp.solve(solver)
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 273.55447943474246)
+
+    # detailed cost values
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 273.55441803778837)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 6.139695412526653e-05)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (298, 1))
+
+    # Check some of the results
+    states, controls, stochastic_variables = (
+        sol.states,
+        sol.controls,
+        sol.stochastic_variables,
+    )
+    q, qdot= states["q"], states["qdot"]
+    tau = controls["tau"]
+    k, ref, m, cov, a, c = stochastic_variables["k"], stochastic_variables["ref"], stochastic_variables["m"], stochastic_variables["cov"], stochastic_variables["a"], stochastic_variables["c"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+    np.testing.assert_almost_equal(q[:, -2], np.array([0.9256103 , 1.29037205]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([-5.24835824e-11, -1.47644145e-11]))
+    np.testing.assert_almost_equal(qdot[:, -2], np.array([5.21241356e-11, 2.06282533e-11]))
+
+    np.testing.assert_almost_equal(tau[:, 0], np.array([0.74343712, -0.38484293]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([-0.69874402,  0.44428418]))
+
+    np.testing.assert_almost_equal(
+        k[:, 0],
+        np.array(
+            [
+                0.01848591, 0.00748107, 0.00991704, 0.02024049, 0.00036123,
+                -0.00220054, 0.00174077, -0.00692099,
+            ]
+        ),
+    )
+    np.testing.assert_almost_equal(
+        ref[:, 0], np.array([2.81907790e-02, 2.84412560e-01, 1.74611109e-11, 2.68491278e-12])
+    )
+    np.testing.assert_almost_equal(
+        m[:, 0],
+        np.array(
+            [
+                1.11111345e+00, 3.42118449e-05, -1.24960788e-02, -6.91292907e-05,
+                -1.52820799e-05, 1.11185885e+00, -2.10300614e-04, -1.24002635e-02,
+                -2.10903926e-04, -3.07906604e-03, 1.12464709e+00, 6.22163615e-03,
+                1.37538723e-03, -6.72967228e-02, 1.89270553e-02, 1.11602371e+00,
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        cov[:, -2],
+        np.array(
+            [
+                8.82608391e-07, 4.46856593e-07, 8.92012519e-09, 9.17580048e-09,
+                4.46856593e-07, 3.59584442e-07, 5.33858759e-09, 5.58195502e-09,
+                8.92012519e-09, 5.33858759e-09, 2.53764113e-08, 1.30965341e-08,
+                9.17580048e-09, 5.58195502e-09, 1.30965341e-08, 1.05834332e-08
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        a[:, 3],
+        np.array(
+            [
+                1.00000000e+00, -5.41414868e-15, -1.00000000e-01, -5.24368888e-16,
+                -7.45824586e-15, 1.00000000e+00, -1.13077816e-15, -1.00000000e-01,
+                4.22934990e-02, -4.04008596e-01, 1.01591658e+00, -2.09996413e-02,
+                -1.02365829e-01, 1.04314781e+00, 1.27055981e-02, 1.09217829e+00,
+            ]
+        ),
+    )
+
+    # This is a bug!
+    np.testing.assert_almost_equal(
+        c[:, 4],
+        np.array(
+            [
+                0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                0., 0., 0., 0., 0., 0., 0.,
             ]
         ),
     )
