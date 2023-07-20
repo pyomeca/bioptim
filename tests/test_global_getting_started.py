@@ -48,11 +48,11 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ode_solver = ode_solver()
+    ode_solver_obj = ode_solver()
 
-    if isinstance(ode_solver, (OdeSolver.IRK, OdeSolver.CVODES)) and use_sx:
+    if isinstance(ode_solver_obj, (OdeSolver.IRK, OdeSolver.CVODES)) and use_sx:
         with pytest.raises(
-            RuntimeError, match=f"use_sx=True and OdeSolver.{ode_solver.rk_integrator.__name__} are not yet compatible"
+            RuntimeError, match=f"use_sx=True and OdeSolver.{ode_solver_obj.rk_integrator.__name__} are not yet compatible"
         ):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -60,7 +60,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
                 n_shooting=10,
                 n_threads=n_threads,
                 use_sx=use_sx,
-                ode_solver=ode_solver,
+                ode_solver=ode_solver_obj,
                 assume_phase_dynamics=assume_phase_dynamics,
             )
         return
@@ -71,13 +71,14 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
         n_shooting=30,
         n_threads=n_threads,
         use_sx=use_sx,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver_obj,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver not in (OdeSolver.IRK, OdeSolver.CVODES),
     )
     ocp.print(to_console=True, to_graph=False)
 
     # the test is too long with CVODES
-    if isinstance(ode_solver, OdeSolver.CVODES):
+    if isinstance(ode_solver_obj, OdeSolver.CVODES):
         return
 
     sol = ocp.solve()
@@ -95,35 +96,35 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
     else:
         detailed_cost = sol.detailed_cost[0]
 
-    if isinstance(ode_solver, OdeSolver.RK8):
+    if isinstance(ode_solver_obj, OdeSolver.RK8):
         np.testing.assert_almost_equal(f[0, 0], 41.57063948309302)
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 41.57063948309302)
         np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.5010317, 0.6824593])
 
-    elif isinstance(ode_solver, OdeSolver.IRK):
+    elif isinstance(ode_solver_obj, OdeSolver.IRK):
         np.testing.assert_almost_equal(f[0, 0], 65.8236055171619)
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 65.8236055171619)
         np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.5536468, -0.4129719])
 
-    elif isinstance(ode_solver, OdeSolver.COLLOCATION):
+    elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
         np.testing.assert_almost_equal(f[0, 0], 46.667345680854794)
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 46.667345680854794)
         np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.1780507, 0.3254202])
 
-    elif isinstance(ode_solver, OdeSolver.RK1):
+    elif isinstance(ode_solver_obj, OdeSolver.RK1):
         np.testing.assert_almost_equal(f[0, 0], 47.360621044913245)
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 47.360621044913245)
         np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.1463538, 0.0215651])
 
-    elif isinstance(ode_solver, OdeSolver.RK2):
+    elif isinstance(ode_solver_obj, OdeSolver.RK2):
         np.testing.assert_almost_equal(f[0, 0], 76.24887695462857)
         # detailed cost values
         if detailed_cost is not None:
@@ -139,7 +140,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
 
     # Check constraints
     g = np.array(sol.constraints)
-    if ode_solver.is_direct_collocation:
+    if ode_solver_obj.is_direct_collocation:
         np.testing.assert_equal(g.shape, (600, 1))
         np.testing.assert_almost_equal(g, np.zeros((600, 1)))
     else:
@@ -159,19 +160,19 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # initial and final controls
-    if isinstance(ode_solver, OdeSolver.RK8):
+    if isinstance(ode_solver_obj, OdeSolver.RK8):
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.03763589, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-13.59527556, 0)))
-    elif isinstance(ode_solver, OdeSolver.IRK):
+    elif isinstance(ode_solver_obj, OdeSolver.IRK):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.40765381, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-25.26494109, 0)))
-    elif isinstance(ode_solver, OdeSolver.COLLOCATION):
+    elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.78386563, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-18.22245512, 0)))
-    elif isinstance(ode_solver, OdeSolver.RK1):
+    elif isinstance(ode_solver_obj, OdeSolver.RK1):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.498956, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-17.6888209, 0)))
-    elif isinstance(ode_solver, OdeSolver.RK2):
+    elif isinstance(ode_solver_obj, OdeSolver.RK2):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.6934385, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-27.6610711, 0)))
     else:
