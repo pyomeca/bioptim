@@ -177,7 +177,6 @@ def configure_stochastic_optimal_control_problem(
         ),
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
-        expand=False,
     )
     return
 
