@@ -52,7 +52,8 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
 
     if isinstance(ode_solver_obj, (OdeSolver.IRK, OdeSolver.CVODES)) and use_sx:
         with pytest.raises(
-            RuntimeError, match=f"use_sx=True and OdeSolver.{ode_solver_obj.rk_integrator.__name__} are not yet compatible"
+            RuntimeError,
+            match=f"use_sx=True and OdeSolver.{ode_solver_obj.rk_integrator.__name__} are not yet compatible",
         ):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -62,6 +63,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
                 use_sx=use_sx,
                 ode_solver=ode_solver_obj,
                 assume_phase_dynamics=assume_phase_dynamics,
+                expand_dynamics=False,
             )
         return
 
@@ -215,6 +217,7 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_pha
                     use_sx=use_sx,
                     ode_solver=ode_solver,
                     assume_phase_dynamics=assume_phase_dynamics,
+                    expand_dynamics=False,
                 )
         else:
             ocp = ocp_module.prepare_ocp(
@@ -225,6 +228,7 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_pha
                 use_sx=use_sx,
                 ode_solver=ode_solver,
                 assume_phase_dynamics=assume_phase_dynamics,
+                expand_dynamics=False,
             )
             sol = ocp.solve()
 
@@ -263,6 +267,7 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_pha
             use_sx=use_sx,
             ode_solver=ode_solver,
             assume_phase_dynamics=assume_phase_dynamics,
+            expand_dynamics=False,
         )
         sol = ocp.solve()
 
@@ -330,6 +335,7 @@ def test_pendulum_save_and_load_rk8(use_sx):
         n_threads=1,
         use_sx=use_sx,
         ode_solver=OdeSolver.RK8(),
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -378,6 +384,7 @@ def test_custom_constraint_track_markers(ode_solver, assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -444,6 +451,7 @@ def test_initial_guesses(ode_solver, interpolation, random_init, assume_phase_dy
                 initial_guess=interpolation,
                 ode_solver=ode_solver,
                 assume_phase_dynamics=assume_phase_dynamics,
+                expand_dynamics=False,
             )
         return
 
@@ -455,6 +463,7 @@ def test_initial_guesses(ode_solver, interpolation, random_init, assume_phase_dy
         initial_guess=interpolation,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
 
     sol = ocp.solve()
@@ -516,6 +525,7 @@ def test_cyclic_objective(ode_solver, assume_phase_dynamics):
         loop_from_constraint=False,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -569,6 +579,7 @@ def test_cyclic_constraint(ode_solver, assume_phase_dynamics):
         loop_from_constraint=True,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -622,6 +633,7 @@ def test_phase_transitions(ode_solver, assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -702,6 +714,7 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         target_m=20,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -807,6 +820,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, assum
         problem_type_custom=problem_type_custom,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -854,6 +868,7 @@ def test_example_external_forces(ode_solver):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
         ode_solver=ode_solver,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -922,6 +937,7 @@ def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -1182,6 +1198,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
                 final_time=1,
                 ode_solver=ode_solver,
                 assume_phase_dynamics=assume_phase_dynamics,
+                expand_dynamics=False,
             )
         return
 
@@ -1191,6 +1208,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
         final_time=1,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
     sol.print_cost()
@@ -1306,6 +1324,7 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
                 ode_solver=ode_solver,
                 assume_phase_dynamics=assume_phase_dynamics,
                 with_too_much_constraints=too_much_constraints,
+                expand_dynamics=False,
             )
     else:
         ocp_module.prepare_ocp(
@@ -1314,6 +1333,7 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
             ode_solver=ode_solver,
             assume_phase_dynamics=assume_phase_dynamics,
             with_too_much_constraints=too_much_constraints,
+            expand_dynamics=False,
         )
 
 
@@ -1335,6 +1355,7 @@ def test_multinode_constraints(ode_solver, assume_phase_dynamics):
         n_shootings=(8, 10, 8),
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
     sol.print_cost()
@@ -1568,6 +1589,7 @@ def test_example_variable_scaling(assume_phase_dynamics):
         final_time=1 / 10,
         n_shooting=30,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 

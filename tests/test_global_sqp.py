@@ -21,6 +21,7 @@ def test_pendulum(assume_phase_dynamics):
         final_time=1,
         n_shooting=30,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
 
     solver = Solver.SQP_METHOD(show_online_optim=False)

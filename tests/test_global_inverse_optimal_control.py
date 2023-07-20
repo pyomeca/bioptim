@@ -20,6 +20,7 @@ def test_double_pendulum_torque_driven_IOCP(assume_phase_dynamics):
         biorbd_model_path=biorbd_model_path,
         assume_phase_dynamics=assume_phase_dynamics,
         n_threads=4 if assume_phase_dynamics else 1,
+        expand_dynamics=False,
     )
 
     sol = ocp.solve()

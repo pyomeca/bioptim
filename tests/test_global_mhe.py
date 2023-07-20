@@ -24,6 +24,7 @@ def test_cyclic_nmpc(assume_phase_dynamics):
         cycle_duration=1,
         max_torque=50,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = nmpc.solve(update_functions, solver=Solver.IPOPT())
 

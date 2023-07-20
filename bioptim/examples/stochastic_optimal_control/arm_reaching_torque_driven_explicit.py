@@ -509,6 +509,7 @@ def prepare_socp(
     sensory_noise_magnitude: cas.DM,
     force_field_magnitude: float = 0,
     problem_type: str = "CIRCLE",
+    expand_dynamics: bool = True,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -530,6 +531,11 @@ def prepare_socp(
         The magnitude of the force field
     problem_type: str
         The type of problem to solve (CIRCLE or BAR)
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
+
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -627,7 +633,7 @@ def prepare_socp(
         ),
         motor_noise=np.zeros((n_tau, 1)),
         sensory_noise=np.zeros((n_q + n_qdot, 1)),
-        # expand=False,
+        expand=expand_dynamics,
     )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf

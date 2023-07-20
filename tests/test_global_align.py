@@ -25,6 +25,7 @@ def test_track_segment_on_rt(ode_solver, assume_phase_dynamics):
         n_shooting=8,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -74,6 +75,7 @@ def test_track_marker_on_segment(ode_solver, assume_phase_dynamics):
         initialize_near_solution=True,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -118,6 +120,7 @@ def test_track_vector_orientation(assume_phase_dynamics):
         final_time=1,
         n_shooting=10,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 

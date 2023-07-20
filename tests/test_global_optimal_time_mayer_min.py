@@ -41,6 +41,7 @@ def test_pendulum_min_time_mayer(ode_solver, assume_phase_dynamics):
         n_shooting=ns,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -140,6 +141,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, assume_phase_dynamics):
         ode_solver=ode_solver(),
         min_time=min_ft,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 

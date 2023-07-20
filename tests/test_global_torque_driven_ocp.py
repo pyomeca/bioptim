@@ -255,6 +255,7 @@ def test_track_marker_2D_pendulum(ode_solver, assume_phase_dynamics):
         tau_ref,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -342,7 +343,15 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, assume_phase_dynamic
     if isinstance(ode_solver, OdeSolver.IRK):
         tau_ref = tau_ref * 5
 
-    ocp = ocp_module.prepare_ocp(bio_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(
+        bio_model,
+        final_time,
+        n_shooting,
+        markers_ref,
+        tau_ref,
+        ode_solver=ode_solver,
+        expand_dynamics=False,
+    )
     sol = ocp.solve()
 
     # Check constraints
@@ -426,7 +435,13 @@ def test_trampo_quaternions(assume_phase_dynamics):
     final_time = 0.25
     n_shooting = 5
 
-    ocp = ocp_module.prepare_ocp(model_path, n_shooting, final_time, assume_phase_dynamics=assume_phase_dynamics)
+    ocp = ocp_module.prepare_ocp(
+        model_path,
+        n_shooting,
+        final_time,
+        assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
+    )
     sol = ocp.solve()
 
     # Check objective function value
@@ -533,6 +548,7 @@ def test_phase_transition_uneven_variable_number_by_bounds(assume_phase_dynamics
         biorbd_model_path_with_translations=biorbd_model_path_with_translations,
         n_shooting=(10, 10),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
 
     solver = Solver.IPOPT()
@@ -565,6 +581,7 @@ def test_phase_transition_uneven_variable_number_by_mapping(assume_phase_dynamic
         biorbd_model_path_with_translations=biorbd_model_path_with_translations,
         n_shooting=(10, 10),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -673,6 +690,7 @@ def test_example_multi_biorbd_model(assume_phase_dynamics):
         biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
         n_shooting=20,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -724,6 +742,7 @@ def test_example_minimize_segment_velocity():
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         n_shooting=5,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 

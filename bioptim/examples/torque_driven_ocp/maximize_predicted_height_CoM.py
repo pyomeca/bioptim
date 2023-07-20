@@ -39,6 +39,7 @@ def prepare_ocp(
     com_constraints: bool = False,
     rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     assume_phase_dynamics: bool = True,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -66,6 +67,10 @@ def prepare_ocp(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -91,9 +96,11 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     if use_actuators:
-        dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=True)
+        dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=True, expand=expand_dynamics)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, rigidbody_dynamics=rigidbody_dynamics)
+        dynamics.add(
+            DynamicsFcn.TORQUE_DRIVEN, with_contact=True, rigidbody_dynamics=rigidbody_dynamics, expand=expand_dynamics
+        )
 
     # Constraints
     constraints = ConstraintList()

@@ -20,6 +20,7 @@ def test_node_time(ode_solver, assume_phase_dynamics):
         n_shooting=10,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     solver = Solver.IPOPT(show_online_optim=False)
     solver.set_maximum_iterations(0)

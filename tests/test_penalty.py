@@ -39,7 +39,7 @@ def prepare_test_ocp(
     elif with_muscles:
         bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True)
+        dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand=False)
     elif with_contact:
         bio_model = BiorbdModel(
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
@@ -50,11 +50,11 @@ def prepare_test_ocp(
     elif with_actuator:
         bio_model = BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=False)
     else:
         bio_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=False)
 
     ocp = OptimalControlProgram(
         bio_model,

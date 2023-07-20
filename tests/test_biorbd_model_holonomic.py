@@ -156,7 +156,10 @@ def test_example_two_pendulums():
 
     # --- Prepare the ocp --- #
     ocp, model = two_pendulums.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/two_pendulums.bioMod", n_shooting=10, final_time=1
+        biorbd_model_path=bioptim_folder + "/models/two_pendulums.bioMod",
+        n_shooting=10,
+        final_time=1,
+        expand_dynamics=False,
     )
 
     # --- Solve the ocp --- #

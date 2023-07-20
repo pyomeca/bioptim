@@ -428,6 +428,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, assume
         rigidbody_dynamics=rigidbody_dynamics,
         with_passive_torque=with_passive_torque,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     solver = Solver.IPOPT()
 

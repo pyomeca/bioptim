@@ -22,6 +22,7 @@ def test_xia_fatigable_muscles(assume_phase_dynamics):
         fatigue_type="xia",
         ode_solver=OdeSolver.COLLOCATION(),
         torque_level=1,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -99,6 +100,7 @@ def test_xia_stabilized_fatigable_muscles(assume_phase_dynamics):
         torque_level=1,
         assume_phase_dynamics=assume_phase_dynamics,
         n_threads=8 if assume_phase_dynamics else 1,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -177,6 +179,7 @@ def test_michaud_fatigable_muscles(assume_phase_dynamics):
         torque_level=1,
         assume_phase_dynamics=assume_phase_dynamics,
         n_threads=8 if assume_phase_dynamics else 1,
+        expand_dynamics=False,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
@@ -216,6 +219,7 @@ def test_effort_fatigable_muscles(assume_phase_dynamics):
         torque_level=1,
         assume_phase_dynamics=assume_phase_dynamics,
         n_threads=8 if assume_phase_dynamics else 1,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -288,6 +292,7 @@ def test_fatigable_xia_torque_non_split(assume_phase_dynamics):
         split_controls=False,
         use_sx=False,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
@@ -323,6 +328,7 @@ def test_fatigable_xia_torque_split(assume_phase_dynamics):
         split_controls=True,
         use_sx=False,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -394,6 +400,7 @@ def test_fatigable_xia_stabilized_torque_split(assume_phase_dynamics):
         split_controls=True,
         use_sx=False,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -465,6 +472,7 @@ def test_fatigable_michaud_torque_non_split(assume_phase_dynamics):
         split_controls=False,
         use_sx=False,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
@@ -504,6 +512,7 @@ def test_fatigable_michaud_torque_split(assume_phase_dynamics):
         split_controls=True,
         use_sx=False,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -572,6 +581,7 @@ def test_fatigable_effort_torque_non_split(assume_phase_dynamics):
         split_controls=False,
         use_sx=False,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
@@ -611,6 +621,7 @@ def test_fatigable_effort_torque_split(assume_phase_dynamics):
         split_controls=True,
         use_sx=False,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 

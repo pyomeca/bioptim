@@ -26,6 +26,7 @@ def test_symmetry_by_mapping(ode_solver, assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 
@@ -82,6 +83,7 @@ def test_symmetry_by_constraint(ode_solver, assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
 

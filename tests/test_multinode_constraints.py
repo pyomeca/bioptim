@@ -29,9 +29,9 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, assume_phase_dynamics) -> O
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=False)
 
     multinode_constraints = MultinodeConstraintList()
     # hard constraint

@@ -28,6 +28,7 @@ def test_plot_graphs_one_phase(assume_phase_dynamics):
         n_shooting=30,
         final_time=2,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
@@ -45,6 +46,7 @@ def test_plot_check_conditioning(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         long_optim=False,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     ocp.check_conditioning()
     sol = ocp.solve()
@@ -80,6 +82,7 @@ def test_plot_merged_graphs(assume_phase_dynamics):
         use_residual_torque=True,
         kin_data_to_track="markers",
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(1)
@@ -95,7 +98,9 @@ def test_plot_graphs_multi_phases(assume_phase_dynamics):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
@@ -113,6 +118,7 @@ def test_add_new_plot(assume_phase_dynamics):
         n_shooting=20,
         final_time=0.5,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(1)
@@ -167,6 +173,7 @@ def test_plot_graphs_for_implicit_constraints(rigidbody_dynamics, assume_phase_d
         final_time=1,
         rigidbody_dynamics=rigidbody_dynamics,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
@@ -203,7 +210,9 @@ def test_console_objective_functions(assume_phase_dynamics):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=assume_phase_dynamics
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
     sol = ocp.solve()
     ocp = sol.ocp  # We will override ocp with known and controlled values for the test

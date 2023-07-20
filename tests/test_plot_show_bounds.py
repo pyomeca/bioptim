@@ -1,5 +1,4 @@
 import os
-from bioptim import BoundsList
 from bioptim.limits.path_conditions import Bounds
 
 
@@ -17,6 +16,7 @@ def test_pendulum_show_bounds():
         final_time=1,
         n_shooting=30,
         assume_phase_dynamics=True,
+        expand_dynamics=False,
     )
     # Test the keys in the dict ocp.nlp[0].plot
     assert ["q_states", "qdot_states", "tau_controls"] == list(ocp.nlp[0].plot.keys())

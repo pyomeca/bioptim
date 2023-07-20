@@ -21,6 +21,7 @@ def prepare_ocp(
     biorbd_model_path_modified_inertia: str = "models/triple_pendulum_modified_inertia.bioMod",
     n_shooting: int = 40,
     assume_phase_dynamics: bool = True,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     # Adding the models to the same phase
     bio_models = MultiBiorbdModel((biorbd_model_path, biorbd_model_path_modified_inertia))
@@ -41,7 +42,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False, expand=False)
 
     # Path constraint
     x_bounds = BoundsList()

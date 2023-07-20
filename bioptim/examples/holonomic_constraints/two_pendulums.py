@@ -104,6 +104,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int = 30,
     final_time: float = 1,
+    expand_dynamics: bool = True,
 ) -> (HolonomicBiorbdModel, OptimalControlProgram):
     """
     Prepare the program
@@ -146,7 +147,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, expand=False)
+    dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, expand=expand_dynamics)
 
     # Path Constraints
     constraints = ConstraintList()
