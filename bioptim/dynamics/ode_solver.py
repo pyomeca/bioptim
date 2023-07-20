@@ -71,12 +71,7 @@ class OdeSolverBase:
         """
         nlp.dynamics = []
 
-        # TODO : IF FUN DOESN'T HAVE T, t=0.0
-        # assume_phase_dynamic
-
         nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0, t=ocp.node_time(phase_idx=nlp.phase_idx, node_idx=0))
-        # nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0, t=controller.ocp.time(phase_index=controller.get_nlp.phase_idx, node=controller.node_index))
-        # nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0, t=ocp.time(phase_index=get_nlp.phase_idx, node=node_index))
         if ocp.assume_phase_dynamics:
             nlp.dynamics = nlp.dynamics * nlp.ns
         else:

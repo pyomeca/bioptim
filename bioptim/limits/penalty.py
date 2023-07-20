@@ -963,11 +963,6 @@ class PenaltyFunctionAbstract:
                     continuity,
                     controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["defects"],
                 )
-                # continuity -= controller.integrate(t0=controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index), x0=cx, p=u, params=controller.parameters.cx)["xf"]
-                # continuity = vertcat(
-                #     continuity,
-                #     controller.integrate(t0=controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index), x0=cx, p=u, params=controller.parameters.cx)["defects"],
-                # )
 
                 penalty.integrate = True
 

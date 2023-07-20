@@ -79,9 +79,7 @@ class Integrator:
         self.control_type = ode_opt["control_type"]
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
-
         self.t = ode["time"]
-
         self.function = None
 
     def __call__(self, *args, **kwargs):
@@ -250,7 +248,6 @@ class RK(Integrator):
         for i in range(1, self.n_step + 1):
             t_norm_init = self.t if 't' in self.fun.name_in() else (i - 1) / self.n_step
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
-            # x[:, i] = self.next_x(h, self.t, x[:, i - 1], u, p)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
 

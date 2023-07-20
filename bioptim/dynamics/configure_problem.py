@@ -638,13 +638,6 @@ class ConfigureProblem:
             nlp.parameters.mx,
             nlp,
             **extra_params,
-        ) if t is None else dyn_func(
-            nlp.states.scaled.mx_reduced,
-            nlp.controls.scaled.mx_reduced,
-            nlp.parameters.mx,
-            t,
-            nlp,
-            **extra_params,
         )
 
         dynamics_dxdt = dynamics_eval.dxdt
@@ -661,19 +654,7 @@ class ConfigureProblem:
             [dynamics_dxdt],
             ["x", "u", "p"],
             ["xdot"],
-        ) if t is None else Function(
-            "ForwardDyn",
-            [
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.mx,
-                t,
-            ],
-            [dynamics_dxdt],
-            ["x", "u", "p", "t"],
-            ["xdot"],
         )
-
 
         if expand:
             nlp.dynamics_func = nlp.dynamics_func.expand()
