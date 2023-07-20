@@ -69,10 +69,6 @@ def test_symmetry_by_mapping(ode_solver, assume_phase_dynamics):
 def test_symmetry_by_constraint(ode_solver, assume_phase_dynamics):
     from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_constraint as ocp_module
 
-    if platform.system() == "Windows":
-        # This is a long test and CI is already long for Windows
-        return
-
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
         return
@@ -83,7 +79,7 @@ def test_symmetry_by_constraint(ode_solver, assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
