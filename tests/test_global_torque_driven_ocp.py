@@ -83,7 +83,7 @@ def test_track_markers_changing_constraints(ode_solver, assume_phase_dynamics):
         final_time=2,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=ode_solver != OdeSolver.IRK
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
