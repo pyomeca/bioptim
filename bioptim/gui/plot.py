@@ -345,36 +345,42 @@ class PlotOcp:
                         nlp.controls.node_index = node_index
                         nlp.stochastic_variables.node_index = node_index
 
-                        casadi_function = nlp.plot[key].parameters["penalty"].weighted_function_non_threaded[0]
-                        if nlp.plot[key].parameters["penalty"].multinode_penalty:
-                            if casadi_function is None:
-                                size = 0
+                        # If multi-node penalties = None, stays zero
+                        size_x = 0
+                        size_u = 0
+                        size_p = 0
+                        size_s = 0
+                        if "penalty" in nlp.plot[key].parameters:
+                            casadi_function = nlp.plot[key].parameters["penalty"].weighted_function_non_threaded[0]
+                            if nlp.plot[key].parameters["penalty"].multinode_penalty:
+                                if casadi_function is not None:
+                                    size_x = len(casadi_function.nominal_in(0))
+                                    size_u = len(casadi_function.nominal_in(1))
+                                    size_p = len(casadi_function.nominal_in(2))
+                                    size_s = len(casadi_function.nominal_in(3))
                             else:
-                                size = (
-                                    nlp.plot[key]
-                                    .function(
-                                        node_index,
-                                        np.zeros((len(casadi_function.nominal_in(0)), 1)),
-                                        np.zeros((len(casadi_function.nominal_in(1)), 1)),
-                                        np.zeros((len(casadi_function.nominal_in(2)), 1)),
-                                        np.zeros((len(casadi_function.nominal_in(3)), 1)),
-                                        **nlp.plot[key].parameters,
-                                    )
-                                    .shape[0]
-                                )
+                                size_x = nlp.states.shape
+                                size_u = nlp.controls.shape
+                                size_p = nlp.parameters.shape
+                                size_s = nlp.stochastic_variables.shape
                         else:
-                            size = (
-                                nlp.plot[key]
-                                .function(
-                                    node_index,
-                                    np.zeros((nlp.states.shape, 2)),
-                                    np.zeros((nlp.controls.shape, 2)),
-                                    np.zeros((nlp.parameters.shape, 2)),
-                                    np.zeros((nlp.stochastic_variables.shape, 2)),
-                                    **nlp.plot[key].parameters,
-                                )
-                                .shape[0]
+                            size_x = nlp.states.shape
+                            size_u = nlp.controls.shape
+                            size_p = nlp.parameters.shape
+                            size_s = nlp.stochastic_variables.shape
+
+                        size = (
+                            nlp.plot[key]
+                            .function(
+                                node_index,
+                                np.zeros((size_x, 1)),
+                                np.zeros((size_u, 1)),
+                                np.zeros((size_p, 1)),
+                                np.zeros((size_s, 1)),
+                                **nlp.plot[key].parameters,
                             )
+                            .shape[0]
+                        )
                         nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
                     else:
                         size = len(nlp.plot[key].phase_mappings.to_second.map_idx)
