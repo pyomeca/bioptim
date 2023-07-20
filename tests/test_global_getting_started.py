@@ -1028,15 +1028,33 @@ def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
     )
 
 
+@pytest.mark.parametrize("expand_dynamics", [True, False])
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
-def test_contact_forces_inequality_greater_than_constraint(ode_solver, assume_phase_dynamics):
+def test_contact_forces_inequality_greater_than_constraint(ode_solver, assume_phase_dynamics, expand_dynamics):
     from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     min_bound = 50
-    ode_solver = ode_solver()
+
+    if not expand_dynamics and ode_solver != OdeSolver.IRK:
+        # There is no point testing that
+        return
+    if expand_dynamics and ode_solver == OdeSolver.IRK:
+        with pytest.raises(RuntimeError):
+            ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
+                phase_time=0.1,
+                n_shooting=10,
+                min_bound=min_bound,
+                max_bound=np.inf,
+                mu=0.2,
+                ode_solver=ode_solver(),
+                assume_phase_dynamics=assume_phase_dynamics,
+                expand_dynamics=expand_dynamics,
+            )
+        return
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
@@ -1045,8 +1063,9 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, assume_ph
         min_bound=min_bound,
         max_bound=np.inf,
         mu=0.2,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=expand_dynamics,
     )
     sol = ocp.solve()
 
@@ -1091,8 +1110,6 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     max_bound = 75
-    ode_solver = ode_solver()
-
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.1,
@@ -1100,7 +1117,8 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
         min_bound=-np.inf,
         max_bound=max_bound,
         mu=0.2,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 

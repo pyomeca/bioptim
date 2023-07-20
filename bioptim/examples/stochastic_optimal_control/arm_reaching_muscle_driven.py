@@ -130,7 +130,6 @@ def configure_stochastic_optimal_control_problem(
         ),
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
-        expand=False,
     )
 
 
@@ -540,6 +539,7 @@ def prepare_socp(
         ),
         motor_noise=np.zeros((2, 1)),
         sensory_noise=np.zeros((4, 1)),
+        expand=False,
     )
 
     n_muscles = 6

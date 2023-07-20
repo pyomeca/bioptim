@@ -185,7 +185,6 @@ def configure_stochastic_optimal_control_problem(
         ),
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
-        expand=False,
     )
     return
 
@@ -628,7 +627,8 @@ def prepare_socp(
         ),
         motor_noise=np.zeros((n_tau, 1)),
         sensory_noise=np.zeros((n_q + n_qdot, 1)),
-    )  # expand=False
+        # expand=False,
+    )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf
     states_max = np.ones((n_states, n_shooting + 1)) * cas.inf

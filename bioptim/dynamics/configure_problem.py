@@ -620,8 +620,6 @@ class ConfigureProblem:
             A reference to the phase
         dyn_func: Callable[states, controls, param]
             The function to get the derivative of the states
-        expand: bool
-            If the dynamics should be expanded with casadi
         """
 
         nlp.parameters = ocp.parameters
@@ -652,7 +650,17 @@ class ConfigureProblem:
             ["xdot"],
         )
         if nlp.dynamics_type.expand:
-            nlp.dynamics_func = nlp.dynamics_func.expand()
+            try:
+                nlp.dynamics_func = nlp.dynamics_func.expand()
+            except Exception as me:
+                RuntimeError(
+                    f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                    f"Please review the following casadi error message for more details.\n"
+                    "Several factors could be causing this issue. One of the most likely is the inability to "
+                    "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                    "Original casadi error message:\n"
+                    f"{me}"
+                )
 
         if dynamics_eval.defects is not None:
             nlp.implicit_dynamics_func = Function(
@@ -669,7 +677,17 @@ class ConfigureProblem:
                 ["defects"],
             )
             if nlp.dynamics_type.expand:
-                nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
+                try:
+                    nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
+                except Exception as me:
+                    RuntimeError(
+                        f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                        f"Please review the following casadi error message for more details.\n"
+                        "Several factors could be causing this issue. One of the most likely is the inability to "
+                        "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                        "Original casadi error message:\n"
+                        f"{me}"
+                    )
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -1735,7 +1753,7 @@ class Dynamics(OptionGeneric):
         The configuration function provided by the user that declares the NLP (states and controls),
         usually only necessary when defining custom functions
     expand: bool
-        If the continuity constraint should be expand. This can be extensive on RAM
+        If the continuity constraint should be expanded. This can be extensive on RAM
 
     """
 

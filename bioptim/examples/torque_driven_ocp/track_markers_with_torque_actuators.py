@@ -33,6 +33,7 @@ def prepare_ocp(
     actuator_type: int = None,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     assume_phase_dynamics: bool = True,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -53,6 +54,9 @@ def prepare_ocp(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note that with_contact is set to True, then this must be
+        set to False if ode_solver is IRK
 
     Returns
     -------
@@ -77,14 +81,13 @@ def prepare_ocp(
     dynamics = DynamicsList()
     if actuator_type:
         if actuator_type == 1:
-            dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN)
+            dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, expand=expand_dynamics)
         elif actuator_type == 2:
-            dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+            dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
         else:
             raise ValueError("actuator_type is 1 (torque activations) or 2 (torque max constraints)")
     else:
-        expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
 
     # Constraints
     constraints = ConstraintList()

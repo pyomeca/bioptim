@@ -56,6 +56,7 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, assume_ph
         ode_solver=ode_solver(),
         n_threads=n_threads,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     solver = Solver.IPOPT()
     # solver.set_maximum_iterations(10)
@@ -190,6 +191,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, a
         kin_data_to_track="q",
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 

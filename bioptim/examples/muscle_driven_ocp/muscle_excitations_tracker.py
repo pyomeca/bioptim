@@ -218,6 +218,7 @@ def prepare_ocp(
     kin_data_to_track: str = "markers",
     ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     assume_phase_dynamics: bool = True,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp to solve
@@ -246,6 +247,9 @@ def prepare_ocp(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note that with_contact is set to True, then this must be
+        set to False if ode_solver is IRK
 
     Returns
     -------
@@ -273,7 +277,12 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_excitations=True, with_residual_torque=use_residual_torque)
+    dynamics.add(
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_excitations=True,
+        with_residual_torque=use_residual_torque,
+        expand=expand_dynamics,
+    )
 
     # Path constraint
     x_bounds = BoundsList()
