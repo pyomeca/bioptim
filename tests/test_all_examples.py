@@ -185,6 +185,7 @@ def test__getting_started__example_inequality_constraint(assume_phase_dynamics):
         max_bound=np.inf,
         mu=0.2,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
 
 
@@ -324,6 +325,7 @@ def test__muscle_driven_ocp__static_arm(assume_phase_dynamics):
         n_shooting=50,
         weight=1000,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=False,
     )
 
 
