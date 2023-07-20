@@ -19,8 +19,6 @@ from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biomodel import BioModel
-from ..interfaces.holonomic_biomodel import HolonomicBioModel
-from ..interfaces.variational_biomodel import VariationalBioModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -31,7 +29,7 @@ from ..limits.constraints import (
     ParameterConstraint,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
-from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraint, MultinodeConstraintFcn
+from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import (
     ObjectiveFcn,

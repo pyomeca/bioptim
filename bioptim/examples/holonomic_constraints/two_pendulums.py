@@ -104,7 +104,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int = 30,
     final_time: float = 1,
-    expand_dynamics: bool = True,
+    expand_dynamics: bool = False,
 ) -> (HolonomicBiorbdModel, OptimalControlProgram):
     """
     Prepare the program
@@ -117,6 +117,10 @@ def prepare_ocp(
         The number of shooting points
     final_time: float
         The time at the final node
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------

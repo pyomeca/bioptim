@@ -994,7 +994,7 @@ def test_muscle_driven(
             with_excitations=with_excitations,
             with_contact=with_contact,
             rigidbody_dynamics=rigidbody_dynamics,
-            expand=False,
+            expand=True,
         ),
         False,
     )

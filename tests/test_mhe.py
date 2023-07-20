@@ -68,7 +68,7 @@ def test_mhe(solver, assume_phase_dynamics):
         u_init=u_init,
         assume_phase_dynamics=assume_phase_dynamics,
         n_threads=4 if assume_phase_dynamics else 1,
-        expand_dynamics=False,
+        expand_dynamics=True,
     ).solve(update_functions, **ocp_module.get_solver_options(solver))
 
     if solver.type == SolverType.ACADOS:

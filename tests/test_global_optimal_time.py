@@ -64,7 +64,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
         max_time=max_ft,
         weight=-1,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -141,7 +141,7 @@ def test_pendulum_min_time_lagrange(ode_solver, assume_phase_dynamics):
         n_shooting=ns,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -403,7 +403,7 @@ def test_monophase_time_constraint(ode_solver, assume_phase_dynamics):
         n_shooting=(20,),
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -467,7 +467,7 @@ def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
         n_shooting=(20, 30, 20),
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -540,7 +540,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, assume_
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
         with_phase_time_equality=True,
-        expand_dynamics=False,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 

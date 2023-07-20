@@ -108,7 +108,6 @@ def prepare_ocp(
     n_threads: int = 8,
     use_sx: bool = False,
     assume_phase_dynamics: bool = True,
-    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -148,7 +147,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         rigidbody_dynamics=RigidBodyDynamics.ODE,
         soft_contacts_dynamics=SoftContactDynamics.ODE,
-        expand=expand_dynamics,
+        expand=True,
     )
 
     # Constraints

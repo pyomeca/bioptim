@@ -93,7 +93,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=not isinstance(ode_solver, OdeSolver.IRK))
 
     # Path constraint
     nq = bio_model.nb_q

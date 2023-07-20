@@ -19,7 +19,7 @@ def test_merge_phases_one_phase(assume_phase_dynamics):
         final_time=2,
         n_shooting=10,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -42,7 +42,7 @@ def test_merge_phases_multi_phase(assume_phase_dynamics):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -77,7 +77,7 @@ def test_interpolate(assume_phase_dynamics):
         final_time=2,
         n_shooting=n_shooting,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -121,7 +121,7 @@ def test_interpolate_multiphases(ode_solver, assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -168,7 +168,7 @@ def test_interpolate_multiphases_merge_phase(assume_phase_dynamics):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -211,7 +211,7 @@ def test_integrate(integrator, ode_solver, assume_phase_dynamics):
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -280,7 +280,7 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver, assume_pha
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -348,7 +348,7 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -501,7 +501,7 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, assume_pha
         n_shooting=n_shooting,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -582,7 +582,7 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -664,7 +664,7 @@ def test_check_models_comes_from_same_super_class():
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         assume_phase_dynamics=True,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -704,7 +704,7 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()

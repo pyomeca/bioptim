@@ -20,7 +20,6 @@ def test_soft_contact(assume_phase_dynamics):
         use_sx=False,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
     )
 
     ocp.print(to_console=True, to_graph=False)

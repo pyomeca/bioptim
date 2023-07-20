@@ -81,7 +81,7 @@ def prepare_ocp(
         raise ValueError("Wrong objective")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=False)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True)
 
     # Path constraint
     x_bounds = BoundsList()

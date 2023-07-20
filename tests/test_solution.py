@@ -19,7 +19,7 @@ def test_time(ode_solver, assume_phase_dynamics):
         n_shooting=10,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
     solver = Solver.IPOPT(show_online_optim=False)
     solver.set_maximum_iterations(0)
@@ -52,7 +52,7 @@ def test_time_multiphase(ode_solver, assume_phase_dynamics):
         phase_time=(0.2, 0.3, 0.5),
         n_shooting=(3, 4, 5),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT(show_online_optim=False)
@@ -104,7 +104,7 @@ def test_generate_time(ode_solver, merge_phase, keep_intermediate_points, shooti
         phase_time=(0.2, 0.3, 0.5),
         n_shooting=(3, 4, 5),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT(show_online_optim=False)
@@ -228,7 +228,7 @@ def test_generate_integrate(
         phase_time=(0.2, 0.3, 0.5),
         n_shooting=(3, 4, 5),
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT(show_online_optim=False)
@@ -346,7 +346,7 @@ def test_generate_integrate_linear_continuous(
                 n_shooting=(3, 4, 5),
                 control_type=ControlType.LINEAR_CONTINUOUS,
                 assume_phase_dynamics=assume_phase_dynamics,
-                expand_dynamics=False,
+                expand_dynamics=True,
             )
         return
     ocp = ocp_module.prepare_ocp(
@@ -356,7 +356,7 @@ def test_generate_integrate_linear_continuous(
         n_shooting=(3, 4, 5),
         control_type=ControlType.LINEAR_CONTINUOUS,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT(show_online_optim=False)
