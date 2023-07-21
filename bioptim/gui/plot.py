@@ -833,11 +833,15 @@ class PlotOcp:
                                 for tp in range(len(penalty.nodes_phase)):
                                     phase_tp = penalty.nodes_phase[tp]
                                     node_idx_tp = penalty.all_nodes_index[tp]
-                                    if (node_idx_tp != nlp.ns or (
-                                            node_idx_tp == nlp.ns and not np.isnan(
-                                        data_controls[i][control_key][0, -1]))):
+                                    if node_idx_tp != nlp.ns or (
+                                        node_idx_tp == nlp.ns and not np.isnan(data_controls[i][control_key][0, -1])
+                                    ):
                                         new_value = data_controls[phase_tp][control_key][:, node_idx_tp][:, np.newaxis]
-                                        u_phase_tp = np.vstack((u_phase_tp, new_value)) if isinstance(u_phase_tp, np.ndarray) else new_value
+                                        u_phase_tp = (
+                                            np.vstack((u_phase_tp, new_value))
+                                            if isinstance(u_phase_tp, np.ndarray)
+                                            else new_value
+                                        )
                                 u_phase = u_phase_tp if u_phase is None else np.hstack((u_phase, u_phase_tp))
 
                             s_phase = np.ndarray((0, len(penalty.nodes_phase)))
