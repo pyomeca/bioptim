@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from casadi import MX, vertcat, Function, DM
+from casadi import MX, SX, vertcat, Function, DM
 import numpy as np
 
 from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
@@ -13,6 +13,40 @@ from ..misc.enums import (
     VariableType,
 )
 from ..misc.mapping import BiMapping
+
+
+def variable_type_from_booleans_to_enums(
+        as_states: bool, as_controls: bool, as_states_dot: bool, as_stochastic: bool
+) -> list[VariableType]:
+    """
+    Convert the booleans to enums
+
+    Parameters
+    ----------
+    as_states: bool
+        If the new variable should be added to the state variable set
+    as_states_dot: bool
+        If the new variable should be added to the state_dot variable set
+    as_controls: bool
+        If the new variable should be added to the control variable set
+    as_stochastic: bool
+        If the new variable should be added to the stochastic variable set
+
+    Returns
+    -------
+    The list of variable type
+    """
+
+    variable_type = []
+    if as_states:
+        variable_type.append(VariableType.STATE)
+    if as_states_dot:
+        variable_type.append(VariableType.STATE_DOT)
+    if as_controls:
+        variable_type.append(VariableType.CONTROL)
+    if as_stochastic:
+        variable_type.append(VariableType.STOCHASTIC)
+    return variable_type
 
 
 class NewVariableConfiguration:
@@ -147,16 +181,21 @@ class NewVariableConfiguration:
     @staticmethod
     def check_variable_copy_condition(nlp, phase_idx: int, use_from_phase_idx: int, name: str, decision_variable_attribute: str):
         """
-        Check if the copy condition is met.
+        Check if the copy condition is met, if a NodeMapping exists.
 
         Parameters
         ----------
         nlp: NonLinearProgram
             The non linear program of the phase of the ocp
         phase_idx:
-
+            The index of the phase
         decision_variable_attribute: str
             refers to one property of the nlp, e.g. "states", "states_dot", "controls", ...
+
+        Returns
+        -------
+        bool
+            True if the copy condition is met, False otherwise
         """
         return (
                 use_from_phase_idx is not None
@@ -172,7 +211,7 @@ class NewVariableConfiguration:
         Parameters
         ---------
         n_col: int
-
+            The number of columns per shooting interval, useful espacially for direct collocation
         n_shooting: int
             The number of node shooting
         initial_node: todo (int or str)
@@ -213,7 +252,7 @@ class NewVariableConfiguration:
         _cx_scaled: list[MX | SX, ...]
             Decision variables scaled to the physical world
         scaling: np.ndarray
-            The scaling associated to the decision variable
+            The scaling factors associated to the decision variable
 
         Returns
         --------
