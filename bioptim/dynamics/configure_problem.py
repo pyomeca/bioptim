@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from casadi import MX, SX, vertcat, Function
+from casadi import DM, MX, SX, vertcat, Function
 import numpy as np
 
 from .dynamics_functions import DynamicsFunctions

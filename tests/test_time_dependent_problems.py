@@ -52,6 +52,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     t = (
         MX.sym("t") if nlp.cx.type_name() == "MX" else SX.sym("t")
     )  # t needs a symbolic value to start computing in custom_configure_dynamics_function
+    # CX.sym à regarder
 
     configure_dynamics_function(ocp, nlp, time_dynamic, t=t)
 
@@ -123,6 +124,7 @@ def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra
         nlp.states.scaled.mx_reduced,
         nlp.controls.scaled.mx_reduced,
         nlp.parameters.mx,
+        nlp.stochastic_variables.mx,
         nlp,
         **extra_params,
     )
@@ -137,10 +139,11 @@ def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
+            nlp.stochastic_variables.mx,
             extra_params["t"]
         ],
         [dynamics_dxdt],
-        ["x", "u", "p", "t"],
+        ["x", "u", "p", "s","t"],
         ["xdot"],
     )
 
@@ -154,11 +157,12 @@ def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
+                nlp.stochastic_variables.mx,
                 extra_params["t"],
                 nlp.states_dot.scaled.mx_reduced,
             ],
             [dynamics_eval.defects],
-            ["x", "u", "p", "t", "xdot"],
+            ["x", "u", "p", "s", "t", "xdot"],
             ["defects"],
         ).expand()
 

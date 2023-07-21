@@ -280,7 +280,7 @@ class RK(Integrator):
 
         for i in range(1, self.n_step + 1):
             t_norm_init = self.t if 't' in self.fun.name_in() else (i - 1) / self.n_step
-            x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p)
+            x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
 
@@ -434,13 +434,14 @@ class RK4(RK):
         The next integrate states
         """
 
-        k1 = self.fun(x_prev, self.get_u(u, t), p, t)[:, self.idx] if 't' in self.fun.name_in() else self.fun(x_prev, self.get_u(u, t), p)[:, self.idx]
-        k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm / 2)[:,self.idx] if 't' in self.fun.name_in() else self.fun(x_prev + h / 2 * k1,self.get_u(u, t + self.h_norm / 2), p)[:,self.idx]
-        k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, t + self.h_norm / 2)[:,self.idx] if 't' in self.fun.name_in() else self.fun(x_prev + h / 2 * k2,self.get_u(u, t + self.h_norm / 2), p)[:,self.idx]
-        k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, t + self.h_norm)[:,self.idx] if 't' in self.fun.name_in() else self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p)[:, self.idx]
+        k1 = self.fun(x_prev, self.get_u(u, t), p, s, t)[:, self.idx] if 't' in self.fun.name_in() else self.fun(x_prev, self.get_u(u, t), p, s)[:, self.idx]
+        k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s, t + self.h_norm / 2)[:,self.idx] if 't' in self.fun.name_in() else self.fun(x_prev + h / 2 * k1,self.get_u(u, t + self.h_norm / 2), p, s)[:,self.idx]
+        k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, s, t + self.h_norm / 2)[:,self.idx] if 't' in self.fun.name_in() else self.fun(x_prev + h / 2 * k2,self.get_u(u, t + self.h_norm / 2), p, s)[:,self.idx]
+        k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, s, t + self.h_norm)[:,self.idx] if 't' in self.fun.name_in() else self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, s)[:, self.idx]
 
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
+# time, x, u, p, s
 
 class RK8(RK4):
     """
