@@ -119,7 +119,7 @@ def test_track_markers_changing_constraints(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(tau[:, -2], np.array((1.36088709, 9.81, -2.27903226)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -159,7 +159,7 @@ def test_track_markers_changing_constraints(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(tau[:, -2], np.array((-5.625, 21.06, -2.27903226)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)

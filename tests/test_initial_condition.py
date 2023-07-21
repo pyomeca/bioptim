@@ -126,7 +126,7 @@ def test_initial_guess_update(assume_phase_dynamics):
         final_time=2,
         n_shooting=10,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     np.testing.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.zeros((2, 1)))
@@ -188,7 +188,7 @@ def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
         n_shooting=10,
         n_threads=4 if assume_phase_dynamics else 1,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     X = InitialGuessList()
@@ -235,7 +235,7 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
         n_shooting=10,
         n_threads=4 if assume_phase_dynamics else 1,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     X = InitialGuessList()

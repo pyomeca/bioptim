@@ -23,7 +23,7 @@ def test__acados__pendulum():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod", n_shooting=41, final_time=3, expand_dynamics=False
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod", n_shooting=41, final_time=3, expand_dynamics=True
     )
 
 
@@ -53,7 +53,7 @@ def test__getting_started__custom_bounds():
         n_shooting=30,
         final_time=2,
         assume_phase_dynamics=True,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
 
@@ -63,9 +63,7 @@ def test__getting_started__custom_constraints():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        assume_phase_dynamics=True,
-        expand_dynamics=False,
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=True, expand_dynamics=False
     )
 
 
@@ -95,7 +93,7 @@ def test__getting_started__custom_initial_guess(interpolation, random):
         random_init=random,
         initial_guess=interpolation,
         assume_phase_dynamics=True,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
 

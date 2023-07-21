@@ -34,7 +34,7 @@ def test_multi_cyclic_nmpc_get_final(assume_phase_dynamics):
         n_cycles_to_advance=n_cycles_to_advance,
         max_torque=50,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
     sol = nmpc.solve(
         update_functions,

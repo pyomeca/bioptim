@@ -46,7 +46,7 @@ def test_custom_constraint_multiple_nodes_fail():
     ):
         OptimalControlProgram(
             BiorbdModel(model_path),
-            Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=False),
+            Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True),
             30,
             2,
             constraints=constraints,
@@ -78,7 +78,7 @@ def test_custom_constraint_mx_fail(assume_phase_dynamics):
 
     ocp = OptimalControlProgram(
         BiorbdModel(model_path),
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=False),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True),
         30,
         2,
         constraints=constraints,

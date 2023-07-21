@@ -213,7 +213,7 @@ def prepare_ocp(
             custom_model.declare_variables,
             dynamic_function=custom_model.custom_dynamics,
             phase=i,
-            expand=False,
+            expand=True,
         )
 
     # Creates the constraint for my n phases

@@ -17,7 +17,7 @@ def test_continuity_as_objective(assume_phase_dynamics):
         n_shooting=3,
         state_continuity_weight=1000000,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
     sol = ocp.solve()
 

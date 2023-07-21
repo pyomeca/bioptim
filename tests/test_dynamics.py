@@ -65,7 +65,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             DynamicsFcn.TORQUE_DRIVEN,
             with_contact=with_contact,
             rigidbody_dynamics=rigidbody_dynamics,
-            expand=False,
+            expand=True,
         ),
         False,
     )
@@ -212,7 +212,7 @@ def test_torque_driven_implicit(with_contact, cx, assume_phase_dynamics):
             DynamicsFcn.TORQUE_DRIVEN,
             with_contact=with_contact,
             rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
-            expand=False,
+            expand=True,
         ),
         False,
     )
@@ -278,7 +278,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
         ocp,
         "dynamics_type",
         Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact, expand=False
+            DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact, expand=True
         ),
         False,
     )
@@ -346,7 +346,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, assume_
         Dynamics(
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
             with_contact=with_contact,
-            expand=False,
+            expand=True,
         ),
         False,
     )
@@ -485,7 +485,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx, assume_phase_dynami
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
             with_contact=with_contact,
             rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
-            expand=False,
+            expand=True,
         ),
         False,
     )
@@ -586,7 +586,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
             with_contact=with_contact,
             soft_contacts_dynamics=implicit_contact,
-            expand=False,
+            expand=True,
         ),
         False,
     )
@@ -674,7 +674,7 @@ def test_soft_contacts_dynamics_errors(dynamics, assume_phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, soft_contacts_dynamics=True, expand=False),
+        Dynamics(dynamics, soft_contacts_dynamics=True, expand=True),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -716,7 +716,7 @@ def test_implicit_dynamics_errors(dynamics, assume_phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS, expand=False),
+        Dynamics(dynamics, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS, expand=True),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -761,7 +761,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, assume_
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=with_contact, expand=False),
+        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=with_contact, expand=True),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -867,7 +867,7 @@ def test_torque_activation_driven_with_residual_torque(
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_residual_torque=with_residual_torque, expand=False),
+        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_residual_torque=with_residual_torque, expand=True),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -1500,7 +1500,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, assume_phase_dynami
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, rigidbody_dynamics=rigid_body_dynamics, expand=False),
+        Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, rigidbody_dynamics=rigid_body_dynamics, expand=True),
         False,
     )
     np.random.seed(42)
@@ -1574,7 +1574,7 @@ def test_custom_dynamics(with_contact, assume_phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(configure, dynamic_function=custom_dynamic, with_contact=with_contact, expand=False),
+        Dynamics(configure, dynamic_function=custom_dynamic, with_contact=with_contact, expand=True),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -1634,11 +1634,7 @@ def test_with_contact_error(dynamics_fcn, assume_phase_dynamics):
     objective_functions = ObjectiveList()
 
     # Dynamics
-    dynamics = Dynamics(
-        dynamics_fcn,
-        with_contact=True,
-        expand=False,
-    )
+    dynamics = Dynamics(dynamics_fcn, with_contact=True, expand=True)
 
     # Path constraint
     x_bounds = BoundsList()

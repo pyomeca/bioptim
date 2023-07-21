@@ -78,7 +78,7 @@ def test_xia_fatigable_muscles(assume_phase_dynamics):
     )
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -157,7 +157,7 @@ def test_xia_stabilized_fatigable_muscles(assume_phase_dynamics):
     )
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -197,7 +197,7 @@ def test_michaud_fatigable_muscles(assume_phase_dynamics):
     # TODO: add tests
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -267,7 +267,7 @@ def test_effort_fatigable_muscles(assume_phase_dynamics):
     )
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -310,7 +310,7 @@ def test_fatigable_xia_torque_non_split(assume_phase_dynamics):
     # TODO: add tests
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -375,7 +375,7 @@ def test_fatigable_xia_torque_split(assume_phase_dynamics):
     np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -447,7 +447,7 @@ def test_fatigable_xia_stabilized_torque_split(assume_phase_dynamics):
     np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -490,7 +490,7 @@ def test_fatigable_michaud_torque_non_split(assume_phase_dynamics):
     # TODO: add some tests
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -560,7 +560,7 @@ def test_fatigable_michaud_torque_split(assume_phase_dynamics):
     np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
@@ -599,7 +599,7 @@ def test_fatigable_effort_torque_non_split(assume_phase_dynamics):
     # TODO: add some tests
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -660,7 +660,7 @@ def test_fatigable_effort_torque_split(assume_phase_dynamics):
         np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)

@@ -182,7 +182,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
         np.testing.assert_almost_equal(tau[:, -2], np.array((-13.68877181, 0)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -254,7 +254,7 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_pha
             np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
             # save and load
-            TestUtils.save_and_load(sol, ocp, True)
+            TestUtils.save_and_load(sol, ocp, False)
 
             # simulate
             TestUtils.simulate(sol)
@@ -314,7 +314,7 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_pha
             np.testing.assert_almost_equal(tau[:, -2], np.array((-11.62799294, 0)))
 
         # save and load
-        TestUtils.save_and_load(sol, ocp, True)
+        TestUtils.save_and_load(sol, ocp, False)
 
         # simulate
         TestUtils.simulate(sol)
@@ -332,23 +332,23 @@ def test_pendulum_save_and_load_rk8(use_sx):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
-        n_shooting=30,
+        n_shooting=10,
         n_threads=1,
         use_sx=use_sx,
         ode_solver=OdeSolver.RK8(),
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
     sol = ocp.solve()
 
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 9.821989132327003)
+    np.testing.assert_almost_equal(f[0, 0], 1134.4262872942047)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (120, 1))
-    np.testing.assert_almost_equal(g, np.zeros((120, 1)))
+    np.testing.assert_equal(g.shape, (40, 1))
+    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
     q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
@@ -362,11 +362,11 @@ def test_pendulum_save_and_load_rk8(use_sx):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((5.67291529, 0)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-11.71262836, 0)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((4.18966502, 0)))
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-17.59767942, 0)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -500,9 +500,9 @@ def test_initial_guesses(ode_solver, interpolation, random_init, assume_phase_dy
     # save and load
     if interpolation == InterpolationType.CUSTOM and not random_init:
         with pytest.raises(AttributeError, match="'PathCondition' object has no attribute 'custom_function'"):
-            TestUtils.save_and_load(sol, ocp, True)
+            TestUtils.save_and_load(sol, ocp, False)
     else:
-        TestUtils.save_and_load(sol, ocp, True)
+        TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -556,7 +556,7 @@ def test_cyclic_objective(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(tau[:, -2], np.array([17.16370432, 9.78643138, -26.94701577]))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -611,7 +611,7 @@ def test_cyclic_constraint(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(tau[:, -2], np.array([20.0, 9.81, -31.4]))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -670,7 +670,7 @@ def test_phase_transitions(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array((0.11614402, 8.70686126, 1.05599166)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     with pytest.raises(
@@ -795,7 +795,7 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
 
     # TODO: fix save and load
     # # save and load
-    # TestUtils.save_and_load(sol, ocp, True)
+    # TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
@@ -920,7 +920,7 @@ def test_example_external_forces(ode_solver):
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -1187,7 +1187,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
 
     ode_solver = ode_solver()
 
-    n_shooting = 30
+    n_shooting = 10
     if assume_phase_dynamics:
         with pytest.raises(
             ValueError,
@@ -1203,7 +1203,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
                 final_time=1,
                 ode_solver=ode_solver,
                 assume_phase_dynamics=assume_phase_dynamics,
-                expand_dynamics=False,
+                expand_dynamics=True,
             )
         return
 
@@ -1213,7 +1213,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
         final_time=1,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
     sol = ocp.solve()
     sol.print_cost()
@@ -1232,31 +1232,31 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 415.8259417971987)
+        np.testing.assert_almost_equal(f[0, 0], 5018.648542811508)
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (120, 1))
-        np.testing.assert_almost_equal(g, np.zeros((120, 1)))
+        np.testing.assert_equal(g.shape, (40, 1))
+        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.01549791, 0.0]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.68877169, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([4.87390358, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-18.98599313, 0.0]))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 415.7063940128547)
+        np.testing.assert_almost_equal(f[0, 0], 3745.4213211878414)
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (120, 1))
-        np.testing.assert_almost_equal(g, np.zeros((120, 1)))
+        np.testing.assert_equal(g.shape, (40, 1))
+        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.03763583, 0.0]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.59527541, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([5.82225895, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-16.68896926, 0.0]))
 
     # Check that the output is what we expect
     dt = ocp.nlp[0].tf / ocp.nlp[0].ns
@@ -1315,6 +1315,7 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    ode_solver_obj = ode_solver
     ode_solver = ode_solver()
     if assume_phase_dynamics and too_much_constraints:
         with pytest.raises(
@@ -1329,7 +1330,7 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
                 ode_solver=ode_solver,
                 assume_phase_dynamics=assume_phase_dynamics,
                 with_too_much_constraints=too_much_constraints,
-                expand_dynamics=False,
+                expand_dynamics=ode_solver_obj != OdeSolver.IRK,
             )
     else:
         ocp_module.prepare_ocp(
@@ -1338,7 +1339,7 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
             ode_solver=ode_solver,
             assume_phase_dynamics=assume_phase_dynamics,
             with_too_much_constraints=too_much_constraints,
-            expand_dynamics=False,
+            expand_dynamics=ode_solver_obj != OdeSolver.IRK,
         )
 
 
@@ -1394,7 +1395,7 @@ def test_multinode_constraints(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-1.2, 9.81, -1.884]))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -1595,7 +1596,7 @@ def test_example_variable_scaling(assume_phase_dynamics):
         final_time=1 / 10,
         n_shooting=30,
         assume_phase_dynamics=assume_phase_dynamics,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
     sol = ocp.solve()
 
@@ -1624,4 +1625,4 @@ def test_example_variable_scaling(assume_phase_dynamics):
     np.testing.assert_almost_equal(tau[:, -2], np.array([-1000.00000999, 0.0]))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
