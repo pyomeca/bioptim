@@ -176,7 +176,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         )
 
         self.problem_type = problem_type
-        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
+        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints)
 
         self.finalize_penalties(
             skip_continuity,
@@ -187,7 +187,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_objectives,
         )
 
-    def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
+    def _declare_multi_node_penalties(
+        self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList, constraints: ConstraintList
+    ):
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
@@ -201,6 +203,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             self._prepare_stochastic_dynamics_implicit(
                 motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
                 sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
+                constraints=constraints,
             )
 
     def _prepare_stochastic_dynamics_explicit(self, motor_noise_magnitude, sensory_noise_magnitude):
@@ -211,16 +214,16 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         for i_phase, nlp in enumerate(self.nlp):
             for i_node in range(nlp.ns - 1):
                 penalty_m_dg_dz_list.add(
-                    MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
+                    MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
                     dynamics=nlp.dynamics_type.dynamic_function,
                     motor_noise_magnitude=motor_noise_magnitude,
                     sensory_noise_magnitude=sensory_noise_magnitude,
                 )
-            if i_phase > 0:  # TODO: verify with Friedl, but should be OK
+            if i_phase > 0:
                 penalty_m_dg_dz_list.add(
-                    MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
+                    MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
                     dynamics=nlp.dynamics_type.dynamic_function,
@@ -229,70 +232,75 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
-    def _prepare_stochastic_dynamics_implicit(self, motor_noise_magnitude, sensory_noise_magnitude):
+    def _prepare_stochastic_dynamics_implicit(self, motor_noise_magnitude, sensory_noise_magnitude, constraints):
         """
         Adds the internal constraint needed for the implicit formulation of the stochastic ocp.
         """
-        # constraint A, C, P, M TODO: Charbie -> some are missing
+        # constraint A, C, P, M
         multi_node_penalties = MultinodeConstraintList()
-        single_node_penalties = ConstraintList()
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
-            for i_node in range(nlp.ns - 1):
+            for i_node in range(nlp.ns):
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    dynamics=nlp.dynamics_type.dynamic_function,
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
-            if i_phase > 0:
+            if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
-                    dynamics=nlp.dynamics_type.dynamic_function,
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
 
         # Constraints for P
         for i_phase, nlp in enumerate(self.nlp):
-            single_node_penalties.add(
-                MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
-                node=Node.ALL,
+            constraints.add(
+                ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
+                node=Node.ALL_SHOOTING,
                 phase=i_phase,
                 motor_noise_magnitude=motor_noise_magnitude,
                 sensory_noise_magnitude=sensory_noise_magnitude,
             )
-            if i_phase > 0:
-                multi_node_penalties.add(  # TODO: check
-                    MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,  # TODO: to be continued in penalty
+            if i_phase > 0 and i_phase < len(self.nlp) - 1:
+                multi_node_penalties.add(
+                    MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
                     motor_noise_magnitude=motor_noise_magnitude,
                     sensory_noise_magnitude=sensory_noise_magnitude,
                 )
+
         # Constraints for A
         for i_phase, nlp in enumerate(self.nlp):
-            single_node_penalties.add(
-                ConstraintFcn.STOCHASTIC_DF_DX_IMPLICIT,
-                node=Node.ALL,
+            constraints.add(
+                ConstraintFcn.STOCHASTIC_DG_DX_IMPLICIT,
+                node=Node.ALL_SHOOTING,
                 phase=i_phase,
+                dynamics=nlp.dynamics_type.dynamic_function,
                 motor_noise_magnitude=motor_noise_magnitude,
                 sensory_noise_magnitude=sensory_noise_magnitude,
             )
 
         # Constraints for C
         for i_phase, nlp in enumerate(self.nlp):
-            single_node_penalties.add(
-                ConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
-                node=Node.ALL,
-                phase=i_phase,
-                motor_noise_magnitude=motor_noise_magnitude,
-                sensory_noise_magnitude=sensory_noise_magnitude,
-            )
+            for i_node in range(nlp.ns):
+                multi_node_penalties.add(
+                    MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
+                    nodes_phase=(i_phase, i_phase),
+                    nodes=(i_node, i_node + 1),
+                    dynamics=nlp.dynamics_type.dynamic_function,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
+                )
+            if i_phase > 0 and i_phase < len(self.nlp) - 1:
+                multi_node_penalties.add(
+                    MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
+                    nodes_phase=(i_phase, i_phase + 1),
+                    nodes=(-1, 0),
+                    dynamics=nlp.dynamics_type.dynamic_function,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
+                )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)
-        single_node_penalties.add_or_replace_to_penalty_pool(self)
