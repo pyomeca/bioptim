@@ -1327,6 +1327,12 @@ class OptimalControlProgram:
             if len(s.shape) < 2:
                 s = s.reshape((-1, 1))
 
+            if penalty.multinode_penalty:
+                # TODO: Fix the scaling of multi_node_penalty (This is a hack, it should be computed at each phase)
+                penalty_phase = penalty.nodes_phase[0]
+            else:
+                penalty_phase = penalty.phase
+
             # if time is parameter of the ocp, we need to evaluate with current parameters
             if isinstance(dt, Function):
                 dt = dt(p)
@@ -1334,7 +1340,7 @@ class OptimalControlProgram:
             dt = dt / (x.shape[1] - 1) if x.shape[1] > 1 else dt
             if not isinstance(penalty.dt, (float, int)):
                 if dt.shape[0] > 1:
-                    dt = dt[penalty.phase]
+                    dt = dt[penalty_phase]
 
             _target = (
                 np.hstack([p[..., penalty.node_idx.index(t)] for p in penalty.target])
@@ -1344,12 +1350,12 @@ class OptimalControlProgram:
 
             x_scaling = np.concatenate(
                 [
-                    np.repeat(self.nlp[penalty.phase].x_scaling[key].scaling[:, np.newaxis], x.shape[1], axis=1)
-                    for key in self.nlp[penalty.phase].states
+                    np.repeat(self.nlp[penalty_phase].x_scaling[key].scaling[:, np.newaxis], x.shape[1], axis=1)
+                    for key in self.nlp[penalty_phase].states
                 ]
             )
             if penalty.multinode_penalty:
-                len_x = sum(self.nlp[penalty.phase].states[key].shape for key in self.nlp[penalty.phase].states)
+                len_x = sum(self.nlp[penalty_phase].states[key].shape for key in self.nlp[penalty_phase].states)
                 complete_scaling = np.array(x_scaling)
                 number_of_repeat = x.shape[0] // len_x
                 x_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
@@ -1358,12 +1364,12 @@ class OptimalControlProgram:
             if u.size != 0:
                 u_scaling = np.concatenate(
                     [
-                        np.repeat(self.nlp[penalty.phase].u_scaling[key].scaling[:, np.newaxis], u.shape[1], axis=1)
-                        for key in self.nlp[penalty.phase].controls
+                        np.repeat(self.nlp[penalty_phase].u_scaling[key].scaling[:, np.newaxis], u.shape[1], axis=1)
+                        for key in self.nlp[penalty_phase].controls
                     ]
                 )
                 if penalty.multinode_penalty:
-                    len_u = sum(self.nlp[penalty.phase].controls[key].shape for key in self.nlp[penalty.phase].controls)
+                    len_u = sum(self.nlp[penalty_phase].controls[key].shape for key in self.nlp[penalty_phase].controls)
                     complete_scaling = np.array(u_scaling)
                     number_of_repeat = u.shape[0] // len_u
                     u_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
