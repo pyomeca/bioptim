@@ -73,7 +73,8 @@ def test_torque_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params))
+    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
     if with_ligament:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -132,7 +133,8 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, assume_phase_
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params))
+    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
     if with_ligament:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -187,7 +189,8 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, assume_phase_
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params))
+    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
     if with_ligament:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -250,7 +253,8 @@ def test_muscle_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params))
+    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
     if with_ligament:
         np.testing.assert_almost_equal(

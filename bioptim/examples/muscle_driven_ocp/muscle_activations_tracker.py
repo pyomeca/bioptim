@@ -167,6 +167,7 @@ def generate_data(
             states=symbolic_states,
             controls=symbolic_controls,
             parameters=symbolic_parameters,
+            stochastic_variables=MX(),
             nlp=nlp,
             with_contact=False,
             rigidbody_dynamics=RigidBodyDynamics.ODE,

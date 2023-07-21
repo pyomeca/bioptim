@@ -4,7 +4,7 @@ from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, Node
 
 
 class PenaltyController:
@@ -26,6 +26,7 @@ class PenaltyController:
         x_scaled: list,
         u_scaled: list,
         p: MX | SX | list,
+        s: list,
         node_index: int = None,
     ):
         """
@@ -124,6 +125,20 @@ class PenaltyController:
         return out
 
     @property
+    def controls(self) -> OptimizationVariableList:
+        """
+        Return the controls associated with the current node index
+
+        Returns
+        -------
+        The controls at node node_index
+        """
+        self._nlp.controls.node_index = self.node_index
+        out = self._nlp.controls.unscaled
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
     def states_dot(self) -> OptimizationVariableList:
         """
         Return the states_dot associated with the current node index
@@ -134,6 +149,33 @@ class PenaltyController:
         """
         self._nlp.states_dot.node_index = self.node_index
         out = self._nlp.states_dot.unscaled
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
+    def stochastic_variables(self) -> OptimizationVariableList:
+        """
+        Return the stochastic_variables associated with the current node index
+        Returns
+        -------
+        The stochastic_variables at node node_index
+        """
+        # TODO: This variables should be scaled and renamed to "algebraic"
+        self._nlp.stochastic_variables.node_index = self.node_index
+        out = self._nlp.stochastic_variables
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
+    def integrated_values(self) -> OptimizationVariableList:
+        """
+        Return the values associated with the current node index
+        Returns
+        -------
+        The integrated_values at node node_index
+        """
+        self._nlp.integrated_values.node_index = self.node_index
+        out = self._nlp.integrated_values
         out.current_cx_to_get = self.cx_index_to_get
         return out
 
@@ -163,6 +205,23 @@ class PenaltyController:
         return out
 
     @property
+    def controls_scaled(self) -> OptimizationVariableList:
+        """
+        Return the scaled controls associated with the current node index.
+
+        Warning: Most of the time, the user does not want that controls but the normal `controls`, that said, it can
+        sometime be useful for very limited number of use case.
+
+        Returns
+        -------
+        The scaled controls at node node_index
+        """
+        self._nlp.controls.node_index = self.node_index
+        out = self._nlp.controls.scaled
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
     def states_dot_scaled(self) -> OptimizationVariableList:
         """
         Return the scaled states_dot associated with the current node index.
@@ -177,37 +236,6 @@ class PenaltyController:
         self._nlp.states_dot.node_index = self.node_index
 
         out = self._nlp.states_dot.scaled
-        out.current_cx_to_get = self.cx_index_to_get
-        return out
-
-    @property
-    def controls(self) -> OptimizationVariableList:
-        """
-        Return the controls associated with the current node index
-
-        Returns
-        -------
-        The controls at node node_index
-        """
-        self._nlp.controls.node_index = self.node_index
-        out = self._nlp.controls.unscaled
-        out.current_cx_to_get = self.cx_index_to_get
-        return out
-
-    @property
-    def controls_scaled(self) -> OptimizationVariableList:
-        """
-        Return the scaled controls associated with the current node index.
-
-        Warning: Most of the time, the user does not want that controls but the normal `controls`, that said, it can
-        sometime be useful for very limited number of use case.
-
-        Returns
-        -------
-        The scaled controls at node node_index
-        """
-        self._nlp.controls.node_index = self.node_index
-        out = self._nlp.controls.scaled
         out.current_cx_to_get = self.cx_index_to_get
         return out
 

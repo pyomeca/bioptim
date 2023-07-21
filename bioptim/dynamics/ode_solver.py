@@ -122,6 +122,7 @@ class RK(OdeSolverBase):
         nlp.states.node_index = node_index
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
+        nlp.stochastic_variables.node_index = node_index
 
         ode_opt = {
             "t0": 0,
@@ -144,6 +145,7 @@ class RK(OdeSolverBase):
             "p_scaled": nlp.controls.scaled.cx_start
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
             else horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
+            "stochastic_variables": nlp.stochastic_variables.cx_start,
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
@@ -289,6 +291,7 @@ class OdeSolver:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
+            nlp.stochastic_variables.node_index = node_index
 
             if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
@@ -304,6 +307,7 @@ class OdeSolver:
                 "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
                 "p_unscaled": nlp.controls.cx_start,
                 "p_scaled": nlp.controls.scaled.cx_start,
+                "stochastic_variables": nlp.stochastic_variables.cx_start,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -419,6 +423,7 @@ class OdeSolver:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
+            nlp.stochastic_variables.node_index = node_index
 
             if not isinstance(ocp.cx(), MX):
                 raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")
@@ -436,6 +441,7 @@ class OdeSolver:
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
+                    nlp.stochastic_variables.cx_start,
                 ),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
@@ -449,13 +455,14 @@ class OdeSolver:
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.cx,
+                        nlp.stochastic_variables.cx_start,
                     ],
                     self._adapt_integrator_output(
                         integrator_func,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                     ),
-                    ["x0", "p", "params"],
+                    ["x0", "p", "params", "s"],
                     ["xf", "xall"],
                 )
             ]

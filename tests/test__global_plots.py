@@ -123,24 +123,24 @@ def test_add_new_plot(assume_phase_dynamics):
     ocp.save(sol, save_name)
 
     # Test 1 - Working plot
-    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 2 - Combine using combine_to is not allowed
     ocp, sol = OptimalControlProgram.load(save_name)
     with pytest.raises(RuntimeError):
-        ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :], combine_to="NotAllowed")
+        ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :], combine_to="NotAllowed")
 
     # Test 3 - Create a completely new plot
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
-    ocp.add_plot("My Second New Plot", lambda t, x, p, u: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My Second New Plot", lambda t, x, p, u, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 4 - Combine to the first using fig_name
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
-    ocp.add_plot("My New Plot", lambda t, x, u, p: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Add the plot of objectives and constraints to this mess
@@ -220,6 +220,7 @@ def test_console_objective_functions(assume_phase_dynamics):
                     nlp.states.node_index = node_index
                     nlp.states_dot.node_index = node_index
                     nlp.controls.node_index = node_index
+                    nlp.stochastic_variables.node_index = node_index
 
                     name = (
                         p.name.replace("->", "_")
@@ -236,16 +237,19 @@ def test_console_objective_functions(assume_phase_dynamics):
                     if p.weighted_function[node_index].sparsity_in("i1").shape == (0, 0):
                         u = MX.sym("u", 3, 1)
                     param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("i2").shape)
-                    weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i3").shape)
-                    target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i4").shape)
-                    dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i5").shape)
+                    s = MX.sym("s", *p.weighted_function[node_index].sparsity_in("i3").shape)
+                    weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i4").shape)
+                    target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i5").shape)
+                    dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i6").shape)
 
                     p.function[node_index] = Function(
-                        name, [x, u, param], [np.array([range(cmp, len(p.rows) + cmp)]).T]
+                        name, [x, u, param, s], [np.array([range(cmp, len(p.rows) + cmp)]).T]
                     )
                     p.function_non_threaded[node_index] = p.function[node_index]
                     p.weighted_function[node_index] = Function(
-                        name, [x, u, param, weight, target, dt], [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T]
+                        name,
+                        [x, u, param, s, weight, target, dt],
+                        [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T],
                     )
                     p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]
 

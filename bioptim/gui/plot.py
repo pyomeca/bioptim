@@ -22,7 +22,7 @@ class CustomPlot:
 
     Attributes
     ----------
-    function: Callable[states, controls, parameters]
+    function: Callable[states, controls, parameters, stochastic_variables]
         The function to call to update the graph
     type: PlotType
         Type of plot to use
@@ -66,7 +66,7 @@ class CustomPlot:
         """
         Parameters
         ----------
-        update_function: Callable[states, controls, parameters]
+        update_function: Callable[states, controls, parameters, stochastic_variables]
             The function to call to update the graph
         plot_type: PlotType
             Type of plot to use
@@ -343,6 +343,7 @@ class PlotOcp:
                         nlp.states.node_index = node_index
                         nlp.states_dot.node_index = node_index
                         nlp.controls.node_index = node_index
+                        nlp.stochastic_variables.node_index = node_index
 
                         size = (
                             nlp.plot[key]
@@ -351,6 +352,7 @@ class PlotOcp:
                                 np.zeros((nlp.states.shape, 2)),
                                 np.zeros((nlp.controls.shape, 2)),
                                 np.zeros((nlp.parameters.shape, 2)),
+                                np.zeros((nlp.stochastic_variables.shape, 2)),
                                 **nlp.plot[key].parameters,
                             )
                             .shape[0]
@@ -665,6 +667,7 @@ class PlotOcp:
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
+        data_stochastic = sol.stochastic_variables
 
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
@@ -681,21 +684,33 @@ class PlotOcp:
                 else nlp.ode_solver.steps + 1
             )
 
-            n_elements = data_time[i].shape[0]
+            if isinstance(data_states, dict):
+                n_elements = data_states[list(data_states.keys())[0]].shape[1]
+            elif isinstance(data_states, list):
+                n_elements = data_states[i][list(data_states[i].keys())[0]].shape[1]
+            else:
+                raise RuntimeError("Invalid data_states type")
             state = np.ndarray((0, n_elements))
-            for s in nlp.states:
+            for ss in nlp.states:
                 if nlp.use_states_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_states, (list, tuple)):
-                        state = np.concatenate((state, data_states[i][s]))
+                        state = np.concatenate((state, data_states[i][ss]))
                     else:
-                        state = np.concatenate((state, data_states[s]))
+                        state = np.concatenate((state, data_states[ss]))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.controls:
+            for ss in nlp.controls:
                 if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_controls, (list, tuple)):
-                        control = np.concatenate((control, data_controls[i][s]))
+                        control = np.concatenate((control, data_controls[i][ss]))
                     else:
-                        control = np.concatenate((control, data_controls[s]))
+                        control = np.concatenate((control, data_controls[ss]))
+
+            stochastic = np.ndarray((0, nlp.ns + 1))
+            for ss in nlp.stochastic_variables:
+                if isinstance(data_stochastic, (list, tuple)):
+                    stochastic = np.concatenate((stochastic, data_stochastic[i][ss]))
+                else:
+                    stochastic = np.concatenate((stochastic, data_stochastic[ss]))
 
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:
@@ -738,6 +753,7 @@ class PlotOcp:
                             state[:, step_size * idx : step_size * (idx + 1) + x_mod],
                             control[:, idx : idx + u_mod + 1],
                             data_params_in_dyn,
+                            stochastic[:, idx : idx + 1 + 1],
                             **self.plot_func[key][i].parameters,
                         )
 
@@ -799,11 +815,28 @@ class PlotOcp:
                                     )
                                 u_phase = np.vstack((u_phase, u_phase_tp))
 
+                            s_phase = np.ndarray((0, len(penalty.nodes_phase)))
+                            for stochastic_key in data_stochastic[i].keys():
+                                s_phase_tp = np.ndarray((data_stochastic[i][stochastic_key].shape[0], 0))
+                                for tp in range(len(penalty.nodes_phase)):
+                                    phase_tp = penalty.nodes_phase[tp]
+                                    node_idx_tp = penalty.all_nodes_index[tp]
+                                    s_phase_tp = np.hstack(
+                                        (
+                                            s_phase_tp,
+                                            data_stochastic[phase_tp][stochastic_key][
+                                                :, node_idx_tp - (1 if node_idx_tp == nlp.ns else 0)
+                                            ][:, np.newaxis],
+                                        )
+                                    )
+                                s_phase = np.vstack((s_phase, s_phase_tp))
+
                             val_tempo = self.plot_func[key][i].function(
                                 self.plot_func[key][i].node_idx[0],
                                 x_phase,
                                 u_phase,
                                 data_params_in_dyn,
+                                s_phase,
                                 **self.plot_func[key][i].parameters,
                             )
                             y[0] = val_tempo[abs(self.plot_func[key][i].phase_mappings.to_second.map_idx[i_var])]
@@ -829,6 +862,12 @@ class PlotOcp:
                                             )
                                         ),
                                         data_params_in_dyn,
+                                        np.hstack(
+                                            (
+                                                data_stochastic[node_idx]["all"][:, -1],
+                                                data_stochastic[node_idx + 1]["all"][:, 0],
+                                            )
+                                        ),
                                         **self.plot_func[key][i].parameters,
                                     )
                                 else:
@@ -844,11 +883,13 @@ class PlotOcp:
                                     control_tp = control[:, node_idx : node_idx + 1 + u_mod]
                                     if np.isnan(control_tp).any():
                                         control_tp = np.array(())
+                                    stochastic_tp = stochastic[:, node_idx : node_idx + 1 + 1]
                                     val = self.plot_func[key][i].function(
                                         node_idx,
                                         states,
                                         control_tp,
                                         data_params_in_dyn,
+                                        stochastic_tp,
                                         **self.plot_func[key][i].parameters,
                                     )
                                 y[i_node] = val[i_var]
@@ -866,6 +907,7 @@ class PlotOcp:
                                 state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
                                 control[:, node_idx : node_idx + 1 + 1],
                                 data_params_in_dyn,
+                                stochastic[:, node_idx : node_idx + 1 + 1],
                                 **self.plot_func[key][i].parameters,
                             )
                             for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):
@@ -892,6 +934,7 @@ class PlotOcp:
                             state[:, ::step_size],
                             control,
                             data_params_in_dyn,
+                            stochastic,
                             **self.plot_func[key][i].parameters,
                         )
                         if (

@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian, DM
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
@@ -100,6 +100,27 @@ class PenaltyFunctionAbstract:
 
             # TODO: We should scale the target here!
             return controller.controls[key].cx_start
+
+        @staticmethod
+        def stochastic_minimize_variables(penalty: PenaltyOption, controller: PenaltyController, key: str):
+            """
+            Minimize a stochastic variable.
+            By default, this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            key: str
+                The name of the controls to minimize
+            """
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
+
+            return controller.stochastic_variables[key].cx_start
 
         @staticmethod
         def minimize_fatigue(penalty: PenaltyOption, controller: PenaltyController, key: str):
@@ -470,7 +491,10 @@ class PenaltyFunctionAbstract:
 
             if "qddot" not in controller.states and "qddot" not in controller.controls:
                 return controller.dynamics(
-                    controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
+                    controller.states.cx_start,
+                    controller.controls.cx_start,
+                    controller.parameters.cx,
+                    controller.stochastic_variables.cx_start,
                 )[controller.states["qdot"].index, :]
             elif "qddot" in controller.states:
                 return controller.states["qddot"].cx_start
@@ -576,9 +600,12 @@ class PenaltyFunctionAbstract:
                 com_ddot = controller.model.center_of_mass_acceleration(
                     controller.states["q"].mx,
                     controller.states["qdot"].mx,
-                    controller.dynamics(controller.states.mx, controller.controls.mx, controller.parameters.mx)[
-                        controller.states["qdot"].index, :
-                    ],
+                    controller.dynamics(
+                        controller.states.mx,
+                        controller.controls.mx,
+                        controller.parameters.mx,
+                        controller.stochastic_variables.mx,
+                    )[controller.states["qdot"].index, :],
                 )
                 # TODO scaled?
                 var = []
@@ -683,7 +710,10 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             contact_force = controller.get_nlp.contact_forces_func(
-                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
+                controller.states.cx_start,
+                controller.controls.cx_start,
+                controller.parameters.cx,
+                controller.stochastic_variables.cx_start,
             )
             return contact_force
 

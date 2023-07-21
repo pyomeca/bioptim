@@ -129,7 +129,7 @@ def main():
 
     # --- Solve the ocp --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
-    # sol.graphs()
+    # sol.graphs(show_bounds=True)
 
     # --- Show the results in a bioviz animation --- #
     sol.print_cost()
