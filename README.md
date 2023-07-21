@@ -453,6 +453,13 @@ compare the different optimal kinemtaics. It is possible to multi-start the prob
 with `MultiStart()` and running it with its method `run()`.
 An example of how to use multi-start is given in examples/getting_started/multi-start.py.
 
+## Solving stochastic optimal control problems (SOCP)
+It is possible to solve SOCP (also called optimal feedback control problem) using the class 
+`StochasticOptimalControlProgram`. You just have to add the type of SOCP that you want to solve using 
+`SocpType.SOCP_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude)` or 
+`SocpType.SOCP_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude)`. Our implementation of SOCP is based on 
+Van Wouwe 2022 (https://doi.org/10.1371/journal.pcbi.1009338). See the examples in the folder 
+examples/stochastic_optimal_control.
 
 ## The full example files
 If you did not completely follow (or were too lazy to!) you will find in this section the complete files described in the Getting started section.

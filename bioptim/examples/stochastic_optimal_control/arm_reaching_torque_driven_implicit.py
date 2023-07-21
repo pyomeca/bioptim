@@ -3,6 +3,8 @@ This example is adapted from arm_reaching_muscle_driven.py to make it torque dri
 The states dynamics is explicit, while the stochastic variables dynamics is implicit.
 This formulation allow to decouple the covariance matrix with the previous states reducing the comlexity of resolution,
 but increases largely the number of variables to optimize.
+Decomposing the covariance matrix using Cholesky L @ @.T allors to reduce the number of variables and ensures that the
+covariance matrix always stays positive semi-definite.
 """
 
 import platform
