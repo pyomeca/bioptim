@@ -877,6 +877,39 @@ class ConfigureProblem:
             skip_plot,
             axes_idx,
         )
+
+        # variable_types = variable_type_from_booleans_to_enums(
+        #     as_states, as_controls, as_states_dot, as_stochastic
+        # )
+        #
+        # # rethinking the way to add new variables, drafting some code ideas
+        # ocp.configure_new_variable(
+        #     phase_idx,
+        #     name,
+        #     name_elements,
+        #     variable_type=variable_types,
+        #     # VariableType.CONTROLS, VariableType.STATES_DOT, VariableType.STOCHASTIC, VariableType.ALGEBRAIC_STATES
+        # )
+        #
+        # ocp.configure_new_state(
+        #     phase_idx,
+        #     name,
+        #     name_elements,
+        # )
+        #
+        # ocp.configure_new_control(
+        #     phase_idx,
+        #     name,
+        #     name_elements,
+        # )
+        #
+        # ocp.configure_fatigue(
+        #     phase_idx,
+        #     name,
+        #     fatigue,
+        # )
+
+
         # new_variable_config.add_states()
         # new_variable_config.add_controls()
         # new_variable_config.add_states_dot()
