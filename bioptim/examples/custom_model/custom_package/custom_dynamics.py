@@ -17,6 +17,7 @@ def custom_dynamics(
     states: MX,
     controls: MX,
     parameters: MX,
+    stochastic_variables: MX,
     nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """

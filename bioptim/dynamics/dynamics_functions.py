@@ -42,7 +42,9 @@ class DynamicsFunctions:
     """
 
     @staticmethod
-    def custom(states: MX.sym, controls: MX.sym, parameters: MX.sym,  nlp) -> DynamicsEvaluation:
+    def custom(
+        states: MX.sym, controls: MX.sym, parameters: MX.sym, stochastic_variables: MX.sym, nlp
+    ) -> DynamicsEvaluation:
         """
         Interface to custom dynamic function provided by the user.
 
@@ -65,13 +67,14 @@ class DynamicsFunctions:
             The defects of the implicit dynamics
         """
 
-        return nlp.dynamics_type.dynamic_function(states, controls, parameters, nlp)
+        return nlp.dynamics_type.dynamic_function(states, controls, parameters, stochastic_variables, nlp)
 
     @staticmethod
     def torque_driven(
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
+        stochastic_variables: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
@@ -227,6 +230,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
+        stochastic_variables: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
@@ -285,6 +289,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
+        stochastic_variables: MX.sym,
         nlp,
         rigidbody_dynamics: RigidBodyDynamics,
         with_contact: bool,
@@ -355,6 +360,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
+        stochastic_variables: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
@@ -370,6 +376,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic variables of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -400,6 +408,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
+        stochastic_variables: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
@@ -445,6 +454,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
+        stochastic_variables: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool = False,
@@ -580,6 +590,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
+        stochastic_variables: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
@@ -626,6 +637,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
+        stochastic_variables: MX.sym,
         nlp,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ) -> DynamicsEvaluation:
@@ -892,6 +904,7 @@ class DynamicsFunctions:
         states: MX | SX,
         controls: MX | SX,
         parameters: MX | SX,
+        stochastic_variables: MX | SX,
         nlp: NonLinearProgram,
     ) -> DynamicsEvaluation:
         """
@@ -905,6 +918,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX | SX
             The parameters acting on the system
+        stochastic_variables: MX | SX
+            The stochastic variables of the system
         nlp: NonLinearProgram
             A reference to the phase
 

@@ -100,6 +100,8 @@ def test_biorbd_model():
     center_of_mass = Function("CoM", [], [models.center_of_mass(q)])()["o0"]
     center_of_mass_velocity = Function("CoMdot", [], [models.center_of_mass_velocity(q, qdot)])()["o0"]
     center_of_mass_acceleration = Function("CoMddot", [], [models.center_of_mass_acceleration(q, qdot, qdot)])()["o0"]
+    mass_matrix = Function("MassMatrix", [], models.mass_matrix(q))()
+    non_linear_effects = Function("NonLinearEffect", [], models.non_linear_effects(q, qdot))()
     angular_momentum = Function("AngMom", [], [models.angular_momentum(q, qdot)])()["o0"]
     reshape_qdot = Function("GetQdot", [], [models.reshape_qdot(q, qdot, 1)])()["o0"]
     segment_angular_velocity = Function("SegmentAngMom", [], [models.segment_angular_velocity(q, qdot, 0)])()["o0"]
@@ -248,6 +250,35 @@ def test_biorbd_model():
     for i in range(center_of_mass_acceleration.shape[0]):
         np.testing.assert_almost_equal(
             center_of_mass_acceleration[i], DM(np.array([0, -1.2543, 0.750037, 0, -0.097267, 2.34977])[i]), decimal=5
+        )
+
+    for i in range(3):
+        for j in range(3):
+            np.testing.assert_almost_equal(
+                mass_matrix["o0"][i, j],
+                DM(
+                    np.array([[8.99991, 5.14091, 1.44319], [5.14091, 4.23625, 1.61812], [1.44319, 1.61812, 0.954331]])[
+                        i, j
+                    ]
+                ),
+                decimal=5,
+            )
+            np.testing.assert_almost_equal(
+                mass_matrix["o1"][i, j],
+                DM(
+                    np.array([[13.3131, 7.56109, 2.76416], [7.56109, 4.75431, 1.87716], [2.76416, 1.87716, 0.945231]])[
+                        i, j
+                    ]
+                ),
+                decimal=5,
+            )
+
+    for j in range(3):
+        np.testing.assert_almost_equal(
+            non_linear_effects["o0"][j], DM(np.array([7.01844, 7.1652, 3.02573])[j]), decimal=5
+        )
+        np.testing.assert_almost_equal(
+            non_linear_effects["o1"][j], DM(np.array([10.3449, 6.41134, 2.68226])[j]), decimal=5
         )
 
     for i in range(angular_momentum.shape[0]):

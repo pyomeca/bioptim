@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, DM, horzcat
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -244,7 +244,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.max_bound = np.array([np.inf, np.inf])
 
             contact = controller.get_nlp.contact_forces_func(
-                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
+                controller.states.cx_start,
+                controller.controls.cx_start,
+                controller.parameters.cx,
+                controller.stochastic_variables.cx_start,
             )
             normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
             if len(tangential_component_idx) == 1:
@@ -575,6 +578,129 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             return controller.mx_to_cx("forward_dynamics", controller.controls["fext"].mx - soft_contact_force, *var)
 
+        @staticmethod
+        def stochastic_covariance_matrix_continuity_implicit(
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            motor_noise_magnitude: DM,
+            sensory_noise_magnitude: DM,
+        ):
+            """
+            This functions constrain the covariance matrix to its actual value as in Gillis 2013.
+            It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
+            P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
+            """
+
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
+            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+
+            cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
+                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov"
+            )
+            a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
+                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "a"
+            )
+            c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
+                controller.stochastic_variables, 2 * nu, 3 * nu, Node.START, "c"
+            )
+            m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
+                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "m"
+            )
+
+            sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude) * MX_eye(
+                vertcat(sensory_noise_magnitude, motor_noise_magnitude).shape[0]
+            )
+            dt = controller.tf / controller.ns
+            dg_dw = -dt * c_matrix
+            dg_dx = -MX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
+
+            cov_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
+            cov_implicit_deffect = cov_next - cov_matrix
+
+            penalty.expand = controller.get_nlp.dynamics_type.expand
+            penalty.explicit_derivative = True
+            penalty.multi_thread = True
+
+            out_vector = controller.stochastic_variables["cov"].reshape_to_vector(cov_implicit_deffect)
+            return out_vector
+
+        @staticmethod
+        def stochastic_dg_dx_implicit(
+            penalty: Constraint,
+            controller: PenaltyController,
+            dynamics: Callable,
+            motor_noise_magnitude: DM,
+            sensory_noise_magnitude: DM,
+        ):
+            """
+            This function constrains the stochastic matrix A to its actual value which is
+            A = dG/dx
+            TODO: Charbie -> This is only true for trapezoidal integration
+            """
+            dt = controller.tf / controller.ns
+
+            nb_root = controller.model.nb_root
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
+            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+
+            a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
+                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "a"
+            )
+
+            q_root = MX.sym("q_root", nb_root, 1)
+            q_joints = MX.sym("q_joints", nu, 1)
+            qdot_root = MX.sym("qdot_root", nb_root, 1)
+            qdot_joints = MX.sym("qdot_joints", nu, 1)
+            motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
+            sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
+
+            dx = dynamics(
+                vertcat(q_root, q_joints, qdot_root, qdot_joints),
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+                controller.get_nlp,
+                motor_noise,
+                sensory_noise,
+                with_gains=True,
+            )
+
+            non_root_index = list(range(nb_root, nb_root + nu)) + list(
+                range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu)
+            )
+            DF_DX_fun = Function(
+                "DF_DX_fun",
+                [
+                    q_root,
+                    q_joints,
+                    qdot_root,
+                    qdot_joints,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    motor_noise,
+                    sensory_noise,
+                ],
+                [jacobian(dx.dxdt[non_root_index], vertcat(q_joints, qdot_joints))],
+            )
+
+            DF_DX = DF_DX_fun(
+                controller.states["q"].cx_start[:nb_root],
+                controller.states["q"].cx_start[nb_root:],
+                controller.states["qdot"].cx_start[:nb_root],
+                controller.states["qdot"].cx_start[nb_root:],
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+                motor_noise_magnitude,
+                sensory_noise_magnitude,
+            )
+
+            out = a_matrix - (MX_eye(DF_DX.shape[0]) - DF_DX * dt / 2)
+
+            out_vector = controller.stochastic_variables["a"].reshape_to_vector(out)
+            return out_vector
+
     @staticmethod
     def get_dt(_):
         return 1
@@ -619,6 +745,10 @@ class ConstraintFcn(FcnEnum):
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
     TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,)
     TRACK_PARAMETER = (PenaltyFunctionAbstract.Functions.minimize_parameter,)
+    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
+        ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
+    )
+    STOCHASTIC_DG_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_dg_dx_implicit,)
 
     @staticmethod
     def get_type():

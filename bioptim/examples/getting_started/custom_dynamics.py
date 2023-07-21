@@ -35,6 +35,7 @@ def custom_dynamic(
     states: MX | SX,
     controls: MX | SX,
     parameters: MX | SX,
+    stochastic_variables: MX | SX,
     nlp: NonLinearProgram,
     my_additional_factor=1,
 

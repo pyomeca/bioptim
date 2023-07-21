@@ -194,8 +194,10 @@ def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
     X["qdot"] = [1, 0.5]
     U = InitialGuessList()
     U.add("tau", np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
+    P = InitialGuessList()
+    S = InitialGuessList()
 
-    sol = Solution(ocp, [X, U])
+    sol = Solution(ocp, [X, U, P, S])
     controls = sol.controls
     sol = sol.integrate(
         shooting_type=Shooting.MULTIPLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP
@@ -238,8 +240,10 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
     X["qdot"] = [0.1, 0.2]
     U = InitialGuessList()
     U.add("tau", np.array([[-0.1, 0], [1, 2]]).T, interpolation=InterpolationType.LINEAR)
+    P = InitialGuessList()
+    S = InitialGuessList()
 
-    sol = Solution(ocp, [X, U])
+    sol = Solution(ocp, [X, U, P, S])
     controls = sol.controls
     sol = sol.integrate(shooting_type=Shooting.SINGLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP)
 

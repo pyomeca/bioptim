@@ -495,7 +495,6 @@ def test_initial_guesses(ode_solver, interpolation, random_init, assume_phase_dy
     # simulate
     TestUtils.simulate(sol)
 
-    # detailed cost values
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13954.735000000004)
 
 
@@ -1225,6 +1224,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
     x_out = np.ndarray((0, 1))
     u_out = np.ndarray((0, 1))
     p_out = []
+    s_out = []
     for i in range(n_shooting):
         x_out = np.vstack((x_out, np.concatenate([sol.states[key][:, i] for key in sol.states.keys()])[:, np.newaxis]))
         if i == n_shooting:
@@ -1235,7 +1235,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
             )
 
     # Note that dt=1, because the multi-node objectives are treated as mayer terms
-    out = fun[0](x_out, u_out, p_out, weight, target, 1)
+    out = fun[0](x_out, u_out, p_out, s_out, weight, target, 1)
     out_expected = sum2(sum1(sol.controls["tau"][:, :-1] ** 2)) * dt * weight
     np.testing.assert_almost_equal(out, out_expected)
 
