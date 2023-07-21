@@ -129,23 +129,60 @@ class NewVariableConfiguration:
 
     def _declare_phase_copy_booleans(self):
         """Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True"""
-        self.copy_states = (
-            self.nlp.use_states_from_phase_idx is not None
-            and self.nlp.use_states_from_phase_idx < self.nlp.phase_idx
-            and self.name in self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[0]
-        )
-        self.copy_controls = (
-            self.nlp.use_controls_from_phase_idx is not None
-            and self.nlp.use_controls_from_phase_idx < self.nlp.phase_idx
-            and self.name in self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[0]
-        )
-        self.copy_states_dot = (
-            self.nlp.use_states_dot_from_phase_idx is not None
-            and self.nlp.use_states_dot_from_phase_idx < self.nlp.phase_idx
-            and self.name in self.ocp.nlp[self.nlp.use_states_dot_from_phase_idx].states_dot[0]
+        nlp = self.ocp.nlp
+        phase_idx = self.nlp.phase_idx
+
+        self.copy_states = self.check_variable_copy_condition(
+            nlp, phase_idx, self.nlp.use_states_from_phase_idx, self.name, "states"
         )
 
-    def define_cx_scaled(self, n_col: int, n_shooting: int, initial_node) -> list:
+        self.copy_controls = self.check_variable_copy_condition(
+            nlp, phase_idx, self.nlp.use_controls_from_phase_idx, self.name, "controls"
+        )
+
+        self.copy_states_dot = self.check_variable_copy_condition(
+            nlp, phase_idx, self.nlp.use_states_dot_from_phase_idx, self.name, "states_dot"
+        )
+
+    @staticmethod
+    def check_variable_copy_condition(nlp, phase_idx: int, use_from_phase_idx: int, name: str, decision_variable_attribute: str):
+        """
+        Check if the copy condition is met.
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            The non linear program of the phase of the ocp
+        phase_idx:
+
+        decision_variable_attribute: str
+            refers to one property of the nlp, e.g. "states", "states_dot", "controls", ...
+        """
+        return (
+                use_from_phase_idx is not None
+                and use_from_phase_idx < phase_idx
+                and name in getattr(nlp[use_from_phase_idx], decision_variable_attribute)
+        )
+
+    def define_cx_scaled(self, n_col: int, n_shooting: int, initial_node) -> list[MX | SX, ...]:
+        """
+        This function defines the decision variables, either MX or SX,
+        scaled to the physical world, they mean something according to the physical model considered.
+
+        Parameters
+        ---------
+        n_col: int
+
+        n_shooting: int
+            The number of node shooting
+        initial_node: todo (int or str)
+            todo: complete
+
+        Returns
+        --------
+        _cx: list[MX |SX]
+            The scaled decision variables
+        """
         _cx = [self.nlp.cx() for _ in range(n_shooting + 1)]
         for node_index in range(n_shooting + 1):
             _cx[node_index] = [self.nlp.cx() for _ in range(n_col)]
@@ -163,7 +200,26 @@ class NewVariableConfiguration:
                     )
         return _cx
 
-    def define_cx_unscaled(self, _cx_scaled: list, scaling: np.ndarray) -> list:
+    def define_cx_unscaled(self, _cx_scaled: list[MX | SX, ...], scaling: np.ndarray) -> list[MX | SX, ...]:
+        """
+        This function defines the decision variables, either MX or SX,
+        unscaled means here the decision variable doesn't correspond to physical quantity.
+
+        The initial decision variable is multiplied by a coefficient
+        to be more are less important with respect to the optimizer
+
+        Parameters
+        ---------
+        _cx_scaled: list[MX | SX, ...]
+            Decision variables scaled to the physical world
+        scaling: np.ndarray
+            The scaling associated to the decision variable
+
+        Returns
+        --------
+        _cx: list[SX | MX]
+            The symbolic unscaled decision variables.
+        """
         _cx = [self.nlp.cx() for _ in range(len(_cx_scaled))]
         for node_index in range(len(_cx_scaled)):
             _cx[node_index] = [self.nlp.cx() for _ in range(len(_cx_scaled[0]))]
