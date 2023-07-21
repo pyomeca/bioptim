@@ -568,7 +568,16 @@ def prepare_socp(
 
     s_init = InitialGuessList()
     s_bounds = BoundsList()
-    n_stochastic = n_tau * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states  # K(2x4) + ref(4x1) + M(6x6)
+    # K(2x4) + ref(4x1) + M(4x4)
+    n_stochastic = n_tau * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states
+    if not cholesky_flag:
+        n_stochastic += n_states * n_states  # + cov(4, 4)
+    else:
+        n_cholesky_cov = 0
+        for i in range(n_states):
+            for j in range(i+1):
+                n_cholesky_cov += 1
+        n_stochastic += n_cholesky_cov  # + cholesky_cov(10)
     stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
     stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
     stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
@@ -606,6 +615,41 @@ def prepare_socp(
         min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
         max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
     )
+    curent_index += n_states * n_states
+    if not cholesky_flag:
+        stochastic_init[curent_index : curent_index + n_states * n_states, :] = 0.01  # cov
+        cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
+        idx = 0
+        for i in range(n_states):
+            for j in range(n_states):
+                stochastic_init[idx, 0] = cov_init[i, j]
+        s_init.add(
+            "cov",
+            initial_guess=stochastic_init[curent_index : curent_index + n_states * n_states, :],
+            interpolation=InterpolationType.EACH_FRAME,
+        )
+        s_bounds.add(
+            "cov",
+            min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
+            max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
+        )
+    else:
+        stochastic_init[curent_index : curent_index + n_cholesky_cov, :] = 0.01  # cholsky cov
+        cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
+        idx = 0
+        for i in range(n_states):
+            for j in range(i+1):
+                stochastic_init[idx, 0] = cov_init[i, j]
+        s_init.add(
+            "cholesky_cov",
+            initial_guess=stochastic_init[curent_index : curent_index + n_cholesky_cov, :],
+            interpolation=InterpolationType.EACH_FRAME,
+        )
+        s_bounds.add(
+            "cholesky_cov",
+            min_bound=stochastic_min[curent_index : curent_index + n_cholesky_cov, :],
+            max_bound=stochastic_max[curent_index : curent_index + n_cholesky_cov, :],
+        )
 
     return StochasticOptimalControlProgram(
         bio_model,
