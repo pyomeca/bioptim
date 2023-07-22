@@ -62,9 +62,11 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_time_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_time_from_phase_idx", use_time_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
@@ -75,11 +77,12 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
+    time = np.random.rand(nlp.time.shape, nlp.ns)
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_passive_torque:
             np.testing.assert_almost_equal(
@@ -143,9 +146,11 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, a
 
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_time_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_time_from_phase_idx", use_time_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
@@ -156,11 +161,12 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, a
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
+    time = np.random.rand(nlp.time.shape, nlp.ns)
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
     if with_passive_torque:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -236,9 +242,11 @@ def test_torque_activation_driven_with_passive_torque(
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_time_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_time_from_phase_idx", use_time_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
@@ -249,11 +257,12 @@ def test_torque_activation_driven_with_passive_torque(
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
+    time = np.random.rand(nlp.time.shape, nlp.ns)
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
     if with_residual_torque:
         if with_passive_torque:
             np.testing.assert_almost_equal(
@@ -350,9 +359,11 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_time_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_time_from_phase_idx", use_time_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
@@ -365,11 +376,12 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
+    time = np.random.rand(nlp.time.shape, nlp.ns)
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_passive_torque:

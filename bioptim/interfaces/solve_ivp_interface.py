@@ -8,6 +8,7 @@ from ..misc.enums import Shooting, ControlType
 def solve_ivp_interface(
     dynamics_func: Callable,
     t_eval: np.ndarray | List[float],
+    t: np.ndarray,
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
@@ -25,6 +26,8 @@ def solve_ivp_interface(
         function that computes the dynamics of the system
     t_eval : np.ndarray | List[float]
         array of times t the controls u are evaluated at
+    t : np.ndarray
+        array of time
     x0 : np.ndarray
         array of initial conditions
     u : np.ndarray
@@ -66,6 +69,7 @@ def solve_ivp_interface(
             y = run_solve_ivp(
                 dynamics_func=dynamics_func,
                 t_eval=t_eval_step,
+                t=t,
                 x0=x0i,
                 u=ui,
                 s=s,
@@ -113,6 +117,7 @@ def solve_ivp_interface(
             y = run_solve_ivp(
                 dynamics_func=dynamics_func,
                 t_eval=t_eval_step,
+                t=t,
                 x0=x0i,
                 u=ui,
                 s=s,
@@ -132,6 +137,7 @@ def solve_ivp_interface(
 def run_solve_ivp(
     dynamics_func: Callable,
     t_eval: np.ndarray | List[float],
+    t: np.ndarray,
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
@@ -149,6 +155,8 @@ def run_solve_ivp(
         function that computes the dynamics of the system
     t_eval : np.ndarray | List[float]
         array of times t the controls u are evaluated at
+    t : np.ndarray
+        array of time
     x0 : np.ndarray
         array of initial conditions
     u : np.ndarray
@@ -176,7 +184,7 @@ def run_solve_ivp(
 
     t_span = [t_eval[0], t_eval[-1]]
     integrated_sol = solve_ivp(
-        lambda t, x: np.array(dynamics_func(x, control_function(t), params, s))[:, 0],
+        lambda t, x: np.array(dynamics_func(t, x, control_function(t), params, s))[:, 0],
         t_span=t_span,
         y0=x0,
         t_eval=np.array(t_eval, dtype=np.float64),  # prevent error with dtype=object
@@ -310,6 +318,7 @@ def piecewise_constant_u(t: float, t_eval: np.ndarray | List[float], u: np.ndarr
 def solve_ivp_bioptim_interface(
     dynamics_func: list[Callable],
     keep_intermediate_points: bool,
+    t: np.ndarray,
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
@@ -327,6 +336,8 @@ def solve_ivp_bioptim_interface(
         function that computes the dynamics of the system
     keep_intermediate_points : bool
         whether to keep the intermediate points or not
+    t : np.ndarray
+        array of time
     x0 : np.ndarray
         array of initial conditions
     u : np.ndarray
@@ -366,7 +377,7 @@ def solve_ivp_bioptim_interface(
                 np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
                 if keep_intermediate_points
                 else x0i,  # x0 or None
-                np.array(func(x0=x0i, p=u_controls, params=params / param_scaling, s=s)[dynamics_output]),
+                np.array(func(t=t, x0=x0i, p=u_controls, params=params / param_scaling, s=s)[dynamics_output]),
             ),  # xf or xall
             axis=1,
         )

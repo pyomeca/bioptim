@@ -444,6 +444,7 @@ class PenaltyFunctionAbstract:
 
             if "qddot" not in controller.states and "qddot" not in controller.controls:
                 return controller.dynamics(
+                    controller.time.cx_start,
                     controller.states.cx_start,
                     controller.controls.cx_start,
                     controller.parameters.cx,
@@ -554,6 +555,7 @@ class PenaltyFunctionAbstract:
                     controller.states["q"].mx,
                     controller.states["qdot"].mx,
                     controller.dynamics(
+                        controller.time.mx,
                         controller.states.mx,
                         controller.controls.mx,
                         controller.parameters.mx,
@@ -663,6 +665,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             contact_force = controller.get_nlp.contact_forces_func(
+                controller.time.cx_start,
                 controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx,
@@ -988,22 +991,23 @@ class PenaltyFunctionAbstract:
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-                continuity -= controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["xf"]
+                continuity -= controller.integrate(x0=cx, p=u, params=controller.parameters.cx, t = controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index))["xf"]
                 continuity = vertcat(
                     continuity,
-                    controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["defects"],
+                    controller.integrate(x0=cx, p=u, params=controller.parameters.cx, t = controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index))["defects"],
                 )
 
                 penalty.integrate = True
 
             else:
-                continuity -= controller.integrate(x0=controller.states.cx_start, p=u, params=controller.parameters.cx)[
+                continuity -= controller.integrate(x0=controller.states.cx_start, p=u, params=controller.parameters.cx, t = controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index))[
                     "xf"
                 ]
                 # continuity -= controller.integrate(
                 #     t0=controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index),
                 #     x0=controller.states.cx_start, p=u, params=controller.parameters.cx)[
                 #     "xf"]
+
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True

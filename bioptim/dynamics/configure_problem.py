@@ -128,6 +128,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
+            A reference to the phase
         """
 
         nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.params)
@@ -613,7 +614,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven, expand=False)
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, t: MX | SX = None, expand: bool = True, **extra_params):
+    def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra_params):
         """
         Configure the dynamics of the system
 
@@ -633,6 +634,7 @@ class ConfigureProblem:
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
         dynamics_eval = dyn_func(
+            nlp.time.mx,
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
@@ -648,13 +650,14 @@ class ConfigureProblem:
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [
+                nlp.time.mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.mx,
             ],
             [dynamics_dxdt],
-            ["x", "u", "p", "s"],
+            ["t", "x", "u", "p", "s"],
             ["xdot"],
         )
 
@@ -665,6 +668,7 @@ class ConfigureProblem:
             nlp.implicit_dynamics_func = Function(
                 "DynamicsDefects",
                 [
+                    nlp.time.mx,
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
@@ -672,7 +676,7 @@ class ConfigureProblem:
                     nlp.states_dot.scaled.mx_reduced,
                 ],
                 [dynamics_eval.defects],
-                ["x", "u", "p", "s", "xdot"],
+                ["t", "x", "u", "p", "s", "xdot"],
                 ["defects"],
             )
             if expand:
@@ -696,6 +700,7 @@ class ConfigureProblem:
         nlp.contact_forces_func = Function(
             "contact_forces_func",
             [
+                nlp.time.mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
@@ -703,6 +708,7 @@ class ConfigureProblem:
             ],
             [
                 dyn_func(
+                    nlp.time.mx,
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
@@ -711,7 +717,7 @@ class ConfigureProblem:
                     **extra_params,
                 )
             ],
-            ["x", "u", "p", "s"],
+            ["t", "x", "u", "p", "s"],
             ["contact_forces"],
         ).expand()
 
@@ -759,9 +765,9 @@ class ConfigureProblem:
         )
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
-            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+            [nlp.time.mx, nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
             [global_soft_contact_force_func],
-            ["x", "u", "p"],
+            ["t", "x", "u", "p"],
             ["soft_contact_forces"],
         ).expand()
 
@@ -796,7 +802,7 @@ class ConfigureProblem:
                     to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
-                lambda t, x, u, p, s: nlp.soft_contact_forces_func(x, u, p, s)[(i_sc * 6) : ((i_sc + 1) * 6), :],
+                lambda t, x, u, p, s: nlp.soft_contact_forces_func(t, x, u, p, s)[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
                 legend=all_soft_contact_names,
@@ -917,6 +923,7 @@ class ConfigureProblem:
         as_controls: bool,
         as_states_dot: bool = False,
         as_stochastic: bool = False,
+        as_time: bool = False,
         fatigue: FatigueList = None,
         combine_name: str = None,
         combine_state_control_plot: bool = False,
@@ -1037,6 +1044,7 @@ class ConfigureProblem:
             nlp.u_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
+        mx_time = []
         mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[0][name].mx]
         mx_states_dot = (
             [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0][name].mx]
@@ -1057,8 +1065,10 @@ class ConfigureProblem:
             if not copy_controls:
                 mx_controls.append(MX.sym(var_name, 1, 1))
 
+            mx_time.append(MX.sym(var_name, 1, 1))
             mx_stochastic.append(MX.sym(var_name, 1, 1))
 
+        mx_time = vertcat(*mx_time)
         mx_states = vertcat(*mx_states)
         mx_states_dot = vertcat(*mx_states_dot)
         mx_controls = vertcat(*mx_controls)
@@ -1157,6 +1167,16 @@ class ConfigureProblem:
                 cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
                 nlp.stochastic_variables.append(
                     name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
+                )
+
+        if as_time:
+            for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
+                n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+                if n_cx < 3:
+                    n_cx = 3
+                cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
+                nlp.time.append(
+                    name, cx_scaled[0], cx_scaled[0], mx_time, nlp.variable_mappings[name], node_index
                 )
 
     @staticmethod

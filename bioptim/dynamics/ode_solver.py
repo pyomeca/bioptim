@@ -119,7 +119,7 @@ class RK(OdeSolverBase):
         -------
         A list of integrators
         """
-
+        nlp.time.node_index = node_index
         nlp.states.node_index = node_index
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
@@ -138,6 +138,7 @@ class RK(OdeSolverBase):
         }
 
         ode = {
+            "time": nlp.time.cx_start,
             "x_unscaled": nlp.states.cx_start,
             "x_scaled": nlp.states.scaled.cx_start,
             "p_unscaled": nlp.controls.cx_start
@@ -149,7 +150,6 @@ class RK(OdeSolverBase):
             "stochastic_variables": nlp.stochastic_variables.cx_start,
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
-            "time": t
         }
 
         if ode["ode"].size2_out("xdot") != 1:
@@ -289,7 +289,7 @@ class OdeSolver:
             -------
             A list of integrators
             """
-
+            nlp.time.node_index = node_index
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -305,6 +305,7 @@ class OdeSolver:
                 )
 
             ode = {
+                "time": nlp.time.cx_start,
                 "x_unscaled": [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
                 "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
                 "p_unscaled": nlp.controls.cx_start,
@@ -312,7 +313,7 @@ class OdeSolver:
                 "stochastic_variables": nlp.stochastic_variables.cx_start,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
-                "time": t
+                # "time": t
             }
             ode_opt = {
                 "t0": 0,
@@ -422,7 +423,7 @@ class OdeSolver:
             -------
             A list of integrators
             """
-
+            nlp.time.node_index = node_index
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -438,15 +439,16 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
+                "time": nlp.time.cx_start,
                 "x": nlp.states.scaled.cx_start,
                 "p": nlp.controls.scaled.cx_start,
                 "ode": nlp.dynamics_func(
+                    nlp.time.scaled.cx_start,
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
                     nlp.stochastic_variables.cx_start,
                 ),
-                "time": t,
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
 
@@ -456,6 +458,7 @@ class OdeSolver:
                 Function(
                     "integrator",
                     [
+                        nlp.time,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.cx,
@@ -466,7 +469,7 @@ class OdeSolver:
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                     ),
-                    ["x0", "p", "params", "s"],
+                    ["t", "x0", "p", "params", "s"],
                     ["xf", "xall"],
                 )
             ]

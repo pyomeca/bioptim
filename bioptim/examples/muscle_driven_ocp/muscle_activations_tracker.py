@@ -164,6 +164,7 @@ def generate_data(
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
         dyn_func(
+            time=MX(),
             states=symbolic_states,
             controls=symbolic_controls,
             parameters=symbolic_parameters,

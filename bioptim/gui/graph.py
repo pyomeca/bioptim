@@ -279,6 +279,7 @@ class OcpToConsole(GraphAbstract):
         """
         for phase_idx in range(self.ocp.n_phases):
             # We only need to use the first index since the bounds are not depend on the dynamics
+            self.ocp.nlp[phase_idx].time.node_index = 0
             self.ocp.nlp[phase_idx].states.node_index = 0
             self.ocp.nlp[phase_idx].states_dot.node_index = 0
             self.ocp.nlp[phase_idx].controls.node_index = 0

@@ -87,6 +87,10 @@ class NonLinearProgram:
         The casadi variables for the integration at each node of the phase
     controls: OptimizationVariableContainer
         A list of all the control variables
+    t_bounds = Bounds()
+        The bounds for the time
+    t_init = InitialGuess()
+        The initial guess for the time
     x_bounds = Bounds()
         The bounds for the states
     x_init = InitialGuess()
@@ -146,6 +150,8 @@ class NonLinearProgram:
         self.phase_mapping = None
         self.plot = {}
         self.plot_mapping = {}
+        self.T = None
+        self.T_scaled = None
         self.t0 = None
         self.tf = None
         self.t_initial_guess = None
@@ -155,9 +161,12 @@ class NonLinearProgram:
         self.U_scaled = None
         self.u_scaling = None
         self.U = None
+        self.use_time_from_phase_idx = NodeMapping()
         self.use_states_from_phase_idx = NodeMapping()
         self.use_controls_from_phase_idx = NodeMapping()
         self.use_states_dot_from_phase_idx = NodeMapping()
+        self.t_bounds = BoundsList()
+        self.t_init = InitialGuessList()
         self.x_bounds = BoundsList()
         self.x_init = InitialGuessList()
         self.X_scaled = None
@@ -167,6 +176,7 @@ class NonLinearProgram:
         self.s_init = InitialGuessList()
         self.S = None
         self.assume_phase_dynamics = assume_phase_dynamics
+        self.time = OptimizationVariableContainer(assume_phase_dynamics)
         self.states = OptimizationVariableContainer(assume_phase_dynamics)
         self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
         self.controls = OptimizationVariableContainer(assume_phase_dynamics)
@@ -191,6 +201,7 @@ class NonLinearProgram:
         self.g_internal = []
         self.casadi_func = {}
 
+        self.time.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)

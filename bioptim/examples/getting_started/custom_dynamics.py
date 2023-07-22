@@ -32,6 +32,7 @@ from bioptim import (
 
 
 def custom_dynamic(
+    time: MX | SX,
     states: MX | SX,
     controls: MX | SX,
     parameters: MX | SX,
@@ -45,6 +46,8 @@ def custom_dynamic(
 
     Parameters
     ----------
+    time: MX | SX
+        The time of the system
     states: MX | SX
         The state of the system
     controls: MX | SX

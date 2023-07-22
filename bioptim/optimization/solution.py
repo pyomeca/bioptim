@@ -66,6 +66,8 @@ class Solution:
         The number of iterations that were required to solve the program
     status: int
         Optimization success status (Ipopt: 0=Succeeded, 1=Failed)
+    _time: list
+        The data structure that holds the time
     _states: list
         The data structure that holds the states
     _controls: list
@@ -215,9 +217,11 @@ class Solution:
 
             self.tf = nlp.tf
             self.phase_idx = nlp.phase_idx
+            self.use_time_from_phase_idx = nlp.use_time_from_phase_idx
             self.use_states_from_phase_idx = nlp.use_states_from_phase_idx
             self.use_controls_from_phase_idx = nlp.use_controls_from_phase_idx
             self.model = nlp.model
+            self.time = nlp.time
             self.states = nlp.states
             self.states_dot = nlp.states_dot
             self.controls = nlp.controls
@@ -316,6 +320,7 @@ class Solution:
         self._time_vector = None
 
         # Extract the data now for further use
+        self._time = {}
         self._states = {}
         self._controls = {}
         self.parameters = {}
@@ -323,7 +328,7 @@ class Solution:
         self._integrated_values = {}
         self.phase_time = []
 
-        def get_integrated_values(states, controls, parameters, stochastic_variables):
+        def get_integrated_values(time, states, controls, parameters, stochastic_variables):
             integrated_values_num = [{} for _ in self.ocp.nlp]
             for i_phase, nlp in enumerate(self.ocp.nlp):
                 nlp.states.node_index = 0
@@ -433,6 +438,7 @@ class Solution:
 
             # Extract the data now for further use
             (
+                self._time["scaled"],
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
@@ -445,7 +451,7 @@ class Solution:
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
             self._integrated_values = get_integrated_values(
-                self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
+                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
             )
 
         def init_from_initial_guess(_sol: list):
@@ -535,6 +541,7 @@ class Solution:
                         self.vector = np.concatenate((self.vector, ss[key].init.evaluate_at(i)[:, np.newaxis]))
 
             (
+                self._time["scaled"],
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
@@ -547,7 +554,7 @@ class Solution:
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
             self._integrated_values = get_integrated_values(
-                self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
+                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
             )
 
         def init_from_vector(_sol: np.ndarray | DM):
@@ -562,6 +569,7 @@ class Solution:
 
             self.vector = _sol
             (
+                self._time["scaled"],
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
@@ -573,7 +581,7 @@ class Solution:
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._integrated_values = get_integrated_values(
-                self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
+                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
             )
 
         if isinstance(sol, dict):
@@ -663,8 +671,9 @@ class Solution:
 
         if skip_data:
             new._states["unscaled"], new._controls["unscaled"] = [], []
-            new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables = [], [], {}, []
+            self._time["scaled"], new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables = [], [], [], {}, []
         else:
+            new._time["scaled"] = deepcopy(self._time["scaled"])
             new._states["scaled"] = deepcopy(self._states["scaled"])
             new._controls["scaled"] = deepcopy(self._controls["scaled"])
             new.parameters = deepcopy(self.parameters)
@@ -1202,11 +1211,15 @@ class Solution:
 
         for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
             self.ocp.nlp[p].controls.node_index = 0
-
             states_phase_idx = self.ocp.nlp[p].use_states_from_phase_idx
             controls_phase_idx = self.ocp.nlp[p].use_controls_from_phase_idx
             param_scaling = nlp.parameters.scaling
             x0 = self._get_first_frame_states(out, shooting_type, phase=p)
+            if self.ocp.nlp[p].time.keys():
+                t = np.concatenate([self._time[p][key] for key in self.ocp.nlp[p].time])
+            else:
+                t = np.array([])
+
             u = (
                 np.array([])
                 if nlp.control_type == ControlType.NONE
@@ -1225,6 +1238,7 @@ class Solution:
                 integrated_sol = solve_ivp_bioptim_interface(
                     dynamics_func=nlp.dynamics,
                     keep_intermediate_points=keep_intermediate_points,
+                    t=t,
                     x0=x0,
                     u=u,
                     s=s,
@@ -1238,6 +1252,7 @@ class Solution:
                     dynamics_func=nlp.dynamics_func,
                     keep_intermediate_points=keep_intermediate_points,
                     t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
+                    t=t,
                     x0=x0,
                     u=u,
                     s=s,
@@ -1291,7 +1306,7 @@ class Solution:
                 t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), out.ns[p] + 1))
 
         if isinstance(n_frames, int):
-            _, data_states, _, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
+            time, _, data_states, _, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
             t_all = [np.concatenate((np.concatenate([_t[:-1] for _t in t_all]), [t_all[-1][-1]]))]
 
             n_frames = [n_frames]
@@ -1630,12 +1645,14 @@ class Solution:
         )
 
         for idx in penalty.node_idx:
+            t = []
             x = []
             u = []
             s = []
             target = []
             if nlp is not None:
                 if penalty.multinode_penalty or penalty.transition:
+                    t = np.array(())
                     x = np.array(())
                     u = np.array(())
                     s = np.array(())
@@ -1643,6 +1660,8 @@ class Solution:
                         node_idx = penalty.multinode_idx[i]
                         phase_idx = penalty.nodes_phase[i]
 
+                        for key in nlp.time:
+                            t = np.concatenate((t, self._time["scaled"][phase_idx][key][:, node_idx]))
                         for key in nlp.states:
                             x = np.concatenate((x, self._states["scaled"][phase_idx][key][:, node_idx]))
                         for key in nlp.controls:
@@ -1723,8 +1742,8 @@ class Solution:
             # casadi function
             if not self.ocp.assume_phase_dynamics and ((isinstance(u, list) and u != []) or isinstance(u, np.ndarray)):
                 u = u[:, ~np.isnan(np.sum(u, axis=0))]
-            val.append(penalty.function[idx](x, u, p, s))
-            val_weighted.append(penalty.weighted_function[idx](x, u, p, s, penalty.weight, target, dt))
+            val.append(penalty.function[idx](t, x, u, p, s))
+            val_weighted.append(penalty.weighted_function[idx](t, x, u, p, s, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)

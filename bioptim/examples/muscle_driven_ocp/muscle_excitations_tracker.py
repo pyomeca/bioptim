@@ -82,6 +82,7 @@ def generate_data(
     symbolic_tau = MX.sym("tau", n_tau, 1)
     symbolic_mus_controls = MX.sym("mus", n_mus, 1)
 
+    symbolic_time = MX.sym("t", 0, 0)
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot, symbolic_mus_states))
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus_controls))
 
@@ -166,6 +167,7 @@ def generate_data(
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
         DynamicsFunctions.muscles_driven(
+            time=symbolic_time,
             states=symbolic_states,
             controls=symbolic_controls,
             parameters=symbolic_parameters,
@@ -174,6 +176,7 @@ def generate_data(
             with_contact=False,
             rigidbody_dynamics=RigidBodyDynamics.ODE,
         ).dxdt,
+        symbolic_time,
         symbolic_states,
         symbolic_controls,
         symbolic_parameters,
@@ -183,7 +186,7 @@ def generate_data(
 
     def dyn_interface(t, x, u):
         u = np.concatenate([np.zeros(n_tau), u])
-        return np.array(dynamics_func(x, u, [])[:, 0]).squeeze()
+        return np.array(dynamics_func(t, x, u, [])[:, 0]).squeeze()
 
     # Generate some muscle excitations
     U = np.random.rand(n_shooting, n_mus).T

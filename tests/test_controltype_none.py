@@ -77,15 +77,15 @@ class NonControlledMethod:
 
     def custom_dynamics(
         self,
+        time: MX,
         states: MX,
         controls: MX,
         parameters: MX,
         nlp: NonLinearProgram,
-        t=None,
     ) -> DynamicsEvaluation:
         t_phase = nlp.parameters.mx[-1]
         return DynamicsEvaluation(
-            dxdt=nlp.model.system_dynamics(a=states[0], b=states[1], c=states[2], t=t, t_phase=t_phase),
+            dxdt=nlp.model.system_dynamics(a=states[0], b=states[1], c=states[2], t=time, t_phase=t_phase),
             defects=None,
         )
 
@@ -97,34 +97,25 @@ class NonControlledMethod:
         nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
-        # Gets the t0 time for the current phase
-        t0_phase_in_ocp = sum1(nlp.parameters.mx[0 : nlp.phase_idx])
-        # Gets every time node for the current phase
+        dynamics_eval = self.custom_dynamics(
+            nlp.time.scaled.mx_reduced, nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced, nlp.parameters.mx, nlp, **extra_params
+        )
 
-        dynamics_eval_horzcat = np.array(())
-        for i in range(nlp.ns):
-            t_node_in_phase = nlp.parameters.mx[nlp.phase_idx] / (nlp.ns + 1) * i
-            t_node_in_ocp = t0_phase_in_ocp + t_node_in_phase
-            extra_params["t"] = t_node_in_ocp
-
-            dynamics_eval = self.custom_dynamics(
-                nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced, nlp.parameters.mx, nlp, **extra_params
-            )
-
-            dynamics_eval_horzcat = (
-                horzcat(dynamics_eval.dxdt) if i == 0 else horzcat(dynamics_eval_horzcat, dynamics_eval.dxdt)
-            )
+        dynamics_dxdt = dynamics_eval.dxdt
+        if isinstance(dynamics_dxdt, (list, tuple)):
+            dynamics_dxdt = vertcat(*dynamics_dxdt)
 
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [
+                nlp.time.scaled.mx_reduced,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.mx,
             ],
-            [dynamics_eval_horzcat],
-            ["x", "u", "p", "s"],
+            [dynamics_dxdt],
+            ["t", "x", "u", "p", "s"],
             ["xdot"],
         )
 
@@ -165,9 +156,9 @@ class NonControlledMethod:
             as_states_dot=False,
         )
 
-        t = MX.sym("t")  # t needs a symbolic value to start computing in custom_configure_dynamics_function
-        self.custom_configure_dynamics_function(ocp, nlp, t=t)
-
+        # t = MX.sym("t")  # t needs a symbolic value to start computing in custom_configure_dynamics_function
+        # self.custom_configure_dynamics_function(ocp, nlp, t=t)
+        self.custom_configure_dynamics_function(ocp, nlp)
 
 def prepare_ocp(
     n_phase: int,
@@ -253,6 +244,7 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     """
 
     # TODO It seems assume_phase_dynamics=True is broken
+    #  I THINK IT'S NORMAL AS THIS FUN CHANGES AT EACH NODE
 
     # number of stimulation corresponding to phases
     n = 10

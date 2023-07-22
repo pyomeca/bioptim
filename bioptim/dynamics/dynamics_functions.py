@@ -43,7 +43,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def custom(
-        states: MX.sym, controls: MX.sym, parameters: MX.sym, stochastic_variables: MX.sym, nlp
+        time: MX.sym, states: MX.sym, controls: MX.sym, parameters: MX.sym, stochastic_variables: MX.sym, nlp
     ) -> DynamicsEvaluation:
         """
         Interface to custom dynamic function provided by the user.
@@ -67,10 +67,11 @@ class DynamicsFunctions:
             The defects of the implicit dynamics
         """
 
-        return nlp.dynamics_type.dynamic_function(states, controls, parameters, stochastic_variables, nlp)
+        return nlp.dynamics_type.dynamic_function(time, states, controls, parameters, stochastic_variables, nlp)
 
     @staticmethod
     def torque_driven(
+        time: MX.sym,
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
@@ -227,6 +228,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_activations_driven(
+        time: MX.sym,
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
@@ -286,6 +288,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def torque_derivative_driven(
+        time: MX.sym,
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
@@ -357,6 +360,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_torque_driven(
+        time: MX.sym,
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
@@ -405,6 +409,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_torque_activation_driven(
+        time: MX.sym,
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
@@ -451,6 +456,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def muscles_driven(
+        time: MX.sym,
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
@@ -587,6 +593,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def forces_from_muscle_driven(
+        time: MX.sym,
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
@@ -634,6 +641,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def joints_acceleration_driven(
+        time: MX.sym,
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
@@ -901,6 +909,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def holonomic_torque_driven(
+        time: MX | SX,
         states: MX | SX,
         controls: MX | SX,
         parameters: MX | SX,
