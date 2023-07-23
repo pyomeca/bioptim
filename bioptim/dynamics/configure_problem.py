@@ -1450,7 +1450,6 @@ class ConfigureProblem:
             skip_plot=True,
         )
 
-
     @staticmethod
     def configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states: int):
         """
@@ -1468,7 +1467,7 @@ class ConfigureProblem:
 
         name_cov = []
         for nb_1, name_1 in enumerate([f"X_{i}" for i in range(n_noised_states)]):
-            for name_2 in [f"X_{i}" for i in range(nb_1+1)]:
+            for name_2 in [f"X_{i}" for i in range(nb_1 + 1)]:
                 name_cov += [name_1 + "_&_" + name_2]
         nlp.variable_mappings[name] = BiMapping(list(range(len(name_cov))), list(range(len(name_cov))))
         ConfigureProblem.configure_new_variable(

@@ -179,7 +179,7 @@ class OptimizationVariable:
         matrix = MX.zeros(shape_0, shape_0)
         i = 0
         for s0 in range(shape_0):
-            for s1 in range(s0+1):
+            for s1 in range(s0 + 1):
                 if node == Node.START:
                     matrix[s0, s1] = variable[key].cx_start[i]
                 elif node == Node.MID:

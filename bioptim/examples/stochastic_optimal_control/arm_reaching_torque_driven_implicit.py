@@ -277,7 +277,11 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     val = fun(
         controllers[-1].states["q"].cx_start,
         controllers[-1].states["qdot"].cx_start,
-        (controllers[-1].stochastic_variables["cholesky_cov"].cx_start if "cholesky_cov" in controllers[-1].stochastic_variables.keys() else controllers[-1].stochastic_variables["cov"].cx_start),
+        (
+            controllers[-1].stochastic_variables["cholesky_cov"].cx_start
+            if "cholesky_cov" in controllers[-1].stochastic_variables.keys()
+            else controllers[-1].stochastic_variables["cov"].cx_start
+        ),
     )
     # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
 
@@ -577,7 +581,7 @@ def prepare_socp(
     else:
         n_cholesky_cov = 0
         for i in range(n_states):
-            for j in range(i+1):
+            for j in range(i + 1):
                 n_cholesky_cov += 1
         n_stochastic += n_cholesky_cov  # + cholesky_cov(10)
     stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
@@ -640,7 +644,7 @@ def prepare_socp(
         cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
         idx = 0
         for i in range(n_states):
-            for j in range(i+1):
+            for j in range(i + 1):
                 stochastic_init[idx, 0] = cov_init[i, j]
         s_init.add(
             "cholesky_cov",
@@ -723,7 +727,7 @@ def main():
         sensory_noise_magnitude=sensory_noise_magnitude,
         problem_type=problem_type,
         force_field_magnitude=force_field_magnitude,
-        cholesky_flag=cholesky_flag
+        cholesky_flag=cholesky_flag,
     )
 
     sol_socp = socp.solve(solver)
@@ -759,7 +763,9 @@ def main():
     }
 
     # --- Save the results --- #
-    with open(f"leuvenarm_torque_driven_socp_{problem_type}_forcefield{force_field_magnitude}_{cholesky_flag}.pkl", "wb") as file:
+    with open(
+        f"leuvenarm_torque_driven_socp_{problem_type}_forcefield{force_field_magnitude}_{cholesky_flag}.pkl", "wb"
+    ) as file:
         pickle.dump(data, file)
 
     # --- Visualize the results --- #
