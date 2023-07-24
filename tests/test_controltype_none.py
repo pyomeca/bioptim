@@ -121,7 +121,7 @@ class NonControlledMethod:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
-                nlp.stochastic_variables.mx,
+                nlp.stochastic_variables.scaled.mx,
             ],
             [dynamics_eval_horzcat],
             ["x", "u", "p", "s"],

@@ -442,7 +442,7 @@ class PenaltyOption(OptionGeneric):
             for ctrl in controllers:
                 state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
                 control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
-                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables.unscaled.cx)
+                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx)
 
         else:
             ocp = controller.ocp
@@ -846,4 +846,5 @@ class PenaltyOption(OptionGeneric):
             u = [nlp.U[idx] for idx in t if idx != nlp.ns]
             u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
         s = [nlp.S[idx] for idx in t]
-        return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx, s)
+        s_scaled = [nlp.S_scaled[idx] for idx in t]
+        return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx, s, s_scaled)

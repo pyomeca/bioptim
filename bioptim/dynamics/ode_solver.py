@@ -145,7 +145,8 @@ class RK(OdeSolverBase):
             "p_scaled": nlp.controls.scaled.cx_start
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
             else horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
-            "stochastic_variables": nlp.stochastic_variables.cx_start,
+            "stochastic_variables_unscaled": nlp.stochastic_variables.cx_start,
+            "stochastic_variables_scaled": nlp.stochastic_variables.scaled.cx_start,
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
@@ -307,7 +308,8 @@ class OdeSolver:
                 "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
                 "p_unscaled": nlp.controls.cx_start,
                 "p_scaled": nlp.controls.scaled.cx_start,
-                "stochastic_variables": nlp.stochastic_variables.cx_start,
+                "stochastic_variables_unscaled": nlp.stochastic_variables.cx_start,
+                "stochastic_variables_scaled": nlp.stochastic_variables.scaled.cx_start,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -441,7 +443,7 @@ class OdeSolver:
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
-                    nlp.stochastic_variables.cx_start,
+                    nlp.stochastic_variables.scaled.cx_start,
                 ),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
@@ -455,7 +457,7 @@ class OdeSolver:
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.cx,
-                        nlp.stochastic_variables.cx_start,
+                        nlp.stochastic_variables.scaled.cx_start,
                     ],
                     self._adapt_integrator_output(
                         integrator_func,

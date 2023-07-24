@@ -62,6 +62,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         x_scaling: VariableScalingList = None,
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
+        s_scaling: VariableScalingList = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -109,6 +110,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             x_scaling,
             xdot_scaling,
             u_scaling,
+            s_scaling,
             external_forces,
             ode_solver,
             control_type,
@@ -151,6 +153,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             x_scaling,
             xdot_scaling,
             u_scaling,
+            s_scaling,
             objective_functions,
             constraints,
             parameters,

@@ -237,6 +237,7 @@ class Solution:
             self.parameters = nlp.parameters
             self.x_scaling = nlp.x_scaling
             self.u_scaling = nlp.u_scaling
+            self.s_scaling = nlp.s_scaling
             self.assume_phase_dynamics = nlp.assume_phase_dynamics
 
     class SimplifiedOCP:
@@ -587,7 +588,7 @@ class Solution:
         else:
             raise ValueError("Solution called with unknown initializer")
 
-    def _to_unscaled_values(self, states_scaled, controls_scaled) -> tuple:
+    def _to_unscaled_values(self, states_scaled, controls_scaled, stochastic_variables_scaled) -> tuple:
         """
         Convert values of scaled solution to unscaled values
         """
@@ -596,17 +597,23 @@ class Solution:
 
         states = [{} for _ in range(len(states_scaled))]
         controls = [{} for _ in range(len(controls_scaled))]
+        stochastic_variables = [{} for _ in range(len(stochastic_variables_scaled))]
         for phase in range(len(states_scaled)):
             states[phase] = {}
             controls[phase] = {}
+            stochastic_variables[phase] = {}
             for key, value in states_scaled[phase].items():
                 states[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(states_scaled[phase][key].shape[1])
             for key, value in controls_scaled[phase].items():
                 controls[phase][key] = value * ocp.nlp[phase].u_scaling[key].to_array(
                     controls_scaled[phase][key].shape[1]
                 )
+            for key, value in stochastic_variables_scaled[phase].items():
+                stochastic_variables[phase][key] = value * ocp.nlp[phase].s_scaling[key].to_array(
+                    stochastic_variables_scaled[phase][key].shape[1]
+                )
 
-        return states, controls
+        return states, controls, stochastic_variables
 
     @property
     def cost(self):

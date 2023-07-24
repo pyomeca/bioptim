@@ -175,6 +175,7 @@ class OptimalControlProgram:
         x_scaling: VariableScalingList = None,
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
+        s_scaling: VariableScalingList = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -211,6 +212,8 @@ class OptimalControlProgram:
             The scaling for the states derivative, if only one is sent, then the scaling is copied over the phases
         u_scaling: VariableScalingList
             The scaling for the controls, if only one is sent, then the scaling is copied over the phases
+        s_scaling: VariableScalingList
+            The scaling for the stochastic variables, if only one is sent, then the scaling is copied over the phases
         objective_functions: Objective | ObjectiveList
             All the objective function of the program
         constraints: Constraint | ConstraintList
@@ -270,6 +273,7 @@ class OptimalControlProgram:
             x_scaling,
             xdot_scaling,
             u_scaling,
+            s_scaling,
             external_forces,
             ode_solver,
             control_type,
@@ -312,6 +316,7 @@ class OptimalControlProgram:
             x_scaling,
             xdot_scaling,
             u_scaling,
+            s_scaling,
             objective_functions,
             constraints,
             parameters,
@@ -373,6 +378,7 @@ class OptimalControlProgram:
         x_scaling,
         xdot_scaling,
         u_scaling,
+        s_scaling,
         external_forces,
         ode_solver,
         control_type,
@@ -415,6 +421,7 @@ class OptimalControlProgram:
             "x_scaling": x_scaling,
             "xdot_scaling": xdot_scaling,
             "u_scaling": u_scaling,
+            "s_scaling": s_scaling,
             "objective_functions": ObjectiveList(),
             "constraints": ConstraintList(),
             "parameters": ParameterList(),
@@ -455,6 +462,7 @@ class OptimalControlProgram:
         x_scaling,
         xdot_scaling,
         u_scaling,
+        s_scaling,
         objective_functions,
         constraints,
         parameters,
@@ -537,7 +545,7 @@ class OptimalControlProgram:
         x_scaling = self._prepare_option_dict_for_phase("x_scaling", x_scaling, VariableScalingList)
         xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
         u_scaling = self._prepare_option_dict_for_phase("u_scaling", u_scaling, VariableScalingList)
-        # TODO: add scaling for s
+        s_scaling = self._prepare_option_dict_for_phase("s_scaling", s_scaling, VariableScalingList)
 
         if objective_functions is None:
             objective_functions = ObjectiveList()
@@ -697,6 +705,7 @@ class OptimalControlProgram:
         NLP.add(self, "x_scaling", x_scaling, True)
         NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)
+        NLP.add(self, "s_scaling", s_scaling, True)
 
         NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
 
@@ -1374,6 +1383,20 @@ class OptimalControlProgram:
                     number_of_repeat = u.shape[0] // len_u
                     u_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
                 u /= u_scaling
+
+            if s.size != 0:
+                s_scaling = np.concatenate(
+                    [
+                        np.repeat(self.nlp[penalty_phase].s_scaling[key].scaling[:, np.newaxis], s.shape[1], axis=1)
+                        for key in self.nlp[penalty_phase].stochastic_variables
+                    ]
+                )
+                if penalty.multinode_penalty:
+                    len_s = sum(self.nlp[penalty_phase].stochastic_variables[key].shape for key in self.nlp[penalty_phase].stochastic_variables)
+                    complete_scaling = np.array(s_scaling)
+                    number_of_repeat = s.shape[0] // len_s
+                    s_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
+                s /= s_scaling
 
             out = []
             if penalty.transition or penalty.multinode_penalty:
