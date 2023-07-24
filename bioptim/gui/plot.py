@@ -714,11 +714,12 @@ class PlotOcp:
                 else nlp.ode_solver.steps + 1
             )
             if isinstance(data_time, dict):
-                n_elements = data_time[list(data_time.keys())[0]].shape[1]
+                problem_time = data_time[list(data_time.keys())[0]].shape[1]
             elif isinstance(data_time, list):
-                n_elements = data_time[i][list(data_time[i].keys())[0]].shape[1]
+                problem_time = data_time[i][list(data_time[i].keys())[0]].shape[1]
             else:
                 raise RuntimeError("Invalid data_time type")
+            time = np.ndarray((0, problem_time))
             if isinstance(data_states, dict):
                 n_elements = data_states[list(data_states.keys())[0]].shape[1]
             elif isinstance(data_states, list):
@@ -998,7 +999,7 @@ class PlotOcp:
 
                         val_tempo = self.plot_func[key][i].function(
                             nodes,
-                            time[:, node_idx: node_idx + 1 + 1],
+                            time,
                             state[:, ::step_size],
                             control,
                             data_params_in_dyn,

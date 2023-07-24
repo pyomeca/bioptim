@@ -1221,6 +1221,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
     weight = 10
     target = []
     fun = ocp.nlp[0].J_internal[0].weighted_function
+    t_out = []
     x_out = np.ndarray((0, 1))
     u_out = np.ndarray((0, 1))
     p_out = []
@@ -1235,7 +1236,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
             )
 
     # Note that dt=1, because the multi-node objectives are treated as mayer terms
-    out = fun[0](x_out, u_out, p_out, s_out, weight, target, 1)
+    out = fun[0](t_out, x_out, u_out, p_out, s_out, weight, target, 1)
     out_expected = sum2(sum1(sol.controls["tau"][:, :-1] ** 2)) * dt * weight
     np.testing.assert_almost_equal(out, out_expected)
 

@@ -79,6 +79,7 @@ def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
 
 
 def stochastic_forward_dynamics(
+    time: cas.MX | cas.SX,
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
@@ -94,6 +95,8 @@ def stochastic_forward_dynamics(
 
     Parameters
     ----------
+    time: MX.sym
+        The time
     states: MX.sym
         The states
     controls: MX.sym
@@ -172,8 +175,8 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=False
+        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=False
         ),
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
@@ -349,6 +352,7 @@ def trapezoidal_integration_continuity_constraint(
     dt = controllers[0].tf / controllers[0].ns
 
     dyn = stochastic_forward_dynamics(
+        controllers[0].time.cx_start,
         controllers[0].states.cx_start,
         controllers[0].controls.cx_start,
         controllers[0].parameters.cx_start,
@@ -362,6 +366,7 @@ def trapezoidal_integration_continuity_constraint(
     dx_i = dyn.dxdt
 
     dx_i_plus = stochastic_forward_dynamics(
+        controllers[1].time.cx_start,
         controllers[1].states.cx_start,
         controllers[1].controls.cx_start,
         controllers[1].parameters.cx_start,
@@ -482,7 +487,8 @@ def prepare_socp(
     dynamics = DynamicsList()
     dynamics.add(
         configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
+        dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
+            time,
             states,
             controls,
             parameters,

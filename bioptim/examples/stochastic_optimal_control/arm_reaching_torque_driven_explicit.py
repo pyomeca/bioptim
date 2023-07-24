@@ -78,6 +78,7 @@ def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
 
 
 def stochastic_forward_dynamics(
+    time: cas.MX | cas.SX,
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
@@ -93,6 +94,8 @@ def stochastic_forward_dynamics(
 
     Parameters
     ----------
+    states: MX.sym
+        The time
     states: MX.sym
         The states
     controls: MX.sym
@@ -180,8 +183,8 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=False
+        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=False
         ),
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
@@ -256,6 +259,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     """
     dt = nlp.tf / nlp.ns
 
+    nlp.time.node_index = node_index - 1
     nlp.states.node_index = node_index - 1
     nlp.controls.node_index = node_index - 1
     nlp.stochastic_variables.node_index = node_index - 1
@@ -277,6 +281,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     cov_matrix = nlp.integrated_values.reshape_to_matrix(cov_sym_dict, nx, nx, Node.START, "cov")
 
     dx = stochastic_forward_dynamics(
+        nlp.time.cx_start,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,
@@ -297,6 +302,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     func_eval = cas.Function(
         "p_next",
         [
+            nlp.time.cx_start,
             nlp.states.cx_start,
             nlp.controls.cx_start,
             nlp.parameters,
@@ -307,6 +313,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
         ],
         [p_next],
     )(
+        nlp.time.cx_start,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,

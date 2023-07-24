@@ -331,15 +331,21 @@ class Solution:
         def get_integrated_values(time, states, controls, parameters, stochastic_variables):
             integrated_values_num = [{} for _ in self.ocp.nlp]
             for i_phase, nlp in enumerate(self.ocp.nlp):
+                nlp.time.node_index = 0
                 nlp.states.node_index = 0
                 nlp.controls.node_index = 0
                 nlp.parameters.node_index = 0
                 nlp.stochastic_variables.node_index = 0
                 for key in nlp.integrated_values:
+                    time_cx = nlp.time.cx_start
                     states_cx = nlp.states.cx_start
                     controls_cx = nlp.controls.cx_start
                     stochastic_variables_cx = nlp.stochastic_variables.cx_start
                     integrated_values_cx = nlp.integrated_values[key].cx_start
+
+                    time_num = np.array([])
+                    for key_tempo in states[i_phase].keys():
+                        time_num = np.concatenate((time_num, states[i_phase][key_tempo][:, 0]))
 
                     states_num = np.array([])
                     for key_tempo in states[i_phase].keys():
@@ -356,15 +362,22 @@ class Solution:
                         )
 
                     for i_node in range(1, nlp.ns):
+                        nlp.time.node_index = i_node
                         nlp.states.node_index = i_node
                         nlp.controls.node_index = i_node
                         nlp.stochastic_variables.node_index = i_node
                         nlp.integrated_values.node_index = i_node
 
+                        time_cx = vertcat(time_cx, nlp.time.cx_start)
                         states_cx = vertcat(states_cx, nlp.states.cx_start)
                         controls_cx = vertcat(controls_cx, nlp.controls.cx_start)
                         stochastic_variables_cx = vertcat(stochastic_variables_cx, nlp.stochastic_variables.cx_start)
                         integrated_values_cx = vertcat(integrated_values_cx, nlp.integrated_values[key].cx_start)
+                        time_num_tempo = np.array([])
+                        for key_tempo in time[i_phase].keys():
+                            time_num_tempo = np.concatenate((time_num_tempo, time[i_phase][key_tempo][:, i_node]))
+                        time_num = vertcat(time_num, time_num_tempo)
+
                         states_num_tempo = np.array([])
                         for key_tempo in states[i_phase].keys():
                             states_num_tempo = np.concatenate((states_num_tempo, states[i_phase][key_tempo][:, i_node]))
@@ -394,11 +407,11 @@ class Solution:
                             parameters_tempo = np.concatenate((parameters_tempo, parameters[i_phase][key_tempo]))
                     casadi_func = Function(
                         "integrate_values",
-                        [states_cx, controls_cx, nlp.parameters.cx_start, stochastic_variables_cx],
+                        [time_cx, states_cx, controls_cx, nlp.parameters.cx_start, stochastic_variables_cx],
                         [integrated_values_cx],
                     )
                     integrated_values_this_time = casadi_func(
-                        states_num, controls_num, parameters_tempo, stochastic_variables_num
+                        time_num, states_num, controls_num, parameters_tempo, stochastic_variables_num
                     )
                     nb_elements = nlp.integrated_values[key].cx_start.shape[0]
                     integrated_values_data = np.zeros((nb_elements, nlp.ns))
@@ -489,7 +502,8 @@ class Solution:
                     )
 
             self.vector = np.ndarray((0, 1))
-            sol_states, sol_controls, sol_stochastic_variables = _sol[0], _sol[1], _sol[3]
+            # sol_states, sol_controls, sol_stochastic_variables = _sol[0], _sol[1], _sol[3]
+            sol_states, sol_controls, sol_stochastic_variables = _sol[1], _sol[2], _sol[4]
             # For states
             for p, ss in enumerate(sol_states):
                 for key in ss.keys():
@@ -1126,6 +1140,14 @@ class Solution:
             if phase == 0:
                 return np.hstack([self._states["unscaled"][0][key][:, 0] for key in self.ocp.nlp[phase].states])
 
+            t0 = []
+            if len(self.ocp.nlp[phase - 1].time) > 0:
+                t0 = np.concatenate(
+                    [
+                        self._time[phase - 1][key][:, -1]
+                        for key in self.ocp.nlp[phase - 1].time
+                    ]
+                )
             x0 = np.concatenate(
                 [self._states["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].states]
             )
@@ -1145,7 +1167,7 @@ class Solution:
                 )
             if self.parameters.keys():
                 params = np.vstack([self.parameters[key] for key in self.parameters])
-            val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params, s0)
+            val = self.ocp.phase_transitions[phase - 1].function[-1](t0, vertcat(x0, x0), u0, params, s0)
             if val.shape[0] != x0.shape[0]:
                 raise RuntimeError(
                     f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -1306,7 +1328,7 @@ class Solution:
                 t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), out.ns[p] + 1))
 
         if isinstance(n_frames, int):
-            time, _, data_states, _, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
+            _, data_states, _, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
             t_all = [np.concatenate((np.concatenate([_t[:-1] for _t in t_all]), [t_all[-1][-1]]))]
 
             n_frames = [n_frames]
@@ -1678,6 +1700,7 @@ class Solution:
                     if penalty.target is not None:
                         target = penalty.target[0]
                 else:
+                    col_t_idx = [idx]
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
                     col_s_idx = [idx]
@@ -1695,6 +1718,12 @@ class Solution:
                     elif penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
                         if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                             col_u_idx.append((idx + 1))
+
+                    t = np.ndarray((nlp.time.shape, len(col_t_idx)))
+                    for key in nlp.time:
+                        t[nlp.time[key].index, :] = self._time[phase_idx][key][
+                                                                    :, col_t_idx
+                                                                    ]
 
                     x = np.ndarray((nlp.states.shape, len(col_x_idx)))
                     for key in nlp.states:

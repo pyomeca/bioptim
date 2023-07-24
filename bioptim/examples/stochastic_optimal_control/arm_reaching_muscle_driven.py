@@ -44,6 +44,7 @@ from bioptim.examples.stochastic_optimal_control.leuven_arm_model import LeuvenA
 
 
 def stochastic_forward_dynamics(
+    time : cas.MX | cas.SX,
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
@@ -125,8 +126,8 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=False
+        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=False
         ),
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
@@ -160,6 +161,7 @@ def hand_equals_ref(controller: PenaltyController) -> cas.MX:
 def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, sensory_noise_magnitude):
     dt = nlp.tf / nlp.ns
 
+    nlp.time.node_index = node_index - 1
     nlp.states.node_index = node_index - 1
     nlp.controls.node_index = node_index - 1
     nlp.stochastic_variables.node_index = node_index - 1
@@ -177,6 +179,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     cov_matrix = nlp.integrated_values.reshape_to_matrix(cov_sym_dict, nx, nx, Node.START, "cov")
 
     dx = stochastic_forward_dynamics(
+        nlp.time.cx_start,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,
@@ -197,6 +200,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     func_eval = cas.Function(
         "p_next",
         [
+            nlp.time.cx_start,
             nlp.states.cx_start,
             nlp.controls.cx_start,
             nlp.parameters,
@@ -207,6 +211,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
         ],
         [p_next],
     )(
+        nlp.time.cx_start,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,
@@ -343,6 +348,7 @@ def zero_acceleration(
     No acceleration of the joints at the beginning and end of the movement.
     """
     dx = stochastic_forward_dynamics(
+        controller.time.cx_start,
         controller.states.cx_start,
         controller.controls.cx_start,
         controller.parameters.cx_start,
@@ -378,6 +384,7 @@ def trapezoidal_integration_continuity_constraint(
     dt = controllers[0].tf / controllers[0].ns
 
     dx_i = stochastic_forward_dynamics(
+        controllers[0].time.cx_start,
         controllers[0].states.cx_start,
         controllers[0].controls.cx_start,
         controllers[0].parameters.cx_start,
@@ -389,6 +396,7 @@ def trapezoidal_integration_continuity_constraint(
         with_gains=False,
     ).dxdt
     dx_i_plus = stochastic_forward_dynamics(
+        controllers[1].time.cx_start,
         controllers[1].states.cx_start,
         controllers[1].controls.cx_start,
         controllers[1].parameters.cx_start,
@@ -527,7 +535,8 @@ def prepare_socp(
     dynamics = DynamicsList()
     dynamics.add(
         configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
+        dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
+            time,
             states,
             controls,
             parameters,
@@ -541,6 +550,9 @@ def prepare_socp(
         motor_noise=np.zeros((2, 1)),
         sensory_noise=np.zeros((4, 1)),
     )
+
+    t_init = InitialGuessList()
+    t_bounds = BoundsList()
 
     n_muscles = 6
     n_q = bio_model.nb_q
@@ -649,9 +661,11 @@ def prepare_socp(
         dynamics,
         n_shooting,
         final_time,
+        t_init=t_init,
         x_init=x_init,
         u_init=u_init,
         s_init=s_init,
+        t_bounds=t_bounds,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         s_bounds=s_bounds,
@@ -719,7 +733,7 @@ def main():
     )
 
     sol_socp = socp.solve(solver)
-
+    time_sol = sol_socp.time["t"]
     q_sol = sol_socp.states["q"]
     qdot_sol = sol_socp.states["qdot"]
     activations_sol = sol_socp.states["muscles"]
@@ -735,6 +749,7 @@ def main():
                 cov_sol[j, k, i] = cov_sol_vect[j * 10 + k, i]
     stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol))
     data = {
+        "time_sol": time_sol,
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
         "activations_sol": activations_sol,
@@ -766,6 +781,7 @@ def main():
         hand_pos_fcn = cas.Function("hand_pos", [q_sym], [model.end_effector_position(q_sym)])
         hand_vel_fcn = cas.Function("hand_vel", [q_sym, qdot_sym], [model.end_effector_velocity(q_sym, qdot_sym)])
 
+        time = socp.nlp[0].time.cx_start
         states = socp.nlp[0].states.cx_start
         controls = socp.nlp[0].controls.cx_start
         parameters = socp.nlp[0].parameters.cx_start
@@ -774,6 +790,7 @@ def main():
         motor_noise_sym = cas.MX.sym("motor_noise", 2, 1)
         sensory_noise_sym = cas.MX.sym("sensory_noise", 4, 1)
         out = stochastic_forward_dynamics(
+            time,
             states,
             controls,
             parameters,
@@ -786,7 +803,7 @@ def main():
         )
         dyn_fun = cas.Function(
             "dyn_fun",
-            [states, controls, parameters, stochastic_variables, motor_noise_sym, sensory_noise_sym],
+            [time, states, controls, parameters, stochastic_variables, motor_noise_sym, sensory_noise_sym],
             [out.dxdt],
         )
 
@@ -806,6 +823,7 @@ def main():
             qdot_simulated[i_simulation, :, 0] = qdot_sol[:, 0]
             mus_activation_simulated[i_simulation, :, 0] = activations_sol[:, 0]
             for i_node in range(n_shooting):
+                t = time_sol[:, i_node]
                 x_prev = cas.vertcat(
                     q_simulated[i_simulation, :, i_node],
                     qdot_simulated[i_simulation, :, i_node],
@@ -817,7 +835,7 @@ def main():
                 )
                 u = excitations_sol[:, i_node]
                 s = stochastic_variables_sol[:, i_node]
-                k1 = dyn_fun(x_prev, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node])
+                k1 = dyn_fun(t, x_prev, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node])
                 x_next = x_prev + dt * dyn_fun(
                     x_prev + dt / 2 * k1, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node]
                 )

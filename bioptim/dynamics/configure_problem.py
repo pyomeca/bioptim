@@ -739,7 +739,7 @@ class ConfigureProblem:
             )
 
         nlp.plot["contact_forces"] = CustomPlot(
-            lambda t, x, u, p, s: nlp.contact_forces_func(x, u, p, s),
+            lambda t, x, u, p, s: nlp.contact_forces_func(t, x, u, p, s),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
             legend=all_contact_names,
@@ -943,6 +943,8 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
+        as_time: bool
+            If the new variable should be added to the time variable set
         as_states: bool
             If the new variable should be added to the state variable set
         as_states_dot: bool
@@ -1347,6 +1349,7 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
+            as_time=False,
             skip_plot=True,
         )
 
@@ -1379,6 +1382,7 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
+            as_time=False,
             skip_plot=True,
         )
 
@@ -1411,6 +1415,7 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
+            as_time=False,
             skip_plot=True,
         )
 
@@ -1469,6 +1474,7 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
+            as_time=False,
             skip_plot=True,
         )
 
@@ -1497,6 +1503,7 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
+            as_time=False,
             skip_plot=True,
         )
 
@@ -1528,6 +1535,7 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
+            as_time=False,
             skip_plot=True,
         )
 
