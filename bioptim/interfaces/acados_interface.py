@@ -158,6 +158,7 @@ class AcadosInterface(SolverInterface):
             raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
 
         # Declare model variables
+        x = ocp.nlp[0].time.cx_start
         x = ocp.nlp[0].states.cx_start
         u = ocp.nlp[0].controls.cx_start
         p = ocp.nlp[0].parameters.cx
@@ -172,7 +173,7 @@ class AcadosInterface(SolverInterface):
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
-        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(x[self.nparams :, :], u, p, s))
+        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(t, x[self.nparams :, :], u, p, s))
         f_impl = x_dot - f_expl
 
         self.acados_model.f_impl_expr = f_impl

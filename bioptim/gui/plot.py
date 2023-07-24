@@ -713,13 +713,22 @@ class PlotOcp:
                 if self.integrator != SolutionIntegrator.OCP
                 else nlp.ode_solver.steps + 1
             )
-            if isinstance(data_time, dict):
-                problem_time = data_time[list(data_time.keys())[0]].shape[1]
-            elif isinstance(data_time, list):
-                problem_time = data_time[i][list(data_time[i].keys())[0]].shape[1]
-            else:
-                raise RuntimeError("Invalid data_time type")
-            time = np.ndarray((0, problem_time))
+
+            # if isinstance(data_time, dict):
+            #     problem_time = data_time[list(data_time.keys())[0]].shape[1]
+            # elif isinstance(data_time, list):
+            #     problem_time = data_time[i][list(data_time[i].keys())[0]].shape[1]
+            # else:
+            #     raise RuntimeError("Invalid data_time type")
+            # time = np.ndarray((0, problem_time))
+
+            time = np.ndarray((0, nlp.ns + 1))
+            for ss in nlp.time:
+                if isinstance(data_time, (list, tuple)):
+                    time = np.concatenate((time, data_time[i][ss]))
+                else:
+                    time = np.concatenate((time, data_time[ss]))
+
             if isinstance(data_states, dict):
                 n_elements = data_states[list(data_states.keys())[0]].shape[1]
             elif isinstance(data_states, list):

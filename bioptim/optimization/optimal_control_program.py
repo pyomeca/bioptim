@@ -144,6 +144,7 @@ class OptimalControlProgram:
     """
 
     # TODO: OCP should not be aware of s (s_init, s_bounds...)
+    #  OCP should not be aware of t (t_init, t_bounds...) ???
 
     def __init__(
         self,

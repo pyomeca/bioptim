@@ -624,7 +624,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[states, controls, param]
+        dyn_func: Callable[time, states, controls, param, stochastic]
             The function to get the derivative of the states
         expand: bool
             If the dynamics should be expanded with casadi
@@ -693,7 +693,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[states, controls, param]
+        dyn_func: Callable[time, states, controls, param, stochastic]
             The function to get the values of contact forces from the dynamics
         """
 

@@ -136,14 +136,14 @@ def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra
     nlp.dynamics_func = Function(
         "ForwardDyn",
         [
+            nlp.time.scaled.mx_reduced,
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
             nlp.stochastic_variables.mx,
-            extra_params["t"]
         ],
         [dynamics_dxdt],
-        ["x", "u", "p", "s","t"],
+        ["t", "x", "u", "p", "s"],
         ["xdot"],
     )
 
@@ -154,15 +154,15 @@ def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra
         nlp.implicit_dynamics_func = Function(
             "DynamicsDefects",
             [
+                nlp.time.scaled.mx_reduced,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.mx,
-                extra_params["t"],
                 nlp.states_dot.scaled.mx_reduced,
             ],
             [dynamics_eval.defects],
-            ["x", "u", "p", "s", "t", "xdot"],
+            ["t", "x", "u", "p", "s", "xdot"],
             ["defects"],
         ).expand()
 
