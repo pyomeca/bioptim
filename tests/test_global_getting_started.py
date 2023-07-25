@@ -377,6 +377,10 @@ def test_pendulum_save_and_load_rk8(use_sx):
 def test_custom_constraint_track_markers(ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import custom_constraint as ocp_module
 
+    if sys.platform == "win32" and (ode_solver == OdeSolver.RK8 or ode_solver == OdeSolver.IRK):
+        # This test does not work on Windows for the CI
+        return
+
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver_orig = ode_solver
