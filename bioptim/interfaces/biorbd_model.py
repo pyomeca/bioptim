@@ -393,7 +393,6 @@ class BiorbdModel:
 
             return out
 
-
     def marker_accelerations(self, q, qdot, qddot, reference_index=None) -> list[MX]:
         if reference_index is None:
             return [
