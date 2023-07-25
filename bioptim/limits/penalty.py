@@ -35,20 +35,32 @@ class PenaltyFunctionAbstract:
     """
 
     @staticmethod
-    def _get_qddot(controller):
+    def _get_qddot(controller, attribute):
+        """
+        Returns the generalized acceleration by either fetching it directly
+        from the controller's states or controls or by computing it using the controller's dynamics.
+
+        Parameters:
+        controller : object
+            The controller that has 'states', 'controls', 'parameters', and 'stochastic_variables' attributes.
+
+        attribute : str
+            Specifies which attribute ('cx' or 'mx') to use for the calculation.
+
+        Returns:
+        np.ndarray
+            The computed generalized acceleration.
+        """
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             return controller.dynamics(
-                controller.states.cx, #cx_start
-                controller.controls.cx, #cx_start
-                controller.parameters.cx,
-                controller.stochastic_variables.cx_start,
+                getattr(controller.states, attribute),
+                getattr(controller.controls, attribute),
+                getattr(controller.parameters, attribute),
+                getattr(controller.stochastic_variables, attribute),
             )[controller.states["qdot"].index, :]
 
-
-
-
         source = controller.states if "qddot" in controller.states else controller.controls
-        return source["qddot"].mx  # MICK: valider s'il faut le .mx ou pas
+        return getattr(source["qddot"], attribute)
 
     @staticmethod
     def _get_markers_acceleration(controller, markers, CoM=False):
@@ -306,7 +318,7 @@ class PenaltyFunctionAbstract:
 
             q_mx = controller.states["q"].mx
             qdot_mx = controller.states["qdot"].mx
-            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller)
+            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
 
             markers = horzcat(
                 *controller.model.marker_accelerations(q_mx, qdot_mx, qddot_mx, reference_index=reference_jcs)
@@ -527,7 +539,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True
 
-            return PenaltyFunctionAbstract._get_qddot(controller)
+            return PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
         @staticmethod
         def minimize_predicted_com_height(_: PenaltyOption, controller: PenaltyController):
@@ -626,10 +638,12 @@ class PenaltyFunctionAbstract:
 
             q_mx = controller.states["q"].mx
             qdot_mx = controller.states["qdot"].mx
-            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller)
+            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
             # TODO scaled?
 
             marker = controller.model.center_of_mass_acceleration(q_mx, qdot_mx, qddot_mx)
+            #print(qddot_mx)
+
             com_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, marker, CoM=True)
 
             return com_objective
