@@ -413,12 +413,13 @@ class BiorbdModel:
                 reference_index,
                 inverse=True,
             )
-            for m in self.model.markersAcceleration(GeneralizedCoordinates(q), GeneralizedVelocity(qdot), GeneralizedAcceleration(qddot)):
+            for m in self.model.markersAcceleration(
+                GeneralizedCoordinates(q), GeneralizedVelocity(qdot), GeneralizedAcceleration(qddot)
+            ):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     out.append(m.to_mx())
 
             return out
-
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         self.model.closeActuator()
