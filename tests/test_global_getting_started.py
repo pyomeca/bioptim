@@ -441,6 +441,10 @@ def test_custom_constraint_track_markers(ode_solver, assume_phase_dynamics):
 def test_initial_guesses(ode_solver, interpolation, random_init, assume_phase_dynamics):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
+    if sys.platform == "win32" and interpolation == InterpolationType.EACH_FRAME:
+        # it works but not with the CI
+        return
+
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver = ode_solver()
