@@ -51,6 +51,9 @@ class PenaltyFunctionAbstract:
         np.ndarray
             The computed generalized acceleration.
         """
+        if attribute not in ['mx', 'cx_start']:
+            print('atrribute should be either mx or cx_start')
+
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             return controller.dynamics(
                 getattr(controller.states, attribute),
@@ -539,7 +542,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True
 
-            return PenaltyFunctionAbstract._get_qddot(controller, "cx")
+            return PenaltyFunctionAbstract._get_qddot(controller, "cx_start")
 
         @staticmethod
         def minimize_predicted_com_height(_: PenaltyOption, controller: PenaltyController):
