@@ -1392,7 +1392,10 @@ class OptimalControlProgram:
                     ]
                 )
                 if penalty.multinode_penalty:
-                    len_s = sum(self.nlp[penalty_phase].stochastic_variables[key].shape for key in self.nlp[penalty_phase].stochastic_variables)
+                    len_s = sum(
+                        self.nlp[penalty_phase].stochastic_variables[key].shape
+                        for key in self.nlp[penalty_phase].stochastic_variables
+                    )
                     complete_scaling = np.array(s_scaling)
                     number_of_repeat = s.shape[0] // len_s
                     s_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
