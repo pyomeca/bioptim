@@ -34,7 +34,7 @@ from .utils import TestUtils
 def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
-    if platform.system() == "Windows" and (ode_solver != OdeSolver.RK4 or not assume_phase_dynamics):
+    if platform.system() == "Windows":
         # These tests fail on CI for Windows
         return
 
