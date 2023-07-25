@@ -195,7 +195,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
 def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_phase_dynamics):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
-    if platform.system() == "Windows" and not assume_phase_dynamics:
+    if platform.system() == "Windows":
         # This is a long test and CI is already long for Windows
         return
 
