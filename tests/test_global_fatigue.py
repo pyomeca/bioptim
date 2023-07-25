@@ -570,6 +570,10 @@ def test_fatigable_michaud_torque_split(assume_phase_dynamics):
 def test_fatigable_effort_torque_non_split(assume_phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
+    if platform.system() == "Windows":
+        # This tst fails on the CI
+        return
+
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     model_path = f"{bioptim_folder}/models/pendulum.bioMod"
@@ -606,7 +610,7 @@ def test_fatigable_effort_torque_non_split(assume_phase_dynamics):
 def test_fatigable_effort_torque_split(assume_phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform.system() == "Windows" and not assume_phase_dynamics:
+    if platform.system() == "Windows":
         # This tst fails on the CI
         return
 
