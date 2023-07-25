@@ -782,7 +782,6 @@ class DynamicsFunctions:
         qdot_nlp = nlp.states["qdot"] if "qdot" in nlp.states else nlp.controls["qdot"]
         return qdot_nlp.mapping.to_first.map(nlp.model.reshape_qdot(qdot, qddot))
 
-
     @staticmethod
     def forward_dynamics(
         nlp: NonLinearProgram,

@@ -52,8 +52,7 @@ class PenaltyFunctionAbstract:
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             last_param = controller.controls["tau"]
         else:
-            last_param = controller.states["qddot"] if "qddot" in controller.states else controller.controls[
-                "qddot"]
+            last_param = controller.states["qddot"] if "qddot" in controller.states else controller.controls["qddot"]
 
         return controller.mx_to_cx(
             "com_ddot" if CoM else "markers_acceleration",
@@ -267,14 +266,13 @@ class PenaltyFunctionAbstract:
             )
             return markers_objective
 
-
         @staticmethod
         def minimize_markers_acceleration(
-                penalty: PenaltyOption,
-                controller: PenaltyController,
-                marker_index: tuple | list | int | str = None,
-                axes: tuple | list = None,
-                reference_jcs: str | int = None,
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            marker_index: tuple | list | int | str = None,
+            axes: tuple | list = None,
+            reference_jcs: str | int = None,
         ):
             """
             Minimize a marker set acecleration by computing the actual acceleration of the markers
@@ -617,18 +615,16 @@ class PenaltyFunctionAbstract:
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-            #penalty.quadratic = penalty.quadratic if penalty.quadratic is not None else True
-            #TODO: uniformiser les quadratic?
+            # penalty.quadratic = penalty.quadratic if penalty.quadratic is not None else True
+            # TODO: uniformiser les quadratic?
 
             q_mx = controller.states["q"].mx
             qdot_mx = controller.states["qdot"].mx
             qddot_mx = PenaltyFunctionAbstract._get_qddot(controller)
 
-
             markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, markers, qddot_mx)
 
             return markers_objective
-
 
             if "qddot" not in controller.states and "qddot" not in controller.controls:
                 com_ddot = controller.model.center_of_mass_acceleration(
