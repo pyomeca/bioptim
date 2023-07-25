@@ -1187,7 +1187,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
 
     ode_solver = ode_solver()
 
-    n_shooting = 10
+    n_shooting = 20
     if assume_phase_dynamics:
         with pytest.raises(
             ValueError,
@@ -1232,31 +1232,31 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 5018.648542811508)
+        np.testing.assert_almost_equal(f[0, 0], 488.05375155958615)
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+        np.testing.assert_equal(g.shape, (80, 1))
+        np.testing.assert_almost_equal(g, np.zeros((80, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([4.87390358, 0.0]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-18.98599313, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.49295131, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-14.26800861, 0.0]))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 3745.4213211878414)
+        np.testing.assert_almost_equal(f[0, 0], 475.44403901331214)
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+        np.testing.assert_equal(g.shape, (80, 1))
+        np.testing.assert_almost_equal(g, np.zeros((80, 1)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([5.82225895, 0.0]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-16.68896926, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([5.84195684, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.1269555, 0.0]))
 
     # Check that the output is what we expect
     dt = ocp.nlp[0].tf / ocp.nlp[0].ns
