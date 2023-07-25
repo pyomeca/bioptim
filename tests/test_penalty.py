@@ -133,6 +133,7 @@ def test_penalty_minimize_state(penalty_origin, value, assume_phase_dynamics):
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_qddot(penalty_origin, value, assume_phase_dynamics):
+    print(f"origin:{penalty_origin}, assume:{assume_phase_dynamics}")
     ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0, 1]
     x = [DM.ones((8, 1)) * value, DM.ones((8, 1)) * value]
