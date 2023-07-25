@@ -296,7 +296,7 @@ class PenaltyFunctionAbstract:
 
             PenaltyFunctionAbstract.set_idx_columns(penalty, controller, marker_index, "marker")
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
-            penalty.quadratic = penalty.quadratic if penalty.quadratic is not None else True
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             q_mx = controller.states["q"].mx
             qdot_mx = controller.states["qdot"].mx
@@ -305,7 +305,9 @@ class PenaltyFunctionAbstract:
             markers = horzcat(
                 *controller.model.marker_accelerations(q_mx, qdot_mx, qddot_mx, reference_index=reference_jcs)
             )
-            markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, markers, qddot_mx)
+            markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(
+                controller, markers, qddot_mx, CoM=False
+            )
 
             # var = []
             # var.extend([controller.states[key] for key in controller.states])
@@ -615,45 +617,16 @@ class PenaltyFunctionAbstract:
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-            # penalty.quadratic = penalty.quadratic if penalty.quadratic is not None else True
-            # TODO: uniformiser les quadratic?
 
             q_mx = controller.states["q"].mx
             qdot_mx = controller.states["qdot"].mx
             qddot_mx = PenaltyFunctionAbstract._get_qddot(controller)
+            # TODO scaled?
 
-            markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, markers, qddot_mx)
+            marker = controller.model.center_of_mass_acceleration(q_mx, qdot_mx, qddot_mx)
+            com_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, marker, CoM=True)
 
-            return markers_objective
-
-            if "qddot" not in controller.states and "qddot" not in controller.controls:
-                com_ddot = controller.model.center_of_mass_acceleration(
-                    controller.states["q"].mx,
-                    controller.states["qdot"].mx,
-                    # TODO use _get_qddot_mx?
-                    controller.dynamics(
-                        controller.states.mx,
-                        controller.controls.mx,
-                        controller.parameters.mx,
-                        controller.stochastic_variables.mx,
-                    )[controller.states["qdot"].index, :],
-                )
-                # TODO scaled?
-
-                var = []
-                var.extend([controller.states[key] for key in controller.states])
-                var.extend([controller.controls[key] for key in controller.controls])
-                var.extend([controller.parameters[key] for key in controller.parameters])
-                return controller.mx_to_cx("com_ddot", com_ddot, *var)
-            else:
-                qddot = controller.states["qddot"] if "qddot" in controller.states else controller.controls["qddot"]
-                return controller.mx_to_cx(
-                    "com_ddot",
-                    controller.model.center_of_mass_acceleration,
-                    controller.states["q"],
-                    controller.states["qdot"],
-                    qddot,
-                )
+            return com_objective
 
         @staticmethod
         def minimize_angular_momentum(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
