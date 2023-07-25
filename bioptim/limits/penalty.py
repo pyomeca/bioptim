@@ -34,6 +34,35 @@ class PenaltyFunctionAbstract:
         Return the dt of the penalty (abstract
     """
 
+    @staticmethod
+    def _get_qddot(controller):
+        if "qddot" not in controller.states and "qddot" not in controller.controls:
+            return controller.dynamics(
+                controller.states.cx_start,
+                controller.controls.cx_start,
+                controller.parameters.cx,
+                controller.stochastic_variables.cx_start,
+            )[controller.states["qdot"].index, :]
+
+        source = controller.states if "qddot" in controller.states else controller.controls
+        return source["qddot"].mx  # MICK: valider s'il faut le .mx ou pas
+
+    @staticmethod
+    def _get_markers_acceleration(controller, markers, CoM=False):
+        if "qddot" not in controller.states and "qddot" not in controller.controls:
+            last_param = controller.controls["tau"]
+        else:
+            last_param = controller.states["qddot"] if "qddot" in controller.states else controller.controls[
+                "qddot"]
+
+        return controller.mx_to_cx(
+            "com_ddot" if CoM else "markers_acceleration",
+            markers,
+            controller.states["q"],
+            controller.states["qdot"],
+            last_param,
+        )
+
     class Functions:
         """
         Implementation of all the generic penalty functions
@@ -238,13 +267,14 @@ class PenaltyFunctionAbstract:
             )
             return markers_objective
 
+
         @staticmethod
         def minimize_markers_acceleration(
-            penalty: PenaltyOption,
-            controller: PenaltyController,
-            marker_index: tuple | list | int | str = None,
-            axes: tuple | list = None,
-            reference_jcs: str | int = None,
+                penalty: PenaltyOption,
+                controller: PenaltyController,
+                marker_index: tuple | list | int | str = None,
+                axes: tuple | list = None,
+                reference_jcs: str | int = None,
         ):
             """
             Minimize a marker set acecleration by computing the actual acceleration of the markers
@@ -266,23 +296,25 @@ class PenaltyFunctionAbstract:
                 The index or name of the segment to use as reference. Default [None] is the global coordinate system
             """
 
-            # Adjust the cols and rows
             PenaltyFunctionAbstract.set_idx_columns(penalty, controller, marker_index, "marker")
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+            penalty.quadratic = penalty.quadratic if penalty.quadratic is not None else True
 
-            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-
-            # Add the penalty in the requested reference frame. None for global
             q_mx = controller.states["q"].mx
             qdot_mx = controller.states["qdot"].mx
-            qddot_mx = controller.states["qddot"].mx
+            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller)
 
-            markers = horzcat(*controller.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs))
-
-            markers_objective = controller.mx_to_cx(
-                "markers_acceleration", markers, controller.states["q"], controller.states["qdot"],
-                controller.states["qddot"],
+            markers = horzcat(
+                *controller.model.marker_accelerations(q_mx, qdot_mx, qddot_mx, reference_index=reference_jcs)
             )
+            markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, markers, qddot_mx)
+
+            # var = []
+            # var.extend([controller.states[key] for key in controller.states])
+            # var.extend([controller.controls[key] for key in controller.controls])
+            # var.extend([controller.parameters[key] for key in controller.parameters])
+            # return controller.mx_to_cx("com_ddot", com_ddot, *var)
+
             return markers_objective
 
         @staticmethod
@@ -489,17 +521,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True
 
-            if "qddot" not in controller.states and "qddot" not in controller.controls:
-                return controller.dynamics(
-                    controller.states.cx_start,
-                    controller.controls.cx_start,
-                    controller.parameters.cx,
-                    controller.stochastic_variables.cx_start,
-                )[controller.states["qdot"].index, :]
-            elif "qddot" in controller.states:
-                return controller.states["qddot"].cx_start
-            elif "qddot" in controller.controls:
-                return controller.controls["qddot"].cx_start
+            return PenaltyFunctionAbstract._get_qddot(controller)
 
         @staticmethod
         def minimize_predicted_com_height(_: PenaltyOption, controller: PenaltyController):
@@ -595,11 +617,24 @@ class PenaltyFunctionAbstract:
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            #penalty.quadratic = penalty.quadratic if penalty.quadratic is not None else True
+            #TODO: uniformiser les quadratic?
+
+            q_mx = controller.states["q"].mx
+            qdot_mx = controller.states["qdot"].mx
+            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller)
+
+
+            markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, markers, qddot_mx)
+
+            return markers_objective
+
 
             if "qddot" not in controller.states and "qddot" not in controller.controls:
                 com_ddot = controller.model.center_of_mass_acceleration(
                     controller.states["q"].mx,
                     controller.states["qdot"].mx,
+                    # TODO use _get_qddot_mx?
                     controller.dynamics(
                         controller.states.mx,
                         controller.controls.mx,
@@ -608,6 +643,7 @@ class PenaltyFunctionAbstract:
                     )[controller.states["qdot"].index, :],
                 )
                 # TODO scaled?
+
                 var = []
                 var.extend([controller.states[key] for key in controller.states])
                 var.extend([controller.controls[key] for key in controller.controls])
