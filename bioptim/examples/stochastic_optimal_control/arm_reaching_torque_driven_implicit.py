@@ -8,11 +8,8 @@ but increases largely the number of variables to optimize.
 import platform
 
 import pickle
-import biorbd_casadi as biorbd
-import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
-import scipy.io as sio
 
 from bioptim import (
     OptimalControlProgram,
@@ -34,8 +31,8 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     MultinodeConstraintList,
-    MultinodeObjectiveList,
     InitialGuessList,
+    VariableScalingList,
 )
 
 
@@ -575,6 +572,14 @@ def prepare_socp(
         max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
     )
 
+    u_scaling = VariableScalingList()
+    u_scaling["tau"] = [10] * n_tau
+
+    s_scaling = VariableScalingList()
+    s_scaling["k"] = [100] * (n_tau * (n_q + n_qdot))
+    s_scaling["ref"] = [1] * (n_q + n_qdot)
+    s_scaling["m"] = [1] * (n_states * n_states)
+
     return StochasticOptimalControlProgram(
         bio_model,
         dynamics,
@@ -608,8 +613,9 @@ def main():
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
-    n_shooting = int(final_time / dt) + 1
+    # n_shooting = int(final_time / dt) + 1
     final_time += dt
+    n_shooting = 5
 
     # --- Noise constants --- #
     motor_noise_std = 0.05
