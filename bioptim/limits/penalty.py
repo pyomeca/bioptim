@@ -38,17 +38,23 @@ class PenaltyFunctionAbstract:
     def _get_qddot(controller):
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             return controller.dynamics(
-                controller.states.cx_start,
-                controller.controls.cx_start,
+                controller.states.cx, #cx_start
+                controller.controls.cx, #cx_start
                 controller.parameters.cx,
                 controller.stochastic_variables.cx_start,
             )[controller.states["qdot"].index, :]
+
+
+
 
         source = controller.states if "qddot" in controller.states else controller.controls
         return source["qddot"].mx  # MICK: valider s'il faut le .mx ou pas
 
     @staticmethod
     def _get_markers_acceleration(controller, markers, CoM=False):
+
+        print(controller.states.keys(), controller.controls.keys())
+
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             last_param = controller.controls["tau"]
         else:

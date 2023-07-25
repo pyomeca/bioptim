@@ -643,6 +643,8 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit, assume_phase_
     x = [DM.ones((8, 1)) * value]
     u = [0]
 
+    #print(f"implicit:{implicit}, origin:{penalty_origin}, assume:{assume_phase_dynamics}")
+
     penalty_type = penalty_origin.MINIMIZE_COM_ACCELERATION
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
