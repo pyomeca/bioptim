@@ -231,16 +231,17 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 ui_mode = get_control_modificator(i)
 
                 if is_unscaled:
+                    _t_tp = nlp_i.T[index_i]
                     _x_tp = nlp_i.X[index_i]
                     _u_tp = nlp_i.U[index_i - ui_mode] if ocp.assume_phase_dynamics or index_i < len(nlp_i.U) else []
                 else:
+                    _t_tp = nlp_i.T_scaled[index_i][:, 0]
                     _x_tp = nlp_i.X_scaled[index_i]
                     _u_tp = (
                         nlp_i.U_scaled[index_i - ui_mode]
                         if ocp.assume_phase_dynamics or index_i < len(nlp_i.U_scaled)
                         else []
                     )
-                _t_tp = nlp_i.T[index_i]
                 _s_tp = nlp_i.S[index_i]
 
                 # 0th column since this constraint can only be applied to a single point. This is to account for
@@ -252,35 +253,40 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
         elif _penalty.integrate:
             if is_unscaled:
+                _t = nlp.T[_idx][:, 0]
                 _x = nlp.X[_idx]
                 _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
             else:
+                _t = nlp.T_scaled[_idx][:, 0]
                 _x = nlp.X_scaled[_idx]
                 _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
-            _t = nlp.T[_idx]
             _s = nlp.S[_idx]
         else:
             if is_unscaled:
+                # TODO : add _t like _x for every if unscaled
+                _t = nlp.T[_idx][:, 0]
                 _x = nlp.X[_idx][:, 0]
                 _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
             else:
+                _t = nlp.T_scaled[_idx][:, 0]
                 _x = nlp.X_scaled[_idx][:, 0]
                 if sum(_penalty.weighted_function[_idx].size_in(1)) == 0:
                     _u = []
                 else:
                     _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
-            _t = nlp.T[_idx][:, 0]
+
             _s = nlp.S[_idx][:, 0]
 
         if _penalty.derivative or _penalty.explicit_derivative:
             if _idx < nlp.ns:
                 if is_unscaled:
+                    t = nlp.T[_idx + 1][:, 0]
                     x = nlp.X[_idx + 1][:, 0]
                     u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
                 else:
+                    t = nlp.T_scaled[_idx + 1][:, 0]
                     x = nlp.X_scaled[_idx + 1][:, 0]
                     u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
-                t = nlp.T[_idx + 1][:, 0]
                 s = nlp.S[_idx + 1][:, 0]
 
                 _t = horzcat(_t, t)
@@ -290,9 +296,12 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
         if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
             if is_unscaled:
+                t = nlp.T[_idx + 1][:, 0]
                 x = nlp.X[_idx + 1][:, 0]
             else:
+                t = nlp.T_scaled[_idx + 1][:, 0]
                 x = nlp.X_scaled[_idx + 1][:, 0]
+            _t = horzcat(_t, t)
             _x = horzcat(_x, x)
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
@@ -300,8 +309,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 else:
                     u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
                 _u = horzcat(_u, u)
-            t = nlp.T[_idx + 1][:, 0]
-            _t = horzcat(_t, t)
             s = nlp.S[_idx + 1][:, 0]
             _s = horzcat(_s, s)
 

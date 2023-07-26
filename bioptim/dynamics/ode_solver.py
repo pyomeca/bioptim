@@ -126,8 +126,8 @@ class RK(OdeSolverBase):
         nlp.stochastic_variables.node_index = node_index
 
         ode_opt = {
-            "t0": 0,
-            "tf": nlp.dt,
+            "t0": 0 if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start,
+            "tf": nlp.dt if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start + nlp.dt,
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
@@ -138,7 +138,6 @@ class RK(OdeSolverBase):
         }
 
         ode = {
-            "time": nlp.time.cx_start,
             "x_unscaled": nlp.states.cx_start,
             "x_scaled": nlp.states.scaled.cx_start,
             "p_unscaled": nlp.controls.cx_start
@@ -305,7 +304,6 @@ class OdeSolver:
                 )
 
             ode = {
-                "time": nlp.time.cx_start,
                 "x_unscaled": [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
                 "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
                 "p_unscaled": nlp.controls.cx_start,
@@ -313,11 +311,11 @@ class OdeSolver:
                 "stochastic_variables": nlp.stochastic_variables.cx_start,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
-                # "time": t
+
             }
             ode_opt = {
-                "t0": 0,
-                "tf": nlp.dt,
+                "t0": 0 if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start,
+                "tf": nlp.dt if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start + nlp.dt,
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
@@ -439,7 +437,6 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
 
             ode = {
-                "time": nlp.time.cx_start,
                 "x": nlp.states.scaled.cx_start,
                 "p": nlp.controls.scaled.cx_start,
                 "ode": nlp.dynamics_func(
@@ -450,7 +447,10 @@ class OdeSolver:
                     nlp.stochastic_variables.cx_start,
                 ),
             }
-            ode_opt = {"t0": 0, "tf": nlp.dt}
+            ode_opt = {
+                        "t0": 0 if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start,
+                        "tf": nlp.dt if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start + nlp.dt,
+                       }
 
             integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)
 

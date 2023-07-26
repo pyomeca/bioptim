@@ -122,7 +122,7 @@ class NonLinearProgram:
         Add to the pool of declared casadi function. If the function already exists, it is skipped
     """
 
-    def __init__(self, assume_phase_dynamics):
+    def __init__(self, assume_phase_dynamics, time_dependent: bool = False, time_optimization: bool = False):
         self.casadi_func = {}
         self.contact_forces_func = None
         self.soft_contact_forces_func = None
@@ -161,7 +161,6 @@ class NonLinearProgram:
         self.U_scaled = None
         self.u_scaling = None
         self.U = None
-        self.use_time_from_phase_idx = NodeMapping()
         self.use_states_from_phase_idx = NodeMapping()
         self.use_controls_from_phase_idx = NodeMapping()
         self.use_states_dot_from_phase_idx = NodeMapping()
@@ -176,6 +175,8 @@ class NonLinearProgram:
         self.s_init = InitialGuessList()
         self.S = None
         self.assume_phase_dynamics = assume_phase_dynamics
+        self.time_dependent = time_dependent
+        self.time_optimization = time_optimization
         self.time = OptimizationVariableContainer(assume_phase_dynamics)
         self.states = OptimizationVariableContainer(assume_phase_dynamics)
         self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
@@ -200,7 +201,6 @@ class NonLinearProgram:
         self.g = []
         self.g_internal = []
         self.casadi_func = {}
-
         self.time.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)

@@ -217,7 +217,6 @@ class Solution:
 
             self.tf = nlp.tf
             self.phase_idx = nlp.phase_idx
-            self.use_time_from_phase_idx = nlp.use_time_from_phase_idx
             self.use_states_from_phase_idx = nlp.use_states_from_phase_idx
             self.use_controls_from_phase_idx = nlp.use_controls_from_phase_idx
             self.model = nlp.model

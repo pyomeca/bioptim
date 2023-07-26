@@ -19,8 +19,8 @@ class Integrator:
         The index of the degrees of freedom to integrate
     cx: MX | SX
         The CasADi type the integration should be built from
-    t_sym: MX | SX
-        The state variables
+    # t_sym: MX | SX
+    #     The state variables
     x_sym: MX | SX
         The state variables
     u_sym: MX | SX
@@ -73,7 +73,6 @@ class Integrator:
         self.t_span = ode_opt["t0"], ode_opt["tf"]
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
-        self.t_sym = ode["time"]
         self.x_sym = ode["x_scaled"]
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
@@ -125,7 +124,6 @@ class Integrator:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
-        # TODO LINEAR CONTINUOUS error because time is SX(0x1)
         elif self.control_type == ControlType.NONE:
             return np.ndarray((0,))
         else:
@@ -173,11 +171,13 @@ class Integrator:
         Prepare the CasADi function from dxdt
         """
 
+        t_sym = self.t_span[0] if isinstance(self.t_span[0], (MX, SX)) else []
+
         self.function = Function(
             "integrator",
-            [self.t_sym, self.x_sym, self.u_sym, self.param_sym, self.stochastic_variables_sym],
+            [t_sym, self.x_sym, self.u_sym, self.param_sym, self.stochastic_variables_sym],
             self.dxdt(
-                self.h, self.t_sym, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
+                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
             ),
             ["t", "x0", "p", "params", "s"],
             ["xf", "xall"],
@@ -289,7 +289,7 @@ class RK(Integrator):
 
         for i in range(1, self.n_step + 1):
             # t_norm_init = t if 't' in self.fun.name_in() else (i - 1) / self.n_step
-            t_norm_init = t
+            t_norm_init = (i - 1) / self.n_step if isinstance(t, int) else t
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -711,11 +711,13 @@ class COLLOCATION(Integrator):
         Prepare the CasADi function from dxdt
         """
 
+        t_sym = self.t_span[0] if isinstance(self.t_span[0], (MX, SX)) else []
+
         self.function = Function(
             "integrator",
-            [self.t_sym, horzcat(*self.x_sym), self.u_sym, self.param_sym, self.stochastic_variables_sym],
+            [t_sym, horzcat(*self.x_sym), self.u_sym, self.param_sym, self.stochastic_variables_sym],
             self.dxdt(
-                self.h, self.t_sym, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
+                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
             ),
             ["t", "x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
@@ -806,11 +808,13 @@ class IRK(COLLOCATION):
         Prepare the CasADi function from dxdt
         """
 
+        t_sym = self.t_span[0] if isinstance(self.t_span[0], (MX, SX)) else []
+
         self.function = Function(
             "integrator",
-            [self.t_sym, self.x_sym[0], self.u_sym, self.param_sym, self.stochastic_variables_sym],
+            [t_sym, self.x_sym[0], self.u_sym, self.param_sym, self.stochastic_variables_sym],
             self.dxdt(
-                self.h, self.t_sym, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
+                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
             ),
             ["t", "x0", "p", "params", "s"],
             ["xf", "xall"],

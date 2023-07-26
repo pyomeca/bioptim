@@ -62,11 +62,9 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_time_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_time_from_phase_idx", use_time_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
@@ -146,11 +144,9 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, a
 
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_time_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_time_from_phase_idx", use_time_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
@@ -242,11 +238,9 @@ def test_torque_activation_driven_with_passive_torque(
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_time_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_time_from_phase_idx", use_time_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
@@ -359,11 +353,9 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     )
     phase_index = [i for i in range(ocp.n_phases)]
     NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
-    use_time_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
     use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
-    NonLinearProgram.add(ocp, "use_time_from_phase_idx", use_time_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
