@@ -269,6 +269,10 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value, assume_phase_d
             decimal=4,
         )
 
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
+@pytest.mark.parametrize("value", [0.1, -10])
+@pytest.mark.parametrize("implicit", [True, False])
 def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, assume_phase_dynamics):
     ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
@@ -376,7 +380,10 @@ def test_penalty_track_markers_velocity(penalty_origin, value, assume_phase_dyna
         )
 
 
-# TODO: add test for track_marker_acceleration and minimize_marker_acceleration
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
+@pytest.mark.parametrize("value", [0.1, -10])
+@pytest.mark.parametrize("implicit", [True, False])
 def test_penalty_track_markers_acceleration(penalty_origin, value, implicit, assume_phase_dynamics):
     # print(f"implicit:{implicit}, origin:{penalty_origin}, assume:{assume_phase_dynamics}")
 
