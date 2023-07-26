@@ -146,9 +146,9 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     if problem_type_custom:
-        dynamics.add(custom_configure, dynamic_function=custom_dynamic, my_additional_factor=1, expand=expand_dynamics)
+        dynamics.add(custom_configure, dynamic_function=custom_dynamics, my_additional_factor=1, expand=expand_dynamics)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamic, expand=expand_dynamics)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamics, expand=expand_dynamics)
 
     # Constraints
     constraints = ConstraintList()
