@@ -194,7 +194,7 @@ class BioModel(Protocol):
         """Get the marker velocities of the model"""
 
     def marker_accelerations(self, q, qdot, qddot, reference_index=None) -> list[MX]:
-        """Get the marker velocities of the model"""
+        """Get the marker accelerations of the model"""
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         """Get the maximum torque"""
