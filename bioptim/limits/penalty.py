@@ -51,8 +51,8 @@ class PenaltyFunctionAbstract:
         np.ndarray
             The computed generalized acceleration.
         """
-        if attribute not in ['mx', 'cx_start']:
-            print('atrribute should be either mx or cx_start')
+        if attribute not in ["mx", "cx_start"]:
+            print("atrribute should be either mx or cx_start")
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             return controller.dynamics(
@@ -67,9 +67,6 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _get_markers_acceleration(controller, markers, CoM=False):
-
-        print(controller.states.keys(), controller.controls.keys())
-
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             last_param = controller.controls["tau"]
         else:
@@ -326,9 +323,7 @@ class PenaltyFunctionAbstract:
             markers = horzcat(
                 *controller.model.marker_accelerations(q_mx, qdot_mx, qddot_mx, reference_index=reference_jcs)
             )
-            markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(
-                controller, markers, qddot_mx, CoM=False
-            )
+            markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, markers, CoM=False)
 
             # var = []
             # var.extend([controller.states[key] for key in controller.states])
@@ -645,7 +640,7 @@ class PenaltyFunctionAbstract:
             # TODO scaled?
 
             marker = controller.model.center_of_mass_acceleration(q_mx, qdot_mx, qddot_mx)
-            #print(qddot_mx)
+            # print(qddot_mx)
 
             com_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, marker, CoM=True)
 
