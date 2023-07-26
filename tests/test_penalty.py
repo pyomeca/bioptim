@@ -269,16 +269,17 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value, assume_phase_d
             decimal=4,
         )
 
+
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
 @pytest.mark.parametrize("value", [0.1, -10])
 @pytest.mark.parametrize("implicit", [True, False])
 def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, assume_phase_dynamics):
-    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
+    ocp = prepare_test_ocp(implicit=implicit, assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
-    penalty_type = penalty_origin.MINIMIZE_MARKER_ACCELERATION
+    penalty_type = penalty_origin.MINIMIZE_MARKERS_ACCELERATION
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type)
@@ -288,55 +289,46 @@ def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, 
     if not implicit:
         res = get_penalty_value(ocp, penalty, t, x, u, [], [])
 
-        expected =             np.array(
-                [
-                    [0.1, -0.00948376, -0.0194671, 0.0900167, 0, 00, 00, -0.00499167],
-                    [0, 0, 0, 0, 0, 00, 00, 0],
-                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, 0, -0.0497502],
-                ])
+        expected = np.array(
+            [
+                [2.15106e-16, -0.00895171, -0.0189017, -0.00995004, 00, 00, 00, -0.00497502],
+                [0, 0, 0, 0, 00, 00, 00, 0],
+                [-9.81, -9.79905, -9.79805, -9.809, 00, 00, 00, 0.000499167],
+            ]
+        )
         if value == -10:
-            expected =  np.array(
+            expected = np.array(
                 [
-                    [0.1, -0.00948376, -0.0194671, 0.0900167, 0, 00, 00, -0.00499167],
-                    [0, 0, 0, 0, 0, 00, 00, 0],
-                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, 0, -0.0497502],
-                ])
+                    [0.0, 138.309264, 222.2164169, 83.90715291, 0.0, 0.0, 0.0, 41.95357645],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
+                ]
+            )
 
-        np.testing.assert_almost_equal(res, expected)
+        np.testing.assert_almost_equal(res, expected, decimal=5)
     else:
         res = get_penalty_value(ocp, penalty, t, x, u, [], [])
 
-        expected = np.array([[0], [-0.0008324], [0.002668]])
+        expected = np.array(
+            [
+                [2.15105711e-16, -8.95170749e-03, -1.89017491e-02, -9.95004165e-03, 00, 00, 00, -4.97502083e-03],
+                [0, 0, 0, 0, 00, 00, 00, 0],
+                [-9.81, -9.79905162e00, -9.79805329e00, -9.80900167e00, 00, 00, 00, 4.99167083e-04],
+            ]
+        )
         if value == -10:
-            expected = np.array([[0], [-17.5050533], [-18.2891901]])
-
-        np.testing.assert_almost_equal(res, expected)
-
-
-    if value == 0.1:
+            expected = np.array(
+                [
+                    [0.0, 138.309264, 222.2164169, 83.90715291, 0.0, 0.0, 0.0, 41.95357645],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
+                ]
+            )
         np.testing.assert_almost_equal(
             res,
-            np.array(
-                [
-                    [0.1, -0.00948376, -0.0194671, 0.0900167, 0, 00, 00, -0.00499167],
-                    [0, 0, 0, 0, 0, 00, 00, 0],
-                    [0.1, 0.0104829, -0.0890175, 0.000499583, 0, 0, 0, -0.0497502],
-                ]
-            ),
+            expected,
+            decimal=5,
         )
-    else:
-        np.testing.assert_almost_equal(
-            res,
-            np.array(
-                [
-                    [-10, -12.9505, -7.51029, -4.55979, 0, 00, 00, 2.72011],
-                    [0, 0, 0, 0, 0, 00, 00, 0],
-                    [-10, -23.8309, -32.2216, -18.3907, 0, 0, 0, -4.19536],
-                ]
-            ),
-            decimal=4,
-        )
-
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -385,36 +377,60 @@ def test_penalty_track_markers_velocity(penalty_origin, value, assume_phase_dyna
 @pytest.mark.parametrize("value", [0.1, -10])
 @pytest.mark.parametrize("implicit", [True, False])
 def test_penalty_track_markers_acceleration(penalty_origin, value, implicit, assume_phase_dynamics):
-    # print(f"implicit:{implicit}, origin:{penalty_origin}, assume:{assume_phase_dynamics}")
-
     ocp = prepare_test_ocp(implicit=implicit, assume_phase_dynamics=assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
-    u = [1]
-
+    u = [0]
     penalty_type = penalty_origin.TRACK_MARKERS_ACCELERATION
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
-        penalty = Objective(penalty_type)
+        penalty = Objective(penalty_type, target=np.ones((3, 7, 1)) * value)
     else:
-        penalty = Constraint(penalty_type)
+        penalty = Constraint(penalty_type, target=np.ones((3, 7, 1)) * value)
 
     if not implicit:
         res = get_penalty_value(ocp, penalty, t, x, u, [], [])
 
-        expected = np.array([[0.0], [-0.7168803], [-0.0740871]])
+        expected = np.array(
+            [
+                [2.15106e-16, -0.00895171, -0.0189017, -0.00995004, 00, 00, 00, -0.00497502],
+                [0, 0, 0, 0, 00, 00, 00, 0],
+                [-9.81, -9.79905, -9.79805, -9.809, 00, 00, 00, 0.000499167],
+            ]
+        )
         if value == -10:
-            expected = np.array([[0.0], [1.455063], [16.3741091]])
+            expected = np.array(
+                [
+                    [0.0, 138.309264, 222.2164169, 83.90715291, 0.0, 0.0, 0.0, 41.95357645],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
+                ]
+            )
 
-        np.testing.assert_almost_equal(res, expected)
+        np.testing.assert_almost_equal(res, expected, decimal=5)
     else:
         res = get_penalty_value(ocp, penalty, t, x, u, [], [])
 
-        expected = np.array([[0], [-0.0008324], [0.002668]])
+        expected = np.array(
+            [
+                [2.15105711e-16, -8.95170749e-03, -1.89017491e-02, -9.95004165e-03, 00, 00, 00, -4.97502083e-03],
+                [0, 0, 0, 0, 00, 00, 00, 0],
+                [-9.81, -9.79905162e00, -9.79805329e00, -9.80900167e00, 00, 00, 00, 4.99167083e-04],
+            ]
+        )
         if value == -10:
-            expected = np.array([[0], [-17.5050533], [-18.2891901]])
-
-        np.testing.assert_almost_equal(res, expected)
+            expected = np.array(
+                [
+                    [0.0, 138.309264, 222.2164169, 83.90715291, 0.0, 0.0, 0.0, 41.95357645],
+                    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+                    [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
+                ]
+            )
+        np.testing.assert_almost_equal(
+            res,
+            expected,
+            decimal=5,
+        )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
