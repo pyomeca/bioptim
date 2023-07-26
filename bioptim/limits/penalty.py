@@ -35,7 +35,7 @@ class PenaltyFunctionAbstract:
     """
 
     @staticmethod
-    def _get_qddot(controller, attribute):
+    def _get_qddot(controller, attribute="mx"):
         """
         Returns the generalized acceleration by either fetching it directly
         from the controller's states or controls or by computing it using the controller's dynamics.
@@ -52,7 +52,7 @@ class PenaltyFunctionAbstract:
             The computed generalized acceleration.
         """
         if attribute not in ["mx", "cx_start"]:
-            print("atrribute should be either mx or cx_start")
+            print("atrribute should be either mx or cx_start")  # probably not enough
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             return controller.dynamics(
@@ -640,8 +640,6 @@ class PenaltyFunctionAbstract:
             # TODO scaled?
 
             marker = controller.model.center_of_mass_acceleration(q_mx, qdot_mx, qddot_mx)
-            # print(qddot_mx)
-
             com_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, marker, CoM=True)
 
             return com_objective
