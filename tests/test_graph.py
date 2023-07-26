@@ -13,7 +13,6 @@ from bioptim import (
     DynamicsFcn,
     ObjectiveList,
     ObjectiveFcn,
-    Objective,
     BoundsList,
     InitialGuessList,
     InterpolationType,
@@ -98,10 +97,10 @@ def prepare_ocp_phase_transitions(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
 
     # Constraints
     constraints = ConstraintList()
@@ -273,7 +272,7 @@ def prepare_ocp_parameters(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=10)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -422,7 +421,7 @@ def prepare_ocp_custom_objectives(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, list_index=7, index=[1, 2], target=target)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True)
 
     # Path constraint
     x_bounds = BoundsList()

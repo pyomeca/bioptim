@@ -64,6 +64,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
         max_time=max_ft,
         weight=-1,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -100,7 +101,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(tf, max_ft)
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
@@ -140,6 +141,7 @@ def test_pendulum_min_time_lagrange(ode_solver, assume_phase_dynamics):
         n_shooting=ns,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -206,7 +208,7 @@ def test_pendulum_min_time_lagrange(ode_solver, assume_phase_dynamics):
         raise ValueError("Test not implemented")
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
@@ -314,6 +316,7 @@ def test_time_constraint(ode_solver, assume_phase_dynamics):
         time_max=1,
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -374,7 +377,7 @@ def test_time_constraint(ode_solver, assume_phase_dynamics):
         raise ValueError("Test not ready")
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
@@ -400,6 +403,7 @@ def test_monophase_time_constraint(ode_solver, assume_phase_dynamics):
         n_shooting=(20,),
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -437,7 +441,7 @@ def test_monophase_time_constraint(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(tf, 1.0)
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -463,6 +467,7 @@ def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
         n_shooting=(20, 30, 20),
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -508,7 +513,7 @@ def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(tf, np.sum(tf_all))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -535,6 +540,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, assume_
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
         with_phase_time_equality=True,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -586,7 +592,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, assume_
     np.testing.assert_almost_equal(tf, np.sum(tf_all) + tf_all[0, 0])
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)

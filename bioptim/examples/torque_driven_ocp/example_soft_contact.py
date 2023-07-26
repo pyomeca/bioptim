@@ -112,7 +112,6 @@ def prepare_ocp(
     """
     Prepare the ocp
 
-
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -148,6 +147,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         rigidbody_dynamics=RigidBodyDynamics.ODE,
         soft_contacts_dynamics=SoftContactDynamics.ODE,
+        expand=True,
     )
 
     # Constraints

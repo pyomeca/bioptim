@@ -25,6 +25,7 @@ def test_muscle_driven_ocp_implicit(ode_solver, assume_phase_dynamics):
         weight=1,
         ode_solver=ode_solver_obj,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 

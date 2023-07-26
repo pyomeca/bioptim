@@ -1,11 +1,8 @@
 import os
 
-import pytest
 import numpy as np
 from casadi import DM, vertcat
 from bioptim import Solver
-
-from .utils import TestUtils
 
 
 def test_arm_reaching_muscle_driven():
@@ -34,6 +31,7 @@ def test_arm_reaching_muscle_driven():
         sensory_noise_magnitude=sensory_noise_magnitude,
         force_field_magnitude=force_field_magnitude,
         problem_type=problem_type,
+        expand_dynamics=True,
     )
 
     # ocp.print(to_console=True, to_graph=False)  #TODO: check to adjust the print method
@@ -371,6 +369,7 @@ def test_arm_reaching_torque_driven_explicit():
         sensory_noise_magnitude=sensory_noise_magnitude,
         force_field_magnitude=force_field_magnitude,
         problem_type=problem_type,
+        expand_dynamics=True,
     )
 
     # Solver parameters
@@ -555,6 +554,7 @@ def test_arm_reaching_torque_driven_implicit():
         sensory_noise_magnitude=sensory_noise_magnitude,
         force_field_magnitude=force_field_magnitude,
         problem_type=problem_type,
+        expand_dynamics=True,
     )
 
     # Solver parameters
