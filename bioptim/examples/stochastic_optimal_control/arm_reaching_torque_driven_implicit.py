@@ -277,41 +277,47 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     n_tau = controller.controls["tau"].cx_start.shape[0]
     n_q = controller.states["q"].cx_start.shape[0]
     n_qdot = controller.states["qdot"].cx_start.shape[0]
+    n_stochastic = controller.stochastic_variables.shape
 
+    states_sym = cas.MX.sym("states_sym", n_q + n_qdot, 1)
+    stochastic_sym = cas.MX.sym("stochastic_sym", n_stochastic, 1)
     sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
 
     # create the casadi function to be evaluated
     # Get the symbolic variables
-    ref = controller.stochastic_variables["ref"].cx_start
+    ref = stochastic_sym[controller.stochastic_variables["ref"].index]
+    stochastic_sym_dict = {key: stochastic_sym[controller.stochastic_variables[key].index] for key in controller.stochastic_variables.keys()}
+    for key in controller.stochastic_variables.keys():
+        stochastic_sym_dict[key].cx_start = stochastic_sym_dict[key]
     cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-        controller.stochastic_variables,
-        controller.states.cx_start.shape[0],
-        controller.states.cx_start.shape[0],
+        stochastic_sym_dict,
+        n_q + n_qdot,
+        n_q + n_qdot,
         Node.START,
         "cov",
     )
 
-    k = controller.stochastic_variables["k"].cx_start
-    k_matrix = cas.MX(n_q + n_qdot, n_tau)
-    for s0 in range(n_q + n_qdot):
-        for s1 in range(n_tau):
-            k_matrix[s0, s1] = k[s0 * n_tau + s1]
+    k_matrix = controller.stochastic_variables["k"].reshape_to_matrix(
+        stochastic_sym_dict,
+        n_q + n_qdot,
+        n_tau,
+        Node.START,
+        "cov",
+    )
     k_matrix = k_matrix.T
 
     # Compute the expected effort
-    hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
-    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[
-        2
-    ][:2]
+    hand_pos = controller.model.markers(states_sym[:n_q])[2][:2]
+    hand_vel = controller.model.marker_velocities(states_sym[:n_q], states_sym[n_q:])[2][:2]
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
     ee = cas.vertcat(hand_pos, hand_vel)
     e_fb = k_matrix @ ((ee - ref) + sensory_noise_magnitude)
-    jac_e_fb_x = cas.jacobian(e_fb, controller.states.cx_start)
+    jac_e_fb_x = cas.jacobian(e_fb, states_sym)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     func = cas.Function(
         "f_expectedEffort_fb",
-        [controller.states.cx_start, controller.stochastic_variables.cx_start],
+        [states_sym, stochastic_sym],
         [expectedEffort_fb_mx],
     )
 
@@ -591,6 +597,8 @@ def prepare_socp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         s_bounds=s_bounds,
+        u_scaling=u_scaling,
+        s_scaling=s_scaling,
         objective_functions=objective_functions,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
@@ -633,7 +641,8 @@ def main():
     solver.set_tol(1e-3)
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
-    solver.set_maximum_iterations(10000)
+    # solver.set_maximum_iterations(10000)
+    solver.set_maximum_iterations(0)
     solver.set_hessian_approximation("limited-memory")
     solver.set_bound_frac(1e-8)
     solver.set_bound_push(1e-8)
