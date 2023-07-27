@@ -514,24 +514,21 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = len(controllers[0].get_nlp.variable_mappings["tau"].to_first.map_idx)
 
-            c_matrix = (
-                controllers[0]
-                .stochastic_variables["c"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 3 * nu, Node.START, "c")
-            )
-
             q_root = MX.sym("q_root", nb_root, 1)
             q_joints = MX.sym("q_joints", nu, 1)
             qdot_root = MX.sym("qdot_root", nb_root, 1)
             qdot_joints = MX.sym("qdot_joints", nu, 1)
+            tau_joints = MX.sym("tau_joints", nu, 1)
+            parameters_sym = MX.sym("params", controllers[0].parameters.shape)
+            stochastic_sym = MX.sym("stochastic_sym", controllers[0].stochastic_variables.shape)
             motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
             sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
 
             dx = dynamics(
-                vertcat(q_root, q_joints, qdot_root, qdot_joints),
-                controllers[0].controls.cx_start,
-                controllers[0].parameters.cx_start,
-                controllers[0].stochastic_variables.cx_start,
+                vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
+                tau_joints,  # Controls
+                parameters_sym,  # Parameters
+                stochastic_sym,  # Stochastic variables
                 controllers[0].get_nlp,
                 motor_noise,
                 sensory_noise,
@@ -549,13 +546,19 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     q_joints,
                     qdot_root,
                     qdot_joints,
-                    controllers[0].controls.cx_start,
-                    controllers[0].parameters.cx_start,
-                    controllers[0].stochastic_variables.cx_start,
+                    tau_joints,
+                    parameters_sym,
+                    stochastic_sym,
                     motor_noise,
                     sensory_noise,
                 ],
                 [jacobian(dx.dxdt[non_root_index], vertcat(motor_noise, sensory_noise))],
+            )
+
+            c_matrix = (
+                controllers[0]
+                .stochastic_variables["c"]
+                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 3 * nu, Node.START, "c")
             )
 
             DF_DW = DF_DW_fun(
@@ -574,7 +577,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[1].states["q"].cx_start[nb_root:],
                 controllers[1].states["qdot"].cx_start[:nb_root],
                 controllers[1].states["qdot"].cx_start[nb_root:],
-                controllers[1].controls.cx_start,
+                controllers[1].controls["tau"].cx_start,
                 controllers[1].parameters.cx_start,
                 controllers[1].stochastic_variables.cx_start,
                 motor_noise_magnitude,

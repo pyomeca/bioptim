@@ -455,13 +455,13 @@ class PenaltyOption(OptionGeneric):
             else:
                 state_cx_scaled = controller.states_scaled.cx_start
                 control_cx_scaled = controller.controls_scaled.cx_start
-            stochastic_cx_scaled = controller.stochastic_variables.cx_start
+            stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
                 state_cx_scaled = horzcat(state_cx_scaled, controller.states_scaled.cx_end)
                 control_cx_scaled = horzcat(control_cx_scaled, controller.controls_scaled.cx_end)
-                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, controller.stochastic_variables.cx_end)
+                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
 
         # Alias some variables
         node = controller.node_index
