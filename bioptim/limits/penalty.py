@@ -130,8 +130,14 @@ class PenaltyFunctionAbstract:
             if key_control is "tau":
                 return controls * controller.states["qdot"].cx_start
             elif key_control is "muscles":
-                x = controller.states.cx_start
-                return controls * controller.model.muscle_velocity(x["q"], x["qdot"])
+                q_mx = controller.states["q"].mx
+                qdot_mx = controller.states["qdot"].mx
+                muscles_dot = controller.model.muscle_velocity(q_mx, qdot_mx)
+                objective = controller.mx_to_cx(
+                    "muscle_velocity", muscles_dot, controller.states["q"], controller.states["qdot"]
+                )
+
+                return controls * objective
 
         @staticmethod
         def stochastic_minimize_variables(penalty: PenaltyOption, controller: PenaltyController, key: str):
