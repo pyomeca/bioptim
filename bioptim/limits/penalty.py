@@ -34,52 +34,6 @@ class PenaltyFunctionAbstract:
         Return the dt of the penalty (abstract
     """
 
-    @staticmethod
-    def _get_qddot(controller, attribute="mx"):
-        """
-        Returns the generalized acceleration by either fetching it directly
-        from the controller's states or controls or by computing it using the controller's dynamics.
-
-        Parameters:
-        controller : object
-            The controller that has 'states', 'controls', 'parameters', and 'stochastic_variables' attributes.
-
-        attribute : str
-            Specifies which attribute ('cx' or 'mx') to use for the calculation.
-
-        Returns:
-        np.ndarray
-            The computed generalized acceleration.
-        """
-        if attribute not in ["mx", "cx_start"]:
-            print("atrribute should be either mx or cx_start")  # probably not enough
-
-        if "qddot" not in controller.states and "qddot" not in controller.controls:
-            return controller.dynamics(
-                getattr(controller.states, attribute),
-                getattr(controller.controls, attribute),
-                getattr(controller.parameters, attribute),
-                getattr(controller.stochastic_variables, attribute),
-            )[controller.states["qdot"].index, :]
-
-        source = controller.states if "qddot" in controller.states else controller.controls
-        return getattr(source["qddot"], attribute)
-
-    @staticmethod
-    def _get_markers_acceleration(controller, markers, CoM=False):
-        if "qddot" not in controller.states and "qddot" not in controller.controls:
-            last_param = controller.controls["tau"]
-        else:
-            last_param = controller.states["qddot"] if "qddot" in controller.states else controller.controls["qddot"]
-
-        return controller.mx_to_cx(
-            "com_ddot" if CoM else "markers_acceleration",
-            markers,
-            controller.states["q"],
-            controller.states["qdot"],
-            last_param,
-        )
-
     class Functions:
         """
         Implementation of all the generic penalty functions
@@ -637,7 +591,6 @@ class PenaltyFunctionAbstract:
             q_mx = controller.states["q"].mx
             qdot_mx = controller.states["qdot"].mx
             qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
-            # TODO scaled?
 
             marker = controller.model.center_of_mass_acceleration(q_mx, qdot_mx, qddot_mx)
             com_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, marker, CoM=True)
@@ -1299,3 +1252,57 @@ class PenaltyFunctionAbstract:
         """
 
         raise RuntimeError("penalty_nature cannot be called from an abstract class")
+
+    @staticmethod
+    def _get_qddot(controller, attribute: str):
+        """
+        Returns the generalized acceleration by either fetching it directly
+        from the controller's states or controls or from the controller's dynamics.
+
+        Parameters
+        ----------
+        controller : object
+            The controller that has 'states', 'controls', 'parameters', and 'stochastic_variables' attributes.
+        attribute : str
+            Specifies which attribute ('cx_start' or 'mx') to use for the extraction.
+        """
+        if attribute not in ["mx", "cx_start"]:
+            raise ValueError("atrribute should be either mx or cx_start")
+
+        if "qddot" not in controller.states and "qddot" not in controller.controls:
+            return controller.dynamics(
+                getattr(controller.states, attribute),
+                getattr(controller.controls, attribute),
+                getattr(controller.parameters, attribute),
+                getattr(controller.stochastic_variables, attribute),
+            )[controller.states["qdot"].index, :]
+
+        source = controller.states if "qddot" in controller.states else controller.controls
+        return getattr(source["qddot"], attribute)
+
+    @staticmethod
+    def _get_markers_acceleration(controller, markers, CoM=False):
+        """
+        Retrieve the acceleration of the markers or the center of mass (CoM) from the controller.
+
+        Args:
+            controller (object): An object containing states and controls data.
+            markers (MX): generic expression of the marker/com acceleration
+            CoM (bool, optional): If True, return the CoM acceleration. If False, return markers acceleration. Defaults to False.
+
+        Returns:
+            The acceleration of the specified markers or the CoM.
+        """
+
+        if "qddot" not in controller.states and "qddot" not in controller.controls:
+            last_param = controller.controls["tau"]
+        else:
+            last_param = controller.states["qddot"] if "qddot" in controller.states else controller.controls["qddot"]
+
+        return controller.mx_to_cx(
+            "com_ddot" if CoM else "markers_acceleration",
+            markers,
+            controller.states["q"],
+            controller.states["qdot"],
+            last_param,
+        )
