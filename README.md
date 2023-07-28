@@ -132,15 +132,15 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 
 # How to install 
 The preferred way to install for the lay user is using anaconda. 
-Another way, more designed for the core programmers is from the sources. 
-While it is theoretically possible to use `bioptim` from Windows, it is highly discouraged since it will require to manually compile all the dependencies. 
-A great alternative for the Windows users is *Ubuntu* on *Windows supporting Linux*.
+Another way, more designed for the core programmers, is from the sources. 
+While it is theoretically possible to use `bioptim` from Windows, it is highly discouraged since it will require manually compiling all the dependencies. 
+A great alternative for Windows users is *Ubuntu* on *Windows supporting Linux*.
 
-## Installing from Anaconda (For Windows, Linux and Mac)
+## Installing from Anaconda (For Windows, Linux, and Mac)
 The easiest way to install `bioptim` is to download the binaries from [Anaconda](https://anaconda.org/) repositories. 
 The project is hosted on the conda-forge channel (https://anaconda.org/conda-forge/bioptim).
 
-After having installed properly an anaconda client [my suggestion would be Miniconda (https://conda.io/miniconda.html)] and loaded the desired environment to install `bioptim` in, just type the following command:
+After having appropriately installed an anaconda client [my suggestion would be Miniconda (https://conda.io/miniconda.html)] and loaded the desired environment to install `bioptim` in, just type the following command:
 ```bash
 conda install -c conda-forge bioptim
 ```
@@ -148,14 +148,14 @@ This will download and install all the dependencies and install `bioptim`.
 And that is it! 
 You can already enjoy bioptiming!
 
-## Installing from the sources (For Linux, Mac and Windows)
-Installing from the sources is basically as easy as installing from Anaconda, with the difference that you will be required to download and install the dependencies by hand (see section below). 
+## Installing from the sources (For Linux, Mac, and Windows)
+Installing from the sources is as easy as installing from Anaconda, with the difference that you will be required to download and install the dependencies by hand (see the section below). 
 
 ### Dependencies
 `bioptim` relies on several libraries. 
-The most obvious one is the `biorbd` suite (including indeed `biorbd` and `bioviz`), but some extra more are required.
-Due to the amount of different dependencies, it would be tedious to show how to install them all here. 
-The user is therefore invited to read the relevant documentations. 
+The most obvious one is the `biorbd` suite (including indeed `biorbd` and `bioviz`), but extra libraries are required.
+Due to the different dependencies, it would be tedious to show how to install them all here. 
+The user is therefore invited to read the relevant documentation. 
 
 Here is a list of all direct dependencies (meaning that some dependencies may require other libraries themselves):
 - [Python](https://www.python.org/)
@@ -183,55 +183,55 @@ and optionally:
 - [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
 
 #### Linux - Installing dependencies with conda
-All these (except for ̀`Acados` and the HSL lib) can easily be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command, or the Anaconda's following command:
+All these (except for ̀`Acados` and the HSL lib) can easily be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command or the Anaconda's following command:
 ```bash
 conda install biorbd bioviz python-graphviz -cconda-forge
 ```
-Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`. 
+Since there is no `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`. 
 The installer can be found and run at `[ROOT_BIOPTIM]/external/acados_install_linux.sh`.
 However, the installer requires an `Anaconda3` environment.
-If you have an `Anaconda3` environment loaded, the installer should find itself where to install. 
-If you want to install elsewhere, you can provide the script with a first argument which is the `$CONDA_PREFIX`. 
+If you have an `Anaconda3` environment loaded, the installer should find itself where to install it. 
+If you want to install it elsewhere, you can provide the script with a first argument which is the `$CONDA_PREFIX`. 
 The second argument that can be passed to the script is the `$BLASFEO_TARGET`. 
 If you don't know what it is, it is probably better to keep the default. 
-Please note that depending on your computer architecture, `Acados` may or may not work properly.
+Please note that depending on your computer architecture, `Acados` may or may not work correctly.
 
 #### Mac - Installing dependencies with conda
 Equivalently for MacOSX:
 ```bash
 conda install casadi 'rbdl' 'biorbd' 'bioviz' python-graphviz -cconda-forge
 ```
-Since there isn't any `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`.
+Since there is no `Anaconda` nor `pip3` package of `Acados`, a convenient installer is provided with `bioptim`.
 The `Acados` installation script is `[ROOT_BIOPTIM]/external/acados_install_mac.sh`.
 However, the installer requires an `Anaconda3` environment.
-If you have an `Anaconda3` environment loaded, the installer should find itself where to install. 
-If you want to install elsewhere, you can provide the script with a first argument which is the `$CONDA_PREFIX`. 
+If you have an `Anaconda3` environment loaded, the installer should find itself where to install it. 
+If you want to install it elsewhere, you can provide the script with a first argument, the `$CONDA_PREFIX`. 
 The second argument that can be passed to the script is the `$BLASFEO_TARGET`. 
 If you don't know what it is, it is probably better to keep the default. 
-Please note that depending on your computer architecture, `Acados` may or may not work properly.
+Please note that depending on your computer architecture, `Acados` may or may not work correctly.
 
 #### Windows - Installing dependencies with conda
 Equivalently for Windows:
 ```bash
 conda install casadi 'rbdl' 'biorbd' 'bioviz' python-graphviz -cconda-forge
 ```
-There isn't any `Anaconda` nor `pip3` package of `Acados`.
-If one wants to use the `Acados` solver on Windows, they must compile it by themselves.
+There is no `Anaconda` nor `pip3` package of `Acados`.
+To use the `Acados` solver on Windows, one must compile it themselves.
 
 #### The case of HSL solvers
 HSL is a collection of state-of-the-art packages for large-scale scientific computation. 
-Among its best known packages are those for the solution of sparse linear systems (`ma27`, `ma57`, etc.), compatible with ̀`Ipopt`.
+Among its best-known packages are those for the solution of sparse linear systems (`ma27`, `ma57`, etc.), compatible with ̀`Ipopt`.
 HSL packages are [available](http://www.hsl.rl.ac.uk/download/coinhsl-archive-linux-x86_64/2014.01.17/) at no cost for academic research and teaching. 
-Once you obtain the HSL dynamic library (precompiled `libhsl.so` for Linux, to be compiled `libhsl.dylib` for MacOSX, `libhsl.dll` for Windows), you just have place it in your `Anaconda3` environment into the `lib/` folder.
-You are now able to use all the options of `bioptim`, including the HSL linear solvers with `Ipopt`.
-We recommend that you use `ma57` as a default linear solver by calling as such:
+Once you obtain the HSL dynamic library (precompiled `libhsl.so` for Linux, to be compiled `libhsl.dylib` for MacOSX, `libhsl.dll` for Windows), you just have to place it in your `Anaconda3` environment into the `lib/` folder.
+You can now use all the options of `bioptim`, including the HSL linear solvers with `Ipopt`.
+We recommend using `ma57` as a default linear solver by calling as such:
 ```python
 solver = Solver.IPOPT()
 solver.set_linear_solver("ma57")
 ocp.solve(solver)
 ```
 ## Installation complete
-Once you have downloaded `bioptim`, navigate to the root folder and (assuming your conda environment is loaded if needed), you can type the following command:
+Once `bioptim` is downloaded, navigate to the root folder and (assuming your conda environment is loaded if needed), you can type the following command:
 ```bash 
 python setup.py install
 ```
@@ -243,9 +243,9 @@ Here we will detail our implementation of optimal control problems and some defi
 The mathematical transcription of the OCP is as follows:
 ![](OCP_equation.jpg)
 The optimization variables are the states (x = variables that represent the state of the system at each node and that 
-are subject to continuity constraints), controls (u = decision variables defined at each node that have an effect on the system),
-algebraic states (s = optimization variables that are defined at each node, but that are not subject to the 
-built-in continuity constraints), and parameters (p = optimization variables that are defined once per phase).
+are subject to continuity constraints), controls (u = decision variables defined at each node that drive the system),
+algebraic states (s = optimization variables that are defined at each node but that are not subject to the 
+built-in continuity constraints), and parameters (p = optimization variables defined once per phase).
 The state continuity constraints implementation may vary depending on the transcription of the problem (implicit vs explicit, direct multiple shooting vs direct collocations).
 
 The cost function can include Mayer terms (function evaluated at one node) and Lagrange terms (functions integrated over the duration of the phase).
@@ -253,11 +253,11 @@ The optimization variables can be subject to equality and/or inequality constrai
 
 # A first practical example
 The easiest way to learn `bioptim` is to dive into it.
-So let's do that and build our first optimal control program together.
-Please note that this tutorial is designed to recreate the `examples/getting_started/pendulum.py` file where a pendulum is asked to start in a downward position and to end, balanced, in an upward position while only being able to actively move sideways.
+So let us do that and build our first optimal control program together.
+Please note that this tutorial is designed to recreate the `examples/getting_started/pendulum.py` file where a pendulum is asked to start in a downward position and end, balanced, in an upward position while only being able to move sideways actively.
 
 ## The import
-We won't spend time explaining the import, since every one of them will be explained in details later, and that it is pretty straightforward anyway.
+We will not spend time explaining the import since every one of them will be explained in detail later, and it is pretty straightforward anyway.
 ```python
 from bioptim import (
     BiorbdModel,
@@ -272,71 +272,71 @@ from bioptim import (
 ```
 
 ## Building the ocp
-First of all, let's load a bioMod file using `biorbd`:
+First of all, let us load a bioMod file using `biorbd`:
 ```python
 bio_model = BiorbdModel("pendulum.bioMod")
 ```
 It is convenient since it will provide interesting functions such as the number of degrees of freedom (`bio_model.nb_q`).
-Please note that a copy of `pendulum.bioMod` is available at the end of the *Getting started* section.
-In brief, the pendulum consists of two degrees of freedom (sideways movement and rotation) with the center of mass near the head.
+Please note that a `pendulum.bioMod` copy is available at the end of the *Getting started* section.
+In brief, the pendulum consists of two degrees of freedom (sideways movement and rotation), with the center of mass near the head.
 
-The dynamics of the pendulum, as for a lot of biomechanics one as well, is to drive it by the generalized forces. 
-That is forces and moments directly applied to the degrees of freedom as if virtual motors were to power them.
+The dynamics of the pendulum, as for many biomechanical dynamics, is driven by the generalized forces. 
+Generalized forces are forces or moments directly applied to the degrees of freedom as if virtual motors were driven them.
 In `bioptim`, this dynamic is called torque driven. 
-In a torque driven dynamics, the states are the positions (also called generalized coordinates, *q*) and the velocities (also called the generalized velocities, *qdot*) and the controls are the joint torques (also called generalized forces, *tau*). 
-Let's define such a dynamics:
+In a torque driven dynamics, the states are the positions (also called generalized coordinates, *q*) and the velocities (also called the generalized velocities, *qdot*), whereas the controls are the joint torques (also called generalized forces, *tau*). 
+Let us define such dynamics:
 ```python
 dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
 ```
 
-The pendulum is required to start in a downward position (0 rad) and to finish in an upward position (3.14 rad) with no velocity at start and end nodes.
-To define that, it would be nice to first define boundary constraints on the position (*q*) and velocities (*qdot*) that match those in the bioMod file and to apply them at the very beginning, the very end and all the intermediate nodes as well.
-In this case, the state with index 0 is translation y, and the index 1 refers to rotation about x. 
-Finally, the index 2 and 3 are respectively the velocity of translation y and rotation about x 
+The pendulum is required to start in a downward position (0 rad) and to finish in an upward position (3.14 rad) with no velocity at the start and end nodes.
+To define that, it would be nice first to define boundary constraints on the position (*q*) and velocities (*qdot*) that match those in the bioMod file and to apply them at the very beginning, the very end, and all the intermediate nodes as well.
+In this case, the state with index 0 is translation y, and index 1 refers to rotation about x. 
+Finally, the index 2 and 3 are  the velocity of translation y and rotation about x,respectively.
 
-bounds_from_ranges uses the ranges from a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting node, the intermediate nodes and the final node, respectively.
+bounds_from_ranges uses the ranges from a biorbd model and returns a structure with the minimal and maximal bounds for all the degrees of freedom and velocities on three columns corresponding to the starting, intermediate, and final nodes, respectively.
 How convenient!
 ```python
 x_bounds = BoundsList()
 x_bounds["q"] = bio_model.bounds_from_ranges("q")
 x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
 ```
-The first dimension of x_bounds is the degrees of freedom (*q*) `and` their velocities (*qdot*) that match those `in` the bioMod `file`. The time `is` discretized `in` nodes wich `is` the second dimension declared `in` x_bounds.
+The first dimension of x_bounds is the degrees of freedom (*q*) `and` their velocities (*qdot*) that match those `in` the bioMod `file`. The time `is` discretized `in` nodes which `is` the second dimension declared `in` x_bounds.
 If you have more than one phase, we would have x_bound[*phase*][*q `and` qdot*, *nodes*]
-In the first place, we want the first `and` last column(which `is` equivalent to nodes 0 `and` -1) to be 0, that is the translations `and` rotations to be null `for` both the position `and` so the velocities.
+In the first place, we want the first `and` last column (which `is` equivalent to nodes 0 `and` -1) to be 0, i.e., the translations `and` rotations to be null `for` both the position `and` so the velocities.
 ```python
 x_bounds["q"][:, [0, -1]] = 0
 x_bounds["qdot"][:, [0, -1]] = 0
 ```
-Finally, override once again the final node for the rotation, so it is upside down.
+Finally, override once again the final node for the rotation so it is upside down.
 ```python
 x_bounds["q"][1, -1] = 3.14
 ```
-At that point, you may want to have a look at the `x_bounds["q"].min` and `x_bounds["q"].max` matrices to convince yourself that the initial and final position are prescribed and that all the intermediate points are free up to a certain minimal and maximal values. 
+At that point, you may want to have a look at the `x_bounds["q"].min` and `x_bounds["q"].max` matrices to convince yourself that the initial and final positions are prescribed and that all the intermediate points are free up to certain minimal and maximal values. 
 
-Up to that point, there is nothing preventing the solver to simply use the virtual motor of the rotation to rotate the pendulum upward (like clock hands) to get to the upside down rotation. 
+Up to that point, nothing prevents the solver from simply using the virtual motor of the rotation to rotate the pendulum upward (like clock hands) to get to the upside-down rotation. 
 What makes this example interesting is that we can prevent this by defining minimal and maximal bounds on the control (the maximal forces that these motors have)
 ```
 u_bounds = BoundsList()
 u_bounds["tau"] = [-100, 0], [100, 0]
 ```
 Like this, the sideways force ranges from -100 Newton to 100 Newton, but the rotation force ranges from 0 N/m to 0 N/m.
-Again, `u_bounds` is defined for the first, the intermediate and the final nodes, but this time, we don't want to specify anything particular for the first and final nodes, so we can leave them as is. 
+Again, `u_bounds` is defined for the first, the intermediate, and the final nodes, but this time, we do not want to specify anything particular for the first and final nodes, so we can leave them as is. 
 
-If you wondering where are defined *q*, *qdot* and *tau*, it is in the configuration of `DynamicsFcn.TORQUE_DRIVEN`. If you define a custom dynamics, then the name of the variable should match those you define yourself.
+If you wondering where are defined *q*, *qdot* and *tau*, it is in the configuration of `DynamicsFcn.TORQUE_DRIVEN`. If you define a custom dynamics, then the variable's name should match those you define yourself.
 
-Who says optimization, says cost function.
-Even though, it is possible to define an OCP without objective, it is not so much recommended, and let's face it... much less fun!
-So the goal (or the cost function) of the pendulum is to perform its task while using the minimum forces as possible. 
+Who says optimization says cost function.
+Even though, it is possible to define an OCP without objective, it is not so much recommended, and let us face it... much less fun!
+So the pendulum's goal (or the cost function) is to perform its task while using the minimum forces possible. 
 Therefore, an objective function that minimizes the generalized forces is defined:
 ```python
 objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_TORQUE)
 ```
 
-At that point, it is possible to solves the program.
-Still, helping the solver is usually a good idea, so let's give ̀`Ipopt` a starting point to investigate.
-The initial guess that we can provide are those for the states (`x_init`, here *q* and *qdot*) and for the controls (`u_init`, here *tau*). 
-So let's define both of them quickly
+At that point, it is possible to solve the program.
+Still, helping the solver is usually a good idea, so let us give ̀`Ipopt` a starting point to investigate.
+The initial guess that we can provide is those for the states (`x_init`, here *q* and *qdot*) and for the controls (`u_init`, here *tau*). 
+So let us define both of them quickly
 ```python
 x_init = InitialGuessList()
 x_init["q"] = [0, 0]
@@ -345,19 +345,18 @@ x_init["qdot"] = [0, 0]
 u_init = InitialGuessList()
 u_init["tau"] = [0, 0]
 ```
-Please note that initial guess are optional. The default value if a value is not provided is zero.
+Please note that initial guess is optional. The default value if a value is not provided is zero.
 
-On the same train of thoughts, if we want to help the solver even more, we can also define a variable scaling for the states (`x_scaling`, here *q* and *qdot*) and for the controls (`u_scaling`, here *tau*). *Note that the scaling should be declared in order that the variables appear. 
+On the same train of thought, if we want to help the solver even more, we can also define a variable scaling for the states (`x_scaling`, here *q* and *qdot*) and for the controls (`u_scaling`, here *tau*). *Note that the scaling should be declared in the order in which the variables appear. 
 We encourage you to choose a variable scaling the same order of magnitude to the expected optimal values.
 ```python
 x_scaling = VariableScalingList()
 x_scaling.add("q", scaling=[1, 3])
 x_scaling.add("qdot", scaling=[85, 85])
-    
+   
 u_scaling = VariableScalingList()
 u_scaling.add("tau", scaling=[900, 1])
 ```
-
 We now have everything to create the ocp!
 For that we have to decide how much time the pendulum has to get up there (`phase_time`) and how many shooting point are defined for the multishoot (`n_shooting`).
 Thereafter, you just have to send everything to the `OptimalControlProgram` class and let `bioptim` prepare everything for you.
