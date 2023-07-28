@@ -92,7 +92,8 @@ class PenaltyFunctionAbstract:
                 target_mapping = BiMapping(
                     to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
                     to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
-                )
+                )  # TODO: why if condition, target_mapping not used (Pariterre?)
+
             if penalty.integration_rule == QuadratureRule.RECTANGLE_LEFT:
                 # TODO: for trapezoidal integration (This should not be done here but in _set_penalty_function)
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_controls")
@@ -100,6 +101,37 @@ class PenaltyFunctionAbstract:
 
             # TODO: We should scale the target here!
             return controller.controls[key].cx_start
+
+        @staticmethod
+        def minimize_power(
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            key_control: str,
+        ):
+            """
+            Minimize a product of states variables x control variable; e.g. joint power; muscle power.
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            key_controls: str
+                The name of the control to select
+            """
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
+
+            controls = controller.controls[key_control].cx_start  # select only actuacted states
+            if key_control is "tau":
+                return controls * controller.states["qdot"].cx_start
+            elif key_control is "muscles":
+                x = controller.states.cx_start
+                return controls * controller.model.muscle_velocity(x["q"], x["qdot"])
 
         @staticmethod
         def stochastic_minimize_variables(penalty: PenaltyOption, controller: PenaltyController, key: str):
@@ -119,6 +151,14 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
+
+            if key in controller.get_nlp.variable_mappings:
+                target_mapping = controller.get_nlp.variable_mappings[key]
+            else:
+                target_mapping = BiMapping(
+                    to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
+                    to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
+                )
 
             return controller.stochastic_variables[key].cx_start
 

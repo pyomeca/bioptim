@@ -312,6 +312,14 @@ class BiorbdModel:
             muscle_states[k].setExcitation(muscle_excitations[k])
         return self.model.activationDot(muscle_states).to_mx()
 
+    def muscle_length_jacobian(self, q) -> MX:
+        q_biorbd = GeneralizedCoordinates(q)
+        return self.model.musclesLengthJacobian(q_biorbd).to_mx()
+
+    def muscle_velocity(self, q, qdot) -> MX:
+        J = self.muscle_length_jacobian(q)
+        return J @ qdot
+
     def muscle_joint_torque(self, activations, q, qdot) -> MX:
         muscles_states = self.model.stateSet()
         for k in range(self.model.nbMuscles()):

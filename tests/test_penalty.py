@@ -130,6 +130,33 @@ def test_penalty_minimize_state(penalty_origin, value, assume_phase_dynamics):
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_joint_power(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [1]
+    penalty = Objective(penalty_origin.MINIMIZE_POWER, key_control="tau")
+    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    np.testing.assert_almost_equal(res, np.array([[value]] * 4))
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_muscle_power(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(with_muscles=True, assume_phase_dynamics=assume_phase_dynamics)
+    t = [0]
+    x = [1]
+    u = [DM.ones((8, 1)) * value]
+
+    penalty = Objective(penalty_origin.MINIMIZE_POWER, key_control="muscles")
+    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    np.testing.assert_almost_equal(res, np.array([[value]] * 4))
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_qddot(penalty_origin, value, assume_phase_dynamics):
@@ -163,6 +190,23 @@ def test_penalty_track_state(penalty_origin, value, assume_phase_dynamics):
         penalty = Objective(penalty_type, key="qdot", target=np.ones((4, 1)) * value)
     else:
         penalty = Constraint(penalty_type, key="qdot", target=np.ones((4, 1)) * value)
+    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    np.testing.assert_almost_equal(res, [[value]] * 4)
+
+
+@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_track_joint_power(penalty_origin, value, assume_phase_dynamics):
+    ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [1]
+    penalty_type = penalty_origin.TRACK_POWER
+    if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
+        penalty = Objective(penalty_type, key_control="tau")
+    else:
+        penalty = Constraint(penalty_type, key_control="tau")
     res = get_penalty_value(ocp, penalty, t, x, u, [], [])
     np.testing.assert_almost_equal(res, [[value]] * 4)
 
