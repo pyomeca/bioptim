@@ -153,7 +153,14 @@ def test_penalty_minimize_muscle_power(penalty_origin, value, assume_phase_dynam
 
     penalty = Objective(penalty_origin.MINIMIZE_POWER, key_control="muscles")
     res = get_penalty_value(ocp, penalty, t, x, u, [], [])
-    np.testing.assert_almost_equal(res, np.array([[value]] * 4))
+    if value == 0.1:
+        np.testing.assert_almost_equal(
+            res, np.array([[0.00475812, -0.00505504, -0.000717714, 0.00215864, 0.00215864, -0.00159915]]).T
+        )
+    else:
+        np.testing.assert_almost_equal(
+            res, np.array([[-0.475812, 0.505504, 0.0717714, -0.215864, -0.215864, 0.159915]]).T, decimal=5
+        )
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
