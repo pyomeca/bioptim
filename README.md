@@ -358,9 +358,9 @@ u_scaling = VariableScalingList()
 u_scaling.add("tau", scaling=[900, 1])
 ```
 We now have everything to create the ocp!
-For that we have to decide how much time the pendulum has to get up there (`phase_time`) and how many shooting point are defined for the multishoot (`n_shooting`).
-Thereafter, you just have to send everything to the `OptimalControlProgram` class and let `bioptim` prepare everything for you.
-For simplicity's sake, I copy all the piece of code previously visited in the building of the ocp section here:
+For that, we have to decide how much time the pendulum has to get up there (`phase_time`) and how many shooting points are defined for the multishoot (`n_shooting`).
+Thereafter, you have to send everything to the `OptimalControlProgram` class and let `bioptim` prepare everything for you.
+For simplicity's sake, I copied all the pieces of code previously visited in the building of the ocp section here:
 ```python
 ocp = OptimalControlProgram(
         bio_model,
@@ -375,30 +375,29 @@ ocp = OptimalControlProgram(
         assume_phase_dynamics=True,
     )
 ```
-The argument `assume_phase_dynamics` should be set to `True` if we assume the dynamics 
-are the same within in each phase of the ocp problem. 
-This argument increase speed to mount the problem, it should be consider each time you build an Optimal Control Program.
-The default value is `False`, meaning we consider the dynamic equations are different for each shooting node (e.g. when applying an different external force at each shooting node).
+The argument `assume_phase_dynamics` should be set to `True` if we assume the dynamics are the same within each phase of the ocp problem. 
+This argument increases the speed to mount the problem; it should be considered each time you build an Optimal Control Program.
+The default value is `False`, meaning we consider the dynamic equations are different for each shooting node (e.g., when applying a different external force at each shooting node).
 
 
 ## Checking the ocp
-Now you can check if the ocp is well defined for the initial values.
-This checking will help you to see if your constraints and objectives are ok.
+Now you can check if the ocp is well-defined for the initial values.
+This checking will help see if your constraints and objectives are okay.
 To visualize it, you can use
 ```python
 ocp.check_conditioning()
 ```
-This will print two different plots !
+This call will print two different plots!
 
-The first one shows the jacobian matrix of constraints and the norm of each hessian matrix of constraints.
-There are one matrix for each phase.
-The first half of the plot can be used to verify if some constraints are redundant. It simply compare the rank of the jacobian with the numbers of contraints for each phase.
+The first shows the Jacobian matrix of constraints and the norm of each Hessian matrix of constraints.
+There is one matrix for each phase.
+The first half of the plot can be used to verify if some constraints are redundant. It simply compares the rank of the Jacobian with the number of constraints for each phase.
 The second half of the plot can be used to verify if the equality constraints are linear.
 
-The second plot window shows the hessian of the objective for each phase. It calculates if the problem can be convexe by checking if the matrix is positive semi-definite.
-It also calculate the condition number for each phase thanks to the eigen values.
+The second plot window shows the hessian of the objective for each phase. It calculates if the problem can be convex by checking if the matrix is positive semi-definite.
+It also calculates the condition number for each phase thanks to the eigenvalues.
 
-If everything is ok, let's solve the ocp !
+If everything is okay, let us solve the ocp !
 
 ## Solving the ocp
 It is now time to see `Ipopt` in action! 
@@ -408,7 +407,7 @@ solver = Solver.IPOPT(show_online_optim=True)
 sol = ocp.solve(solver)
 ```
 If you feel fancy, you can even activate the online optimization graphs!
-However, for such an easy problem, `Ipopt` won't leave you the time to appreciate the realtime updates of the graph...
+However, for such an easy problem, `Ipopt` will not leave you the time to appreciate the real-time updates of the graph...
 For a more complicated problem, you may also wish to visualize the objectives and constraints during the optimization 
 (useful when debugging, because who codes the right thing the first time). You can do it by calling
 ```python
@@ -422,13 +421,13 @@ ocp.add_plot_penalty(CostType.ALL)
 That's it!
 
 ## Show the results
-If you want to have a look at the animated data, `bioptim` has an interface to `bioviz` which is designed to visualize bioMod files.
+If you want to look at the animated data, `bioptim` has an interface to `bioviz` designed to visualize bioMod files.
 For that, simply call the `animate()` method of the solution:
 ```python
 sol.animate()
 ```
 
-If you did not fancy the online graphs, but would enjoy them anyway, you can call the method `graphs()`:
+If you did not fancy the online graphs but would enjoy them anyway, you can call the method `graphs()`:
 ```python
 sol.graphs()
 ```
@@ -437,7 +436,7 @@ If you are interested in the results of individual objective functions and const
 `print_cost()` or access them using the `detailed_cost_values()`:
 
 ```python
-# sol.detailed_cost  # Invoke this for adding the objectives details to sol for later manipulations
+# sol.detailed_cost  # Invoke this for adding the details of the objectives to sol for later manipulations
 sol.print_cost()  # For printing their values in the console
 ```
 
@@ -445,17 +444,16 @@ And that is all!
 You have completed your first optimal control program with `bioptim`! 
 
 ## Solving using multi-start
-Due to the gradient descent methods used, we can affirm that the optimal solution is a local minima. However, it is not 
-possible to know if a global minima was found. For highly non-linear problems, there might exist a wide range of local 
-optima. Solving the same problem with different initial guesses can be useful to find the best local minimum or to 
-compare the different optimal kinemtaics. It is possible to multi-start the problem by creating a multi-start object 
+Due to the gradient descent methods, we can affirm that the optimal solution is a local minimum. However, it is impossible to know if a global minimum was found. For highly non-linear problems, there might exist a wide range of local 
+optima. Solving the same problem with different initial guesses can be helpful to find the best local minimum or to 
+compare the different optimal kinematics. It is possible to multi-start the problem by creating a multi-start object 
 with `MultiStart()` and running it with its method `run()`.
 An example of how to use multi-start is given in examples/getting_started/multi-start.py.
 
 
-## The full example files
-If you did not completely follow (or were too lazy to!) you will find in this section the complete files described in the Getting started section.
-You will find that the file is a bit different from the `example/getting_started/pendulum.py`, but it is merely differences on the surface.
+## The complete example files
+If you did not completely follow (or were too lazy to!) you will find  the complete files described in the Getting started section here.
+You will find that the file is a bit different from the `example/getting_started/pendulum.py`, but it is merely different on the surface.
 
 ### The pendulum.py file
 ```python
@@ -570,28 +568,29 @@ endsegment
     endmarker
 ```
 
-# A more in depth look at the `bioptim` API
+# A more in-depth look at the `bioptim` API
 
-In this section, we are going to have an in depth look at all the classes one can use to interact with the bioptim API. 
-All the classes covered here, can be imported using the command:
+In this section, we will have an in-depth look at all the classes one can use to interact with the bioptim API. 
+All the classes covered here can be imported using the command:
 ```python
 from bioptim import ClassName
 ```
 
 ## The OCP
-An optimal control program is an optimization that uses control variables in order to drive some state variables.
-There are mainly two different types of ocp, which is the `direct collocation` and the `direct multiple shooting`.
+An optimal control program is an optimization that uses control variables to drive some state variables.
+There are mainly two types of transcription methods: the `direct collocation` and the `direct multiple shooting`.
 `Bioptim` is based on the latter. 
-To summarize, it defines a large optimization problem by discretizing the control and the state variables into a predetermined number of intervals, the beginning of which are called the shooting points.
-By defining strict constraints between the end of an interval and the beginning of the next, it can ensure a proper dynamics of the system, ???->while have good insight to solve the problem using gradient decending algorithms.
+To summarize, it defines a large optimization problem by discretizing the control and the state variables into a predetermined number of intervals, the beginning of the interval being the shooting points.
+By defining strict constraints between the end of an interval and the beginning of the next one, it can ensure proper dynamics of the system, ???->while having good insight to solve the problem using gradient descending algorithms.
 
 ### Class: OptimalControlProgram
 This is the main class that holds an ocp. 
-Most of the attributes and methods are for internal use, therefore the API user should not care much about them.
+Most of the attributes and methods are for internal use; therefore the API user should not care much about them.
 Once an OptimalControlProgram is constructed, it is usually ready to be solved.
 
-The full signature of the `OptimalControlProgram` can be scary at first, but should becomes clear soon.
+The full signature of the `OptimalControlProgram` can be scary at first, but should become clear soon.
 Here it is:
+
 ```python
 OptimalControlProgram(
     bio_model: [list, BioModel],
@@ -619,38 +618,39 @@ OptimalControlProgram(
     assume_phase_dynamics=False,
 )
 ```
-Of these, only the first 4 are mandatory.
-`bio_model` is the model loaded such with class such as BiorbdModel, MultiBiorbdModel, or a custom class.
+Of these, only the first four are mandatory.
+`bio_model` is the model loaded with classes such as BiorbdModel, MultiBiorbdModel, or a custom class.
 In the case of a multiphase optimization, one model per phase should be passed in a list.
-`dynamics` is the dynamics of the system during each phase (see The dynamics section).
-`n_shooting` is the number of shooting point of the direct multiple shooting (method) for each phase.
+`dynamics` is the system's dynamics during each phase (see The dynamics section).
+`n_shooting` is the number of shooting points of the direct multiple shooting (method) for each phase.
 `phase_time` is the final time of each phase. If the time is free, this is the initial guess.
 `x_bounds` is the minimal and maximal value the states can have (see The bounds section)
 `u_bounds` is the minimal and maximal value the controls can have (see The bounds section)
 `x_init` is the initial guess for the states variables (see The initial conditions section)
 `u_init` is the initial guess for the controls variables (see The initial conditions section)
 `x_scaling` is the scaling applied to the states variables (see The variable scaling section)
-`xdot_scaling` is the scaling applied to the states derivative variables (see The variable scaling section)
+`xdot_scaling` is the scaling applied to the state derivative variables (see The variable scaling section)
 `u_scaling` is the scaling applied to the controls variables (see The variable scaling section)
 `objective_functions` is the objective function set of the ocp (see The objective functions section)
 `constraints` is the constraint set of the ocp (see The constraints section)
 `parameters` is the parameter set of the ocp (see The parameters section)
 `external_forces` are the external forces acting on the center of mass of the bodies. 
-It is list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
+It is a list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
 `ode_solver` is the ode solver used to solve the dynamic equations
 `control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section)
 `all_generalized_mapping` is used to reduce the number of degrees of freedom by linking them (see The mappings section).
-This ones applies the same mapping to the generalized coordinates (*q*), velocities (*qdot*) and forces (*tau*).
+This one applies the same mapping to the generalized coordinates (*q*), velocities (*qdot*), and forces (*tau*).
 `q_mapping` the mapping applied to *q*.
 `qdot_mapping` the mapping applied to *q_dot*.
 `tau_mapping` the mapping applied to *tau*.
-`plot_mappings` is to force some plot to be linked together. 
-`n_threads` is to solve the optimization using multiple thread. 
-This number is the number of thread to use.
+`plot_mappings` is to force some plots to be linked together. 
+`n_threads` is to solve the optimization using multiple threads. 
+This number is the number of threads to use.
 `use_sx` is if the CasADi graph should be constructed in SX. 
-SX will tend to solve much faster than MX graphs, however they can necessitate a huge amount of RAM.
+SX will tend to solve much faster than MX graphs, however they necessitate a huge amount of RAM.
 
 Please note that a common ocp will usually define only these parameters:
+
 ```python
 ocp = OptimalControlProgram(
     bio_model: [list, BioModel],
@@ -676,13 +676,13 @@ ocp.update_bounds()
 ocp.update_initial_guess()
 ```
 These allow to modify the ocp after being defined. 
-It is particularly useful when solving the ocp for a first time, and then adjusting some parameters and reoptimizing afterwards.
+It is advantageous when solving the ocp for the first time, then adjusting some parameters and reoptimizing afterward.
 
 Moreover, the method 
 ```python
 solution = ocp.solve(Solver)
 ```
-is called to actually solve the ocp (the solution structure is discussed later). 
+is called to solve the ocp (the solution structure is discussed later). 
 The `Solver` class can be used to select the nonlinear solver to solve the ocp:
 
 - IPOPT
@@ -690,60 +690,59 @@ The `Solver` class can be used to select the nonlinear solver to solve the ocp:
 - SQP method
 
 Note that options can be passed to the solver parameter.
-One can refer to the documentation of their respective chosen solver to know which options exist.
+One can refer to their respective solver's documentation to know which options exist.
 The `show_online_optim` parameter can be set to `True` so the graphs nicely update during the optimization.
-It is expected to slow down the optimization a bit though.
+It is expected to slow down the optimization a bit.
 
 Finally, one can save and load previously optimized values by using
 ```python
 ocp.save(solution, file_path)
 ocp, solution = OptimalControlProgram.load(file_path)
 ```
-IMPORTANT NOTICE: Please note that this is dependent on the `bioptim` version used to create the .bo file and retrocompatibility is NOT enforced.
-This means that an optimized solution from a previous version will probably NOT load on a newer `bioptim` version.
-To save the solution in a way which is independent of the version of `bioptim`, one may use the `stand_alone` flag to `True`.
+IMPORTANT NOTICE: Please note that saved solution depends on the `bioptim` version used to create the .bo file, and retro-compatibility is NOT enforced.
+In other words, an optimized solution from a previous version will probably NOT load on a newer `bioptim` version.
+To save the solution in a way independent of the version of `bioptim`, one may use the `stand_alone` flag to `True`.
 
-Finally, the `add_plot(name, update_function)` method can be used to create new dynamics plots.
+Finally, the `add_plot(name, update_function)` method can create new dynamics plots.
 The name is simply the name of the figure.
-If one with the same name already exists, then the axes are merged.
+If one with the same name already exists, the axes are merged.
 The update_function is a function handler with signature: `update_function(states: np.ndarray, constrols: np.ndarray: parameters: np.ndarray) -> np.ndarray`.
 It is expected to return a np.ndarray((n, 1)), where `n` is the number of elements to plot. 
 The `axes_idx` parameter can be added to parse the data in a more exotic manner.
-For instance, on a three axes figure, if one wanted to plot the first value on the third axes and the second value on the first axes and nothing on the second, the `axes_idx=[2, 0]` would do the trick.
+For instance, on a three-axes figure, if one wanted to plot the first value on the third axes and the second value on the first axes and nothing on the second, the `axes_idx=[2, 0]` would do the trick.
 The interested user can have a look at the `examples/getting_started/custom_plotting.py` example.
 
 ### Class: NonLinearProgram
-The NonLinearProgram is by essence the phase of an ocp. 
-The user is expected not to change anything from this class, but can retrieve useful information from it.
+The NonLinearProgram is, by essence, the phase of an ocp. 
+The user is expected not to change anything from this class but can retrieve valuable information from it.
 
-One of the main use of nlp is to get a reference to the bio_model for the current phase: `nlp.model`.
-Another important value stored in nlp is the shape of the states and controls: `nlp.shape`, which is a dictionary where the keys are the names of the elements (for instance, *q* for the generalized coordinates)
+One main use of nlp is to get a reference to the bio_model for the current phase: `nlp.model`.
+Another essential value stored in nlp is the shape of the states and controls: `nlp.shape`, which is a dictionary where the keys are the names of the elements (for instance, *q* for the generalized coordinates)
 
 It would be tedious, and probably not much useful, to list all the elements of nlp here.   
-The interested user is invited to have a look at the docstrings for this particular class to get a detailed overview of it.
+The interested user is invited to look at the docstrings for this class to get a detailed overview of it.
 
 ### Class: VariationalOptimalControlProgram
 The `VariationalOptimalControlProgram` class inherits from `OptimalControlProgram` and is used to solve optimal control
-problems using the variational approach. The integration is done by a variational integration, the formulation being
-completely different from the other approaches it needed its own class. The parameters are the same as in
+problems using the variational approach. A variational integrator does the integration. The formulation being completely different from the other approaches, it needed its own class. The parameters are the same as in
 `OptimalControlProgram` apart from the following changes:
 - `bio_model` must be a `VariationalBiorbdModel`
-- The phases have not been implemented yet, hence, only `final_time` must be specified, and it must be a float.
+- The phases have not been implemented yet; hence, only `final_time` must be specified, and it must be a float.
 - There are no velocities in the variational approach, so you must only specify the `q_init` and not the `q_bounds`
 instead of `x_init` and `x_bounds`.
 - You can specify an initial guess for the velocities at the first node and the last node using `qdot_init` and
 `qdot_bounds` and the keys must be `"qdot_start"` and `"qdot_end"`. These velocities are implemented as parameters of
-the OCP, you can access to them with `sol.parameters["qdot_start"]` and `sol.parameters["qdot_end"]` at the end of the
+the OCP, you can access them with `sol.parameters["qdot_start"]` and `sol.parameters["qdot_end"]` at the end of the
 optimization.
 
 ## The model
 
 Bioptim is designed to work with any model, as long as it inherits from the class `bioptim.Model`. Models built with `biorbd` are already compatible with `bioptim`.
-They can be used as is, or can be modified to add new features.
+They can be used as is or modified to add new features.
 
 ### Class: BiorbdModel
 
-The `BiorbdModel` class is implementing a BioModel of the biorbd dynamics library. Some methods may not be interfaced yet, it is accessible through:
+The `BiorbdModel` class implements a BioModel of the biorbd dynamics library. Some methods may not be interfaced yet; it is accessible through:
 ```python
 bio_model = BiorbdModel("path/to/model.bioMod")
 bio_model.marker_names  # for example returns the marker names
@@ -753,19 +752,20 @@ bio_model.model.markerNames()
 
 ### Class: MultiBiorbdModel
 
-The `MultiBiorbdModel` class is implementing BioModel of multiple models of biorbd dynamics library. Some methods may not be interfaced yet, it is accessible through:
+The `MultiBiorbdModel` class implements BioModel of multiple models of biorbd dynamics library. Some methods may not be interfaced yet; it is accessible through:
 ```python
 bio_model = MultiBiorbdModel(("path/to/model.bioMod", "path/to/other/model.bioMod"))
 ```
 
 ### Class: HolonomicBiorbdModel
-The `HolonomicBiorbdModel` class is implementing a BioModel of the biorbd dynamics library. Since the class inherits
+The `HolonomicBiorbdModel` class implements a BioModel of the biorbd dynamics library. Since the class inherits
 from `BiorbdModel`, all the methods of `BiorbdModel` are available. You can define the
-degrees of freedom (DoF) that are independents (that define the movement) and the ones that are dependant (that are
-defined by the independents DoF and the holonomic constraint(s)). You can add some holonomic constraints to the model.
+degrees of freedom (DoF) that are independent (that define the movement) and the ones that are dependent (that are
+defined by the independent DoF and the holonomic constraint(s)). You can add some holonomic constraints to the model.
 For this, you can use one of the functions of `HolonomicConstraintFcn` or add a custom one. You can refer to the
 examples in `bioptim/examples/holonomic_constraints` to see how to use it.
-Some methods may not be interfaced yet, it is accessible through:
+Some methods may not be interfaced yet; it is accessible through:
+
 
 ```python
 bio_model = HolonomicBiorbdModel("path/to/model.bioMod")
@@ -773,16 +773,16 @@ holonomic_constraints = HolonomicConstraintsList()
 holonomic_constraints.add("holonomic_constraints", HolonomicConstraintsFcn.function, **kwargs)
 bio_model.set_holonomic_configuration(holonomic_constraints, independent_joint_index, dependent_joint_index)
 ```
-Two dynamics are implemented in the differential algebraic equations handling constraints at acceleration-level in
-constrained_forward_dynamics(...). And the other was inspired by Robotran which uses index reduction methods to satisfy
+Two dynamics are implemented in the differential algebraic equations handling constraints at the acceleration level in
+constrained_forward_dynamics(...). Moreover, the other was inspired by Robotran, which uses index reduction methods to satisfy
 the constraints: partitioned_forward_dynamics(...)
 ### Class VariationalBiorbdModel
-The `VariationalBiorbdModel` class is implementing a BioModel of the biorbd dynamics library. It is used in Discrete
-Mechanic and Optimal Control (DMOC) and in Discrete Mechanics and Optimal Control in Constrained Systems (DMOCC).
-Since the class inherits from `HolonomicBiorbdModel`, all the methods of `HolonomicBiorbdModel` and `BiorbdModel` are
+The `VariationalBiorbdModel` class implements a BioModel of the biorbd dynamics library. It is used in Discrete
+Mechanic and Optimal Control (DMOC) and Discrete Mechanics and Optimal Control in Constrained Systems (DMOCC).
+Since the class inherits from `HolonomicBiorbdModel`, all the `HolonomicBiorbdModel` and `BiorbdModel` methods are
 available. This class is used in `VariationalOptimalControlProgram`. You can refer to the examples in
 `bioptim/examples/discrete_mechanics_and_optimal_control` to see how to use it.
-Some methods may not be interfaced yet, it is accessible through:
+Some methods may not be interfaced yet; it is accessible through:
 
 ```python
 bio_model = VariationalBiorbdModel("path/to/model.bioMod")
@@ -815,21 +815,21 @@ see the example [examples/custom_model/](https://github.com/pyomeca/bioptim/tree
 
 ## The dynamics
 By essence, an optimal control program (ocp) links two types of variables: the states (x) and the controls (u). 
-Conceptually, the controls could be seen as the driving inputs of the system, which participate to changing the system states. 
+Conceptually, the controls are the driving inputs of the system, which participate in changing the system states. 
 In the case of biomechanics, the states (*x*) are usually the generalized coordinates (*q*) and velocities (*qdot*), i.e., the pose of the musculoskeletal model and the joint velocities. 
 On the other hand, the controls (*u*) can be the generalized forces, i.e., the joint torques, but can also be the muscle excitations, for instance.
-States and controls are linked through Ordinary differential equations of the form: dx/dt = f(x, u, p), where p can be additional parameters that act on the system, but are not time dependent.
+States and controls are linked through Ordinary differential equations: dx/dt = f(x, u, p), where p can be additional parameters that act on the system but are not time-dependent.
 
-The following section investigate how to instruct `bioptim` of the dynamic equations the system should follow.
+The following section investigates how to instruct `bioptim` of the dynamic equations the system should follow.
 
  
 ### Class: Dynamics
 This class is the main class to define a dynamics. 
-It therefore contains all the information necessary to configure (i.e., determining which variables are states or controls) and perform the dynamics. 
+It, therefore, contains all the information necessary to configure (i.e., determining which variables are states or controls) and perform the dynamics. 
 When constructing an `OptimalControlProgram()`, Dynamics is the expected class for the `dynamics` parameter. 
 
-The user can minimally define a Dynamics as follows: `dyn = Dynamics(DynamicsFcn)`.
-The `DynamicsFcn` are the one presented in the corresponding section below. 
+The user can minimally define a Dynamics as: `dyn = Dynamics(DynamicsFcn)`.
+The `DynamicsFcn` is the one presented in the corresponding section below. 
 
 #### The options
 The full signature of Dynamics is as follows:
@@ -839,17 +839,17 @@ Dynamics(dynamics_type, configure: Callable, dynamic_function: Callable, phase: 
 The `dynamics_type` is the selected `DynamicsFcn`. 
 It automatically defines both `configure` and `dynamic_function`. 
 If a function is sent instead, this function is interpreted as `configure` and the DynamicsFcn is assumed to be `DynamicsFcn.CUSTOM`
-If one is interested in changing the behaviour of a particular `DynamicsFcn`, they can refer to the Custom dynamics functions right below. 
+If one is interested in changing the behavior of a particular `DynamicsFcn`, they can refer to the Custom dynamics functions right below. 
 
 The `phase` is the index of the phase the dynamics applies to. 
-This is usually taken care by the `add()` method of `DynamicsList`, but it can be useful when declaring the dynamics out of order.
+The `add()` method of `DynamicsList` usually takes care of this, but it can be useful when declaring the dynamics out of order.
 
 #### Custom dynamic functions
 If an advanced user wants to define their own dynamic function, they can define the configuration and/or the dynamics. 
 
 The configuration is what tells `bioptim` which variables are states and which are control.
-The user is expected to provide a function handler with the follow signature: `custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram)`.
-In this function the user is expected to call the relevant `ConfigureProblem` class methods: 
+The user is expected to provide a function handler with the following signature: `custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram)`.
+In this function, the user is expected to call the relevant `ConfigureProblem` class methods: 
 - `configure_q(nlp, as_states: bool, as_controls: bool)`
 - `configure_qdot(nlp, as_states: bool, as_controls: bool)`
 - `configure_q_qdot(nlp, as_states: bool, as_controls: bool)`
@@ -857,13 +857,13 @@ In this function the user is expected to call the relevant `ConfigureProblem` cl
 - `configure_residual_tau(nlp, as_states: bool, as_controls: bool)`
 - `configure_muscles(nlp, as_states: bool, as_controls: bool)`
 where `as_states` add the variable to the states vector and `as_controls` to the controls vector.
-Please note that this is not necessary mutually exclusive.
+Please note that this is not necessarily mutually exclusive.
 Finally, the user is expected to configure the dynamic by calling `ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics)`
 
-Defining the dynamic function must be done when one provides a custom configuration, but can also be defined by providing a function handler to the `dynamic_function` parameter for `Dynamics`. 
+Defining the dynamic function must be done when one provides a custom configuration, but it can also be defined by providing a function handler to the `dynamic_function` parameter for `Dynamics`. 
 The signature of this custom dynamic function is as follows: `custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram`.
 This function is expected to return a tuple[MX] of the derivative of the states. 
-Some method defined in the class `DynamicsFunctions` can be useful, but will not be covered here since it is initially designed for internal use.
+Some methods defined in the class `DynamicsFunctions` can be useful, but will not be covered here since it is initially designed for internal use.
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom dynamics should be at least familiar with this type beforehand. 
 
@@ -1110,10 +1110,10 @@ Please note that MX type is a CasADi type.
 Anyone who wants to define custom constraint should be at least familiar with this type beforehand. 
 
 ### Class: ConstraintList
-A ConstraintList is by essence simply a list of Constraint. 
-The `add()` method can be called exactly as if one was calling the `Constraint` constructor. 
-If the `add()` method is used more than one, the `list_index` parameter is automatically incremented for the prescribed `phase`.
-If no `phase` are prescribed by the user, the first phase is assumed. 
+A ConstraintList is simply a list of Constraints. 
+The `add()` method can be called exactly as calling the `Constraint` constructor. 
+If the `add()` method is used more than once, the `list_index` parameter is automatically incremented for the prescribed `phase`.
+If no `phase` is prescribed by the user, the first phase is assumed. 
 
 So a minimal use is as follows:
 ```python
@@ -1123,98 +1123,98 @@ constraint_list.add(constraint)
 
 ### Class: ConstraintFcn
 The `ConstraintFcn` class is the declaration of all the already available constraints in `bioptim`. 
-Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
+Since this is an Enum, it is possible to use the tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
 
 #### TRACK_STATE
-Tracks the states variable towards a target
+Tracks the state's variable toward a target.
 
 #### TRACK_MARKERS
-Tracks the skin markers towards a target.
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+Tracks the skin markers toward a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the markers should be tracked.
 
 #### TRACK_MARKERS_VELOCITY
-Tracks the skin marker velocities towards a target.
+Tracks the skin marker velocities toward a target.
 
 #### SUPERIMPOSE_MARKERS
 Matches one marker with another one.
-The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
+The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed.
 
 #### PROPORTIONAL_STATE
 Links one state to another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`
-The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor
+The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
 
 #### PROPORTIONAL_CONTROL
 Links one control to another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`
-The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor
+The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
 
 #### TRACK_TORQUE
-Tracks the generalized forces part of the control variables towards a target
+Tracks the generalized forces (part of the control variables) toward a target.
 
 #### TRACK_MUSCLES_CONTROL
-Tracks the muscles part of the control variables towards a target
+Tracks the muscles (part of the control variables) toward a target.
 
 #### TRACK_ALL_CONTROLS
-Tracks all the control variables towards a target
+Tracks all the control variables toward a target.
 
 #### TRACK_CONTACT_FORCES
-Tracks the non-acceleration point reaction forces towards a target
+Tracks the non-acceleration point reaction forces toward a target.
 
 #### TRACK_SEGMENT_WITH_CUSTOM_RT
 Links a segment with an RT (for instance, an Inertial Measurement Unit). 
 It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles.
-The extra parameters `segment_idx: int` and `rt_idx: int` must be passed to the `Constraint` constructor
+The extra parameters `segment_idx: int` and `rt_idx: int` must be passed to the `Constraint` constructor.
 
 #### TRACK_MARKER_WITH_SEGMENT_AXIS
 Tracks a marker using a segment, that is aligning an axis toward the marker.
-The extra parameters `marker_idx: int`, `segment_idx: int` and `axis: Axis` must be passed to the `Constraint` constructor
+The extra parameters `marker_idx: int`, `segment_idx: int`, and `axis: Axis` must be passed to the `Constraint` constructor
 
 #### TRACK_COM_POSITION
-Constraints the center of mass towards a target.
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+Constraints the center of mass toward a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be tracked.
 
 #### TRACK_COM_VELOCITY
-Constraints the center of mass velocity towards a target.
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+Constraints the center of mass velocity toward a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be tracked.
 
 #### TRACK_ANGULAR_MOMENTUM
-Constraints the angular momentum in the global reference frame towards a target.
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the angular momentum
+Constraints the angular momentum in the global reference frame toward a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
 
 #### TRACK_LINEAR_MOMENTUM
-Constraints the linear momentum towards a target.
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
+Constraints the linear momentum toward a target.
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the momentum should be tracked.
 
 #### NON_SLIPPING
 Adds a constraint of static friction at contact points constraining for small tangential forces. 
 This constraint assumes that the normal forces is positive (that is having an additional TRACK_CONTACT_FORCES with `max_bound=np.inf`).
-The extra parameters `tangential_component_idx: int`, `normal_component_idx: int` and `static_friction_coefficient: float` must be passed to the `Constraint` constructor
+The extra parameters `tangential_component_idx: int`, `normal_component_idx: int`, and `static_friction_coefficient: float` must be passed to the `Constraint` constructor
 
 #### TORQUE_MAX_FROM_ACTUATORS
 Adds a constraint of maximal torque to the generalized forces controls such that the maximal *tau* are computed from the `biorbd` method `bio_model.torque_max(q, qdot).`
-This is an efficient alternative to the torque activation dynamics. 
-The extra parameter `min_torque` can be passed to ensure that the model is never too weak
+This is an efficient alternative to torque activation dynamics. 
+The extra parameter `min_torque` can be passed to ensure that the model is never too weak.
 
 #### TIME_CONSTRAINT
 Adds the time to the optimization variable set. 
-It will leave the time free, within the given boundaries
+It will leave the time free within the given boundaries.
 
 #### CUSTOM
-CUSTOM should not be directly sent by the user, but the user should pass the custom_constraint function directly. 
-You can have a look at Constraint and ConstraintList sections for more information about how to define custom constraints.
+The user should not directly send CUSTOM, but the user should pass the custom_constraint function directly. 
+You can look at Constraint and ConstraintList sections for more information about how to define custom constraints.
 
 
 ## The objective functions
 The objective functions are soft penalties of the optimization program.
-That means the solution tries to minimize the value as much as possible but won't complaint if it does a bad job at it.
-The objective functions come in two format: Lagrange and Mayer. 
+In other words, the solution tries to minimize the value as much as possible but will not complain if the objective remains high.
+The objective functions come in two formats: Lagrange and Mayer. 
 
-The Lagrange objective functions are integrated over the whole phase (actually over the selected nodes, which are usually Node.ALL). 
+The Lagrange objective functions are integrated over the whole phase (actually over the selected nodes, usually Node.ALL). 
 One should note that integration is not given by the dynamics function but by the rectangle approximation over a node.
 
 The Mayer objective functions are values at a single node, usually the Node.LAST. 
 
 ### Class: Objective
-The Objective provides a class that prepares an objective function, so it can be added to the objective set by `bioptim`.
+The Objective provides a class that prepares an objective function so that it can be added to the objective set by `bioptim`.
 When constructing an `OptimalControlProgram()`, Objective is the expected class for the `objective_functions` parameter. 
 It is also possible to later change the objective functions by calling the method `update_objectives(the_objective_function)` of the `OptimalControlProgram`
 
@@ -1228,24 +1228,24 @@ Objective(ObjectiveFcn, node: Node, index: list, phase: int, list_index: int, qu
 ```
 The first parameters are presented before.
 The `list` is the list of elements to keep. 
-For instance, if one defines a MINIMIZE_STATE objective_function with `index=0`, then only the first state is minimized.
+When defining a MINIMIZE_STATE objective_function with `index=0`,  only the first state is minimized.
 The default value is all the elements.
 The `phase` is the index of the phase the objective function should apply to.
 If it is not sent, phase=0 is assumed.
 The `list_index` is the ith element of a list for a particular phase
-This is usually taken care by the `add()` method of `ObjectiveList`, but it can be useful when declaring the objectives out of order, or when overriding previously declared objectives using `update_objectives`.
-`quadratic` is used to defined if the objective function should be squared. 
-This is particularly useful when one wants to minimize toward 0 instead of minus infinity
-The `target` is a value subtracted to the objective value. 
-It is useful to define tracking problems.
+This is usually taken care by the `add()` method of `ObjectiveList`, but it can be useful when declaring the objectives out of order or when overriding previously declared objectives using `update_objectives`.
+`quadratic` defines if the objective function should be squared. 
+This is particularly useful when minimizing toward 0 instead of minus infinity.
+The `target` is a value subtracted from the objective value. 
+It is relevant to define tracking problems.
 The dimensions of the target must be of [index, node].
 Finally, `weight` is the weighting that should be applied to the objective. 
 The higher the weight is, the more important the objective is compared to the other objective functions.
 
 The `ObjectiveFcn` class provides a list of some predefined objective functions. 
 Since `ObjectiveFcn.Lagrange` and `ObjectiveFcn.Mayer` are Enum, it is possible to use tab key on the keyboard to dynamically list them all, assuming you IDE allows for it. 
-It is possible however to define a custom objective function by sending a function handler in place of the `ObjectiveFcn`.
-If one do so, an additional parameter must be sent to the `Objective` constructor which is `custom_type` and must be either `ObjectiveFcn.Lagrange` or `ObjectiveFcn.Mayer`.
+It is possible, however, to define a custom objective function by sending a function handler in place of the `ObjectiveFcn`.
+In this case, an additional parameter must be sent to the `Objective` constructor:  the `custom_type` with either `ObjectiveFcn.Lagrange` or `ObjectiveFcn.Mayer`.
 The signature of the custom function is: `custom_function(pn: PenaltyController, **extra_params)`
 The PenaltyController contains all the required information to act on the states and controls at all the nodes defined by `node`, while `**extra_params` are all the extra parameters sent to the `Objective` constructor. 
 The function is expected to return an MX vector of the objective function. 
@@ -1254,9 +1254,9 @@ Anyone who wants to define custom objective functions should be at least familia
 
 ### Class: ObjectiveList
 An ObjectiveList is a list of Objective. 
-The `add()` method can be called exactly as if one was calling the `Objective` constructor. 
-If the `add()` method is used more than one, the `list_index` parameter is automatically incremented for the prescribed `phase`.
-If no `phase` are prescribed by the user, the first phase is assumed. 
+The `add()` method can be called exactly as calling the `Objective` constructor. 
+If the `add()` method is used more than once, the `list_index` parameter is automatically incremented for the prescribed `phase`.
+If no `phase` is prescribed by the user, the first phase is assumed. 
 
 So a minimal use is as follows:
 ```python
