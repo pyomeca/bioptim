@@ -127,9 +127,9 @@ class PenaltyFunctionAbstract:
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
             controls = controller.controls[key_control].cx_start  # select only actuacted states
-            if key_control is "tau":
+            if key_control == "tau":
                 return controls * controller.states["qdot"].cx_start
-            elif key_control is "muscles":
+            elif key_control == "muscles":
                 q_mx = controller.states["q"].mx
                 qdot_mx = controller.states["qdot"].mx
                 muscles_dot = controller.model.muscle_velocity(q_mx, qdot_mx)
