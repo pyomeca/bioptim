@@ -1178,7 +1178,8 @@ constraint_list.add(constraint)
 ### Class: ConstraintFcn
 The `ConstraintFcn` class is the declaration of all the already available constraints in `bioptim`. 
 Since this is an Enum, it is possible to use the tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. The existing contraint functions in alphabetical order:
-- **NON_SLIPPING**  &mdash; Adds a constraint of static friction at contact points constraining for small tangential forces. This constraint assumes that the normal forces is positive (that is having an additional TRACK_CONTACT_FORCES with `max_bound=np.inf`). The extra parameters `tangential_component_idx: int`, `normal_component_idx: int`, and `static_friction_coefficient: float` must be passed to the `Constraint` constructor
+- **NON_SLIPPING**  &mdash; Adds a constraint of static friction at contact points constraining for small tangential forces.  
+This constraint assumes that the normal forces is positive (that is having an additional TRACK_CONTACT_FORCES with `max_bound=np.inf`). The extra parameters `tangential_component_idx: int`, `normal_component_idx: int`, and `static_friction_coefficient: float` must be passed to the `Constraint` constructor.
 - **PROPORTIONAL_CONTROL** &mdash; Links one control to another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
 - **PROPORTIONAL_STATE** &mdash; Links one state to another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
 - **SUPERIMPOSE_MARKERS** &mdash; Matches one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed.
@@ -1262,120 +1263,39 @@ objective_list.add(objective)
 ```
 
 ### Class: ObjectiveFcn
-
-#### MINIMIZE_TIME (Lagrange and Mayer)
-Adds the time to the optimization variable set. 
-It will minimize the time toward minus infinity or a target.
-If the Mayer term is used, `min_bound` and `max_bound` can also be defined.
-
-#### MINIMIZE_STATE (Lagrange and Mayer)
-Minimizes the state variable towards zero (or a target).
-
-#### TRACK_STATE (Lagrange and Mayer)
-Tracks the state variable toward a target.
-
-#### MINIMIZE_MARKERS (Lagrange and Mayer)
-Minimizes the position of the markers toward zero (or a target)
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be minimized.
-
-#### TRACK_MARKERS (Lagrange and Mayer)
-Tracks the skin markers towards a target.
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be tracked.
-
-#### MINIMIZE_MARKERS_DISPLACEMENT (Lagrange)
-Minimizes the difference between a state at a node and the same state at the next node, effectively minimizing the velocity
-The extra parameter `coordinates_system_idx` can be specified to compute the marker position in that coordinate system. 
-Otherwise, it is computed in the global reference frame. 
-
-#### MINIMIZE_MARKERS_VELOCITY and MINIMIZE_MARKERS_ACCELERATION (Lagrange and Mayer)
-Minimizes the marker velocities or accelerations toward zero (or a target).
-
-#### TRACK_MARKERS_VELOCITY and TRACK_MARKERS_ACCELERATION (Lagrange and Mayer)
-Tracks the marker velocities or accelerations toward a target.
-
-#### SUPERIMPOSE_MARKERS (Lagrange and Mayer)
-Tracks one marker with another one.
-The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
-
-#### PROPORTIONAL_STATE (Lagrange and Mayer)
-Minimizes the difference between one state and another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`
-The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
-
-#### PROPORTIONAL_CONTROL (Lagrange)
-Minimizes the difference between one control and another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`
-The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
-
-#### MINIMIZE_TORQUE (Lagrange)
-Minimizes the generalized forces (part of the control variables) toward zero (or a target).
-
-#### TRACK_TORQUE (Lagrange)
-Tracks the generalized forces (part of the control variables) toward a target.
-
-#### MINIMIZE_STATE_DERIVATIVE (Lagrange)
-Minimizes the difference between a state at a node and the same state at the next node, i.e., minimizes the generalized state derivative.
-
-#### MINIMIZE_TORQUE_DERIVATIVE (Lagrange)
-Minimizes the difference between a *tau* at a node and the same *tau* at the next node, i.e., minimizes the generalized forces derivative.
-
-#### MINIMIZE_MUSCLES_CONTROL (Lagrange)
-Minimizes the muscles' controls (part of the control variables) toward zero (or a target).
-
-#### TRACK_MUSCLES_CONTROL (Lagrange)
-Tracks the muscles' controls (part of the control variables) toward a target.
-
-#### MINIMIZE_ALL_CONTROLS (Lagrange)
-Minimizes all the control variables toward zero (or a target).
-
-#### TRACK_ALL_CONTROLS (Lagrange)
-Tracks all the control variables toward a target.
-
-#### MINIMIZE_CONTACT_FORCES (Lagrange)
-Minimizes the non-acceleration points of the reaction forces toward zero (or a target).
-
-#### TRACK_CONTACT_FORCES (Lagrange)
-Tracks the non-acceleration points of the reaction forces toward a target.
-
-#### MINIMIZE_SOFT_CONTACT_FORCES (Lagrange)
-Minimizes the external forces induced by soft contacts (or a target).
-
-#### TRACK_SOFT_CONTACT_FORCES  (Lagrange)
-Tracks the external forces induced by soft contacts toward a target.
-
-#### MINIMIZE_COM_POSITION (Lagrange and Mayer)
-Minimizes the center of mass position toward zero (or a target).
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be minimized.
-
-#### MINIMIZE_COM_VELOCITY (Lagrange and Mayer)
-Minimizes the center of mass velocity towards zero (or a target).
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be minimized.
-
-#### MINIMIZE_COM_ACCELERATION (Lagrange and Mayer)
-Minimizes the center of mass acceleration towards zero (or a target).
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the acceleration should be minimized.
-
-#### MINIMIZE_ANGULAR_MOMENTUM (Lagrange and Mayer)
-Minimizes the angular momentum in the global reference frame toward zero (or a target).
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
-
-#### MINIMIZE_LINEAR_MOMENTUM (Lagrange and Mayer)
-Minimizes the linear momentum towards zero (or a target).
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
-
-#### MINIMIZE_PREDICTED_COM_HEIGHT (Mayer)
-Minimizes the maximal height of the center of mass, predicted from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2].
-To maximize a jump, one can use this function at the end of the push-off phase and declare a weight of -1.
-
-#### TRACK_SEGMENT_WITH_CUSTOM_RT (Lagrange and Mayer)
-Minimizes the distance between a segment and an RT (for instance, an Inertial Measurement Unit). 
-It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles.
-The extra parameters `segment_idx: int` and `rt_idx: int` must be passed to the `Objective` constructor.
-
-#### TRACK_MARKER_WITH_SEGMENT_AXIS (Lagrange and Mayer)
-Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker.
-The extra parameters `marker_idx: int`, `segment_idx: int` and `axis: Axis` must be passed to the `Objective` constructor
-
-#### CUSTOM (Lagrange and Mayer)
-The user should not directly send CUSTOM, but pass the custom_objective function directly. 
+Here a list of objective function with its type (Lagrange and/or Mayer) in alphabetical order: 
+- **MINIMIZE_ALL_CONTROLS** (Lagrange) &mdash; Minimizes all the control variables toward zero (or a target).
+- **MINIMIZE_ANGULAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the angular momentum in the global reference frame toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
+- **MINIMIZE_COM_ACCELERATION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass acceleration towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the acceleration should be minimized.
+- **MINIMIZE_COM_POSITION** (Lagrange and Mayer)  &mdash; Minimizes the center of mass position toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be minimized.
+- **MINIMIZE_COM_VELOCITY**  (Lagrange and Mayer)  &mdash; Minimizes the center of mass velocity towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be minimized.
+- **MINIMIZE_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the non-acceleration points of the reaction forces toward zero (or a target).
+- **MINIMIZE_LINEAR_MOMENTUM** (Lagrange and Mayer)  &mdash; Minimizes the linear momentum towards zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
+- **MINIMIZE_MARKERS_DISPLACEMENT** (Lagrange) &mdash; Minimizes the difference between a state at a node and the same state at the next node, effectively minimizing the velocity. The extra parameter `coordinates_system_idx` can be specified to compute the marker position in that coordinate system. Otherwise, it is computed in the global reference frame. 
+- **MINIMIZE_MARKERS_VELOCITY or MINIMIZE_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash; Minimizes the marker velocities or accelerations toward zero (or a target).
+- **MINIMIZE_MARKERS** (Lagrange and Mayer) &mdash; Minimizes the position of the markers toward zero (or a target). The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be minimized.
+- **MINIMIZE_MUSCLES_CONTROL** (Lagrange) &mdash;  Minimizes the muscles' controls (part of the control variables) toward zero (or a target).
+- **MINIMIZE_PREDICTED_COM_HEIGHT** (Mayer)  &mdash; Minimizes the maximal height of the center of mass, predicted from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2]. To maximize a jump, one can use this function at the end of the push-off phase and declare a weight of -1.
+- **MINIMIZE_SOFT_CONTACT_FORCES** (Lagrange) &mdash; Minimizes the external forces induced by soft contacts (or a target).
+- **MINIMIZE_STATE_DERIVATIVE** (Lagrange) &mdash; Minimizes the difference between a state at a node and the same state at the next node, i.e., minimizes the generalized state derivative.
+- **MINIMIZE_STATE** (Lagrange and Mayer) &mdash; Minimizes the state variable towards zero (or a target).
+- **MINIMIZE_TIME** (Lagrange and Mayer) &mdash; Adds the time to the optimization variable set. It will minimize the time toward minus infinity or a target. If the Mayer term is used, `min_bound` and `max_bound` can also be defined.
+- **MINIMIZE_TORQUE_DERIVATIVE** (Lagrange) &mdash; Minimizes the difference between a *tau* at a node and the same *tau* at the next node, i.e., minimizes the generalized forces derivative.
+- **MINIMIZE_TORQUE** (Lagrange) &mdash; Minimizes the generalized forces (part of the control variables) toward zero (or a target).
+- **PROPORTIONAL_CONTROL** (Lagrange) &mdash; Minimizes the difference between one control and another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
+- **PROPORTIONAL_STATE** (Lagrange and Mayer) &mdash; Minimizes the difference between one state and another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
+- **SUPERIMPOSE_MARKERS** (Lagrange and Mayer) &mdash; Tracks one marker with another one. The extra parameters `first_marker_idx: int` and `second_marker_idx: int` informs which markers are to be superimposed
+- **TRACK_ALL_CONTROLS (Lagrange)** &mdash; Tracks all the control variables toward a target.
+- **TRACK_CONTACT_FORCES** (Lagrange) &mdash; Tracks the non-acceleration points of the reaction forces toward a target.
+- **TRACK_MARKER_WITH_SEGMENT_AXIS** (Lagrange and Mayer) &mdash; Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker. The extra parameters `marker_idx: int`, `segment_idx: int` and `axis: Axis` must be passed to the `Objective` constructor
+- **TRACK_MARKERS_VELOCITY or TRACK_MARKERS_ACCELERATION** (Lagrange and Mayer) &mdash;  Tracks the marker velocities or accelerations toward a target.
+- **TRACK_MARKERS** (Lagrange and Mayer) &mdash; Tracks the skin markers towards a target. The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be tracked.
+- **TRACK_MUSCLES_CONTROL** (Lagrange) &mdash; Tracks the muscles' controls (part of the control variables) toward a target.
+- **TRACK_SEGMENT_WITH_CUSTOM_RT** (Lagrange and Mayer)  &mdash; Minimizes the distance between a segment and an RT (for instance, an Inertial Measurement Unit). It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles. The extra parameters `segment_idx: int` and `rt_idx: int` must be passed to the `Objective` constructor.
+- **TRACK_SOFT_CONTACT_FORCES**  (Lagrange)  &mdash; Tracks the external forces induced by soft contacts toward a target.
+- **TRACK_STATE**  (Lagrange and Mayer) &mdash; Tracks the state variable toward a target.
+- **TRACK_TORQUE** (Lagrange &mdash; Tracks the generalized forces (part of the control variables) toward a target.
+- **CUSTOM** (Lagrange and Mayer)  &mdash; The user should not directly send CUSTOM, but pass the custom_objective function directly. 
 You can look at Objective and ObjectiveList sections for more information about defining custom objective function.
 
 
@@ -1446,17 +1366,10 @@ The `second_node` is the second node considered.
 The `BinodeConstraintFcn` class is the already available binode constraints in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabailities of your IDE. 
 
-#### EQUALITY
-The states are equals.
-
-#### COM_EQUALITY
-The positions of centers of mass are equals.
-
-#### COM_VELOCITY_EQUALITY
-The velocities of centers of mass are equals.
-
-#### CUSTOM
-CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
+- **EQUALITY**   &mdash; The states are equals.
+- **COM_EQUALITY**   &mdash; The positions of centers of mass are equals.
+- **COM_VELOCITY_EQUALITY**   &mdash; The velocities of centers of mass are equals.
+- **CUSTOM**   &mdash; CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
 You can have a look at the BinodeConstraintList section for more information about how to define custom transition function.
 
 ## The phase transitions
@@ -1492,20 +1405,12 @@ If the `phase_pre_idx` is set to the index of the last phase then this is equiva
 The `PhaseTransitionFcn` class is the already available phase transitions in `bioptim`. 
 Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabailities of your IDE. 
 
-#### CONTINUOUS
-The states at the end of the phase_pre equals the states at the beginning of the phase_post
-
-#### IMPACT
-The impulse function of `biorbd`: `qdot_post = bio_model.qdot_from_impact, q_pre, qdot_pre)` is apply to compute the velocities of the joint post impact.
+- **CONTINUOUS**  &mdash; The states at the end of the phase_pre equals the states at the beginning of the phase_post
+- **IMPACT**   &mdash; The impulse function of `biorbd`: `qdot_post = bio_model.qdot_from_impact, q_pre, qdot_pre)` is apply to compute the velocities of the joint post impact.
 These computed states at the end of the phase_pre equals the states at the beginning of the phase_post.
-
-If a bioMod with more contact points than the phase before is used, then the IMPACT transition phase should be used as well
-
-#### CYCLIC
-Apply the CONTINUOUS phase transition to the end of the last phase and the begininning the of first, effectively creating a cyclic movement
-
-#### CUSTOM
-CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
+If a bioMod with more contact points than the phase before is used, then the IMPACT transition phase should be used as well.
+- **CYCLIC** &mdash; Apply the CONTINUOUS phase transition to the end of the last phase and the begininning the of first, effectively creating a cyclic movement
+- **CUSTOM** &mdash; CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
 You can have a look at the PhaseTransitionList section for more information about how to define custom transition function.
 
 ## The results
