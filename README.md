@@ -32,17 +32,28 @@ Anyone can play with bioptim with a working (but slightly limited in terms of gr
 As a tour guide that uses this binder, you can watch the `bioptim` workshop that we gave at the CMBBE conference on September 2021 by following this link:
 [https://youtu.be/z7fhKoW1y60](https://youtu.be/z7fhKoW1y60)
 
-# Table of Contents  
-[Testing bioptim](#try-bioptim)
+# Table of Contents 
 
-[How to install](#how-to-install)
+
+
+
+
+[Testing bioptim](#try-bioptim)
+<details>
+<summary><a href="#how-to-install">How to install</a></summary>
+
 - [From anaconda](#installing-from-anaconda-for-windows-linux-and-mac)
 - [From the sources](#installing-from-the-sources-for-linux-mac-and-windows)
 - [Installation complete](#installation-complete)
 
+</details>
+
+
 [Defining our optimal control problems](#defining-our-optimal-control-problems)
 
-[A first practical example](#a-first-practical-example)
+<details>
+<summary><a href="#a-first-practical-example">A first practical example</a></summary>
+
 - [The import](#the-import)
 - [Building the ocp](#building-the-ocp)
 - [Solving the ocp](#solving-the-ocp)
@@ -50,59 +61,136 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [The full example files](#the-full-example-files)
 - [Solving using multi-start](#solving-using-multi-start)
 
-[A more in depth look at the `bioptim` API](#a-more-in-depth-look-at-the-bioptim-api)
-- [The OCP](#the-ocp)
-  - [OptimalControlProgram](#class-optimalcontrolprogram)
-  - [NonLinearProgram](#class-nonlinearprogram)
-- [The dynamics](#the-dynamics)
-  - [Dynamics](#class-dynamics)
-  - [DynamicsList](#class-dynamicslist)
-  - [DynamicsFcn](#class-dynamicsfcn)
-- [The bounds](#the-bounds)
-  - [Bounds](#class-bounds)
-  - [BoundsList](#class-boundslist)
-- [The initial conditions](#the-initial-conditions)
-  - [InitialGuess](#class-initialguess)
-  - [InitialGuessList](#class-initialguesslist)
-- [The variable scaling](#the-variable-scaling)
-  - [VariableScaling](#class-VariableScaling)
-  - [VariableScalingList](#class-VariableScalinglist)
-- [The constraints](#the-constraints)
-  - [Constraint](#class-constraint)
-  - [ConstraintList](#class-constraintlist)
-  - [ConstraintFcn](#class-constraintfcn)
-- [The objective functions](#the-objective-functions)
-  - [Objective](#class-objective)
-  - [ObjectiveList](#class-objectivelist)
-  - [ObjectiveFcn](#class-objectivefcn)
-- [The parameters](#the-parameters)
-  - [ParameterList](#class-parameterlist)
-- [The multinode constraints](#the-multinode-constraints)
-  - [BinodeConstraintList](#class-binodeconstraintlist)
-  - [BinodeConstraintFcn](#class-binodeconstraintfcn)
-- [The phase transitions](#the-phase-transitions)
-  - [PhaseTransitionList](#class-phasetransitionlist)
-  - [PhaseTransitionFcn](#class-phasetransitionfcn)
-- [The results](#the-results)
-  - [Data manipulation](#data-manipulation)
-  - [Data visualization](#data-visualization)
-- [The extra stuff and the Enum](#the-extra-stuff-and-the-enum)
-  - [The mappings](#the-mappings)
-  - [Node](#enum-node)
-  - [OdeSolver](#class-odesolver)
-  - [Solver](#enum-solver)
-  - [ControlType](#enum-controltype)
-  - [PlotType](#enum-plottype)
-  - [InterpolationType](#enum-interpolationtype)
-  - [Shooting](#enum-shooting)
-  - [CostType](#enum-costtype)
-  - [SolutionIntegrator](#enum-solutionintegrator)
-  - [QuadratureRule](#enum-quadraturerule)
-  - [RigidBodyDynamics](#enum-rigidbodydynamics)
-  - [SoftContactDynamics](#enum-softcontactdynamics)
-  - [DefectType](#enum-defecttype)
+</details>
+
+
+
+<details>
+  <summary><a href="#a-more-in-depth-look-at-the-bioptim-api">A more in depth look at the `bioptim` API</a></summary>
+
+  - <details>
+    <summary><a href="#the-ocp">The OCP</a></summary>
+  
+    - [OptimalControlProgram](#class-optimalcontrolprogram)
+    - [NonLinearProgram](#class-nonlinearprogram)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-dynamics">The dynamics</a></summary>
+
+    - [Dynamics](#class-dynamics)
+    - [DynamicsList](#class-dynamicslist)
+    - [DynamicsFcn](#class-dynamicsfcn)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-bounds">The bounds</a></summary>
+
+    - [Bounds](#class-bounds)
+    - [BoundsList](#class-boundslist)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-initial-conditions">The initial conditions</a></summary>
+
+    - [InitialGuess](#class-initialguess)
+    - [InitialGuessList](#class-initialguesslist)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-variable-scaling">The variable scaling</a></summary>
+
+    - [VariableScaling](#class-VariableScaling)
+    - [VariableScalingList](#class-VariableScalinglist)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-constraints">The constraints</a></summary>
+
+    - [Constraint](#class-constraint)
+    - [ConstraintList](#class-constraintlist)
+    - [ConstraintFcn](#class-constraintfcn)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-objective-functions">The objective functions</a></summary>
+
+    - [Objective](#class-objective)
+    - [ObjectiveList](#class-objectivelist)
+    - [ObjectiveFcn](#class-objectivefcn)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-parameters">The parameters</a></summary>
+
+    - [ParameterList](#class-parameterlist)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-multinode-constraints">The multinode constraints</a></summary>
+
+    - [BinodeConstraintList](#class-binodeconstraintlist)
+    - [BinodeConstraintFcn](#class-binodeconstraintfcn)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-phase-transitions">The phase transitions</a></summary>
+
+    - [PhaseTransitionList](#class-phasetransitionlist)
+    - [PhaseTransitionFcn](#class-phasetransitionfcn)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-results">The results</a></summary>
+
+    - [Data manipulation](#data-manipulation)
+    - [Data visualization](#data-visualization)
+
+    </details>
+
+  - <details>
+    <summary><a href="#the-extra-stuff-and-the-enum">The extra stuff and the Enum</a></summary>
+
+    - [The mappings](#the-mappings)
+    - [Node](#enum-node)
+    - [OdeSolver](#class-odesolver)
+    - [Solver](#enum-solver)
+    - [ControlType](#enum-controltype)
+    - [PlotType](#enum-plottype)
+    - [InterpolationType](#enum-interpolationtype)
+    - [Shooting](#enum-shooting)
+    - [CostType](#enum-costtype)
+    - [SolutionIntegrator](#enum-solutionintegrator)
+    - [QuadratureRule](#enum-quadraturerule)
+    - [RigidBodyDynamics](#enum-rigidbodydynamics)
+    - [SoftContactDynamics](#enum-softcontactdynamics)
+    - [DefectType](#enum-defecttype)
+
+    </details>
+
+  </details>
+
+
+
+
+
+
+
+
         
-[Examples](#examples)
+<details>
+<summary><a href="#examples">Examples</a></summary>
+
 - [Run examples](#run-examples)
 - [Getting started](#getting-started)
 - [Muscle driven OCP](#muscle-driven-ocp)
@@ -115,16 +203,29 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 - [Acados](#acados)
 - [Inverse optimal control](#inverse-optimal-control)
 
-[Performance](#performance)
+</details>
+
+
+<details>
+<summary><a href="#performance">Performance</a></summary>
+
 - [use_sx](#use_sx)
 - [n_threads](#n_threads)
 - [assume_phase_dynamics](#assume_phase_dynamics)
 - [expand](#expand)
 
-[Troubleshooting](#troubleshooting)
+</details>
+
+
+<details>
+<summary><a href="#troubleshooting">Troubleshooting</a></summary>
+
 - [freezing compute](#freezing-compute)
 - [free variables](#free-variables)
 - [non-converging problem](#non-converging-problem)
+
+</details>
+
 
 
 [Citing](#Citing)
@@ -157,30 +258,10 @@ The most obvious one is the `biorbd` suite (including indeed `biorbd` and `biovi
 Due to the different dependencies, it would be tedious to show how to install them all here. 
 The user is therefore invited to read the relevant documentation. 
 
-Here is a list of all direct dependencies (meaning that some dependencies may require other libraries themselves):
-- [Python](https://www.python.org/)
-- [numpy](https://numpy.org/)
-- [scipy](https://scipy.org/)
-- [packaging](https://packaging.python.org/)
-- [setuptools](https://pypi.org/project/setuptools/)
-- [matplotlib](https://matplotlib.org/)
-- [pandas](https://pandas.pydata.org/)
-- [pyomeca](https://github.com/pyomeca/pyomeca)
-- [CasADi](https://web.casadi.org/)
-- [rbdl-casadi](https://github.com/pyomeca/rbdl-casadi) compiled with the CasADi backend
-- [tinyxml](http://www.grinninglizard.com/tinyxmldocs/index.html)
-- [biorbd](https://github.com/pyomeca/biorbd)
-- [vtk](https://vtk.org/)
-- [PyQt](https://www.riverbankcomputing.com/software/pyqt)
-- [bioviz](https://github.com/pyomeca/bioviz)
-- [graphviz](https://graphviz.org/)
-- [`Ipopt`](https://github.com/coin-or/Ipopt)
-- [`Acados`](https://github.com/acados/acados)
-- [pyqtgraph](https://www.pyqtgraph.org/)
-- [pygmo](https://esa.github.io/pygmo2/) (only for inverse optimal control)
-
-and optionally:
-- [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
+Here is a list of all direct dependencies (meaning that some dependencies may require other libraries themselves):  
+[Python](https://www.python.org/) | [numpy](https://numpy.org/) | [scipy](https://scipy.org/) | [packaging](https://packaging.python.org/) | [setuptools](https://pypi.org/project/setuptools/)
+| [matplotlib](https://matplotlib.org/) | [pandas](https://pandas.pydata.org/) | [pyomeca](https://github.com/pyomeca/pyomeca) | [CasADi](https://web.casadi.org/) | [rbdl-casadi](https://github.com/pyomeca/rbdl-casadi) compiled with the CasADi backend | [tinyxml](http://www.grinninglizard.com/tinyxmldocs/index.html) | [biorbd](https://github.com/pyomeca/biorbd) | [vtk](https://vtk.org/) | [PyQt](https://www.riverbankcomputing.com/software/pyqt) | [bioviz](https://github.com/pyomeca/bioviz) | [graphviz](https://graphviz.org/) | [`Ipopt`](https://github.com/coin-or/Ipopt) | [`Acados`](https://github.com/acados/acados) | [pyqtgraph](https://www.pyqtgraph.org/) | [pygmo](https://esa.github.io/pygmo2/) (only for inverse optimal control)  
+and optionally: [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
 
 #### Linux - Installing dependencies with conda
 All these (except for ̀`Acados` and the HSL lib) can easily be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command or the Anaconda's following command:
@@ -260,14 +341,14 @@ Please note that this tutorial is designed to recreate the `examples/getting_sta
 We will not spend time explaining the import since every one of them will be explained in detail later, and it is pretty straightforward anyway.
 ```python
 from bioptim import (
-    BiorbdModel,
-    OptimalControlProgram,
-    DynamicsFcn,
-    Dynamics,
-    BoundsList,
-    InitialGuessList,
-    ObjectiveFcn,
-    Objective,
+  BiorbdModel,
+  OptimalControlProgram,
+  DynamicsFcn,
+  Dynamics,
+  BoundsList,
+  InitialGuessList,
+  ObjectiveFcn,
+  Objective,
 )
 ```
 
@@ -618,34 +699,34 @@ OptimalControlProgram(
     assume_phase_dynamics=False,
 )
 ```
-Of these, only the first four are mandatory.
-`bio_model` is the model loaded with classes such as BiorbdModel, MultiBiorbdModel, or a custom class.
-In the case of a multiphase optimization, one model per phase should be passed in a list.
-`dynamics` is the system's dynamics during each phase (see The dynamics section).
-`n_shooting` is the number of shooting points of the direct multiple shooting (method) for each phase.
-`phase_time` is the final time of each phase. If the time is free, this is the initial guess.
-`x_bounds` is the minimal and maximal value the states can have (see The bounds section)
-`u_bounds` is the minimal and maximal value the controls can have (see The bounds section)
-`x_init` is the initial guess for the states variables (see The initial conditions section)
-`u_init` is the initial guess for the controls variables (see The initial conditions section)
-`x_scaling` is the scaling applied to the states variables (see The variable scaling section)
-`xdot_scaling` is the scaling applied to the state derivative variables (see The variable scaling section)
-`u_scaling` is the scaling applied to the controls variables (see The variable scaling section)
-`objective_functions` is the objective function set of the ocp (see The objective functions section)
-`constraints` is the constraint set of the ocp (see The constraints section)
-`parameters` is the parameter set of the ocp (see The parameters section)
+Of these, only the first four are mandatory.  
+`bio_model` is the model loaded with classes such as BiorbdModel, MultiBiorbdModel, or a custom class. 
+In the case of a multiphase optimization, one model per phase should be passed in a list.  
+`dynamics` is the system's dynamics during each phase (see The dynamics section).  
+`n_shooting` is the number of shooting points of the direct multiple shooting (method) for each phase.  
+`phase_time` is the final time of each phase. If the time is free, this is the initial guess.  
+`x_bounds` is the minimal and maximal value the states can have (see The bounds section)  .  
+`u_bounds` is the minimal and maximal value the controls can have (see The bounds section).  
+`x_init` is the initial guess for the states variables (see The initial conditions section).  
+`u_init` is the initial guess for the controls variables (see The initial conditions section).  
+`x_scaling` is the scaling applied to the states variables (see The variable scaling section).  
+`xdot_scaling` is the scaling applied to the state derivative variables (see The variable scaling section).  
+`u_scaling` is the scaling applied to the controls variables (see The variable scaling section).  
+`objective_functions` is the objective function set of the ocp (see The objective functions section).  
+`constraints` is the constraint set of the ocp (see The constraints section).  
+`parameters` is the parameter set of the ocp (see The parameters section).  
 `external_forces` are the external forces acting on the center of mass of the bodies. 
-It is a list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n
-`ode_solver` is the ode solver used to solve the dynamic equations
-`control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section)
+It is a list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n.  
+`ode_solver` is the ode solver used to solve the dynamic equations.  
+`control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section).  
 `all_generalized_mapping` is used to reduce the number of degrees of freedom by linking them (see The mappings section).
 This one applies the same mapping to the generalized coordinates (*q*), velocities (*qdot*), and forces (*tau*).
-`q_mapping` the mapping applied to *q*.
-`qdot_mapping` the mapping applied to *q_dot*.
-`tau_mapping` the mapping applied to *tau*.
-`plot_mappings` is to force some plots to be linked together. 
+`q_mapping` the mapping applied to *q*.  
+`qdot_mapping` the mapping applied to *q_dot*.  
+`tau_mapping` the mapping applied to *tau*.  
+`plot_mappings` is to force some plots to be linked together.  
 `n_threads` is to solve the optimization using multiple threads. 
-This number is the number of threads to use.
+This number is the number of threads to use.  
 `use_sx` is if the CasADi graph should be constructed in SX. 
 SX will tend to solve much faster than MX graphs, however they necessitate a huge amount of RAM.
 
@@ -886,20 +967,17 @@ Since this is an Enum, it is possible to use tab key on the keyboard to dynamica
 Please note that one can change the dynamic function associated to any of the configuration by providing a custom dynamics_function. 
 For more information on this, please refer to the Dynamics and DynamicsList section right before. 
 
+
+
 #### TORQUE_DRIVEN 
 The torque driven defines the states (x) as *q* and *qdot* and the controls (u) as *tau*. 
 The derivative of *q* is trivially *qdot*.
 The derivative of *qdot* is given by the biorbd function: `qddot = bio_model.ForwardDynamics(q, qdot, tau)`.
-If external forces are provided, they are added to the ForwardDynamics function. 
+If external forces are provided, they are added to the ForwardDynamics function.
+- **with_contact = True:** The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
+- **with_passive_torque = True:** The passive torque is taken into account in the *tau*
+- **with_ligament = True:** The tau generated by the ligament is taken into account in the *tau* 
 
-##### with_contact = True
-The derivative of *qdot* is given by the `biorbd` function that includes non-acceleration contact point defined in the bioMod: `qddot = bio_model.ForwardDynamicsConstraintsDirect(q, qdot, tau)`.
-
-##### with_passive_torque = True
-The passive torque is taken into account in the *tau* 
-
-##### with_ligament = True
-The tau generated by the ligament is taken into account in the *tau* 
 
 #### TORQUE_DERIVATIVE_DRIVEN
 The torque derivative driven defines the states (x) as *q*, *qdot*, *tau* and the controls (u) as *taudot*. 
@@ -1268,22 +1346,22 @@ objective_list.add(objective)
 
 #### MINIMIZE_TIME (Lagrange and Mayer)
 Adds the time to the optimization variable set. 
-It will try to minimize the time towards minus infinity or towards a target.
+It will minimize the time toward minus infinity or a target.
 If the Mayer term is used, `min_bound` and `max_bound` can also be defined.
 
 #### MINIMIZE_STATE (Lagrange and Mayer)
-Minimizes the states variable towards zero (or a target)
+Minimizes the state variable towards zero (or a target).
 
 #### TRACK_STATE (Lagrange and Mayer)
-Tracks the states variable towards a target
+Tracks the state variable toward a target.
 
 #### MINIMIZE_MARKERS (Lagrange and Mayer)
-Minimizes the position of the markers towards zero (or a target)
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+Minimizes the position of the markers toward zero (or a target)
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be minimized.
 
 #### TRACK_MARKERS (Lagrange and Mayer)
 Tracks the skin markers towards a target.
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the markers should be tracked.
 
 #### MINIMIZE_MARKERS_DISPLACEMENT (Lagrange)
 Minimizes the difference between a state at a node and the same state at the next node, effectively minimizing the velocity
@@ -1291,10 +1369,10 @@ The extra parameter `coordinates_system_idx` can be specified to compute the mar
 Otherwise, it is computed in the global reference frame. 
 
 #### MINIMIZE_MARKERS_VELOCITY and MINIMIZE_MARKERS_ACCELERATION (Lagrange and Mayer)
-Minimizes the skin marker velocities or accelerations towards zero (or a target)
+Minimizes the marker velocities or accelerations toward zero (or a target).
 
 #### TRACK_MARKERS_VELOCITY and TRACK_MARKERS_ACCELERATION (Lagrange and Mayer)
-Tracks the skin marker velocities or accelerations towards a target.
+Tracks the marker velocities or accelerations toward a target.
 
 #### SUPERIMPOSE_MARKERS (Lagrange and Mayer)
 Tracks one marker with another one.
@@ -1302,84 +1380,84 @@ The extra parameters `first_marker_idx: int` and `second_marker_idx: int` inform
 
 #### PROPORTIONAL_STATE (Lagrange and Mayer)
 Minimizes the difference between one state and another, such that `x[first_dof] - first_dof_intercept = coef * (x[second_dof] - second_dof_intercept)`
-The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor
+The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
 
 #### PROPORTIONAL_CONTROL (Lagrange)
 Minimizes the difference between one control and another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`
-The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor
+The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Objective` constructor.
 
 #### MINIMIZE_TORQUE (Lagrange)
-Minimizes the generalized forces part of the controls variable towards zero (or a target)
+Minimizes the generalized forces (part of the control variables) toward zero (or a target).
 
 #### TRACK_TORQUE (Lagrange)
-Tracks the generalized forces part of the controls variable towards a target
+Tracks the generalized forces (part of the control variables) toward a target.
 
 #### MINIMIZE_STATE_DERIVATIVE (Lagrange)
-Minimizes the difference between a state at a node and the same state at the next node, effectively minimizing the generalized forces derivative
+Minimizes the difference between a state at a node and the same state at the next node, i.e., minimizes the generalized state derivative.
 
 #### MINIMIZE_TORQUE_DERIVATIVE (Lagrange)
-Minimizes the difference between a *tau* at a node and the same *tau* at the next node, effectively minimizing the generalized forces derivative
+Minimizes the difference between a *tau* at a node and the same *tau* at the next node, i.e., minimizes the generalized forces derivative.
 
 #### MINIMIZE_MUSCLES_CONTROL (Lagrange)
-Minimizes the muscles part of the controls variable towards zero (or a target)
+Minimizes the muscles' controls (part of the control variables) toward zero (or a target).
 
 #### TRACK_MUSCLES_CONTROL (Lagrange)
-Tracks the muscles part of the controls variable towards a target
+Tracks the muscles' controls (part of the control variables) toward a target.
 
 #### MINIMIZE_ALL_CONTROLS (Lagrange)
-Minimizes all the controls variable towards zero (or a target)
+Minimizes all the control variables toward zero (or a target).
 
 #### TRACK_ALL_CONTROLS (Lagrange)
-Tracks all the controls variable towards a target
+Tracks all the control variables toward a target.
 
 #### MINIMIZE_CONTACT_FORCES (Lagrange)
-Minimizes the non-acceleration points reaction forces towards zero (or a target)
+Minimizes the non-acceleration points of the reaction forces toward zero (or a target).
 
 #### TRACK_CONTACT_FORCES (Lagrange)
-Tracks the non-acceleration points reaction forces towards a target
+Tracks the non-acceleration points of the reaction forces toward a target.
 
 #### MINIMIZE_SOFT_CONTACT_FORCES (Lagrange)
-Minimizes the external forces induced by soft contacts (or a target)
+Minimizes the external forces induced by soft contacts (or a target).
 
 #### TRACK_SOFT_CONTACT_FORCES  (Lagrange)
-Tracks the external forces induced by soft contacts towards a target
+Tracks the external forces induced by soft contacts toward a target.
 
 #### MINIMIZE_COM_POSITION (Lagrange and Mayer)
-Minimizes the center of mass position towards zero (or a target).
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+Minimizes the center of mass position toward zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes along which the center of mass should be minimized.
 
 #### MINIMIZE_COM_VELOCITY (Lagrange and Mayer)
 Minimizes the center of mass velocity towards zero (or a target).
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the markers
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the velocity should be minimized.
 
 #### MINIMIZE_COM_ACCELERATION (Lagrange and Mayer)
 Minimizes the center of mass acceleration towards zero (or a target).
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the acceleration of the center of mass
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the acceleration should be minimized.
 
 #### MINIMIZE_ANGULAR_MOMENTUM (Lagrange and Mayer)
-Minimizes the angular momentum in the global reference frame towards zero (or a target).
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the angular momentum
+Minimizes the angular momentum in the global reference frame toward zero (or a target).
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
 
 #### MINIMIZE_LINEAR_MOMENTUM (Lagrange and Mayer)
 Minimizes the linear momentum towards zero (or a target).
-The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be sent to specify the axes on which to track the linear momentum
+The extra parameter `axis_to_track: Axis = (Axis.X, Axis.Y, Axis.Z)` can be provided to specify the axes along which the momentum should be minimized.
 
 #### MINIMIZE_PREDICTED_COM_HEIGHT (Mayer)
-Minimizes the prediction of the center of mass maximal height from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2].
+Minimizes the maximal height of the center of mass, predicted from the parabolic equation, assuming vertical axis is Z (2): CoM_dot[2]**2 / (2 * -g) + CoM[2].
 To maximize a jump, one can use this function at the end of the push-off phase and declare a weight of -1.
 
 #### TRACK_SEGMENT_WITH_CUSTOM_RT (Lagrange and Mayer)
 Minimizes the distance between a segment and an RT (for instance, an Inertial Measurement Unit). 
 It does so by computing the homogenous transformation between the segment and the RT and then converting this to Euler angles.
-The extra parameters `segment_idx: int` and `rt_idx: int` must be passed to the `Objective` constructor
+The extra parameters `segment_idx: int` and `rt_idx: int` must be passed to the `Objective` constructor.
 
 #### TRACK_MARKER_WITH_SEGMENT_AXIS (Lagrange and Mayer)
 Minimizes the distance between a marker and an axis of a segment, that is aligning an axis toward the marker.
 The extra parameters `marker_idx: int`, `segment_idx: int` and `axis: Axis` must be passed to the `Objective` constructor
 
 #### CUSTOM (Lagrange and Mayer)
-CUSTOM should not be directly sent by the user, but the user should pass the custom_objective function directly. 
-You can have a look at Objective and ObjectiveList sections for more information about how to define custom objective function.
+The user should not directly send CUSTOM, but pass the custom_objective function directly. 
+You can look at Objective and ObjectiveList sections for more information about defining custom objective function.
 
 
 ## The parameters
