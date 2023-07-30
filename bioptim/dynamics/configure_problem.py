@@ -896,7 +896,7 @@ class ConfigureProblem:
             if split_controls:
                 ConfigureProblem.append_faked_optim_var(name, nlp.controls.scaled, var_names_with_suffix)
                 ConfigureProblem.append_faked_optim_var(name, nlp.controls.unscaled, var_names_with_suffix)
-                ConfigureProblem.append_faked_optim_var(name, nlp.stochastic_Variables.unscaled, var_names_with_suffix)
+                ConfigureProblem.append_faked_optim_var(name, nlp.stochastic_variables.unscaled, var_names_with_suffix)
             else:
                 for meta_suffix in var_names_with_suffix:
                     ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.scaled, [name])
