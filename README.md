@@ -2217,15 +2217,15 @@ all_generalized_mapping = BiMapping([0, 1, 2, -2], [0, 1, 2])
 ```
 
 ## Torque driven OCP
-In this section, you will find different examples showing how to implement torque driven optimal control programs.
+In this section, you will find different examples showing how to implement torque-driven optimal control programs.
 
-### [The maximize_predicted_height_CoM.py](./bioptim/examples/track/maximize_predicted_height_CoM.py) file
-This example mimics by essence what a jumper does which is maximizing the predicted height of the
-center of mass at the peak of an aerial phase. It does so with a very simple two segments model though.
+### [The maximize_predicted_height_CoM.py](./bioptim/examples/torque_driven_ocp/maximize_predicted_height_CoM.py) file
+This example mimics what a jumper does to maximize the predicted height of the
+center of mass at the peak of an aerial phase. It does so with a very simple two segments model.
 It is designed to give a sense of the goal of the different MINIMIZE_COM functions and the use of
-`weight=-1` to maximize instead of minimizing.
+`weight=-1` to maximize instead of minimize.
 
-Let's take a look at the definition of the objetive functions used for this example to better understand how to 
+Let us take a look at the definition of the objective functions used for this example to understand better how to 
 implement that:
 
 ```python
@@ -2239,7 +2239,7 @@ elif objective_name == "MINIMIZE_COM_VELOCITY":
 ```
 
 Another interesting point of this example is the definition of the constraints. Thanks to the `com_constraints` boolean, 
-the user can easily choose to apply constraints on the center of mass. Here is the definition of the constraints for our 
+the user can easily choose to apply or not constraints on the center of mass. Here is the definition of the constraints for our 
 example:
 
 ```python
@@ -2260,21 +2260,19 @@ if com_constraints:
 ```
 
 This example is designed to show how to use `min_bound` and `max_bound` values so they define inequality constraints 
-instead of equality constraints, which can be used with any `ConstraintFcn`. This example is closed to the 
-example_inequality_constraint.py file you can find in 'examples/getting_started/example_inequality_constraint.py'.
+instead of equality constraints, which can be used with any `ConstraintFcn`. This example is close to the 
+example_inequality_constraint.py file available in 'examples/getting_started/example_inequality_constraint.py'.
 
-### The spring_load.py file 
-This trivial spring example targets to have the highest upward velocity. It is however only able to load a spring by
-pulling downward and afterward to let it go so it gains velocity. It is designed to show how one can use the external
-forces to interact with the body.
+### The [spring_load.py](./bioptim/examples/torque_driven_ocp/spring_load.py) file 
+This trivial spring example aims to achieve the highest upward velocity. It can, however, only load a spring by
+pulling downward and then letting it go so it gains velocity. It is designed to show how to use external forces to interact with the body.
 
-This example is closed to the custom_dynamics.py file you can find in 'examples/getting_started/custom_dynamics.py'. 
+This example is close to the custom_dynamics.py file you can find in 'examples/getting_started/custom_dynamics.py'. 
 Indeed, we generate an external force thanks to the custom_dynamic function. Then, we configure the dynamics with 
 the `custom_configure` function. 
 
-### The track_markers_2D_pendulum.py file
-
-This example uses the data from the balanced pendulum example to generate the data to track.
+### The [track_markers_2D_pendulum.py](./bioptim/examples/torque_driven_ocp/track_markers_2D_pendulum.py) file
+This example uses the data from the balanced pendulum example to generate data to track.
 When it optimizes the program, contrary to the vanilla pendulum, it tracks the values instead of 'knowing' that
 it is supposed to balance the pendulum. It is designed to show how to track marker and kinematic data.
 
@@ -2291,32 +2289,48 @@ objective_functions.add(
 objective_functions.add(ObjectiveFcn.Lagrange.TRACK_TORQUE, target=tau_ref)
 ```
 
-This is a good example of how to load data for tracking tasks, and how to plot data. The extra parameter 
-`axis_to_track` allows users to specify the axes on which to track the markers (x and y axes in this example).
-This example is closed to the example_save_and_load.py and custom_plotting.py files you can find in the 
+This is a good example of how to load data for tracking tasks and how to plot data. The extra parameter 
+`axis_to_track` allows users to specify the axes to track the markers (x and y axes in this example).
+This example is close to the example_save_and_load.py and custom_plotting.py files you can find in the 
 examples/getting_started repository. 
 
-### The track_markers_with_torque_actuators.py file
+### The [track_markers_with_torque_actuators.py](./bioptim/examples/torque_driven_ocp/track_markers_with_torque_actuators.py)  file
 
-This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
+This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement
 and superimpose the same corner to a different marker at the end. It is a clone of
 'getting_started/custom_constraint.py' 
 
-It is designed to show how to use the `TORQUE_ACTIVATIONS_DRIVEN` which limits
-the torque to [-1; 1]. This is useful when the maximal torque are not constant. Please note that this dynamic then
-to not converge when it is used on more complicated model. A solution that defines non-constant constraints seems a
-better idea. An example of which can be found with the `bioptim` paper.
+It is designed to show how to use the `TORQUE_ACTIVATIONS_DRIVEN`, which limits
+the torque to [-1; 1]. This is useful when the maximal torques are not constant. Please note that such a dynamics may
+not converge when it is used on a more complicated model. A solution that defines non-constant constraints seems a
+better idea. An example can be found in the `bioptim` paper.
 
-Let's take a look at the structure of the code. First, tau_min, tau_max and tau_init are respectively initialized 
-to -1, 1 and 0 if the integer `actuator_type` (which is a parameter of the `prepare_ocp` function) equals to 1. 
-In this particular case, the dynamics function used is `DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN`. 
+Let us take a look at the structure of the code. First, tau_min, tau_max, and tau_init are respectively initialized 
+to -1, 1 and 0 if the integer `actuator_type` (a parameter of the `prepare_ocp` function) equals 1. 
+In this case, the dynamics function used is `DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN`. 
 
-### The trampo_quaternions.py file
-
+### The [trampo_quaternions.py](./bioptim/examples/torque_driven_ocp/trampo_quaternions.py) file
 This example uses a representation of a human body by a trunk_leg segment and two arms.
 It is designed to show how to use a model that has quaternions in their degrees of freedom.
 
-
+### The [example_minimize_segment_velocity.py](./bioptim/examples/torque_driven_ocp/example_minimize_segment_velocity.py) file
+*#TODO*
+### The [example_multi_biorbd_model.py](./bioptim/examples/torque_driven_ocp/example_multi_biorbd_model.py) file
+*#TODO*
+### The [example_soft_contact.py](./bioptim/examples/torque_driven_ocp/example_soft_contact.py) file
+*#TODO*
+### The [miminize_maximum_torque_by_extra_parameter.py](./bioptim/examples/torque_driven_ocp/miminize_maximum_torque_by_extra_parameter.py) file
+*#TODO*
+### The [ocp_mass_with_ligament.py](./bioptim/examples/torque_driven_ocp/ocp_mass_with_ligament.py) file
+*#TODO*
+### The [phase_transition_uneven_variable_number_by_bounds.py](./bioptim/examples/torque_driven_ocp/phase_transition_uneven_variable_number_by_bounds.py) file
+*#TODO*
+### The [phase_transition_uneven_variable_number_by_mapping.py](./bioptim/examples/torque_driven_ocp/phase_transition_uneven_variable_number_by_mapping.py) file
+*#TODO*
+### The [slider.py](./bioptim/examples/torque_driven_ocp/slider.py) file
+*#TODO*
+### The [torque_activation_driven.py](./bioptim/examples/torque_driven_ocp/torque_activation_driven.py) file
+*#TODO*
 
 
 ## Track
