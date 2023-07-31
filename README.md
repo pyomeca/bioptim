@@ -1702,6 +1702,10 @@ The type of transcription of any dynamics (e.g., rigidbody_dynamics or soft_cont
 - IMPLICIT: The defect comes from the implicit formulation.
 - NOT_APPLICABLE: The defect is not applicable.
 
+
+
+
+
 # Examples
 In this section, we describe all the examples implemented with bioptim. They are ordered in separate files. Each subsection corresponds to the different files, dealing with different examples and topics.
 Please note that the examples from the paper (see [Citing](#citing)) can be found in this repo
@@ -1714,8 +1718,6 @@ You can run the file `__main__.py` in the `examples` folder or execute the follo
 python -m bioptim.examples
 ```
 Please note that `pyqtgraph` must be installed to run this GUI. 
-
-
 
 
 ## Getting started
@@ -1733,7 +1735,7 @@ provide custom x bounds. The functions `custom_u_bounds_min` and `custom_u_bound
 u bounds. 
 In this particular example,  linear interpolation is mimicked using these four functions.
 
-### The [custom_constraints.py](./bioptim/examples/getting_started/custom_constraints.py) file
+### The [custom_constraint.py](./bioptim/examples/getting_started/custom_constraint.py) file
 This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement and superimpose the same corner on a different marker at the end.
 It is designed to show how to define custom constraints function if the available constraints do not fulfill your need.
 
@@ -1799,7 +1801,7 @@ Different phase transitions can be considered. By default, all the phase transit
 the `custom_phase_transition` function or directly use `PhaseTransitionFcn.IMPACT`. If a phase transition is desired 
 between the last and the first phase, use the dedicated `PhaseTransitionFcn.Cyclic`. 
 
-### The [custom_plot_callback.py](./bioptim/examples/getting_started/custom_plot_callback.py) file
+### The [custom_plotting.py](./bioptim/examples/getting_started/custom_plotting.py) file
 This example is a trivial example of using the pendulum without any objective. It is designed to show how to create new
 plots and expand pre-existing ones with new information.
 
@@ -1815,6 +1817,9 @@ We use the plot_type `PlotType.PLOT`. It is a way to plot the first,
 second, and fourth states (i.e., `q_Seg1_TransY`, `q_Seg1_RotX` and `qdot_Seg1_RotX`) in a new window entitled "My New 
 Extra Plot". Please note that for further information about the different plot types, you can refer to the section 
 "Enum: PlotType".
+
+### The [example_continuity_as_objective.py](./bioptim/examples/getting_started/example_continuity_as_objective.py) file 
+*#TODO*
 
 ### The [example_cyclic_movement.py](./bioptim/examples/getting_started/example_cyclic_movement.py) file 
 This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement
@@ -1859,6 +1864,11 @@ external_forces = external_forces = [[np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0
 `external_forces` is of len 1 because there is only one phase. The list is 30-element long, and each array are 6x2 since there
 is [Mx, My, Mz, Fx, Fy, Fz] for the two `externalforceindex` for each node (in this example, we take 30 shooting nodes).
 
+
+### The [example_implicit_dynamics.py](./bioptim/examples/getting_started/example_implicit_dynamics.py) file
+*#TODO*
+
+
 ### The [example_inequality_constraint.py](./bioptim/examples/getting_started/example_inequality_constraint.py) file
 This example mimics what a jumper does when maximizing the predicted height of the center of mass at the peak of an aerial phase. It does so with a simplistic two segments model.
 It is a clone of 'torque_driven_ocp/maximize_predicted_height_CoM.py' using
@@ -1893,28 +1903,41 @@ constraints.add(
     )
 ```
 
-Let us describe the code above. First, we create a list of constraints. Then, two contact forces are defined with the indexes 1 and 2, respectively. The last step is the implementation of the 
-non-slipping constraint for the two forces defined before.   
+Let us describe the code above. First, we create a list of constraints. Then, two contact forces are defined with the indexes 1 and 2, respectively. The last step is the implementation of a non-slipping constraint for the two forces defined before.   
 
 This example is designed to show how to use min_bound and max_bound values so they define inequality constraints instead
 of equality constraints, which can be used with any `ConstraintFcn`.
 
-### The example_mapping.py file 
-An example of mapping can be found at 'examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py'.
-Another example of mapping can be found at 'examples/getting_started/example_inequality_constraint.py'. 
 
-### The example_multiphase.py file
+### The [example_joints_acceleration_driven.py](./bioptim/examples/getting_started/example_joints_acceleration_driven.py) file
+This example shows how to use the joints' acceleration dynamic to achieve the same goal as the simple pendulum but with a double pendulum for which only the angular acceleration of the second pendulum is controlled.
+
+
+### The [example_mapping.py](./bioptim/examples/getting_started/example_mapping.py) file 
+In fact, examples of mapping can be found at 'examples/symmetrical_torque_driven_ocp/symmetry_by_mapping.py'.
+and 'examples/getting_started/example_inequality_constraint.py'. 
+
+
+### The [example_multinode_constraints.py](./bioptim/examples/getting_started/example_multinode_constraints.py) file 
+*#TODO*
+
+
+### The [example_multinode_objective.py](./bioptim/examples/getting_started/example_multinode_objective.py) file 
+*#TODO*
+
+
+### The [example_multiphase.py](./bioptim/examples/getting_started/example_multiphase.py) file
 This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement and
-a the at different marker at the end of each phase. Moreover a constraint on the rotation is imposed on the cube.
-It is designed to show how one can define a multiphase optimal control program.
+a different marker at the end of each phase. Moreover, a constraint on the rotation is imposed on the cube.
+It is designed to show how to define a multiphase optimal control program.
 
 In this example, three phases are implemented. The `long_optim` boolean allows users to choose between solving the precise
-optimization or the approximate. In the first case, 500 points are considered and `n_shooting = (100, 300, 100)`. 
-Otherwise, 50 points are considered and `n_shooting = (20, 30, 20)`. Three steps are necessary to define the 
-objective functions, the dynamics, the constraints, the path constraints, the initial guesses and the control path 
-contsraints. Each step corresponds to one phase. 
+optimization or the approximate. In the first case, 500 points are considered: `n_shooting = (100, 300, 100)`. 
+Otherwise, 50 points are considered: `n_shooting = (20, 30, 20)`. Three steps are necessary to define the 
+objective functions, the dynamics, the constraints, the path constraints, the initial guesses, and the control path 
+constraints. Each step corresponds to one phase. 
 
-Let's take a look at the definition of the constraints:
+Let us take a look at the definition of the constraints:
 
 ```python
 constraints = ConstraintList()
@@ -1933,86 +1956,92 @@ end of the last step, marker 0 must superimpose marker 2. Please, note that the 
 implemented in the `bioMod` file corresponding to the model. Further information about the definition of the markers is
 available in the `biorbd` documentation.
 
-### The example_optimal_time.py file
+
+### The [example_multistart.py](./bioptim/examples/getting_started/example_multistart.py) file 
+*#TODO*
+
+
+### The [example_optimal_time.py](./bioptim/examples/getting_started/example_optimal_time.py) file
 Examples of time optimization can be found in 'examples/optimal_time_ocp/'.
 
-### The example_save_and_load.py file
-This is a clone of the getting_started/pendulum.py example. It is designed to show how to create and solve a problem,
-and afterward, save it to the hard drive and reload it. It shows an example of *.bo method. 
 
-Let's take a look at the most important lines of the example. To save the optimal control program and the solution, use
+### The [example_save_and_load.py](./bioptim/examples/getting_started/example_save_and_load.py) file
+This example is a clone of  getting_started/pendulum.py. It is designed to show how to create and solve a problem
+and, afterward, save it to the hard drive and reload it. It shows an example of the *.bo method. 
+
+Let us take a look at the most important lines of the example. To save the optimal control program and the solution, use
 ocp.save(sol, "pendulum.bo"). To load the optimal control program and the solution, use 
-`ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")`. Then, to show the results, 
-simply use `sol_load.animate()`.
+`ocp_load, sol_load = OptimalControlProgram.load("pendulum.bo")`. Then, to show the results, use `sol_load.animate()`.
 
-### The example_simulation.py file
-The first part of this example of a single shooting simulation from initial guesses.
-It is not an optimal control program. It is merely the simulation of values, that is applying the dynamics.
-The main goal of this kind of simulation is to get a sens of the initial guesses passed to the solver.
 
-The second part of the example is to actually solve the program and then simulate the results from this solution.
-The main goal of this kind of simulation, especially in single shooting (that is not resetting the states at each node)
-is to validate the dynamics of multiple shooting. If they both are equal, it usually means that a great confidence
+### The [example_simulation.py](./bioptim/examples/getting_started/example_simulation.py) file
+The first part of this example is a single shooting simulation from initial guesses.
+It is not an optimal control program. It is merely the simulation of values that is applying the dynamics.
+The main goal of this kind of simulation is to get a sense of the initial guesses passed to the solver.
+
+The second part of the example is to solve the program and simulate the results from this solution.
+The main goal of this kind of simulation, especially in single shooting (i.e., not resetting the states at each node)
+is to validate the dynamics obtained by multiple shooting. If they both are equal, it usually means great confidence
 can be held in the solution. Another goal would be to reload fast a previously saved optimized solution.
 
-### The example_joints_acceleration_driven.py file
-This example shows how to use the joints acceleration dynamic to achieve the same goal as the simple pendulum, but with a double pendulum for which only the angular acceleration of the second pendulum is controled.
 
-### The pendulum.py file
-This is another way to present the pendulum example of the 'Getting started' section.
+### The [example_variable_scaling.py](./bioptim/examples/getting_started/example_variable_scaling.py) file 
+*#TODO*
 
-## Muscle driven OCP
-In this file, you will find four examples about muscle driven optimal control programs. The two first refer to traking 
+### The [pendulum.py](./bioptim/examples/getting_started/pendulum.py) file
+This example is another way to present the pendulum example of the 'Getting started' section.
+
+
+
+## Muscle-driven OCP
+In this folder, you will find four examples of muscle-driven optimal control programs. The two first refer to tracking 
 examples. The two last refer to reaching tasks. 
 
-### The muscle_activations_tracker.py file
-This is an example of muscle activation/skin marker or state tracking.
+### The [muscle_activations_tracker.py](./bioptim/examples/muscle_driven_ocp/muscle_activations_tracker.py) file
+This example is about muscle activation/skin marker or state tracking.
 Random data are created by generating a random set of muscle activations and then by generating the kinematics
-associated with these data. The solution is trivial since no noise is applied to the data. Still, it is a relevant
-example to show how to track data using a musculoskeletal model. In real situation, the muscle activation
-and kinematics would indeed be acquired via data acquisition devices.
+associated with these controls. The solution is trivial since no noise is applied to the data. Still, it is a relevant
+example of how to track data using a musculoskeletal model. In a real situation, muscle activation
+and kinematics would indeed be acquired using data acquisition devices.
 
 The difference between muscle activation and excitation is that the latter is the derivative of the former.
 
-The generate_data function is used to create random data. First, a random set of muscle activation is generated, as 
+The generate_data function is used to create random data. First, a random set of muscle activations is generated, as 
 shown below:
 `U = np.random.rand(n_shooting, n_mus).T`
 
 Then, the kinematics associated with these data are generated by numerical integration, using 
 `scipy.integrate.solve_ivp`. 
 
-To implement this tracking task, we use the ObjectiveFcn.Lagrange.TRACK_STATE objective function in the case of a state 
-tracking, or the `ObjectiveFcn.Lagrange.TRACK_MARKERS` objective function in the case of a marker tracking. We also use 
+To implement this tracking task, we use the ObjectiveFcn.Lagrange.TRACK_STATE objective function in the case of state tracking, or the `ObjectiveFcn.Lagrange.TRACK_MARKERS` objective function in the case of marker tracking. We also use 
 the `ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL` objective function. The user can choose between marker or state 
-tracking thanks to the string `kin_data_to_track` which is one of the `prepare_ocp` function parameters. 
+tracking thanks to the string `kin_data_to_track`, which is one of the `prepare_ocp` function parameters. 
 
-### The muscle_excitations_tracker.py file
-This is an example of muscle excitation(EMG)/skin marker or state tracking.
+### The [muscle_excitations_tracker.py](./bioptim/examples/muscle_driven_ocp/muscle_activations_tracker.py)  file
+This example concerns muscle excitation(EMG)/skin marker or state tracking.
 Random data are created by generating a random set of EMG and then by generating the kinematics associated with these
-data. The solution is trivial since no noise is applied to the data. Still, it is a relevant example to show how to
-track data using a musculoskeletal model. In real world, the EMG and kinematics would indeed be acquired via
-data acquisition devices.
+data. The solution is trivial since no noise is applied to the data. Still, it is a relevant example of how to
+track data using a musculoskeletal model. The EMG and kinematics would be acquired in the real world using data acquisition devices.
 
-There is no huge difference with the precedent example. Some dynamic equations make the link between muscle activation
-and excitation. 
+There is no major difference with the previous example. Some dynamic equations link muscle activation and excitation. 
 
-### The static_arm.py file
-This is a basic example on how to use `biorbd` model driven by muscle to perform an optimal reaching task.
-The arms must reach a marker placed upward in front while minimizing the muscles activity.
+### The [static_arm.py](./bioptim/examples/muscle_driven_ocp/static_arm.py)  file
+This is a basic example of using the `biorbd` muscle-driven model to perform an optimal reaching task.
+The arms must reach a marker placed upward in front while minimizing the muscles' activity.
 
 For this reaching task, we use the `ObjectiveFcn.Mayer.SUPERIMPOSE_MARKERS` objective function. At the end of the 
 movement, marker 0 and marker 5 should superimpose. The weight applied to the `SUPERIMPOSE_MARKERS` objective function 
 is 1000. Please note that the bigger this number, the greater the model will try to reach the marker. 
 
-Please note that using show_meshes=True in the animator may be long due to the creation of a huge `CasADi` graph of the
+Please note that using show_meshes=True in the animator may be long due to the creation of a large `CasADi` graph of the
 mesh points.
 
-### The static_arm_with_contact.py file
-This is a basic example on how to use biorbd model driven by muscle to perform an optimal reaching task with a
+### The [static_arm_with_contact.py](./bioptim/examples/muscle_driven_ocp/static_arm_with_contact.py) file
+This is a basic example of how to use biorbd model driven by muscle to perform an optimal reaching task with a
 contact dynamics.
-The arms must reach a marker placed upward in front while minimizing the muscles activity.
+The arms must reach a marker placed upward in front while minimizing the muscles' activity.
 
-The only difference with the precedent example is that we use the arm26_with_contact.bioMod model and the 
+The only difference with the previous example is that we use the arm26_with_contact.bioMod model and the 
 `DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT` dynamics function instead of 
 `DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN`.
 
@@ -2020,8 +2049,8 @@ Please note that using show_meshes=True in the animator may be long due to the c
 mesh points.
 
 ## Muscle driven with contact
-All the examples in muscle_driven_with_contact are merely to show some dynamics and prepare some OCP for the tests.
-It is not really relevant and will be removed when unitary tests for the dynamics will be implemented.
+All the examples in the folder muscle_driven_with_contact merely show some dynamics and prepare some OCP for the tests.
+They are not relevant and will be removed when unitary tests for the dynamics will be implemented.
 
 ### The contact_forces_inequality_constraint_muscle.py file
 In this example, we implement inequality constraints on two contact forces. It is designed to show how to use min_bound 
@@ -2190,7 +2219,7 @@ all_generalized_mapping = BiMapping([0, 1, 2, -2], [0, 1, 2])
 ## Torque driven OCP
 In this section, you will find different examples showing how to implement torque driven optimal control programs.
 
-### The maximize_predicted_height_CoM.py file
+### [The maximize_predicted_height_CoM.py](./bioptim/examples/track/maximize_predicted_height_CoM.py) file
 This example mimics by essence what a jumper does which is maximizing the predicted height of the
 center of mass at the peak of an aerial phase. It does so with a very simple two segments model though.
 It is designed to give a sense of the goal of the different MINIMIZE_COM functions and the use of
@@ -2287,13 +2316,16 @@ In this particular case, the dynamics function used is `DynamicsFcn.TORQUE_ACTIV
 This example uses a representation of a human body by a trunk_leg segment and two arms.
 It is designed to show how to use a model that has quaternions in their degrees of freedom.
 
-## Track
-In this section, you will find the description of two tracking examples. 
 
-### The track_marker_on_segment.py file
+
+
+## Track
+In this section, you will find the description of three tracking examples. 
+
+### The [track_marker_on_segment.py](./bioptim/examples/track/track_marker_on_segment.py) file
 This example is a trivial example where a stick must keep a corner of a box in line for the whole duration of the
-movement. The initial and final position of the box are dictated, the rest is fully optimized. It is designed
-to show how one can use the tracking function to track a marker with a body segment.
+movement. The initial and final positions of the box are dictated; the rest is fully optimized. It is designed
+to show how to use the tracking function for tracking a marker with a body segment.
 
 In this case, we use the `ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS` constraint function, as shown below in the 
 definition of the constraints of the problem:
@@ -2305,65 +2337,79 @@ ConstraintFcn.TRACK_MARKER_WITH_SEGMENT_AXIS, node=Node.ALL, marker_idx=1, segme
 )
 ```
 
-Here, we minimize the distance between the marker with index 1 ans the x axis of the segment with index 2. We align 
+Here, we minimize the distance between the marker with index 1 and the x-axis of the segment with index 2. We align 
 the axis toward the marker. 
 
-### The track_segment_on_rt.py file
+### The [track_segment_on_rt.py](./bioptim/examples/track/track_segment_on_rt.py) file
 This example is a trivial example where a stick must keep its coordinate system of axes aligned with the one
-from a box during the whole duration of the movement. The initial and final position of the box are dictated,
-the rest is fully optimized. It is designed to show how one can use the tracking RT function to track
-any RT (for instance Inertial Measurement Unit [IMU]) with a body segment.
+from a box during the whole duration of the movement. The initial and final positions of the box are dictated;
+the rest is fully optimized. It is designed to show how to use the tracking RT function for tracking
+any RT (for instance, Inertial Measurement Unit [IMU]) with a body segment.
 
 To implement this tracking task, we use the `ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT` constraint function, which 
 minimizes the distance between a segment and an RT. The extra parameters `segment_idx: int` and `rt_idx: int` must be 
 passed to the Objective constructor.
 
-## Moving estimation horizon
-In this section, we perform mhe on the pendulum example.
+### The [track_vector_orientation.py](./bioptim/examples/track/track_vector_orientation.py) file
+*#TODO*
 
-### The mhe.py file
-In this example, mhe (Moving Horizon Estimation) is applied on a simple pendulum simulation. Data are generated (states,
+
+
+## Moving estimation horizon (MHE)
+In this section, we perform MHE on the pendulum example.
+
+### The [mhe.py](./bioptim/examples/moving_horizon_estimation/mhe.py) file
+In this example, MHE is applied to a simple pendulum simulation. Data are generated (states,
 controls, and marker trajectories) to simulate the movement of a pendulum, using `scipy.integrate.solve_ivp`. These data
-are used to perform mhe.
+are used to perform MHE.
 
-In this example, 500 shooting nodes are defined. As the size of the mhe window is 10, 490 iterations are performed to
+In this example, 500 shooting nodes are defined. As the size of the MHE window is 10, 490 iterations are performed to
 solve the complete problem.
 
-For each iteration, the new marker trajectory is taken into account so that a real time data acquisition is simulated.
+For each iteration, the new marker trajectory is considered so that real-time data acquisition is simulated.
 For each iteration, the list of objectives is updated, the problem is solved with the new frame added to the window,
-the oldest frame is discarded with the `warm_start_mhe function`, and it is saved. The results are plotted so that
-estimated data can be compared to real data. 
+the oldest frame is discarded with the `warm_start_mhe function`, and it is saved. The results are plotted to compare estimated data to real data. 
+
+### The [cyclic_nmpc.py](./bioptim/examples/moving_horizon_estimation/cyclic_nmpc.py) file
+*#TODO*
+
+### The [multi_cyclic_nmpc.py](./bioptim/examples/moving_horizon_estimation/multi_cyclic_nmpc.py) file
+*#TODO*
+
 
 ## Acados
 In this section, you will find three examples to investigate `bioptim` using `acados`. 
 
-### The cube.py file
-This is a basic example of a cube which have to reach a target at the end of the movement, starting from an initial 
-position, and minimizing states and torques. This problem is solved using `acados`. 
+### The [cube.py](./bioptim/examples/acados/cube.py) file
+This is a basic example of a cube that must reach a target at the end of the movement, starting from an initial 
+position while minimizing states and torques. This problem is solved using `acados`. 
 
-### The pendulum.py file 
-A very simple yet meaningful optimal control program consisting in a pendulum starting downward and ending upward
-while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
+### The [pendulum.py](./bioptim/examples/acados/pendulum.py) file 
+This simple yet meaningful optimal control program consists of a pendulum starting downward and ending upward
+while minimizing the generalized forces. The solver can only move the pendulum sideways.
 
-This simple example is a good place to start investigating `bioptim` using `acados` as it describes the most common
-dynamics out there (the joint torque driven), it defines an objective function and some boundaries and initial guesses.
+This simple example is an excellent place to investigate `bioptim` using `acados` as it describes the most common
+dynamics (the joint torque driven). It also defines an objective function and some boundaries and initial guesses.
 
-### The static_arm.py file
+### The [static_arm.py](./bioptim/examples/acados/static_arm.py) file
 This basic example shows how to use biorbd model driven by muscle to perform an optimal reaching task.
 The arm must reach a marker while minimizing the muscles' activity and the states. We solve the problem using both 
 `acados` and `ipopt`.
 
 ## Inverse optimal control
-In this section, you will find an example about inverse optimal control with `bioptim`. 
+In this section, you will find an example of inverse optimal control with `bioptim`. 
 
-### The double_pendulum_torque_driven_IOCP.py file
-This basic example is a rigid double pendulum that circles around a fixed point.
+### The [double_pendulum_torque_driven_IOCP.py](./bioptim/examples/inverse_optimal_control/double_pendulum_torque_driven_IOCP.py) file
+This basic example is a rigid double pendulum that circles a fixed point.
 The movement is inspired by the motion of gymnasts on the bar apparatus.
 This example is separated into three parts:
 - The first part is the definition of the problem. The problem is solved with specific weightings.
 - The second part solves the problem with only one objective at a time for the Pareto front.
 - The third part solves the inverse optimal control problem aiming to retrieve the initial weightings.
 A the end of the example, the markers' trajectories are plotted to show that the movement is the same.
+
+
+
 
 # Performance
 If you find yourself asking, "Why is bioptim so slow? I thought it was lightning fast!"
