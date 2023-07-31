@@ -2149,25 +2149,25 @@ Please note that using show_meshes=True in the animator may be long due to the c
 mesh points.
 
 ## Muscle driven with contact
-All the examples in the folder muscle_driven_with_contact merely show some dynamics and prepare some OCP for the tests.
+All the examples in the folder muscle_driven_with_contact show some dynamics and prepare some OCP for the tests.
 They are not relevant and will be removed when unitary tests for the dynamics will be implemented.
 
-### The contact_forces_inequality_constraint_muscle.py file
+### The [contact_forces_inequality_constraint_muscle.py](./bioptim/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle.py) file
 In this example, we implement inequality constraints on two contact forces. It is designed to show how to use min_bound 
-and max_bound values so they define inequality constraints instead of equality constraints, which can be used with 
+and max_bound values for the definition of inequality constraints instead of equality constraints, which can be used with 
 any ConstraintFcn.
 
 In this case, the dynamics function used is `DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT`.
 
-### The contact_forces_inequality_constraint_muscle_excitations.py file
+### The [contact_forces_inequality_constraint_muscle_excitations.py](./bioptim/examples/muscle_driven_with_contact/contact_forces_inequality_constraint_muscle_excitations.py) file
 In this example, we implement inequality constraints on two contact forces. It is designed to show how to use `min_bound` 
 and `max_bound` values so they define inequality constraints instead of equality constraints, which can be used with any 
 `ConstraintFcn`.
 
 In this case, the dynamics function used is `DynamicsFcn.MUSCLE_EXCITATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT` instead of 
-`DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT` used in the precedent example. 
+`DynamicsFcn.MUSCLE_ACTIVATIONS_AND_TORQUE_DRIVEN_WITH_CONTACT` used in the previous example. 
 
-### The muscle_activations_contacts_tracker.py file 
+### The [muscle_activations_contacts_tracker.py](./bioptim/examples/muscle_driven_with_contact/muscle_activations_contacts_tracker.py) file 
 In this example, we track both muscle controls and contact forces, as it is defined when adding the two objective 
 functions below, using both `ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL` and 
 `ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES` objective functions. 
@@ -2178,7 +2178,7 @@ objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MUSCLES_CONTROL, target=musc
 objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
 ```
 
-Let's take a look at the structure of this example. First, we load data to track, and we generate data using the 
+Let us take a look at the structure of this example. First, we load data to track and generate data using the 
 `data_to_track.prepare_ocp` optimization control program. Then, we track these data using `muscle_activation_ref` and 
 `contact_forces_ref` as shown below:
 
@@ -2195,10 +2195,10 @@ ocp = prepare_ocp(
 ## Optimal time OCP
 In this section, you will find four examples showing how to play with time parameters.  
 
-### The multiphase_time_constraint.py file
+### The [multiphase_time_constraint.py](./bioptim/examples/optimal_time_ocp/multiphase_time_constraint.py) file
 This example is a trivial multiphase box that must superimpose different markers at beginning and end of each
-phase with one of its corner. The time is free for each phase.
-It is designed to show how one can define a multi-phase ocp problem with free time. 
+phase with one of its corners. The time is free for each phase.
+It is designed to show how to define a multiphase ocp problem with free time. 
 
 In this example, the number of phases is 1 or 3. prepare_ocp function takes `time_min`, `time_max` and `final_time` as 
 arguments. There are arrays of length 3 in the case of a 3-phase problem. In the example, these arguments are defined 
@@ -2225,8 +2225,8 @@ if n_phases == 3:
     )
 ```
 
-### The pendulum_min_time_Lagrange.py file
-This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+### The [pendulum_min_time_Lagrange.py](./bioptim/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py) file
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balanced. The difference is that
 the time to perform the task is now free and minimized by the solver, as shown in the definition of the objective 
 function used for this example:
 
@@ -2238,13 +2238,13 @@ objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=1)
 Please note that a weight of -1 will maximize time. 
 
 This example shows how to define such an optimal
-control program with a Lagrange criteria (integral of dt).
+control program with a Lagrange criterion (integral of dt).
 
 The difference between Mayer and Lagrange minimization time is that the former can define bounds to
 the values, while the latter is the most common way to define optimal time. 
 
-### The pendulum_min_time_Mayer.py file
-This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+### The [pendulum_min_time_Mayer.py](./bioptim/examples/optimal_time_ocp/pendulum_min_time_Mayer.py)  file
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balanced. The difference is that
 the time to perform the task is now free and minimized by the solver, as shown in the definition of the objective 
 function used for this example: 
 
@@ -2256,13 +2256,13 @@ objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=weight, min_bou
 Please note that a weight of -1 will maximize time. 
 
 This example shows how to define such an optimal
-control program with a Mayer criteria (value of `final_time`).
+control program with a Mayer criterion (value of `final_time`).
 
 The difference between Mayer and Lagrange minimization time is that the former can define bounds to
 the values, while the latter is the most common way to define optimal time.
 
-### The time_constraint.py file
-This is a clone of the example/getting_started/pendulum.py where a pendulum must be balance. The difference is that
+### The [time_constraint.py](./bioptim/examples/optimal_time_ocp/pendulum_min_time_Mayer.py) file
+This is a clone of the example/getting_started/pendulum.py where a pendulum must be balanced. The difference is that
 the time to perform the task is now free for the solver to change. This example shows how to define such an optimal
 control program. 
 
@@ -2271,6 +2271,7 @@ In this example, a time constraint is implemented:
 ```python
 constraints = Constraint(ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min, max_bound=time_max)
 ```
+
 
 ## Symmetrical torque driven OCP
 In this section, you will find an example using symmetry by constraint and another using symmetry by mapping. In both 
@@ -2415,8 +2416,6 @@ A the end of the example, the markers' trajectories are plotted to show that the
 
 ## Stochastic optimal control
 *#TODO*
-
-
 
 
 
