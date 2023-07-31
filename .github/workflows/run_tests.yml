@@ -1,21 +1,24 @@
 name: Run the tests
 
 on: [pull_request]
+
 jobs:
   build:
     strategy:
-      max-parallel: 1
       matrix:
-        include:
-          - os: macos-latest
-            label: osx-64
-            prefix: /Users/runner/miniconda3/envs/bioptim
-          - os: windows-latest
-            label: win-64
-            prefix: C:\Miniconda3\envs\bioptim
-          - os: ubuntu-latest
-            label: linux-64
-            prefix: /usr/share/miniconda3/envs/bioptim
+        os:
+          - macos-latest
+          - windows-latest
+          - ubuntu-latest
+        label:
+          - osx-64
+          - win-64
+          - linux-64
+        prefix:
+          - /Users/runner/miniconda3/envs/bioptim
+          - C:\Miniconda3\envs\bioptim
+          - /usr/share/miniconda3/envs/bioptim
+        shard: [1, 2, 3, 4]  # added shards
     name: ${{ matrix.label }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -23,7 +26,7 @@ jobs:
         shell: bash -l {0}
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -32,13 +35,13 @@ jobs:
           use-mamba: true
           activate-environment: bioptim
           environment-file: environment.yml
-        
+
       - name: Print mamba info
         run: | 
           mamba config --show
           mamba info
           mamba list
-          
+
       - name: Install extra dependencies
         run: mamba install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
 
@@ -57,7 +60,7 @@ jobs:
         if: matrix.label == 'osx-64'
 
       - name: Run the actual tests
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }}  # modified to select shard
           
       - name: Test installed version of bioptim
         run: | 
