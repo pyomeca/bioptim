@@ -148,4 +148,3 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, assume_ph
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
-

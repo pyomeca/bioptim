@@ -11,7 +11,6 @@ from bioptim import OdeSolver, Solver, BiorbdModel
 from .utils import TestUtils
 
 
-
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, assume_phase_dynamics):
