@@ -4,6 +4,7 @@ on: [pull_request]
 jobs:
   build:
     strategy:
+      max-parallel: 1
       matrix:
         include:
           - os: ubuntu-latest
