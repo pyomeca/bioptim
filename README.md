@@ -1300,11 +1300,9 @@ You can look at Objective and ObjectiveList sections for more information about 
 
 
 ## The parameters
-Parameters are time independent variables. 
-It can be, for instance, the maximal value of the strength of a muscle, or even the value of gravity.
-If affects the dynamics of the whole system. 
-Due to the variety of parameters, it was impossible to provide predefined parameters, apart from time. 
-Therefore, all the parameters are custom made.
+Parameters are time-independent variables (e.g., a muscle maximal isometric force, the value of gravity ). that affect the dynamics of the whole system. 
+Due to the variety of parameters, it was impossible to provide predefined parameters but the time. 
+Therefore, all the parameters are custom-made.
 
 ### Class: ParameterList
 The ParameterList provides a class that prepares the parameters, so it can be added to the parameter set to optimize by `bioptim`.
@@ -1312,38 +1310,37 @@ When constructing an `OptimalControlProgram()`, ParameterList is the expected cl
 It is also possible to later change the parameters by calling the method `update_parameters(the_parameter_list)` of the `OptimalControlProgram`
 
 The ParameterList class is the main class to define parameters.
-Please note that unlike other lists, `Parameter` is not accessible, this is for simplicity reasons as it would complicate the API quite a bit to permit it.
+Please note that, unlike other lists, `Parameter` is not accessible. This is for simplicity reasons, as it would complicate the API quite a bit to permit it.
 Therefore, one should not call the Parameter constructor directly. 
 
 Here is the full signature of the `add()` method of the `ParameterList`:
 ```python
 ParameterList.add(parameter_name: str, function: Callable, initial_guess: InitialGuess, bounds: Bounds, size: int, phase: int, **extra_parameters)
 ```
-The `parameter_name` is the name of the parameter. 
-This is how it will be referred to in the output data as well.
-The `function` is the function that modifies the biorbd model, it will be called just prior to applying the dynamics
+The `parameter_name` is the parameter's name (reference for the output data as well).
+The `function` is the function that modifies the biorbd model, it will be called just prior to applying the dynamics. 
 The signature of the custom function is: `custom_function(BioModel, MX, **extra_parameters)`, where BiorbdModel is the model to apply the parameter to, the MX is the value the parameter will take, and the `**extra_parameters` are those sent to the add() method.
 This function is expected to modify the bio_model, and not return anything.
 Please note that MX type is a CasADi type.
 Anyone who wants to define custom parameters should be at least familiar with this type beforehand.
-The `initial_guess` is the initial values of the parameter.
+The `initial_guess` is the initial value of the parameter.
 The `bounds` are the maximal and minimal values of the parameter.
-The `size` is the number of element of this parameter.
+The `size` is the number of elements of this parameter.
 If an objective function is provided, the return of the objective function should match the size.
 The `phase` that the parameter applies to.
-Even though a parameter is time independent, one biorbd_model is loaded per phase. 
-Since parameters are associate to a specific bio_model, one must define a parameter per phase.
+Even though a parameter is time-independent, one biorbd_model is loaded per phase. 
+Since parameters are associated to a specific bio_model, one must define a parameter per phase.
 
 ## The multinode constraints
 `Bioptim` can declare multiphase optimisation programs. The goal of a multiphase ocp is usually to handle changing dynamics. 
-The user must understand that each phase is therefore a full ocp by itself, with constraints that links the end of which with the beginning of the following.
+The user must understand that each phase is, therefore, a full ocp by itself, with constraints that links the end of which with the beginning of the following.
 
 ### Class: BinodeConstraintList
-The BinodeConstraintList provide a class that prepares the binode constraints.
+The BinodeConstraintList provides a class that prepares the binode constraints.
 When constructing an `OptimalControlProgram()`, BinodeConstraintList is the expected class for the `binode_constraints` parameter. 
 
 The BinodeConstraintList class is the main class to define parameters.
-Please note that unlike other lists, `BinodeConstraint` is not accessible since binode constraint don't make sense for single phase ocp.
+Please note that, unlike other lists, `BinodeConstraint` is not accessible since binode constraints do not make sense for single-phase ocp.
 Therefore, one should not call the PhaseTransition constructor directly. 
 
 Here is the full signature of the `add()` method of the `BinodeConstraintList`:
@@ -1352,7 +1349,7 @@ BinodeConstraintList.add(BinodeConstraintFcn, phase_first_idx, phase_second_idx,
 ```
 The `BinodeConstraintFcn` is binode constraints function to use.
 The default is EQUALITY.
-If one wants to declare a custom transition phase, then BinodeConstraintFcn is the function handler to the custom function.
+When declaring a custom transition phase, BinodeConstraintFcn is the function handler to the custom function.
 The signature of the custom function is: `custom_function(binode_constraint:BinodeConstraint, nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
 where `nlp_pre` is the non linear program of the considered phase, `nlp_post` is the non linear program of the second considered phase, and the `**extra_parameters` are those sent to the add() method.
 This function is expected to return the cost of the binode constraint computed in the form of an MX. Please note that MX type is a CasADi type.
@@ -1363,58 +1360,58 @@ The `first_node` is the first node considered.
 The `second_node` is the second node considered. 
 
 ### Class: BinodeConstraintFcn
-The `BinodeConstraintFcn` class is the already available binode constraints in `bioptim`. 
-Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabailities of your IDE. 
+The `BinodeConstraintFcn` class is the already available binode constraint in `bioptim`. 
+Since this is an Enum, it is possible to use the tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
 
 - **EQUALITY**   &mdash; The states are equals.
 - **COM_EQUALITY**   &mdash; The positions of centers of mass are equals.
 - **COM_VELOCITY_EQUALITY**   &mdash; The velocities of centers of mass are equals.
 - **CUSTOM**   &mdash; CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
-You can have a look at the BinodeConstraintList section for more information about how to define custom transition function.
+You can look at the BinodeConstraintList section for more information about defining a custom transition function.
 
 ## The phase transitions
 `Bioptim` can declare multiphase optimisation programs. 
 The goal of a multiphase ocp is usually to handle changing dynamics. 
-The user must understand that each phase is therefore a full ocp by itself, with constraints that links the end of which with the beginning of the following.
-Due to some limitations created by the use of MX variables, some things can be done and some cannot during a phase transition. 
+The user must understand that each phase is, therefore, a full ocp by itself, with constraints that links the end of which with the beginning of the following.
+Due to some limitations created by using MX variables, some things can be done, and some cannot during a phase transition. 
 
 ### Class: PhaseTransitionList
-The PhaseTransitionList provide a class that prepares the phase transitions.
+The PhaseTransitionList provides a class that prepares the phase transitions.
 When constructing an `OptimalControlProgram()`, PhaseTransitionList is the expected class for the `phase_transitions` parameter. 
 
 The PhaseTransitionList class is the main class to define parameters.
-Please note that unlike other lists, `PhaseTransition` is not accessible since phase transition don't make sense for single phase ocp.
+Please note that, unlike other lists, `PhaseTransition` is not accessible since phase transition does not make sense for single-phase ocp.
 Therefore, one should not call the PhaseTransition constructor directly. 
 
 Here is the full signature of the `add()` method of the `PhaseTransitionList`:
 ```python
 PhaseTransitionList.add(PhaseTransitionFcn, phase_pre_idx, **extra_parameters)
 ```
-The `PhaseTransitionFcn` is transition phase function to use.
+The `PhaseTransitionFcn` is the transition phase function to use.
 The default is CONTINUOUS.
-If one wants to declare a custom transition phase, then PhaseTransitionFcn is the function handler to the custom function.
+When declaring a custom transition phase,  PhaseTransitionFcn is the function handler to the custom function.
 The signature of the custom function is: `custom_function(transition: PhaseTransition nlp_pre: NonLinearProgram, nlp_post: NonLinearProgram, **extra_parameters)`,
-where `nlp_pre` is the non linear program at the end of the phase before the transition, `nlp_post` is the non linear program  at the beginning of the phase after the transition, and the `**extra_parameters` are those sent to the add() method.
-This function is expected to return the cost of the phase transition computed from the states pre and post in the form of an MX.
+where `nlp_pre` is the nonlinear program at the end of the phase before the transition, `nlp_post` is the nonlinear program at the beginning of the phase after the transition, and the `**extra_parameters` are those sent to the add() method.
+This function is expected to return the cost of the phase transition computed from the states pre- and post-transition in the form of an MX.
 Please note that MX type is a CasADi type.
 Anyone who wants to define phase transitions should be at least familiar with this type beforehand.
 The `phase_pre_idx` is the index of the phase before the transition.
-If the `phase_pre_idx` is set to the index of the last phase then this is equivalent to set `PhaseTransitionFcn.CYCLIC`.  
+If the `phase_pre_idx` is set to the index of the last phase, then this is equivalent to set `PhaseTransitionFcn.CYCLIC`.  
 
 ### Class: PhaseTransitionFcn
 The `PhaseTransitionFcn` class is the already available phase transitions in `bioptim`. 
-Since this is an Enum, it is possible to use tab key on the keyboard to dynamically list them all, depending on the capabailities of your IDE. 
+Since this is an Enum, it is possible to use the tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. 
 
 - **CONTINUOUS**  &mdash; The states at the end of the phase_pre equals the states at the beginning of the phase_post
-- **IMPACT**   &mdash; The impulse function of `biorbd`: `qdot_post = bio_model.qdot_from_impact, q_pre, qdot_pre)` is apply to compute the velocities of the joint post impact.
-These computed states at the end of the phase_pre equals the states at the beginning of the phase_post.
-If a bioMod with more contact points than the phase before is used, then the IMPACT transition phase should be used as well.
-- **CYCLIC** &mdash; Apply the CONTINUOUS phase transition to the end of the last phase and the begininning the of first, effectively creating a cyclic movement
-- **CUSTOM** &mdash; CUSTOM should not be directly sent by the user, but the user should pass the custom_transition function directly. 
-You can have a look at the PhaseTransitionList section for more information about how to define custom transition function.
+- **IMPACT**   &mdash; The impulse function of `biorbd`: `qdot_post = bio_model.qdot_from_impact, q_pre, qdot_pre)` is applied to compute the velocities of the joint post impact.
+These computed states at the end of the phase_pre equals those at the beginning of the phase_post.
+If a bioMod has more contact points than the model in the previous phase, then the IMPACT transition phase should also be used.
+- **CYCLIC** &mdash; Apply the CONTINUOUS phase transition from the end of the last phase to the beginning the first one, effectively creating a cyclic movement.
+- **CUSTOM** &mdash; the user should not send CUSTOM directly but pass the custom_transition function. 
+You can look at the PhaseTransitionList section for more information about defining a custom transition function.
 
 ## The results
-`Bioptim` offers different ways to manage and visualize the results from an optimisation. 
+`Bioptim` offers different ways to manage and visualize the results from an optimization. 
 This section explores the different methods that can be called to have a look at your data.
 
 Everything related to managing the results can be accessed from the solution class returned from 
@@ -1424,7 +1421,7 @@ sol = ocp.solve()
 
 ### Data manipulation
 The Solution structure holds all the optimized values. 
-To get the states variable, control variables and time, one can invoke each property.
+To get the states variable, control variables, and time, one can invoke each property.
 
 ```python
 states = sol.states
@@ -1432,10 +1429,10 @@ controls = sol.controls
 time = sol.time
 ```
 
-If the program was a single phase problem, then the returned values are dictionaries, otherwise it is a list of dictionaries of size equals to the number of phases.
+If the program was a single-phase problem, then the returned values are dictionaries, otherwise, it is a list of dictionaries of size equal to the number of phases.
 The keys of the returned dictionaries correspond to the name of the variables. 
-For instance, if generalized coordinates (*q*) are states, then the state dictionary has *q* as key.
-In any cases, the key `all` is always there.
+For instance, if generalized coordinates (*q*) are states, the state dictionary has *q* as key.
+In any case, the key `all` is always there.
 
 ```python
 # single-phase case
@@ -1448,25 +1445,25 @@ q = sol.states[0]["all"]
 
 The values inside the dictionaries are np.ndarray of dimension `n_elements` x `n_shooting`, unless the data were previously altered by integrating or interpolating (then the number of columns may differ).
 
-The parameters are very similar, but differs by the fact that it is always a dictionary (since parameters don't depend on the phases).
+The parameters are very similar but differ because they are always a dictionary (since they do not depend on the phases).
 Also, the values inside the dictionaries are of dimension `n_elements` x 1. 
 
 #### Integrate
 
-It is possible to integrate (also called simulate) the states at will, by calling the `sol.integrate()` method.
-The `shooting_type: Shooting` parameter allows to select the type of integration to perform (see the enum Shooting for more detail).
-The `keep_intermediate_points` parameter allows to keep the intermediate shooting points (usually a multiple of n_steps of the Runge-Kutta) or collocation points.
-If set to false, this points are not stored into the output structure.
-By definition, setting `keep_intermediate_points` to True while asking for `Shooting.MULTIPLE` would return the exact same structure.
-This will therefore raise an error is set to False with `Shooting.MULTIPLE`.
+It is possible to integrate (also called simulate) the states at will by calling the `sol.integrate()` method.
+The `shooting_type: Shooting` parameter allows you to select the type of integration to perform (see the enum Shooting for more detail).
+The `keep_intermediate_points` parameter allows us to keep the intermediate shooting points (usually a multiple of n_steps of the Runge-Kutta) or collocation points.
+If set to false, these points are not stored in the output structure.
+By definition, setting `keep_intermediate_points` to True while asking for `Shooting.MULTIPLE` would return the same structure.
+This will therefore raise an error if set to False with `Shooting.MULTIPLE`.
 The `merge_phase: bool` parameter requests to merge all the phases into one [True] or not [False].
-The `continuous: bool` parameter can be deceiving. If it mostly for internal purposes.
+The `continuous: bool` parameter can be deceiving. It is mostly for internal purposes.
 
 Here are the tables of the combinations for `sol.integrate` and shooting_types.
-As the argument `keep_intermediates_points` does not have a significant effect on the implementations it has been withdraw from the tables.
-If it's implemented, it will be done with `keep_intermediates_points=True or False`.
+As the argument `keep_intermediates_points` does not significantly affect the implementations, it has been withdrawn from the tables.
+If implemented, it will be done with `keep_intermediates_points=True or False`.
 
-Let's begin with `shooting_type = Shooting.SINGLE`, it re-integrates the ocp as a single phase ocp :
+Let us begin with `shooting_type = Shooting.SINGLE`, it re-integrates the ocp as a single phase ocp :
 
 ##### Shooting.SINGLE
 
@@ -1498,9 +1495,9 @@ COLLOCATION | False | SCIPY | :white_check_mark: | |
 
 ##### Shooting.MULTIPLE
 
-Let's finish with `shooting_type = Shooting.MULTIPLE`,
+Let us finish with `shooting_type = Shooting.MULTIPLE`,
 please note that this cannot be used with `keep_intermediates_points=False`.
-Also, the word `MULTIPLE` is used to refer to direct multiple shooting.
+Also, the word `MULTIPLE` refers to direct multiple shooting.
 
 OdeSolver | <div style="width:110px">merge_phase</div>  | <div style="width:80px">Solution<br>Integrator</div> | Implemented | Comment|
 ----|-------------|-----------|:----:|:-----------:|
@@ -1516,32 +1513,32 @@ COLLOCATION | False | SCIPY | :white_check_mark: | This is re-integrated with so
 #### Interpolation
 
 The `sol.interpolation(n_frames: [int, tuple])` method returns the states interpolated by changing the number of shooting points.
-If the program is multiphase, but only a `int` is sent, then the phases are merged and the interpolation keeps their respective time ratio consistent.
+If the program is multiphase, but only a `int` is sent, then the phases are merged, and the interpolation keeps their respective time ratio consistent.
 If one does not want to merge the phases, then a `tuple` with one value per phase can be sent. 
 
 #### Merge phases
 
-Finally `sol.merge_phases()` returns a Solution structure with all the phases merged into one.
+Finally, `sol.merge_phases()` returns a Solution structure with all the phases merged into one.
 
 Please note that, apart from `sol.merge_phases()`, these data manipulation methods return an incomplete Solution structure.
-This structure can be used for further analyses, but cannot be used for visualization. 
-If one wants to visualize integrated or interpolated data, they are required to use the corresponding parameters or the visualization method they use.
+This structure can be used for further analyses but cannot be used for visualization. 
+If one wants to visualize integrated or interpolated data, they must use the corresponding parameters or the visualization method they use.
 
 ### Data visualization
-A first method to visualize the data is `sol.graphs()`. 
+The first data visualizing method is `sol.graphs()`. 
 This method will spawn all the graphs associated with the ocp. 
 This is the same method that is called by the online plotter. 
-In order to add and modify plots, one should use the `ocp.add_plot()` method.
+To add and modify plots, one should use the `ocp.add_plot()` method.
 By default, this graphs the states as multiple shootings.
 If one wants to simulate in single shooting, the option `shooting_type=Shooting.SINGLE` will do the trick.
 
 A second one is `sol.animate()`.
-This method summons one or more `bioviz` figures (depending if phases were merged or not) and animates the model.
+This method summons one or more `bioviz` figures (depending on whether phases were merged) and animates the model.
 Please note that despite `bioviz` best efforts, plotting a lot of meshing vertices in MX format is slow.
 So even though it is possible, it is suggested to animate without the bone meshing (by passing the parameter `show_meshes=False`)
-To do so, we strongly suggest saving the data and load them in an environment where `bioptim` is compiled with the Eigen backend, which will be much more efficient.
-If `n_frames` is set, an interpolation is performed, otherwise, the phases are merged if possible, so a single animation is shown. 
-To prevent from the phase merging, one can set `n_frames=-1`.
+To do so, we strongly suggest saving the data and loading them in an environment where `bioptim` is compiled with the Eigen backend, which will be much more efficient.
+If `n_frames` is set, an interpolation is performed. Otherwise, the phases are merged if possible, so a single animation is shown. 
+To prevent phase merging, one can set `n_frames=-1`.
 
 In order to print the values of the objective functions and constraints, one can use the `sol.print_cost()` method.
 If the parameter `cost_type=CostType.OBJECTIVE` is passed, only the values of each objective functions are printed.
@@ -1550,36 +1547,35 @@ Please note that for readability purposes, this method prints the sum by phases 
 
 ## The extra stuff and the Enum
 It was hard to categorize the remaining classes and enum. 
-So I present them in bulk in this extra stuff section
+So I present them in bulk in this extra stuff section.
 
 ### The mappings
-The mapping are a way to link things stored in a list.
-For instance, lets consider these vectors: a = [0, 0, 0, 10, -9] and b = [10, 9]. 
+The mapping is a way to link things stored in a list.
+For instance, consider these vectors: a = [0, 0, 0, 10, -9] and b = [10, 9]. 
 Even though they are quite different, they share some common values. 
-It it therefore possible to retrieve a from b, and conversely.
+It is, therefore, possible to retrieve a from b, and conversely.
 
-This is what the Mapping class does, for the rows of numpy arrays.
+This is what the Mapping class does for the rows of numpy arrays.
 So if one was to declare the following Mapping: `b_from_a = Mapping([3, -4])`.
 Then, assuming a is a numpy.ndarray column vector (`a = np.array([a]).T`), it would be possible to summon b from a like so: 
 ```python
 b = b_from_a.map(a)
 ```
-Note that the `-4` opposed the forth value.
+Note that the `-4` opposed the fourth value.
 Conversely, using the `a_from_b = Mapping([None, None, None, 0, -1])` mapping, and assuming b is a numpy.ndarray column vector (`b = np.array([b]).T`), it would be possible to summon b from a like so:
 ```python
 a = a_from_b.map(b)
 ```
-Note the `None` are replaced by zeros.
+Note that the `None` are replaced by zeros.
 
 The BiMapping is no more no less than a list of two mappings that link two matrices both ways: `BiMapping(a_to_b, b_to_a)`
 
 The SelectionMapping is a subclass of BiMapping where you only have to precise the size of the first matrix, 
-and the mapping b_to_a to get the second matrix from the first, if some elements depend on others 
-you can add an argument dependencies :`SelectionMapping(size(int), b_to_a; tuple[int, int, ...], dependencies :tuple([int, int, bool]))`
+and the mapping b_to_a to get the second matrix from the first. If some elements depend on others, 
+you can add an argument dependency:`SelectionMapping(size(int), b_to_a; tuple[int, int, ...], dependencies :tuple([int, int, bool]))`
 
 ### Enum: Node
-The node targets some specific nodes of the ocp or of a phase
-
+The node targets some specific nodes of the ocp or a phase.
 The accepted values are:
 - START: The first node
 - MID: The middle node
@@ -1591,27 +1587,27 @@ The accepted values are:
 
 ### Class: OdeSolver
 The ordinary differential equation (ode) solver to solve the dynamics of the system. 
-The RK4 and RK8 are the one with the most options available.
-IRK is supposed to be a bit more robust, but may be slower too. 
-CVODES is the one with the least options, since it is not in-house implemented.
+The RK4 and RK8 are the ones with the most options available.
+IRK may be more robust but slower . 
+CVODES is the one with the least options since it is not in-house implemented.
 
 The accepted values are:
 - For Direct multiple shooting:
-	- RK1: Runge-Kutta of the 1st order also known as Forward Euler
-	- RK2: Runge-Kutta of the 2nd order also known as Midpoint Euler
-	- RK4: Runge-Kutta of the 4th order
-	- RK8: Runge-Kutta of the 8th order
-	- IRK: Implicit runge-Kutta (Legendre and Radau, from 0th to 9th order)
-	- CVODES: cvodes solver
+   - RK1: Runge-Kutta of the 1st order also known as Forward Euler
+   - RK2: Runge-Kutta of the 2nd order also known as Midpoint Euler
+   - RK4: Runge-Kutta of the 4th order
+   - RK8: Runge-Kutta of the 8th order
+   - IRK: Implicit Runge-Kutta (Legendre and Radau, from 0th to 9th order)
+   - CVODES: cvodes solver
 - For Direct collocation:
-	- COLLOCATION: Legendre and Radau, from 0th to 9th order
+   - COLLOCATION: Legendre and Radau, from 0th to 9th order
 
 ### Enum: Solver
 The nonlinear solver to solve the whole ocp. 
 Each solver has some requirements (for instance, ̀`Acados` necessitates that the graph is SX). 
-Feel free to test each of them to see which one fits the best your needs.
-̀`Ipopt` is a robust solver, that may be a bit slow though.
-̀`Acados` on the other is a very fast solver, but is much more sensitive to the relative weightings of the objective functions and to the initial guess.
+Feel free to test each of them to see which fits your needs best.
+̀`Ipopt` is a robust solver, that may be slow.
+̀`Acados`, on the other hand, is a very fast solver, but is much more sensitive to the relative weightings of the objective functions and the initial guess.
 It is perfectly designed for MHE and NMPC problems.
 
 The accepted values are:
@@ -1622,48 +1618,48 @@ The accepted values are:
 ### Enum: ControlType
 The type the controls are. 
 Typically, the controls for an optimal control program are constant over the shooting intervals. 
-However, one may wants to get non constant values.
+However, one may want to get non-constant values.
 `Bioptim` has therefore implemented some other types of controls.
 
 The accepted values are:
-- CONSTANT: The controls remain constant over the interval. The number of control is therefore equals to the number of shooting point
-- LINEAR_CONTINUOUS: The controls are linearly interpolated over the interval. Since they are continuous, the end of an interval corresponds to the beginning of the next. There is therefore number of shooting point + 1 controls.
+- CONSTANT: The controls remain constant over the interval. The number of control is, therefore, equal to the number of shooting points.
+- LINEAR_CONTINUOUS: The controls are linearly interpolated over the interval. Since they are continuous, the end of an interval corresponds to the beginning of the next. The number of control equals the number shooting point + 1.
 
 ### Enum: PlotType
 When adding a plot, it is possible to change the aspect of it.
 
 The accepted values are:
 PLOT: Normal plot that links the points.
-INTEGRATED: Plot that links the points within an interval, but is discrete between the end of an interval and the beginning of the next one.
-STEP: Step plot, constant over an interval
-POINT: Point plot
+INTEGRATED: Plot that links the points within an interval but is discrete between its end and the beginning of the next interval.
+STEP: Step plot, constant over an interval.
+POINT: Point plot.
 
 ### Enum: InterpolationType
-How a time dependent variable is interpolated.
-It is mostly used for phases time span.
-Therefore, first and last nodes refer to the first and last nodes of a phase
+Defines wow a time-dependent variable is interpolated.
+It is mainly used for phases time span.
+Therefore, first and last nodes refer to the first and last nodes of a phase.
 
 The accepted values are:
-- CONSTANT: Requires only one column, all the values are equal during the whole period of time.
-- CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT: Requires three columns. The first and last columns correspond to the first and last node, while the middle corresponds to all the other nodes.
-- LINEAR: Requires two columns. It corresponds to the first and last node. The middle nodes are linearly interpolated to get their values.
+- CONSTANT: Requires only one column; all the values are equal during the whole period of time.
+- CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT: Requires three columns. The first and last columns correspond to the first and last nodes, while the middle corresponds to all the other nodes.
+- LINEAR: Requires two columns. It corresponds to the first and last nodes. The middle nodes are linearly interpolated to get their values.
 - EACH_FRAME: Requires as many columns as there are nodes. It is not an interpolation per se, but it allows the user to specify all the nodes individually.
 - ALL_POINTS: Requires as many columns as there are collocation points. It is not an interpolation per se, but it allows the user to specify all the collocation points individually.
 - SPLINE: Requires five columns. It performs a cubic spline to interpolate between the nodes.
-- CUSTOM: User defined interpolation function.
+- CUSTOM: User-defined interpolation function.
 
 ### Enum: MagnitudeType
 The type of magnitude you want for the added noise. Either relative to the bounds (0 is no noise, 1 is the value of your bounds), or absolute
 
 The accepted values are:
 - ABSOLUTE: Absolute noise of a chosen magnitude.
-- RELATIVE: Relative noise to the bounds (0 is no noise, 1 is the value of your bounds)
+- RELATIVE: Relative noise to the bounds (0 is no noise, 1 is the value of your bounds).
 
 ### Enum: Shooting
 The type of integration to perform
-- SINGLE: It re-integrate the solution as a single-phase optimal control problem
-- SINGLE_DISCONTINUOUS_PHASE: It re-integrate each phase of the solution as a single-phase optimal control problem. The phases are therefore not continuous.
-- MULTIPLE: The word `MULTIPLE` is used as a common terminology, to be able to execute DMS and COLLOCATION. It refers to the fact there are several points per intervals, shooting points in DMS and collocation points in COLLOCATION.
+- SINGLE: It re-integrates the solution as a single-phase optimal control problem
+- SINGLE_DISCONTINUOUS_PHASE: It re-integrates each phase of the solution as a single-phase optimal control problem. The phases are, therefore, not continuous.
+- MULTIPLE: The word `MULTIPLE` is used as a common terminology to be able to execute DMS and COLLOCATION. It refers to the fact that there are several points per interval, shooting points in DMS and collocation points in COLLOCATION.
 
 ### Enum: CostType
 The type of cost
@@ -1682,76 +1678,75 @@ The type of integrator used to integrate the solution of the optimal control pro
 
 ### Enum: QuadratureRule
 The type of integration used to integrate the cost function terms of Lagrange:
-- RECTANGLE_LEFT: The integral is approximated by a left rectangle rule (Left Riemann sum)
-- RECTANGLE_RIGHT: The integral is approximated by a right rectangle rule (Right Riemann sum)
-- MIDPOINT: The integral is approximated by a midpoint rectangle rule (Midpoint Riemann sum)
-- APPROXIMATE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the beginning of the next interval
-- TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval
+- RECTANGLE_LEFT: The integral is approximated by a left rectangle rule (Left Riemann sum).
+- RECTANGLE_RIGHT: The integral is approximated by a right rectangle rule (Right Riemann sum).
+- MIDPOINT: The integral is approximated by a midpoint rectangle rule (Midpoint Riemann sum).
+- APPROXIMATE_TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the beginning of the next interval.
+- TRAPEZOIDAL: The integral is approximated by a trapezoidal rule using the state at the end of the current interval.
 
 ### Enum: RigidBodyDynamics
-The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_contact_dynamics)
-- ODE: dynamics is handled explicitly in the continuity constraint of the ordinary differential equation of the Direct Multiple Shooting approach
-- DAE_INVERSE_DYNAMICS: it adds an extra control *qddot* to respect inverse dynamics on nodes, this is a DAE-constrained OCP
-- DAE_FORWARD_DYNAMICS: it adds an extra control *qddot* to respect forward dynamics on nodes, this is a DAE-constrained OCP
-- DAE_INVERSE_DYNAMICS_JERK: it adds an extra control *qdddot* and an extra state *qddot* to respect inverse dynamics on nodes, this is a DAE-constrained OCP
-- DAE_FORWARD_DYNAMICS_JERK: it adds an extra control *qdddot* and an extra state *qddot* to respect forward dynamics on nodes, this is a DAE-constrained OCP
+The type of transcription of any dynamics (e.g., rigidbody_dynamics or soft_contact_dynamics):
+- ODE: the dynamics is handled explicitly in the continuity constraint of the ordinary differential equation of the Direct Multiple Shooting approach.
+- DAE_INVERSE_DYNAMICS: it adds an extra control *qddot* to respect inverse dynamics on nodes; this is a DAE-constrained OCP.
+- DAE_FORWARD_DYNAMICS: it adds an extra control *qddot* to respect forward dynamics on nodes; this is a DAE-constrained OCP.
+- DAE_INVERSE_DYNAMICS_JERK: it adds an extra control *qdddot* and an extra state *qddot* to respect inverse dynamics on nodes; this is a DAE-constrained OCP.
+- DAE_FORWARD_DYNAMICS_JERK: it adds an extra control *qdddot* and an extra state *qddot* to respect forward dynamics on nodes; this is a DAE-constrained OCP.
 
 ### Enum: SoftContactDynamics
-The type of transcription of any dynamics (e.g. rigidbody_dynamics or soft_contact_dynamics)
-- ODE: soft contacts dynamics is handled explicitly
-- CONSTRAINT: an extra control *fext* is added and it ensures to respect soft contact_dynamics on nodes through a constraint.
+The type of transcription of any dynamics (e.g., rigidbody_dynamics or soft_contact_dynamics):
+- ODE: soft contact dynamics is handled explicitly.
+- CONSTRAINT: an extra control *fext* is added, and it ensures respecting soft contact_dynamics on nodes through a constraint.
 
 ### Enum: DefectType
-- EXPLICIT: The defect comes from explicit formulation
-- IMPLICIT: The defect comes from implicit formulation
-- NOT_APPLICABLE: The defect is not applicable
+- EXPLICIT: The defect comes from the explicit formulation.
+- IMPLICIT: The defect comes from the implicit formulation.
+- NOT_APPLICABLE: The defect is not applicable.
 
 # Examples
-In this section, you will find the description of all the examples implemented with bioptim. They are ordered in 
-separate files. Each subsection corresponds to the different files, dealing with different examples and topics.
+{% assign base_url = "https://github.com/pyomeca/bioptim/tree/master/bioptim/examples" %}
+In this section, we describe all the examples implemented with bioptim. They are ordered in separate files. Each subsection corresponds to the different files, dealing with different examples and topics.
 Please note that the examples from the paper (see [Citing](#citing)) can be found in this repo
 [https://github.com/s2mLab/BioptimPaperExamples](https://github.com/s2mLab/BioptimPaperExamples).
 
 ## Run examples
-An GUI to access the examples can be run to facilitate the testing of bioptim
-You can either run the file `__main__.py` in the `examples` folder or execute the following command.
+A GUI to access the examples can be run to facilitate the testing of bioptim
+You can run the file `__main__.py` in the `examples` folder or execute the following command.
 ```bash
 python -m bioptim.examples
 ```
 Please note that `pyqtgraph` must be installed to run this GUI. 
 
+
+
+
 ## Getting started
 In this subsection, all the examples of the getting_started file are described.
 
-### The custom_bounds.py file
-This example is a trivial box sent upward. It is designed to investigate the different
-bounds one can define in bioptim.
-Therefore, it shows how one can define the bounds, that is the minimal and maximal values
-of the state and control variables.
+### The [custom_bounds.py]({{ base_url }}/getting_started/custom_bounds.py) file
+This example is a trivial box sent upward. It is designed to investigate the different bounds defined in bioptim.
+Therefore, it shows how to define the bounds, i.e., the minimal and maximal values of the state and control variables.
 
-All the types of interpolation are shown : `CONSTANT`, `CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT`, `LINEAR`, `EACH_FRAME`,
+All the types of interpolation are shown: `CONSTANT`, `CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT`, `LINEAR`, `EACH_FRAME`,
 `SPLINE`, and `CUSTOM`. 
 
-When the `CUSTOM` interpolation is chosen, the functions `custom_x_bounds_min` and `custom_x_bounds_max` are used to 
-provide custom x bounds. The functions `custom_u_bounds_min` and `custom_u_bounds_max` are used to provide custom 
+When the `CUSTOM` interpolation is chosen, the functions `custom_x_bounds_min` and `custom_x_bounds_max`  
+provide custom x bounds. The functions `custom_u_bounds_min` and `custom_u_bounds_max` provide custom 
 u bounds. 
-In this particular example, one mimics linear interpolation using these four functions.
+In this particular example,  linear interpolation is mimicked using these four functions.
 
-### The custom_constraints.py file
+### The [custom_constraints.py]({{ base_url }}/getting_started/custom_constraints.py) file
+This example is a trivial box that must superimpose one of its corners to a marker at the beginning of the movement and superimpose the same corner to a different marker at the end.
+It is designed to show how to define custom constraints function if the availables constraints do not fulfill your need.
+
+This example reproduces the behavior of the `SUPERIMPOSE_MARKERS` constraint.
+
+### The [custom_dynamics.py]({{ base_url }}/getting_started/custom_dynamics.py) file
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
 and superimpose the same corner to a different marker at the end.
-It is designed to show how one can define its own custom constraints function if the provided ones are not
+It is designed to show how to define a custom dynamics function if the provided ones are not 
 sufficient.
 
-More specifically this example reproduces the behavior of the `SUPERIMPOSE_MARKERS` constraint.
-
-### The custom_dynamics.py file
-This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
-and superimpose the same corner to a different marker at the end.
-It is designed to show how one can define its own custom dynamics function if the provided ones are not
-sufficient.
-
-More specifically this example reproduces the behavior of the `DynamicsFcn.TORQUE_DRIVEN` using a custom dynamics. 
+This example reproduces the behavior of the `DynamicsFcn.TORQUE_DRIVEN` using a custom dynamics. 
 
 The custom_dynamic function is used to provide the derivative of the states. The custom_configure function is used 
 to tell the program which variables are states and controls. 
@@ -1759,13 +1754,13 @@ to tell the program which variables are states and controls.
 ### The custom_initial_guess.py file
 This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
 and superimpose the same corner to a different marker at the end.
-It is designed to investigate the different way to define the initial guesses at each node sent to the solver.
+It is designed to investigate the different way to define the initial guesses at each node that are sent to the solver.
 
 All the types of interpolation are shown : `CONSTANT`, `CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT`, `LINEAR`, `EACH_FRAME`,
 `SPLINE`, and `CUSTOM`. 
 
 When the CUSTOM interpolation is chosen, the `custom_init_func` function is used to custom the initial guesses of the 
-states and controls. In this particular example, one mimics linear interpolation. 
+states and controls. In this particular example, the CUSTOM interpolation mimics linear interpolation. 
 
 ### The custom_objectives.py file
 This example is a trivial box that tries to superimpose one of its corner to a marker at the beginning of the movement
@@ -2427,3 +2422,4 @@ If you use `bioptim`, we would be grateful if you could cite it as follows:
   year={2022},
   publisher={IEEE}
 }
+
