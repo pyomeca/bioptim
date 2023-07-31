@@ -1721,7 +1721,7 @@ Please note that `pyqtgraph` must be installed to run this GUI.
 ## Getting started
 In this subsection, all the examples of the getting_started file are described.
 
-### The [custom_bounds.py](./bioptim/example/getting_started/custom_bounds.py) file
+### The [custom_bounds.py](./bioptim/examples/getting_started/custom_bounds.py) file
 This example is a trivial box sent upward. It is designed to investigate the different bounds defined in bioptim.
 Therefore, it shows how to define the bounds, i.e., the minimal and maximal values of the state and control variables.
 
@@ -1733,13 +1733,13 @@ provide custom x bounds. The functions `custom_u_bounds_min` and `custom_u_bound
 u bounds. 
 In this particular example,  linear interpolation is mimicked using these four functions.
 
-### The [custom_constraints.py](./bioptim/example/getting_started/custom_constraints.py) file
+### The [custom_constraints.py](./bioptim/examples/getting_started/custom_constraints.py) file
 This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement and superimpose the same corner on a different marker at the end.
 It is designed to show how to define custom constraints function if the available constraints do not fulfill your need.
 
 This example reproduces the behavior of the `SUPERIMPOSE_MARKERS` constraint.
 
-### The [custom_dynamics.py](./bioptim/example/getting_started/custom_dynamics.py) file
+### The [custom_dynamics.py](./bioptim/examples/getting_started/custom_dynamics.py) file
 This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement
 and superimpose the same corner on a different marker at the end.
 It is designed to show how to define a custom dynamics function if the provided ones are not 
@@ -1750,7 +1750,7 @@ This example reproduces the behavior of the `DynamicsFcn.TORQUE_DRIVEN` using cu
 The custom_dynamic function is used to provide the derivative of the states. The custom_configure function is used 
 to tell the program which variables are states and controls. 
 
-### The [custom_initial_guess.py](./bioptim/example/getting_started/custom_initial_guess.py) file
+### The [custom_initial_guess.py](./bioptim/examples/getting_started/custom_initial_guess.py) file
 This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement
 and superimpose the same corner on a different marker at the end.
 It is designed to investigate the different ways to define the initial guesses at each node sent to the solver.
@@ -1761,7 +1761,7 @@ All the types of interpolation are shown: `CONSTANT`, `CONSTANT_WITH_FIRST_AND_L
 When the CUSTOM interpolation is chosen, the `custom_init_func` function is used to custom the initial guesses of the 
 states and controls. In this particular example, the CUSTOM interpolation mimics linear interpolation. 
 
-### The [custom_objectives.py](./bioptim/example/getting_started/custom_objectives.py) file
+### The [custom_objectives.py](./bioptim/examples/getting_started/custom_objectives.py) file
 This example is a trivial box that tries to superimpose one of its corners on a marker at the beginning of the movement
 and superimpose the same corner on a different marker at the end.
 It is designed to show how one can define its own custom objective function if the provided ones are not
