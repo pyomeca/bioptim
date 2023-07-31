@@ -1703,7 +1703,6 @@ The type of transcription of any dynamics (e.g., rigidbody_dynamics or soft_cont
 - NOT_APPLICABLE: The defect is not applicable.
 
 # Examples
-{% assign base_url = "https://github.com/pyomeca/bioptim/tree/master/bioptim/examples" %}
 In this section, we describe all the examples implemented with bioptim. They are ordered in separate files. Each subsection corresponds to the different files, dealing with different examples and topics.
 Please note that the examples from the paper (see [Citing](#citing)) can be found in this repo
 [https://github.com/s2mLab/BioptimPaperExamples](https://github.com/s2mLab/BioptimPaperExamples).
@@ -1722,7 +1721,7 @@ Please note that `pyqtgraph` must be installed to run this GUI.
 ## Getting started
 In this subsection, all the examples of the getting_started file are described.
 
-### The [custom_bounds.py]({{ base_url }}/getting_started/custom_bounds.py) file
+### The [custom_bounds.py](./bioptim/example/getting_started/custom_bounds.py) file
 This example is a trivial box sent upward. It is designed to investigate the different bounds defined in bioptim.
 Therefore, it shows how to define the bounds, i.e., the minimal and maximal values of the state and control variables.
 
@@ -1734,44 +1733,44 @@ provide custom x bounds. The functions `custom_u_bounds_min` and `custom_u_bound
 u bounds. 
 In this particular example,  linear interpolation is mimicked using these four functions.
 
-### The [custom_constraints.py]({{ base_url }}/getting_started/custom_constraints.py) file
-This example is a trivial box that must superimpose one of its corners to a marker at the beginning of the movement and superimpose the same corner to a different marker at the end.
-It is designed to show how to define custom constraints function if the availables constraints do not fulfill your need.
+### The [custom_constraints.py](./bioptim/example/getting_started/custom_constraints.py) file
+This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement and superimpose the same corner on a different marker at the end.
+It is designed to show how to define custom constraints function if the available constraints do not fulfill your need.
 
 This example reproduces the behavior of the `SUPERIMPOSE_MARKERS` constraint.
 
-### The [custom_dynamics.py]({{ base_url }}/getting_started/custom_dynamics.py) file
-This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
-and superimpose the same corner to a different marker at the end.
+### The [custom_dynamics.py](./bioptim/example/getting_started/custom_dynamics.py) file
+This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement
+and superimpose the same corner on a different marker at the end.
 It is designed to show how to define a custom dynamics function if the provided ones are not 
 sufficient.
 
-This example reproduces the behavior of the `DynamicsFcn.TORQUE_DRIVEN` using a custom dynamics. 
+This example reproduces the behavior of the `DynamicsFcn.TORQUE_DRIVEN` using custom dynamics. 
 
 The custom_dynamic function is used to provide the derivative of the states. The custom_configure function is used 
 to tell the program which variables are states and controls. 
 
-### The custom_initial_guess.py file
-This example is a trivial box that must superimpose one of its corner to a marker at the beginning of the movement
-and superimpose the same corner to a different marker at the end.
-It is designed to investigate the different way to define the initial guesses at each node that are sent to the solver.
+### The [custom_initial_guess.py](./bioptim/example/getting_started/custom_initial_guess.py) file
+This example is a trivial box that must superimpose one of its corners on a marker at the beginning of the movement
+and superimpose the same corner on a different marker at the end.
+It is designed to investigate the different ways to define the initial guesses at each node sent to the solver.
 
-All the types of interpolation are shown : `CONSTANT`, `CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT`, `LINEAR`, `EACH_FRAME`,
+All the types of interpolation are shown: `CONSTANT`, `CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT`, `LINEAR`, `EACH_FRAME`,
 `SPLINE`, and `CUSTOM`. 
 
 When the CUSTOM interpolation is chosen, the `custom_init_func` function is used to custom the initial guesses of the 
 states and controls. In this particular example, the CUSTOM interpolation mimics linear interpolation. 
 
-### The custom_objectives.py file
-This example is a trivial box that tries to superimpose one of its corner to a marker at the beginning of the movement
-and superimpose the same corner to a different marker at the end.
+### The [custom_objectives.py](./bioptim/example/getting_started/custom_objectives.py) file
+This example is a trivial box that tries to superimpose one of its corners on a marker at the beginning of the movement
+and superimpose the same corner on a different marker at the end.
 It is designed to show how one can define its own custom objective function if the provided ones are not
 sufficient.
 
-More specifically this example reproduces the behavior of the `Mayer.SUPERIMPOSE_MARKERS` objective function. 
+This example reproduces the behavior of the `Mayer.SUPERIMPOSE_MARKERS` objective function. 
 
-This example is closed to the example of the custom_constraint.py file. We use the custom_func_track_markers to define 
-the objective function. In this example, one mimics the `ObjectiveFcn.SUPERIMPOSE_MARKERS`.
+This example is close to the example of the custom_constraint.py file. We use the custom_func_track_markers to define 
+the objective function. In this example, the CUSTOM objective mimics `ObjectiveFcn.SUPERIMPOSE_MARKERS`.
 
 ### The custom_parameters.py file 
 This example is a clone of the pendulum.py example with the difference that the
@@ -2422,4 +2421,3 @@ If you use `bioptim`, we would be grateful if you could cite it as follows:
   year={2022},
   publisher={IEEE}
 }
-
