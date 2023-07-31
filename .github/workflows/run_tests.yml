@@ -6,14 +6,17 @@ jobs:
     strategy:
       matrix:
         include:
-          #- os: ubuntu-22.04
-          #  label: linux-64
-          #  prefix: /usr/share/miniconda3/envs/bioptim
-          #- os: macos-latest
-          #  label: osx-64
-          #  prefix: /Users/runner/miniconda3/envs/bioptim
+          - os: ubuntu-latest
+            label: linux-64
+            node: 16
+            prefix: /usr/share/miniconda3/envs/bioptim
+          - os: macos-latest
+            label: osx-64
+            node: 16
+            prefix: /Users/runner/miniconda3/envs/bioptim
           - os: windows-latest
             label: win-64
+            node: 16
             prefix: C:\Miniconda3\envs\bioptim
     name: ${{ matrix.label }}
     runs-on: ${{ matrix.os }}
