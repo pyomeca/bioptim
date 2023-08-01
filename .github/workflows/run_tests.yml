@@ -93,7 +93,9 @@ jobs:
         uses: actions/upload-artifact@v3
         with:
           name: coverage${{ matrix.shard }}
-          path: coverage.xml
+          path: |
+            coverage.xml
+            .coverage.*
 
       - name: 'Echo upload path'
         run: echo ${{steps.archive.outputs.path}}
@@ -108,7 +110,9 @@ jobs:
         id: download
         uses: actions/download-artifact@v3
         with:
-          path: coverage.xml
+          path: |
+            coverage.xml
+            .coverage.*
 
       - name: 'Echo download path'
         run: echo ${{steps.download.outputs.download-path}}
@@ -117,6 +121,9 @@ jobs:
         run: |
           sudo apt-get install -y python3-pip
           pip3 install coverage
+
+      - name: Echo coverage reports
+        run: find . -name '.coverage.*' -print
 
       - name: Move coverage reports to current directory
         run: find . -name '.coverage.*' -exec mv {} . \;
