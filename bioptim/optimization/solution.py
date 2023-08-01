@@ -1269,11 +1269,11 @@ class Solution:
                     ]
                 )
             )
-            if self.ocp.nlp[p].stochastic_variables["unscaled"].keys():
+            if self.ocp.nlp[p].stochastic_variables.keys():
                 s = np.concatenate(
                     [
                         self._stochastic_variables["unscaled"][p][key]
-                        for key in self.ocp.nlp[p].stochastic_variables["unscaled"]
+                        for key in self.ocp.nlp[p].stochastic_variables
                     ]
                 )
             else:
