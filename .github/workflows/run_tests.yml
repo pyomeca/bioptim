@@ -74,7 +74,7 @@ jobs:
         if: matrix.os == 'macos-latest'
 
       - name: Run tests
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
         #run:  pytest -v --color=yes  --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
 
 
