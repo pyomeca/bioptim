@@ -13,7 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest] #, macos-latest, windows-latest]
-        shard: [1, 2] #, 3, 4]
+        shard: [1, 4] #, 3, 4]
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -90,10 +90,11 @@ jobs:
         run: coverage report -m
 
       - name: Archive coverage report
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: coverage${{ matrix.shard }}
-          path: coverage.xml
+          #path: coverage.xml
+          path: output/test/code-coverage.html
 
 
 
@@ -101,8 +102,15 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
+
       - name: Download all workflow run artifacts
-        uses: actions/download-artifact@v2
+        id: download
+        uses: actions/download-artifact@v3
+        with:
+          path: output/test/code-coverage.html
+
+      - name: 'Echo download path'
+        run: echo ${{steps.download.outputs.download-path}}
 
       - name: Install extra dependencies
         run: |
