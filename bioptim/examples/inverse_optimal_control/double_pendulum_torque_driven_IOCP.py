@@ -30,6 +30,7 @@ def prepare_ocp(
     biorbd_model_path="models/double_pendulum.bioMod",
     assume_phase_dynamics: bool = True,
     n_threads: int = 4,
+    expand_dynamics: bool = True,
 ):
     # Parameters of the problem
     biorbd_model = BiorbdModel(biorbd_model_path)
@@ -59,7 +60,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
 
     # Path constraint
     n_q = biorbd_model.nb_q

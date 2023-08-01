@@ -18,6 +18,7 @@ def test_custom_model(assume_phase_dynamics):
         configure_dynamics=configure_dynamics,
         assume_phase_dynamics=assume_phase_dynamics,
         n_threads=1,
+        expand_dynamics=True,
     )
 
     np.testing.assert_almost_equal(ocp.nlp[0].model.nb_q, 1)

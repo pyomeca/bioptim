@@ -43,6 +43,7 @@ def test_acados_no_obj(cost_type):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=10,
         tf=2,
+        expand_dynamics=True,
     )
     solver = Solver.ACADOS()
     solver.set_cost_type(cost_type)
@@ -63,9 +64,7 @@ def test_acados_one_mayer(cost_type):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        n_shooting=10,
-        tf=2,
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", n_shooting=10, tf=2, expand_dynamics=True
     )
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0], target=np.array([[1.0]]).T)
@@ -97,6 +96,7 @@ def test_acados_mayer_first_node(cost_type):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=10,
         tf=2,
+        expand_dynamics=True,
     )
     objective_functions = ObjectiveList()
     objective_functions.add(
@@ -131,6 +131,7 @@ def test_acados_several_mayer(cost_type):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=10,
         tf=2,
+        expand_dynamics=True,
     )
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="q", index=[0, 1], target=np.array([[1.0, 2.0]]).T)
@@ -169,6 +170,7 @@ def test_acados_one_lagrange(cost_type):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=n_shooting,
         tf=2,
+        expand_dynamics=True,
     )
     objective_functions = ObjectiveList()
     objective_functions.add(
@@ -212,6 +214,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=n_shooting,
         tf=2,
+        expand_dynamics=True,
     )
     objective_functions = ObjectiveList()
     objective_functions.add(
@@ -257,6 +260,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=n_shooting,
         tf=2,
+        expand_dynamics=True,
     )
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", multi_thread=False)
@@ -292,6 +296,7 @@ def test_acados_options(cost_type):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=0.6,
         n_shooting=200,
+        expand_dynamics=True,
     )
 
     tols = [1e-1, 1e1]
@@ -325,6 +330,7 @@ def test_acados_fail_external():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=2,
+        expand_dynamics=True,
     )
 
     solver = Solver.ACADOS()
@@ -348,6 +354,7 @@ def test_acados_fail_lls():
         final_time=1,
         n_shooting=2,
         use_sx=True,
+        expand_dynamics=True,
     )
 
     solver = Solver.ACADOS()
@@ -374,6 +381,7 @@ def test_acados_custom_dynamics(problem_type_custom):
         problem_type_custom=problem_type_custom,
         ode_solver=OdeSolver.RK4(),
         use_sx=True,
+        expand_dynamics=True,
     )
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
@@ -418,6 +426,7 @@ def test_acados_one_parameter():
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
         use_sx=True,
+        expand_dynamics=True,
     )
     model = ocp.nlp[0].model
     objectives = ObjectiveList()
@@ -484,6 +493,7 @@ def test_acados_several_parameter():
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
         use_sx=True,
+        expand_dynamics=True,
     )
     model = ocp.nlp[0].model
     objectives = ObjectiveList()
@@ -552,6 +562,7 @@ def test_acados_one_end_constraints():
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=10,
         tf=2,
+        expand_dynamics=True,
     )
 
     model = ocp.nlp[0].model
@@ -605,6 +616,7 @@ def test_acados_constraints_all():
         initialize_near_solution=True,
         constr=False,
         use_sx=True,
+        expand_dynamics=True,
     )
 
     constraints = ConstraintList()
@@ -646,6 +658,7 @@ def test_acados_constraints_end_all():
         initialize_near_solution=True,
         constr=False,
         use_sx=True,
+        expand_dynamics=True,
     )
 
     constraints = ConstraintList()
@@ -686,6 +699,7 @@ def test_acados_assume_phase_dynamics_reject():
         final_time=1,
         n_shooting=10,
         assume_phase_dynamics=False,
+        expand_dynamics=True,
     )
 
     with pytest.raises(
@@ -739,7 +753,7 @@ def test_acados_bounds_not_implemented(failing):
 
     mhe = MovingHorizonEstimator(
         bio_model,
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True),
         window_len,
         window_duration,
         x_init=x_init,

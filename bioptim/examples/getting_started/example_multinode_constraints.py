@@ -68,6 +68,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     assume_phase_dynamics: bool = True,
     with_too_much_constraints: bool = False,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -88,6 +89,10 @@ def prepare_ocp(
         This is to show what happens in the case too many constraints are declared in the multinode constraints (that
         is more than three in the same phase). It will raise ValueError if assume_phase_dynamics is True since maximum
         three nodes are created by phase. If is it set too False, it will work just fine
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -108,10 +113,9 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
 
     # Constraints
     constraints = ConstraintList()

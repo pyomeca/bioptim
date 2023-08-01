@@ -194,7 +194,6 @@ def configure_stochastic_optimal_control_problem(
         ),
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
-        expand=False,
     )
     return
 
@@ -435,6 +434,7 @@ def prepare_socp(
     force_field_magnitude: float = 0,
     problem_type = ExampleType.CIRCLE,
     with_cholesky: bool = False,
+    expand_dynamics: bool = True,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -458,6 +458,11 @@ def prepare_socp(
         The type of problem to solve (CIRCLE or BAR)
     with_cholesky: bool
         If True, whether to use the Cholesky factorization of the covariance matrix or not
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
+
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -545,6 +550,7 @@ def prepare_socp(
         motor_noise=np.zeros((n_tau, 1)),
         sensory_noise=np.zeros((n_q + n_qdot, 1)),
         with_cholesky=with_cholesky,
+        expand=expand_dynamics,
     )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf

@@ -209,7 +209,12 @@ def prepare_ocp(
     # Creates the system's dynamic for my n phases
     dynamics = DynamicsList()
     for i in range(n_phase):
-        dynamics.add(custom_model.declare_variables, dynamic_function=custom_model.custom_dynamics, phase=i)
+        dynamics.add(
+            custom_model.declare_variables,
+            dynamic_function=custom_model.custom_dynamics,
+            phase=i,
+            expand=True,
+        )
 
     # Creates the constraint for my n phases
     constraints = ConstraintList()
