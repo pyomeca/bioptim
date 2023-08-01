@@ -261,7 +261,7 @@ The user is therefore invited to read the relevant documentation.
 Here is a list of all direct dependencies (meaning that some dependencies may require other libraries themselves):  
 [Python](https://www.python.org/) | [numpy](https://numpy.org/) | [scipy](https://scipy.org/) | [packaging](https://packaging.python.org/) | [setuptools](https://pypi.org/project/setuptools/)
 | [matplotlib](https://matplotlib.org/) | [pandas](https://pandas.pydata.org/) | [pyomeca](https://github.com/pyomeca/pyomeca) | [CasADi](https://web.casadi.org/) | [rbdl-casadi](https://github.com/pyomeca/rbdl-casadi) compiled with the CasADi backend | [tinyxml](http://www.grinninglizard.com/tinyxmldocs/index.html) | [biorbd](https://github.com/pyomeca/biorbd) | [vtk](https://vtk.org/) | [PyQt](https://www.riverbankcomputing.com/software/pyqt) | [bioviz](https://github.com/pyomeca/bioviz) | [graphviz](https://graphviz.org/) | [`Ipopt`](https://github.com/coin-or/Ipopt) | [`Acados`](https://github.com/acados/acados) | [pyqtgraph](https://www.pyqtgraph.org/) | [pygmo](https://esa.github.io/pygmo2/) (only for inverse optimal control)  
-and optionally: [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html)
+and optionally: [The linear solvers from the HSL Mathematical Software Library](http://www.hsl.rl.ac.uk/index.html) with install instructions [here](https://github.com/casadi/casadi/wiki/Obtaining-HSL).
 
 #### Linux - Installing dependencies with conda
 All these (except for ̀`Acados` and the HSL lib) can easily be installed using (assuming the anaconda3 environment is loaded if needed) the `pip3` command or the Anaconda's following command:
