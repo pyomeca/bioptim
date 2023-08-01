@@ -17,15 +17,15 @@ jobs:
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Set prefix
-        run: |
-          if [[ "${{ runner.os }}" == "Linux" ]]; then
-            echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
-          elif [[ "${{ runner.os }}" == "macOS" ]]; then
-            echo "PREFIX=${{ env.PREFIX_MACOS }}" >> $GITHUB_ENV
-          elif [[ "${{ runner.os }}" == "Windows" ]]; then
-            echo "PREFIX=${{ env.PREFIX_WINDOWS }}" >> $GITHUB_ENV
-          fi
+#      - name: Set prefix
+#        run: |
+#          if [[ "${{ runner.os }}" == "Linux" ]]; then
+#            echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
+#          elif [[ "${{ runner.os }}" == "macOS" ]]; then
+#            echo "PREFIX=${{ env.PREFIX_MACOS }}" >> $GITHUB_ENV
+#          elif [[ "${{ runner.os }}" == "Windows" ]]; then
+#            echo "PREFIX=${{ env.PREFIX_WINDOWS }}" >> $GITHUB_ENV
+#          fi
 
       - name: Checkout code
         uses: actions/checkout@v3
@@ -51,14 +51,14 @@ jobs:
       - name: Install ACADOS on Linux
         run: |
           cd external
-          ./acados_install_linux.sh
+          ./acados_install_linux.sh ${{ env.PREFIX_LINUX }}
           cd ..
         if: matrix.os == 'ubuntu-latest'
 
       - name: Install ACADOS on Mac
         run: |
           cd external
-          ./acados_install_mac.sh
+          ./acados_install_mac.sh ${{ env.PREFIX_MACOS }}
           cd ..
         if: matrix.os == 'macos-latest'
 
