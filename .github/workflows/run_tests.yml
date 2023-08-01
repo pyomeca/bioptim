@@ -6,15 +6,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
         shard: [1, 2, 3, 4]
-    name: Test on ${{ matrix.os }}, shard ${{ matrix.shard }}
+    name: Run tests on ${{ matrix.os }} for shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash -l {0}
     steps:
-      - name: Checkout Code
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Setup environment
@@ -33,56 +30,62 @@ jobs:
           mamba list
 
       - name: Install extra dependencies
-        run: mamba install pytest-cov black pytest pytest-cov codecov packaging -c conda-forge
+        run: mamba install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
 
       - name: Install ACADOS on Linux
         run: |
           cd external
           ./acados_install_linux.sh
           cd ..
-        if: runner.os == 'Linux'
+        if: matrix.os == 'ubuntu-latest'
 
       - name: Install ACADOS on Mac
         run: |
           cd external
           ./acados_install_mac.sh
           cd ..
-        if: runner.os == 'macOS'
+        if: matrix.os == 'macos-latest'
 
-      - name: Run the actual tests
-        run: pytest -v --color=yes --cov-report=xml --cov=bioptim tests/test_shard_${{ matrix.shard }}.py
+      - name: Run tests
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }}
 
       - name: Test installed version of bioptim
         run: | 
           python setup.py install
           cd
           python -c "import bioptim"
+        #if: matrix.shard == 1
+
+      - name: Generate coverage report
+        run: coverage report -m
+
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage${{ matrix.shard }}
+          path: .coverage.*
+
+  merge-coverage:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all workflow run artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Install extra dependencies
+        run: |
+          sudo apt-get install -y python3-pip
+          pip3 install coverage
+
+      - name: Merge coverage reports
+        run: coverage combine
+
+      - name: Generate XML report
+        run: coverage xml
 
       - name: Upload coverage to Codecov
-        run: bash <(curl -s https://codecov.io/bash) -f coverage.xml
-        if: runner.os == 'Linux'
-
-merge-coverage:
-  needs: build
-  runs-on: ubuntu-latest
-  steps:
-    - name: Download all workflow run artifacts
-      uses: actions/download-artifact@v2
-
-    - name: Install extra dependencies
-      run: |
-        sudo apt-get install -y python3-pip
-        pip3 install coverage
-
-    - name: Merge coverage reports
-      run: coverage combine
-
-    - name: Generate XML report
-      run: coverage xml
-
-    - name: Upload coverage to Codecov
-      uses: codecov/codecov-action@v2
-      with:
-        file: ./coverage.xml
-        flags: unittests
-        fail_ci_if_error: true
+        uses: codecov/codecov-action@v2
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          fail_ci_if_error: true
