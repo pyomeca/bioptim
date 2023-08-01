@@ -12,6 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        prefix: /usr/share/miniconda3/envs/bioptim
         os: [ubuntu-latest, macos-latest, windows-latest]
         shard: [1, 2, 3, 4]
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
@@ -55,6 +56,7 @@ jobs:
 
       - name: Install ACADOS on Linux
         run: |
+          pwd
           cd external
           ./acados_install_linux.sh 1 ${{ env.PREFIX_LINUX }}
           cd ..
@@ -62,6 +64,7 @@ jobs:
 
       - name: Install ACADOS on Mac
         run: |
+          pwd
           cd external
           ./acados_install_mac.sh 1 ${{ env.PREFIX_MACOS }}
           cd ..
