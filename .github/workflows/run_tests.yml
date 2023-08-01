@@ -84,7 +84,6 @@ jobs:
           python setup.py install
           cd
           python -c "import bioptim"
-        #if: matrix.shard == 1
 
       - name: Generate coverage report
         run: coverage report -m
@@ -118,6 +117,9 @@ jobs:
         run: |
           sudo apt-get install -y python3-pip
           pip3 install coverage
+
+      - name: Move coverage reports to current directory
+        run: find . -name '.coverage.*' -exec mv {} . \;
 
       - name: Merge coverage reports
         run: coverage combine
