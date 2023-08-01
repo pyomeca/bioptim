@@ -90,12 +90,15 @@ jobs:
         run: coverage report -m
 
       - name: Archive coverage report
+        id: archive
         uses: actions/upload-artifact@v3
         with:
           name: coverage${{ matrix.shard }}
           #path: coverage.xml
-          path: output/test/code-coverage.html
+          path: output/test/code-coverage.xml
 
+      - name: 'Echo upload path'
+        run: echo ${{steps.archive.outputs.path}}
 
 
   merge-coverage:
@@ -107,7 +110,7 @@ jobs:
         id: download
         uses: actions/download-artifact@v3
         with:
-          path: output/test/code-coverage.html
+          path: output/test/code-coverage.xml
 
       - name: 'Echo download path'
         run: echo ${{steps.download.outputs.download-path}}
