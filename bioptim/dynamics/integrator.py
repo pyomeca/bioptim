@@ -171,7 +171,8 @@ class Integrator:
         Prepare the CasADi function from dxdt
         """
 
-        t_sym = self.t_span[0] if isinstance(self.t_span[0], (MX, SX)) else []
+        # t_sym = self.t_span[0] if isinstance(self.t_span[0], (MX, SX)) else []
+        t_sym = []
 
         self.function = Function(
             "integrator",
@@ -791,8 +792,9 @@ class IRK(COLLOCATION):
         _, _, defect = super(IRK, self).dxdt(h, time, states, controls, params, param_scaling, stochastic_variables)
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
+        time_sym = []
         vfcn = Function(
-            "vfcn", [vertcat(*states[1:]), time, states[0], controls, params, stochastic_variables], [defect]
+            "vfcn", [vertcat(*states[1:]), time_sym, states[0], controls, params, stochastic_variables], [defect]
         ).expand()
 
         # Create a implicit function instance to solve the system of equations

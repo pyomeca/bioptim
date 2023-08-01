@@ -528,10 +528,10 @@ class OptimalControlProgram:
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
 
-        # if t_bounds is None:
-        #     t_bounds = BoundsList()
-        # elif not isinstance(t_bounds, BoundsList):
-        #     raise RuntimeError("t_bounds should be built from a BoundsList")
+        if t_bounds is None:
+            t_bounds = BoundsList()
+        elif not isinstance(t_bounds, BoundsList):
+            raise RuntimeError("t_bounds should be built from a BoundsList")
 
         if x_bounds is None:
             x_bounds = BoundsList()
@@ -548,10 +548,10 @@ class OptimalControlProgram:
         elif not isinstance(s_bounds, BoundsList):
             raise RuntimeError("s_bounds should be built from a BoundsList")
 
-        # if t_init is None:
-        #     t_init = InitialGuessList()
-        # if not isinstance(t_init, InitialGuessList):
-        #     raise RuntimeError("t_init should be built from a InitialGuessList")
+        if t_init is None:
+            t_init = InitialGuessList()
+        if not isinstance(t_init, InitialGuessList):
+            raise RuntimeError("t_init should be built from a InitialGuessList")
 
         if x_init is None:
             x_init = InitialGuessList()
@@ -568,12 +568,12 @@ class OptimalControlProgram:
         if not isinstance(s_init, InitialGuessList):
             raise RuntimeError("s_init should be built from a InitialGuessList")
 
-        # t_bounds = self._prepare_option_dict_for_phase("t_bounds", t_bounds, BoundsList)
+        t_bounds = self._prepare_option_dict_for_phase("t_bounds", t_bounds, BoundsList)
         x_bounds = self._prepare_option_dict_for_phase("x_bounds", x_bounds, BoundsList)
         u_bounds = self._prepare_option_dict_for_phase("u_bounds", u_bounds, BoundsList)
         s_bounds = self._prepare_option_dict_for_phase("s_bounds", s_bounds, BoundsList)
 
-        # t_init = self._prepare_option_dict_for_phase("t_init", t_init, InitialGuessList)
+        t_init = self._prepare_option_dict_for_phase("t_init", t_init, InitialGuessList)
         x_init = self._prepare_option_dict_for_phase("x_init", x_init, InitialGuessList)
         u_init = self._prepare_option_dict_for_phase("u_init", u_init, InitialGuessList)
         s_init = self._prepare_option_dict_for_phase("s_init", s_init, InitialGuessList)
@@ -1179,12 +1179,12 @@ class OptimalControlProgram:
             The stochastic variable bounds to add
         """
         for i in range(self.n_phases):
-            # if t_bounds is not None:
-            #     if not isinstance(t_bounds, BoundsList):
-            #         raise RuntimeError("t_bounds should be built from a BoundsList")
-            #     origin_phase = 0 if len(t_bounds) == 1 else i
-            #     for key in t_bounds[origin_phase].keys():
-            #         self.nlp[i].t_bounds.add(key, t_bounds[origin_phase][key], phase=0)
+            if t_bounds is not None:
+                if not isinstance(t_bounds, BoundsList):
+                    raise RuntimeError("t_bounds should be built from a BoundsList")
+                origin_phase = 0 if len(t_bounds) == 1 else i
+                for key in t_bounds[origin_phase].keys():
+                    self.nlp[i].t_bounds.add(key, t_bounds[origin_phase][key], phase=0)
 
             if x_bounds is not None:
                 if not isinstance(x_bounds, BoundsList):

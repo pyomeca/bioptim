@@ -451,7 +451,7 @@ class Solution:
             # Extract the data now for further use
             (
                 # self._time["scaled"],
-                self._time,
+                # self._time,
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
@@ -593,7 +593,7 @@ class Solution:
             self.vector = _sol
             (
                 # self._time["scaled"],
-                self._time,
+                # self._time,
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
