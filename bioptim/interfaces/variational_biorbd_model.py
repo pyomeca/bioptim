@@ -260,7 +260,10 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
 
         if self.has_holonomic_constraints:
             return vertcat(
-                residual, self.holonomic_constraints(q0), self.holonomic_constraints(q1)
+                residual,
+                self.holonomic_constraints(q1),  # consistent with the paper
+                self.holonomic_constraints(q0),  # to make sure the initial position fulfills the constraints
+                self.holonomic_constraints_jacobian(q0) @ qdot0,  # and the initial velocity fulfills its derivative
             )  # constraints(0) is never evaluated if not here
         else:
             return residual
@@ -324,4 +327,11 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         residual = -d2_l_q_ultimate_qdot_ultimate + d2_ld_q_penultimate_q_ultimate + fd_plus - constraint_term
         # constraints(q_ultimate) has already been evaluated in the last constraint calling
         # discrete_euler_lagrange_equations, thus it is not necessary to evaluate it again here.
-        return residual
+        # however it is necessary to evaluate the derivative of the constraints with respect to q_ultimate
+        if self.has_holonomic_constraints:
+            return vertcat(
+                residual, self.holonomic_constraints_jacobian(q_ultimate) @ q_dot_ultimate
+            )
+        else:
+            return residual
+
