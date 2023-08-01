@@ -75,8 +75,8 @@ jobs:
 
       - name: Run tests
         #run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }}
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
-
+        #run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
+        run:  pytest -v --color=yes  --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
 
 
       - name: Test installed version of bioptim
@@ -128,8 +128,11 @@ jobs:
         run: coverage xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v3
         with:
           file: ./coverage.xml
           flags: unittests
           fail_ci_if_error: true
+          verbose: true # optional (default = false)
+
+
