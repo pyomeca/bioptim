@@ -94,7 +94,7 @@ class OptimizationVectorHelper:
                 if nlp.stochastic_variables.keys():
                     s[nlp.phase_idx].append(
                         s_scaled[nlp.phase_idx][0]
-                        # * np.concatenate([nlp.s_scaling[key].scaling for key in nlp.stochastic_variables.keys()])
+                        * np.concatenate([nlp.s_scaling[key].scaling for key in nlp.stochastic_variables.keys()])
                     )
 
             OptimizationVectorHelper._set_node_index(nlp, 0)
@@ -244,8 +244,8 @@ class OptimizationVectorHelper:
                 collapsed_values_max = np.ndarray((nlp.stochastic_variables.shape, 1))
                 for key in nlp.stochastic_variables.keys():
                     if key in nlp.s_bounds.keys():
-                        value_min = nlp.s_bounds[key].min.evaluate_at(shooting_point=k)  # / nlp.s_scaling[key].scaling
-                        value_max = nlp.s_bounds[key].max.evaluate_at(shooting_point=k)  # / nlp.s_scaling[key].scaling
+                        value_min = nlp.s_bounds[key].min.evaluate_at(shooting_point=k) / nlp.s_scaling[key].scaling
+                        value_max = nlp.s_bounds[key].max.evaluate_at(shooting_point=k) / nlp.s_scaling[key].scaling
                     else:
                         value_min = -np.inf
                         value_max = np.inf
@@ -363,7 +363,7 @@ class OptimizationVectorHelper:
                 collapsed_values = np.ndarray((nlp.stochastic_variables.shape, 1))
                 for key in nlp.stochastic_variables:
                     if key in nlp.s_init.keys():
-                        value = nlp.s_init[key].init.evaluate_at(shooting_point=k)  #  / nlp.s_scaling[key].scaling
+                        value = nlp.s_init[key].init.evaluate_at(shooting_point=k) / nlp.s_scaling[key].scaling
                     else:
                         value = 0
 

@@ -27,7 +27,7 @@ class PenaltyController:
         u_scaled: list,
         p: MX | SX | list,
         s: list,
-        # s_scaled: list,
+        s_scaled: list,
         node_index: int = None,
     ):
         """
@@ -64,8 +64,8 @@ class PenaltyController:
         self.u = u
         self.x_scaled = x_scaled
         self.u_scaled = u_scaled
-        # self.s = s
-        # self.s_scaled = s_scaled
+        self.s = s
+        self.s_scaled = s_scaled
         self.p = vertcat(p) if p is not None else p
         self.node_index = node_index
         self.cx_index_to_get = 0

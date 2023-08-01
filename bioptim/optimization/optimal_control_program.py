@@ -1384,6 +1384,23 @@ class OptimalControlProgram:
                     u_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
                 u /= u_scaling
 
+            if s.size != 0:
+                s_scaling = np.concatenate(
+                    [
+                        np.repeat(self.nlp[penalty_phase].s_scaling[key].scaling[:, np.newaxis], s.shape[1], axis=1)
+                        for key in self.nlp[penalty_phase].stochastic_variables
+                    ]
+                )
+                if penalty.multinode_penalty:
+                    len_s = sum(
+                        self.nlp[penalty_phase].stochastic_variables[key].shape
+                        for key in self.nlp[penalty_phase].stochastic_variables
+                    )
+                    complete_scaling = np.array(s_scaling)
+                    number_of_repeat = s.shape[0] // len_s
+                    s_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
+                s /= s_scaling
+
             out = []
             if penalty.transition or penalty.multinode_penalty:
                 out.append(
