@@ -19,8 +19,8 @@ from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biomodel import BioModel
-from ..interfaces.holonomic_biomodel import HolonomicBioModel
-from ..interfaces.variational_biomodel import VariationalBioModel
+from ..interfaces.holonomic_biorbd_model import HolonomicBiorbdModel
+from ..interfaces.variational_biorbd_model import VariationalBiorbdModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -727,6 +727,10 @@ class OptimalControlProgram:
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
+            if (( isinstance(bio_model, HolonomicBiorbdModel) or
+                    isinstance(bio_model, VariationalBiorbdModel))
+                    and self.nlp[i].stochastic_variables.shape > 0):
+                raise RuntimeError("Stochastic variables are not supported with holonomic constraints / variational integrator yet")
 
         self.parameter_bounds = BoundsList()
         self.parameter_init = InitialGuessList()
