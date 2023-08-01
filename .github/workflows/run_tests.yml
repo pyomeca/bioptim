@@ -94,7 +94,8 @@ jobs:
           name: coverage${{ matrix.shard }}
           path: |
             coverage.xml
-            .coverage.*
+            .coverage
+
 
   merge-coverage:
     needs: build
@@ -107,10 +108,7 @@ jobs:
         with:
           path: |
             coverage.xml
-            .coverage.*
-
-      - name: 'Echo download path'
-        run: echo ${{steps.download.outputs.download-path}}
+            .coverage
 
       - name: Install extra dependencies
         run: |
