@@ -63,7 +63,7 @@ jobs:
           cd external
           ./acados_install_linux.sh 1 ${{ env.PREFIX_LINUX }}
           cd ..
-        if: matrix.os == 'not' #'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest'
 
       - name: Install ACADOS on Mac
         run: |
