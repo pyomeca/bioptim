@@ -439,14 +439,21 @@ class Solution:
                 self.parameters,
                 self._stochastic_variables["scaled"],
             ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
-            self._states["unscaled"], self._controls["unscaled"], self._stochastic_variables["unscaled"] = self._to_unscaled_values(
+            (
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self._stochastic_variables["unscaled"],
+            ) = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"], self._stochastic_variables["scaled"]
             )
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
             self._integrated_values = get_integrated_values(
-                self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables["unscaled"]
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self.parameters,
+                self._stochastic_variables["unscaled"],
             )
 
         def init_from_initial_guess(_sol: list):
@@ -541,14 +548,21 @@ class Solution:
                 self.parameters,
                 self._stochastic_variables["scaled"],
             ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
-            self._states["unscaled"], self._controls["unscaled"], self._stochastic_variables["unscaled"] = self._to_unscaled_values(
+            (
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self._stochastic_variables["unscaled"],
+            ) = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"], self._stochastic_variables["scaled"]
             )
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
             self._integrated_values = get_integrated_values(
-                self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables["unscaled"]
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self.parameters,
+                self._stochastic_variables["unscaled"],
             )
 
         def init_from_vector(_sol: np.ndarray | DM):
@@ -568,13 +582,20 @@ class Solution:
                 self.parameters,
                 self._stochastic_variables["scaled"],
             ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
-            self._states["unscaled"], self._controls["unscaled"], self._stochastic_variables["unscaled"] = self._to_unscaled_values(
+            (
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self._stochastic_variables["unscaled"],
+            ) = self._to_unscaled_values(
                 self._states["scaled"], self._controls["scaled"], self._stochastic_variables["scaled"]
             )
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._integrated_values = get_integrated_values(
-                self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables["unscaled"]
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self.parameters,
+                self._stochastic_variables["unscaled"],
             )
 
         if isinstance(sol, dict):
@@ -670,7 +691,12 @@ class Solution:
 
         if skip_data:
             new._states["unscaled"], new._controls["unscaled"], new._stochastic_variables["unscaled"] = [], [], []
-            new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables["scaled"] = [], [], {}, []
+            new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables["scaled"] = (
+                [],
+                [],
+                {},
+                [],
+            )
         else:
             new._states["scaled"] = deepcopy(self._states["scaled"])
             new._controls["scaled"] = deepcopy(self._controls["scaled"])
@@ -840,7 +866,11 @@ class Solution:
         The stochastic variables data
         """
 
-        return self._stochastic_variables["unscaled"] if len(self._stochastic_variables["unscaled"]) > 1 else self._stochastic_variables["unscaled"][0]
+        return (
+            self._stochastic_variables["unscaled"]
+            if len(self._stochastic_variables["unscaled"]) > 1
+            else self._stochastic_variables["unscaled"][0]
+        )
 
     @property
     def stochastic_variables_scaled(self) -> list | dict:
@@ -851,7 +881,11 @@ class Solution:
         The stochastic variables data
         """
 
-        return self._stochastic_variables["scaled"] if len(self._stochastic_variables["scaled"]) > 1 else self._stochastic_variables["scaled"][0]
+        return (
+            self._stochastic_variables["scaled"]
+            if len(self._stochastic_variables["scaled"]) > 1
+            else self._stochastic_variables["scaled"][0]
+        )
 
     @property
     def integrated_values(self) -> list | dict:
@@ -1236,7 +1270,12 @@ class Solution:
                 )
             )
             if self.ocp.nlp[p].stochastic_variables["unscaled"].keys():
-                s = np.concatenate([self._stochastic_variables["unscaled"][p][key] for key in self.ocp.nlp[p].stochastic_variables["unscaled"]])
+                s = np.concatenate(
+                    [
+                        self._stochastic_variables["unscaled"][p][key]
+                        for key in self.ocp.nlp[p].stochastic_variables["unscaled"]
+                    ]
+                )
             else:
                 s = np.array([])
             if integrator == SolutionIntegrator.OCP:
@@ -1367,7 +1406,13 @@ class Solution:
         new.is_merged = True
         return new
 
-    def _merge_phases(self, skip_states: bool = False, skip_controls: bool = False, skip_stochastic: bool = False, continuous: bool = True) -> tuple:
+    def _merge_phases(
+        self,
+        skip_states: bool = False,
+        skip_controls: bool = False,
+        skip_stochastic: bool = False,
+        continuous: bool = True,
+    ) -> tuple:
         """
         Actually performing the phase merging
 
@@ -1472,11 +1517,24 @@ class Solution:
             out_stochastic_variables = deepcopy(self._stochastic_variables["unscaled"])
         else:
             out_stochastic_variables_scaled = (
-                _merge(self._stochastic_variables["scaled"], is_control=False) if not skip_stochastic and self._stochastic_variables["scaled"] else None
+                _merge(self._stochastic_variables["scaled"], is_control=False)
+                if not skip_stochastic and self._stochastic_variables["scaled"]
+                else None
             )
-            out_stochastic_variables = _merge(self._stochastic_variables["unscaled"], is_control=False) if not skip_stochastic else None
+            out_stochastic_variables = (
+                _merge(self._stochastic_variables["unscaled"], is_control=False) if not skip_stochastic else None
+            )
 
-        return out_states_scaled, out_states, out_controls_scaled, out_controls, out_stochastic_variables_scaled, out_stochastic_variables, phase_time, ns
+        return (
+            out_states_scaled,
+            out_states,
+            out_controls_scaled,
+            out_controls,
+            out_stochastic_variables_scaled,
+            out_stochastic_variables,
+            phase_time,
+            ns,
+        )
 
     def _complete_control(self):
         """
@@ -1731,9 +1789,9 @@ class Solution:
 
                     s = np.ndarray((nlp.stochastic_variables.shape, len(col_s_idx)))
                     for key in nlp.stochastic_variables:
-                        s[nlp.stochastic_variables[key].index, :] = self._stochastic_variables["scaled"][phase_idx][key][
-                            :, col_s_idx
-                        ]
+                        s[nlp.stochastic_variables[key].index, :] = self._stochastic_variables["scaled"][phase_idx][
+                            key
+                        ][:, col_s_idx]
 
                     if penalty.target is None:
                         target = []

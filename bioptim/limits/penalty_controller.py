@@ -246,7 +246,6 @@ class PenaltyController:
         out.current_cx_to_get = self.cx_index_to_get
         return out
 
-
     @property
     def stochastic_variables_scaled(self) -> OptimizationVariableList:
         """

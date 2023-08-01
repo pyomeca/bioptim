@@ -168,9 +168,7 @@ class Integrator:
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(
-                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
-            ),
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
@@ -692,9 +690,7 @@ class COLLOCATION(Integrator):
         self.function = Function(
             "integrator",
             [horzcat(*self.x_sym), self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(
-                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
-            ),
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
         )
@@ -784,9 +780,7 @@ class IRK(COLLOCATION):
         self.function = Function(
             "integrator",
             [self.x_sym[0], self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(
-                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
-            ),
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )

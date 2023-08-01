@@ -286,8 +286,10 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     # create the casadi function to be evaluated
     # Get the symbolic variables
     ref = stochastic_sym[controller.stochastic_variables["ref"].index]
-    stochastic_sym_dict = {key: stochastic_sym[controller.stochastic_variables[key].index] for key in
-                           controller.stochastic_variables.keys()}
+    stochastic_sym_dict = {
+        key: stochastic_sym[controller.stochastic_variables[key].index]
+        for key in controller.stochastic_variables.keys()
+    }
     for key in controller.stochastic_variables.keys():
         stochastic_sym_dict[key].cx_start = stochastic_sym_dict[key]
     cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
