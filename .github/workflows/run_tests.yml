@@ -22,7 +22,7 @@ jobs:
 
     steps:
       - name: Set prefix Linux
-        run: 
+        run:
             echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
         if: matrix.os == 'ubuntu-latest'
 
@@ -154,7 +154,7 @@ jobs:
         run: coverage xml
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v2
         with:
           file: ./coverage.xml
           flags: unittests
