@@ -157,17 +157,16 @@ jobs:
 #      - name: Show current dir content with new .coverage file
 #        run: pwd; ls -a
 
-      - name: Generate XML report
-        run: |
-          coverage xml
-          coverage report -m
+#      - name: Generate XML report
+#        run: |
+#          coverage xml
+#          coverage report -m
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
         with:
-          file: ./coverage.xml
+          #file: ./coverage.xml
+          files: /coverage1.xml,./coverage2.xml, /coverage3.xml,./coverage4.xml
           flags: unittests
           fail_ci_if_error: true
           verbose: true
-
-
