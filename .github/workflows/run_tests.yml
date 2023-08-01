@@ -97,7 +97,7 @@ jobs:
 #
 
   merge-coverage:
-    needs: build
+    #needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
