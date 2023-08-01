@@ -17,16 +17,21 @@ jobs:
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
     steps:
-#      - name: Set prefix
-#        run: |
-#          if [[ "${{ runner.os }}" == "Linux" ]]; then
-#            echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
-#          elif [[ "${{ runner.os }}" == "macOS" ]]; then
-#            echo "PREFIX=${{ env.PREFIX_MACOS }}" >> $GITHUB_ENV
-#          elif [[ "${{ runner.os }}" == "Windows" ]]; then
-#            echo "PREFIX=${{ env.PREFIX_WINDOWS }}" >> $GITHUB_ENV
-#          fi
+      - name: Set prefix Linux
+        run: |
+            echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
+        if: matrix.os == 'ubuntu-latest'
 
+      - name: Set prefix osx
+        run: |
+          echo "PREFIX=${{ env.PREFIX_macOS }}" >> $GITHUB_ENV
+        if: matrix.os == 'macos-latest'
+
+      - name: Set prefix windows
+        run: |
+          echo "PREFIX=${{ env.PREFIX_WINDOWS }}" >> $GITHUB_ENV
+        if: matrix.os == 'windows-latest'
+      
       - name: Checkout code
         uses: actions/checkout@v3
 
