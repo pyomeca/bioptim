@@ -463,6 +463,7 @@ class OdeSolver:
                         integrator_func,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
+                        nlp.stochastic_variables.scaled.cx_start,
                     ),
                     ["x0", "p", "params", "s"],
                     ["xf", "xall"],
@@ -470,7 +471,7 @@ class OdeSolver:
             ]
 
         @staticmethod
-        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, p: MX | SX):
+        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, p: MX | SX, s: MX | SX):
             """
             Interface to make xf and xall as outputs
 
@@ -482,13 +483,15 @@ class OdeSolver:
                 Symbolic variable of states
             p: MX | SX
                 Symbolic variable of controls
+            s: MX | SX
+                Symbolic variable of stochastic variables
 
             Returns
             -------
             xf and xall
             """
 
-            xf = integrator_func(x0=x0, p=p)["xf"]
+            xf = integrator_func(x0=x0, p=p, s=s)["xf"]
             return xf, horzcat(x0, xf)
 
         def __str__(self):

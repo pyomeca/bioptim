@@ -96,6 +96,8 @@ class OptimizationVectorHelper:
                         s_scaled[nlp.phase_idx][0]
                         * np.concatenate([nlp.s_scaling[key].scaling for key in nlp.stochastic_variables.keys()])
                     )
+                else:
+                    s[nlp.phase_idx].append(s_scaled[nlp.phase_idx][0])
 
             OptimizationVectorHelper._set_node_index(nlp, 0)
 
