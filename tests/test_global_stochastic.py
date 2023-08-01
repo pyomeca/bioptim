@@ -53,6 +53,7 @@ def test_arm_reaching_muscle_driven():
     # detailed cost values
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.4718449494109634)
     np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.35077195834212055)
+    np.testing.assert_almost_equal(f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost))))
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -388,6 +389,7 @@ def test_arm_reaching_torque_driven_explicit():
     # detailed cost values
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.0008000000000003249)
     np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.157506624022141e-06)
+    np.testing.assert_almost_equal(f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost))))
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -590,6 +592,8 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
         # detailed cost values
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 273.5544356233155)
         np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.00632179936471477)
+        np.testing.assert_almost_equal(f[0, 0], sum(
+            sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost))))
 
         # Check some of the results
         k, ref, m, cov, a, c = (
@@ -729,6 +733,8 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
         # detailed cost values
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 273.5560267942219)
         np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.00010090999197482785)
+        np.testing.assert_almost_equal(f[0, 0], sum(
+            sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost))))
 
         # Check some of the results
         k, ref, m, cov, a, c = (
@@ -743,8 +749,8 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0.34906586, 2.24586773]))
         np.testing.assert_almost_equal(q[:, -2], np.array([0.92561225, 1.29036811]))
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([5.99750888e-10, 6.36777753e-11]))
-        np.testing.assert_almost_equal(qdot[:, -2], np.array([1.14034274e-09, 1.77348396e-09]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+        np.testing.assert_almost_equal(qdot[:, -2], np.array([0, 0]))
 
         np.testing.assert_almost_equal(tau[:, 0], np.array([0.74341393, -0.38470965]))
         np.testing.assert_almost_equal(tau[:, -2], np.array([-0.69875678, 0.44426507]))
@@ -756,7 +762,7 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
             ),
         )
         np.testing.assert_almost_equal(
-            ref[:, 0], np.array([2.81907762e-02, 2.84412559e-01, -1.82246478e-10, -3.02336569e-12])
+            ref[:, 0], np.array([2.81907762e-02, 2.84412559e-01, 0, 0])
         )
         np.testing.assert_almost_equal(
             m[:, 0],
@@ -807,8 +813,8 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
                     1.00000000e00,
                     1.08524580e-09,
                     -9.99999991e-02,
-                    2.72912724e-10,
-                    -1.29617696e-10,
+                    0,
+                    0,
                     9.99999995e-01,
                     -5.48136491e-09,
                     -1.00000001e-01,
@@ -828,16 +834,16 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
             c[:, 3],
             np.array(
                 [
-                    -9.28531424e-12,
-                    2.10560432e-11,
-                    -8.74791141e-12,
-                    -1.84391377e-11,
+                    0,
+                    0,
+                    0,
+                    0,
                     -2.10526798e-04,
                     8.92312491e-04,
-                    2.61170664e-11,
-                    -4.05508057e-11,
-                    2.86516265e-11,
-                    4.55817345e-11,
+                    0,
+                    0,
+                    0,
+                    0,
                     -2.73807889e-02,
                     6.59798851e-02,
                     -1.34796595e00,
