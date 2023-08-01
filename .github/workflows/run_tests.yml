@@ -4,25 +4,27 @@ on: [pull_request]
 jobs:
   build:
     strategy:
+      fail-fast: false
       matrix:
-        include:
-          - os: ubuntu-20.04
+          - os: ubuntu-latest
             label: linux-64
             prefix: /usr/share/miniconda3/envs/bioptim
+            shard: [1, 2, 3, 4]
           - os: macos-latest
             label: osx-64
             prefix: /Users/runner/miniconda3/envs/bioptim
+            shard: [1, 2, 3, 4]
           - os: windows-latest
             label: win-64
             prefix: C:\Miniconda3\envs\bioptim
-    name: ${{ matrix.label }}
+            shard: [1, 2, 3, 4]
+
+    name: Run tests on ${{ matrix.os }} for shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
-    defaults:
-      run:
-        shell: bash -l {0}
     steps:
-      - uses: actions/checkout@v2
-      
+      - name: Checkout code
+        uses: actions/checkout@v3
+
       - name: Setup environment
         uses: conda-incubator/setup-miniconda@v2
         with:
@@ -31,13 +33,13 @@ jobs:
           use-mamba: true
           activate-environment: bioptim
           environment-file: environment.yml
-        
+
       - name: Print mamba info
         run: | 
           mamba config --show
           mamba info
           mamba list
-          
+
       - name: Install extra dependencies
         run: mamba install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
 
@@ -46,24 +48,55 @@ jobs:
           cd external
           ./acados_install_linux.sh
           cd ..
-        if: matrix.label == 'linux-64'
+        if: matrix.os == 'ubuntu-latest'
 
       - name: Install ACADOS on Mac
         run: |
           cd external
           ./acados_install_mac.sh
           cd ..
-        if: matrix.label == 'osx-64'
+        if: matrix.os == 'macos-latest'
 
-      - name: Run the actual tests
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests
-          
+      - name: Run tests
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }}
+
       - name: Test installed version of bioptim
         run: | 
           python setup.py install
           cd
           python -c "import bioptim"
-        
+        #if: matrix.shard == 1
+
+      - name: Generate coverage report
+        run: coverage report -m
+
+      - name: Archive coverage report
+        uses: actions/upload-artifact@v2
+        with:
+          name: coverage${{ matrix.shard }}
+          path: .coverage.*
+
+  merge-coverage:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all workflow run artifacts
+        uses: actions/download-artifact@v2
+
+      - name: Install extra dependencies
+        run: |
+          sudo apt-get install -y python3-pip
+          pip3 install coverage
+
+      - name: Merge coverage reports
+        run: coverage combine
+
+      - name: Generate XML report
+        run: coverage xml
+
       - name: Upload coverage to Codecov
-        run: codecov
-        if: matrix.label == 'linux-64'
+        uses: codecov/codecov-action@v2
+        with:
+          file: ./coverage.xml
+          flags: unittests
+          fail_ci_if_error: true
