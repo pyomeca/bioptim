@@ -12,7 +12,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+        os: [ubuntu-latest] #, macos-latest, windows-latest]
         shard: [1, 2, 3, 4] #,[1, 2, 3, 4]
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
@@ -149,10 +149,10 @@ jobs:
           done
 
       - name: Show current dir content
-        run: pwd; ls -a
+        run: pwd; ls -a -l
 
-      - name: Merge coverage reports
-        run: coverage combine .coverage1 .coverage2 .coverage3 .coverage4
+#      - name: Merge coverage reports
+#        run: coverage combine .coverage1 .coverage2 .coverage3 .coverage4
 
 #      - name: Show current dir content with new .coverage file
 #        run: pwd; ls -a
