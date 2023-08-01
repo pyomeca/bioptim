@@ -63,7 +63,7 @@ jobs:
           cd external
           ./acados_install_linux.sh 1 ${{ env.PREFIX_LINUX }}
           cd ..
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'not' #'ubuntu-latest'
 
       - name: Install ACADOS on Mac
         run: |
@@ -74,9 +74,8 @@ jobs:
         if: matrix.os == 'macos-latest'
 
       - name: Run tests
-        #run: pytest -v --color=yes --cov-report term-missing --cov=bioptim tests/shard${{ matrix.shard }}
-        #run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
-        run:  pytest -v --color=yes  --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
+        #run:  pytest -v --color=yes  --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
 
 
       - name: Test installed version of bioptim
