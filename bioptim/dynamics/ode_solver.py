@@ -435,6 +435,8 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with external_forces")
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
+            if nlp.stochastic_variables.shape != 0:
+                raise RuntimeError("CVODES cannot be used with stochastic variables")
 
             ode = {
                 "x": nlp.states.scaled.cx_start,
@@ -463,7 +465,6 @@ class OdeSolver:
                         integrator_func,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
-                        nlp.stochastic_variables.scaled.cx_start,
                     ),
                     ["x0", "p", "params", "s"],
                     ["xf", "xall"],
@@ -471,7 +472,7 @@ class OdeSolver:
             ]
 
         @staticmethod
-        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, p: MX | SX, s: MX | SX):
+        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, p: MX | SX):
             """
             Interface to make xf and xall as outputs
 
@@ -491,7 +492,7 @@ class OdeSolver:
             xf and xall
             """
 
-            xf = integrator_func(x0=x0, p=p, s=s)["xf"]
+            xf = integrator_func(x0=x0, p=p)["xf"]
             return xf, horzcat(x0, xf)
 
         def __str__(self):
