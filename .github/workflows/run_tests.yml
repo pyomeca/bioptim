@@ -63,7 +63,7 @@ jobs:
           cd external
           ./acados_install_linux.sh 1 ${{ env.PREFIX_LINUX }}
           cd ..
-        if: matrix.os == 'ubuntu-latest'
+        if: matrix.os == 'ubuntu-latest' && matrix.shard == 1
 
       - name: Install ACADOS on Mac
         run: |
@@ -71,17 +71,22 @@ jobs:
           cd external
           ./acados_install_mac.sh 1 ${{ env.PREFIX_MACOS }}
           cd ..
-        if: matrix.os == 'macos-latest'
-
-      - name: Run tests
-        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
-        #run:  pytest -v --color=yes  --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
+        if: matrix.os == 'macos-latest' && matrix.shard == 1
 
       - name: Test installed version of bioptim
         run: |
           python setup.py install
           cd
           python -c "import bioptim"
+        if: matrix.shard == 1
+
+      - name: Run tests with code coverage
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Run tests without code coverage
+        run: pytest -v --color=yes tests/shard${{ matrix.shard }}
+        if: matrix.os != 'ubuntu-latest'
 
       - name: Generate coverage report
         run: coverage report -m
@@ -121,6 +126,12 @@ jobs:
           activate-environment: bioptim
           environment-file: environment.yml
 
+      - name: Print mamba info
+        run: |
+          mamba config --show
+          mamba info
+#          mamba list
+
       - name: Install extra dependencies
         run: |
           sudo apt-get install -y python3-pip
@@ -129,10 +140,6 @@ jobs:
       - name: Download all workflow run artifacts
         id: download
         uses: actions/download-artifact@v3
-#        with:
-#          path: |
-#            coverage.xml
-#            .coverage
 
       - name: Rename coverage files
         run: |
@@ -147,8 +154,8 @@ jobs:
       - name: Merge coverage reports
         run: coverage combine .coverage1 .coverage2 .coverage3 .coverage4
 
-      - name: Show current dir content with new .coverage file
-        run: pwd; ls -a
+#      - name: Show current dir content with new .coverage file
+#        run: pwd; ls -a
 
       - name: Generate XML report
         run: coverage xml
@@ -159,6 +166,6 @@ jobs:
           file: ./coverage.xml
           flags: unittests
           fail_ci_if_error: true
-          verbose: true # optional (default = false)
+          verbose: true
 
 
