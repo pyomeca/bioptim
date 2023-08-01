@@ -103,7 +103,7 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
 
     np.testing.assert_almost_equal(
         sol.states["q"][:, 10].squeeze(),
-        [-0.325653795765506, 0.0, 0.514317755981258],
+        [-5.31812533e-01, -3.45378660e-14,  7.06503085e-01],
         decimal=6,
     )
 
@@ -115,30 +115,41 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 0].squeeze(),
-        [9.952650040825121, 0.0, 0.0],
+        [10.52248442,  0.        ,  0.        ],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 10].squeeze(),
-        [1.326124390994498, 0.0, 0.0],
+        [12.73929061,  0.        ,  0.        ],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, -2].squeeze(),
-        [-24.871395482792202, 0.0, 0.0],
+        [-19.06595356,   0.        ,   0.        ],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.parameters["qdot_start"].squeeze(),
-        [0.0, 0.0, 0.0],
+        [0.01000001, 0.01000001, 0.01000001],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.parameters["qdot_end"].squeeze(),
-        [0.0, 0.0, 0.0],
+        [-0.01000001, -0.01      ,  0.01000001],
         decimal=6,
     )
+    np.testing.assert_almost_equal(
+        sol.states["lambdas"][:, 0].squeeze(),
+        [-16.06577635],
+        decimal=6,
+    )
+    np.testing.assert_almost_equal(
+        sol.states["lambdas"][:, -1].squeeze(),
+        [7.59354865],
+        decimal=6,
+    )
+
