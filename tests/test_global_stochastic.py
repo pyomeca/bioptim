@@ -525,8 +525,8 @@ def test_arm_reaching_torque_driven_explicit():
         ),
     )
 
-
-def test_arm_reaching_torque_driven_implicit():
+@pytest.mark.parametrize("with_scaling", [True, False])
+def test_arm_reaching_torque_driven_implicit(with_scaling):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
 
     final_time = 0.8
@@ -555,6 +555,7 @@ def test_arm_reaching_torque_driven_implicit():
         sensory_noise_magnitude=sensory_noise_magnitude,
         force_field_magnitude=force_field_magnitude,
         problem_type=problem_type,
+        with_scaling=with_scaling,
     )
 
     # Solver parameters
@@ -567,15 +568,9 @@ def test_arm_reaching_torque_driven_implicit():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 273.55627111505794)
-
-    # detailed cost values
-    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 273.5562960834589)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], -2.496840094602077e-05)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (338, 1))
 
     # Check some of the results
     states, controls, stochastic_variables = (
@@ -594,122 +589,158 @@ def test_arm_reaching_torque_driven_implicit():
         stochastic_variables["c"],
     )
 
-    # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-    np.testing.assert_almost_equal(q[:, -2], np.array([0.92561256, 1.29036753]))
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([-2.82172788e-11, -1.23274702e-10]))
-    np.testing.assert_almost_equal(qdot[:, -2], np.array([7.65668575e-10, 5.59702668e-10]))
+    if with_scaling:
+        # Check objective function value
+        np.testing.assert_almost_equal(f[0, 0], 273.5544968992132)
 
-    np.testing.assert_almost_equal(tau[:, 0], np.array([0.74344014, -0.38479402]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-0.6987582, 0.44431225]))
+        # detailed cost values
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 273.55441804553374)
+        np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 7.885367938562026e-05)
 
-    np.testing.assert_almost_equal(
-        k[:, 0],
-        np.array([0.02004026, 0.0069783, 0.01389716, 0.01323812, -0.00142161, -0.00646875, 0.00394643, -0.01447342]),
-    )
-    np.testing.assert_almost_equal(
-        ref[:, 0], np.array([2.81907783e-02, 2.84412560e-01, 2.86053354e-11, 3.23037015e-11])
-    )
-    np.testing.assert_almost_equal(
-        m[:, 0],
-        np.array(
-            [
-                1.11111457e00,
-                3.88373567e-05,
-                -1.24951503e-02,
-                -7.04455780e-05,
-                -1.40358119e-05,
-                1.11184768e00,
-                -2.10160021e-04,
-                -1.23948958e-02,
-                -3.10844387e-04,
-                -3.49535274e-03,
-                1.12456352e00,
-                6.34010048e-03,
-                1.26322734e-03,
-                -6.62912775e-02,
-                1.89144013e-02,
-                1.11554061e00,
-            ]
-        ),
-    )
+        # Check constraints
+        np.testing.assert_equal(g.shape, (298, 1))
 
-    np.testing.assert_almost_equal(
-        cov[:, -2],
-        np.array(
-            [
-                -1.78665942e-04,
-                -1.51496351e-04,
-                -1.21263671e-04,
-                -4.05921692e-05,
-                -1.51496351e-04,
-                -1.26709767e-04,
-                -9.61403341e-05,
-                -3.41109001e-05,
-                -1.21263671e-04,
-                -9.61403341e-05,
-                -7.78125309e-05,
-                3.90777686e-06,
-                -4.05921692e-05,
-                -3.41109001e-05,
-                3.90777686e-06,
-                -5.29791556e-05,
-            ]
-        ),
-    )
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+        np.testing.assert_almost_equal(q[:, -2], np.array([0.9256103, 1.29037205]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+        np.testing.assert_almost_equal(qdot[:, -2], np.array([0, 0]))
 
-    np.testing.assert_almost_equal(
-        a[:, 3],
-        np.array(
-            [
-                1.00000000e00,
-                -1.22962760e-10,
-                -1.00000000e-01,
-                4.15084657e-12,
-                -1.55692210e-10,
-                1.00000000e00,
-                -1.14130204e-10,
-                -1.00000000e-01,
-                3.94221859e-02,
-                -4.10569380e-01,
-                1.01639263e00,
-                -1.87492281e-02,
-                -9.52505814e-02,
-                1.05939931e00,
-                9.65948051e-03,
-                1.08555264e00,
-            ]
-        ),
-    )
+        np.testing.assert_almost_equal(tau[:, 0], np.array([0.74343697, -0.38484252]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([-0.69874358,  0.444283]))
 
-    np.testing.assert_almost_equal(
-        c[:, 3],
-        np.array(
-            [
-                1.72287273e-13,
-                1.84947099e-13,
-                1.07604338e-13,
-                1.05774309e-13,
-                1.51137629e-02,
-                6.81012572e-02,
-                1.00666354e-13,
-                3.78518270e-14,
-                7.34625949e-14,
-                9.22662894e-14,
-                1.22466921e-02,
-                5.51958308e-02,
-                -1.34786949e00,
-                1.37816701e00,
-                -1.77974876e-02,
-                -3.20175900e-02,
-                6.12337352e-03,
-                2.72477423e-02,
-                1.37816701e00,
-                -4.28824687e00,
-                2.28876944e-02,
-                5.20590815e-02,
-                7.43922133e-03,
-                3.53387709e-02,
-            ]
-        ),
-    )
+        np.testing.assert_almost_equal(
+            k[:, 0],
+            np.array(
+                [0.02333378,  0.00325272, -0.00060941,  0.04029283,  0.00045477,
+       -0.00174648,  0.00156712, -0.00632804]),
+        )
+        np.testing.assert_almost_equal(
+            ref[:, 0], np.array([2.81907790e-02, 2.84412560e-01, 1.74521636e-11, 2.64914896e-12])
+        )
+        np.testing.assert_almost_equal(
+            m[:, 0],
+            np.array(
+                [
+                    1.11111432e+00, 2.85535247e-05, -1.24961020e-02, -6.89113047e-05,
+                    -2.19041660e-05, 1.11187133e+00, -2.10455632e-04, -1.24009462e-02,
+                    -2.89184109e-04, -2.56981736e-03, 1.12464918e+00, 6.20201739e-03,
+                    1.97137470e-03, -6.84200024e-02, 1.89410069e-02, 1.11608516e+00,
+                ]
+            ),
+        )
+
+        np.testing.assert_almost_equal(
+            cov[:, -2],
+            np.array(
+                [
+                    8.82546635e-07, 4.46828751e-07, 8.90901475e-09, 9.15265453e-09,
+                    4.46828751e-07, 3.59634750e-07, 5.33720039e-09, 5.56973974e-09,
+                    8.90901475e-09, 5.33720039e-09, 2.53804426e-08, 1.30925890e-08,
+                    9.15265453e-09, 5.56973974e-09, 1.30925890e-08, 1.05708217e-08,
+                ]
+            ),
+        )
+
+        np.testing.assert_almost_equal(
+            a[:, 3],
+            np.array(
+                [
+                    1.00000000e+00, -5.68969547e-15, -1.00000000e-01, 1.03817843e-15,
+                    -7.66040507e-15, 1.00000000e+00, -1.91357291e-15, -1.00000000e-01,
+                    4.36053135e-02, -3.95636967e-01, 1.01600723e+00, -2.11527917e-02,
+                    -1.10853715e-01, 1.01873121e+00, 1.26065494e-02, 1.09263288e+00,
+                ]
+            ),
+        )
+
+        np.testing.assert_almost_equal(
+            c[:, 2],
+            np.array(
+                [
+                    1.96935839e-18, 1.74751659e-17, -5.50955953e-17, -8.58071938e-17,
+                    4.09214661e-04, 6.15883749e-04, -2.26896306e-18, -2.16208566e-17,
+                    6.56859503e-17, 1.11337888e-16, -1.22914893e-03, -2.46554334e-03,
+                    -1.33957035e+00, 1.49128150e+00, -8.40286642e-02, -1.83694896e-01,
+                    -5.35569642e-04, -1.31671041e-03, 1.49128150e+00, -4.50504353e+00,
+                    2.24746884e-01, 4.47265116e-01, 2.79403656e-02, 4.58827555e-02,
+                ]
+            ),
+        )
+    else:
+        # Check objective function value
+        np.testing.assert_almost_equal(f[0, 0], 273.5544794347424)
+
+        # detailed cost values
+        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 273.5544180377883)
+        np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 6.139695412526639e-05)
+
+        # Check constraints
+        np.testing.assert_equal(g.shape, (298, 1))
+
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+        np.testing.assert_almost_equal(q[:, -2], np.array([0.9256103 , 1.29037205]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+        np.testing.assert_almost_equal(qdot[:, -2], np.array([0, 0]))
+
+        np.testing.assert_almost_equal(tau[:, 0], np.array([0.74343712, -0.38484293]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([-0.69874402,  0.44428418]))
+
+        np.testing.assert_almost_equal(
+            k[:, 0],
+            np.array([0.01848591,  0.00748107,  0.00991704,  0.02024049,  0.00036123,
+       -0.00220054,  0.00174077, -0.00692099]),
+        )
+        np.testing.assert_almost_equal(
+            ref[:, 0], np.array([2.81907790e-02, 2.84412560e-01, 1.74611109e-11, 2.68491278e-12])
+        )
+        np.testing.assert_almost_equal(
+            m[:, 0],
+            np.array(
+                [
+                    1.11111345e+00, 3.42118449e-05, -1.24960788e-02, -6.91292907e-05,
+                    -1.52820799e-05, 1.11185885e+00, -2.10300614e-04, -1.24002635e-02,
+                    -2.10903926e-04, -3.07906604e-03, 1.12464709e+00, 6.22163615e-03,
+                    1.37538723e-03, -6.72967228e-02, 1.89270553e-02, 1.11602371e+00,
+                ]
+            ),
+        )
+
+        np.testing.assert_almost_equal(
+            cov[:, -2],
+            np.array(
+                [
+                    8.82608391e-07, 4.46856593e-07, 8.92012519e-09, 9.17580048e-09,
+                    4.46856593e-07, 3.59584442e-07, 5.33858759e-09, 5.58195502e-09,
+                    8.92012519e-09, 5.33858759e-09, 2.53764113e-08, 1.30965341e-08,
+                    9.17580048e-09, 5.58195502e-09, 1.30965341e-08, 1.05834332e-08,
+                ]
+            ),
+        )
+
+        np.testing.assert_almost_equal(
+            a[:, 3],
+            np.array(
+                [
+                    1.00000000e+00, -5.41414868e-15, -1.00000000e-01, -5.24368888e-16,
+                    -7.45824586e-15, 1.00000000e+00, -1.13077816e-15, -1.00000000e-01,
+                    4.22934990e-02, -4.04008596e-01, 1.01591658e+00, -2.09996413e-02,
+                    -1.02365829e-01, 1.04314781e+00, 1.27055981e-02, 1.09217829e+00,
+                ]
+            ),
+        )
+
+        np.testing.assert_almost_equal(
+            c[:, 2],
+            np.array(
+                [
+                    4.93143323e-19, 5.86690331e-18, -1.40556691e-17, -2.76333591e-17,
+                    4.09107356e-04, 7.61240212e-04, -9.59577521e-19, -4.43182691e-18,
+                    1.01414386e-17, 1.93469669e-17, -7.79964468e-04, -1.63355034e-03,
+                    -1.33957035e+00, 1.49128147e+00, -8.60509322e-02, -1.73107320e-01,
+                    -3.31224977e-04, -8.23738528e-04, 1.49128147e+00, -4.50504346e+00,
+                    2.06517918e-01, 4.10530196e-01, 2.61274055e-02, 4.48237394e-02,
+                ]
+            ),
+        )
