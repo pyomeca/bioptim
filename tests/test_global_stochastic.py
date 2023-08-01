@@ -51,7 +51,9 @@ def test_arm_reaching_muscle_driven():
     # detailed cost values
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.4718449494109634)
     np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.35077195834212055)
-    np.testing.assert_almost_equal(f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost))))
+    np.testing.assert_almost_equal(
+        f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
+    )
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -388,7 +390,9 @@ def test_arm_reaching_torque_driven_explicit():
     # detailed cost values
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.0008000000000003249)
     np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.157506624022141e-06)
-    np.testing.assert_almost_equal(f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost))))
+    np.testing.assert_almost_equal(
+        f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
+    )
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -592,8 +596,9 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
         # detailed cost values
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 273.5544356233155)
         np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.00632179936471477)
-        np.testing.assert_almost_equal(f[0, 0], sum(
-            sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost))))
+        np.testing.assert_almost_equal(
+            f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
+        )
 
         # Check some of the results
         k, ref, m, cov, a, c = (
@@ -733,8 +738,9 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
         # detailed cost values
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 273.5560267942219)
         np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.00010090999197482785)
-        np.testing.assert_almost_equal(f[0, 0], sum(
-            sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost))))
+        np.testing.assert_almost_equal(
+            f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
+        )
 
         # Check some of the results
         k, ref, m, cov, a, c = (
@@ -761,9 +767,7 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
                 [0.01531877, 0.01126498, 0.01593056, 0.01857115, -0.00125035, -0.00515613, 0.00340021, -0.01075679]
             ),
         )
-        np.testing.assert_almost_equal(
-            ref[:, 0], np.array([2.81907762e-02, 2.84412559e-01, 0, 0])
-        )
+        np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907762e-02, 2.84412559e-01, 0, 0]))
         np.testing.assert_almost_equal(
             m[:, 0],
             np.array(

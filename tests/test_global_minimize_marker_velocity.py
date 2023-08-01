@@ -21,7 +21,6 @@ from bioptim import (
 from .utils import TestUtils
 
 
-
 def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,

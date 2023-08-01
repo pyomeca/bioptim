@@ -432,7 +432,7 @@ def prepare_socp(
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
     force_field_magnitude: float = 0,
-    problem_type = ExampleType.CIRCLE,
+    problem_type=ExampleType.CIRCLE,
     with_cholesky: bool = False,
     expand_dynamics: bool = True,
 ) -> StochasticOptimalControlProgram:
