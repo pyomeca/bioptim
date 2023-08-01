@@ -51,14 +51,14 @@ jobs:
       - name: Install ACADOS on Linux
         run: |
           cd external
-          ./acados_install_linux.sh 2 ${{ env.PREFIX_LINUX }}
+          ./acados_install_linux.sh 1 ${{ env.PREFIX_LINUX }}
           cd ..
         if: matrix.os == 'ubuntu-latest'
 
       - name: Install ACADOS on Mac
         run: |
           cd external
-          ./acados_install_mac.sh 2 ${{ env.PREFIX_MACOS }}
+          ./acados_install_mac.sh 1 ${{ env.PREFIX_MACOS }}
           cd ..
         if: matrix.os == 'macos-latest'
 
