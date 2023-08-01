@@ -71,7 +71,8 @@ def prepare_test_ocp(
 
 
 def get_penalty_value(ocp, penalty, t, x, u, p, s):
-    val = penalty.type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], [], [], 0), **penalty.params)
+    val = penalty.type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], [], [], s,0), **penalty.params)
+    # changed only this one
     if isinstance(val, float):
         return val
 

@@ -116,7 +116,7 @@ class Parameter(PenaltyOption):
             else:
                 penalty.name = penalty.type.name
 
-        fake_penalty_controller = PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], ocp.parameters.cx, [])
+        fake_penalty_controller = PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], ocp.parameters.cx, [], [])
         penalty_function = penalty.type(penalty, fake_penalty_controller, **penalty.params)
         self.set_penalty(ocp, fake_penalty_controller, penalty, penalty_function, penalty.expand)
 
