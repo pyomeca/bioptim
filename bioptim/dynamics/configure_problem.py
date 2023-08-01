@@ -896,10 +896,12 @@ class ConfigureProblem:
             if split_controls:
                 ConfigureProblem.append_faked_optim_var(name, nlp.controls.scaled, var_names_with_suffix)
                 ConfigureProblem.append_faked_optim_var(name, nlp.controls.unscaled, var_names_with_suffix)
+                # Nope
             else:
                 for meta_suffix in var_names_with_suffix:
                     ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.scaled, [name])
                     ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.unscaled, [name])
+                    # Nope
 
         nlp.controls.node_index = nlp.states.node_index
         nlp.states_dot.node_index = nlp.states.node_index
@@ -1025,6 +1027,8 @@ class ConfigureProblem:
             nlp.x_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls and name not in nlp.u_init:
             nlp.u_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
+        if as_stochastic and name not in nlp.s_init:
+            nlp.s_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         # Declare the scaling for that variable
         if as_states and name not in nlp.x_scaling:
@@ -1033,6 +1037,8 @@ class ConfigureProblem:
             nlp.xdot_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls and name not in nlp.u_scaling:
             nlp.u_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
+        if as_stochastic and name not in nlp.s_scaling:
+            nlp.s_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
         mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[0][name].mx]
@@ -1153,8 +1159,9 @@ class ConfigureProblem:
                 if n_cx < 3:
                     n_cx = 3
                 cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
+                cx = define_cx_unscaled(cx_scaled, nlp.s_scaling[name].scaling)
                 nlp.stochastic_variables.append(
-                    name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
+                    name, cx[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
                 )
 
     @staticmethod
