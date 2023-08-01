@@ -88,8 +88,8 @@ jobs:
         run: pytest -v --color=yes tests/shard${{ matrix.shard }}
         if: matrix.os != 'ubuntu-latest'
 
-      - name: Generate coverage report
-        run: coverage report -m
+#      - name: Generate coverage report
+#        run: coverage report -m
 
       - name: Archive coverage report
         id: archive
@@ -158,7 +158,9 @@ jobs:
 #        run: pwd; ls -a
 
       - name: Generate XML report
-        run: coverage xml
+        run: |
+          coverage xml
+          coverage report -m
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v2
