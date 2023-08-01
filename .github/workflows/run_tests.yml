@@ -35,7 +35,7 @@ jobs:
         run: |
           echo "PREFIX=${{ env.PREFIX_WINDOWS }}" >> $GITHUB_ENV
         if: matrix.os == 'windows-latest'
-      
+
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -105,27 +105,28 @@ jobs:
       - name: Download all workflow run artifacts
         id: download
         uses: actions/download-artifact@v3
-        with:
-          path: |
-            coverage.xml
-            .coverage
+#        with:
+#          path: |
+#            coverage.xml
+#            .coverage
+
+      - name: Rename coverage files
+        run: |
+          for shard in {5,6}; do
+            mv coverage${shard}/coverage.xml coverage${shard}.xml
+            mv coverage${shard}/.coverage* .coverage${shard}
+          done
 
       - name: Install extra dependencies
         run: |
           sudo apt-get install -y python3-pip
           pip3 install coverage
 
-#      - name: Echo coverage reports
-#        run: find . -name '.coverage*' -print
-#
-#      - name: Move coverage reports to current directory
-#        run: find . -name '.coverage*' -exec mv {} . \;
-
       - name: Show current dir content
         run: ls -a
 
       - name: Merge coverage reports
-        run: coverage combine
+        run: coverage combine .coverage5 .coverage6
 
       - name: Generate XML report
         run: coverage xml
