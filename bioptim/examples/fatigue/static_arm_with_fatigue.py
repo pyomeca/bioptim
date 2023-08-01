@@ -47,6 +47,7 @@ def prepare_ocp(
     torque_level: int = 0,
     assume_phase_dynamics: bool = True,
     n_threads: int = 8,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -70,6 +71,10 @@ def prepare_ocp(
         different external forces are applied at each node
     n_threads: int
         Number ot threads to use
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -145,7 +150,10 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = Dynamics(
-        DynamicsFcn.MUSCLE_DRIVEN, expand=False, fatigue=fatigue_dynamics, with_residual_torque=torque_level > 0
+        DynamicsFcn.MUSCLE_DRIVEN,
+        expand=expand_dynamics,
+        fatigue=fatigue_dynamics,
+        with_residual_torque=torque_level > 0,
     )
 
     # Add objective functions

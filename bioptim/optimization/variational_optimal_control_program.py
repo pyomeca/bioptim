@@ -332,7 +332,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             nlp.implicit_dynamics_func_first_node = nlp.implicit_dynamics_func_first_node.expand()
             nlp.implicit_dynamics_func_last_node = nlp.implicit_dynamics_func_last_node.expand()
 
-    def configure_torque_driven(self, ocp: OptimalControlProgram, nlp: NonLinearProgram, expand: bool = True):
+    def configure_torque_driven(self, ocp: OptimalControlProgram, nlp: NonLinearProgram):
         """
         Configure the problem to be torque driven for the variational integrator.
         The states are the q (and the lambdas if the system has holonomic constraints).
@@ -364,7 +364,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 as_states_dot=False,
             )
 
-        self.configure_dynamics_function(ocp, nlp, expand)
+        self.configure_dynamics_function(ocp, nlp)
 
     def variational_integrator_three_nodes(
         self,

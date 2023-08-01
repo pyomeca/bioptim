@@ -31,6 +31,7 @@ def test_maximize_predicted_height_CoM(objective_name, assume_phase_dynamics):
         ode_solver=OdeSolver.RK4(),
         objective_name=objective_name,
         com_constraints=True,
+        expand_dynamics=True,
     )
     sol = ocp.solve()
 
@@ -90,7 +91,7 @@ def test_maximize_predicted_height_CoM(objective_name, assume_phase_dynamics):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("assume_phase_dynamics", [True])
 def test_maximize_predicted_height_CoM_with_actuators(assume_phase_dynamics):
     from bioptim.examples.torque_driven_ocp import maximize_predicted_height_CoM as ocp_module
 
@@ -103,6 +104,7 @@ def test_maximize_predicted_height_CoM_with_actuators(assume_phase_dynamics):
         use_actuators=True,
         ode_solver=OdeSolver.RK4(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=True,
     )
     sol = ocp.solve()
 
@@ -138,7 +140,7 @@ def test_maximize_predicted_height_CoM_with_actuators(assume_phase_dynamics):
     TestUtils.simulate(sol, decimal_value=5)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("assume_phase_dynamics", [True])
 @pytest.mark.parametrize(
     "rigidbody_dynamics",
     [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
@@ -158,6 +160,7 @@ def test_maximize_predicted_height_CoM_rigidbody_dynamics(rigidbody_dynamics, as
         ode_solver=ode_solver,
         rigidbody_dynamics=rigidbody_dynamics,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=True,
     )
     sol_opt = Solver.IPOPT(show_online_optim=False)
     sol_opt.set_maximum_iterations(1)

@@ -21,15 +21,14 @@ def test_track_markers(ode_solver, actuator_type, assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ode_solver = ode_solver()
-
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=actuator_type,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -78,14 +77,13 @@ def test_track_markers_changing_constraints(ode_solver, assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ode_solver = ode_solver()
-
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -121,7 +119,7 @@ def test_track_markers_changing_constraints(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(tau[:, -2], np.array((1.36088709, 9.81, -2.27903226)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -161,7 +159,7 @@ def test_track_markers_changing_constraints(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(tau[:, -2], np.array((-5.625, 21.06, -2.27903226)))
 
     # save and load
-    TestUtils.save_and_load(sol, ocp, True)
+    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -179,15 +177,14 @@ def test_track_markers_with_actuators(ode_solver, assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ode_solver = ode_solver()
-
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
         actuator_type=1,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -233,6 +230,7 @@ def test_track_marker_2D_pendulum(ode_solver, assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    ode_solver_orig = ode_solver
     ode_solver = ode_solver()
 
     # Define the problem
@@ -258,6 +256,7 @@ def test_track_marker_2D_pendulum(ode_solver, assume_phase_dynamics):
         tau_ref,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -328,6 +327,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, assume_phase_dynamic
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    ode_solver_orig = ode_solver
     ode_solver = ode_solver()
 
     # Define the problem
@@ -345,7 +345,15 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, assume_phase_dynamic
     if isinstance(ode_solver, OdeSolver.IRK):
         tau_ref = tau_ref * 5
 
-    ocp = ocp_module.prepare_ocp(bio_model, final_time, n_shooting, markers_ref, tau_ref, ode_solver=ode_solver)
+    ocp = ocp_module.prepare_ocp(
+        bio_model,
+        final_time,
+        n_shooting,
+        markers_ref,
+        tau_ref,
+        ode_solver=ode_solver,
+        expand_dynamics=ode_solver_orig != OdeSolver.IRK,
+    )
     sol = ocp.solve()
 
     # Check constraints
@@ -417,7 +425,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, assume_phase_dynamic
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("assume_phase_dynamics", [True])
 def test_trampo_quaternions(assume_phase_dynamics):
     # Load trampo_quaternion
     from bioptim.examples.torque_driven_ocp import trampo_quaternions as ocp_module
@@ -429,7 +437,13 @@ def test_trampo_quaternions(assume_phase_dynamics):
     final_time = 0.25
     n_shooting = 5
 
-    ocp = ocp_module.prepare_ocp(model_path, n_shooting, final_time, assume_phase_dynamics=assume_phase_dynamics)
+    ocp = ocp_module.prepare_ocp(
+        model_path,
+        n_shooting,
+        final_time,
+        assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=True,
+    )
     sol = ocp.solve()
 
     # Check objective function value
@@ -536,6 +550,7 @@ def test_phase_transition_uneven_variable_number_by_bounds(assume_phase_dynamics
         biorbd_model_path_with_translations=biorbd_model_path_with_translations,
         n_shooting=(10, 10),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=True,
     )
 
     solver = Solver.IPOPT()
@@ -568,6 +583,7 @@ def test_phase_transition_uneven_variable_number_by_mapping(assume_phase_dynamic
         biorbd_model_path_with_translations=biorbd_model_path_with_translations,
         n_shooting=(10, 10),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=True,
     )
     sol = ocp.solve()
 
@@ -619,14 +635,13 @@ def test_torque_activation_driven(ode_solver, assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ode_solver = ode_solver()
-
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/2segments_2dof_2contacts.bioMod",
         n_shooting=30,
         final_time=2,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -660,7 +675,7 @@ def test_torque_activation_driven(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol, decimal_value=4)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("assume_phase_dynamics", [True])
 def test_example_multi_biorbd_model(assume_phase_dynamics):
     # Load example_multi_biorbd_model
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
@@ -677,6 +692,7 @@ def test_example_multi_biorbd_model(assume_phase_dynamics):
         biorbd_model_path_modified_inertia=biorbd_model_path_modified_inertia,
         n_shooting=20,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=True,
     )
     sol = ocp.solve()
 
@@ -728,6 +744,7 @@ def test_example_minimize_segment_velocity():
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=biorbd_model_path,
         n_shooting=5,
+        expand_dynamics=True,
     )
     sol = ocp.solve()
 

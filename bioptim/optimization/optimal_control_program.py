@@ -31,7 +31,7 @@ from ..limits.constraints import (
     ParameterConstraint,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
-from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraint, MultinodeConstraintFcn
+from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import (
     ObjectiveFcn,

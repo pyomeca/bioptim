@@ -358,6 +358,22 @@ class NonLinearProgram:
             elif not isinstance(func_evaluated, MX):
                 func_evaluated = func_evaluated.to_mx()
         func = Function(name, cx_param, [func_evaluated])
+
+        if expand:
+            try:
+                func = func.expand()
+            except Exception as me:
+                raise RuntimeError(
+                    f"An error occurred while executing the 'expand()' function for {name}. Please review the following "
+                    "casadi error message for more details.\n"
+                    "Several factors could be causing this issue. If you are creating your own casadi function, "
+                    "it is possible that you have free variables. Another possibility, if you are using a predefined "
+                    "function, the error might be due to the inability to use expand=True at all. In that case, try "
+                    "adding expand=False to the dynamics or the penalty.\n"
+                    "Original casadi error message:\n"
+                    f"{me}"
+                )
+
         return func.expand() if expand else func
 
     def node_time(self, node_idx: int):

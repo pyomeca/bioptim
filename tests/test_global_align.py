@@ -17,14 +17,13 @@ def test_track_segment_on_rt(ode_solver, assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ode_solver = ode_solver()
-
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
         final_time=0.5,
         n_shooting=8,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -65,15 +64,14 @@ def test_track_marker_on_segment(ode_solver, assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ode_solver = ode_solver()
-
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
         final_time=0.5,
         n_shooting=8,
         initialize_near_solution=True,
-        ode_solver=ode_solver,
+        ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
 
@@ -118,6 +116,7 @@ def test_track_vector_orientation(assume_phase_dynamics):
         final_time=1,
         n_shooting=10,
         assume_phase_dynamics=assume_phase_dynamics,
+        expand_dynamics=True,
     )
     sol = ocp.solve()
 

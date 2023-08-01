@@ -21,7 +21,11 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str, final_time: float, n_shooting: int, use_sx: bool = True
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    use_sx: bool = True,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -63,7 +67,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
