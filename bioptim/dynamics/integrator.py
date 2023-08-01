@@ -712,6 +712,10 @@ class COLLOCATION(Integrator):
         """
 
         t_sym = self.t_span[0] if isinstance(self.t_span[0], (MX, SX)) else []
+        #  ti symbolic depends on param time_phase,
+        #  ti numeric depends on node_value (i), f(t,x) =x**2
+
+
 
         self.function = Function(
             "integrator",

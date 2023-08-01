@@ -126,8 +126,12 @@ class RK(OdeSolverBase):
         nlp.stochastic_variables.node_index = node_index
 
         ode_opt = {
-            "t0": 0 if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start,
-            "tf": nlp.dt if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start + nlp.dt,
+            # 't0' : # TODO : OCP.time(phase_idx:, node: idx)
+            # "t0": 0 if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start,
+            # "tf": nlp.dt if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start + nlp.dt,
+
+            "t0": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index),
+            "tf": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index) + nlp.dt,
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
@@ -314,8 +318,10 @@ class OdeSolver:
 
             }
             ode_opt = {
-                "t0": 0 if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start,
-                "tf": nlp.dt if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start + nlp.dt,
+                "t0": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index),
+                "tf": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index) + nlp.dt,
+                # "t0": 0 if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start,
+                # "tf": nlp.dt if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start + nlp.dt,
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
@@ -448,8 +454,10 @@ class OdeSolver:
                 ),
             }
             ode_opt = {
-                        "t0": 0 if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start,
-                        "tf": nlp.dt if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start + nlp.dt,
+                "t0": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index),
+                "tf": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index) + nlp.dt,
+                        # "t0": 0 if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start,
+                        # "tf": nlp.dt if nlp.time.cx_start.shape == (0,0) else nlp.time.cx_start + nlp.dt,
                        }
 
             integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)

@@ -436,12 +436,12 @@ class PenaltyOption(OptionGeneric):
             for ctrl in controllers:
                 self.all_nodes_index.extend(ctrl.t)
 
-            time_cx_scaled = ocp.cx()
+            # time_cx_scaled = ocp.cx()
             state_cx_scaled = ocp.cx()
             control_cx_scaled = ocp.cx()
             stochastic_cx_scaled = ocp.cx()
             for ctrl in controllers:
-                time_cx_scaled = vertcat(time_cx_scaled, ctrl.time_scaled.cx)
+                # time_cx_scaled = vertcat(time_cx_scaled, ctrl.time_scaled.cx)
                 state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
                 control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
                 stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables.unscaled.cx)
@@ -457,12 +457,12 @@ class PenaltyOption(OptionGeneric):
             else:
                 state_cx_scaled = controller.states_scaled.cx_start
                 control_cx_scaled = controller.controls_scaled.cx_start
-            time_cx_scaled = controller.time.cx_start
+            # time_cx_scaled = controller.time.cx_start
             stochastic_cx_scaled = controller.stochastic_variables.cx_start
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
-                time_cx_scaled = horzcat(time_cx_scaled, controller.time_scaled.cx_end)
+                # time_cx_scaled = horzcat(time_cx_scaled, controller.time_scaled.cx_end)
                 state_cx_scaled = horzcat(state_cx_scaled, controller.states_scaled.cx_end)
                 control_cx_scaled = horzcat(control_cx_scaled, controller.controls_scaled.cx_end)
                 stochastic_cx_scaled = horzcat(stochastic_cx_scaled, controller.stochastic_variables.cx_end)
@@ -470,6 +470,8 @@ class PenaltyOption(OptionGeneric):
         # Alias some variables
         node = controller.node_index
         param_cx = controller.parameters.cx
+
+        time_cx = controller.time.cx
 
         # Sanity check on outputs
         if len(self.function) <= node:
@@ -481,33 +483,39 @@ class PenaltyOption(OptionGeneric):
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
+        # self.function[node] = controller.to_casadi_func(
+        #     name, sub_fcn, time_cx_scaled, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, expand=self.expand
+        # )
         self.function[node] = controller.to_casadi_func(
-            name, sub_fcn, time_cx_scaled, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, expand=self.expand
+            name, sub_fcn, time_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, expand=self.expand
         )
         self.function_non_threaded[node] = self.function[node]
 
         if self.derivative:
-            time_cx_scaled = horzcat(controller.time_scaled.cx_end, controller.time_scaled.cx_start)
+            # time_cx_scaled = horzcat(controller.time_scaled.cx_end, controller.time_scaled.cx_start)
             state_cx_scaled = horzcat(controller.states_scaled.cx_end, controller.states_scaled.cx_start)
             control_cx_scaled = horzcat(controller.controls_scaled.cx_end, controller.controls_scaled.cx_start)
             self.function[node] = biorbd.to_casadi_func(
                 f"{name}",
                 # TODO: Charbie -> this is Flase, add stochastic_variables for start, mid AND end
                 self.function[node](
-                    controller.time_scaled.cx_end,
+                    # controller.time_scaled.cx_end,
+                    time_cx,
                     controller.states_scaled.cx_end,
                     controller.controls_scaled.cx_end,
                     param_cx,
                     controller.stochastic_variables.cx_start,
                 )
                 - self.function[node](
-                    controller.time_scaled.cx_start,
+                    time_cx,
+                    # controller.time_scaled.cx_start,
                     controller.states_scaled.cx_start,
                     controller.controls_scaled.cx_start,
                     param_cx,
                     controller.stochastic_variables.cx_start,
                 ),
-                time_cx_scaled,
+                # time_cx_scaled,
+                time_cx,
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
@@ -532,11 +540,11 @@ class PenaltyOption(OptionGeneric):
         if is_trapezoidal:
             # Hypothesis: the function is continuous on time
             # it neglects the discontinuities at the beginning of the optimization
-            time_cx_scaled = (
-                horzcat(controller.time_scaled.cx_start, controller.time_scaled.cx_end)
-                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                else controller.time_scaled.cx_start
-            )
+            # time_cx_scaled = (
+            #     horzcat(controller.time_scaled.cx_start, controller.time_scaled.cx_end)
+            #     if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+            #     else controller.time_scaled.cx_start
+            # )
 
             # Hypothesis: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
@@ -581,7 +589,8 @@ class PenaltyOption(OptionGeneric):
                 (
                     (
                         self.function[node](
-                            controller.time_scaled.cx_start,
+                            time_cx,
+                            # controller.time_scaled.cx_start,
                             controller.states_scaled.cx_start,
                             controller.controls_scaled.cx_start,
                             param_cx,
@@ -591,13 +600,16 @@ class PenaltyOption(OptionGeneric):
                     )
                     ** exponent
                     + (
-                        self.function[node](time_cx_scaled, state_cx_end_scaled, control_cx_end_scaled, param_cx, stochastic_cx_scaled)
+                        # self.function[node](time_cx_scaled, state_cx_end_scaled, control_cx_end_scaled, param_cx,
+                        #                     stochastic_cx_scaled)
+                        self.function[node](time_cx, state_cx_end_scaled, control_cx_end_scaled, param_cx, stochastic_cx_scaled)
                         - target_cx[:, 1]
                     )
                     ** exponent
                 )
                 / 2,
-                time_cx_scaled,
+                # time_cx_scaled,
+                time_cx,
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
@@ -605,12 +617,18 @@ class PenaltyOption(OptionGeneric):
                 target_cx,
                 dt_cx,
             )
+            # modified_fcn = modified_function(
+            #     time_cx_scaled, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, target_cx, dt_cx
+            # )
             modified_fcn = modified_function(
-                time_cx_scaled, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, target_cx, dt_cx
+                time_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, target_cx, dt_cx
             )
         else:
+            # modified_fcn = (
+            #     self.function[node](time_cx_scaled, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled) - target_cx
+            # ) ** exponent
             modified_fcn = (
-                self.function[node](time_cx_scaled, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled) - target_cx
+                self.function[node](time_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled) - target_cx
             ) ** exponent
 
         # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
@@ -619,9 +637,14 @@ class PenaltyOption(OptionGeneric):
         # Do not use nlp.add_casadi_func because all of them must be registered
         self.weighted_function[node] = Function(
             name,
-            [time_cx_scaled, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, weight_cx, target_cx, dt_cx],
+            [time_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, weight_cx, target_cx, dt_cx],
             [modified_fcn],
         )
+        # self.weighted_function[node] = Function(
+        #     name,
+        #     [time_cx_scaled, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, weight_cx, target_cx, dt_cx],
+        #     [modified_fcn],
+        # )
         self.weighted_function_non_threaded[node] = self.weighted_function[node]
 
         if ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:

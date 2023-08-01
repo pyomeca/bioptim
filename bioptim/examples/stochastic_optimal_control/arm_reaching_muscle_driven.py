@@ -551,8 +551,8 @@ def prepare_socp(
         sensory_noise=np.zeros((4, 1)),
     )
 
-    t_init = InitialGuessList()
-    t_bounds = BoundsList()
+    # t_init = InitialGuessList()
+    # t_bounds = BoundsList()
 
     n_muscles = 6
     n_q = bio_model.nb_q

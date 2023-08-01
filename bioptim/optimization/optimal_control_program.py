@@ -187,8 +187,8 @@ class OptimalControlProgram:
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
-        time_dependent: bool = False,
-        time_optimization: bool = False,
+        time_dependent: bool = False,  # TODO  :raise flag time_dependent = True et assume_phase_dynamics = True
+        time_optimization: bool = False, # TODO : add an automatic set true is min time is set in OCP
     ):
         """
         Parameters
@@ -528,10 +528,10 @@ class OptimalControlProgram:
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
 
-        if t_bounds is None:
-            t_bounds = BoundsList()
-        elif not isinstance(t_bounds, BoundsList):
-            raise RuntimeError("t_bounds should be built from a BoundsList")
+        # if t_bounds is None:
+        #     t_bounds = BoundsList()
+        # elif not isinstance(t_bounds, BoundsList):
+        #     raise RuntimeError("t_bounds should be built from a BoundsList")
 
         if x_bounds is None:
             x_bounds = BoundsList()
@@ -548,10 +548,10 @@ class OptimalControlProgram:
         elif not isinstance(s_bounds, BoundsList):
             raise RuntimeError("s_bounds should be built from a BoundsList")
 
-        if t_init is None:
-            t_init = InitialGuessList()
-        if not isinstance(t_init, InitialGuessList):
-            raise RuntimeError("t_init should be built from a InitialGuessList")
+        # if t_init is None:
+        #     t_init = InitialGuessList()
+        # if not isinstance(t_init, InitialGuessList):
+        #     raise RuntimeError("t_init should be built from a InitialGuessList")
 
         if x_init is None:
             x_init = InitialGuessList()
@@ -568,12 +568,12 @@ class OptimalControlProgram:
         if not isinstance(s_init, InitialGuessList):
             raise RuntimeError("s_init should be built from a InitialGuessList")
 
-        t_bounds = self._prepare_option_dict_for_phase("t_bounds", t_bounds, BoundsList)
+        # t_bounds = self._prepare_option_dict_for_phase("t_bounds", t_bounds, BoundsList)
         x_bounds = self._prepare_option_dict_for_phase("x_bounds", x_bounds, BoundsList)
         u_bounds = self._prepare_option_dict_for_phase("u_bounds", u_bounds, BoundsList)
         s_bounds = self._prepare_option_dict_for_phase("s_bounds", s_bounds, BoundsList)
 
-        t_init = self._prepare_option_dict_for_phase("t_init", t_init, InitialGuessList)
+        # t_init = self._prepare_option_dict_for_phase("t_init", t_init, InitialGuessList)
         x_init = self._prepare_option_dict_for_phase("x_init", x_init, InitialGuessList)
         u_init = self._prepare_option_dict_for_phase("u_init", u_init, InitialGuessList)
         s_init = self._prepare_option_dict_for_phase("s_init", s_init, InitialGuessList)
@@ -769,7 +769,11 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
-            if self.nlp[i].time_dependent or self.nlp[i].time_optimization: self.update_time(i)  # Prepare t variable if impacts dynamic or optimization factor
+            # if self.nlp[i].time_dependent or self.nlp[i].time_optimization: self.update_time(
+            #     i)  # Prepare t variable if impacts dynamic or optimization factor
+
+            # self.update_time(i)  # Prepare t variable if impacts dynamic or optimization factor
+
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
         self.parameter_bounds = BoundsList()
@@ -1013,11 +1017,12 @@ class OptimalControlProgram:
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
-    def update_time(self, i):
+    def update_time(self, i):  # TODO : put in NLP instead
         self.nlp[i].time = OptimizationVariableContainer(self.nlp[i].assume_phase_dynamics)
         self.nlp[i].time.initialize_from_shooting(self.nlp[i].ns + 1, self.cx)
         for node in range(self.nlp[i].ns + 1):
-            cx = [self.cx.sym(f"time_{i}_{node}_{j}", 1, 1) for j in range(3)] if self.nlp[i].time_optimization else [DM.sym(self.node_time(phase_idx=self.nlp[i].phase_idx, node_idx=i), 1, 1) for j in range(3)]
+            # cx = [self.cx.sym(f"time_{i}_{node}_{j}", 1, 1) for j in range(3)] if self.nlp[i].time_optimization else [DM.sym(self.node_time(phase_idx=self.nlp[i].phase_idx, node_idx=i), 1, 1) for j in range(3)]
+            cx = [self.cx.sym(f"time_{i}_{node}_{j}", 1, 1) for j in range(3)]
             # cx = [DM.sym(ocp.node_time(idx), 1, 1) for j in range(3)]
             cx_scaled = [x / 1 for x in cx]  # TODO fix scale (x/1)
             self.nlp[i].time.append("time", cx, cx_scaled, None, None, node)
@@ -1174,12 +1179,12 @@ class OptimalControlProgram:
             The stochastic variable bounds to add
         """
         for i in range(self.n_phases):
-            if t_bounds is not None:
-                if not isinstance(t_bounds, BoundsList):
-                    raise RuntimeError("t_bounds should be built from a BoundsList")
-                origin_phase = 0 if len(t_bounds) == 1 else i
-                for key in t_bounds[origin_phase].keys():
-                    self.nlp[i].t_bounds.add(key, t_bounds[origin_phase][key], phase=0)
+            # if t_bounds is not None:
+            #     if not isinstance(t_bounds, BoundsList):
+            #         raise RuntimeError("t_bounds should be built from a BoundsList")
+            #     origin_phase = 0 if len(t_bounds) == 1 else i
+            #     for key in t_bounds[origin_phase].keys():
+            #         self.nlp[i].t_bounds.add(key, t_bounds[origin_phase][key], phase=0)
 
             if x_bounds is not None:
                 if not isinstance(x_bounds, BoundsList):
@@ -1993,24 +1998,24 @@ class OptimalControlProgram:
         previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
         return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
 
-    def node_time_sym(self, phase_idx: int, node_idx: int):
-        """
-        Gives the time of the node node_idx of from the phase phase_idx
-
-        Parameters
-        ----------
-        phase_idx: int
-          Index of the phase
-        node_idx: int
-          Index of the node
-
-        Returns
-        -------
-        The node time node_idx from the phase phase_idx
-        """
-        if phase_idx < 0 or phase_idx > self.n_phases - 1:
-            return ValueError(f"phase_index out of range [0:{self.n_phases}]")
-        if node_idx < 0 or node_idx > self.nlp[phase_idx].ns:
-            return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
-        previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
-        return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
+    # def node_time_sym(self, phase_idx: int, node_idx: int):
+    #     """
+    #     Gives the time of the node node_idx of from the phase phase_idx
+    #
+    #     Parameters
+    #     ----------
+    #     phase_idx: int
+    #       Index of the phase
+    #     node_idx: int
+    #       Index of the node
+    #
+    #     Returns
+    #     -------
+    #     The node time node_idx from the phase phase_idx
+    #     """
+    #     if phase_idx < 0 or phase_idx > self.n_phases - 1:
+    #         return ValueError(f"phase_index out of range [0:{self.n_phases}]")
+    #     if node_idx < 0 or node_idx > self.nlp[phase_idx].ns:
+    #         return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
+    #     previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
+    #     return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)

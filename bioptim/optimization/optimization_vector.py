@@ -33,16 +33,16 @@ class OptimizationVectorHelper:
         """
         Declare all the casadi variables with the right size to be used during a specific phase
         """
-        t = []
-        t_scaled = []
+        # t = []
+        # t_scaled = []
         x = []
         x_scaled = []
         u = []
         u_scaled = []
         s = []
         for nlp in ocp.nlp:
-            t.append([])
-            t_scaled.append([])
+            # t.append([])
+            # t_scaled.append([])
             x.append([])
             x_scaled.append([])
             u.append([])
@@ -52,11 +52,11 @@ class OptimizationVectorHelper:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
-                OptimizationVectorHelper._set_node_index(nlp, k)
-
-                if nlp.time.cx_start.shape != (0, 0):
-                    t_scaled[nlp.phase_idx].append(nlp.time.scaled.cx_start)
-                    t[nlp.phase_idx].append(nlp.time.cx_start)
+            #     OptimizationVectorHelper._set_node_index(nlp, k)
+            #
+            #     if nlp.time.cx_start.shape != (0, 0):
+            #         t_scaled[nlp.phase_idx].append(nlp.time.scaled.cx_start)
+            #         t[nlp.phase_idx].append(nlp.time.cx_start)
 
                 if nlp.phase_idx == nlp.use_states_from_phase_idx:
                     if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
@@ -101,9 +101,9 @@ class OptimizationVectorHelper:
 
             OptimizationVectorHelper._set_node_index(nlp, 0)
 
-            if nlp.time.cx_start.shape != (0, 0):
-                nlp.T_scaled = t_scaled[nlp.phase_idx]
-                nlp.T = t[nlp.phase_idx]
+            # if nlp.time.cx_start.shape != (0, 0):
+            #     nlp.T_scaled = t_scaled[nlp.phase_idx]
+            #     nlp.T = t[nlp.phase_idx]
 
             nlp.X_scaled = x_scaled[nlp.phase_idx]
             nlp.X = x[nlp.phase_idx]
@@ -122,7 +122,7 @@ class OptimizationVectorHelper:
         -------
         The vector of all variables
         """
-        t_scaled = []
+        # t_scaled = []
         x_scaled = []
         u_scaled = []
         s = []
@@ -131,12 +131,13 @@ class OptimizationVectorHelper:
                 x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
             else:
                 x_scaled += nlp.X_scaled
-            if nlp.time.cx_start.shape != (0, 0):
-                t_scaled += nlp.T_scaled[:1] if nlp.assume_phase_dynamics else nlp.T_scaled
+            # if nlp.time.cx_start.shape != (0, 0):
+            #     t_scaled += nlp.T_scaled[:1] if nlp.assume_phase_dynamics else nlp.T_scaled
             u_scaled += nlp.U_scaled
             s += nlp.S
 
-        return vertcat(*t_scaled, *x_scaled, *u_scaled, ocp.parameters.cx, *s) if ocp.nlp[0].time.cx_start.shape != (0, 0) else vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s)
+        return vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s)
+    # vertcat(*t_scaled, *x_scaled, *u_scaled, ocp.parameters.cx, *s) if ocp.nlp[0].time.cx_start.shape != (0, 0) else
 
     @staticmethod
     def bounds_vectors(ocp) -> tuple[np.ndarray, np.ndarray]:
@@ -150,32 +151,32 @@ class OptimizationVectorHelper:
         v_bounds_min = np.ndarray((0, 1))
         v_bounds_max = np.ndarray((0, 1))
 
-        # For time
-        for i_phase in range(ocp.n_phases):
-            nlp = ocp.nlp[i_phase]
-            OptimizationVectorHelper._set_node_index(nlp, 0)
-            if nlp.time.cx_start.shape != (0, 0):
-                if "time" in nlp.t_bounds.keys():
-                    nlp.t_bounds["time"].check_and_adjust_dimensions(nlp.time["time"].cx.shape[0], nlp.ns + 1)
-
-                for k in range(1 if nlp.assume_phase_dynamics else (nlp.ns + 1)):
-                    OptimizationVectorHelper._set_node_index(nlp, k)
-
-                    if "time" in nlp.t_bounds.keys():
-                        value_min = (
-                                            nlp.t_bounds["time"].min.evaluate_at(shooting_point=k) / nlp.t_scaling[
-                                        "time"].scaling
-                                    )[:, np.newaxis]
-                        value_max = (
-                                            nlp.t_bounds["time"].max.evaluate_at(shooting_point=k) / nlp.t_scaling[
-                                        "time"].scaling
-                                    )[:, np.newaxis]
-                    else:
-                        value_min = np.array([-np.inf])
-                        value_max = np.array([np.inf])
-
-                    v_bounds_min = np.concatenate((v_bounds_min, np.reshape(value_min.T, (-1, 1))))
-                    v_bounds_max = np.concatenate((v_bounds_max, np.reshape(value_max.T, (-1, 1))))
+        # # For time
+        # for i_phase in range(ocp.n_phases):
+        #     nlp = ocp.nlp[i_phase]
+        #     OptimizationVectorHelper._set_node_index(nlp, 0)
+        #     if nlp.time.cx_start.shape != (0, 0):
+        #         if "time" in nlp.t_bounds.keys():
+        #             nlp.t_bounds["time"].check_and_adjust_dimensions(nlp.time["time"].cx.shape[0], nlp.ns + 1)
+        #
+        #         for k in range(1 if nlp.assume_phase_dynamics else (nlp.ns + 1)):
+        #             OptimizationVectorHelper._set_node_index(nlp, k)
+        #
+        #             if "time" in nlp.t_bounds.keys():
+        #                 value_min = (
+        #                                     nlp.t_bounds["time"].min.evaluate_at(shooting_point=k) / nlp.t_scaling[
+        #                                 "time"].scaling
+        #                             )[:, np.newaxis]
+        #                 value_max = (
+        #                                     nlp.t_bounds["time"].max.evaluate_at(shooting_point=k) / nlp.t_scaling[
+        #                                 "time"].scaling
+        #                             )[:, np.newaxis]
+        #             else:
+        #                 value_min = np.array([-np.inf])
+        #                 value_max = np.array([np.inf])
+        #
+        #             v_bounds_min = np.concatenate((v_bounds_min, np.reshape(value_min.T, (-1, 1))))
+        #             v_bounds_max = np.concatenate((v_bounds_max, np.reshape(value_max.T, (-1, 1))))
 
         # For states
         for i_phase in range(ocp.n_phases):
@@ -304,22 +305,22 @@ class OptimizationVectorHelper:
         """
         v_init = np.ndarray((0, 1))
 
-        # For time
-        for i_phase in range(len(ocp.nlp)):
-            nlp = ocp.nlp[i_phase]
-            OptimizationVectorHelper._set_node_index(nlp, 0)
-            if nlp.time.cx_start.shape != (0, 0):
-                if "time" in nlp.t_init.keys():
-                    nlp.t_init["time"].check_and_adjust_dimensions(nlp.time["time"].cx.shape[0], nlp.ns)
-
-                for k in range(1 if nlp.assume_phase_dynamics else (nlp.ns + 1)):
-                    OptimizationVectorHelper._set_node_index(nlp, k)
-                    if "time" in nlp.t_init.keys():
-                        value = nlp.t_init["time"].init.evaluate_at(shooting_point=k)
-                    else:
-                        value = np.array([0])
-
-                    v_init = np.concatenate((v_init, np.reshape(value.T, (-1, 1))))
+        # # For time
+        # for i_phase in range(len(ocp.nlp)):
+        #     nlp = ocp.nlp[i_phase]
+        #     OptimizationVectorHelper._set_node_index(nlp, 0)
+        #     if nlp.time.cx_start.shape != (0, 0):
+        #         if "time" in nlp.t_init.keys():
+        #             nlp.t_init["time"].check_and_adjust_dimensions(nlp.time["time"].cx.shape[0], nlp.ns)
+        #
+        #         for k in range(1 if nlp.assume_phase_dynamics else (nlp.ns + 1)):
+        #             OptimizationVectorHelper._set_node_index(nlp, k)
+        #             if "time" in nlp.t_init.keys():
+        #                 value = nlp.t_init["time"].init.evaluate_at(shooting_point=k)
+        #             else:
+        #                 value = np.array([0])
+        #
+        #             v_init = np.concatenate((v_init, np.reshape(value.T, (-1, 1))))
 
         # For states
         for i_phase in range(len(ocp.nlp)):
@@ -505,26 +506,26 @@ class OptimizationVectorHelper:
             )
         data_parameters = {key: np.ndarray((0, 1)) for key in ocp.parameters.keys()}
 
-        # For time
+        # # For time
         offset = 0
-        data_time = []
-        if ocp.nlp[0].time.cx_start.shape != (0, 0):
-            for p in range(ocp.n_phases):
-                nlp = ocp.nlp[p]
-                n_points = nlp.ns * (
-                1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.polynomial_degree + 1)) + 1
-                data_time.append({key: np.ndarray((nlp.time[key].shape, n_points)) for key in nlp.time})
-            p_idx = 0
-            for p in range(ocp.n_phases):
-                nlp = ocp.nlp[p]
-                nt = nlp.time.shape
-                for k in range(1 if nlp.assume_phase_dynamics else (nlp.ns + 1)):
-                    nlp.time.node_index = k
-                    x_array = v_array[offset : offset + nt].reshape((nlp.time.scaled.shape, -1), order="F")
-                    for key in nlp.time:
-                        data_time[p_idx][key][:, k : k + 1] = x_array[nlp.time[key].index, :]
-                    offset += nt
-                p_idx += 1
+        # data_time = []
+        # if ocp.nlp[0].time.cx_start.shape != (0, 0):
+        #     for p in range(ocp.n_phases):
+        #         nlp = ocp.nlp[p]
+        #         n_points = nlp.ns * (
+        #         1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.polynomial_degree + 1)) + 1
+        #         data_time.append({key: np.ndarray((nlp.time[key].shape, n_points)) for key in nlp.time})
+        #     p_idx = 0
+        #     for p in range(ocp.n_phases):
+        #         nlp = ocp.nlp[p]
+        #         nt = nlp.time.shape
+        #         for k in range(1 if nlp.assume_phase_dynamics else (nlp.ns + 1)):
+        #             nlp.time.node_index = k
+        #             x_array = v_array[offset : offset + nt].reshape((nlp.time.scaled.shape, -1), order="F")
+        #             for key in nlp.time:
+        #                 data_time[p_idx][key][:, k : k + 1] = x_array[nlp.time[key].index, :]
+        #             offset += nt
+        #         p_idx += 1
 
         # For states
         p_idx = 0
@@ -589,7 +590,8 @@ class OptimizationVectorHelper:
                         ].reshape(nlp.stochastic_variables[key].shape, 1)
                     offset += nstochastic
                 p_idx += 1
-        return data_time, data_states, data_controls, data_parameters, data_stochastic_variables if ocp.nlp[0].time.cx_start.shape != (0, 0) else data_states, data_controls, data_parameters, data_stochastic_variables
+        return data_states, data_controls, data_parameters, data_stochastic_variables
+    # data_time, data_states, data_controls, data_parameters, data_stochastic_variables if ocp.nlp[0].time.cx_start.shape != (0, 0) else
 
     @staticmethod
     def _nb_points(nlp, interpolation_type):

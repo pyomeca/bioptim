@@ -164,8 +164,8 @@ class NonLinearProgram:
         self.use_states_from_phase_idx = NodeMapping()
         self.use_controls_from_phase_idx = NodeMapping()
         self.use_states_dot_from_phase_idx = NodeMapping()
-        self.t_bounds = BoundsList()
-        self.t_init = InitialGuessList()
+        # self.t_bounds = BoundsList()
+        # self.t_init = InitialGuessList()
         self.x_bounds = BoundsList()
         self.x_init = InitialGuessList()
         self.X_scaled = None
