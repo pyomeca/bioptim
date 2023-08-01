@@ -532,8 +532,8 @@ def test_arm_reaching_torque_driven_explicit():
     )
 
 
-@pytest.mark.parametrize("cholesky_flag", [True, False])
-def test_arm_reaching_torque_driven_implicit(cholesky_flag):
+@pytest.mark.parametrize("with_cholesky", [True, False])
+def test_arm_reaching_torque_driven_implicit(with_cholesky):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
 
     final_time = 0.8
@@ -562,7 +562,7 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
         sensory_noise_magnitude=sensory_noise_magnitude,
         force_field_magnitude=force_field_magnitude,
         problem_type=problem_type,
-        cholesky_flag=cholesky_flag,
+        with_cholesky=with_cholesky,
         expand_dynamics=True,
     )
 
@@ -590,7 +590,7 @@ def test_arm_reaching_torque_driven_implicit(cholesky_flag):
     q, qdot = states["q"], states["qdot"]
     tau = controls["tau"]
 
-    if not cholesky_flag:
+    if not with_cholesky:
         # Check objective function value
         np.testing.assert_almost_equal(f[0, 0], 273.5607574226802)
 
