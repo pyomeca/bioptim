@@ -96,10 +96,6 @@ jobs:
             coverage.xml
             .coverage.*
 
-      - name: 'Echo upload path'
-        run: echo ${{steps.archive.outputs.path}}
-
-
   merge-coverage:
     needs: build
     runs-on: ubuntu-latest
