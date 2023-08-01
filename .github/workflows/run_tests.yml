@@ -102,6 +102,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
 
+      - name: Set prefix Linux
+        run: |
+            echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Setup environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          activate-environment: bioptim
+          environment-file: environment.yml
+
+      - name: Install extra dependencies
+        run: |
+          sudo apt-get install -y python3-pip
+          pip3 install coverage
+
       - name: Download all workflow run artifacts
         id: download
         uses: actions/download-artifact@v3
@@ -117,16 +136,14 @@ jobs:
             mv coverage${shard}/.coverage* .coverage${shard}
           done
 
-      - name: Install extra dependencies
-        run: |
-          sudo apt-get install -y python3-pip
-          pip3 install coverage
-
       - name: Show current dir content
-        run: ls -a
+        run: pwd; ls -a
 
       - name: Merge coverage reports
         run: coverage combine .coverage5 .coverage6
+
+      - name: Show current dir content with new .coverage file
+        run: pwd; ls -a
 
       - name: Generate XML report
         run: coverage xml
