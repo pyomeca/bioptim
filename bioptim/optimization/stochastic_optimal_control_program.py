@@ -243,7 +243,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         multi_node_penalties = MultinodeConstraintList()
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
-            for i_node in range(nlp.ns):    # TODO: Charbie -> check if this is correct
+            for i_node in range(nlp.ns - 1):    # TODO: Charbie -> check if this is correct
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
@@ -287,7 +287,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         # Constraints for C
         for i_phase, nlp in enumerate(self.nlp):
-            for i_node in range(nlp.ns):    # TODO: Charbie -> check if this is correct
+            for i_node in range(nlp.ns - 1):    # TODO: Charbie -> check if this is correct
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
