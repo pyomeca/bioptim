@@ -8,96 +8,96 @@ env:
   PREFIX_WINDOWS: C:\Miniconda3\envs\bioptim
 
 jobs:
-#  build:
-#    strategy:
-#      fail-fast: false
-#      matrix:
-#        os: [ubuntu-latest] #, macos-latest, windows-latest]
-#        shard: [5, 6] #,[1, 2, 3, 4]
-#    name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
-#    runs-on: ${{ matrix.os }}
-#    defaults:
-#      run:
-#        shell: bash -l {0}
-#
-#    steps:
-#      - name: Set prefix Linux
-#        run: |
-#            echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
-#        if: matrix.os == 'ubuntu-latest'
-#
-#      - name: Set prefix osx
-#        run: |
-#          echo "PREFIX=${{ env.PREFIX_macOS }}" >> $GITHUB_ENV
-#        if: matrix.os == 'macos-latest'
-#
-#      - name: Set prefix windows
-#        run: |
-#          echo "PREFIX=${{ env.PREFIX_WINDOWS }}" >> $GITHUB_ENV
-#        if: matrix.os == 'windows-latest'
-#
-#      - name: Checkout code
-#        uses: actions/checkout@v3
-#
-#      - name: Setup environment
-#        uses: conda-incubator/setup-miniconda@v2
-#        with:
-#          miniforge-variant: Mambaforge
-#          miniforge-version: latest
-#          use-mamba: true
-#          activate-environment: bioptim
-#          environment-file: environment.yml
-#
-#      - name: Print mamba info
-#        run: |
-#          mamba config --show
-#          mamba info
-#          mamba list
-#
-#      - name: Install extra dependencies
-#        run: mamba install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
-#
-#      - name: Install ACADOS on Linux
-#        run: |
-#          pwd
-#          cd external
-#          ./acados_install_linux.sh 1 ${{ env.PREFIX_LINUX }}
-#          cd ..
-#        if: matrix.os == 'not' #'ubuntu-latest'
-#
-#      - name: Install ACADOS on Mac
-#        run: |
-#          pwd
-#          cd external
-#          ./acados_install_mac.sh 1 ${{ env.PREFIX_MACOS }}
-#          cd ..
-#        if: matrix.os == 'macos-latest'
-#
-#      - name: Run tests
-#        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
-#        #run:  pytest -v --color=yes  --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
-#
-#      - name: Test installed version of bioptim
-#        run: |
-#          python setup.py install
-#          cd
-#          python -c "import bioptim"
-#
-#      - name: Generate coverage report
-#        run: coverage report -m
-#
-#      - name: Archive coverage report
-#        id: archive
-#        uses: actions/upload-artifact@v3
-#        with:
-#          name: coverage${{ matrix.shard }}
-#          path: |
-#            coverage.xml
-#            .coverage
-#
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest] #, macos-latest, windows-latest]
+        shard: [5, 6] #,[1, 2, 3, 4]
+    name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Set prefix Linux
+        run: 
+            echo "PREFIX=${{ env.PREFIX_LINUX }}" >> $GITHUB_ENV
+        if: matrix.os == 'ubuntu-latest'
+
+      - name: Set prefix osx
+        run: |
+          echo "PREFIX=${{ env.PREFIX_macOS }}" >> $GITHUB_ENV
+        if: matrix.os == 'macos-latest'
+
+      - name: Set prefix windows
+        run: |
+          echo "PREFIX=${{ env.PREFIX_WINDOWS }}" >> $GITHUB_ENV
+        if: matrix.os == 'windows-latest'
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          activate-environment: bioptim
+          environment-file: environment.yml
+
+      - name: Print mamba info
+        run: |
+          mamba config --show
+          mamba info
+          mamba list
+
+      - name: Install extra dependencies
+        run: mamba install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
+
+      - name: Install ACADOS on Linux
+        run: |
+          pwd
+          cd external
+          ./acados_install_linux.sh 1 ${{ env.PREFIX_LINUX }}
+          cd ..
+        if: matrix.os == 'not' #'ubuntu-latest'
+
+      - name: Install ACADOS on Mac
+        run: |
+          pwd
+          cd external
+          ./acados_install_mac.sh 1 ${{ env.PREFIX_MACOS }}
+          cd ..
+        if: matrix.os == 'macos-latest'
+
+      - name: Run tests
+        run: pytest -v --color=yes --cov-report term-missing --cov=bioptim --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
+        #run:  pytest -v --color=yes  --cov-config=.coveragerc --cov-report=xml:coverage.xml tests/shard${{ matrix.shard }}
+
+      - name: Test installed version of bioptim
+        run: |
+          python setup.py install
+          cd
+          python -c "import bioptim"
+
+      - name: Generate coverage report
+        run: coverage report -m
+
+      - name: Archive coverage report
+        id: archive
+        uses: actions/upload-artifact@v3
+        with:
+          name: coverage${{ matrix.shard }}
+          path: |
+            coverage.xml
+            .coverage
+
 
   merge-coverage:
-    #needs: build
+    needs: build
     runs-on: ubuntu-latest
     defaults:
       run:
