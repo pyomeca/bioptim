@@ -85,10 +85,12 @@ def prepare_ocp(
     qdot_bounds = BoundsList()
     # Start and finish with zero velocity
     # Start and finish with zero velocity
-    qdot_bounds.add("qdot_start", min_bound=[-0.01] * n_q, max_bound=[0.01] * n_q,
-                    interpolation=InterpolationType.CONSTANT)
-    qdot_bounds.add("qdot_end", min_bound=[-0.01] * n_q, max_bound=[0.01] * n_q,
-                    interpolation=InterpolationType.CONSTANT)
+    qdot_bounds.add(
+        "qdot_start", min_bound=[-0.01] * n_q, max_bound=[0.01] * n_q, interpolation=InterpolationType.CONSTANT
+    )
+    qdot_bounds.add(
+        "qdot_end", min_bound=[-0.01] * n_q, max_bound=[0.01] * n_q, interpolation=InterpolationType.CONSTANT
+    )
 
     return VariationalOptimalControlProgram(
         bio_model,

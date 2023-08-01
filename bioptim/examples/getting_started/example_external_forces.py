@@ -34,7 +34,9 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube_with_forces.bioMod", ode_solver: OdeSolverBase = OdeSolver.RK4(), expand_dynamics: bool = True,
+    biorbd_model_path: str = "models/cube_with_forces.bioMod",
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp

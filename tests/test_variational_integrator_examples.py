@@ -114,7 +114,7 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
 
     np.testing.assert_almost_equal(
         sol.states["q"][:, 10].squeeze(),
-        [-5.307718e-01, -2.969952e-14,  7.052470e-01],
+        [-5.307718e-01, -2.969952e-14, 7.052470e-01],
         decimal=6,
     )
 
@@ -126,19 +126,19 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 0].squeeze(),
-        [10.502854,  0.      ,  0.      ],
+        [10.502854, 0.0, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 10].squeeze(),
-        [12.717297,  0.      ,  0.      ],
+        [12.717297, 0.0, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, -2].squeeze(),
-        [-19.131171,   0.      ,   0.      ],
+        [-19.131171, 0.0, 0.0],
         decimal=6,
     )
 
@@ -153,5 +153,3 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
         [-1.000001e-02, 7.028717e-16, 1.000001e-02],
         decimal=6,
     )
-
-

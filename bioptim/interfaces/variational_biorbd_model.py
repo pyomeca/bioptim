@@ -329,9 +329,6 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         # discrete_euler_lagrange_equations, thus it is not necessary to evaluate it again here.
         # however it is necessary to evaluate the derivative of the constraints with respect to q_ultimate
         if self.has_holonomic_constraints:
-            return vertcat(
-                residual, self.holonomic_constraints_jacobian(q_ultimate) @ q_dot_ultimate
-            )
+            return vertcat(residual, self.holonomic_constraints_jacobian(q_ultimate) @ q_dot_ultimate)
         else:
             return residual
-
