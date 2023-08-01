@@ -6,8 +6,19 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        shard: [1, 2, 3, 4]
+          - os: ubuntu-latest
+            label: linux-64
+            prefix: /usr/share/miniconda3/envs/bioptim
+            shard: [1, 2, 3, 4]
+          - os: macos-latest
+            label: osx-64
+            prefix: /Users/runner/miniconda3/envs/bioptim
+            shard: [1, 2, 3, 4]
+          - os: windows-latest
+            label: win-64
+            prefix: C:\Miniconda3\envs\bioptim
+            shard: [1, 2, 3, 4]
+            
     name: Run tests on ${{ matrix.os }} for shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
     steps:
