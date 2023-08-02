@@ -54,7 +54,7 @@ def solve_ivp_interface(
             u_slice = slice(ss, ss + 1) if control_type == ControlType.CONSTANT else slice(ss, ss + 2)
 
             # resize u to match the size of t_eval according to the type of control
-            if control_type == ControlType.CONSTANT:
+            if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 ui = np.repeat(u[:, u_slice], t_eval_step.shape[0], axis=1)
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)
@@ -102,7 +102,7 @@ def solve_ivp_interface(
             u_slice = slice(ss, ss + 1) if control_type == ControlType.CONSTANT else slice(ss, ss + 2)
 
             # resize u to match the size of t_eval according to the type of control
-            if control_type == ControlType.CONSTANT:
+            if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 ui = np.repeat(u[:, u_slice], t_eval_step.shape[0], axis=1)
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)
@@ -199,7 +199,7 @@ def define_control_function(
     controls : np.ndarray
         arrays of controls u evaluated at t_eval
     control_type : ControlType
-        type of control such as CONSTANT or LINEAR_CONTINUOUS
+        type of control such as CONSTANT, CONSTANT_WITH_LAST_NODE, LINEAR_CONTINUOUS or NONE
     keep_intermediate_points : bool
         whether to keep the intermediate points or not
 
@@ -225,6 +225,10 @@ def define_control_function(
             )
             return lambda t: piecewise_constant_u(t, t_u, controls)
 
+        elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            controls = np.repeat(controls[:, :], n_step, axis=1)
+            return lambda t: piecewise_constant_u(t, t_u, controls)
+
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             # interpolate linearly the values of u at each time step to match the size of t_eval
             t_u = t_u[::n_step]  # get the actual time steps of u
@@ -232,7 +236,8 @@ def define_control_function(
     else:
         if control_type == ControlType.CONSTANT:
             return lambda t: piecewise_constant_u(t, t_u, controls)
-
+        elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            return lambda t: piecewise_constant_u(t, t_u, controls[:, :-1])
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             # interpolate linearly the values of u at each time step to match the size of t_eval
             return interp1d(t_u, controls, kind="linear", axis=1)
@@ -340,7 +345,7 @@ def solve_ivp_bioptim_interface(
     shooting_type : Shooting
         The way we integrate the solution such as SINGLE, SINGLE_CONTINUOUS, MULTIPLE
     control_type : ControlType
-        The type of control such as ControlType.CONSTANT or ControlType.LINEAR_CONTINUOUS
+        The type of control such as ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS or ControlType.NONE
 
     Returns
     -------

@@ -140,10 +140,10 @@ class RK(OdeSolverBase):
             "x_unscaled": nlp.states.cx_start,
             "x_scaled": nlp.states.scaled.cx_start,
             "p_unscaled": nlp.controls.cx_start
-            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
             else horzcat(nlp.controls.cx_start, nlp.controls.cx_end),
             "p_scaled": nlp.controls.scaled.cx_start
-            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
             else horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
             "stochastic_variables": nlp.stochastic_variables.cx_start,
             "ode": nlp.dynamics_func,

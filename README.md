@@ -1727,6 +1727,8 @@ However, one may wants to get non constant values.
 The accepted values are:
 - CONSTANT: The controls remain constant over the interval. The number of control is therefore equals to the number of shooting point
 - LINEAR_CONTINUOUS: The controls are linearly interpolated over the interval. Since they are continuous, the end of an interval corresponds to the beginning of the next. There is therefore number of shooting point + 1 controls.
+- CONSTANT_WITH_LAST_NODE: The controls remain constant over the interval. The number of control is therefore equals to the number of shooting point + 1 controls. (Note that the last control has no effect on the states so it should be constrained. This type of control is useful when you want the instantaneous slope of the states at the last node)
+- NONE: The problem has no controls. (It is useful if the system is driven by parameters)
 
 ### Enum: PlotType
 When adding a plot, it is possible to change the aspect of it.

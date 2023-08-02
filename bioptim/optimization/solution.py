@@ -503,7 +503,7 @@ class Solution:
                 control_type = self.ocp.nlp[p].control_type
                 if control_type == ControlType.CONSTANT:
                     off = 0
-                elif control_type == ControlType.LINEAR_CONTINUOUS:
+                elif control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
@@ -1469,7 +1469,7 @@ class Solution:
                         ),
                         axis=1,
                     )
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 pass
             else:
                 raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
