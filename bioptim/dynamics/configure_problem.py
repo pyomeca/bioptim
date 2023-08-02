@@ -1118,7 +1118,7 @@ class ConfigureProblem:
                 (
                     1
                     if ocp.assume_phase_dynamics
-                    else (nlp.ns + (1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS else 0))
+                    else (nlp.ns + (1 if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE) else 0))
                 )
             ):
                 cx_scaled = (
