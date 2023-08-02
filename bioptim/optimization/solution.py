@@ -1671,10 +1671,10 @@ class Solution:
 
                         if (
                             penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                        ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        ) or nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                             col_u_idx.append((idx + 1))
                     elif penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
-                        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                             col_u_idx.append((idx + 1))
 
                     x = np.ndarray((nlp.states.shape, len(col_x_idx)))
