@@ -5,6 +5,8 @@ import numpy as np
 from casadi import DM, vertcat
 from bioptim import Solver
 
+from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
+
 
 def test_arm_reaching_muscle_driven():
     from bioptim.examples.stochastic_optimal_control import arm_reaching_muscle_driven as ocp_module
@@ -12,7 +14,7 @@ def test_arm_reaching_muscle_driven():
     final_time = 0.8
     n_shooting = 4
     ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
-    problem_type = "CIRCLE"
+    problem_type = ExampleType.CIRCLE
     force_field_magnitude = 0
 
     dt = 0.01
@@ -350,7 +352,7 @@ def test_arm_reaching_torque_driven_explicit():
     final_time = 0.8
     n_shooting = 4
     ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
-    problem_type = "CIRCLE"
+    problem_type = ExampleType.CIRCLE
     force_field_magnitude = 0
 
     dt = 0.01
@@ -539,7 +541,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky):
     final_time = 0.8
     n_shooting = 4
     ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
-    problem_type = "CIRCLE"
+    problem_type = ExampleType.CIRCLE
     force_field_magnitude = 0
 
     dt = 0.01
