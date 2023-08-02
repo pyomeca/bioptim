@@ -20,9 +20,9 @@ def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
     if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
         return
 
-    if sys.platform == "win32" and not assume_phase_dynamics:
+#    if sys.platform == "win32" and not assume_phase_dynamics:
         # it works but not with the CI
-        return
+#        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
