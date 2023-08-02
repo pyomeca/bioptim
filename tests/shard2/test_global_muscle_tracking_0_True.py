@@ -18,9 +18,9 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, assume_ph
     # Load muscle_activations_tracker
     from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
 
-    # if platform.system() == "Windows" and not assume_phase_dynamics and ode_solver in (OdeSolver.RK4, OdeSolver.COLLOCATION):
-    #     # This one fails on CI
-    #     return
+    if platform.system() == "Windows" and assume_phase_dynamics and ode_solver == OdeSolver.RK4:
+        # This one fails on CI
+        return
 
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
