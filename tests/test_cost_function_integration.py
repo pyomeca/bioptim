@@ -135,11 +135,7 @@ def sum_cost_function_output(sol):
 )
 @pytest.mark.parametrize(
     "control_type",
-    [
-     ControlType.CONSTANT,
-     ControlType.CONSTANT_WITH_LAST_NODE,
-     ControlType.LINEAR_CONTINUOUS
-    ],
+    [ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS],
 )
 @pytest.mark.parametrize(
     "integration_rule",
@@ -188,7 +184,15 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
                 states = np.vstack((sol.states["q"], sol.states["qdot"]))
                 out = 0
                 for i, fcn in enumerate(ocp.nlp[0].J[0].weighted_function):
-                    out += fcn(states[:, i], controls_faking_constant[:, i], [], [], ocp.nlp[0].J[0].weight, [], ocp.nlp[0].J[0].dt)
+                    out += fcn(
+                        states[:, i],
+                        controls_faking_constant[:, i],
+                        [],
+                        [],
+                        ocp.nlp[0].J[0].weight,
+                        [],
+                        ocp.nlp[0].J[0].dt,
+                    )
                 np.testing.assert_almost_equal(np.array([out])[0][0][0], 36.077211633874185)
             else:
                 np.testing.assert_almost_equal(f[0, 0], 18.918634878502065)

@@ -44,7 +44,12 @@ class OptimizationVectorHelper:
             u.append([])
             u_scaled.append([])
             s.append([])
-            if nlp.control_type not in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS, ControlType.NONE):
+            if nlp.control_type not in (
+                ControlType.CONSTANT,
+                ControlType.CONSTANT_WITH_LAST_NODE,
+                ControlType.LINEAR_CONTINUOUS,
+                ControlType.NONE,
+            ):
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
@@ -430,7 +435,13 @@ class OptimizationVectorHelper:
                     key: np.ndarray(
                         (
                             nlp.controls[key].shape,
-                            nlp.ns + (1 if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE) else 0),
+                            nlp.ns
+                            + (
+                                1
+                                if nlp.control_type
+                                in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+                                else 0
+                            ),
                         )
                     )
                     for key in ocp.nlp[p].controls

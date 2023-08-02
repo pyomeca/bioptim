@@ -1669,9 +1669,10 @@ class Solution:
                     ):
                         col_x_idx.append((idx + 1) * (steps if nlp.ode_solver.is_direct_shooting else 1))
 
-                        if (
-                            penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                        ) or nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+                        if (penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL) or nlp.control_type in (
+                            ControlType.LINEAR_CONTINUOUS,
+                            ControlType.CONSTANT_WITH_LAST_NODE,
+                        ):
                             col_u_idx.append((idx + 1))
                     elif penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
                         if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
