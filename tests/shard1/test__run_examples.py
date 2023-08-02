@@ -5,8 +5,8 @@ from sys import platform
 
 
 def test_run_examples():
-    #    if platform == "linux":
-    #        return  # AppVeyor cannot work with graphic interface on Linux
+    if platform == "linux":  # AppVeyor and GitHub action cannot work with graphic interface on Linux
+        return
 
     from bioptim.examples.__main__ import ExampleLoader
 

@@ -91,7 +91,7 @@ class Objective(PenaltyOption):
 
     def ensure_penalty_sanity(self, ocp, nlp):
         """
-        Resets a objective function. A negative penalty index creates a new empty objective function.
+        Resets an objective function. A negative penalty index creates a new empty objective function.
 
         Parameters
         ----------
