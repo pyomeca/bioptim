@@ -2,7 +2,7 @@ from typing import Callable
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
-from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES
+from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES, TRAPEZOIDAL
 from ..misc.enums import ControlType, DefectType
 
 
@@ -232,6 +232,89 @@ class OdeSolver:
 
             super(OdeSolver.RK8, self).__init__(n_integration_steps)
             self.rk_integrator = RK8
+
+    class TRAPEZOIDAL(OdeSolverBase):
+        """
+        A trapezoidal ode solver
+
+        Methods
+        -------
+        integrator(self, ocp, nlp) -> list
+            The interface of the OdeSolver to the corresponding integrator
+        """
+
+        def __init__(self):
+            super(OdeSolver.TRAPEZOIDAL, self).__init__()
+            self.rk_integrator = TRAPEZOIDAL
+
+        def integrator(self, ocp, nlp, node_index: int) -> list:
+            """
+            The interface of the OdeSolver to the corresponding integrator
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the nlp
+            node_index
+                The index of the node currently integrated
+
+            Returns
+            -------
+            A list of integrators
+            """
+
+            nlp.states.node_index = node_index
+            nlp.states_dot.node_index = node_index
+            nlp.controls.node_index = node_index
+            nlp.stochastic_variables.node_index = node_index
+
+            if ocp.n_threads > 1:
+                raise RuntimeError("Trapezoidal integration cannot be used with multiple threads")
+
+            if nlp.control_type == ControlType.CONSTANT:
+                raise RuntimeError("Trapezoidal integration cannot be used with constant controls, please use "
+                                   "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead")
+            if ocp.assume_phase_dynamics is True:
+                raise RuntimeError("Trapezoidal integration cannot be used with assume_phase_dynamics = True")
+
+            ode = {
+                "x_unscaled": nlp.states.cx_start,
+                "x_scaled": nlp.states.scaled.cx_start,
+                "p_unscaled": nlp.controls.cx_start,
+                "p_scaled": nlp.controls.scaled.cx_start,
+                "stochastic_variables": nlp.stochastic_variables.cx_start,
+                "ode": nlp.dynamics_func,
+                "implicit_ode": nlp.implicit_dynamics_func,
+            }
+
+            nlp.states.node_index = node_index + 1
+            nlp.states_dot.node_index = node_index + 1
+            nlp.controls.node_index = node_index + 1
+            nlp.stochastic_variables.node_index = node_index + 1
+
+            ode["x_scaled_next"] = nlp.states.scaled.cx_start
+            ode["p_scaled_next"] = nlp.controls.scaled.cx_start
+            ode["stochastic_variables_next"] = nlp.stochastic_variables.scaled.cx_start
+
+            ode_opt = {
+                "t0": 0,
+                "tf": nlp.dt,
+                "model": nlp.model,
+                "param": nlp.parameters,
+                "cx": nlp.cx,
+                "idx": 0,
+                "control_type": nlp.control_type,
+                "defects_type": DefectType.NOT_APPLICABLE,
+            }
+
+            if ode["ode"].size2_out("xdot") != 1:
+                ode_opt["idx"] = node_index
+            return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+
+        def __str__(self):
+            return f"{self.rk_integrator.__name__}"
 
     class COLLOCATION(OdeSolverBase):
         """
