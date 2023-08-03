@@ -289,7 +289,7 @@ class RK(Integrator):
         s = stochastic_variables
 
         for i in range(1, self.n_step + 1):
-            t_norm_init = (self.t_span[1]-self.t_span[0])*i/self.n_step
+            t_norm_init = ((self.t_span[1]-self.t_span[0])*(i-1))/self.n_step
             x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
