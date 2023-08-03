@@ -17,6 +17,7 @@ from bioptim import (
     BiorbdModel,
     PenaltyController,
     MultinodeObjectiveList,
+    CostType,
 )
 
 
@@ -40,6 +41,7 @@ def prepare_ocp(
     use_sx: bool = True,
     n_threads: int = 1,
     assume_phase_dynamics: bool = False,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -56,6 +58,16 @@ def prepare_ocp(
         Which type of OdeSolver to use
     use_sx: bool
         If the SX variable should be used instead of MX (can be extensive on RAM)
+    n_threads: int
+        Number of thread to use
+    assume_phase_dynamics: bool
+        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
+        capability to have changing dynamics within a phase. A good example of when False should be used is when
+        different external forces are applied at each node
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -76,7 +88,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -116,12 +128,15 @@ def main():
     # --- Prepare the ocp --- #
     n_shooting = 30
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=n_shooting)
+    ocp.add_plot_penalty(CostType.ALL)
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))  # show_online_optim=platform.system() == "Linux"
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show the results in a bioviz animation --- #
     sol.animate(n_frames=100)
+    # sol.graphs()
+    # sol.print_cost()
 
 
 if __name__ == "__main__":

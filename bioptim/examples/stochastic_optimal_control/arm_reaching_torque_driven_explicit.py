@@ -37,6 +37,8 @@ from bioptim import (
     InitialGuessList,
 )
 
+from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
+
 
 def get_force_field(q, force_field_magnitude):
     """
@@ -185,7 +187,6 @@ def configure_stochastic_optimal_control_problem(
         ),
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
-        expand=False,
     )
     return
 
@@ -509,7 +510,8 @@ def prepare_socp(
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
     force_field_magnitude: float = 0,
-    problem_type: str = "CIRCLE",
+    problem_type=ExampleType.CIRCLE,
+    expand_dynamics: bool = True,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -530,7 +532,12 @@ def prepare_socp(
     force_field_magnitude: float
         The magnitude of the force field
     problem_type: str
-        The type of problem to solve (CIRCLE or BAR)
+        The type of problem to solve (ExampleType.CIRCLE or ExampleType.BAR)
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
+
     Returns
     -------
     The OptimalControlProgram ready to be solved
@@ -588,9 +595,9 @@ def prepare_socp(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
 
-    if problem_type == "BAR":
+    if problem_type == ExampleType.BAR:
         max_bounds_lateral_variation = cas.inf
-    elif problem_type == "CIRCLE":
+    elif problem_type == ExampleType.CIRCLE:
         max_bounds_lateral_variation = 0.004
     else:
         raise NotImplementedError("Wrong problem type")
@@ -628,7 +635,8 @@ def prepare_socp(
         ),
         motor_noise=np.zeros((n_tau, 1)),
         sensory_noise=np.zeros((n_q + n_qdot, 1)),
-    )  # expand=False
+        expand=expand_dynamics,
+    )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf
     states_max = np.ones((n_states, n_shooting + 1)) * cas.inf
@@ -791,7 +799,7 @@ def main():
     solver.set_bound_push(1e-8)
     solver.set_nlp_scaling_method("none")
 
-    problem_type = "CIRCLE"
+    problem_type = ExampleType.CIRCLE
     force_field_magnitude = 0
     socp = prepare_socp(
         biorbd_model_path=biorbd_model_path,

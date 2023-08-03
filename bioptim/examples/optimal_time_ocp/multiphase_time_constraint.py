@@ -33,6 +33,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     assume_phase_dynamics: bool = True,
     with_phase_time_equality: bool = False,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program. This example can be called as a normal single phase (all list len equals to 1)
@@ -58,6 +59,10 @@ def prepare_ocp(
         different external forces are applied at each node
     with_phase_time_equality: bool
         If the phase time equality should be applied, this is ignored if len(n_shooting) = 1 (instead of 3)
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -88,11 +93,10 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0, expand=expand)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0, expand=expand_dynamics)
     if n_phases == 3:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1, expand=expand)
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2, expand=expand)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1, expand=expand_dynamics)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2, expand=expand_dynamics)
 
     # Constraints
     constraints = ConstraintList()

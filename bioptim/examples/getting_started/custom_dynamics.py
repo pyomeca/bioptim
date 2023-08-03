@@ -31,7 +31,7 @@ from bioptim import (
 )
 
 
-def custom_dynamic(
+def custom_dynamics(
     states: MX | SX,
     controls: MX | SX,
     parameters: MX | SX,
@@ -93,7 +93,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_addit
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, my_additional_factor=my_additional_factor)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, my_additional_factor=my_additional_factor)
 
 
 def prepare_ocp(
@@ -102,6 +102,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = False,
     assume_phase_dynamics: bool = True,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -121,6 +122,10 @@ def prepare_ocp(
         If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
         capability to have changing dynamics within a phase. A good example of when False should be used is when
         different external forces are applied at each node
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -140,11 +145,10 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
     if problem_type_custom:
-        dynamics.add(custom_configure, dynamic_function=custom_dynamic, my_additional_factor=1, expand=expand)
+        dynamics.add(custom_configure, dynamic_function=custom_dynamics, my_additional_factor=1, expand=expand_dynamics)
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamic, expand=expand)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamics, expand=expand_dynamics)
 
     # Constraints
     constraints = ConstraintList()

@@ -29,6 +29,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
     assume_phase_dynamics: bool = True,
     n_threads: int = 2,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -51,6 +52,10 @@ def prepare_ocp(
         different external forces are applied at each node
     n_threads: int
         Number of threads to use
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -62,7 +67,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(configure_dynamics, dynamic_function=dynamics)
+    dynamics.add(configure_dynamics, dynamic_function=dynamics, expand=expand_dynamics)
 
     # Path constraint
     # the pendulum is constrained to point down with zero velocity at the beginning

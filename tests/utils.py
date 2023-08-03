@@ -38,7 +38,7 @@ class TestUtils:
         return module
 
     @staticmethod
-    def save_and_load(sol, ocp, test_solve_of_loaded=False):
+    def save_and_load(sol, ocp, test_solve_of_loaded=False, solver=None):
         file_path = "test"
         ocp.save(sol, f"{file_path}.bo")
         ocp_load, sol_load = OptimalControlProgram.load(f"{file_path}.bo")
@@ -46,7 +46,7 @@ class TestUtils:
         TestUtils.deep_assert(sol, sol_load)
         TestUtils.deep_assert(sol_load, sol)
         if test_solve_of_loaded:
-            sol_from_load = ocp_load.solve()
+            sol_from_load = ocp_load.solve(solver)
             TestUtils.deep_assert(sol, sol_from_load)
             TestUtils.deep_assert(sol_from_load, sol)
 
