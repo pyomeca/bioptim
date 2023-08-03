@@ -549,7 +549,17 @@ class TRAPEZOIDAL(Integrator):
         super(TRAPEZOIDAL, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, x_prev: MX | SX, x_next: MX | SX, u_prev: MX | SX, u_next: MX | SX, p: MX | SX, s_prev: MX | SX, s_next: MX | SX):
+    def next_x(
+        self,
+        h: float,
+        x_prev: MX | SX,
+        x_next: MX | SX,
+        u_prev: MX | SX,
+        u_next: MX | SX,
+        p: MX | SX,
+        s_prev: MX | SX,
+        s_next: MX | SX,
+    ):
         """
         Compute the next integrated state
 
@@ -627,7 +637,16 @@ class TRAPEZOIDAL(Integrator):
 
         x_prev[:, 0] = states[:, 0]
 
-        x_prev[:, 1] = self.next_x(h, x_prev[:, 0], states_next, controls_prev, controls_next, p, stochastic_variables_prev, stochastic_variables_next)
+        x_prev[:, 1] = self.next_x(
+            h,
+            x_prev[:, 0],
+            states_next,
+            controls_prev,
+            controls_next,
+            p,
+            stochastic_variables_prev,
+            stochastic_variables_next,
+        )
 
         if self.model.nb_quaternions > 0:
             x_prev[:, 1] = self.model.normalize_state_quaternions(x_prev[:, 1])
@@ -642,9 +661,7 @@ class TRAPEZOIDAL(Integrator):
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(
-                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
-            ),
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
