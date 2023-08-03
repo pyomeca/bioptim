@@ -171,6 +171,12 @@ class BioModel(Protocol):
     def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
         """Get the muscular joint torque"""
 
+    def muscle_length_jacobian(self, q) -> MX:
+        """Get the muscle velocity"""
+
+    def muscle_velocity(self, q, qdot) -> MX:
+        """Get the muscle velocity"""
+
     def marker(self, q, marker_index: int, reference_frame_idx: int = None) -> MX:
         """Get the position of a marker"""
 
@@ -192,6 +198,9 @@ class BioModel(Protocol):
 
     def marker_velocities(self, q, qdot, reference_index=None) -> list[MX]:
         """Get the marker velocities of the model"""
+
+    def marker_accelerations(self, q, qdot, qddot, reference_index=None) -> list[MX]:
+        """Get the marker accelerations of the model"""
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         """Get the maximum torque"""
