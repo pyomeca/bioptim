@@ -271,14 +271,15 @@ class OdeSolver:
             nlp.controls.node_index = node_index
             nlp.stochastic_variables.node_index = node_index
 
-            if ocp.n_threads > 1:
-                raise RuntimeError("Trapezoidal integration cannot be used with multiple threads")
-
-            if nlp.control_type == ControlType.CONSTANT:
-                raise RuntimeError("Trapezoidal integration cannot be used with constant controls, please use "
-                                   "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead")
-            if ocp.assume_phase_dynamics is True:
-                raise RuntimeError("Trapezoidal integration cannot be used with assume_phase_dynamics = True")
+            # Pariterre: can we do this or not?
+            # if ocp.n_threads > 1:
+            #     raise RuntimeError("Trapezoidal integration cannot be used with multiple threads")
+            #
+            # if nlp.control_type == ControlType.CONSTANT:
+            #     raise RuntimeError("Trapezoidal integration cannot be used with constant controls, please use "
+            #                        "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead")
+            # if ocp.assume_phase_dynamics is True:
+            #     raise RuntimeError("Trapezoidal integration cannot be used with assume_phase_dynamics = True")
 
             ode = {
                 "x_unscaled": horzcat(nlp.states.cx_start, nlp.states.cx_end),
