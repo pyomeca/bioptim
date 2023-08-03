@@ -162,12 +162,14 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
     solver.set_maximum_iterations(5)
     sol = ocp.solve(solver)
     j_printed = sum_cost_function_output(sol)
+    tau = sol.controls["tau"]
 
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     if integration_rule == QuadratureRule.RECTANGLE_LEFT:
         if control_type == ControlType.CONSTANT:
+            np.testing.assert_equal(tau[:, -1], np.array([np.nan, np.nan]))
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874164)
@@ -175,6 +177,7 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
                 np.testing.assert_almost_equal(f[0, 0], 18.91863487850207)
                 np.testing.assert_almost_equal(j_printed, 18.91863487850207)
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874185)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874185)
@@ -206,6 +209,7 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
                 np.testing.assert_almost_equal(j_printed, 18.844221574687065)
     elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
+            np.testing.assert_equal(tau[:, -1], np.array([np.nan, np.nan]))
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874164)
@@ -213,6 +217,7 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
                 np.testing.assert_almost_equal(f[0, 0], 18.91863487850206)
                 np.testing.assert_almost_equal(j_printed, 18.91863487850206)
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 43.72095415269257)
                 np.testing.assert_almost_equal(j_printed, 43.72095415269257)
@@ -228,6 +233,7 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
                 np.testing.assert_almost_equal(j_printed, 18.844221574687094)
     elif integration_rule == QuadratureRule.TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
+            np.testing.assert_equal(tau[:, -1], np.array([np.nan, np.nan]))
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874164)
@@ -235,6 +241,7 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
                 np.testing.assert_almost_equal(f[0, 0], 17.944878542423062)
                 np.testing.assert_almost_equal(j_printed, 17.944878542423062)
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 43.72095415269257)
                 np.testing.assert_almost_equal(j_printed, 43.72095415269257)
