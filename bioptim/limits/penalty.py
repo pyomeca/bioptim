@@ -1322,7 +1322,6 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _get_markers_acceleration(controller, markers, CoM=False):
-
         """
         Retrieve the acceleration of either the markers or the center of mass (CoM) from the controller.
 

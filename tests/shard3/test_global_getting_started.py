@@ -322,7 +322,6 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_pha
 
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_pendulum_save_and_load_rk8(use_sx):
-
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -857,7 +856,6 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, assum
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
 def test_example_external_forces(ode_solver):
-
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
