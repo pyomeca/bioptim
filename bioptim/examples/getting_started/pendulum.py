@@ -23,6 +23,7 @@ from bioptim import (
     CostType,
     Solver,
     BiorbdModel,
+    ControlType,
 )
 
 

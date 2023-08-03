@@ -118,7 +118,7 @@ class Integrator:
         The control at a given time
         """
 
-        if self.control_type == ControlType.CONSTANT:
+        if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
@@ -614,7 +614,7 @@ class COLLOCATION(Integrator):
         The control at a given time
         """
 
-        if self.control_type == ControlType.CONSTANT:
+        if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return super(COLLOCATION, self).get_u(u, dt_norm)
         else:
             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
