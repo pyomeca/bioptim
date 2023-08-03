@@ -289,9 +289,8 @@ class RK(Integrator):
         s = stochastic_variables
 
         for i in range(1, self.n_step + 1):
-            # t_norm_init = t if 't' in self.fun.name_in() else (i - 1) / self.n_step
-            t_norm_init = (i - 1) / self.n_step if isinstance(t, int) else t
-            x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p, s)
+            # t_norm_init = t
+            x[:, i] = self.next_x(h, t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
 

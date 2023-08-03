@@ -564,7 +564,7 @@ class Solution:
 
             (
                 # self._time["scaled"],
-                self._time,
+                # self._time,
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
