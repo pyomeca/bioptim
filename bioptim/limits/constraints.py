@@ -594,9 +594,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
 
-            cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov"
-            )
+            if "cholesky_cov" in controller.stochastic_variables.keys():
+                l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
+                    controller.stochastic_variables, 2 * nu, Node.START, "cholesky_cov"
+                )
+                cov_matrix = l_cov_matrix @ l_cov_matrix.T
+            else:
+                cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
+                    controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov"
+                )
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
                 controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "a"
             )
@@ -621,7 +627,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            out_vector = controller.stochastic_variables["cov"].reshape_to_vector(cov_implicit_deffect)
+            if "cholesky_cov" in controller.stochastic_variables.keys():
+                out_vector = controller.stochastic_variables["cholesky_cov"].reshape_to_vector(cov_implicit_deffect)
+            else:
+                out_vector = controller.stochastic_variables["cov"].reshape_to_vector(cov_implicit_deffect)
             return out_vector
 
         @staticmethod

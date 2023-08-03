@@ -3,6 +3,8 @@ This example is adapted from arm_reaching_muscle_driven.py to make it torque dri
 The states dynamics is explicit, while the stochastic variables dynamics is implicit.
 This formulation allow to decouple the covariance matrix with the previous states reducing the comlexity of resolution,
 but increases largely the number of variables to optimize.
+Decomposing the covariance matrix using Cholesky L @ @.T allows to reduce the number of variables and ensures that the
+covariance matrix always stays positive semi-definite.
 """
 
 import platform
@@ -13,6 +15,7 @@ import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
 import scipy.io as sio
+from enum import Enum
 
 from bioptim import (
     OptimalControlProgram,
@@ -37,6 +40,17 @@ from bioptim import (
     MultinodeObjectiveList,
     InitialGuessList,
 )
+
+
+class ExampleType(Enum):
+    """
+    Selection of the type of example to solve
+    """
+
+    CIRCLE = "CIRCLE"
+    BAR = "BAR"
+    SQP = "SqpMethod"
+    NONE = None
 
 
 def get_force_field(q, force_field_magnitude):
@@ -151,7 +165,7 @@ def stochastic_forward_dynamics(
 
 
 def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, motor_noise, sensory_noise
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, motor_noise, sensory_noise, with_cholesky
 ):
     """
     Configure the stochastic optimal control problem.
@@ -165,7 +179,10 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
     ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
-    ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
+    if with_cholesky:
+        ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=4)
+    else:
+        ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
     ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
     ConfigureProblem.configure_stochastic_c(ocp, nlp, n_feedbacks=4, n_noise=6)
 
@@ -222,20 +239,36 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
 
     q_sym = cas.MX.sym("q_sym", nx)
     qdot_sym = cas.MX.sym("qdot_sym", nx)
-    cov_sym = cas.MX.sym("cov", controllers[0].stochastic_variables["cov"].cx_start.shape[0])
-    cov_sym_dict = {"cov": cov_sym}
-    cov_sym_dict["cov"].cx_start = cov_sym
-    cov_matrix = (
-        controllers[0]
-        .stochastic_variables["cov"]
-        .reshape_to_matrix(
-            cov_sym_dict,
-            controllers[0].states.cx_start.shape[0],
-            controllers[0].states.cx_start.shape[0],
-            Node.START,
-            "cov",
+    if "cholesky_cov" in controllers[0].stochastic_variables.keys():
+        cov_sym = cas.MX.sym("cov", controllers[0].stochastic_variables["cholesky_cov"].cx_start.shape[0])
+        cov_sym_dict = {"cholesky_cov": cov_sym}
+        cov_sym_dict["cholesky_cov"].cx_start = cov_sym
+        l_cov_matrix = (
+            controllers[0]
+            .stochastic_variables["cholesky_cov"]
+            .reshape_to_cholesky_matrix(
+                cov_sym_dict,
+                controllers[0].states.cx_start.shape[0],
+                Node.START,
+                "cholesky_cov",
+            )
         )
-    )
+        cov_matrix = l_cov_matrix @ l_cov_matrix.T
+    else:
+        cov_sym = cas.MX.sym("cov", controllers[0].stochastic_variables["cov"].cx_start.shape[0])
+        cov_sym_dict = {"cov": cov_sym}
+        cov_sym_dict["cov"].cx_start = cov_sym
+        cov_matrix = (
+            controllers[0]
+            .stochastic_variables["cov"]
+            .reshape_to_matrix(
+                cov_sym_dict,
+                controllers[0].states.cx_start.shape[0],
+                controllers[0].states.cx_start.shape[0],
+                Node.START,
+                "cov",
+            )
+        )
 
     hand_pos = controllers[0].model.markers(q_sym)[2][:2]
     hand_vel = controllers[0].model.marker_velocities(q_sym, qdot_sym)[2][:2]
@@ -255,7 +288,11 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     val = fun(
         controllers[-1].states["q"].cx_start,
         controllers[-1].states["qdot"].cx_start,
-        controllers[-1].stochastic_variables["cov"].cx_start,
+        (
+            controllers[-1].stochastic_variables["cholesky_cov"].cx_start
+            if "cholesky_cov" in controllers[-1].stochastic_variables.keys()
+            else controllers[-1].stochastic_variables["cov"].cx_start
+        ),
     )
     # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
 
@@ -285,13 +322,22 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     # create the casadi function to be evaluated
     # Get the symbolic variables
     ref = controller.stochastic_variables["ref"].cx_start
-    cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-        controller.stochastic_variables,
-        controller.states.cx_start.shape[0],
-        controller.states.cx_start.shape[0],
-        Node.START,
-        "cov",
-    )
+    if "cholesky_cov" in controller.stochastic_variables.keys():
+        l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
+            controller.stochastic_variables,
+            controller.states.cx_start.shape[0],
+            Node.START,
+            "cholesky_cov",
+        )
+        cov_matrix = l_cov_matrix @ l_cov_matrix.T
+    else:
+        cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
+            controller.stochastic_variables,
+            controller.states.cx_start.shape[0],
+            controller.states.cx_start.shape[0],
+            Node.START,
+            "cov",
+        )
 
     k = controller.stochastic_variables["k"].cx_start
     k_matrix = cas.MX(n_q + n_qdot, n_tau)
@@ -386,7 +432,8 @@ def prepare_socp(
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
     force_field_magnitude: float = 0,
-    problem_type: str = "CIRCLE",
+    problem_type=ExampleType.CIRCLE,
+    with_cholesky: bool = False,
     expand_dynamics: bool = True,
 ) -> StochasticOptimalControlProgram:
     """
@@ -407,8 +454,10 @@ def prepare_socp(
         The magnitude of the sensory noise
     force_field_magnitude: float
         The magnitude of the force field
-    problem_type: str
+    problem_type
         The type of problem to solve (CIRCLE or BAR)
+    with_cholesky: bool
+        If True, whether to use the Cholesky factorization of the covariance matrix or not
     expand_dynamics: bool
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
@@ -460,9 +509,9 @@ def prepare_socp(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
 
-    if problem_type == "BAR":
+    if problem_type == ExampleType.BAR:
         max_bounds_lateral_variation = cas.inf
-    elif problem_type == "CIRCLE":
+    elif problem_type == ExampleType.CIRCLE:
         max_bounds_lateral_variation = 0.004
     else:
         raise NotImplementedError("Wrong problem type")
@@ -500,6 +549,7 @@ def prepare_socp(
         ),
         motor_noise=np.zeros((n_tau, 1)),
         sensory_noise=np.zeros((n_q + n_qdot, 1)),
+        with_cholesky=with_cholesky,
         expand=expand_dynamics,
     )
 
@@ -542,7 +592,16 @@ def prepare_socp(
 
     s_init = InitialGuessList()
     s_bounds = BoundsList()
-    n_stochastic = n_tau * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states  # K(2x4) + ref(4x1) + M(6x6)
+    # K(2x4) + ref(4x1) + M(4x4)
+    n_stochastic = n_tau * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states
+    if not with_cholesky:
+        n_stochastic += n_states * n_states  # + cov(4, 4)
+    else:
+        n_cholesky_cov = 0
+        for i in range(n_states):
+            for j in range(i + 1):
+                n_cholesky_cov += 1
+        n_stochastic += n_cholesky_cov  # + cholesky_cov(10)
     stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
     stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
     stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
@@ -580,6 +639,41 @@ def prepare_socp(
         min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
         max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
     )
+    curent_index += n_states * n_states
+    if not with_cholesky:
+        stochastic_init[curent_index : curent_index + n_states * n_states, :] = 0.01  # cov
+        cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
+        idx = 0
+        for i in range(n_states):
+            for j in range(n_states):
+                stochastic_init[idx, 0] = cov_init[i, j]
+        s_init.add(
+            "cov",
+            initial_guess=stochastic_init[curent_index : curent_index + n_states * n_states, :],
+            interpolation=InterpolationType.EACH_FRAME,
+        )
+        s_bounds.add(
+            "cov",
+            min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
+            max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
+        )
+    else:
+        stochastic_init[curent_index : curent_index + n_cholesky_cov, :] = 0.01  # cholsky cov
+        cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
+        idx = 0
+        for i in range(n_states):
+            for j in range(i + 1):
+                stochastic_init[idx, 0] = cov_init[i, j]
+        s_init.add(
+            "cholesky_cov",
+            initial_guess=stochastic_init[curent_index : curent_index + n_cholesky_cov, :],
+            interpolation=InterpolationType.EACH_FRAME,
+        )
+        s_bounds.add(
+            "cholesky_cov",
+            min_bound=stochastic_min[curent_index : curent_index + n_cholesky_cov, :],
+            max_bound=stochastic_max[curent_index : curent_index + n_cholesky_cov, :],
+        )
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -606,6 +700,7 @@ def prepare_socp(
 def main():
     # --- Options --- #
     vizualize_sol_flag = True
+    with_cholesky = True
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 
@@ -639,7 +734,7 @@ def main():
     solver.set_bound_push(1e-8)
     solver.set_nlp_scaling_method("none")
 
-    problem_type = "CIRCLE"
+    problem_type = ExampleType.CIRCLE
     force_field_magnitude = 0
     socp = prepare_socp(
         biorbd_model_path=biorbd_model_path,
@@ -650,6 +745,7 @@ def main():
         sensory_noise_magnitude=sensory_noise_magnitude,
         problem_type=problem_type,
         force_field_magnitude=force_field_magnitude,
+        with_cholesky=with_cholesky,
     )
 
     sol_socp = socp.solve(solver)
@@ -661,10 +757,15 @@ def main():
     k_sol = sol_socp.stochastic_variables["k"]
     ref_sol = sol_socp.stochastic_variables["ref"]
     m_sol = sol_socp.stochastic_variables["m"]
-    cov_sol = sol_socp.stochastic_variables["cov"]
+    if with_cholesky:
+        cov_sol = None
+        cholesky_cov_sol = sol_socp.stochastic_variables["cholesky_cov"]
+    else:
+        cov_sol = sol_socp.stochastic_variables["cov"]
+        cholesky_cov_sol = None
     a_sol = sol_socp.stochastic_variables["a"]
     c_sol = sol_socp.stochastic_variables["c"]
-    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol, a_sol, c_sol))
+    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol, cholesky_cov_sol, a_sol, c_sol))
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
@@ -673,13 +774,16 @@ def main():
         "ref_sol": ref_sol,
         "m_sol": m_sol,
         "cov_sol": cov_sol,
+        "cholesky_cov_sol": cholesky_cov_sol,
         "a_sol": a_sol,
         "c_sol": c_sol,
         "stochastic_variables_sol": stochastic_variables_sol,
     }
 
     # --- Save the results --- #
-    with open(f"leuvenarm_torque_driven_socp_{problem_type}_forcefield{force_field_magnitude}.pkl", "wb") as file:
+    with open(
+        f"leuvenarm_torque_driven_socp_{str(problem_type)}_forcefield{force_field_magnitude}_{with_cholesky}.pkl", "wb"
+    ) as file:
         pickle.dump(data, file)
 
     # --- Visualize the results --- #

@@ -1464,6 +1464,38 @@ class ConfigureProblem:
         )
 
     @staticmethod
+    def configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states: int):
+        """
+        Configure the diagonal matrix needed to reconstruct the covariance matrix using L @ L.T.
+        This formulation allows insuring that the covariance matrix is always positive semi-definite.
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "cholesky_cov"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
+        name_cov = []
+        for nb_1, name_1 in enumerate([f"X_{i}" for i in range(n_noised_states)]):
+            for name_2 in [f"X_{i}" for i in range(nb_1 + 1)]:
+                name_cov += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(len(name_cov))), list(range(len(name_cov))))
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_cov,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
     def configure_stochastic_ref(ocp, nlp, n_references: int):
         """
         Configure the reference kinematics.
