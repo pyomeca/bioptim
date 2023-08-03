@@ -450,8 +450,6 @@ class Solution:
 
             # Extract the data now for further use
             (
-                # self._time["scaled"],
-                # self._time,
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
@@ -563,8 +561,6 @@ class Solution:
                         self.vector = np.concatenate((self.vector, ss[key].init.evaluate_at(i)[:, np.newaxis]))
 
             (
-                # self._time["scaled"],
-                # self._time,
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
@@ -592,8 +588,6 @@ class Solution:
 
             self.vector = _sol
             (
-                # self._time["scaled"],
-                # self._time,
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
@@ -697,7 +691,6 @@ class Solution:
             new._states["unscaled"], new._controls["unscaled"] = [], []
             new._time["scaled"], new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables = [], [], [], {}, []
         else:
-            # new._time["scaled"] = deepcopy(self._time["scaled"])
             new._time = deepcopy(self._time)
             new._states["scaled"] = deepcopy(self._states["scaled"])
             new._controls["scaled"] = deepcopy(self._controls["scaled"])
@@ -1694,7 +1687,6 @@ class Solution:
                         phase_idx = penalty.nodes_phase[i]
 
                         for key in nlp.time:
-                            # t = np.concatenate((t, self._time["scaled"][phase_idx][key][:, node_idx]))
                             t = np.concatenate((t, self._time[phase_idx][key][:, node_idx]))
                         for key in nlp.states:
                             x = np.concatenate((x, self._states["scaled"][phase_idx][key][:, node_idx]))

@@ -340,14 +340,12 @@ class PlotOcp:
                         node_index = 0  # TODO deal with assume_phase_dynamics=False
                         if nlp.plot[key].node_idx is not None:
                             node_index = nlp.plot[key].node_idx[0]
-                        # nlp.time.node_index = node_index
                         nlp.states.node_index = node_index
                         nlp.states_dot.node_index = node_index
                         nlp.controls.node_index = node_index
                         nlp.stochastic_variables.node_index = node_index
 
                         # If multi-node penalties = None, stays zero
-                        # size_t = 0
                         size_x = 0
                         size_u = 0
                         size_p = 0
@@ -356,19 +354,17 @@ class PlotOcp:
                             casadi_function = nlp.plot[key].parameters["penalty"].weighted_function_non_threaded[0]
                             if nlp.plot[key].parameters["penalty"].multinode_penalty:
                                 if casadi_function is not None:
-                                    # size_t = len(casadi_function.nominal_in(0))
+                                    # size time is len(casadi_function.nominal_in(0))
                                     size_x = len(casadi_function.nominal_in(1))
                                     size_u = len(casadi_function.nominal_in(2))
                                     size_p = len(casadi_function.nominal_in(3))
                                     size_s = len(casadi_function.nominal_in(4))
                             else:
-                                # size_t = nlp.time.shape
                                 size_x = nlp.states.shape
                                 size_u = nlp.controls.shape
                                 size_p = nlp.parameters.shape
                                 size_s = nlp.stochastic_variables.shape
                         else:
-                            # size_t = nlp.time.shape
                             size_x = nlp.states.shape
                             size_u = nlp.controls.shape
                             size_p = nlp.parameters.shape
@@ -378,7 +374,6 @@ class PlotOcp:
                             nlp.plot[key]
                             .function(
                                 node_index,
-                                # np.zeros((size_t, 1)),
                                 np.zeros((size_x, 1)),
                                 np.zeros((size_u, 1)),
                                 np.zeros((size_p, 1)),
@@ -714,21 +709,6 @@ class PlotOcp:
                 else nlp.ode_solver.steps + 1
             )
 
-            # if isinstance(data_time, dict):
-            #     problem_time = data_time[list(data_time.keys())[0]].shape[1]
-            # elif isinstance(data_time, list):
-            #     problem_time = data_time[i][list(data_time[i].keys())[0]].shape[1]
-            # else:
-            #     raise RuntimeError("Invalid data_time type")
-            # time = np.ndarray((0, problem_time))
-
-            time = np.ndarray((0, nlp.ns + 1))
-            for ss in nlp.time:
-                if isinstance(data_time, (list, tuple)):
-                    time = np.concatenate((time, data_time[i][ss]))
-                else:
-                    time = np.concatenate((time, data_time[ss]))
-
             if isinstance(data_states, dict):
                 n_elements = data_states[list(data_states.keys())[0]].shape[1]
             elif isinstance(data_states, list):
@@ -795,7 +775,6 @@ class PlotOcp:
 
                         val_tempo = self.plot_func[key][i].function(
                             idx,
-                            # time[:, idx: idx + 1 + 1],
                             state[:, step_size * idx : step_size * (idx + 1) + x_mod],
                             control[:, idx : idx + u_mod + 1],
                             data_params_in_dyn,
@@ -900,7 +879,6 @@ class PlotOcp:
 
                             val_tempo = self.plot_func[key][i].function(
                                 self.plot_func[key][i].node_idx[0],
-                                t_phase,
                                 x_phase,
                                 u_phase,
                                 data_params_in_dyn,
@@ -917,12 +895,6 @@ class PlotOcp:
                                     raise NotImplementedError("See todo!")
                                     val = self.plot_func[key][i].function(
                                         node_idx,
-                                        np.hstack(
-                                            (
-                                                data_time[node_idx]["all"][:, -1],
-                                                data_time[node_idx + 1]["all"][:, 0],
-                                            )
-                                        ),
                                         np.hstack(
                                             (
                                                 data_states[node_idx]["all"][:, -1],
@@ -945,7 +917,6 @@ class PlotOcp:
                                         **self.plot_func[key][i].parameters,
                                     )
                                 else:
-                                    time_tp = stochastic[:, node_idx: node_idx + 1 + 1]
                                     if (
                                         self.plot_func[key][i].label == "CONTINUITY"
                                         and nlp.ode_solver.is_direct_collocation
@@ -961,7 +932,6 @@ class PlotOcp:
                                     stochastic_tp = stochastic[:, node_idx : node_idx + 1 + 1]
                                     val = self.plot_func[key][i].function(
                                         node_idx,
-                                        # time_tp,
                                         states,
                                         control_tp,
                                         data_params_in_dyn,
@@ -980,7 +950,6 @@ class PlotOcp:
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
                             val_tempo = self.plot_func[key][i].function(
                                 node_idx,
-                                time[:, node_idx: node_idx + 1 + 1],
                                 state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
                                 control[:, node_idx : node_idx + 1 + 1],
                                 data_params_in_dyn,
@@ -1008,7 +977,6 @@ class PlotOcp:
 
                         val_tempo = self.plot_func[key][i].function(
                             nodes,
-                            # time,
                             state[:, ::step_size],
                             control,
                             data_params_in_dyn,

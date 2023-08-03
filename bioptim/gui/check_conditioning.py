@@ -105,7 +105,6 @@ def check_conditioning(ocp):
                 [jacobian_cas],
             )
 
-            # nb_t_init = sum([nlp.t_init[key].shape[0] for key in nlp.t_init.keys()])
             nb_x_init = sum([nlp.x_init[key].shape[0] for key in nlp.x_init.keys()])
             nb_u_init = sum([nlp.u_init[key].shape[0] for key in nlp.u_init.keys()])
             nb_s_init = sum([nlp.s_init[key].shape[0] for key in nlp.s_init.keys()])
@@ -117,11 +116,6 @@ def check_conditioning(ocp):
             param_init = np.array([ocp.parameter_init[key].shape[0] for key in ocp.parameter_init.keys()])
             s_init = np.zeros((len(nlp.S), nb_s_init))
 
-            # for key in nlp.time.keys():
-            #     nlp.t_init[key].check_and_adjust_dimensions(len(nlp.time[key]), nlp.ns + 1)
-            #     for node_index in range(nlp.ns + 1):
-            #         nlp.time.node_index = node_index
-            #          t_init[node_index, nlp.time[key].index] = np.array(nlp.t_init[key].init.evaluate_at(node_index))
             for key in nlp.states.keys():
                 nlp.x_init[key].check_and_adjust_dimensions(len(nlp.states[key]), nlp.ns + 1)
                 for node_index in range(nlp.ns + 1):
@@ -163,7 +157,6 @@ def check_conditioning(ocp):
             list_norm = []
             for constraints in nlp.g:
                 node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
-                # nlp.time.node_index = node_index
                 nlp.states.node_index = node_index
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
@@ -432,24 +425,17 @@ def check_conditioning(ocp):
                 [hessian_cas],
             )
 
-            # nb_t_init = sum([nlp.t_init[key].shape[0] for key in nlp.t_init.keys()])
             nb_x_init = sum([nlp.x_init[key].shape[0] for key in nlp.x_init.keys()])
             nb_u_init = sum([nlp.u_init[key].shape[0] for key in nlp.u_init.keys()])
             nb_s_init = sum([nlp.s_init[key].shape[0] for key in nlp.s_init.keys()])
 
             # evaluate jac_func at X_init, U_init, considering the parameters
             time_init = np.array([], dtype=np.float64)
-            # t_init = np.zeros((len(nlp.T), nb_t_init))
             x_init = np.zeros((len(nlp.X), nb_x_init))
             u_init = np.zeros((len(nlp.U), nb_u_init))
             param_init = np.array([nlp.x_init[key].shape[0] for key in ocp.parameter_init.keys()])
             s_init = np.zeros((len(nlp.S), nb_s_init))
 
-            # for key in nlp.time.keys():
-            #     nlp.t_init[key].check_and_adjust_dimensions(len(nlp.time[key]), nlp.ns + 1)
-            #     for node_index in range(nlp.ns + 1):
-            #         nlp.time.node_index = node_index
-            #         t_init[node_index, nlp.time[key].index] = np.array(nlp.t_init[key].init.evaluate_at(node_index))
             for key in nlp.states.keys():
                 nlp.x_init[key].check_and_adjust_dimensions(len(nlp.states[key]), nlp.ns + 1)
                 for node_index in range(nlp.ns + 1):
@@ -468,7 +454,6 @@ def check_conditioning(ocp):
                         nlp.s_init[key].init.evaluate_at(node_index)
                     )
 
-            # t_init = t_init.reshape((t_init.size, 1))
             time_init = time_init.reshape((time_init.size, 1))
             x_init = x_init.reshape((x_init.size, 1))
             u_init = u_init.reshape((u_init.size, 1))

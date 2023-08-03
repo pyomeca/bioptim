@@ -749,11 +749,6 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
-            # if self.nlp[i].time_dependent or self.nlp[i].time_optimization: self.update_time(
-            #     i)  # Prepare t variable if impacts dynamic or optimization factor
-
-            # self.update_time(i)  # Prepare t variable if impacts dynamic or optimization factor
-
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
         self.parameter_bounds = BoundsList()
@@ -996,16 +991,6 @@ class OptimalControlProgram:
     def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
-
-    # def update_time(self, i):  # TODO : put in NLP instead
-    #     self.nlp[i].time = OptimizationVariableContainer(self.nlp[i].assume_phase_dynamics)
-    #     self.nlp[i].time.initialize_from_shooting(self.nlp[i].ns + 1, self.cx)
-    #     for node in range(self.nlp[i].ns + 1):
-    #         # cx = [self.cx.sym(f"time_{i}_{node}_{j}", 1, 1) for j in range(3)] if self.nlp[i].time_optimization else [DM.sym(self.node_time(phase_idx=self.nlp[i].phase_idx, node_idx=i), 1, 1) for j in range(3)]
-    #         cx = [self.cx.sym(f"time_{i}_{node}_{j}", 1, 1) for j in range(3)]
-    #         # cx = [DM.sym(ocp.node_time(idx), 1, 1) for j in range(3)]
-    #         cx_scaled = [x / 1 for x in cx]  # TODO fix scale (x/1)
-    #         self.nlp[i].time.append("time", cx, cx_scaled, None, None, node)
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """
@@ -1977,25 +1962,3 @@ class OptimalControlProgram:
             return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
         previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
         return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
-
-    # def node_time_sym(self, phase_idx: int, node_idx: int):
-    #     """
-    #     Gives the time of the node node_idx of from the phase phase_idx
-    #
-    #     Parameters
-    #     ----------
-    #     phase_idx: int
-    #       Index of the phase
-    #     node_idx: int
-    #       Index of the node
-    #
-    #     Returns
-    #     -------
-    #     The node time node_idx from the phase phase_idx
-    #     """
-    #     if phase_idx < 0 or phase_idx > self.n_phases - 1:
-    #         return ValueError(f"phase_index out of range [0:{self.n_phases}]")
-    #     if node_idx < 0 or node_idx > self.nlp[phase_idx].ns:
-    #         return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
-    #     previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
-    #     return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
