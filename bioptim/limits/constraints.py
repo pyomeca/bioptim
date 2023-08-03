@@ -594,9 +594,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
 
-            cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov"
-            )
+            if "cholesky_cov" in controller.stochastic_variables.keys():
+                l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
+                    controller.stochastic_variables, 2 * nu, Node.START, "cholesky_cov"
+                )
+                cov_matrix = l_cov_matrix @ l_cov_matrix.T
+            else:
+                cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
+                    controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov"
+                )
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
                 controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "a"
             )
@@ -621,7 +627,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            out_vector = controller.stochastic_variables["cov"].reshape_to_vector(cov_implicit_deffect)
+            if "cholesky_cov" in controller.stochastic_variables.keys():
+                out_vector = controller.stochastic_variables["cholesky_cov"].reshape_to_vector(cov_implicit_deffect)
+            else:
+                out_vector = controller.stochastic_variables["cov"].reshape_to_vector(cov_implicit_deffect)
             return out_vector
 
         @staticmethod
@@ -724,34 +733,36 @@ class ConstraintFcn(FcnEnum):
     """
 
     CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
-    TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
-    TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
-    TRACK_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
-    TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
-    TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
-    SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
-    SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
-    PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
-    PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
-    TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
-    TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
-    TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
-    TRACK_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
-    TRACK_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
-    TRACK_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
-    TRACK_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
-    TRACK_SEGMENT_ROTATION = (PenaltyFunctionAbstract.Functions.minimize_segment_rotation,)
-    TRACK_SEGMENT_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_segment_velocity,)
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
-    TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
-    TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
-    TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,)
-    TRACK_PARAMETER = (PenaltyFunctionAbstract.Functions.minimize_parameter,)
+    PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
+    PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
     STOCHASTIC_DG_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_dg_dx_implicit,)
+    SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
+    SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
+    TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
+    TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
+    TRACK_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
+    TRACK_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
+    TRACK_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
+    TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+    TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
+    TRACK_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
+    TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+    TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
+    TRACK_MARKERS_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_markers_acceleration,)
+    TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+    TRACK_PARAMETER = (PenaltyFunctionAbstract.Functions.minimize_parameter,)
+    TRACK_POWER = (PenaltyFunctionAbstract.Functions.minimize_power,)
+    TRACK_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
+    TRACK_SEGMENT_ROTATION = (PenaltyFunctionAbstract.Functions.minimize_segment_rotation,)
+    TRACK_SEGMENT_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_segment_velocity,)
+    TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
+    TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+    TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,)
 
     @staticmethod
     def get_type():

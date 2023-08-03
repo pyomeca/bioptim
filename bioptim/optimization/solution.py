@@ -511,7 +511,7 @@ class Solution:
                 control_type = self.ocp.nlp[p].control_type
                 if control_type == ControlType.CONSTANT:
                     off = 0
-                elif control_type == ControlType.LINEAR_CONTINUOUS:
+                elif control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
@@ -1555,7 +1555,7 @@ class Solution:
                         ),
                         axis=1,
                     )
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 pass
             else:
                 raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
@@ -1755,12 +1755,13 @@ class Solution:
                     ):
                         col_x_idx.append((idx + 1) * (steps if nlp.ode_solver.is_direct_shooting else 1))
 
-                        if (
-                            penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                        ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        if (penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL) or nlp.control_type in (
+                            ControlType.LINEAR_CONTINUOUS,
+                            ControlType.CONSTANT_WITH_LAST_NODE,
+                        ):
                             col_u_idx.append((idx + 1))
                     elif penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
-                        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                             col_u_idx.append((idx + 1))
 
                     x = np.ndarray((nlp.states.shape, len(col_x_idx)))

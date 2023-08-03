@@ -404,7 +404,10 @@ class PenaltyOption(OptionGeneric):
             The control at a given time
             """
 
-            if controller.control_type == ControlType.CONSTANT:
+            if (
+                controller.control_type == ControlType.CONSTANT
+                or controller.control_type == ControlType.CONSTANT_WITH_LAST_NODE
+            ):
                 return u
             elif controller.control_type == ControlType.LINEAR_CONTINUOUS:
                 return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
@@ -539,11 +542,13 @@ class PenaltyOption(OptionGeneric):
             control_cx_scaled = (
                 horzcat(controller.controls_scaled.cx_start)
                 if controller.control_type == ControlType.CONSTANT
+                or controller.control_type == ControlType.CONSTANT_WITH_LAST_NODE
                 else horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end)
             )
             control_cx = (
                 horzcat(controller.controls.cx_start)
                 if controller.control_type == ControlType.CONSTANT
+                or controller.control_type == ControlType.CONSTANT_WITH_LAST_NODE
                 else horzcat(controller.controls.cx_start, controller.controls.cx_end)
             )
             control_cx_end_scaled = get_u(control_cx_scaled, dt_cx)
