@@ -527,6 +527,8 @@ class TRAPEZOIDAL(Integrator):
     """
     Numerical integration using trapezoidal method.
     Not that it is only possible to have one step using trapezoidal.
+    It behaves like an order 1 collocation method meaning that the integration is implicit (but since the polynomial is
+    of order 1, it is not possible to put a constraint on the slopes).
 
     Methods
     -------
