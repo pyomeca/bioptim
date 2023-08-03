@@ -325,12 +325,6 @@ class PenaltyFunctionAbstract:
             )
             markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, markers, CoM=False)
 
-            # var = []
-            # var.extend([controller.states[key] for key in controller.states])
-            # var.extend([controller.controls[key] for key in controller.controls])
-            # var.extend([controller.parameters[key] for key in controller.parameters])
-            # return controller.mx_to_cx("com_ddot", com_ddot, *var)
-
             return markers_objective
 
         @staticmethod
@@ -1328,16 +1322,22 @@ class PenaltyFunctionAbstract:
 
     @staticmethod
     def _get_markers_acceleration(controller, markers, CoM=False):
+
         """
-        Retrieve the acceleration of the markers or the center of mass (CoM) from the controller.
+        Retrieve the acceleration of either the markers or the center of mass (CoM) from the controller.
 
-        Args:
-            controller (object): An object containing states and controls data.
-            markers (MX): generic expression of the marker/com acceleration
-            CoM (bool, optional): If True, return the CoM acceleration. If False, return markers acceleration. Defaults to False.
+        Parameters
+        ----------
+        controller : object
+            An object containing 'states' and 'controls' data.
 
-        Returns:
-            The acceleration of the specified markers or the CoM.
+        markers : MX
+            A generic expression of the marker or CoM acceleration.
+
+        CoM : bool, optional
+            A boolean indicating the type of acceleration to be returned. If True, returns the CoM
+            acceleration. If False, returns the markers acceleration. Defaults to False.
+
         """
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
