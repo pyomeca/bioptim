@@ -312,6 +312,14 @@ class BiorbdModel:
             muscle_states[k].setExcitation(muscle_excitations[k])
         return self.model.activationDot(muscle_states).to_mx()
 
+    def muscle_length_jacobian(self, q) -> MX:
+        q_biorbd = GeneralizedCoordinates(q)
+        return self.model.musclesLengthJacobian(q_biorbd).to_mx()
+
+    def muscle_velocity(self, q, qdot) -> MX:
+        J = self.muscle_length_jacobian(q)
+        return J @ qdot
+
     def muscle_joint_torque(self, activations, q, qdot) -> MX:
         muscles_states = self.model.stateSet()
         for k in range(self.model.nbMuscles()):
@@ -388,6 +396,33 @@ class BiorbdModel:
                 inverse=True,
             )
             for m in self.model.markersVelocity(GeneralizedCoordinates(q), GeneralizedVelocity(qdot)):
+                if m.applyRT(homogeneous_matrix_transposed) is None:
+                    out.append(m.to_mx())
+
+            return out
+
+    def marker_accelerations(self, q, qdot, qddot, reference_index=None) -> list[MX]:
+        if reference_index is None:
+            return [
+                m.to_mx()
+                for m in self.model.markerAcceleration(
+                    GeneralizedCoordinates(q),
+                    GeneralizedVelocity(qdot),
+                    GeneralizedAcceleration(qddot),
+                    True,
+                )
+            ]
+
+        else:
+            out = []
+            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
+                GeneralizedCoordinates(q),
+                reference_index,
+                inverse=True,
+            )
+            for m in self.model.markersAcceleration(
+                GeneralizedCoordinates(q), GeneralizedVelocity(qdot), GeneralizedAcceleration(qddot)
+            ):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     out.append(m.to_mx())
 
