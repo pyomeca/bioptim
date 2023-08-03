@@ -72,13 +72,10 @@ class Integrator:
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
         self.x_sym = ode["x_scaled"]
-        self.x_sym_next = ode["x_scaled_next"]
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
-        self.u_sym_next = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled_next"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
         self.s_sym = ode["stochastic_variables"]
-        self.s_sym_next = ode["stochastic_variables_next"]
         self.stochastic_variables_sym = ode["stochastic_variables"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
@@ -134,13 +131,10 @@ class Integrator:
         self,
         h: float,
         states: MX | SX,
-        states_next: MX | SX,
         controls: MX | SX,
-        controls_next: MX | SX,
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
-        stochastic_variables_next: MX | SX,
     ) -> tuple:
         """
         The dynamics of the system
@@ -174,12 +168,9 @@ class Integrator:
 
         self.function = Function(
             "integrator",
-            [self.x_sym, self.x_sym_next, self.u_sym, self.u_sym_next, self.param_sym, self.s_sym, self.s_sym_next],
-            self.dxdt(
-                self.h, self.x_sym, self.x_sym_next, self.u_sym, self.u_sym_next, self.param_sym, self.param_scaling,
-                self.s_sym, self.s_sym_next
-            ),
-            ["x0", "x_next", "p", "p_next", "params", "s", "s_next"],
+            [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 
@@ -539,9 +530,9 @@ class TRAPEZOIDAL(Integrator):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, x_next: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
+    next_x(self, h: float, t: float, x_prev: MX | SX, x_next: MX | SX, u: MX | SX, u_next: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state
-    dxdt(self, h: float, states: MX | SX,  states_next: MX | SX, controls: MX | SX, controls_next: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -596,14 +587,11 @@ class TRAPEZOIDAL(Integrator):
     def dxdt(
         self,
         h: float,
-        states_prev: MX | SX,
-        states_next: MX | SX,
-        controls_prev: MX | SX,
-        controls_next: MX | SX,
+        states: MX | SX,
+        controls: MX | SX,
         params: MX | SX,
         param_scaling,
-        stochastic_variables_prev: MX | SX,
-        stochastic_variables_next: MX | SX,
+        stochastic_variables: MX | SX,
     ) -> tuple:
         """
         The dynamics of the system
@@ -612,36 +600,37 @@ class TRAPEZOIDAL(Integrator):
         ----------
         h: float
             The time step
-        states_prev: MX | SX
-            The currect states of the system
-        states_next: MX | SX
-            The states of the system at the next shooting node
-        controls_prev: MX | SX
-            The current controls of the system
-        controls_next: MX | SX
-            The controls of the system at the next shooting node
+        states: MX | SX
+            The states of the system
+        controls: MX | SX
+            The controls of the system
         params: MX | SX
             The parameters of the system
         param_scaling
             The parameters scaling factor
         stochastic_variables_prev: MX | SX
-            The current stochastic variables of the system
-        stochastic_variables_next: MX | SX
-            The stochastic variables of the system at the next shooting node
+            The stochastic variables of the system
 
         Returns
         -------
         The derivative of the states
         """
 
-        x_prev = self.cx(states_prev.shape[0], 2)
+        x_prev = self.cx(states.shape[0], 2)
         p = params * param_scaling
-        x_prev[:, 0] = states_prev
+
+        states_next = states[:, 1]
+        controls_prev = controls[:, 0]
+        controls_next = controls[:, 1]
+        stochastic_variables_prev = stochastic_variables[:, 0]
+        stochastic_variables_next = stochastic_variables[:, 1]
+
+        x_prev[:, 0] = states[:, 0]
 
         x_prev[:, 1] = self.next_x(h, x_prev[:, 0], states_next, controls_prev, controls_next, p, stochastic_variables_prev, stochastic_variables_next)
 
         if self.model.nb_quaternions > 0:
-            x_prev[:, 1] = self.model.normalize_state_quaternions(x[:, 1])
+            x_prev[:, 1] = self.model.normalize_state_quaternions(x_prev[:, 1])
 
         return x_prev[:, 1], x_prev
 
@@ -652,11 +641,11 @@ class TRAPEZOIDAL(Integrator):
 
         self.function = Function(
             "integrator",
-            [self.x_sym, self.x_sym_next, self.u_sym, self.u_sym_next, self.param_sym, self.s_sym, self.s_sym_next],
+            [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
             self.dxdt(
-                self.h, self.x_sym, self.x_sym_next, self.u_sym, self.u_sym_next, self.param_sym, self.param_scaling, self.s_sym, self.s_sym_next
+                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
             ),
-            ["x0", "x_next", "p", "p_next", "params", "s", "s_next"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 

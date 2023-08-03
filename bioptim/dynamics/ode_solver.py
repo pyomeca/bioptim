@@ -246,6 +246,7 @@ class OdeSolver:
         def __init__(self):
             super(OdeSolver.TRAPEZOIDAL, self).__init__()
             self.rk_integrator = TRAPEZOIDAL
+            self.is_direct_shooting = True
 
         def integrator(self, ocp, nlp, node_index: int) -> list:
             """
@@ -280,24 +281,15 @@ class OdeSolver:
                 raise RuntimeError("Trapezoidal integration cannot be used with assume_phase_dynamics = True")
 
             ode = {
-                "x_unscaled": nlp.states.cx_start,
-                "x_scaled": nlp.states.scaled.cx_start,
-                "p_unscaled": nlp.controls.cx_start,
-                "p_scaled": nlp.controls.scaled.cx_start,
-                "stochastic_variables": nlp.stochastic_variables.cx_start,
+                "x_unscaled": horzcat(nlp.states.cx_start, nlp.states.cx_end),
+                "x_scaled": horzcat(nlp.states.scaled.cx_start, nlp.states.scaled.cx_end),
+                "p_unscaled": horzcat(nlp.controls.cx_start, nlp.controls.cx_end),
+                "p_scaled": horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
+                "stochastic_variables": horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end),
+                # add scaling
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
-
-            nlp.states.node_index = node_index + 1
-            nlp.states_dot.node_index = node_index + 1
-            nlp.controls.node_index = node_index + 1
-            nlp.stochastic_variables.node_index = node_index + 1
-
-            ode["x_scaled_next"] = nlp.states.scaled.cx_start
-            ode["p_scaled_next"] = nlp.controls.scaled.cx_start
-            ode["stochastic_variables_next"] = nlp.stochastic_variables.scaled.cx_start
-
             ode_opt = {
                 "t0": 0,
                 "tf": nlp.dt,
