@@ -1345,9 +1345,8 @@ class Solution:
                 t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), out.ns[p] + 1))
 
         if isinstance(n_frames, int):
-            _, data_states, _, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
+            _, data_states, _, _, _, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
             t_all = [np.concatenate((np.concatenate([_t[:-1] for _t in t_all]), [t_all[-1][-1]]))]
-
             n_frames = [n_frames]
             out.is_merged = True
         elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states["unscaled"]):
