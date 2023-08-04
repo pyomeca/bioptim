@@ -448,6 +448,7 @@ def track_final_marker(controller: PenaltyController) -> cas.MX:
     ee_pos = controller.model.markers(q)[2][:2]
     return ee_pos
 
+
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
@@ -506,16 +507,16 @@ def prepare_socp(
     multinode_objectives = MultinodeObjectiveList()
     multinode_objectives.add(
         minimize_uncertainty,
-        nodes_phase=[0 for _ in range(n_shooting+1)],
-        nodes=[i for i in range(n_shooting+1)],
+        nodes_phase=[0 for _ in range(n_shooting + 1)],
+        nodes=[i for i in range(n_shooting + 1)],
         key="qddot",
         weight=1e3 / 2,
         quadratic=False,
     )
     multinode_objectives.add(
         expected_feedback_effort,
-        nodes_phase=[0 for _ in range(n_shooting+1)],
-        nodes=[i for i in range(n_shooting+1)],
+        nodes_phase=[0 for _ in range(n_shooting + 1)],
+        nodes=[i for i in range(n_shooting + 1)],
         sensory_noise_magnitude=sensory_noise_magnitude,
         weight=1e3 / 2,
         quadratic=False,
@@ -546,8 +547,8 @@ def prepare_socp(
     multinode_constraints = MultinodeConstraintList()
     multinode_constraints.add(
         reach_target_consistantly,
-        nodes_phase=[0 for _ in range(n_shooting+1)],
-        nodes=[i for i in range(n_shooting+1)],
+        nodes_phase=[0 for _ in range(n_shooting + 1)],
+        nodes=[i for i in range(n_shooting + 1)],
         min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
         max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
     )
@@ -601,8 +602,8 @@ def prepare_socp(
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
-    states_init[0, :] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting+1)
-    states_init[1, :] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting+1)
+    states_init[0, :] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting + 1)
+    states_init[1, :] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting + 1)
     states_init[n_states:, :] = 0.01
 
     x_init = InitialGuessList()
@@ -614,7 +615,7 @@ def prepare_socp(
         interpolation=InterpolationType.EACH_FRAME,
     )
 
-    controls_init = np.ones((n_controls, n_shooting+1)) * 0.01
+    controls_init = np.ones((n_controls, n_shooting + 1)) * 0.01
 
     u_init = InitialGuessList()
     u_init.add("qdddot", initial_guess=controls_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)

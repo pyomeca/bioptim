@@ -267,8 +267,10 @@ class OdeSolver:
             """
 
             if nlp.control_type == ControlType.CONSTANT:
-                raise RuntimeError("TRAPEZOIDAL cannot be used with piece-wise constant controls, please use "
-                                   "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead.")
+                raise RuntimeError(
+                    "TRAPEZOIDAL cannot be used with piece-wise constant controls, please use "
+                    "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead."
+                )
 
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
