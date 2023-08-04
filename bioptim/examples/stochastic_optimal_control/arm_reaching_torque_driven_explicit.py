@@ -7,11 +7,8 @@ The stochastic variables dynamics is explicit.
 import platform
 
 import pickle
-import biorbd_casadi as biorbd
-import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
-import scipy.io as sio
 
 from bioptim import (
     OptimalControlProgram,
@@ -35,6 +32,8 @@ from bioptim import (
     MultinodeConstraintList,
     MultinodeObjectiveList,
     InitialGuessList,
+    OdeSolver,
+    ControlType,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
@@ -449,59 +448,6 @@ def track_final_marker(controller: PenaltyController) -> cas.MX:
     ee_pos = controller.model.markers(q)[2][:2]
     return ee_pos
 
-
-def trapezoidal_integration_continuity_constraint(
-    controllers: list[PenaltyController], force_field_magnitude
-) -> cas.MX:
-    """
-    This function computes the continuity constraint for the trapezoidal integration scheme.
-    It is computed as:
-        x_i_plus - x_i - dt/2 * (f(x_i, u_i) + f(x_i_plus, u_i_plus)) = 0
-    """
-    n_q = controllers[0].model.nb_q
-    n_qdot = controllers[0].model.nb_qdot
-    n_tau = controllers[0].model.nb_tau
-
-    motor_noise = np.zeros((n_tau, 1))
-    sensory_noise = np.zeros((n_q + n_qdot, 1))
-    dt = controllers[0].tf / controllers[0].ns
-
-    dyn = stochastic_forward_dynamics(
-        controllers[0].states.cx_start,
-        controllers[0].controls.cx_start,
-        controllers[0].parameters.cx_start,
-        controllers[0].stochastic_variables.cx_start,
-        controllers[0].get_nlp,
-        motor_noise,
-        sensory_noise,
-        force_field_magnitude=force_field_magnitude,
-        with_gains=False,
-    )
-    dx_i = dyn.dxdt
-
-    if controllers[1].node_index != controllers[0].ns:
-        dx_i_plus = stochastic_forward_dynamics(
-            controllers[1].states.cx_start,
-            controllers[1].controls.cx_start,
-            controllers[1].parameters.cx_start,
-            controllers[1].stochastic_variables.cx_start,
-            controllers[1].get_nlp,
-            motor_noise,
-            sensory_noise,
-            force_field_magnitude=force_field_magnitude,
-            with_gains=False,
-        ).dxdt
-
-        continuity = controllers[1].states.cx_start - (controllers[0].states.cx_start + (dx_i + dx_i_plus) / 2 * dt)
-        continuity *= 1e3
-    else:
-        continuity = 0
-
-    implicit_dynamics = dyn.defects
-
-    return cas.vertcat(continuity, implicit_dynamics)
-
-
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
@@ -511,7 +457,6 @@ def prepare_socp(
     sensory_noise_magnitude: cas.DM,
     force_field_magnitude: float = 0,
     problem_type=ExampleType.CIRCLE,
-    expand_dynamics: bool = True,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -533,10 +478,6 @@ def prepare_socp(
         The magnitude of the force field
     problem_type: str
         The type of problem to solve (ExampleType.CIRCLE or ExampleType.BAR)
-    expand_dynamics: bool
-        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
-        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
-        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -559,22 +500,22 @@ def prepare_socp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL_SHOOTING, key="tau", weight=1e3 / 2, quadratic=True
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=1e3 / 2, quadratic=True
     )
 
     multinode_objectives = MultinodeObjectiveList()
     multinode_objectives.add(
         minimize_uncertainty,
-        nodes_phase=[0 for _ in range(n_shooting)],
-        nodes=[i for i in range(n_shooting)],
+        nodes_phase=[0 for _ in range(n_shooting+1)],
+        nodes=[i for i in range(n_shooting+1)],
         key="qddot",
         weight=1e3 / 2,
         quadratic=False,
     )
     multinode_objectives.add(
         expected_feedback_effort,
-        nodes_phase=[0 for _ in range(n_shooting)],
-        nodes=[i for i in range(n_shooting)],
+        nodes_phase=[0 for _ in range(n_shooting+1)],
+        nodes=[i for i in range(n_shooting+1)],
         sensory_noise_magnitude=sensory_noise_magnitude,
         weight=1e3 / 2,
         quadratic=False,
@@ -582,15 +523,15 @@ def prepare_socp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(hand_equals_ref, node=Node.ALL_SHOOTING)
+    constraints.add(hand_equals_ref, node=Node.ALL)
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
     constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.START, target=0)
-    constraints.add(track_final_marker, node=Node.PENULTIMATE, target=ee_final_position)
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.PENULTIMATE, target=0)
+    constraints.add(track_final_marker, node=Node.END, target=ee_final_position)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.END, target=0)
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
@@ -605,18 +546,11 @@ def prepare_socp(
     multinode_constraints = MultinodeConstraintList()
     multinode_constraints.add(
         reach_target_consistantly,
-        nodes_phase=[0 for _ in range(n_shooting)],
-        nodes=[i for i in range(n_shooting)],
+        nodes_phase=[0 for _ in range(n_shooting+1)],
+        nodes=[i for i in range(n_shooting+1)],
         min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
         max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
     )
-    for i in range(n_shooting):
-        multinode_constraints.add(
-            trapezoidal_integration_continuity_constraint,
-            nodes_phase=[0, 0],
-            nodes=[i, i + 1],
-            force_field_magnitude=force_field_magnitude,
-        )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -635,7 +569,7 @@ def prepare_socp(
         ),
         motor_noise=np.zeros((n_tau, 1)),
         sensory_noise=np.zeros((n_q + n_qdot, 1)),
-        expand=expand_dynamics,
+        expand=False,
     )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf
@@ -667,10 +601,8 @@ def prepare_socp(
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
-    states_init[0, :-1] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting)
-    states_init[0, -1] = shoulder_pos_final
-    states_init[1, :-1] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting)
-    states_init[1, -1] = elbow_pos_final
+    states_init[0, :] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting+1)
+    states_init[1, :] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting+1)
     states_init[n_states:, :] = 0.01
 
     x_init = InitialGuessList()
@@ -682,7 +614,7 @@ def prepare_socp(
         interpolation=InterpolationType.EACH_FRAME,
     )
 
-    controls_init = np.ones((n_controls, n_shooting)) * 0.01
+    controls_init = np.ones((n_controls, n_shooting+1)) * 0.01
 
     u_init = InitialGuessList()
     u_init.add("qdddot", initial_guess=controls_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
@@ -754,8 +686,8 @@ def prepare_socp(
         multinode_objectives=multinode_objectives,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
-        ode_solver=None,
-        skip_continuity=True,
+        ode_solver=OdeSolver.TRAPEZOIDAL(),
+        control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
         problem_type=SocpType.SOCP_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
@@ -774,8 +706,7 @@ def main():
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
-    n_shooting = int(final_time / dt) + 1
-    final_time += dt
+    n_shooting = int(final_time / dt)
 
     # --- Noise constants --- #
     motor_noise_std = 0.05
@@ -852,7 +783,7 @@ def main():
         import bioviz
 
         b = bioviz.Viz(model_path=biorbd_model_path)
-        b.load_movement(q_sol[:, :-1])
+        b.load_movement(q_sol)
         b.exec()
 
 

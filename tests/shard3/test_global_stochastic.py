@@ -181,8 +181,6 @@ def test_arm_reaching_torque_driven_explicit():
     final_time = 0.8
     n_shooting = 4
     ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
-    problem_type = ExampleType.CIRCLE
-    force_field_magnitude = 0
 
     dt = 0.01
     motor_noise_std = 0.05
@@ -202,9 +200,6 @@ def test_arm_reaching_torque_driven_explicit():
         ee_final_position=ee_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
-        force_field_magnitude=force_field_magnitude,
-        problem_type=problem_type,
-        expand_dynamics=True,
     )
 
     # Solver parameters
@@ -217,18 +212,18 @@ def test_arm_reaching_torque_driven_explicit():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 561.0948164739301)
+    np.testing.assert_almost_equal(f[0, 0], 0.0009949559696219028)
 
     # detailed cost values
-    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.0008000000000003249)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.157506624022141e-06)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.0009947791440719843)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0)
     np.testing.assert_almost_equal(
         f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
     )
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (177, 1))
+    np.testing.assert_equal(g.shape, (214, 1))
 
     # Check some of the results
     states, controls, stochastic_variables, integrated_values = (
@@ -243,77 +238,44 @@ def test_arm_reaching_torque_driven_explicit():
     cov = integrated_values["cov"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.34906532, 2.24586853]))
-    np.testing.assert_almost_equal(q[:, -2], np.array([0.92562684, 1.29034226]))
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([-1.57899650e-07, 2.41254443e-07]))
-    np.testing.assert_almost_equal(qdot[:, -2], np.array([-1.55837195e-07, 2.43938827e-07]))
-    np.testing.assert_almost_equal(qddot[:, 0], np.array([-1.46193801e-08, 2.26087816e-08]))
-    np.testing.assert_almost_equal(qddot[:, -2], np.array([1.44183405e-08, -2.27987398e-08]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.92481582, 1.29144455]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
+    np.testing.assert_almost_equal(qddot[:, 0], np.array([0, 0]))
+    np.testing.assert_almost_equal(qddot[:, -1], np.array([0, 0]))
 
-    np.testing.assert_almost_equal(qdddot[:, 0], np.array([288.28080732, -477.76320979]))
-    np.testing.assert_almost_equal(qdddot[:, -2], np.array([288.28080727, -477.76320985]))
+    np.testing.assert_almost_equal(qdddot[:, 0], np.array([38.88569235, -59.56207164]))
+    np.testing.assert_almost_equal(qdddot[:, -2], np.array([32.98170709, -59.56049898]))
 
-    np.testing.assert_almost_equal(tau[:, 0], np.array([-3.26925993e-09, 9.16460095e-09]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-4.74280539e-10, 6.73868548e-09]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([1.32767652e-05, 1.32767652e-05]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([1.32767652e-05, 1.32767652e-05]))
 
     np.testing.assert_almost_equal(
         k[:, 0],
         np.array(
             [
-                4.64142689e-03,
-                4.64142689e-03,
-                5.12302385e-03,
-                5.12302385e-03,
-                2.56803086e-05,
-                2.56803086e-05,
-                2.56805175e-05,
-                2.56805175e-05,
+                4.53999320e-05, 4.53999320e-05, 5.29993608e-05, 5.29993608e-05,
+                1.46544478e-05, 1.46544478e-05, 1.46544550e-05, 1.46544550e-05,
             ]
         ),
     )
     np.testing.assert_almost_equal(
-        ref[:, 0], np.array([2.81907902e-02, 2.84412318e-01, 3.52327872e-09, -7.24617190e-08])
+        ref[:, 0], np.array([2.81666286e-02, 2.84048250e-01, 1.32759716e-05, 1.32759716e-05])
     )
     np.testing.assert_almost_equal(
         m[:, 0],
         np.array(
             [
-                9.99999999e-01,
-                -5.52232186e-10,
-                9.99999999e-02,
-                -5.57651141e-11,
-                9.99999999e-03,
-                -6.57964810e-12,
-                -5.52264505e-10,
-                1.00000000e00,
-                -5.57686152e-11,
-                1.00000000e-01,
-                -6.58097541e-12,
-                1.00000000e-02,
-                -4.41781681e-10,
-                -2.20857111e-10,
-                1.00000000e00,
-                -2.23035836e-11,
-                1.00000000e-01,
-                -2.62121430e-12,
-                -2.20831950e-10,
-                -1.09915662e-10,
-                -2.23011389e-11,
-                1.00000000e00,
-                -2.62129367e-12,
-                1.00000000e-01,
-                -8.82781541e-11,
-                -4.41283053e-11,
-                -8.81407350e-12,
-                -4.46497667e-12,
-                1.00000000e00,
-                -5.30124698e-13,
-                -4.40763326e-11,
-                -2.19521899e-11,
-                -4.45974851e-12,
-                -2.12087407e-12,
-                -5.29581943e-13,
-                1.00000000e00,
+                9.98685679e-01, 1.32759716e-05, 9.98805163e-02, 1.32759716e-05,
+                1.00000000e-02, 1.32759716e-05, 1.32759716e-05, 9.98685679e-01,
+                1.32759716e-05, 9.98805163e-02, 1.32759716e-05, 1.00000000e-02,
+                1.32759716e-05, 1.32759716e-05, 9.98685679e-01, 1.32759716e-05,
+                9.98805163e-02, 1.32759716e-05, 1.32759716e-05, 1.32759716e-05,
+                1.32759716e-05, 9.98685679e-01, 1.32759716e-05, 9.98805163e-02,
+                1.32759716e-05, 1.32759716e-05, 1.32759716e-05, 1.32759716e-05,
+                9.98685679e-01, 1.32759716e-05, 1.32759716e-05, 1.32759716e-05,
+                1.32759716e-05, 1.32759716e-05, 1.32759716e-05, 9.98685679e-01,
             ]
         ),
     )
@@ -322,42 +284,15 @@ def test_arm_reaching_torque_driven_explicit():
         cov[:, -2],
         np.array(
             [
-                1.00022400e-04,
-                -2.29971564e-13,
-                7.19999318e-08,
-                -3.40720475e-14,
-                7.99999888e-08,
-                -5.56777152e-15,
-                -2.29971564e-13,
-                1.00022400e-04,
-                -3.40758584e-14,
-                7.19999830e-08,
-                -5.57519308e-15,
-                7.99999972e-08,
-                7.19999318e-08,
-                -3.40758584e-14,
-                2.60000000e-07,
-                -2.93958506e-17,
-                4.00000000e-07,
-                -1.62077043e-17,
-                -3.40720475e-14,
-                7.19999830e-08,
-                -2.93958506e-17,
-                2.60000000e-07,
-                -1.62165579e-17,
-                4.00000000e-07,
-                7.99999888e-08,
-                -5.57519308e-15,
-                4.00000000e-07,
-                -1.62165579e-17,
-                1.00000000e-06,
-                -3.78659436e-18,
-                -5.56777152e-15,
-                7.99999972e-08,
-                -1.62077043e-17,
-                4.00000000e-07,
-                -3.78659436e-18,
-                1.00000000e-06,
+                9.94981789e-05, 5.87995640e-09, 7.45496761e-08, 2.93126339e-09,
+                8.22602351e-08, 2.68422091e-09, 5.87995640e-09, 9.94981789e-05,
+                2.93126339e-09, 7.45496761e-08, 2.68422091e-09, 8.22602351e-08,
+                7.45496761e-08, 2.93126339e-09, 2.58657288e-07, 3.52419757e-11,
+                3.97931483e-07, 5.14120545e-11, 2.93126339e-09, 7.45496761e-08,
+                3.52419757e-11, 2.58657288e-07, 5.14120545e-11, 3.97931483e-07,
+                8.22602351e-08, 2.68422091e-09, 3.97931483e-07, 5.14120545e-11,
+                9.94764852e-07, 6.46744617e-11, 2.68422091e-09, 8.22602351e-08,
+                5.14120545e-11, 3.97931483e-07, 6.46744617e-11, 9.94764852e-07,
             ]
         ),
     )
