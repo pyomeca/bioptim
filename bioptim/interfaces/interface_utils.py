@@ -287,7 +287,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             else:
                 x = nlp.X_scaled[_idx + 1][:, 0]
             _x = horzcat(_x, x)
-            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 if is_unscaled:
                     u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
                 else:
@@ -297,7 +297,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             _s = horzcat(_s, s)
 
         if _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
-            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 if is_unscaled:
                     u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
                 else:
