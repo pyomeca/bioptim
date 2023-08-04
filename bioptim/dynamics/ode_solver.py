@@ -266,6 +266,10 @@ class OdeSolver:
             A list of integrators
             """
 
+            if nlp.control_type == ControlType.CONSTANT:
+                raise RuntimeError("TRAPEZOIDAL cannot be used with piece-wise constant controls, please use "
+                                   "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead.")
+
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -495,6 +499,8 @@ class OdeSolver:
                 raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")
             if ocp.parameters.shape != 0:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
+            if nlp.stochastic_variables.cx_start.shape != 0:
+                raise RuntimeError("CVODES cannot be used while optimizing stochastic variables")
             if nlp.external_forces:
                 raise RuntimeError("CVODES cannot be used with external_forces")
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
