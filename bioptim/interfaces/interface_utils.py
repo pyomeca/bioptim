@@ -44,8 +44,23 @@ def generic_solve(interface) -> dict:
     if interface.opts.show_online_optim:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
+    # This is a temporary hack motor_noise and sensory noise should not appear in the penalty functions since they are
+    # supposed to be evaluated with the noise magnitude... I have to find the error
+    v = interface.ocp.variables_vector
+    v_bounds = interface.ocp.bounds_vectors
+    v_init = interface.ocp.init_vector
+    v_bounds_min = v_bounds[0]
+    v_bounds_max = v_bounds[1]
+    v_init_init = v_init
+    if hasattr(interface.ocp.nlp[0].motor_noise):
+        v = vertcat(v, interface.ocp.nlp[0].motor_noise, interface.ocp.nlp[0].sensory_noise)
+        v_bounds_min = vertcat(v_bounds_min, 0, 0)
+        v_bounds_max = vertcat(v_bounds_max, 0, 0)
+        v_init_init = vertcat(v_init_init, 0, 0)
+
+
     # Thread here on (f and all_g) instead of individually for each function?
-    interface.sqp_nlp = {"x": interface.ocp.variables_vector, "f": sum1(all_objectives), "g": all_g}
+    interface.sqp_nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
 
@@ -57,14 +72,12 @@ def generic_solve(interface) -> dict:
     else:
         interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.sqp_nlp, options)
 
-    v_bounds = interface.ocp.bounds_vectors
-    v_init = interface.ocp.init_vector
     interface.sqp_limits = {
-        "lbx": v_bounds[0],
-        "ubx": v_bounds[1],
+        "lbx": v_bounds_min,  #v_bounds[0],
+        "ubx": v_bounds_max,  # v_bounds[1],
         "lbg": all_g_bounds.min,
         "ubg": all_g_bounds.max,
-        "x0": v_init,
+        "x0": v_init_init,  # v_init,
     }
 
     if interface.lam_g is not None:
@@ -243,7 +256,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
                 # 0th column since this constraint can only be applied to a single point. This is to account for
                 # the COLLOCATION which will have multiple column, but are not intended to be used here
-                _x = vertcat(_x, _x_tp[:, 0])
+                vertcatted_x_tp = nlp_i.cx()
+                for col in range(_x_tp.shape[1]):
+                    vertcatted_x_tp = vertcat(vertcatted_x_tp, _x_tp[:, col])
+                _x = vertcat(_x, vertcatted_x_tp)
                 _u = vertcat(_u, _u_tp)
                 _s = vertcat(_s, _s_tp)
 
@@ -305,6 +321,13 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _u = horzcat(_u, u)
         return _x, _u, _s
 
+    if hasattr(interface.ocp.nlp[0], "motor_noise"):
+        motor_noise = interface.ocp.nlp[0].motor_noise
+        sensory_noise = interface.ocp.nlp[0].sensory_noise
+    else:
+        motor_noise = interface.ocp.nlp[0].cx()
+        sensory_noise = interface.ocp.nlp[0].cx()
+
     param = interface.ocp.cx(interface.ocp.parameters.cx)
     out = interface.ocp.cx()
     for penalty in penalties:
@@ -330,7 +353,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 u = horzcat(u, u[:, -1])
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            p = reshape(penalty.weighted_function[0](x, u, param, s, penalty.weight, target, penalty.dt), -1, 1)
+            p = reshape(penalty.weighted_function[0](x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt), -1, 1)
 
         else:
             p = interface.ocp.cx()
@@ -356,7 +379,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     s = []
                 else:
                     x, u, s = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                p = vertcat(p, penalty.weighted_function[idx](x, u, param, s, penalty.weight, target, penalty.dt))
+                p = vertcat(p, penalty.weighted_function[idx](x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt))
 
         out = vertcat(out, sum2(p))
     return out

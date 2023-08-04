@@ -1260,10 +1260,7 @@ class ConfigureProblem:
 
         if as_stochastic:
             for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
-                n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
-                if n_cx < 3:
-                    n_cx = 3
-                cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
+                cx_scaled = define_cx_scaled(n_col=3, n_shooting=1, initial_node=node_index)
                 nlp.stochastic_variables.append(
                     name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
                 )
