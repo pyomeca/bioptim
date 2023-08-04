@@ -340,10 +340,13 @@ class OptimalControlProgram:
             variable_mappings,
             integrated_value_functions,
         )
-        self.prepare_problem(node_mappings, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init,
-                        parameter_init, s_init, phase_transitions, state_continuity_weight)
+        self.prepare_node_mapping(node_mappings)
+        self.prepare_dynamics()
+        self.prepare_bounds_and_init(x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init,
+                                s_init)
 
-        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
+
+        self.declare_multi_node_penalties(multinode_constraints, multinode_objectives)
 
         self.finalize_penalties(
             skip_continuity,
@@ -352,6 +355,7 @@ class OptimalControlProgram:
             parameter_constraints,
             objective_functions,
             parameter_objectives,
+            phase_transitions,
         )
 
     def check_bioptim_version(self):
@@ -722,8 +726,7 @@ class OptimalControlProgram:
             s_init,
         )
 
-    def prepare_problem(self, node_mappings, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init,
-                        parameter_init, s_init, phase_transitions, state_continuity_weight):
+    def prepare_node_mapping(self, node_mappings):
         # Prepare the node mappings
         if node_mappings is None:
             node_mappings = NodeMappingList()
@@ -737,12 +740,14 @@ class OptimalControlProgram:
             use_states_from_phase_idx, use_controls_from_phase_idx
         )
 
+    def prepare_dynamics(self):
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
+    def prepare_bounds_and_init(self, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init):
         self.parameter_bounds = BoundsList()
         self.parameter_init = InitialGuessList()
 
@@ -751,11 +756,9 @@ class OptimalControlProgram:
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
-        # Define continuity constraints
-        # Prepare phase transitions (Reminder, it is important that parameters are declared before,
-        # otherwise they will erase the phase_transitions)
-        self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
-
+    def declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
+        multinode_constraints.add_or_replace_to_penalty_pool(self)
+        multinode_objectives.add_or_replace_to_penalty_pool(self)
 
     def finalize_penalties(
         self,
@@ -765,7 +768,15 @@ class OptimalControlProgram:
         parameter_constraints,
         objective_functions,
         parameter_objectives,
+        phase_transitions,
     ):
+
+        # Define continuity constraints
+        # Prepare phase transitions (Reminder, it is important that parameters are declared before,
+        # otherwise they will erase the phase_transitions)
+        self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
+
+
         # Skipping creates an OCP without built-in continuity constraints, make sure you declared constraints elsewhere
         if not skip_continuity:
             self._declare_continuity(state_continuity_weight)
@@ -971,10 +982,6 @@ class OptimalControlProgram:
             pt.name = f"PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
-
-    def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
-        multinode_constraints.add_or_replace_to_penalty_pool(self)
-        multinode_objectives.add_or_replace_to_penalty_pool(self)
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """

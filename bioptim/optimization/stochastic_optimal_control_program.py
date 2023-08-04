@@ -3,6 +3,7 @@ from typing import Callable, Any
 from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
+from ..dynamics.configure_problem import ConfigureProblem
 from ..interfaces.biomodel import BioModel
 from ..limits.constraints import (
     ConstraintFcn,
@@ -182,12 +183,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             variable_mappings,
             integrated_value_functions,
         )
-        self.initialize_stochastic_variables()
-        self.prepare_problem(node_mappings, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init,
-                        parameter_init, s_init, phase_transitions, state_continuity_weight)
-
         self.problem_type = problem_type
-        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints)
+        self.initialize_stochastic_variables()
+        self.prepare_node_mapping(node_mappings)
+        self.prepare_dynamics()
+        self.prepare_bounds_and_init(x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init,
+                                     s_init)
+
+        self.declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints)
 
         self.finalize_penalties(
             skip_continuity,
@@ -196,18 +199,26 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_constraints,
             objective_functions,
             parameter_objectives,
+            phase_transitions,
         )
 
     def initialize_stochastic_variables(self):
         n_motor_noise = self.problem_type.motor_noise_magnitude.shape[0]
         n_sensory_noise = self.problem_type.sensory_noise_magnitude.shape[0]
-        motor_noise = self.nlp.cx.sym("motor_noise", n_motor_noise, 1)
-        sensory_noise = self.nlp.cx.sym("sensory_noise", n_sensory_noise, 1)
+        motor_noise = self.cx.sym("motor_noise", n_motor_noise, 1)
+        sensory_noise = self.cx.sym("sensory_noise", n_sensory_noise, 1)
         NLP.add(self, "motor_noise", motor_noise, True)
         NLP.add(self, "sensory_noise", sensory_noise, True)
 
+    def prepare_dynamics(self):
+        # Prepare the dynamics
+        for i in range(self.n_phases):
+            self.nlp[i].initialize(self.cx)
+            ConfigureProblem.initialize(self, self.nlp[i])
+            self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
+            self.nlp[i].ode_solver.prepare_noised_dynamic_integrator(self, self.nlp[i])
 
-    def _declare_multi_node_penalties(
+    def declare_multi_node_penalties(
         self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList, constraints: ConstraintList
     ):
         multinode_constraints.add_or_replace_to_penalty_pool(self)
@@ -221,6 +232,12 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             )
         elif isinstance(self.problem_type, SocpType.SOCP_IMPLICIT):
             self._prepare_stochastic_dynamics_implicit(
+                motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
+                sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
+                constraints=constraints,
+            )
+        elif isinstance(self.problem_type, SocpType.SOCP_COLLOCATION):
+            self._prepare_stochastic_dynamics_collocation(
                 motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
                 sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
                 constraints=constraints,
@@ -324,3 +341,44 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)
+
+    def _prepare_stochastic_dynamics_collocation(self, motor_noise_magnitude, sensory_noise_magnitude, constraints):
+        """
+        Adds the internal constraint needed for the implicit formulation of the stochastic ocp using collocation
+        integration. This is the real implementation suggested in Gillis 2013.
+        """
+
+        # @Pariterre: I don't know how we should generalize it instead of making cases like this...
+
+        # Constraints for M
+        for i_phase, nlp in enumerate(self.nlp):
+            constraints.add(
+                ConstraintFcn.STOCHASTIC_HELPER_MATRIX_COLLOCATION,
+                motor_noise_magnitude=motor_noise_magnitude,
+                sensory_noise_magnitude=sensory_noise_magnitude,
+                node=Node.ALL_SHOOTING,
+                phase=i_phase,
+            )
+
+        # Constraints for P
+        multi_node_penalties = MultinodeConstraintList()
+        for i_phase, nlp in enumerate(self.nlp):
+            for i_node in range(nlp.ns):
+                multi_node_penalties.add(
+                    MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
+                    nodes_phase=(i_phase, i_phase),
+                    nodes=(i_node, i_node + 1),
+                )
+            if i_phase > 0 and i_phase < len(self.nlp) - 1:
+                multi_node_penalties.add(
+                    MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
+                    motor_noise_magnitude=motor_noise_magnitude,
+                    sensory_noise_magnitude=sensory_noise_magnitude,
+                    nodes_phase=(i_phase - 1, i_phase),
+                    nodes=(-1, 0),
+                )
+
+        multi_node_penalties.add_or_replace_to_penalty_pool(self)
+
