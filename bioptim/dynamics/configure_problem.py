@@ -1531,7 +1531,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_m(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_m(ocp, nlp, n_noised_states: int, n_constraints: int=1):
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
         Parameters
@@ -1546,9 +1546,9 @@ class ConfigureProblem:
 
         name_m = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
-            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states*n_constraints)]:
                 name_m += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states*n_noised_states*n_constraints)), list(range(n_noised_states*n_noised_states*n_constraints)))
         ConfigureProblem.configure_new_variable(
             name,
             name_m,
