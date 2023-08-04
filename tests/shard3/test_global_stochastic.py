@@ -297,7 +297,7 @@ def test_arm_reaching_torque_driven_explicit():
         ),
     )
 
-
+# TODO: add test when scaling PR is merged
 @pytest.mark.parametrize("with_cholesky", [True, False])
 def test_arm_reaching_torque_driven_implicit(with_cholesky):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
@@ -305,8 +305,6 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky):
     final_time = 0.8
     n_shooting = 4
     ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
-    problem_type = ExampleType.CIRCLE
-    force_field_magnitude = 0
 
     dt = 0.01
     motor_noise_std = 0.05
@@ -326,10 +324,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky):
         ee_final_position=ee_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
-        force_field_magnitude=force_field_magnitude,
-        problem_type=problem_type,
         with_cholesky=with_cholesky,
-        expand_dynamics=True,
     )
 
     # Solver parameters
