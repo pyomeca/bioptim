@@ -38,3 +38,20 @@ class SocpType:
         def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM):
             self.motor_noise_magnitude = motor_noise_magnitude
             self.sensory_noise_magnitude = sensory_noise_magnitude
+
+    class SOCP_COLLOCATION:
+        """
+        The class used to declare a stochastic problem with implicit stochastic dynamics implemented taking advantage
+        of the collocation integration.
+        Attributes
+        ----------
+        motor_noise_magnitude: DM
+            The magnitude of the motor noise
+        sensory_noise_magnitude: DM
+            The magnitude of the sensory noise
+        """
+
+        def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM):
+            self.motor_noise_magnitude = motor_noise_magnitude
+            self.sensory_noise_magnitude = sensory_noise_magnitude
+

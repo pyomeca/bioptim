@@ -707,6 +707,150 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             out_vector = controller.stochastic_variables["a"].reshape_to_vector(out)
             return out_vector
 
+        @staticmethod
+        def stochastic_helper_matrix_collocation(
+                penalty: Constraint,
+                controller: PenaltyController,
+                motor_noise_magnitude: DM,
+                sensory_noise_magnitude: DM,
+        ):
+            """
+            This function constrains the stochastic matrix M to its actual value which is
+            dF/dz.T = dG/dz.T @ M.T
+            where z = states at the collocation points, F = collocation continuity constraint (dxdt - x_k+1),
+            and G = collocation slope constraints (defects).
+            """
+
+            nb_root = controller.model.nb_root
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
+            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+            polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
+
+            x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
+            x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
+            x_qdot_root = controller.cx.sym("x_qdot_root", nb_root, 1)
+            x_qdot_joints = controller.cx.sym("x_qdot_joints", nu, 1)
+            z_q_root = controller.cx.sym("z_q_root", nb_root, polynomial_degree)
+            z_q_joints = controller.cx.sym("z_q_joints", nu, polynomial_degree)
+            z_qdot_root = controller.cx.sym("z_qdot_root", nb_root, polynomial_degree)
+            z_qdot_joints = controller.cx.sym("z_qdot_joints", nu, polynomial_degree)
+
+            states_full = vertcat(horzcat(x_q_root, z_q_root),
+                                  horzcat(x_q_joints, z_q_joints),
+                                  horzcat(x_qdot_root, z_qdot_root),
+                                  horzcat(x_qdot_joints, z_qdot_joints))
+            dynamics = controller.integrate_noised_dynamics(
+                x0=states_full,
+                p=controller.controls.cx_start,
+                params=controller.parameters.cx_start,
+                s=controller.stochastic_variables.cx_start,
+                motor_noise=controller.get_nlp.motor_noise,
+                sensory_noise=controller.get_nlp.sensory_noise,
+            )
+
+            # @Pariterre: should I use cx_end or multinode or last cx_intermediate?
+            continuity = controller.states.cx_end - dynamics["xf"]
+            defects = dynamics["defects"]
+
+            # Do the order of concatenation matters ?
+            df_dz = horzcat(jacobian(continuity, x_q_root),
+                            jacobian(continuity, z_q_root),
+                            jacobian(continuity, x_q_joints),
+                            jacobian(continuity, z_q_joints),
+                            jacobian(continuity, x_qdot_root),
+                            jacobian(continuity, z_qdot_root),
+                            jacobian(continuity, x_qdot_joints),
+                            jacobian(continuity, z_qdot_joints))
+
+            dg_dz = horzcat(jacobian(defects, x_q_root),
+                            jacobian(defects, z_q_root),
+                            jacobian(defects, x_q_joints),
+                            jacobian(defects, z_q_joints),
+                            jacobian(defects, x_qdot_root),
+                            jacobian(defects, z_qdot_root),
+                            jacobian(defects, x_qdot_joints),
+                            jacobian(defects, z_qdot_joints))
+
+            non_sym_states = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
+            df_dz_fun = Function(
+                "df_dz",
+                [
+                    x_q_root,
+                    x_q_joints,
+                    x_qdot_root,
+                    x_qdot_joints,
+                    z_q_root,
+                    z_q_joints,
+                    z_qdot_root,
+                    z_qdot_joints,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.get_nlp.motor_noise,
+                    controller.get_nlp.sensory_noise,
+                ],
+                [df_dz],
+            )
+            dg_dz_fun = Function(
+                "dg_dz",
+                [
+                    x_q_root,
+                    x_q_joints,
+                    x_qdot_root,
+                    x_qdot_joints,
+                    z_q_root,
+                    z_q_joints,
+                    z_qdot_root,
+                    z_qdot_joints,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.get_nlp.motor_noise,
+                    controller.get_nlp.sensory_noise,
+                ],
+                [dg_dz],
+            )
+
+            df_dz_evaluated = df_dz_fun(
+                non_sym_states[:nb_root, 0],
+                non_sym_states[nb_root : nb_root+nu, 0],
+                non_sym_states[nb_root + nu : 2*nb_root + nu, 0],
+                non_sym_states[2*nb_root + nu:, 0],
+                non_sym_states[:nb_root, 1:],
+                non_sym_states[nb_root : nb_root+nu, 1:],
+                non_sym_states[nb_root + nu : 2*nb_root + nu, 1:],
+                non_sym_states[2*nb_root + nu:, 1:],
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+                motor_noise_magnitude,
+                sensory_noise_magnitude,
+            )
+            dg_dz_evaluated = dg_dz_fun(
+                non_sym_states[:nb_root, 0],
+                non_sym_states[nb_root : nb_root+nu, 0],
+                non_sym_states[nb_root + nu : 2*nb_root + nu, 0],
+                non_sym_states[2*nb_root + nu:, 0],
+                non_sym_states[:nb_root, 1:],
+                non_sym_states[nb_root : nb_root+nu, 1:],
+                non_sym_states[nb_root + nu : 2*nb_root + nu, 1:],
+                non_sym_states[2*nb_root + nu:, 1:],
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+                motor_noise_magnitude,
+                sensory_noise_magnitude,
+            )
+
+            m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
+                controller.stochastic_variables, 2 * nu, 2 * nu * polynomial_degree, Node.START, "m"
+            )
+
+            constraint = df_dz_evaluated.T - dg_dz_evaluated.T @ m_matrix.T
+
+            out_vector = controller.stochastic_variables["m"].reshape_to_vector(constraint)
+            return out_vector
+
     @staticmethod
     def get_dt(_):
         return 1
