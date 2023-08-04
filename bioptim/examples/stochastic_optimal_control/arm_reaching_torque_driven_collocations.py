@@ -10,7 +10,6 @@ import platform
 import pickle
 import casadi as cas
 import numpy as np
-from enum import Enum
 
 from bioptim import (
     OptimalControlProgram,
@@ -33,6 +32,9 @@ from bioptim import (
     ConstraintFcn,
     MultinodeConstraintList,
     InitialGuessList,
+    OdeSolver,
+    ControlType,
+    DefectType,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
@@ -162,13 +164,11 @@ def configure_stochastic_optimal_control_problem(
     # Stochastic variables
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_constraints=4*3)
     if with_cholesky:
         ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=4)
     else:
         ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
-    ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
-    ConfigureProblem.configure_stochastic_c(ocp, nlp, n_feedbacks=4, n_noise=6)
 
     ConfigureProblem.configure_dynamics_function(
         ocp,
@@ -176,9 +176,15 @@ def configure_stochastic_optimal_control_problem(
         dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
             states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=False
         ),
-        motor_noise=motor_noise,
+        motor_noise=motor_noise,  # shouldbe able to remove this
         sensory_noise=sensory_noise,
     )
+    ConfigureProblem.configure_stochastic_dynamics_function(
+        ocp,
+        nlp,
+        noised_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
+            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=True
+        ))
     return
 
 
@@ -510,95 +516,93 @@ def prepare_socp(
     x_init.add("q", initial_guess=states_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
     x_init.add("qdot", initial_guess=states_init[n_q : n_q + n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
 
-    controls_init = np.ones((n_tau, n_shooting)) * 0.01
+    controls_init = np.ones((n_tau, n_shooting+1)) * 0.01
 
     u_init = InitialGuessList()
     u_init.add("tau", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
 
     s_init = InitialGuessList()
     s_bounds = BoundsList()
-    # K(2x4) + ref(4x1) + M(4x4)
-    n_stochastic = n_tau * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states
+    n_k = 2*4
+    n_ref = 4
+    n_m = 4*16
     if not with_cholesky:
-        n_stochastic += n_states * n_states  # + cov(4, 4)
+        n_cov = 4*4
+        n_cholesky_cov = 0
     else:
+        n_cov = 0
         n_cholesky_cov = 0
         for i in range(n_states):
             for j in range(i + 1):
                 n_cholesky_cov += 1
-        n_stochastic += n_cholesky_cov  # + cholesky_cov(10)
-    stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
-    stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
-    stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
-    curent_index = 0
-    stochastic_init[: n_tau * (n_q + n_qdot), :] = 0.01  # K
+
     s_init.add(
-        "k", initial_guess=stochastic_init[: n_tau * (n_q + n_qdot), :], interpolation=InterpolationType.EACH_FRAME
+        "k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT
     )
     s_bounds.add(
         "k",
-        min_bound=stochastic_min[: n_tau * (n_q + n_qdot), :],
-        max_bound=stochastic_max[: n_tau * (n_q + n_qdot), :],
+        min_bound=[-cas.inf] * n_k,
+        max_bound=[cas.inf] * n_k,
+        interpolation=InterpolationType.CONSTANT,
     )
-    curent_index += n_tau * (n_q + n_qdot)
-    stochastic_init[curent_index : curent_index + n_q + n_qdot, :] = 0.01  # ref
+
     s_init.add(
         "ref",
-        initial_guess=stochastic_init[curent_index : curent_index + n_q + n_qdot, :],
-        interpolation=InterpolationType.EACH_FRAME,
+        initial_guess=[0.01] * n_ref,
+        interpolation=InterpolationType.CONSTANT,
     )
     s_bounds.add(
         "ref",
-        min_bound=stochastic_min[curent_index : curent_index + n_q + n_qdot, :],
-        max_bound=stochastic_max[curent_index : curent_index + n_q + n_qdot, :],
+        min_bound=[-cas.inf] * n_ref,
+        max_bound=[cas.inf] * n_ref,
     )
-    curent_index += n_q + n_qdot
-    stochastic_init[curent_index : curent_index + n_states * n_states, :] = 0.01  # M
+
     s_init.add(
         "m",
-        initial_guess=stochastic_init[curent_index : curent_index + n_states * n_states, :],
-        interpolation=InterpolationType.EACH_FRAME,
+        initial_guess=[0.01] * n_m,
+        interpolation=InterpolationType.CONSTANT,
     )
     s_bounds.add(
         "m",
-        min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
-        max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
+        min_bound=[-cas.inf] * n_m,
+        max_bound=[cas.inf] * n_m,
     )
-    curent_index += n_states * n_states
     if not with_cholesky:
-        stochastic_init[curent_index : curent_index + n_states * n_states, :] = 0.01  # cov
         cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
         idx = 0
+        cov_init_vector = np.zeros((n_states * n_states, 1))
         for i in range(n_states):
             for j in range(n_states):
-                stochastic_init[idx, 0] = cov_init[i, j]
+                cov_init_vector[idx] = cov_init[i, j]
         s_init.add(
             "cov",
-            initial_guess=stochastic_init[curent_index : curent_index + n_states * n_states, :],
-            interpolation=InterpolationType.EACH_FRAME,
+            initial_guess=cov_init_vector,
+            interpolation=InterpolationType.CONSTANT,
         )
         s_bounds.add(
             "cov",
-            min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
-            max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
+            min_bound=[-cas.inf] * n_cov,
+            max_bound=[cas.inf] * n_cov,
         )
     else:
-        stochastic_init[curent_index : curent_index + n_cholesky_cov, :] = 0.01  # cholsky cov
         cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
+        cov_init_vector = np.zeros((n_cholesky_cov, 1))
         idx = 0
         for i in range(n_states):
             for j in range(i + 1):
-                stochastic_init[idx, 0] = cov_init[i, j]
+                cov_init_vector[idx, 0] = cov_init[i, j]
         s_init.add(
             "cholesky_cov",
-            initial_guess=stochastic_init[curent_index : curent_index + n_cholesky_cov, :],
-            interpolation=InterpolationType.EACH_FRAME,
+            initial_guess=cov_init_vector,
+            interpolation=InterpolationType.CONSTANT,
         )
         s_bounds.add(
             "cholesky_cov",
-            min_bound=stochastic_min[curent_index : curent_index + n_cholesky_cov, :],
-            max_bound=stochastic_max[curent_index : curent_index + n_cholesky_cov, :],
+            min_bound=[-cas.inf] * n_cholesky_cov,
+            max_bound=[cas.inf] * n_cholesky_cov,
         )
+
+    # TODO: add scaling
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -614,18 +618,18 @@ def prepare_socp(
         objective_functions=objective_functions,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
-        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=5),
-        control_type=ControlType.CONSTANT, #?
+        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, method="legendre"),
+        control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
-        problem_type=SocpType.SOCP_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
+        problem_type=SocpType.SOCP_COLLOCATION(motor_noise_magnitude, sensory_noise_magnitude),
     )
 
 
 def main():
     # --- Options --- #
     vizualize_sol_flag = True
-    with_cholesky = True
+    with_cholesky = False  # Does it make sense to have with_cholesky if we have he semi-definteness ov the cov matrix?
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 
@@ -634,7 +638,8 @@ def main():
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
-    n_shooting = int(final_time / dt)
+    # n_shooting = int(final_time / dt)
+    n_shooting = 10
 
     # --- Noise constants --- #
     motor_noise_std = 0.05
