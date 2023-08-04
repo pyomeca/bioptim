@@ -442,22 +442,28 @@ class PenaltyOption(OptionGeneric):
             state_cx_scaled = ocp.cx()
             control_cx_scaled = ocp.cx()
             stochastic_cx_scaled = ocp.cx()
+            # @Pariterre: Is the last cx_intermediates_list == cx_end? (they have different names)
             for ctrl in controllers:
-                state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
+                if len(ctrl.states_scaled.cx_intermediates_list) > 0:
+                    if ctrl.node_index == controller.ns:
+                        state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
+                    else:
+                        state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list)
+                else:
+                    state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
                 control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
                 stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables.unscaled.cx)
 
         else:
             ocp = controller.ocp
             name = self.name
-            if self.integrate:
+            if len(controller.states_scaled.cx_intermediates_list) > 0 and controller.node_index != controller.ns:
                 state_cx_scaled = horzcat(
                     *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
                 )
-                control_cx_scaled = controller.controls_scaled.cx_start
             else:
                 state_cx_scaled = controller.states_scaled.cx_start
-                control_cx_scaled = controller.controls_scaled.cx_start
+            control_cx_scaled = controller.controls_scaled.cx_start
             stochastic_cx_scaled = controller.stochastic_variables.cx_start
             if self.explicit_derivative:
                 if self.derivative:
@@ -481,7 +487,8 @@ class PenaltyOption(OptionGeneric):
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
         self.function[node] = controller.to_casadi_func(
-            name, sub_fcn, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, expand=self.expand
+            name, sub_fcn, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled,
+            controller.get_nlp.motor_noise, controller.get_nlp.sensory_noise, expand=self.expand
         )
         self.function_non_threaded[node] = self.function[node]
 
@@ -556,7 +563,7 @@ class PenaltyOption(OptionGeneric):
             state_cx_end_scaled = (
                 controller.states_scaled.cx_end
                 if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                else controller.integrate(x0=state_cx, p=control_cx_end, params=controller.parameters.cx)["xf"]
+                else controller.integrate(x0=state_cx, p=control_cx_end, params=controller.parameters.cx, s=controller.stochastic_variables.cx_start)["xf"]
             )
 
             stochastic_cx_scaled = (
@@ -596,8 +603,10 @@ class PenaltyOption(OptionGeneric):
                 state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, target_cx, dt_cx
             )
         else:
+            # How to do otherwise?
             modified_fcn = (
-                self.function[node](state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled) - target_cx
+                self.function[node](state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled,
+                                    controller.get_nlp.motor_noise, controller.get_nlp.sensory_noise) - target_cx
             ) ** exponent
 
         # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
@@ -606,7 +615,8 @@ class PenaltyOption(OptionGeneric):
         # Do not use nlp.add_casadi_func because all of them must be registered
         self.weighted_function[node] = Function(
             name,
-            [state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, weight_cx, target_cx, dt_cx],
+            [state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, controller.get_nlp.motor_noise,
+             controller.get_nlp.sensory_noise, weight_cx, target_cx, dt_cx],
             [modified_fcn],
         )
         self.weighted_function_non_threaded[node] = self.weighted_function[node]
