@@ -370,47 +370,6 @@ def track_final_marker(controller: PenaltyController) -> cas.MX:
     ee_pos = controller.model.end_effector_position(q)
     return ee_pos
 
-
-def trapezoidal_integration_continuity_constraint(
-    controllers: list[PenaltyController], force_field_magnitude
-) -> cas.MX:
-    """
-    This function computes the continuity constraint for the trapezoidal integration scheme.
-    It is computed as:
-        x_i_plus - x_i - dt/2 * (f(x_i, u_i) + f(x_i_plus, u_i_plus)) = 0
-    """
-    motor_noise = np.zeros((2, 1))
-    sensory_noise = np.zeros((4, 1))
-    dt = controllers[0].tf / controllers[0].ns
-
-    dx_i = stochastic_forward_dynamics(
-        controllers[0].states.cx_start,
-        controllers[0].controls.cx_start,
-        controllers[0].parameters.cx_start,
-        controllers[0].stochastic_variables.cx_start,
-        controllers[0].get_nlp,
-        motor_noise,
-        sensory_noise,
-        force_field_magnitude=force_field_magnitude,
-        with_gains=False,
-    ).dxdt
-    dx_i_plus = stochastic_forward_dynamics(
-        controllers[1].states.cx_start,
-        controllers[1].controls.cx_start,
-        controllers[1].parameters.cx_start,
-        controllers[1].stochastic_variables.cx_start,
-        controllers[1].get_nlp,
-        motor_noise,
-        sensory_noise,
-        force_field_magnitude=force_field_magnitude,
-        with_gains=False,
-    ).dxdt
-
-    out = controllers[1].states.cx_start - (controllers[0].states.cx_start + (dx_i + dx_i_plus) / 2 * dt)
-
-    return out * 1e3
-
-
 def prepare_socp(
     final_time: float,
     n_shooting: int,
@@ -522,13 +481,6 @@ def prepare_socp(
         min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
         max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
     )
-    # for i in range(n_shooting - 1):
-    #     multinode_constraints.add(
-    #         trapezoidal_integration_continuity_constraint,
-    #         nodes_phase=[0, 0],
-    #         nodes=[i, i + 1],
-    #         force_field_magnitude=force_field_magnitude,
-    #     )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -667,7 +619,6 @@ def prepare_socp(
         multinode_constraints=multinode_constraints,
         ode_solver=OdeSolver.TRAPEZOIDAL(),
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
-        skip_continuity=False,  # True,
         n_threads=1,
         assume_phase_dynamics=False,
         problem_type=SocpType.SOCP_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
@@ -677,8 +628,8 @@ def prepare_socp(
 
 def main():
     # --- Options --- #
-    plot_sol_flag = False  # True
-    vizualise_sol_flag = False  # True
+    plot_sol_flag = False
+    vizualise_sol_flag = False
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 
@@ -688,8 +639,7 @@ def main():
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
-    n_shooting = int(final_time / dt) # + 1
-    # final_time += dt
+    n_shooting = int(final_time / dt)
 
     # --- Noise constants --- #
     motor_noise_std = 0.05
@@ -762,7 +712,7 @@ def main():
         import bioviz
 
         b = bioviz.Viz(model_path=biorbd_model_path)
-        b.load_movement(q_sol[:, :-1])
+        b.load_movement(q_sol)
         b.exec()
 
     # --- Plot the results --- #
