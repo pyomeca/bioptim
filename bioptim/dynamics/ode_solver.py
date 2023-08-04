@@ -70,12 +70,32 @@ class OdeSolverBase:
             A reference to the current phase of the ocp
         """
         nlp.dynamics = []
-        nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0)
+        nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0, with_noise=False)
         if ocp.assume_phase_dynamics:
             nlp.dynamics = nlp.dynamics * nlp.ns
         else:
             for node_index in range(1, nlp.ns):
                 nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index)
+
+    @staticmethod
+    def prepare_noised_dynamic_integrator(ocp, nlp):
+        """
+        Properly set the integration of the noised dynamics in an nlp
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the main program
+        nlp: NonLinearProgram
+            A reference to the current phase of the ocp
+        """
+        nlp.noised_dynamics = []
+        nlp.noised_dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0, with_noise=True)
+        if ocp.assume_phase_dynamics:
+            nlp.noised_dynamics = nlp.nosed_dynamics * nlp.ns
+        else:
+            for node_index in range(1, nlp.ns):
+                nlp.noised_dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index, with_noise=True)
 
 
 class RK(OdeSolverBase):
@@ -270,7 +290,7 @@ class OdeSolver:
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
-        def integrator(self, ocp, nlp, node_index: int) -> list:
+        def integrator(self, ocp, nlp, node_index: int, with_noise: bool = False) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -302,6 +322,16 @@ class OdeSolver:
                     "developers and ping @EveCharbie"
                 )
 
+            if with_noise:
+                if not hasattr(nlp, "motor_noise"):
+                    raise RuntimeError("You can only call integrator with_noise=True while running a "
+                                       "StochasticOptimalControlProgram.")
+                motor_noise = nlp.motor_noise
+                sensory_noise = nlp.sensory_noise
+            else:
+                motor_noise = ocp.cx()
+                sensory_noise = ocp.cx()
+
             ode = {
                 "x_unscaled": [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
                 "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
@@ -309,13 +339,17 @@ class OdeSolver:
                 "p_scaled": nlp.controls.scaled.cx_start,
                 "stochastic_variables": nlp.stochastic_variables.cx_start,
                 "ode": nlp.dynamics_func,
+                "noised_ode": nlp.noised_dynamics_func if with_noise else None,
                 "implicit_ode": nlp.implicit_dynamics_func,
+                "noised_implicit_ode": nlp.noised_implicit_dynamics_func if with_noise else None,
             }
             ode_opt = {
                 "t0": 0,
                 "tf": nlp.dt,
                 "model": nlp.model,
                 "param": nlp.parameters,
+                "motor_noise": motor_noise,
+                "sensory_noise": sensory_noise,
                 "cx": nlp.cx,
                 "idx": 0,
                 "control_type": nlp.control_type,

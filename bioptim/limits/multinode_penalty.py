@@ -339,9 +339,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             dt = controllers[0].tf / controllers[0].ns
 
-            motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
-            sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
-
             # TODO: Charbie -> This is only True for not mapped variables (have to think on how to generalize it)
             nx = controllers[0].states.cx_start.shape[0]
 
@@ -357,8 +354,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
                 controllers[0].get_nlp,
-                motor_noise,
-                sensory_noise,
+                controllers[0].get_nlp.motor_noise,
+                controllers[0].get_nlp.sensory_noise,
                 with_gains=True,
             )
 
@@ -369,8 +366,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].controls.cx_start,
                     controllers[0].parameters.cx_start,
                     controllers[0].stochastic_variables.cx_start,
-                    motor_noise,
-                    sensory_noise,
+                    controllers[0].get_nlp.motor_noise,
+                    controllers[0].get_nlp.sensory_noise,
                 ],
                 [jacobian(dx.dxdt, controllers[0].states.cx_start)],
             )
@@ -450,8 +447,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             sensory_noise_magnitude: DM,
         ):
             """
-            This functions constrain the covariance matrix to its actual value as in Gillis 2013.
-            It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
+            This functions allows to implicitly integrate the covariance matrix.
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
 

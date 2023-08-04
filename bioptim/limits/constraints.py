@@ -660,17 +660,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             q_joints = MX.sym("q_joints", nu, 1)
             qdot_root = MX.sym("qdot_root", nb_root, 1)
             qdot_joints = MX.sym("qdot_joints", nu, 1)
-            motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
-            sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
-
             dx = dynamics(
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
                 controller.get_nlp,
-                motor_noise,
-                sensory_noise,
+                controller.get_nlp.motor_noise,
+                controller.get_nlp.sensory_noise,
                 with_gains=True,
             )
 
@@ -738,6 +735,9 @@ class ConstraintFcn(FcnEnum):
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
     STOCHASTIC_DG_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_dg_dx_implicit,)
+    STOCHASTIC_HELPER_MATRIX_COLLOCATION = (
+        ConstraintFunction.Functions.stochastic_helper_matrix_collocation,
+    )
     SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
     SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)

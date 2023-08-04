@@ -644,9 +644,11 @@ class ConfigureProblem:
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.mx,
+                nlp.cx(),
+                nlp.cx(),
             ],
             [dynamics_dxdt],
-            ["x", "u", "p", "s"],
+            ["x", "u", "p", "s", "motor_noise", "sensory_noise"],
             ["xdot"],
         )
         if nlp.dynamics_type.expand:
@@ -671,14 +673,103 @@ class ConfigureProblem:
                     nlp.parameters.mx,
                     nlp.stochastic_variables.mx,
                     nlp.states_dot.scaled.mx_reduced,
+                    nlp.cx(),
+                    nlp.cx(),
                 ],
                 [dynamics_eval.defects],
-                ["x", "u", "p", "s", "xdot"],
+                ["x", "u", "p", "s", "xdot", "motor_noise", "sensory_noise"],
                 ["defects"],
             )
             if nlp.dynamics_type.expand:
                 try:
                     nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
+                except Exception as me:
+                    RuntimeError(
+                        f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                        f"Please review the following casadi error message for more details.\n"
+                        "Several factors could be causing this issue. One of the most likely is the inability to "
+                        "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                        "Original casadi error message:\n"
+                        f"{me}"
+                    )
+
+    @staticmethod
+    def configure_stochastic_dynamics_function(ocp, nlp, noised_dyn_func, **extra_params):
+        """
+        Configure the dynamics of the stochastic system that is impacted by motor and sensory noise
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        noised_dyn_func: Callable[states, controls, param]
+            The function to get the derivative of the states
+        """
+        nlp.parameters = ocp.parameters
+        DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
+
+        dynamics_eval = noised_dyn_func(
+            nlp.states.scaled.mx_reduced,
+            nlp.controls.scaled.mx_reduced,
+            nlp.parameters.mx,
+            nlp.stochastic_variables.mx,
+            nlp,
+            nlp.motor_noise,
+            nlp.sensory_noise,
+            **extra_params,
+        )
+        dynamics_dxdt = dynamics_eval.dxdt
+        if isinstance(dynamics_dxdt, (list, tuple)):
+            dynamics_dxdt = vertcat(*dynamics_dxdt)
+
+        nlp.noised_dynamics_func = Function(
+            "ForwardDyn",
+            [
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.mx,
+                nlp.stochastic_variables.mx,
+                nlp.motor_noise,
+                nlp.sensory_noise,
+            ],
+            [dynamics_dxdt],
+            ["x", "u", "p", "s", "motor_noise", "sensory_noise"],
+            ["xdot"],
+        )
+        if nlp.dynamics_type.expand:
+            try:
+                nlp.noised_dynamics_func = nlp.dynamics_func.expand()
+            except Exception as me:
+                RuntimeError(
+                    f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                    f"Please review the following casadi error message for more details.\n"
+                    "Several factors could be causing this issue. One of the most likely is the inability to "
+                    "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                    "Original casadi error message:\n"
+                    f"{me}"
+                )
+
+        if dynamics_eval.defects is not None:
+            nlp.noised_implicit_dynamics_func = Function(
+                "DynamicsDefects",
+                [
+                    nlp.states.scaled.mx_reduced,
+                    nlp.controls.scaled.mx_reduced,
+                    nlp.parameters.mx,
+                    nlp.stochastic_variables.mx,
+                    nlp.states_dot.scaled.mx_reduced,
+                    nlp.motor_noise,
+                    nlp.sensory_noise,
+                ],
+                [dynamics_eval.defects],
+                ["x", "u", "p", "s", "xdot", "motor_noise", "sensory_noise"],
+                ["defects"],
+            )
+            if nlp.dynamics_type.expand:
+                try:
+                    nlp.noised_implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
                 except Exception as me:
                     RuntimeError(
                         f"An error occurred while executing the 'expand()' function for the dynamic function. "
