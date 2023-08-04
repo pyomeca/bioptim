@@ -168,9 +168,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     nx = nlp.states.cx_start.shape[0]
     m_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(nlp.stochastic_variables, nx, nx, Node.START, "m")
 
-    motor_noise = cas.MX.sym("motor_noise", nlp.states["q"].cx_start.shape[0])
-    sensory_noise = cas.MX.sym("sensory_noise", nlp.states["q"].cx_start.shape[0] * 2)
-    sigma_w = cas.vertcat(sensory_noise, motor_noise) * cas.MX_eye(6)
+    sigma_w = cas.vertcat(nlp.sensory_noise, nlp.motor_noise) * cas.MX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
     cov_sym_dict = {"cov": cov_sym}
     cov_sym_dict["cov"].cx_start = cov_sym
@@ -182,13 +180,13 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
         nlp.parameters,
         nlp.stochastic_variables.cx_start,
         nlp,
-        motor_noise,
-        sensory_noise,
+        nlp.motor_noise,
+        nlp.sensory_noise,
         force_field_magnitude=force_field_magnitude,
         with_gains=True,
     )
 
-    ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(sensory_noise, motor_noise))
+    ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.sensory_noise, nlp.motor_noise))
     dg_dw = -ddx_dwm * dt
     ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx_start)
     dg_dx = -(ddx_dx * dt / 2 + cas.MX_eye(ddx_dx.shape[0]))
@@ -202,8 +200,8 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
             nlp.parameters,
             nlp.stochastic_variables.cx_start,
             cov_sym,
-            motor_noise,
-            sensory_noise,
+            nlp.motor_noise,
+            nlp.sensory_noise,
         ],
         [p_next],
     )(
