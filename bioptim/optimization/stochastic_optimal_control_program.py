@@ -1,5 +1,6 @@
 from typing import Callable, Any
 
+from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..interfaces.biomodel import BioModel
@@ -68,7 +69,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
-        problem_type: SocpType.SOCP_EXPLICIT | SocpType.SOCP_IMPLICIT = SocpType.SOCP_EXPLICIT,
+        problem_type: SocpType.SOCP_EXPLICIT | SocpType.SOCP_IMPLICIT | SocpType.SOCP_COLLOCATION = SocpType.SOCP_EXPLICIT,
         **kwargs,
     ):
         """ """
@@ -76,7 +77,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         if "n_thread" in kwargs:
             if kwargs["n_thread"] != 1:
                 raise ValueError(
-                    "Multi-threading is not possible yet while solving a stochactic ocp."
+                    "Multi-threading is not possible yet while solving a stochastic ocp."
                     "n_thread is set to 1 by default."
                 )
 
@@ -85,7 +86,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         if "assume_phase_dynamics" in kwargs:
             if kwargs["assume_phase_dynamics"]:
                 raise ValueError(
-                    "The dynamics cannot be assumed to be the same between phases with a stochactic ocp."
+                    "The dynamics cannot be assumed to be the same between phases with a stochastic ocp."
                     "assume_phase_dynamics is set to False by default."
                 )
 
@@ -137,6 +138,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_objectives,
             multinode_constraints,
             multinode_objectives,
+            phase_transitions,
+            x_bounds,
+            u_bounds,
+            parameter_bounds,
+            s_bounds,
+            x_init,
+            u_init,
+            parameter_init,
+            s_init,
         ) = self.check_arguments_and_build_nlp(
             dynamics,
             n_threads,
@@ -171,9 +181,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             control_type,
             variable_mappings,
             integrated_value_functions,
-            node_mappings,
-            state_continuity_weight,
         )
+        self.initialize_stochastic_variables()
+        self.prepare_problem(node_mappings, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init,
+                        parameter_init, s_init, phase_transitions, state_continuity_weight)
 
         self.problem_type = problem_type
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints)
@@ -186,6 +197,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             objective_functions,
             parameter_objectives,
         )
+
+    def initialize_stochastic_variables(self):
+        n_motor_noise = self.problem_type.motor_noise_magnitude.shape[0]
+        n_sensory_noise = self.problem_type.sensory_noise_magnitude.shape[0]
+        motor_noise = self.nlp.cx.sym("motor_noise", n_motor_noise, 1)
+        sensory_noise = self.nlp.cx.sym("sensory_noise", n_sensory_noise, 1)
+        NLP.add(self, "motor_noise", motor_noise, True)
+        NLP.add(self, "sensory_noise", sensory_noise, True)
+
 
     def _declare_multi_node_penalties(
         self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList, constraints: ConstraintList

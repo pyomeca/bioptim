@@ -296,6 +296,15 @@ class OptimalControlProgram:
             parameter_objectives,
             multinode_constraints,
             multinode_objectives,
+            phase_transitions,
+            x_bounds,
+            u_bounds,
+            parameter_bounds,
+            s_bounds,
+            x_init,
+            u_init,
+            parameter_init,
+            s_init,
         ) = self.check_arguments_and_build_nlp(
             dynamics,
             n_threads,
@@ -330,9 +339,9 @@ class OptimalControlProgram:
             control_type,
             variable_mappings,
             integrated_value_functions,
-            node_mappings,
-            state_continuity_weight,
         )
+        self.prepare_problem(node_mappings, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init,
+                        parameter_init, s_init, phase_transitions, state_continuity_weight)
 
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
 
@@ -473,8 +482,6 @@ class OptimalControlProgram:
         control_type,
         variable_mappings,
         integrated_value_functions,
-        node_mappings,
-        state_continuity_weight,
     ):
         if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
             raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
@@ -697,7 +704,26 @@ class OptimalControlProgram:
         NLP.add(self, "u_scaling", u_scaling, True)
 
         NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
+        return (
+            constraints,
+            objective_functions,
+            parameter_constraints,
+            parameter_objectives,
+            multinode_constraints,
+            multinode_objectives,
+            phase_transitions,
+            x_bounds,
+            u_bounds,
+            parameter_bounds,
+            s_bounds,
+            x_init,
+            u_init,
+            parameter_init,
+            s_init,
+        )
 
+    def prepare_problem(self, node_mappings, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init,
+                        parameter_init, s_init, phase_transitions, state_continuity_weight):
         # Prepare the node mappings
         if node_mappings is None:
             node_mappings = NodeMappingList()
@@ -730,14 +756,6 @@ class OptimalControlProgram:
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
 
-        return (
-            constraints,
-            objective_functions,
-            parameter_constraints,
-            parameter_objectives,
-            multinode_constraints,
-            multinode_objectives,
-        )
 
     def finalize_penalties(
         self,
