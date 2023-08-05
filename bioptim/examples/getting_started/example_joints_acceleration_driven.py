@@ -83,7 +83,9 @@ def prepare_ocp(
     n_qddot_joints = bio_model.nb_qddot - bio_model.nb_root  # 2 - 1 = 1 in this example
     qddot_joints_min, qddot_joints_max, qddot_joints_init = -100, 100, 0
     u_bounds = BoundsList()
-    u_bounds.add("qddot_joints", min_bound=[qddot_joints_min] * n_qddot_joints, max_bound=[qddot_joints_max] * n_qddot_joints)
+    u_bounds.add(
+        "qddot_joints", min_bound=[qddot_joints_min] * n_qddot_joints, max_bound=[qddot_joints_max] * n_qddot_joints
+    )
 
     u_init = InitialGuessList()
     u_init.add("qddot_joints", initial_guess=[qddot_joints_init] * n_qddot_joints)

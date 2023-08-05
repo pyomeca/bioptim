@@ -334,7 +334,9 @@ class ConfigureProblem:
 
         if rigidbody_dynamics is not None:
             if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
-                raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
+                raise NotImplementedError(
+                    "TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet"
+                )
 
         if nlp.model.nb_soft_contacts != 0:
             if (

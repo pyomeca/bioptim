@@ -699,9 +699,11 @@ class DynamicsFunctions:
             defects[
                 qdot_mapped.shape[0] : (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]), :
             ] = floating_base_constraint
-            defects[(qdot_mapped.shape[0] + qddot_root_mapped.shape[0]) :, :] = qddot_joints_mapped - nlp.variable_mappings[
-                "qddot_joints"
-            ].to_first.map(DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced))
+            defects[
+                (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]) :, :
+            ] = qddot_joints_mapped - nlp.variable_mappings["qddot_joints"].to_first.map(
+                DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced)
+            )
 
         return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=defects)
 
