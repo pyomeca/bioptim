@@ -154,7 +154,7 @@ class ConfigureProblem:
         with_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        rigidbody_dynamics: RigidBodyDynamics = None,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
     ):
@@ -174,7 +174,7 @@ class ConfigureProblem:
         with_ligament: bool
             If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
+            which rigidbody dynamics should be used if None, the defects are not computed
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
         fatigue: FatigueList
@@ -305,7 +305,7 @@ class ConfigureProblem:
         with_contact=False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        rigidbody_dynamics: RigidBodyDynamics = None,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
     ):
         """
@@ -324,7 +324,7 @@ class ConfigureProblem:
         with_ligament: bool
             If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
+            which rigidbody dynamics should be used if None, the defects are not computed
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
 
@@ -332,8 +332,9 @@ class ConfigureProblem:
         if with_contact and nlp.model.nb_contacts == 0:
             raise ValueError("No contact defined in the .bioMod, set with_contact to False")
 
-        if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
-            raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
+        if rigidbody_dynamics is not None:
+            if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
+                raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         if nlp.model.nb_soft_contacts != 0:
             if (
@@ -455,7 +456,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def joints_acceleration_driven(ocp, nlp, rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE):
+    def joints_acceleration_driven(ocp, nlp, rigidbody_dynamics: RigidBodyDynamics = None):
         """
         Configure the dynamics for a joints acceleration driven program
         (states are q and qdot, controls are qddot_joints)
@@ -467,11 +468,12 @@ class ConfigureProblem:
         nlp: NonLinearProgram
             A reference to the phase
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
+            which rigidbody dynamics should be used if None, the defects are not computed
 
         """
-        if rigidbody_dynamics != RigidBodyDynamics.ODE:
-            raise NotImplementedError("Implicit dynamics not implemented yet.")
+        if rigidbody_dynamics is not None:
+            if rigidbody_dynamics != RigidBodyDynamics.ODE:
+                raise NotImplementedError("Implicit dynamics not implemented yet.")
 
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
         ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False, as_states_dot=True)
@@ -502,7 +504,7 @@ class ConfigureProblem:
         with_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        rigidbody_dynamics: RigidBodyDynamics = None,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -530,7 +532,7 @@ class ConfigureProblem:
         with_ligament: bool
             If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
+            which rigidbody dynamics should be used if None, the defects are not computed
 
         """
         if with_contact and nlp.model.nb_contacts == 0:
@@ -539,8 +541,9 @@ class ConfigureProblem:
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
-        if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
-            raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
+        if rigidbody_dynamics is not None:
+            if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
+                raise NotImplementedError("MUSCLE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
