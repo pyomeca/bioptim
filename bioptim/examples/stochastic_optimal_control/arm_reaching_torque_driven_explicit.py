@@ -35,6 +35,7 @@ from bioptim import (
     MultinodeConstraintList,
     MultinodeObjectiveList,
     InitialGuessList,
+    Axis,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
@@ -441,15 +442,6 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     return f_expectedEffort_fb
 
 
-def track_final_marker(controller: PenaltyController) -> cas.MX:
-    """
-    Track the hand position.
-    """
-    q = controller.states["q"].cx_start
-    ee_pos = controller.model.markers(q)[2][:2]
-    return ee_pos
-
-
 def trapezoidal_integration_continuity_constraint(
     controllers: list[PenaltyController], force_field_magnitude
 ) -> cas.MX:
@@ -542,6 +534,10 @@ def prepare_socp(
     -------
     The OptimalControlProgram ready to be solved
     """
+    # TODO: Add get_excitation_with_feedback as a built-in constraint + add the necessity to declare it.
+    # TODO: Include the stochastic dynamics in bioptim (@Pariterre: where?)
+    # TODO: Add the stochastic constraints
+    # TODO: Add on objective to minimize the trace of a matrix
 
     bio_model = BiorbdModel(biorbd_model_path)
 
@@ -588,7 +584,8 @@ def prepare_socp(
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
     constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.START, target=0)
-    constraints.add(track_final_marker, node=Node.PENULTIMATE, target=ee_final_position)
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.PENULTIMATE, target=ee_final_position, marker_index=2,
+                    axes=[Axis.X, Axis.Y]) ## merge conflict
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
     constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.PENULTIMATE, target=0)
     constraints.add(

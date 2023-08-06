@@ -1208,7 +1208,8 @@ class PenaltyFunctionAbstract:
             return
 
         if penalty.rows is not None and axes is not None:
-            raise ValueError("It is not possible to define rows and axes since they are the same variable")
+            if penalty.rows != axes:
+                raise ValueError("It is not possible to define rows and axes since they are the same variable")
         penalty.rows = axes if axes is not None else penalty.rows
 
         penalty.rows_is_set = True
