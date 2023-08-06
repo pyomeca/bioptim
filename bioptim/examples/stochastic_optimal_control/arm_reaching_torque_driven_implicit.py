@@ -37,8 +37,8 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     MultinodeConstraintList,
-    MultinodeObjectiveList,
     InitialGuessList,
+    Axis,
 )
 
 
@@ -228,50 +228,50 @@ def hand_equals_ref(controller: PenaltyController) -> cas.MX:
     return ee - ref
 
 
-def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
+def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
     """
     Constraint the hand to reach the target consistently.
     This is a multi-node constraint because the covariance matrix depends on all the precedent nodes, but it only
     applies at the END node.
     """
 
-    nx = controllers[-1].states["q"].cx_start.shape[0]
+    nx = controller.states["q"].cx_start.shape[0]
 
     q_sym = cas.MX.sym("q_sym", nx)
     qdot_sym = cas.MX.sym("qdot_sym", nx)
-    if "cholesky_cov" in controllers[0].stochastic_variables.keys():
-        cov_sym = cas.MX.sym("cov", controllers[0].stochastic_variables["cholesky_cov"].cx_start.shape[0])
+    if "cholesky_cov" in controller.stochastic_variables.keys():
+        cov_sym = cas.MX.sym("cov", controller.stochastic_variables["cholesky_cov"].cx_start.shape[0])
         cov_sym_dict = {"cholesky_cov": cov_sym}
         cov_sym_dict["cholesky_cov"].cx_start = cov_sym
         l_cov_matrix = (
-            controllers[0]
+            controller
             .stochastic_variables["cholesky_cov"]
             .reshape_to_cholesky_matrix(
                 cov_sym_dict,
-                controllers[0].states.cx_start.shape[0],
+                controller.states.cx_start.shape[0],
                 Node.START,
                 "cholesky_cov",
             )
         )
         cov_matrix = l_cov_matrix @ l_cov_matrix.T
     else:
-        cov_sym = cas.MX.sym("cov", controllers[0].stochastic_variables["cov"].cx_start.shape[0])
+        cov_sym = cas.MX.sym("cov", controller.stochastic_variables["cov"].cx_start.shape[0])
         cov_sym_dict = {"cov": cov_sym}
         cov_sym_dict["cov"].cx_start = cov_sym
         cov_matrix = (
-            controllers[0]
+            controller
             .stochastic_variables["cov"]
             .reshape_to_matrix(
                 cov_sym_dict,
-                controllers[0].states.cx_start.shape[0],
-                controllers[0].states.cx_start.shape[0],
+                controller.states.cx_start.shape[0],
+                controller.states.cx_start.shape[0],
                 Node.START,
                 "cov",
             )
         )
 
-    hand_pos = controllers[0].model.markers(q_sym)[2][:2]
-    hand_vel = controllers[0].model.marker_velocities(q_sym, qdot_sym)[2][:2]
+    hand_pos = controller.model.markers(q_sym)[2][:2]
+    hand_vel = controller.model.marker_velocities(q_sym, qdot_sym)[2][:2]
 
     jac_marker_q = cas.jacobian(hand_pos, q_sym)
     jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(q_sym, qdot_sym))
@@ -286,18 +286,17 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
 
     fun = cas.Function("reach_target_consistantly", [q_sym, qdot_sym, cov_sym], [out])
     val = fun(
-        controllers[-1].states["q"].cx_start,
-        controllers[-1].states["qdot"].cx_start,
+        controller.states["q"].cx_start,
+        controller.states["qdot"].cx_start,
         (
-            controllers[-1].stochastic_variables["cholesky_cov"].cx_start
-            if "cholesky_cov" in controllers[-1].stochastic_variables.keys()
-            else controllers[-1].stochastic_variables["cov"].cx_start
+            controller.stochastic_variables["cholesky_cov"].cx_start
+            if "cholesky_cov" in controller.stochastic_variables.keys()
+            else controller.stochastic_variables["cov"].cx_start
         ),
     )
     # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
 
     return val
-
 
 def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnitude: cas.DM) -> cas.MX:
     """
@@ -366,15 +365,6 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     out = func(controller.states.cx_start, controller.stochastic_variables.cx_start)
 
     return out
-
-
-def track_final_marker(controller: PenaltyController) -> cas.MX:
-    """
-    Track the hand position.
-    """
-    q = controller.states["q"].cx_start
-    ee_pos = controller.model.markers(q)[2][:2]
-    return ee_pos
 
 
 def trapezoidal_integration_continuity_constraint(
@@ -503,7 +493,8 @@ def prepare_socp(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
-    constraints.add(track_final_marker, node=Node.PENULTIMATE, target=ee_final_position)
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.PENULTIMATE, target=ee_final_position, marker_index=2,
+                    axes=[Axis.X, Axis.Y])  ## merge conflict
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
@@ -515,15 +506,15 @@ def prepare_socp(
         max_bounds_lateral_variation = 0.004
     else:
         raise NotImplementedError("Wrong problem type")
-
-    multinode_constraints = MultinodeConstraintList()
-    multinode_constraints.add(
+    constraints.add(
         reach_target_consistantly,
-        nodes_phase=[0 for _ in range(n_shooting)],
-        nodes=[i for i in range(n_shooting)],
+        phase=0,
+        node=Node.PENULTIMATE,  # merge conflict
         min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
         max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
     )
+
+    multinode_constraints = MultinodeConstraintList()
     for i in range(n_shooting - 1):
         multinode_constraints.add(
             trapezoidal_integration_continuity_constraint,
