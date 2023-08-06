@@ -1,7 +1,7 @@
 from typing import Any, Callable
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, Function, MX, SX
+from casadi import horzcat, vertcat, Function, MX, SX, jacobian, diag
 import numpy as np
 
 from .penalty_controller import PenaltyController
@@ -100,6 +100,7 @@ class PenaltyOption(OptionGeneric):
         cols: list | tuple | range | np.ndarray = None,
         custom_function: Callable = None,
         penalty_type: PenaltyType = PenaltyType.USER,
+        is_stochastic: bool = False,
         multi_thread: bool = None,
         expand: bool = False,
         **params: Any,
@@ -133,6 +134,8 @@ class PenaltyOption(OptionGeneric):
             A user defined function to call to get the penalty
         penalty_type: PenaltyType
             If the penalty is from the user or from bioptim (implicit or internal)
+        is_stochastic: bool
+            If the penalty is stochastic (i.e. if we should look instead at the variation of the penalty)
         **params: dict
             Generic parameters for the penalty
         """
@@ -216,6 +219,7 @@ class PenaltyOption(OptionGeneric):
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be both True")
         self.penalty_type = penalty_type
+        self.is_stochastic = is_stochastic
 
         self.multi_thread = multi_thread
 
@@ -366,6 +370,57 @@ class PenaltyOption(OptionGeneric):
                         raise NotImplementedError("Modifying target for END not being last is not implemented yet")
                     self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
+    def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn, state_cx_scaled):
+        """
+        Transform the penalty fcn into the variation of fcn depending on the noise:
+            fcn = fcn(x, u, p, s) becomes d/dx(fcn) * covariance * d/dx(fcn).T
+
+        Please note that this is usually used to add a buffer around an equality constraint h(x, u, p, s) = 0
+        transforming it into an inequality constraint of the form:
+            h(x, u, p, s) + sqrt(dh/dx * covariance * dh/dx.T) <= 0
+
+        Here, we chose a different implementation to avoid the discontinuity of the sqrt, we instead decompose the two
+        terms, meaning that you have to declare the constraint h=0 and the "variation of h"=buffer ** 2 with
+        is_stochastic=True independently.
+        """
+
+        # TODO: Charbie -> This is just a first implementation (x=[q, qdot]), it should then be generalized
+
+        nx = controller.states["q"].cx_start.shape[0]
+        n_root = controller.model.nb_root
+        n_joints = nx - n_root
+
+        if "cholesky_cov" in controller.stochastic_variables.keys():
+            l_cov_matrix = (
+                controller
+                    .stochastic_variables["cholesky_cov"]
+                    .reshape_to_cholesky_matrix(
+                    controller.stochastic_variables,
+                    2 * n_joints,
+                    Node.START,
+                    "cholesky_cov",
+                )
+            )
+            cov_matrix = l_cov_matrix @ l_cov_matrix.T
+        else:
+            cov_matrix = (
+                controller
+                    .stochastic_variables["cov"]
+                    .reshape_to_matrix(
+                    controller.stochastic_variables,
+                    2 * n_joints,
+                    2 * n_joints,
+                    Node.START,
+                    "cov",
+                )
+            )
+
+        jac_fcn_states = jacobian(fcn, state_cx_scaled)
+        fcn_variation = jac_fcn_states @ cov_matrix @ jac_fcn_states.T
+
+        return diag(fcn_variation)
+
+
     def _set_penalty_function(
         self, controller: PenaltyController | list[PenaltyController, PenaltyController], fcn: MX | SX
     ):
@@ -480,6 +535,8 @@ class PenaltyOption(OptionGeneric):
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
+        if self.is_stochastic:
+            sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, state_cx_scaled)
         self.function[node] = controller.to_casadi_func(
             name, sub_fcn, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, expand=self.expand
         )

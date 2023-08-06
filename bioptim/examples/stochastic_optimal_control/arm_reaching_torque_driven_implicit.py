@@ -228,76 +228,6 @@ def hand_equals_ref(controller: PenaltyController) -> cas.MX:
     return ee - ref
 
 
-def reach_target_consistantly(controller: PenaltyController) -> cas.MX:
-    """
-    Constraint the hand to reach the target consistently.
-    This is a multi-node constraint because the covariance matrix depends on all the precedent nodes, but it only
-    applies at the END node.
-    """
-
-    nx = controller.states["q"].cx_start.shape[0]
-
-    q_sym = cas.MX.sym("q_sym", nx)
-    qdot_sym = cas.MX.sym("qdot_sym", nx)
-    if "cholesky_cov" in controller.stochastic_variables.keys():
-        cov_sym = cas.MX.sym("cov", controller.stochastic_variables["cholesky_cov"].cx_start.shape[0])
-        cov_sym_dict = {"cholesky_cov": cov_sym}
-        cov_sym_dict["cholesky_cov"].cx_start = cov_sym
-        l_cov_matrix = (
-            controller
-            .stochastic_variables["cholesky_cov"]
-            .reshape_to_cholesky_matrix(
-                cov_sym_dict,
-                controller.states.cx_start.shape[0],
-                Node.START,
-                "cholesky_cov",
-            )
-        )
-        cov_matrix = l_cov_matrix @ l_cov_matrix.T
-    else:
-        cov_sym = cas.MX.sym("cov", controller.stochastic_variables["cov"].cx_start.shape[0])
-        cov_sym_dict = {"cov": cov_sym}
-        cov_sym_dict["cov"].cx_start = cov_sym
-        cov_matrix = (
-            controller
-            .stochastic_variables["cov"]
-            .reshape_to_matrix(
-                cov_sym_dict,
-                controller.states.cx_start.shape[0],
-                controller.states.cx_start.shape[0],
-                Node.START,
-                "cov",
-            )
-        )
-
-    hand_pos = controller.model.markers(q_sym)[2][:2]
-    hand_vel = controller.model.marker_velocities(q_sym, qdot_sym)[2][:2]
-
-    jac_marker_q = cas.jacobian(hand_pos, q_sym)
-    jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(q_sym, qdot_sym))
-
-    cov_matrix_q = cov_matrix[:2, :2]
-    cov_matrix_qdot = cov_matrix[:4, :4]
-
-    pos_constraint = jac_marker_q @ cov_matrix_q @ jac_marker_q.T
-    vel_constraint = jac_marker_qdot @ cov_matrix_qdot @ jac_marker_qdot.T
-
-    out = cas.vertcat(pos_constraint[0, 0], pos_constraint[1, 1], vel_constraint[0, 0], vel_constraint[1, 1])
-
-    fun = cas.Function("reach_target_consistantly", [q_sym, qdot_sym, cov_sym], [out])
-    val = fun(
-        controller.states["q"].cx_start,
-        controller.states["qdot"].cx_start,
-        (
-            controller.stochastic_variables["cholesky_cov"].cx_start
-            if "cholesky_cov" in controller.stochastic_variables.keys()
-            else controller.stochastic_variables["cov"].cx_start
-        ),
-    )
-    # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
-
-    return val
-
 def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnitude: cas.DM) -> cas.MX:
     """
     This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
@@ -493,26 +423,29 @@ def prepare_socp(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.PENULTIMATE, target=ee_final_position, marker_index=2,
-                    axes=[Axis.X, Axis.Y])  ## merge conflict
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
 
+    # This constraint insures that the hand reaches the target with x_mean
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.PENULTIMATE, target=ee_final_position, marker_index=2,
+                    axes=[Axis.X, Axis.Y])  ## merge conflict
+    # While this constraint insures that the hand still reaches the target with the proper position and velocity even
+    # in the presence of noise
     if problem_type == ExampleType.BAR:
         max_bounds_lateral_variation = cas.inf
     elif problem_type == ExampleType.CIRCLE:
         max_bounds_lateral_variation = 0.004
     else:
         raise NotImplementedError("Wrong problem type")
-    constraints.add(
-        reach_target_consistantly,
-        phase=0,
-        node=Node.PENULTIMATE,  # merge conflict
-        min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
-        max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
-    )
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.PENULTIMATE, marker_index=2, axes=[Axis.X, Axis.Y],
+                    phase=0, min_bound=np.array([-cas.inf, -cas.inf]),
+                    max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2]), is_stochastic=True,)  ## merge conflict
+    constraints.add(ConstraintFcn.TRACK_MARKERS_VELOCITY, node=Node.PENULTIMATE, marker_index=2, axes=[Axis.X, Axis.Y],
+                    phase=0, min_bound=np.array([-cas.inf, -cas.inf]),
+                    max_bound=np.array([0.05**2, 0.05**2]),
+                    is_stochastic=True, )  ## merge conflict
 
     multinode_constraints = MultinodeConstraintList()
     for i in range(n_shooting - 1):
@@ -700,8 +633,9 @@ def main():
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
-    n_shooting = int(final_time / dt) + 1
+    # n_shooting = int(final_time / dt) + 1
     final_time += dt
+    n_shooting = 5
 
     # --- Noise constants --- #
     motor_noise_std = 0.05

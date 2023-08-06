@@ -1098,6 +1098,7 @@ class PenaltyFunctionAbstract:
                 "custom_function",
                 "weight",
                 "expand",
+                "is_stochastic"
             ]
             for keyword in inspect.signature(penalty.custom_function).parameters:
                 if keyword in invalid_keywords:

@@ -29,6 +29,7 @@ class Constraint(PenaltyOption):
         max_bound: np.ndarray | float = None,
         quadratic: bool = False,
         phase: int = -1,
+        is_stochastic: bool = False,
         **params: Any,
     ):
         """
@@ -44,6 +45,9 @@ class Constraint(PenaltyOption):
             The index of the phase to apply the constraint
         quadratic: bool
             If the penalty is quadratic
+        is_stochastic: bool
+            If the constraint is stochastic (if we should instead look at the rate of variation of the inequality
+            constraint)
         params:
             Generic parameters for options
         """
@@ -53,7 +57,8 @@ class Constraint(PenaltyOption):
             constraint = ConstraintFcn.CUSTOM
 
         super(Constraint, self).__init__(
-            penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function, **params
+            penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function,
+            is_stochastic=is_stochastic, **params
         )
 
         if isinstance(constraint, ImplicitConstraintFcn):

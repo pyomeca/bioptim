@@ -538,6 +538,7 @@ def prepare_socp(
     # TODO: Include the stochastic dynamics in bioptim (@Pariterre: where?)
     # TODO: Add the stochastic constraints
     # TODO: Add on objective to minimize the trace of a matrix
+    # TODO: change constraints with bounds, as it should be
 
     bio_model = BiorbdModel(biorbd_model_path)
 
