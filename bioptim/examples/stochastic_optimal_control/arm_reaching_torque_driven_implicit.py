@@ -74,24 +74,6 @@ def get_force_field(q, force_field_magnitude):
     return tau_force_field
 
 
-def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
-    """
-    Get the effect of the feedback.
-
-    Parameters
-    ----------
-    k: MX.sym
-        The feedback gains
-    hand_pos_velo: MX.sym
-        The position and velocity of the hand
-    ref: MX.sym
-        The reference position and velocity of the hand
-    sensory_noise: MX.sym
-        The sensory noise
-    """
-    return k @ ((hand_pos_velo - ref) + sensory_noise)
-
-
 def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
@@ -146,9 +128,9 @@ def stochastic_forward_dynamics(
 
         hand_pos = nlp.model.markers(q)[2][:2]
         hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
-        ee = cas.vertcat(hand_pos, hand_vel)
+        hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
 
-        tau_fb += get_excitation_with_feedback(k_matrix, ee, ref, sensory_noise)
+        tau_fb += k_matrix @ ((hand_pos_velo - ref) + sensory_noise)
 
     tau_force_field = get_force_field(q, force_field_magnitude)
 
@@ -197,26 +179,6 @@ def configure_stochastic_optimal_control_problem(
     )
     return
 
-
-def get_ref(controller: PenaltyController, q, qdot) -> cas.MX:
-    """
-    Get the reference had position and velocity.
-
-    Parameters
-    ----------
-    controller: PenaltyController
-        The controller.
-    q: cas.MX
-        The current joint position.
-    qdot: cas.MX
-        The current joint velocity.
-    """
-    hand_pos = controller.model.markers(q)[2][:2]
-    hand_vel = controller.model.marker_velocities(q, qdot)[2][:2]
-    ee = cas.vertcat(hand_pos, hand_vel)
-    return ee
-
-
 def hand_equals_ref(controller: PenaltyController) -> cas.MX:
     """
     Get the error between the hand position and the reference.
@@ -224,7 +186,9 @@ def hand_equals_ref(controller: PenaltyController) -> cas.MX:
     q = controller.states["q"].cx_start
     qdot = controller.states["qdot"].cx_start
     ref = controller.stochastic_variables["ref"].cx_start
-    ee = get_ref(controller, q, qdot)
+    hand_pos = controller.model.markers(q)[2][:2]
+    hand_vel = controller.model.marker_velocities(q, qdot)[2][:2]
+    ee = cas.vertcat(hand_pos, hand_vel)
     return ee - ref
 
 
@@ -598,6 +562,15 @@ def prepare_socp(
             min_bound=stochastic_min[curent_index : curent_index + n_cholesky_cov, :],
             max_bound=stochastic_max[curent_index : curent_index + n_cholesky_cov, :],
         )
+
+    # @Partierre: what would you think of something like this?
+    # This would allow to include minimize expected effort and constrain "ref" as a built-in
+    def reference_function(controller: PenaltyController) -> cas.MX:
+        hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
+        hand_vel = \
+        controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[2][:2]
+        ee = cas.vertcat(hand_pos, hand_vel)
+        return ee
 
     return StochasticOptimalControlProgram(
         bio_model,
