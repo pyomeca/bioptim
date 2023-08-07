@@ -558,7 +558,6 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
         sensory_noise_magnitude=sensory_noise_magnitude,
         with_cholesky=with_cholesky,
         with_scaling=with_scaling,
-        expand_dynamics=True,
     )
 
     # Solver parameters

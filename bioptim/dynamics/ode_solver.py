@@ -283,8 +283,8 @@ class OdeSolver:
                 "x_scaled": horzcat(nlp.states.scaled.cx_start, nlp.states.scaled.cx_end),
                 "p_unscaled": horzcat(nlp.controls.cx_start, nlp.controls.cx_end),
                 "p_scaled": horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
-                "stochastic_variables": horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end),
-                # add scaling
+                "s_unscled": horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end),
+                "s_scaled": horzcat(nlp.stochastic_variables.scaled.cx_start, nlp.stochastic_variables.scaled.cx_end),
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }

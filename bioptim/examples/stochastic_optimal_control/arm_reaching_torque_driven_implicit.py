@@ -393,7 +393,6 @@ def prepare_socp(
     problem_type=ExampleType.CIRCLE,
     with_cholesky: bool = False,
     with_scaling: bool = False,
-    expand_dynamics: bool = True,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -441,13 +440,14 @@ def prepare_socp(
         ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=1e3 / 2, quadratic=True
     )
 
+    # Should be squared in implicit to penalize negative values (even though at convergence it has to be positive)
     objective_functions.add(
         expected_feedback_effort,
         custom_type=ObjectiveFcn.Lagrange,
         node=Node.ALL,
         sensory_noise_magnitude=sensory_noise_magnitude,
         weight=1e3 / 2,
-        quadratic=False,
+        quadratic=True,
         phase=0,
     )
 
