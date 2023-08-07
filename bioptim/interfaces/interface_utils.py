@@ -58,7 +58,6 @@ def generic_solve(interface) -> dict:
         v_bounds_max = vertcat(v_bounds_max, 0, 0, 0, 0, 0, 0)
         v_init_init = vertcat(v_init_init, 0, 0, 0, 0, 0, 0)
 
-
     # Thread here on (f and all_g) instead of individually for each function?
     interface.sqp_nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
@@ -73,7 +72,7 @@ def generic_solve(interface) -> dict:
         interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.sqp_nlp, options)
 
     interface.sqp_limits = {
-        "lbx": v_bounds_min,  #v_bounds[0],
+        "lbx": v_bounds_min,  # v_bounds[0],
         "ubx": v_bounds_max,  # v_bounds[1],
         "lbg": all_g_bounds.min,
         "ubg": all_g_bounds.max,
@@ -353,7 +352,13 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 u = horzcat(u, u[:, -1])
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            p = reshape(penalty.weighted_function[0](x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt), -1, 1)
+            p = reshape(
+                penalty.weighted_function[0](
+                    x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
+                ),
+                -1,
+                1,
+            )
 
         else:
             p = interface.ocp.cx()
@@ -379,7 +384,12 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     s = []
                 else:
                     x, u, s = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                p = vertcat(p, penalty.weighted_function[idx](x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt))
+                p = vertcat(
+                    p,
+                    penalty.weighted_function[idx](
+                        x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
+                    ),
+                )
 
         out = vertcat(out, sum2(p))
     return out

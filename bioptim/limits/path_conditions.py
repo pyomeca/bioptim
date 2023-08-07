@@ -285,7 +285,9 @@ class PathCondition(np.ndarray):
             else:
                 return self[:, 1]
         elif self.type == InterpolationType.LINEAR:
-            return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / (self.n_shooting * repeat + 1)  # see if repeat or repeat + 1
+            return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / (
+                self.n_shooting * repeat + 1
+            )  # see if repeat or repeat + 1
         elif self.type == InterpolationType.EACH_FRAME:
             return self[:, shooting_point]
         elif self.type == InterpolationType.ALL_POINTS:

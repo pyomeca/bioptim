@@ -39,6 +39,7 @@ from bioptim import (
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 
+
 def get_force_field(q, force_field_magnitude):
     """
     Get the effect of the force field.
@@ -184,7 +185,8 @@ def configure_stochastic_optimal_control_problem(
         nlp,
         noised_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
             states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=True
-        ))
+        ),
+    )
     return
 
 
@@ -366,6 +368,7 @@ def track_final_marker(controller: PenaltyController) -> cas.MX:
     ee_pos = controller.model.markers(q)[2][:2]
     return ee_pos
 
+
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
@@ -459,8 +462,8 @@ def prepare_socp(
     multinode_constraints = MultinodeConstraintList()
     multinode_constraints.add(
         reach_target_consistantly,
-        nodes_phase=[0 for _ in range(n_shooting+1)],
-        nodes=[i for i in range(n_shooting+1)],
+        nodes_phase=[0 for _ in range(n_shooting + 1)],
+        nodes=[i for i in range(n_shooting + 1)],
         min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
         max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
     )
@@ -508,26 +511,26 @@ def prepare_socp(
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
-    states_init[0, :] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting+1)
-    states_init[1, :] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting+1)
+    states_init[0, :] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting + 1)
+    states_init[1, :] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting + 1)
     states_init[n_states:, :] = 0.01
 
     x_init = InitialGuessList()
     x_init.add("q", initial_guess=states_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
     x_init.add("qdot", initial_guess=states_init[n_q : n_q + n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
 
-    controls_init = np.ones((n_tau, n_shooting+1)) * 0.01
+    controls_init = np.ones((n_tau, n_shooting + 1)) * 0.01
 
     u_init = InitialGuessList()
     u_init.add("tau", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
 
     s_init = InitialGuessList()
     s_bounds = BoundsList()
-    n_k = 2*4
+    n_k = 2 * 4
     n_ref = 4
-    n_m = 4*3*4
+    n_m = 4 * 3 * 4
     if not with_cholesky:
-        n_cov = 4*4
+        n_cov = 4 * 4
         n_cholesky_cov = 0
     else:
         n_cov = 0
@@ -536,9 +539,7 @@ def prepare_socp(
             for j in range(i + 1):
                 n_cholesky_cov += 1
 
-    s_init.add(
-        "k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT
-    )
+    s_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
     s_bounds.add(
         "k",
         min_bound=[-cas.inf] * n_k,

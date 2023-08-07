@@ -70,7 +70,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
-        problem_type: SocpType.SOCP_EXPLICIT | SocpType.SOCP_IMPLICIT | SocpType.SOCP_COLLOCATION = SocpType.SOCP_EXPLICIT,
+        problem_type: SocpType.SOCP_EXPLICIT
+        | SocpType.SOCP_IMPLICIT
+        | SocpType.SOCP_COLLOCATION = SocpType.SOCP_EXPLICIT,
         **kwargs,
     ):
         """ """
@@ -187,8 +189,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         self.initialize_stochastic_variables()
         self.prepare_node_mapping(node_mappings)
         self.prepare_dynamics()
-        self.prepare_bounds_and_init(x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init,
-                                     s_init)
+        self.prepare_bounds_and_init(
+            x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
+        )
 
         self.declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints)
 
@@ -381,4 +384,3 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)
-

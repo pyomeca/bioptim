@@ -174,10 +174,23 @@ class Integrator:
 
         self.function = Function(
             "integrator",
-            [self.x_sym, self.u_sym, self.param_sym, self.stochastic_variables_sym, self.motor_noise, self.sensory_noise],
+            [
+                self.x_sym,
+                self.u_sym,
+                self.param_sym,
+                self.stochastic_variables_sym,
+                self.motor_noise,
+                self.sensory_noise,
+            ],
             self.dxdt(
-                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym,
-                self.motor_noise, self.sensory_noise
+                self.h,
+                self.x_sym,
+                self.u_sym,
+                self.param_sym,
+                self.param_scaling,
+                self.stochastic_variables_sym,
+                self.motor_noise,
+                self.sensory_noise,
             ),
             ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
             ["xf", "xall"],
@@ -676,14 +689,21 @@ class COLLOCATION(Integrator):
             if self.defects_type == DefectType.EXPLICIT:
                 if self.noised_fun:
                     f_j = self.noised_fun(
-                        states[j], self.get_u(controls, self.step_time[j]), params * param_scaling,
+                        states[j],
+                        self.get_u(controls, self.step_time[j]),
+                        params * param_scaling,
                         stochastic_variables,
-                        motor_noise, sensory_noise
+                        motor_noise,
+                        sensory_noise,
                     )[:, self.idx]
                 else:
                     f_j = self.fun(
-                        states[j], self.get_u(controls, self.step_time[j]), params * param_scaling, stochastic_variables,
-                        motor_noise, sensory_noise
+                        states[j],
+                        self.get_u(controls, self.step_time[j]),
+                        params * param_scaling,
+                        stochastic_variables,
+                        motor_noise,
+                        sensory_noise,
                     )[:, self.idx]
                 defects.append(h * f_j - xp_j)
             elif self.defects_type == DefectType.IMPLICIT:
@@ -728,10 +748,23 @@ class COLLOCATION(Integrator):
 
         self.function = Function(
             "integrator",
-            [horzcat(*self.x_sym), self.u_sym, self.param_sym, self.stochastic_variables_sym, self.motor_noise, self.sensory_noise],
+            [
+                horzcat(*self.x_sym),
+                self.u_sym,
+                self.param_sym,
+                self.stochastic_variables_sym,
+                self.motor_noise,
+                self.sensory_noise,
+            ],
             self.dxdt(
-                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym,
-                self.motor_noise, self.sensory_noise
+                self.h,
+                self.x_sym,
+                self.u_sym,
+                self.param_sym,
+                self.param_scaling,
+                self.stochastic_variables_sym,
+                self.motor_noise,
+                self.sensory_noise,
             ),
             ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
             ["xf", "xall", "defects"],

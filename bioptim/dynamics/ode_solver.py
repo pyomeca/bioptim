@@ -324,8 +324,10 @@ class OdeSolver:
 
             if with_noise:
                 if not hasattr(nlp, "motor_noise"):
-                    raise RuntimeError("You can only call integrator with_noise=True while running a "
-                                       "StochasticOptimalControlProgram.")
+                    raise RuntimeError(
+                        "You can only call integrator with_noise=True while running a "
+                        "StochasticOptimalControlProgram."
+                    )
                 motor_noise = nlp.motor_noise
                 sensory_noise = nlp.sensory_noise
             else:

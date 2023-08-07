@@ -584,10 +584,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
         @staticmethod
         def stochastic_covariance_matrix_continuity_collocation(
-                penalty,
-                controllers: list[PenaltyController, PenaltyController],
-                motor_noise_magnitude: DM,
-                sensory_noise_magnitude: DM,
+            penalty,
+            controllers: list[PenaltyController, PenaltyController],
+            motor_noise_magnitude: DM,
+            sensory_noise_magnitude: DM,
         ):
             """
             This functions allows to implicitly integrate the covariance matrix as in Gillis 2013.
@@ -627,7 +627,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             m_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 2 * nu * polynomial_degree, Node.START, "m")
+                .reshape_to_matrix(
+                    controllers[0].stochastic_variables, 2 * nu, 2 * nu * polynomial_degree, Node.START, "m"
+                )
             )
 
             x_q_root = controllers[0].cx.sym("x_q_root", nb_root, 1)
@@ -639,10 +641,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             z_qdot_root = controllers[0].cx.sym("z_qdot_root", nb_root, polynomial_degree)
             z_qdot_joints = controllers[0].cx.sym("z_qdot_joints", nu, polynomial_degree)
 
-            states_full = vertcat(horzcat(x_q_root, z_q_root),
-                                  horzcat(x_q_joints, z_q_joints),
-                                  horzcat(x_qdot_root, z_qdot_root),
-                                  horzcat(x_qdot_joints, z_qdot_joints))  # TODO: make sure it is the right order
+            states_full = vertcat(
+                horzcat(x_q_root, z_q_root),
+                horzcat(x_q_joints, z_q_joints),
+                horzcat(x_qdot_root, z_qdot_root),
+                horzcat(x_qdot_joints, z_qdot_joints),
+            )  # TODO: make sure it is the right order
             dynamics = controllers[0].integrate_noised_dynamics(
                 x0=states_full,
                 p=controllers[0].controls.cx_start,
@@ -682,13 +686,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             non_sym_states = horzcat(*([controllers[0].states.cx_start] + controllers[0].states.cx_intermediates_list))
             dg_dx_evaluated = dg_dx_fun(
                 non_sym_states[:nb_root, 0],
-                non_sym_states[nb_root : nb_root+nu, 0],
-                non_sym_states[nb_root + nu : 2*nb_root + nu, 0],
-                non_sym_states[2*nb_root + nu:, 0],
+                non_sym_states[nb_root : nb_root + nu, 0],
+                non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
+                non_sym_states[2 * nb_root + nu :, 0],
                 non_sym_states[:nb_root, 1:],
-                non_sym_states[nb_root : nb_root+nu, 1:],
-                non_sym_states[nb_root + nu : 2*nb_root + nu, 1:],
-                non_sym_states[2*nb_root + nu:, 1:],
+                non_sym_states[nb_root : nb_root + nu, 1:],
+                non_sym_states[nb_root + nu : 2 * nb_root + nu, 1:],
+                non_sym_states[2 * nb_root + nu :, 1:],
                 controllers[0].controls.cx_start,
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
@@ -717,13 +721,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )
             dg_dw_evaluated = dg_dw_fun(
                 non_sym_states[:nb_root, 0],
-                non_sym_states[nb_root : nb_root+nu, 0],
-                non_sym_states[nb_root + nu : 2*nb_root + nu, 0],
-                non_sym_states[2*nb_root + nu:, 0],
+                non_sym_states[nb_root : nb_root + nu, 0],
+                non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
+                non_sym_states[2 * nb_root + nu :, 0],
                 non_sym_states[:nb_root, 1:],
-                non_sym_states[nb_root : nb_root+nu, 1:],
-                non_sym_states[nb_root + nu : 2*nb_root + nu, 1:],
-                non_sym_states[2*nb_root + nu:, 1:],
+                non_sym_states[nb_root : nb_root + nu, 1:],
+                non_sym_states[nb_root + nu : 2 * nb_root + nu, 1:],
+                non_sym_states[2 * nb_root + nu :, 1:],
                 controllers[0].controls.cx_start,
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
@@ -731,7 +735,14 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 sensory_noise_magnitude,
             )
 
-            cov_next_computed = m_matrix @ (dg_dx_evaluated @ cov_matrix @ dg_dx_evaluated.T + dg_dw_evaluated @ sigma_matrix @ dg_dw_evaluated.T) @ m_matrix.T
+            cov_next_computed = (
+                m_matrix
+                @ (
+                    dg_dx_evaluated @ cov_matrix @ dg_dx_evaluated.T
+                    + dg_dw_evaluated @ sigma_matrix @ dg_dw_evaluated.T
+                )
+                @ m_matrix.T
+            )
             cov_implicit_deffect = cov_next_computed - cov_matrix_next
 
             out_vector = controllers[0].stochastic_variables["m"].reshape_to_vector(cov_implicit_deffect)

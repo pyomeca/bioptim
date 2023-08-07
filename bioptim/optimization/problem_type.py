@@ -54,4 +54,3 @@ class SocpType:
         def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM):
             self.motor_noise_magnitude = motor_noise_magnitude
             self.sensory_noise_magnitude = sensory_noise_magnitude
-

@@ -342,9 +342,9 @@ class OptimalControlProgram:
         )
         self.prepare_node_mapping(node_mappings)
         self.prepare_dynamics()
-        self.prepare_bounds_and_init(x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init,
-                                s_init)
-
+        self.prepare_bounds_and_init(
+            x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
+        )
 
         self.declare_multi_node_penalties(multinode_constraints, multinode_objectives)
 
@@ -747,7 +747,9 @@ class OptimalControlProgram:
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
-    def prepare_bounds_and_init(self, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init):
+    def prepare_bounds_and_init(
+        self, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
+    ):
         self.parameter_bounds = BoundsList()
         self.parameter_init = InitialGuessList()
 
@@ -770,12 +772,10 @@ class OptimalControlProgram:
         parameter_objectives,
         phase_transitions,
     ):
-
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
         self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
-
 
         # Skipping creates an OCP without built-in continuity constraints, make sure you declared constraints elsewhere
         if not skip_continuity:
