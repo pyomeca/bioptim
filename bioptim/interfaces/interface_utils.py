@@ -52,7 +52,7 @@ def generic_solve(interface) -> dict:
     v_bounds_min = v_bounds[0]
     v_bounds_max = v_bounds[1]
     v_init_init = v_init
-    if hasattr(interface.ocp.nlp[0].motor_noise):
+    if hasattr(interface.ocp.nlp[0], "motor_noise"):
         v = vertcat(v, interface.ocp.nlp[0].motor_noise, interface.ocp.nlp[0].sensory_noise)
         v_bounds_min = vertcat(v_bounds_min, 0, 0)
         v_bounds_max = vertcat(v_bounds_max, 0, 0)

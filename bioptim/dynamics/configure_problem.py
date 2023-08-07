@@ -1129,6 +1129,8 @@ class ConfigureProblem:
             nlp.x_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls and name not in nlp.u_init:
             nlp.u_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
+        if as_stochastic and name not in nlp.s_init:
+            nlp.s_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         # Declare the scaling for that variable
         if as_states and name not in nlp.x_scaling:

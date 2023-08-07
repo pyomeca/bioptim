@@ -164,7 +164,7 @@ def configure_stochastic_optimal_control_problem(
     # Stochastic variables
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_constraints=4*3)
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_constraints=3)
     if with_cholesky:
         ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=4)
     else:
@@ -486,18 +486,18 @@ def prepare_socp(
         expand=False,
     )
 
-    states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf
-    states_max = np.ones((n_states, n_shooting + 1)) * cas.inf
+    states_min = np.ones((n_states, n_shooting * 5 + 1)) * -cas.inf
+    states_max = np.ones((n_states, n_shooting * 5 + 1)) * cas.inf
 
     x_bounds = BoundsList()
     x_bounds.add(
-        "q", min_bound=states_min[:n_q, :], max_bound=states_max[:n_q, :], interpolation=InterpolationType.EACH_FRAME
+        "q", min_bound=states_min[:n_q, :], max_bound=states_max[:n_q, :], interpolation=InterpolationType.ALL_POINTS
     )
     x_bounds.add(
         "qdot",
         min_bound=states_min[n_q : n_q + n_qdot, :],
         max_bound=states_max[n_q : n_q + n_qdot, :],
-        interpolation=InterpolationType.EACH_FRAME,
+        interpolation=InterpolationType.ALL_POINTS,
     )
 
     controls_min = np.ones((n_tau, 3)) * -cas.inf
@@ -525,7 +525,7 @@ def prepare_socp(
     s_bounds = BoundsList()
     n_k = 2*4
     n_ref = 4
-    n_m = 4*16
+    n_m = 4*3*4
     if not with_cholesky:
         n_cov = 4*4
         n_cholesky_cov = 0
