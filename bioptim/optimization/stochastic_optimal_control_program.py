@@ -351,8 +351,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         integration. This is the real implementation suggested in Gillis 2013.
         """
 
-        # @Pariterre: I don't know how we should generalize it instead of making cases like this...
-
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
             constraints.add(

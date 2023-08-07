@@ -37,7 +37,7 @@ class OdeSolverBase:
         self.is_direct_collocation = False
         self.is_direct_shooting = False
 
-    def integrator(self, ocp, nlp, node_index: int) -> list:
+    def integrator(self, ocp, nlp, node_index: int, with_noise: bool = False) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -49,6 +49,8 @@ class OdeSolverBase:
             A reference to the nlp
         node_index
             The index of the node currently evaluated
+        with_noise: bool
+            If the noise should be added to the ode
 
         Returns
         -------
@@ -75,7 +77,7 @@ class OdeSolverBase:
             nlp.dynamics = nlp.dynamics * nlp.ns
         else:
             for node_index in range(1, nlp.ns):
-                nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index)
+                nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index, with_noise=False)
 
     @staticmethod
     def prepare_noised_dynamic_integrator(ocp, nlp):
@@ -121,7 +123,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp, node_index: int) -> list:
+    def integrator(self, ocp, nlp, node_index: int, with_noise: bool) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -133,6 +135,8 @@ class RK(OdeSolverBase):
             A reference to the nlp
         node_index
             The index of the node currently integrated
+        with_noise: bool
+            If the noise should be added to the dynamics
 
         Returns
         -------
@@ -144,11 +148,25 @@ class RK(OdeSolverBase):
         nlp.controls.node_index = node_index
         nlp.stochastic_variables.node_index = node_index
 
+        if with_noise:
+            if not hasattr(nlp, "motor_noise"):
+                raise RuntimeError(
+                    "You can only call integrator with_noise=True while running a "
+                    "StochasticOptimalControlProgram."
+                )
+            motor_noise = nlp.motor_noise
+            sensory_noise = nlp.sensory_noise
+        else:
+            motor_noise = ocp.cx()
+            sensory_noise = ocp.cx()
+
         ode_opt = {
             "t0": 0,
             "tf": nlp.dt,
             "model": nlp.model,
             "param": nlp.parameters,
+            "motor_noise": motor_noise,
+            "sensory_noise": sensory_noise,
             "cx": nlp.cx,
             "idx": 0,
             "control_type": nlp.control_type,
@@ -167,7 +185,9 @@ class RK(OdeSolverBase):
             else horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
             "stochastic_variables": nlp.stochastic_variables.cx_start,
             "ode": nlp.dynamics_func,
+            "noised_ode": nlp.noised_dynamics_func if with_noise else None,
             "implicit_ode": nlp.implicit_dynamics_func,
+            "noised_implicit_ode": nlp.noised_implicit_dynamics_func if with_noise else None,
         }
 
         if ode["ode"].size2_out("xdot") != 1:
@@ -302,6 +322,8 @@ class OdeSolver:
                 A reference to the nlp
             node_index
                 The index of the node currently integrated
+            with_noise: bool
+                If the noise should be added to the dynamics
 
             Returns
             -------

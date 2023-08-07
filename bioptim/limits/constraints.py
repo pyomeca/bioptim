@@ -756,7 +756,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 sensory_noise=controller.get_nlp.sensory_noise,
             )
 
-            # @Pariterre: should I use cx_end or multinode or last cx_intermediate?
             continuity = controller.states.cx_end[non_root_index_continuity] - dynamics["xf"][non_root_index_continuity]
             # @Pariterre: shouldn't there be polynomial_degree+1 x n_states constraints here ?
             defects = dynamics["defects"][non_root_index_defects]
