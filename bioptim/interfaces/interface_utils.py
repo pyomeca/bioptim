@@ -54,9 +54,15 @@ def generic_solve(interface) -> dict:
     v_init_init = v_init
     if hasattr(interface.ocp.nlp[0], "motor_noise"):
         v = vertcat(v, interface.ocp.nlp[0].motor_noise, interface.ocp.nlp[0].sensory_noise)
-        v_bounds_min = vertcat(v_bounds_min, 0, 0, 0, 0, 0, 0)
-        v_bounds_max = vertcat(v_bounds_max, 0, 0, 0, 0, 0, 0)
-        v_init_init = vertcat(v_init_init, 0, 0, 0, 0, 0, 0)
+        v_bounds_min = vertcat(v_bounds_min,
+                               np.zeros((interface.ocp.nlp[0].motor_noise.shape)),
+                               np.zeros((interface.ocp.nlp[0].sensory_noise.shape)))
+        v_bounds_max = vertcat(v_bounds_max,
+                               np.zeros((interface.ocp.nlp[0].motor_noise.shape)),
+                               np.zeros((interface.ocp.nlp[0].sensory_noise.shape)))
+        v_init_init = vertcat(v_init_init,
+                              np.zeros((interface.ocp.nlp[0].motor_noise.shape)),
+                              np.zeros((interface.ocp.nlp[0].sensory_noise.shape)))
 
     # Thread here on (f and all_g) instead of individually for each function?
     interface.sqp_nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
