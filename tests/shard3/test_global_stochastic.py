@@ -609,7 +609,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
             np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
             np.testing.assert_almost_equal(q[:, -1], np.array([0.92561035, 1.29037204]))
             np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-            np.testing.assert_almost_equal(qdot[:, -2], np.array([0, 0]))
+            np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
             np.testing.assert_almost_equal(tau[:, 0], np.array([0.41464303, -0.30980662]))
             np.testing.assert_almost_equal(tau[:, -2], np.array([-0.39128527, 0.2434043]))
@@ -859,7 +859,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
             np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
             np.testing.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
             np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-            np.testing.assert_almost_equal(qdot[:, -2], np.array([0, 0]))
+            np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
             np.testing.assert_almost_equal(tau[:, 0], np.array([0.4145378, -0.3098442]))
             np.testing.assert_almost_equal(tau[:, -2], np.array([-0.39137504, 0.24336774]))
@@ -970,10 +970,10 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
             )
         else:
             # Check objective function value
-            np.testing.assert_almost_equal(f[0, 0], 54.289550436429586)
+            np.testing.assert_almost_equal(f[0, 0], 54.37668076964529)
 
             # detailed cost values
-            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 54.37668076964529)
+            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 54.295453694426094)
             np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.0812270752191952)
             np.testing.assert_almost_equal(
                 f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
