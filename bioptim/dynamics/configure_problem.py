@@ -333,9 +333,7 @@ class ConfigureProblem:
             raise ValueError("No contact defined in the .bioMod, set with_contact to False")
 
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
-            raise NotImplementedError(
-                "TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet"
-            )
+            raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
         if nlp.model.nb_soft_contacts != 0:
             if (
