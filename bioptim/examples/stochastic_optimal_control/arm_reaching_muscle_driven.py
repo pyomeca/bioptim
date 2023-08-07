@@ -132,6 +132,13 @@ def configure_stochastic_optimal_control_problem(
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
     )
+    ConfigureProblem.configure_stochastic_dynamics_function(
+        ocp,
+        nlp,
+        noised_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
+            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=True
+        ),
+    )
 
 
 def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.MX:
@@ -724,6 +731,11 @@ def main():
     )
 
     sol_socp = socp.solve(solver)
+    from bioptim import Shooting, SolutionIntegrator
+    sol_socp.noisy_integrate(shooting_type=Shooting.SINGLE,
+                            keep_intermediate_points=False,
+                            integrator=SolutionIntegrator.SCIPY_RK45,
+                            n_random=30)
 
     q_sol = sol_socp.states["q"]
     qdot_sol = sol_socp.states["qdot"]

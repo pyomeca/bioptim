@@ -971,6 +971,75 @@ class Solution:
 
         return out
 
+    def noisy_integrate(
+        self,
+        shooting_type: Shooting = Shooting.SINGLE,
+        keep_intermediate_points: bool = False,
+        merge_phases: bool = False,
+        integrator: SolutionIntegrator = SolutionIntegrator.SCIPY_RK45,
+        n_random: int = 30,
+    ) -> Any:
+        """
+        Integrate the states
+
+        Parameters
+        ----------
+        shooting_type: Shooting
+            Which type of integration
+        keep_intermediate_points: bool
+            If the integration should return the intermediate values of the integration [False]
+            or only keep the node [True] effective keeping the initial size of the states
+        merge_phases: bool
+            If the phase should be merged in a unique phase
+        integrator: SolutionIntegrator
+            Use the scipy integrator RK45 by default, you can use any integrator provided by scipy or the OCP integrator
+
+        Returns
+        -------
+        A Solution data structure with the states integrated. The controls are removed from this structure
+        """
+
+        self.__integrate_sanity_checks(
+            shooting_type=shooting_type,
+            keep_intermediate_points=keep_intermediate_points,
+            integrator=integrator,
+        )
+
+        out = self.__perform_noisy_integration(
+            shooting_type=shooting_type,
+            keep_intermediate_points=keep_intermediate_points,
+            integrator=integrator,
+            n_random=n_random,
+        )
+
+        if merge_phases:
+            out.is_merged = True
+            out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
+            out.ns = sum(out.ns)
+
+            if shooting_type == Shooting.SINGLE:
+                out._states["unscaled"] = concatenate_optimization_variables_dict(out._states["unscaled"])
+                out._time_vector = [concatenate_optimization_variables(out._time_vector)]
+
+            else:
+                out._states["unscaled"] = concatenate_optimization_variables_dict(
+                    out._states["unscaled"], continuous=False
+                )
+                out._time_vector = [
+                    concatenate_optimization_variables(
+                        out._time_vector, continuous_phase=False, continuous_interval=False
+                    )
+                ]
+
+        elif shooting_type == Shooting.MULTIPLE:
+            out._time_vector = concatenate_optimization_variables(
+                out._time_vector, continuous_phase=False, continuous_interval=False, merge_phases=merge_phases
+            )
+
+        out.is_integrated = True
+
+        return out
+
     def _generate_time(
         self,
         keep_intermediate_points: bool = None,
@@ -1219,6 +1288,107 @@ class Solution:
             )
             if self.ocp.nlp[p].stochastic_variables.keys():
                 s = np.concatenate([self._stochastic_variables[p][key] for key in self.ocp.nlp[p].stochastic_variables])
+            else:
+                s = np.array([])
+            if integrator == SolutionIntegrator.OCP:
+                integrated_sol = solve_ivp_bioptim_interface(
+                    dynamics_func=nlp.dynamics,
+                    keep_intermediate_points=keep_intermediate_points,
+                    x0=x0,
+                    u=u,
+                    s=s,
+                    params=params,
+                    param_scaling=param_scaling,
+                    shooting_type=shooting_type,
+                    control_type=nlp.control_type,
+                )
+            else:
+                integrated_sol = solve_ivp_interface(
+                    dynamics_func=nlp.dynamics_func,
+                    keep_intermediate_points=keep_intermediate_points,
+                    t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
+                    x0=x0,
+                    u=u,
+                    s=s,
+                    params=params,
+                    method=integrator.value,
+                    control_type=nlp.control_type,
+                )
+
+            for key in nlp.states:
+                out._states["unscaled"][states_phase_idx][key] = integrated_sol[nlp.states[key].index, :]
+
+                if shooting_type == Shooting.MULTIPLE:
+                    # last node of the phase is not integrated but do exist as an independent node
+                    out._states["unscaled"][states_phase_idx][key] = np.concatenate(
+                        (
+                            out._states["unscaled"][states_phase_idx][key],
+                            self._states["unscaled"][states_phase_idx][key][:, -1:],
+                        ),
+                        axis=1,
+                    )
+
+        return out
+
+
+    def __perform_noisy_integration(
+        self,
+        shooting_type: Shooting,
+        keep_intermediate_points: bool,
+        integrator: SolutionIntegrator,
+        n_random: int,
+    ):
+        """
+        This function performs the integration of the system dynamics in a noisy environment
+        with different options using scipy or the default integrator
+
+        Parameters
+        ----------
+        shooting_type: Shooting
+            Which type of integration (SINGLE_CONTINUOUS, MULTIPLE, SINGLE)
+        keep_intermediate_points: bool
+            If the integration should return the intermediate values of the integration
+        integrator
+            Use the ode solver defined by the OCP or use a separate integrator provided by scipy such as RK45 or DOP853
+
+        Returns
+        -------
+        Solution
+            A Solution data structure with the states integrated. The controls are removed from this structure
+        """
+
+        # Copy the data
+        out = self.copy(skip_data=True)
+        out.recomputed_time_steps = integrator != SolutionIntegrator.OCP
+        out._states["unscaled"] = [dict() for _ in range(len(self._states["unscaled"]))]
+        out._time_vector = self._generate_time(
+            keep_intermediate_points=keep_intermediate_points,
+            merge_phases=False,
+            shooting_type=shooting_type,
+        )
+
+        params = vertcat(*[self.parameters[key] for key in self.parameters])
+
+        for i_phase, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
+            self.ocp.nlp[i_phase].controls.node_index = 0
+
+            states_phase_idx = self.ocp.nlp[i_phase].use_states_from_phase_idx
+            controls_phase_idx = self.ocp.nlp[i_phase].use_controls_from_phase_idx
+            param_scaling = nlp.parameters.scaling
+            x0 = self._get_first_frame_states(out, shooting_type, phase=i_phase)
+            u = (
+                np.array([])
+                if nlp.control_type == ControlType.NONE
+                else np.concatenate(
+                    [
+                        self._controls["unscaled"][controls_phase_idx][key]
+                        for key in self.ocp.nlp[controls_phase_idx].controls
+                    ]
+                )
+            )
+
+            if self.ocp.nlp[i_phase].stochastic_variables.keys():
+                s = np.concatenate([self._stochastic_variables[i_phase][key] for key in self.ocp.nlp[i_phase].stochastic_variables])
             else:
                 s = np.array([])
             if integrator == SolutionIntegrator.OCP:
