@@ -447,6 +447,7 @@ class PlotOcp:
                                 y_min = nlp.plot[variable].bounds.min[mapping_to_first_index.index(ctr), :].min()
                                 y_max = nlp.plot[variable].bounds.max[mapping_to_first_index.index(ctr), :].max()
                             else:
+                                # TODO: addapt evaluate_at for collocations (LINEAR -> repeat, ALL_POINTS -> j should change)
                                 nlp.plot[variable].bounds.check_and_adjust_dimensions(
                                     len(mapping_to_first_index), nlp.ns
                                 )

@@ -254,7 +254,7 @@ class PathCondition(np.ndarray):
                     f"the expected number of column is {self.n_shooting}"
                 )
 
-    def evaluate_at(self, shooting_point: int):
+    def evaluate_at(self, shooting_point: int, repeat: int = 1):
         """
         Evaluate the interpolation at a specific shooting point
 
@@ -262,6 +262,8 @@ class PathCondition(np.ndarray):
         ----------
         shooting_point: int
             The shooting point to evaluate the path condition at
+        repeat: int
+            The number of collocation points (only used for InterpolationType.LINEAR in collocations)
 
         Returns
         -------
@@ -283,7 +285,7 @@ class PathCondition(np.ndarray):
             else:
                 return self[:, 1]
         elif self.type == InterpolationType.LINEAR:
-            return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / self.n_shooting
+            return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / (self.n_shooting * repeat + 1)  # see if repeat or repeat + 1
         elif self.type == InterpolationType.EACH_FRAME:
             return self[:, shooting_point]
         elif self.type == InterpolationType.ALL_POINTS:
@@ -994,6 +996,7 @@ class NoisedInitialGuess(InitialGuess):
         else:
             n_columns = self.n_shooting
 
+        # TODO: adapt evaluate_at for collocations
         ns = n_columns + 1 if interpolation == InterpolationType.ALL_POINTS else self.n_shooting
         bounds_min_matrix = np.zeros((self.n_elements, ns))
         bounds_max_matrix = np.zeros((self.n_elements, ns))

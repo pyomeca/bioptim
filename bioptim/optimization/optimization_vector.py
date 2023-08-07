@@ -152,22 +152,30 @@ class OptimizationVectorHelper:
             OptimizationVectorHelper._set_node_index(nlp, 0)
             for key in nlp.states:
                 if key in nlp.x_bounds.keys():
-                    nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
+                    if nlp.x_bounds[key].type == InterpolationType.ALL_POINTS:
+                        nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns * (repeat+1))
+                    else:
+                        nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
 
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
                 for p in range(repeat if k != nlp.ns else 1):
-                    point = k if k != 0 else 0 if p == 0 else 1
+                    point = k if k != 0 else 0 if p == 0 else 1  # What is this for?
+                    # @Pariterre is cx_end the same as the last cx_intermediate????
+                    # if p != (repeat+1): # change the loop for repeat +1
+                    #   point = k * (repeat+1) + p
+                    # else:
+                    #   point = k * (repeat+1) + p - 1 # same point twice
 
                     collapsed_values_min = np.ndarray((nlp.states.shape, 1))
                     collapsed_values_max = np.ndarray((nlp.states.shape, 1))
                     for key in nlp.states:
                         if key in nlp.x_bounds.keys():
                             value_min = (
-                                nlp.x_bounds[key].min.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                                nlp.x_bounds[key].min.evaluate_at(shooting_point=point, repeat=repeat+1) / nlp.x_scaling[key].scaling
                             )[:, np.newaxis]
                             value_max = (
-                                nlp.x_bounds[key].max.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                                nlp.x_bounds[key].max.evaluate_at(shooting_point=point, repeat=repeat+1) / nlp.x_scaling[key].scaling
                             )[:, np.newaxis]
                         else:
                             value_min = -np.inf
@@ -294,7 +302,7 @@ class OptimizationVectorHelper:
                             if nlp.x_init[key].type == InterpolationType.ALL_POINTS:
                                 point_to_eval = k * repeat + p
                             value = (
-                                nlp.x_init[key].init.evaluate_at(shooting_point=point_to_eval)
+                                nlp.x_init[key].init.evaluate_at(shooting_point=point_to_eval, repeat=repeat+1)
                                 / nlp.x_scaling[key].scaling
                             )[:, np.newaxis]
                         else:

@@ -112,6 +112,7 @@ def check_conditioning(ocp):
             param_init = np.array([ocp.parameter_init[key].shape[0] for key in ocp.parameter_init.keys()])
             s_init = np.zeros((len(nlp.S), nb_s_init))
 
+            # TODO: adapt evaluate_at for collocations
             for key in nlp.states.keys():
                 nlp.x_init[key].check_and_adjust_dimensions(len(nlp.states[key]), nlp.ns + 1)
                 for node_index in range(nlp.ns + 1):
