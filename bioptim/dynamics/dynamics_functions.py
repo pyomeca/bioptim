@@ -148,7 +148,7 @@ class DynamicsFunctions:
 
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
-        if rigidbody_dynamics is not None:
+        if rigidbody_dynamics is not RigidBodyDynamics.ODE:
             if not with_contact and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.mx_reduced)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
@@ -566,7 +566,7 @@ class DynamicsFunctions:
 
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
-        if rigidbody_dynamics is not None:
+        if rigidbody_dynamics is not RigidBodyDynamics.ODE:
             if not with_contact and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
@@ -641,7 +641,7 @@ class DynamicsFunctions:
         parameters: MX.sym,
         stochastic_variables: MX.sym,
         nlp,
-        rigidbody_dynamics: RigidBodyDynamics = None,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joints accelerations of a free floating body.
@@ -664,9 +664,8 @@ class DynamicsFunctions:
         MX.sym
             The derivative of states
         """
-        if rigidbody_dynamics is not None:
-            if rigidbody_dynamics != RigidBodyDynamics.ODE:
-                raise NotImplementedError("Implicit dynamics not implemented yet.")
+        if rigidbody_dynamics != RigidBodyDynamics.ODE:
+            raise NotImplementedError("Implicit dynamics not implemented yet.")
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -682,7 +681,7 @@ class DynamicsFunctions:
 
         # defects
         defects = None
-        if rigidbody_dynamics is not None:
+        if rigidbody_dynamics is not RigidBodyDynamics.ODE:
             qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)
             qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
 
