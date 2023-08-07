@@ -75,8 +75,7 @@ class Integrator:
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
-        self.s_sym = ode["stochastic_variables"]
-        self.stochastic_variables_sym = ode["stochastic_variables"]
+        self.s_sym = ode["s_scaled"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
         self.defects_type = ode_opt["defects_type"]
@@ -836,10 +835,8 @@ class COLLOCATION(Integrator):
 
         self.function = Function(
             "integrator",
-            [horzcat(*self.x_sym), self.u_sym, self.param_sym, self.stochastic_variables_sym],
-            self.dxdt(
-                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
-            ),
+            [horzcat(*self.x_sym), self.u_sym, self.param_sym, self.s_sym],
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
         )
@@ -928,10 +925,8 @@ class IRK(COLLOCATION):
 
         self.function = Function(
             "integrator",
-            [self.x_sym[0], self.u_sym, self.param_sym, self.stochastic_variables_sym],
-            self.dxdt(
-                self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
-            ),
+            [self.x_sym[0], self.u_sym, self.param_sym, self.s_sym],
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )

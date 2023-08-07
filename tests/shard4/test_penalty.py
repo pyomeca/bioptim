@@ -71,7 +71,8 @@ def prepare_test_ocp(
 
 
 def get_penalty_value(ocp, penalty, t, x, u, p, s):
-    val = penalty.type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], [], [], 0), **penalty.params)
+    val = penalty.type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], [], s, [], 0), **penalty.params)
+    # changed only this one
     if isinstance(val, float):
         return val
 
@@ -107,11 +108,13 @@ def test_penalty_minimize_time(penalty_origin, value, assume_phase_dynamics):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
 
     penalty_type = penalty_origin.MINIMIZE_TIME
     penalty = Objective(penalty_type)
-    penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], [], [], 0))
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0))
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, np.array(1))
 
@@ -124,8 +127,11 @@ def test_penalty_minimize_state(penalty_origin, value, assume_phase_dynamics):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty = Objective(penalty_origin.MINIMIZE_STATE, key="qdot")
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
     np.testing.assert_almost_equal(res, np.array([[value]] * 4))
 
 
@@ -172,6 +178,9 @@ def test_penalty_minimize_qddot(penalty_origin, value, assume_phase_dynamics):
     t = [0, 1]
     x = [DM.ones((8, 1)) * value, DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
+    p = []
+    s = []
+
     if penalty_origin == ConstraintFcn:
         with pytest.raises(AttributeError, match="MINIMIZE_QDDOT"):
             _ = penalty_origin.MINIMIZE_QDDOT
@@ -179,7 +188,7 @@ def test_penalty_minimize_qddot(penalty_origin, value, assume_phase_dynamics):
     else:
         penalty_type = penalty_origin.MINIMIZE_QDDOT
     penalty = Objective(penalty_type)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], []).T
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s).T
 
     np.testing.assert_almost_equal(res, [[value, -9.81 + value, value, value]])
 
@@ -192,12 +201,15 @@ def test_penalty_track_state(penalty_origin, value, assume_phase_dynamics):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.TRACK_STATE
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, key="qdot", target=np.ones((4, 1)) * value)
     else:
         penalty = Constraint(penalty_type, key="qdot", target=np.ones((4, 1)) * value)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
     np.testing.assert_almost_equal(res, [[value]] * 4)
 
 
@@ -226,9 +238,12 @@ def test_penalty_minimize_markers(penalty_origin, value, assume_phase_dynamics):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.MINIMIZE_MARKERS
     penalty = Objective(penalty_type)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = np.array(
         [
@@ -257,13 +272,16 @@ def test_penalty_track_markers(penalty_origin, value, assume_phase_dynamics):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.TRACK_MARKERS
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, target=np.ones((3, 7, 1)) * value)
     else:
         penalty = Constraint(penalty_type, target=np.ones((3, 7, 1)) * value)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = np.array(
         [
@@ -292,9 +310,12 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value, assume_phase_d
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.MINIMIZE_MARKERS_VELOCITY
     penalty = Objective(penalty_type)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     if value == 0.1:
         np.testing.assert_almost_equal(
@@ -390,13 +411,16 @@ def test_penalty_track_markers_velocity(penalty_origin, value, assume_phase_dyna
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.TRACK_MARKERS_VELOCITY
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, target=np.ones((3, 7, 1)) * value)
     else:
         penalty = Constraint(penalty_type, target=np.ones((3, 7, 1)) * value)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     if value == 0.1:
         np.testing.assert_almost_equal(
@@ -492,13 +516,16 @@ def test_penalty_track_super_impose_marker(penalty_origin, value, assume_phase_d
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.SUPERIMPOSE_MARKERS
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, first_marker=0, second_marker=1)
     else:
         penalty = Constraint(penalty_type, first_marker=0, second_marker=1)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = [[0.8951707, 0, -1.0948376]] if value == 0.1 else [[-1.3830926, 0, 0.2950504]]
     np.testing.assert_almost_equal(res.T, expected)
@@ -512,13 +539,16 @@ def test_penalty_track_super_impose_marker_velocity(penalty_origin, value, assum
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.SUPERIMPOSE_MARKERS_VELOCITY
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, first_marker=0, second_marker=1)
     else:
         penalty = Constraint(penalty_type, first_marker=0, second_marker=1)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = [[-0.1094838, 0.0, -0.0895171]] if value == 0.1 else [[-2.9505042, 0.0, -13.8309264]]
     np.testing.assert_almost_equal(res.T, expected)
@@ -533,6 +563,9 @@ def test_penalty_proportional_state(penalty_origin, value, value_intercept, assu
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.PROPORTIONAL_STATE
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
@@ -555,7 +588,7 @@ def test_penalty_proportional_state(penalty_origin, value, value_intercept, assu
             first_dof_intercept=value_intercept,
             second_dof_intercept=value_intercept,
         )
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     if value_intercept == 0.0:
         np.testing.assert_almost_equal(res, -value)
@@ -574,6 +607,9 @@ def test_penalty_proportional_control(penalty_origin, value, assume_phase_dynami
     t = [0]
     x = [0]
     u = [DM.ones((4, 1)) * value]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.PROPORTIONAL_CONTROL
 
     first = 0
@@ -584,7 +620,7 @@ def test_penalty_proportional_control(penalty_origin, value, assume_phase_dynami
         penalty = Objective(penalty_type, key="tau", first_dof=first, second_dof=second, coef=coef)
     else:
         penalty = Constraint(penalty_type, key="tau", first_dof=first, second_dof=second, coef=coef)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, np.array(u[0][first] - coef * u[0][second]))
 
@@ -597,8 +633,11 @@ def test_penalty_minimize_torque(penalty_origin, value, assume_phase_dynamics):
     t = [0, 1]
     x = [0]
     u = [DM.ones((4, 1)) * value]
+    p = []
+    s = []
+
     penalty = Objective(penalty_origin.MINIMIZE_CONTROL, key="tau")
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, np.array([[value, value, value, value]]).T)
 
@@ -611,13 +650,16 @@ def test_penalty_track_torque(penalty_origin, value, assume_phase_dynamics):
     t = [0, 1]
     x = [0]
     u = [DM.ones((4, 1)) * value]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.TRACK_CONTROL
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, key="tau", target=np.ones((4, 1)) * value)
     else:
         penalty = Constraint(penalty_type, key="tau", target=np.ones((4, 1)) * value)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, np.array([[value, value, value, value]]).T)
 
@@ -630,9 +672,12 @@ def test_penalty_minimize_muscles_control(penalty_origin, value, assume_phase_dy
     t = [0, 1]
     x = [0]
     u = [DM.ones((8, 1)) * value]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.MINIMIZE_CONTROL
     penalty = Objective(penalty_type, key="muscles")
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, np.array([[value, value, value, value, value, value]]).T)
 
@@ -645,9 +690,12 @@ def test_penalty_minimize_contact_forces(penalty_origin, value, assume_phase_dyn
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.MINIMIZE_CONTACT_FORCES
     penalty = Objective(penalty_type)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     if value == 0.1:
         np.testing.assert_almost_equal(res, np.array([[-9.6680105, 127.2360329, 5.0905995]]).T)
@@ -663,13 +711,16 @@ def test_penalty_track_contact_forces(penalty_origin, value, assume_phase_dynami
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.TRACK_CONTACT_FORCES
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, target=np.ones((1, 1)) * value, index=0)
     else:
         penalty = Constraint(penalty_type, target=np.ones((1, 1)) * value, index=0)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     if value == 0.1:
         np.testing.assert_almost_equal(res.T, [[-9.6680105, 127.2360329, 5.0905995]])
@@ -684,9 +735,12 @@ def test_penalty_minimize_predicted_com_height(value, assume_phase_dynamics):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT
     penalty = Objective(penalty_type)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = np.array(0.0501274 if value == 0.1 else -3.72579)
     np.testing.assert_almost_equal(res, expected)
@@ -700,6 +754,9 @@ def test_penalty_minimize_com_position(value, penalty_origin, assume_phase_dynam
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     if "TRACK_COM_POSITION" in penalty_origin._member_names_:
         penalty_type = penalty_origin.TRACK_COM_POSITION
     else:
@@ -709,7 +766,7 @@ def test_penalty_minimize_com_position(value, penalty_origin, assume_phase_dynam
         penalty = Objective(penalty_type)
     else:
         penalty = Constraint(penalty_type)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = np.array([[0.05], [0.05], [0.05]])
     if value == -10:
@@ -726,6 +783,8 @@ def test_penalty_minimize_angular_momentum(value, penalty_origin, assume_phase_d
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
 
     penalty_type = penalty_origin.MINIMIZE_ANGULAR_MOMENTUM
 
@@ -733,7 +792,7 @@ def test_penalty_minimize_angular_momentum(value, penalty_origin, assume_phase_d
         penalty = Objective(penalty_type)
     else:
         penalty = Constraint(penalty_type)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = np.array([[-0.005], [0.2], [0.005]])
     if value == -10:
@@ -751,6 +810,8 @@ def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx, assume_
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
 
     penalty_type = penalty_origin.MINIMIZE_LINEAR_MOMENTUM
 
@@ -758,7 +819,7 @@ def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx, assume_
         penalty = Objective(penalty_type)
     else:
         penalty = Constraint(penalty_type)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = np.array([[0.1], [0], [0.1]])
     if value == -10:
@@ -776,6 +837,8 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit, assume_phase_
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
 
     penalty_type = penalty_origin.MINIMIZE_COM_ACCELERATION
 
@@ -785,7 +848,7 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit, assume_phase_
         penalty = Constraint(penalty_type)
 
     if not implicit:
-        res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+        res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
         expected = np.array([[0.0], [-0.7168803], [-0.0740871]])
         if value == -10:
@@ -810,13 +873,16 @@ def test_penalty_track_segment_with_custom_rt(penalty_origin, value, assume_phas
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.TRACK_SEGMENT_WITH_CUSTOM_RT
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, segment="ground", rt=0)
     else:
         penalty = Constraint(penalty_type, segment="ground", rt=0)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = np.array([[0], [0.1], [0]])
     if value == -10:
@@ -833,13 +899,16 @@ def test_penalty_track_marker_with_segment_axis(penalty_origin, value, assume_ph
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.TRACK_MARKER_WITH_SEGMENT_AXIS
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, marker="m0", segment="ground", axis=Axis.X)
     else:
         penalty = Constraint(penalty_type, marker="m0", segment="ground", axis=Axis.X)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = [[value, 0, value]]
     np.testing.assert_almost_equal(res.T, expected)
@@ -853,6 +922,8 @@ def test_penalty_minimize_segment_rotation(penalty_origin, value, assume_phase_d
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
 
     if penalty_origin == ObjectiveFcn.Lagrange or penalty_origin == ObjectiveFcn.Mayer:
         penalty_type = penalty_origin.MINIMIZE_SEGMENT_ROTATION
@@ -860,7 +931,7 @@ def test_penalty_minimize_segment_rotation(penalty_origin, value, assume_phase_d
     else:
         penalty_type = penalty_origin.TRACK_SEGMENT_ROTATION
         penalty = Constraint(penalty_type, segment=2)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = [[0, value, 0]] if value == 0.1 else [[3.1415927, 0.575222, 3.1415927]]
     np.testing.assert_almost_equal(res.T, expected)
@@ -874,6 +945,8 @@ def test_penalty_minimize_segment_velocity(penalty_origin, value, assume_phase_d
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
 
     if penalty_origin == ObjectiveFcn.Lagrange or penalty_origin == ObjectiveFcn.Mayer:
         penalty_type = penalty_origin.MINIMIZE_SEGMENT_VELOCITY
@@ -881,7 +954,7 @@ def test_penalty_minimize_segment_velocity(penalty_origin, value, assume_phase_d
     else:
         penalty_type = penalty_origin.TRACK_SEGMENT_VELOCITY
         penalty = Constraint(penalty_type, segment=2)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = [[0, value, 0]]
     np.testing.assert_almost_equal(res.T, expected)
@@ -895,6 +968,9 @@ def test_penalty_minimize_vector_orientation(penalty_origin, value, assume_phase
     t = [0]
     x = [DM(np.array([0, 0, value, 0, 0, 0, 0, 0]))]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
@@ -914,7 +990,7 @@ def test_penalty_minimize_vector_orientation(penalty_origin, value, assume_phase
             vector_1_marker_1="m6",
         )
 
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     if value == 0.1:
         np.testing.assert_almost_equal(float(res), 0.09999999999999999)
@@ -930,10 +1006,12 @@ def test_penalty_contact_force_inequality(penalty_origin, value, assume_phase_dy
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
+    p = []
+    s = []
 
     penalty_type = penalty_origin.TRACK_CONTACT_FORCES
     penalty = Constraint(penalty_type, contact_index=0)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = [[-9.6680105, 127.2360329, 5.0905995]] if value == 0.1 else [[25.6627161, 462.7973306, -94.0182191]]
     np.testing.assert_almost_equal(res.T, expected)
@@ -946,11 +1024,14 @@ def test_penalty_non_slipping(value, assume_phase_dynamics):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
+    p = []
+    s = []
+
     penalty_type = ConstraintFcn.NON_SLIPPING
     penalty = Constraint(
         penalty_type, tangential_component_idx=0, normal_component_idx=1, static_friction_coefficient=2
     )
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     expected = [[64662.56185612, 64849.5027121]] if value == 0.1 else [[856066.90177734, 857384.05177395]]
     np.testing.assert_almost_equal(res.T, expected)
@@ -964,14 +1045,17 @@ def test_tau_max_from_actuators(value, threshold, assume_phase_dynamics):
     t = [0]
     x = [DM.zeros((6, 1)), DM.zeros((6, 1))]
     u = [DM.ones((3, 1)) * value, DM.ones((3, 1)) * value]
+    p = []
+    s = []
+
     penalty_type = ConstraintFcn.TORQUE_MAX_FROM_Q_AND_QDOT
     penalty = Constraint(penalty_type, min_torque=threshold)
     if threshold and threshold < 0:
         with pytest.raises(ValueError, match="min_torque cannot be negative in tau_max_from_actuators"):
-            get_penalty_value(ocp, penalty, t, x, u, [], [])
+            get_penalty_value(ocp, penalty, t, x, u, p, s)
         return
     else:
-        res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+        res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     if threshold:
         np.testing.assert_almost_equal(res, np.repeat([value + threshold, value - threshold], 3)[:, np.newaxis])
@@ -986,9 +1070,12 @@ def test_penalty_time_constraint(value, assume_phase_dynamics):
     t = [0]
     x = [0]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = ConstraintFcn.TIME_CONSTRAINT
     penalty = Constraint(penalty_type)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, np.array([]))
 
@@ -1005,6 +1092,9 @@ def test_penalty_custom(penalty_origin, value, assume_phase_dynamics):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
+
     penalty_type = penalty_origin.CUSTOM
 
     mult = 2
@@ -1012,7 +1102,7 @@ def test_penalty_custom(penalty_origin, value, assume_phase_dynamics):
         penalty = Objective(custom, index=0, mult=mult, custom_type=penalty_origin)
     else:
         penalty = Constraint(custom, index=0, mult=mult)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, [[value * mult]] * 4)
 
@@ -1082,9 +1172,11 @@ def test_penalty_custom_with_bounds(value, assume_phase_dynamics):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
 
     penalty = Constraint(custom_with_bounds)
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, [[value]] * 4)
     np.testing.assert_almost_equal(penalty.min_bound, -10)
@@ -1101,6 +1193,8 @@ def test_penalty_custom_with_bounds_failing_min_bound(value, assume_phase_dynami
     t = [0]
     x = [DM.ones((12, 1)) * value]
     u = [0]
+    p = []
+    s = []
 
     penalty_type = ConstraintFcn.CUSTOM
     penalty = Constraint(penalty_type)
@@ -1109,7 +1203,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value, assume_phase_dynami
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], [], [], 0))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], p, s, [], 0))
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -1122,6 +1216,8 @@ def test_penalty_custom_with_bounds_failing_max_bound(value, assume_phase_dynami
     t = [0]
     x = [DM.ones((12, 1)) * value]
     u = [0]
+    p = []
+    s = []
 
     penalty_type = ConstraintFcn.CUSTOM
     penalty = Constraint(penalty_type)
@@ -1133,7 +1229,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value, assume_phase_dynami
         RuntimeError,
         match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
     ):
-        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], [], [], 0))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], p, s, [], 0))
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
@@ -1148,6 +1244,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, assume_phase_dynamics):
     nlp.X_scaled = nlp.X
     nlp.U_scaled = nlp.U
     nlp.S = np.linspace(0, 0, ns + 1)
+    nlp.S_scaled = nlp.S
     tp = OptimizationVariableList(MX, assume_phase_dynamics=assume_phase_dynamics)
     tp.append("param", [MX(), MX(), MX()], MX(), BiMapping([], []))
     nlp.parameters = tp["param"]
