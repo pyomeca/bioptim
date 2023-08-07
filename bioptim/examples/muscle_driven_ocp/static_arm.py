@@ -32,7 +32,6 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.IRK(),
     assume_phase_dynamics: bool = True,
     expand_dynamics: bool = True,
-    rigidbody_dynamics=RigidBodyDynamics.ODE,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -80,7 +79,6 @@ def prepare_ocp(
         DynamicsFcn.MUSCLE_DRIVEN,
         with_residual_torque=True,
         expand=expand_dynamics,
-        rigidbody_dynamics=rigidbody_dynamics,
     )
 
     # Path constraint

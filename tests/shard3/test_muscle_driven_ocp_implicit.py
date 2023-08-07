@@ -5,7 +5,7 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver, DefectType, RigidBodyDynamics
+from bioptim import OdeSolver, DefectType
 
 from tests.utils import TestUtils
 
@@ -26,7 +26,6 @@ def test_muscle_driven_ocp_implicit(ode_solver, assume_phase_dynamics):
         ode_solver=ode_solver_obj,
         assume_phase_dynamics=assume_phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
-        rigidbody_dynamics=RigidBodyDynamics.ODE,
     )
     sol = ocp.solve()
 
