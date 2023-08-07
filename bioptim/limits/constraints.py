@@ -728,8 +728,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             non_root_index_continuity = []
             non_root_index_defects = []
             for i in range(2):
-                for j in range(polynomial_degree):
-                    non_root_index_defects += list(range((nb_root + nu) * (i*polynomial_degree+j) + nb_root, (nb_root + nu) * (i*polynomial_degree+j) + nb_root + nu))
+                for j in range(polynomial_degree+1):
+                    non_root_index_defects += list(range((nb_root + nu) * (i*(polynomial_degree+1)+j) + nb_root, (nb_root + nu) * (i*(polynomial_degree+1)+j) + nb_root + nu))
                 non_root_index_continuity += list(range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu))
 
             x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
@@ -758,6 +758,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             # @Pariterre: should I use cx_end or multinode or last cx_intermediate?
             continuity = controller.states.cx_end[non_root_index_continuity] - dynamics["xf"][non_root_index_continuity]
+            # @Pariterre: shouldn't there be polynomial_degree+1 x n_states constraints here ?
             defects = dynamics["defects"][non_root_index_defects]
 
             # Do the order of concatenation matters ?
@@ -847,7 +848,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
-                controller.stochastic_variables, 2 * nu, 2 * nu * polynomial_degree, Node.START, "m"
+                controller.stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree+1), Node.START, "m"
             )
 
             constraint = df_dz_evaluated.T - dg_dz_evaluated.T @ m_matrix.T
