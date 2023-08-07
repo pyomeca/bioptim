@@ -595,10 +595,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             P_k+1 = M_k @ (dg/dx @ P_k @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
 
+            polynomial_degree = controllers[0].get_nlp.ode_solver.polynomial_degree
             nb_root = controllers[0].model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = len(controllers[0].get_nlp.variable_mappings["tau"].to_first.map_idx)
-            polynomial_degree = controllers[0].get_nlp.ode_solver.polynomial_degree
+            non_root_index = []
+            for i in range(polynomial_degree*2):
+                non_root_index += list(range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu))
 
             if "cholesky_cov" in controllers[0].stochastic_variables.keys():
                 l_cov_matrix = (
@@ -657,7 +660,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )
 
             # @Pariterre: Why are there polynomial_degree x n_states constraints and not (polynomial_degree + 1) x n_states ?
-            defects = dynamics["defects"]
+            defects = dynamics["defects"][non_root_index]
             sigma_w = vertcat(controllers[0].get_nlp.sensory_noise, controllers[0].get_nlp.motor_noise)
             sigma_matrix = sigma_w * MX_eye(sigma_w.shape[0])
 

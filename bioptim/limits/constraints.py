@@ -721,10 +721,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             and G = collocation slope constraints (defects).
             """
 
+            polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             nb_root = controller.model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
-            polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
+            non_root_index_continuity = []
+            non_root_index_defects = []
+            for i in range(2):
+                for j in range(polynomial_degree):
+                    non_root_index_defects += list(range((nb_root + nu) * (i*polynomial_degree+j) + nb_root, (nb_root + nu) * (i*polynomial_degree+j) + nb_root + nu))
+                non_root_index_continuity += list(range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu))
 
             x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
             x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
@@ -751,8 +757,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             # @Pariterre: should I use cx_end or multinode or last cx_intermediate?
-            continuity = controller.states.cx_end - dynamics["xf"]
-            defects = dynamics["defects"]
+            continuity = controller.states.cx_end[non_root_index_continuity] - dynamics["xf"][non_root_index_continuity]
+            defects = dynamics["defects"][non_root_index_defects]
 
             # Do the order of concatenation matters ?
             df_dz = horzcat(

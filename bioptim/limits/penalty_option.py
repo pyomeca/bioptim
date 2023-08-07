@@ -487,6 +487,13 @@ class PenaltyOption(OptionGeneric):
                 self.weighted_function_non_threaded.append(None)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
+        if hasattr(controller.get_nlp, "motor_noise"):
+            motor_noise = controller.get_nlp.motor_noise
+            sensory_noise = controller.get_nlp.sensory_noise
+        else:
+            motor_noise = controller.cx()
+            sensory_noise = controller.cx()
+
         sub_fcn = fcn[self.rows, self.cols]
         self.function[node] = controller.to_casadi_func(
             name,
@@ -495,8 +502,8 @@ class PenaltyOption(OptionGeneric):
             control_cx_scaled,
             param_cx,
             stochastic_cx_scaled,
-            controller.get_nlp.motor_noise,
-            controller.get_nlp.sensory_noise,
+            motor_noise,
+            sensory_noise,
             expand=self.expand,
         )
         self.function_non_threaded[node] = self.function[node]
@@ -624,8 +631,8 @@ class PenaltyOption(OptionGeneric):
                     control_cx_scaled,
                     param_cx,
                     stochastic_cx_scaled,
-                    controller.get_nlp.motor_noise,
-                    controller.get_nlp.sensory_noise,
+                    motor_noise,
+                    sensory_noise,
                 )
                 - target_cx
             ) ** exponent
@@ -641,8 +648,8 @@ class PenaltyOption(OptionGeneric):
                 control_cx_scaled,
                 param_cx,
                 stochastic_cx_scaled,
-                controller.get_nlp.motor_noise,
-                controller.get_nlp.sensory_noise,
+                motor_noise,
+                sensory_noise,
                 weight_cx,
                 target_cx,
                 dt_cx,
