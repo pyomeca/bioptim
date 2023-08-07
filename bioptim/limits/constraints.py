@@ -762,23 +762,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             # Do the order of concatenation matters ?
             df_dz = horzcat(
-                jacobian(continuity, x_q_root),
-                jacobian(continuity, z_q_root),
                 jacobian(continuity, x_q_joints),
                 jacobian(continuity, z_q_joints),
-                jacobian(continuity, x_qdot_root),
-                jacobian(continuity, z_qdot_root),
                 jacobian(continuity, x_qdot_joints),
                 jacobian(continuity, z_qdot_joints),
             )
 
             dg_dz = horzcat(
-                jacobian(defects, x_q_root),
-                jacobian(defects, z_q_root),
                 jacobian(defects, x_q_joints),
                 jacobian(defects, z_q_joints),
-                jacobian(defects, x_qdot_root),
-                jacobian(defects, z_qdot_root),
                 jacobian(defects, x_qdot_joints),
                 jacobian(defects, z_qdot_joints),
             )
