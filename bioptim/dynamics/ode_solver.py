@@ -503,7 +503,7 @@ class OdeSolver:
                 raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")
             if ocp.parameters.shape != 0:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
-            if nlp.stochastic_variables.cx_start.shape != 0:
+            if nlp.stochastic_variables.cx_start.shape != 0 and nlp.stochastic_variables.cx_start.shape != (0, 0):
                 raise RuntimeError("CVODES cannot be used while optimizing stochastic variables")
             if nlp.external_forces:
                 raise RuntimeError("CVODES cannot be used with external_forces")

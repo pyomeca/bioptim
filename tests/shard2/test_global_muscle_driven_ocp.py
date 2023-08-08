@@ -6,19 +6,26 @@ import pytest
 import sys
 
 import numpy as np
-from bioptim import OdeSolver
+from bioptim import OdeSolver, ControlType
 
 from tests.utils import TestUtils
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4,
+                                        OdeSolver.IRK,
+                                        OdeSolver.COLLOCATION,
+                                        OdeSolver.TRAPEZOIDAL])
 def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
     from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
 
     # For reducing time assume_phase_dynamics=False is skipped for redundant tests
     if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
         return
+    if ode_solver == OdeSolver.TRAPEZOIDAL:
+        control_type = ControlType.LINEAR_CONTINUOUS
+    else:
+        control_type = ControlType.CONSTANT
 
     #    if sys.platform == "win32" and not assume_phase_dynamics:
     # it works but not with the CI
@@ -34,6 +41,7 @@ def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
         ode_solver=ode_solver(),
         assume_phase_dynamics=assume_phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
+        control_type=control_type,
     )
     sol = ocp.solve()
 
@@ -114,6 +122,26 @@ def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
         np.testing.assert_almost_equal(
             mus[:, -2],
             np.array([5.46652642e-05, 6.57077193e-03, 3.72595814e-03, 4.73887187e-04, 4.89821189e-04, 9.06067240e-03]),
+        )
+    elif ode_solver == OdeSolver.TRAPEZOIDAL:
+        np.testing.assert_almost_equal(f[0, 0], 0.13299706974727432)
+
+        # initial and final position
+        np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([-0.24156091,  2.61667234]))
+        # initial and final velocities
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.37135239, 16.36179822]))
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array([0.00236075, 0.01175397]))
+        np.testing.assert_almost_equal(tau[:, -2], np.array([0.00096139, 0.00296023]))
+        np.testing.assert_almost_equal(
+            mus[:, 0],
+            np.array([1.64993088e-05, 3.49179013e-01, 2.05274808e-01, 2.00177858e-05, 2.12125215e-05, 2.17492272e-01]),
+        )
+        np.testing.assert_almost_equal(
+            mus[:, -2],
+            np.array([0.00015523, 0.05732295, 0.02321138, 0.00036435, 0.00039923, 0.04455363]),
         )
     else:
         raise ValueError("Test not ready")

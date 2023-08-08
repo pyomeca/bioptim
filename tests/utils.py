@@ -134,6 +134,22 @@ class TestUtils:
                 )
             return
 
+        if sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in sol.ocp.nlp]):
+            with pytest.raises(
+                ValueError,
+                match="When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
+                "we cannot use the SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            ):
+                sol.integrate(
+                    merge_phases=True,
+                    shooting_type=Shooting.SINGLE,
+                    keep_intermediate_points=True,
+                    integrator=SolutionIntegrator.OCP,
+                )
+            return
+
         sol_single = sol.integrate(
             merge_phases=True,
             shooting_type=Shooting.SINGLE,
