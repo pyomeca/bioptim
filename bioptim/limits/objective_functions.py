@@ -332,6 +332,9 @@ class ObjectiveFcn:
         PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
         PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
         STOCHASTIC_MINIMIZE_VARIABLE = (PenaltyFunctionAbstract.Functions.stochastic_minimize_variables,)
+        STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS = (
+            PenaltyFunctionAbstract.Functions.stochastic_minimize_expected_feedback_efforts,
+        )
         SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
         TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
         TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)

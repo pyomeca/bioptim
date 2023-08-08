@@ -73,6 +73,20 @@ def get_force_field(q, force_field_magnitude):
     tau_force_field = -f_force_field @ hand_pos
     return tau_force_field
 
+def sensory_reference_function(states: cas.MX | cas.SX,
+                          controls: cas.MX | cas.SX,
+                          parameters: cas.MX | cas.SX,
+                          stochastic_variables: cas.MX | cas.SX,
+                          nlp: NonLinearProgram):
+    """
+    This functions returns the sensory reference for the feedback gains.
+    """
+    q = DynamicsFunctions.get(nlp.states["q"], states)
+    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    hand_pos = nlp.model.markers(q)[2][:2]
+    hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
+    hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
+    return hand_pos_velo
 
 def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
@@ -178,83 +192,13 @@ def hand_equals_ref(controller: PenaltyController) -> cas.MX:
     """
     Get the error between the hand position and the reference.
     """
-    q = controller.states["q"].cx_start
-    qdot = controller.states["qdot"].cx_start
     ref = controller.stochastic_variables["ref"].cx_start
-    hand_pos = controller.model.markers(q)[2][:2]
-    hand_vel = controller.model.marker_velocities(q, qdot)[2][:2]
-    ee = cas.vertcat(hand_pos, hand_vel)
+    ee = controller.model.sensory_reference_function(states=controller.states.cx_start,
+                                                controls=controller.controls.cx_start,
+                                                parameters=controller.parameters.cx_start,
+                                                stochastic_variables=controller.stochastic_variables.cx_start,
+                                                nlp=controller.get_nlp)
     return ee - ref
-
-
-def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnitude: cas.DM) -> cas.MX:
-    """
-    This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
-    magnitude.
-    It is computed as Jacobian(effort, states) @ cov @ Jacobian(effort, states) +
-                        Jacobian(efforst, motor_noise) @ sigma_w @ Jacobian(efforst, motor_noise)
-
-    Parameters
-    ----------
-    controller : PenaltyController
-        Controller to be used to compute the expected effort.
-    sensory_noise_magnitude : cas.DM
-        Magnitude of the sensory noise.
-    """
-    n_tau = controller.controls["tau"].cx_start.shape[0]
-    n_q = controller.states["q"].cx_start.shape[0]
-    n_qdot = controller.states["qdot"].cx_start.shape[0]
-
-    sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
-
-    # create the casadi function to be evaluated
-    # Get the symbolic variables
-    ref = controller.stochastic_variables["ref"].cx_start
-    if "cholesky_cov" in controller.stochastic_variables.keys():
-        l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
-            controller.stochastic_variables,
-            controller.states.cx_start.shape[0],
-            Node.START,
-            "cholesky_cov",
-        )
-        cov_matrix = l_cov_matrix @ l_cov_matrix.T
-    else:
-        cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-            controller.stochastic_variables,
-            controller.states.cx_start.shape[0],
-            controller.states.cx_start.shape[0],
-            Node.START,
-            "cov",
-        )
-
-    k = controller.stochastic_variables["k"].cx_start
-    k_matrix = cas.MX(n_q + n_qdot, n_tau)
-    for s0 in range(n_q + n_qdot):
-        for s1 in range(n_tau):
-            k_matrix[s0, s1] = k[s0 * n_tau + s1]
-    k_matrix = k_matrix.T
-
-    # Compute the expected effort
-    hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
-    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[
-        2
-    ][:2]
-    trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-    ee = cas.vertcat(hand_pos, hand_vel)
-    e_fb = k_matrix @ ((ee - ref) + sensory_noise_magnitude)
-    jac_e_fb_x = cas.jacobian(e_fb, controller.states.cx_start)
-    trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
-    expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
-    func = cas.Function(
-        "f_expectedEffort_fb",
-        [controller.states.cx_start, controller.stochastic_variables.cx_start],
-        [expectedEffort_fb_mx],
-    )
-
-    out = func(controller.states.cx_start, controller.stochastic_variables.cx_start)
-
-    return out
-
 
 def trapezoidal_integration_continuity_constraint(
     controllers: list[PenaltyController], force_field_magnitude
@@ -348,6 +292,9 @@ def prepare_socp(
     """
 
     bio_model = BiorbdModel(biorbd_model_path)
+    bio_model.sensory_reference_function = sensory_reference_function
+    bio_model.force_field = get_force_field
+    bio_model.friction_coefficients = np.array([[0.05, 0.025], [0.025, 0.05]])
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q
@@ -365,15 +312,12 @@ def prepare_socp(
         ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL_SHOOTING, key="tau", weight=1e3 / 2, quadratic=True
     )
 
-    objective_functions.add(
-        expected_feedback_effort,
-        custom_type=ObjectiveFcn.Lagrange,
-        node=Node.ALL_SHOOTING,
-        sensory_noise_magnitude=sensory_noise_magnitude,
-        weight=1e3 / 2,
-        quadratic=False,
-        phase=0,
-    )
+    objective_functions.add(ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
+                            sensory_noise_magnitude=sensory_noise_magnitude,
+                            weight=1e3/2,
+                            quadratic=False,
+                            # quadratic=True,
+                            phase=0)
 
     # Constraints
     constraints = ConstraintList()

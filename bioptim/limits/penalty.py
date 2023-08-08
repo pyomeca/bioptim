@@ -3,7 +3,7 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian, DM
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian, DM, trace
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
@@ -167,6 +167,77 @@ class PenaltyFunctionAbstract:
                 )
 
             return controller.stochastic_variables[key].cx_start
+        @staticmethod
+        def stochastic_minimize_expected_feedback_efforts(penalty: PenaltyOption, controller: PenaltyController, sensory_noise_magnitude: DM):
+            """
+            This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
+            magnitude.
+            It is computed as Jacobian(effort, states) @ cov @ Jacobian(effort, states).T +
+                                Jacobian(efforts, motor_noise) @ sigma_w @ Jacobian(efforts, motor_noise).T
+
+            Parameters
+            ----------
+            controller : PenaltyController
+                Controller to be used to compute the expected effort.
+            sensory_noise_magnitude : DM
+                Magnitude of the sensory noise.
+            """
+
+            sensory_noise_matrix = sensory_noise_magnitude * MX_eye(sensory_noise_magnitude.shape[0])
+
+            # create the casadi function to be evaluated
+            # Get the symbolic variables
+            ref = controller.stochastic_variables["ref"].cx_start
+            if "cholesky_cov" in controller.stochastic_variables.keys():
+                l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
+                    controller.stochastic_variables,
+                    controller.states.cx_start.shape[0],
+                    Node.START,
+                    "cholesky_cov",
+                )
+                cov_matrix = l_cov_matrix @ l_cov_matrix.T
+            elif "cov" in controller.stochastic_variables.keys():
+                cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
+                    controller.stochastic_variables,
+                    controller.states.cx_start.shape[0],
+                    controller.states.cx_start.shape[0],
+                    Node.START,
+                    "cov",
+                )
+            else:
+                raise RuntimeError("The covariance matrix must be provided in the stochastic variables to compute the expected efforts.")
+
+            k = controller.stochastic_variables["k"].cx_start
+            k_matrix = MX(controller.stochastic_variables["k"].matrix_shape[1],
+                              controller.stochastic_variables["k"].matrix_shape[0])
+            for s0 in range(controller.stochastic_variables["k"].matrix_shape[1]):
+                for s1 in range(controller.stochastic_variables["k"].matrix_shape[0]):
+                    k_matrix[s0, s1] = k[s0 * controller.stochastic_variables["k"].matrix_shape[0] + s1]
+            k_matrix = k_matrix.T
+            #TODO: change for the real .reshape_to_matrix
+
+            # Compute the expected effort
+            trace_k_sensor_k = trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
+            ee = controller.model.sensory_reference_function(
+                states=controller.states.cx_start,
+                controls=controller.controls.cx_start,
+                parameters=controller.parameters.cx_start,
+                stochastic_variables=controller.stochastic_variables.cx_start,
+                nlp=controller.get_nlp,
+            )
+            e_fb = k_matrix @ ((ee - ref) + sensory_noise_magnitude)
+            jac_e_fb_x = jacobian(e_fb, controller.states.cx_start)
+            trace_jac_p_jack = trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
+            expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
+            func = Function(
+                "f_expectedEffort_fb",
+                [controller.states.cx_start, controller.stochastic_variables.cx_start],
+                [expectedEffort_fb_mx],
+            )
+
+            out = func(controller.states.cx_start, controller.stochastic_variables.cx_start)
+
+            return out
 
         @staticmethod
         def minimize_fatigue(penalty: PenaltyOption, controller: PenaltyController, key: str):
