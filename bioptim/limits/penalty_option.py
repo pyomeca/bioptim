@@ -459,6 +459,7 @@ class PenaltyOption(OptionGeneric):
         else:
             ocp = controller.ocp
             name = self.name
+            # if self.integrate:
             if isinstance(controller.ode_solver, OdeSolver.COLLOCATION) and controller.node_index != controller.ns:
                 state_cx_scaled = horzcat(
                     *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
@@ -487,9 +488,9 @@ class PenaltyOption(OptionGeneric):
                 self.weighted_function_non_threaded.append(None)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
-        if controller.get_nlp.motor_noise is not None:
-            motor_noise = controller.get_nlp.motor_noise
-            sensory_noise = controller.get_nlp.sensory_noise
+        if controller.motor_noise is not None:
+            motor_noise = controller.motor_noise
+            sensory_noise = controller.sensory_noise
         else:
             motor_noise = controller.cx()
             sensory_noise = controller.cx()

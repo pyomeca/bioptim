@@ -308,12 +308,12 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _u = horzcat(_u, u)
         return _x, _u, _s
 
-    if interface.ocp.nlp[0].motor_noise is not None:
-        motor_noise = interface.ocp.nlp[0].motor_noise
-        sensory_noise = interface.ocp.nlp[0].sensory_noise
+    if nlp.motor_noise is not None:
+        motor_noise = nlp.motor_noise
+        sensory_noise = nlp.sensory_noise
     else:
-        motor_noise = interface.ocp.nlp[0].cx()
-        sensory_noise = interface.ocp.nlp[0].cx()
+        motor_noise = nlp.cx()
+        sensory_noise = nlp.cx()
 
     param = interface.ocp.cx(interface.ocp.parameters.cx)
     out = interface.ocp.cx()

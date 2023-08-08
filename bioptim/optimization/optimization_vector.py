@@ -166,8 +166,7 @@ class OptimizationVectorHelper:
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
                 for p in range(repeat if k != nlp.ns else 1):
-                    point = k if k != 0 else 0 if p == 0 else 1  # What is this for?
-                    # @Pariterre is cx_end the same as the last cx_intermediate????
+                    point = k if k != 0 else 0 if p == 0 else 1
                     # if p != (repeat+1): # change the loop for repeat +1
                     #   point = k * (repeat+1) + p
                     # else:

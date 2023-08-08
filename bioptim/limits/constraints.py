@@ -666,8 +666,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
                 controller.get_nlp,
-                controller.get_nlp.motor_noise,
-                controller.get_nlp.sensory_noise,
+                controller.motor_noise,
+                controller.sensory_noise,
                 with_gains=True,
             )
 
@@ -752,8 +752,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 p=controller.controls.cx_start,
                 params=controller.parameters.cx_start,
                 s=controller.stochastic_variables.cx_start,
-                motor_noise=controller.get_nlp.motor_noise,
-                sensory_noise=controller.get_nlp.sensory_noise,
+                motor_noise=controller.motor_noise,
+                sensory_noise=controller.sensory_noise,
             )
 
             final_defect = dynamics["xf"][non_root_index_continuity]
@@ -790,8 +790,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
-                    controller.get_nlp.motor_noise,
-                    controller.get_nlp.sensory_noise,
+                    controller.motor_noise,
+                    controller.sensory_noise,
                 ],
                 [df_dz],
             )
@@ -809,8 +809,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
-                    controller.get_nlp.motor_noise,
-                    controller.get_nlp.sensory_noise,
+                    controller.motor_noise,
+                    controller.sensory_noise,
                 ],
                 [dg_dz],
             )
