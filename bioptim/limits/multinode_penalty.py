@@ -602,8 +602,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             non_root_index_continuity = []
             non_root_index_defects = []
             for i in range(2):
-                for j in range(polynomial_degree+1):
-                    non_root_index_defects += list(range((nb_root + nu) * (i*(polynomial_degree+1)+j) + nb_root, (nb_root + nu) * (i*(polynomial_degree+1)+j) + nb_root + nu))
+                for j in range(polynomial_degree):
+                    non_root_index_defects += list(range((nb_root + nu) * (i*(polynomial_degree)+j) + nb_root, (nb_root + nu) * (i*(polynomial_degree)+j) + nb_root + nu))
                 non_root_index_continuity += list(range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu))
 
             if "cholesky_cov" in controllers[0].stochastic_variables.keys():
@@ -662,9 +662,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 sensory_noise=controllers[0].get_nlp.sensory_noise,
             )
 
-
             first_defect = dynamics["initial_polynomial"][non_root_index_continuity] - controllers[0].states.cx_start[non_root_index_continuity]
-            defects = vertcat(first_defect, dynamics["defects"])[non_root_index_defects]
+            defects = vertcat(first_defect, dynamics["defects"][non_root_index_defects])
             sigma_w = vertcat(controllers[0].get_nlp.sensory_noise, controllers[0].get_nlp.motor_noise)
             sigma_matrix = sigma_w * MX_eye(sigma_w.shape[0])
 
