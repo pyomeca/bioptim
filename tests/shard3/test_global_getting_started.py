@@ -29,6 +29,7 @@ from tests.utils import TestUtils
         OdeSolver.RK8,
         OdeSolver.IRK,
         OdeSolver.COLLOCATION,
+        OdeSolver.TRAPEZOIDAL,
     ],
 )
 def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
@@ -194,8 +195,8 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.79720006, 0.0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-15.23562005, 0.0)))
     else:
-        np.testing.assert_almost_equal(tau[:, 0], np.array((6.79720006, 0.0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-15.23562005, 0.0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.01549798, 0.        )))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.68877181,   0.        )))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

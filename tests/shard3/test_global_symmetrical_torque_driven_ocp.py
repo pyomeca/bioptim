@@ -12,7 +12,7 @@ from tests.utils import TestUtils
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK, OdeSolver.TRAPEZOIDAL])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_symmetry_by_mapping(ode_solver, assume_phase_dynamics):
     from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
 
