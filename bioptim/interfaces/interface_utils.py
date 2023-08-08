@@ -44,28 +44,8 @@ def generic_solve(interface) -> dict:
     if interface.opts.show_online_optim:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
-    # This is a temporary hack motor_noise and sensory noise should not appear in the penalty functions since they are
-    # supposed to be evaluated with the noise magnitude... I have to find the error
-    v = interface.ocp.variables_vector
-    v_bounds = interface.ocp.bounds_vectors
-    v_init = interface.ocp.init_vector
-    v_bounds_min = v_bounds[0]
-    v_bounds_max = v_bounds[1]
-    v_init_init = v_init
-    if interface.ocp.nlp[0].motor_noise is not None:
-        v = vertcat(v, interface.ocp.nlp[0].motor_noise, interface.ocp.nlp[0].sensory_noise)
-        v_bounds_min = vertcat(v_bounds_min,
-                               np.zeros((interface.ocp.nlp[0].motor_noise.shape)),
-                               np.zeros((interface.ocp.nlp[0].sensory_noise.shape)))
-        v_bounds_max = vertcat(v_bounds_max,
-                               np.zeros((interface.ocp.nlp[0].motor_noise.shape)),
-                               np.zeros((interface.ocp.nlp[0].sensory_noise.shape)))
-        v_init_init = vertcat(v_init_init,
-                              np.zeros((interface.ocp.nlp[0].motor_noise.shape)),
-                              np.zeros((interface.ocp.nlp[0].sensory_noise.shape)))
-
     # Thread here on (f and all_g) instead of individually for each function?
-    interface.sqp_nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
+    interface.sqp_nlp = {"x": interface.ocp.variables_vector, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
 
@@ -77,12 +57,14 @@ def generic_solve(interface) -> dict:
     else:
         interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.sqp_nlp, options)
 
+    v_bounds = interface.ocp.bounds_vectors
+    v_init = interface.ocp.init_vector
     interface.sqp_limits = {
-        "lbx": v_bounds_min,  # v_bounds[0],
-        "ubx": v_bounds_max,  # v_bounds[1],
+        "lbx": v_bounds[0],
+        "ubx": v_bounds[1],
         "lbg": all_g_bounds.min,
         "ubg": all_g_bounds.max,
-        "x0": v_init_init,  # v_init,
+        "x0": v_init,
     }
 
     if interface.lam_g is not None:
