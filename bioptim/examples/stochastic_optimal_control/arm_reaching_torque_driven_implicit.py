@@ -39,6 +39,7 @@ from bioptim import (
     MultinodeConstraintList,
     InitialGuessList,
     Axis,
+    DynamicsFcn,
 )
 
 
@@ -291,6 +292,8 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
+    problem_type = SocpType.SOCP_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
+
     bio_model = BiorbdModel(biorbd_model_path)
     bio_model.sensory_reference_function = sensory_reference_function
     bio_model.force_field = get_force_field
@@ -361,6 +364,12 @@ def prepare_socp(
 
     # Dynamics
     dynamics = DynamicsList()
+    # dynamics.add(DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
+    #              expand=False,
+    #              with_cholesky=with_cholesky,
+    #              problem_type=problem_type,
+    #              )
+    # Fuck, merge with collocations needed to continue
     dynamics.add(
         configure_stochastic_optimal_control_problem,
         dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
@@ -502,15 +511,6 @@ def prepare_socp(
             max_bound=stochastic_max[curent_index : curent_index + n_cholesky_cov, :],
         )
 
-    # @Partierre: what would you think of something like this?
-    # This would allow to include minimize expected effort and constrain "ref" as a built-in
-    def reference_function(controller: PenaltyController) -> cas.MX:
-        hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
-        hand_vel = \
-        controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[2][:2]
-        ee = cas.vertcat(hand_pos, hand_vel)
-        return ee
-
     return StochasticOptimalControlProgram(
         bio_model,
         dynamics,
@@ -529,7 +529,7 @@ def prepare_socp(
         skip_continuity=True,
         n_threads=1,
         assume_phase_dynamics=False,
-        problem_type=SocpType.SOCP_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
+        problem_type=problem_type,
     )
 
 

@@ -21,6 +21,7 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
+from ..optimization.problem_type import SocpType
 
 
 class ConfigureProblem:
@@ -297,6 +298,71 @@ class ConfigureProblem:
                 penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
+
+    @staticmethod
+    def stochastic_torque_driven(
+        ocp,
+        nlp,
+        problem_type,
+        with_contact: bool = False,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
+        fatigue: FatigueList = None,
+        with_cholesky: bool = False,
+    ):
+        """
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        with_contact: bool
+            If the dynamic with contact should be used
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
+        rigidbody_dynamics: RigidBodyDynamics
+            which rigidbody dynamics should be used
+        soft_contacts_dynamics: SoftContactDynamics
+            which soft contact dynamic should be used
+        fatigue: FatigueList
+            A list of fatigue elements
+
+        """
+
+        # Stochastic variables
+        ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
+        ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
+        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
+
+        if problem_type == SocpType.SOCP_EXPLICIT:
+            ConfigureProblem.configure_stochastic_cov_explicit(ocp, nlp, n_noised_states=4)
+        else:
+            if with_cholesky:
+                ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=4)
+            else:
+                ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
+
+        if problem_type == SocpType.SOCP_IMPLICIT:
+            ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
+            ConfigureProblem.configure_stochastic_c(ocp, nlp, n_feedbacks=4, n_noise=6)
+
+        ConfigureProblem.torque_driven(ocp=ocp,
+                           nlp=nlp,
+                           with_contact=with_contact,
+                           with_passive_torque=with_passive_torque,
+                           with_ligament=with_ligament,
+                           rigidbody_dynamics=rigidbody_dynamics,
+                           soft_contacts_dynamics=soft_contacts_dynamics,
+                           fatigue=fatigue)
+
+        # To be continued when collocations is merged
 
     @staticmethod
     def torque_derivative_driven(
@@ -1832,6 +1898,7 @@ class DynamicsFcn(FcnEnum):
     """
 
     TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
+    STOCHASTIC_TORQUE_DRIVEN = (ConfigureProblem.stochastic_torque_driven,)
     TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
     TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
     JOINTS_ACCELERATION_DRIVEN = (ConfigureProblem.joints_acceleration_driven,)
