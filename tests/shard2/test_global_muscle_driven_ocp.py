@@ -12,10 +12,7 @@ from tests.utils import TestUtils
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4,
-                                        OdeSolver.IRK,
-                                        OdeSolver.COLLOCATION,
-                                        OdeSolver.TRAPEZOIDAL])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION, OdeSolver.TRAPEZOIDAL])
 def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
     from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
 
@@ -128,7 +125,7 @@ def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([0.07, 1.4]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([-0.24156091,  2.61667234]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([-0.24156091, 2.61667234]))
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0, 0.0]))
         np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.37135239, 16.36179822]))

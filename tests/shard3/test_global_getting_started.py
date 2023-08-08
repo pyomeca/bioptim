@@ -191,11 +191,11 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.6934385, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-27.6610711, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.TRAPEZOIDAL):
-        np.testing.assert_almost_equal(tau[:, 0], np.array((6.79720006, 0.       )))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-15.23562005,   0.         )))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.79720006, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-15.23562005, 0.0)))
     else:
-        np.testing.assert_almost_equal(tau[:, 0], np.array((6.79720006, 0.        )))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-15.23562005,   0.        )))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.79720006, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-15.23562005, 0.0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
