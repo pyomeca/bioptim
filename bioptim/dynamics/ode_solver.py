@@ -149,7 +149,7 @@ class RK(OdeSolverBase):
         nlp.stochastic_variables.node_index = node_index
 
         if with_noise:
-            if not hasattr(nlp, "motor_noise"):
+            if nlp.motor_noise is None:
                 raise RuntimeError(
                     "You can only call integrator with_noise=True while running a "
                     "StochasticOptimalControlProgram."
@@ -345,7 +345,7 @@ class OdeSolver:
                 )
 
             if with_noise:
-                if not hasattr(nlp, "motor_noise"):
+                if nlp.motor_noise is None:
                     raise RuntimeError(
                         "You can only call integrator with_noise=True while running a "
                         "StochasticOptimalControlProgram."
@@ -424,7 +424,7 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.steps = 1
 
-        def integrator(self, ocp, nlp, node_index: int) -> list:
+        def integrator(self, ocp, nlp, node_index: int, with_noise: bool = False) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -445,7 +445,7 @@ class OdeSolver:
             if ocp.cx is SX:
                 raise RuntimeError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
-            return super(OdeSolver.IRK, self).integrator(ocp, nlp, node_index)
+            return super(OdeSolver.IRK, self).integrator(ocp, nlp, node_index, with_noise=with_noise)
 
     class CVODES(OdeSolverBase):
         """
@@ -460,7 +460,7 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, node_index: int) -> list:
+        def integrator(self, ocp, nlp, node_index: int, with_noise: bool = False) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -491,6 +491,8 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with external_forces")
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
+            if with_noise:
+                raise RuntimeError("CVODES cannot be used with_noise=True")
 
             ode = {
                 "x": nlp.states.scaled.cx_start,
@@ -500,6 +502,8 @@ class OdeSolver:
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
                     nlp.stochastic_variables.cx_start,
+                    nlp.cx(),
+                    nlp.cx(),
                 ),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}

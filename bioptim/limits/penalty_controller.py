@@ -91,6 +91,10 @@ class PenaltyController:
         return self._nlp.control_type
 
     @property
+    def ode_solver(self) -> ControlType:
+        return self._nlp.ode_solver
+
+    @property
     def phase_idx(self) -> int:
         return self._nlp.phase_idx
 
@@ -178,6 +182,14 @@ class PenaltyController:
         out = self._nlp.integrated_values
         out.current_cx_to_get = self.cx_index_to_get
         return out
+
+    @property
+    def motor_noise(self):
+        return self._nlp.motor_noise
+
+    @property
+    def sensory_noise(self):
+        return self._nlp.sensory_noise
 
     @property
     def integrate(self):

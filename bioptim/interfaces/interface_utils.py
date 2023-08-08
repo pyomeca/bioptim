@@ -52,7 +52,7 @@ def generic_solve(interface) -> dict:
     v_bounds_min = v_bounds[0]
     v_bounds_max = v_bounds[1]
     v_init_init = v_init
-    if hasattr(interface.ocp.nlp[0], "motor_noise"):
+    if interface.ocp.nlp[0].motor_noise is not None:
         v = vertcat(v, interface.ocp.nlp[0].motor_noise, interface.ocp.nlp[0].sensory_noise)
         v_bounds_min = vertcat(v_bounds_min,
                                np.zeros((interface.ocp.nlp[0].motor_noise.shape)),
@@ -326,7 +326,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _u = horzcat(_u, u)
         return _x, _u, _s
 
-    if hasattr(interface.ocp.nlp[0], "motor_noise"):
+    if interface.ocp.nlp[0].motor_noise is not None:
         motor_noise = interface.ocp.nlp[0].motor_noise
         sensory_noise = interface.ocp.nlp[0].sensory_noise
     else:

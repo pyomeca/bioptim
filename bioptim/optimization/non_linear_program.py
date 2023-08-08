@@ -174,6 +174,8 @@ class NonLinearProgram:
         self.controls = OptimizationVariableContainer(assume_phase_dynamics)
         self.stochastic_variables = OptimizationVariableContainer(assume_phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(assume_phase_dynamics)
+        self.motor_noise = None
+        self.sensory_noise = None
 
     def initialize(self, cx: Callable = None):
         """
