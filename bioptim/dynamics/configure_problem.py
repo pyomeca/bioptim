@@ -922,6 +922,7 @@ class ConfigureProblem:
     def configure_new_variable(
         name: str,
         name_elements: list,
+        matrix_shape: tuple,
         ocp,
         nlp,
         as_states: bool,
@@ -1103,7 +1104,10 @@ class ConfigureProblem:
                     if copy_states
                     else define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
                 )
-                nlp.states.append(name, cx[0], cx_scaled[0], mx_states, nlp.variable_mappings[name], node_index)
+                nlp.states.append(name, cx[0], cx_scaled[0],
+                                  mx_states, nlp.variable_mappings[name],
+                                  matrix_shape,
+                                  node_index)
                 if not skip_plot:
                     nlp.plot[f"{name}_states"] = CustomPlot(
                         lambda t, x, u, p, s: x[nlp.states[name].index, :],
@@ -1138,7 +1142,10 @@ class ConfigureProblem:
                     if copy_controls
                     else define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
                 )
-                nlp.controls.append(name, cx[0], cx_scaled[0], mx_controls, nlp.variable_mappings[name], node_index)
+                nlp.controls.append(name, cx[0], cx_scaled[0], mx_controls,
+                                    nlp.variable_mappings[name],
+                                    matrix_shape,
+                                    node_index)
 
                 plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not skip_plot:
@@ -1165,7 +1172,10 @@ class ConfigureProblem:
                     if copy_states_dot
                     else define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
                 )
-                nlp.states_dot.append(name, cx[0], cx_scaled[0], mx_states_dot, nlp.variable_mappings[name], node_index)
+                nlp.states_dot.append(name, cx[0], cx_scaled[0], mx_states_dot,
+                                      nlp.variable_mappings[name],
+                                      matrix_shape,
+                                      node_index)
 
         if as_stochastic:
             for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
@@ -1174,13 +1184,17 @@ class ConfigureProblem:
                     n_cx = 3
                 cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
                 nlp.stochastic_variables.append(
-                    name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
+                    name, cx_scaled[0], cx_scaled[0], mx_stochastic,
+                    nlp.variable_mappings[name],
+                    matrix_shape,
+                    node_index
                 )
 
     @staticmethod
     def configure_integrated_value(
         name: str,
         name_elements: list,
+        matrix_shape: tuple,
         ocp,
         nlp,
         initial_matrix: DM,
@@ -1213,13 +1227,19 @@ class ConfigureProblem:
         initial_vector = nlp.integrated_values.reshape_to_vector(initial_matrix)
         cx_scaled_next_formatted = [initial_vector for _ in range(n_cx)]
         nlp.integrated_values.append(
-            name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0
+            name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix,
+            dummy_mapping,
+            matrix_shape,
+            0
         )
         for node_index in range(1, nlp.ns + 1):  # cannot use assume_phase_dynamics = True
             cx_scaled_next = nlp.integrated_value_functions[name](nlp, node_index)
             cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
             nlp.integrated_values.append(
-                name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next, dummy_mapping, node_index
+                name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next,
+                dummy_mapping,
+                matrix_shape,
+                node_index
             )
 
     @staticmethod
@@ -1240,9 +1260,12 @@ class ConfigureProblem:
         """
         name = "q"
         name_q = nlp.model.name_dof
+        matrix_shape = (len(nlp.model.name_dof), 1)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_q, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
+            name, name_q,
+            matrix_shape,
+            ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1264,9 +1287,12 @@ class ConfigureProblem:
 
         name = "qdot"
         name_qdot = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        matrix_shape = (len(name_qdot), 1)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_qdot, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
+            name, name_qdot,
+            matrix_shape,
+            ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1288,9 +1314,12 @@ class ConfigureProblem:
 
         name = "qddot"
         name_qddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        matrix_shape = (len(name_qddot), 1)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_qddot, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
+            name, name_qddot,
+            matrix_shape,
+            ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1330,6 +1359,7 @@ class ConfigureProblem:
         name_k = []
         control_names = [f"control_{i}" for i in range(n_noised_controls)]
         feedback_names = [f"feedback_{i}" for i in range(n_feedbacks)]
+        matrix_shape = (n_noised_controls, n_feedbacks)
         for name_1 in control_names:
             for name_2 in feedback_names:
                 name_k += [name_1 + "_&_" + name_2]
@@ -1339,6 +1369,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(
             name,
             name_k,
+            matrix_shape,
             ocp,
             nlp,
             as_states=False,
@@ -1362,6 +1393,8 @@ class ConfigureProblem:
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
+        matrix_shape = (n_feedbacks, n_noise)
+
         name_c = []
         for name_1 in [f"X_{i}" for i in range(n_feedbacks)]:
             for name_2 in [f"X_{i}" for i in range(n_noise)]:
@@ -1371,6 +1404,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(
             name,
             name_c,
+            matrix_shape,
             ocp,
             nlp,
             as_states=False,
@@ -1394,6 +1428,8 @@ class ConfigureProblem:
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
+        matrix_shape = (n_noised_states, n_noised_states)
+
         name_a = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1403,6 +1439,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(
             name,
             name_a,
+            matrix_shape,
             ocp,
             nlp,
             as_states=False,
@@ -1426,6 +1463,8 @@ class ConfigureProblem:
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
+        matrix_shape = (n_noised_states, n_noised_states)
+
         name_cov = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1434,6 +1473,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_integrated_value(
             name,
             name_cov,
+            matrix_shape,
             ocp,
             nlp,
             initial_matrix=initial_matrix,
@@ -1453,6 +1493,8 @@ class ConfigureProblem:
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
+        matrix_shape = (n_noised_states, n_noised_states)
+
         name_cov = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1461,6 +1503,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(
             name,
             name_cov,
+            matrix_shape,
             ocp,
             nlp,
             as_states=False,
@@ -1485,6 +1528,8 @@ class ConfigureProblem:
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
+        matrix_shape = (n_noised_states, n_noised_states)
+
         name_cov = []
         for nb_1, name_1 in enumerate([f"X_{i}" for i in range(n_noised_states)]):
             for name_2 in [f"X_{i}" for i in range(nb_1 + 1)]:
@@ -1493,6 +1538,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(
             name,
             name_cov,
+            matrix_shape,
             ocp,
             nlp,
             as_states=False,
@@ -1516,11 +1562,13 @@ class ConfigureProblem:
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
+        matrix_shape = (n_references, 1)
         name_ref = [f"reference_{i}" for i in range(n_references)]
         nlp.variable_mappings[name] = BiMapping(list(range(n_references)), list(range(n_references)))
         ConfigureProblem.configure_new_variable(
             name,
             name_ref,
+            matrix_shape,
             ocp,
             nlp,
             as_states=False,
@@ -1544,6 +1592,8 @@ class ConfigureProblem:
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
+        matrix_shape = (n_noised_states, n_noised_states)
+
         name_m = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1552,6 +1602,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(
             name,
             name_m,
+            matrix_shape,
             ocp,
             nlp,
             as_states=False,
@@ -1580,9 +1631,18 @@ class ConfigureProblem:
 
         name = "tau"
         name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        matrix_shape = (len(name_tau), 1)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_tau, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
+            name,
+            name_tau,
+            matrix_shape,
+            ocp,
+            nlp,
+            as_states,
+            as_controls,
+            fatigue=fatigue,
+            axes_idx=axes_idx
         )
 
     @staticmethod

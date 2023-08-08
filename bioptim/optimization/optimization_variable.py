@@ -42,6 +42,7 @@ class OptimizationVariable:
         index: [range, list],
         mapping: BiMapping = None,
         parent_list=None,
+        matrix_shape: tuple = None,
     ):
         """
         Parameters
@@ -60,6 +61,7 @@ class OptimizationVariable:
         self.original_cx: list = cx_start
         self.index: [range, list] = index
         self.mapping: BiMapping = mapping
+        self.matrix_shape = matrix_shape
         self.parent_list: OptimizationVariableList = parent_list
 
     def __len__(self):
@@ -335,7 +337,7 @@ class OptimizationVariableList:
 
         self.fake_elements.append(OptimizationVariable(name, mx, None, index, bimapping, self))
 
-    def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
+    def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping, matrix_shape: tuple):
         """
         Add a new variable to the list
 
@@ -366,7 +368,7 @@ class OptimizationVariableList:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
 
         self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
-        self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, self))
+        self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, parent_list=self, matrix_shape=matrix_shape))
 
     def append_from_scaled(
         self,
@@ -402,7 +404,7 @@ class OptimizationVariableList:
 
         self.mx_reduced = scaled_optimization_variable.mx_reduced
         var = scaled_optimization_variable[name]
-        self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self))
+        self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self, var.matrix_shape))
 
     @property
     def cx(self):
@@ -635,6 +637,7 @@ class OptimizationVariableContainer:
         cx_scaled: list,
         mx: MX,
         mapping: BiMapping,
+        matrix_shape: tuple[int, int],
         node_index: int,
     ):
         """
@@ -655,7 +658,7 @@ class OptimizationVariableContainer:
         node_index
             The index of the node for the scaled variable
         """
-        self._scaled[node_index].append(name, cx_scaled, mx, mapping)
+        self._scaled[node_index].append(name, cx_scaled, mx, mapping, matrix_shape)
         self._unscaled[node_index].append_from_scaled(name, cx, self._scaled[node_index])
 
     def __contains__(self, item: str):

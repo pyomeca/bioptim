@@ -112,31 +112,26 @@ def stochastic_forward_dynamics(
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-    n_q = q.shape[0]
-    n_qdot = qdot.shape[0]
-    n_tau = tau.shape[0]
 
     tau_fb = tau
     if with_gains:
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = cas.MX(n_q + n_qdot, n_tau)
-        for s0 in range(n_q + n_qdot):
-            for s1 in range(n_tau):
-                k_matrix[s0, s1] = k[s0 * n_tau + s1]
+        k_matrix = cas.MX(nlp.stochastic_variables["k"].matrix_shape[1], nlp.stochastic_variables["k"].matrix_shape[0])
+        for s0 in range(nlp.stochastic_variables["k"].matrix_shape[1]):
+            for s1 in range(nlp.stochastic_variables["k"].matrix_shape[0]):
+                k_matrix[s0, s1] = k[s0 * nlp.stochastic_variables["k"].matrix_shape[0] + s1]
         k_matrix = k_matrix.T
 
-        hand_pos = nlp.model.markers(q)[2][:2]
-        hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
-        hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
+        hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
         tau_fb += k_matrix @ ((hand_pos_velo - ref) + sensory_noise)
 
-    tau_force_field = get_force_field(q, force_field_magnitude)
+    tau_force_field = nlp.model.force_field(q, force_field_magnitude)
 
     torques_computed = tau_fb + motor_noise + tau_force_field
 
-    friction = np.array([[0.05, 0.025], [0.025, 0.05]])
+    friction = nlp.model.friction_coefficients
 
     mass_matrix = nlp.model.mass_matrix(q)
     non_linear_effects = nlp.model.non_linear_effects(q, qdot)
