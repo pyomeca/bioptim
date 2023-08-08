@@ -666,10 +666,10 @@ from bioptim import ClassName
 
 ## The OCP
 An optimal control program is an optimization that uses control variables to drive some state variables.
-There are mainly two types of transcription methods: the `direct collocation` and the `direct multiple shooting`.
-`Bioptim` is based on the latter. 
+`Bioptim` includes two types of transcription methods: the `direct collocation` and the `direct multiple shooting`.
 To summarize, it defines a large optimization problem by discretizing the control and the state variables into a predetermined number of intervals, the beginning of the interval being the shooting points.
-By defining strict constraints between the end of an interval and the beginning of the next one, it can ensure proper dynamics of the system, ???->while having good insight to solve the problem using gradient descending algorithms.
+By defining strict continuity/collocation constraints, it can ensure proper dynamics of the system (i.e. state continuity).
+The OCP are the solved using gradient descending algorithms until a local minimum is found.
 
 ### Class: OptimalControlProgram
 This is the main class that holds an ocp. 
@@ -1595,7 +1595,7 @@ The accepted values are:
 ### Class: OdeSolver
 The ordinary differential equation (ode) solver to solve the dynamics of the system. 
 The RK4 and RK8 are the ones with the most options available.
-IRK may be more robust but slower . 
+IRK may be more robust but slower. 
 CVODES is the one with the least options since it is not in-house implemented.
 
 The accepted values are:
@@ -1608,6 +1608,7 @@ The accepted values are:
    - CVODES: cvodes solver
 - For Direct collocation:
    - COLLOCATION: Legendre and Radau, from 0th to 9th order
+   - TRAPEZOIDAL: Trapezoidal rule
 
 ### Enum: Solver
 The nonlinear solver to solve the whole ocp. 
