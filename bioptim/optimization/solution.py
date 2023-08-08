@@ -484,8 +484,12 @@ class Solution:
 
             self.vector = np.ndarray((0, 1))
             sol_states, sol_controls, sol_stochastic_variables = _sol[0], _sol[1], _sol[3]
+
             # For states
             for p, ss in enumerate(sol_states):
+                repeat = 1
+                if isinstance(self.ocp.nlp[p].ode_solver, OdeSolver.COLLOCATION):
+                    repeat = self.ocp.nlp[p].ode_solver.polynomial_degree + 1
                 for key in ss.keys():
                     ns = (
                         self.ocp.nlp[p].ns + 1
@@ -496,7 +500,7 @@ class Solution:
 
                 for i in range(self.ns[p] + 1):
                     for key in ss.keys():
-                        self.vector = np.concatenate((self.vector, ss[key].init.evaluate_at(i)[:, np.newaxis]))
+                        self.vector = np.concatenate((self.vector, ss[key].init.evaluate_at(i, repeat)[:, np.newaxis]))
 
             # For controls
             for p, ss in enumerate(sol_controls):

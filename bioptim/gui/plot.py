@@ -14,6 +14,7 @@ from ..limits.multinode_constraint import MultinodeConstraint
 from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator, QuadratureRule
 from ..misc.mapping import Mapping, BiMapping
 from ..optimization.solution import Solution
+from ..dynamics.ode_solver import OdeSolver
 
 
 class CustomPlot:
@@ -447,20 +448,22 @@ class PlotOcp:
                                 y_min = nlp.plot[variable].bounds.min[mapping_to_first_index.index(ctr), :].min()
                                 y_max = nlp.plot[variable].bounds.max[mapping_to_first_index.index(ctr), :].max()
                             else:
-                                # TODO: addapt evaluate_at for collocations (LINEAR -> repeat, ALL_POINTS -> j should change)
+                                repeat = 1
+                                if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+                                    repeat = nlp.ode_solver.polynomial_degree + 1
                                 nlp.plot[variable].bounds.check_and_adjust_dimensions(
                                     len(mapping_to_first_index), nlp.ns
                                 )
                                 y_min = min(
                                     [
                                         nlp.plot[variable].bounds.min.evaluate_at(j)[mapping_to_first_index.index(ctr)]
-                                        for j in range(nlp.ns)
+                                        for j in range(nlp.ns * repeat)
                                     ]
                                 )
                                 y_max = max(
                                     [
                                         nlp.plot[variable].bounds.max.evaluate_at(j)[mapping_to_first_index.index(ctr)]
-                                        for j in range(nlp.ns)
+                                        for j in range(nlp.ns * repeat)
                                     ]
                                 )
                             if y_min.__array__()[0] < y_min_all[var_idx][mapping_to_first_index.index(ctr)]:
@@ -562,6 +565,9 @@ class PlotOcp:
                                 ns = nlp.plot[variable].bounds.min.shape[1] - 1
                             else:
                                 ns = nlp.ns
+
+                            # TODO: introduce repeat for the COLLOCATIONS min/max_bounds only for states graphs.
+                            # For now the plots in COLLOCATIONS with LINEAR are not giving the right values
                             nlp.plot[variable].bounds.check_and_adjust_dimensions(
                                 n_elements=len(mapping_to_first_index), n_shooting=ns
                             )

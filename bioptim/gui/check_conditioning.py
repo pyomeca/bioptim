@@ -7,6 +7,7 @@ from ..misc.enums import (
     ControlType,
 )
 from ..misc.enums import QuadratureRule
+from ..dynamics.ode_solver import OdeSolver
 
 
 def check_conditioning(ocp):
@@ -112,7 +113,6 @@ def check_conditioning(ocp):
             param_init = np.array([ocp.parameter_init[key].shape[0] for key in ocp.parameter_init.keys()])
             s_init = np.zeros((len(nlp.S), nb_s_init))
 
-            # TODO: adapt evaluate_at for collocations
             for key in nlp.states.keys():
                 nlp.x_init[key].check_and_adjust_dimensions(len(nlp.states[key]), nlp.ns + 1)
                 for node_index in range(nlp.ns + 1):
@@ -535,6 +535,9 @@ def check_conditioning(ocp):
             fontweight="bold",
         )
         plt.suptitle("Check conditioning for objectives", color="b", fontsize=15, fontweight="bold")
+
+    if sum(isinstance(ocp.nlp[i].ode_solver, OdeSolver.COLLOCATION) for i in range(ocp.n_phases)) > 0:
+        raise NotImplementedError("Conditioning check is not implemented for collocations")
 
     check_constraints_plot()
     check_objective_plot()

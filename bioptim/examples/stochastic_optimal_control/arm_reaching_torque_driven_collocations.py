@@ -165,7 +165,7 @@ def configure_stochastic_optimal_control_problem(
     # Stochastic variables
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_constraints=3+1)
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_collocation_points=3+1)
     if with_cholesky:
         ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=4)
     else:

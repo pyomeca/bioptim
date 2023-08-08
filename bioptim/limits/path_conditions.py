@@ -980,10 +980,22 @@ class NoisedInitialGuess(InitialGuess):
         initial_guess: np.ndarray | list | tuple | float | Callable | PathCondition | InitialGuess = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT,
         magnitude_type: MagnitudeType = MagnitudeType.RELATIVE,
+        polynomial_degree: int = 1,
         **parameters: Any,
     ):
         """
         Create the matrix of the initial guess + noise evaluated at each node
+
+        Parameters
+        ----------
+        initial_guess: np.ndarray | list | tuple | float | Callable | PathCondition | InitialGuess
+            The initial guess
+        interpolation: InterpolationType
+            The type of interpolation of the initial guess
+        magnitude_type: MagnitudeType
+            The type of magnitude to apply : relative to the bounds or an absolute value
+        polynomial_degree: int
+            The degree of the polynomial used in collocations
         """
 
         if isinstance(initial_guess, InitialGuess):
@@ -998,7 +1010,6 @@ class NoisedInitialGuess(InitialGuess):
         else:
             n_columns = self.n_shooting
 
-        # TODO: adapt evaluate_at for collocations
         ns = n_columns + 1 if interpolation == InterpolationType.ALL_POINTS else self.n_shooting
         bounds_min_matrix = np.zeros((self.n_elements, ns))
         bounds_max_matrix = np.zeros((self.n_elements, ns))
@@ -1006,11 +1017,11 @@ class NoisedInitialGuess(InitialGuess):
         self.bounds.max.n_shooting = ns
         for shooting_point in range(ns):
             if shooting_point == ns - 1:
-                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point + 1)
-                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point + 1)
+                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point + 1, repeat=polynomial_degree)
+                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point + 1, repeat=polynomial_degree)
             else:
-                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point)
-                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point)
+                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point, repeat=polynomial_degree)
+                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point, repeat=polynomial_degree)
 
         if self.seed is not None:
             np.random.seed(self.seed)
@@ -1028,7 +1039,7 @@ class NoisedInitialGuess(InitialGuess):
             tp.check_and_adjust_dimensions(self.n_elements, n_columns)
             initial_guess_matrix = np.zeros((self.n_elements, ns))
             for shooting_point in range(ns):
-                initial_guess_matrix[:, shooting_point] = tp.init.evaluate_at(shooting_point)
+                initial_guess_matrix[:, shooting_point] = tp.init.evaluate_at(shooting_point, repeat=polynomial_degree)
 
         init_instance = InitialGuess(
             "noised",
