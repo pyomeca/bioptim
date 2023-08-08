@@ -354,8 +354,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
                 controllers[0].get_nlp,
-                controllers[0].get_nlp.motor_noise,
-                controllers[0].get_nlp.sensory_noise,
+                controllers[0].motor_noise,
+                controllers[0].sensory_noise,
                 with_gains=True,
             )
 
@@ -366,8 +366,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].controls.cx_start,
                     controllers[0].parameters.cx_start,
                     controllers[0].stochastic_variables.cx_start,
-                    controllers[0].get_nlp.motor_noise,
-                    controllers[0].get_nlp.sensory_noise,
+                    controllers[0].motor_noise,
+                    controllers[0].sensory_noise,
                 ],
                 [jacobian(dx.dxdt, controllers[0].states.cx_start)],
             )
@@ -658,13 +658,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 p=controllers[0].controls.cx_start,
                 params=controllers[0].parameters.cx_start,
                 s=controllers[0].stochastic_variables.cx_start,
-                motor_noise=controllers[0].get_nlp.motor_noise,
-                sensory_noise=controllers[0].get_nlp.sensory_noise,
+                motor_noise=controllers[0].motor_noise,
+                sensory_noise=controllers[0].sensory_noise,
             )
 
             first_defect = dynamics["initial_polynomial"][non_root_index_continuity] - controllers[0].states.cx_start[non_root_index_continuity]
             defects = vertcat(first_defect, dynamics["defects"][non_root_index_defects])
-            sigma_w = vertcat(controllers[0].get_nlp.sensory_noise, controllers[0].get_nlp.motor_noise)
+            sigma_w = vertcat(controllers[0].sensory_noise, controllers[0].motor_noise)
             sigma_matrix = sigma_w * MX_eye(sigma_w.shape[0])
 
             dg_dx = jacobian(defects, vertcat(x_q_joints, x_qdot_joints))
@@ -684,8 +684,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].controls.cx_start,
                     controllers[0].parameters.cx_start,
                     controllers[0].stochastic_variables.cx_start,
-                    controllers[0].get_nlp.motor_noise,
-                    controllers[0].get_nlp.sensory_noise,
+                    controllers[0].motor_noise,
+                    controllers[0].sensory_noise,
                 ],
                 [dg_dx],
             )
@@ -720,8 +720,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].controls.cx_start,
                     controllers[0].parameters.cx_start,
                     controllers[0].stochastic_variables.cx_start,
-                    controllers[0].get_nlp.motor_noise,
-                    controllers[0].get_nlp.sensory_noise,
+                    controllers[0].motor_noise,
+                    controllers[0].sensory_noise,
                 ],
                 [dg_dw],
             )

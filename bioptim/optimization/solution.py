@@ -1894,8 +1894,8 @@ class Solution:
             # casadi function
             if not self.ocp.assume_phase_dynamics and ((isinstance(u, list) and u != []) or isinstance(u, np.ndarray)):
                 u = u[:, ~np.isnan(np.sum(u, axis=0))]
-            val.append(penalty.function[idx](x, u, p, s))
-            val_weighted.append(penalty.weighted_function[idx](x, u, p, s, penalty.weight, target, dt))
+            val.append(penalty.function[idx](x, u, p, s, 0, 0))
+            val_weighted.append(penalty.weighted_function[idx](x, u, p, s, 0, 0, penalty.weight, target, dt))
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)

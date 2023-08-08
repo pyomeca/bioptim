@@ -883,7 +883,7 @@ class IRK(COLLOCATION):
         """
 
         nx = states[0].shape[0]
-        _, _, defect = super(IRK, self).dxdt(h=h,
+        _, _, defect, _ = super(IRK, self).dxdt(h=h,
                                              states=states,
                                              controls=controls,
                                              params=params,
@@ -899,7 +899,7 @@ class IRK(COLLOCATION):
 
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
-        x_irk_points = ifcn(self.cx(), states[0], controls, params, stochastic_variables)
+        x_irk_points = ifcn(self.cx(), states[0], controls, params, stochastic_variables, motor_noise, sensory_noise)
         x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
@@ -916,7 +916,7 @@ class IRK(COLLOCATION):
 
         self.function = Function(
             "integrator",
-            [self.x_sym[0], self.u_sym, self.param_sym, self.stochastic_variables_sym],
+            [self.x_sym[0], self.u_sym, self.param_sym, self.stochastic_variables_sym, self.motor_noise, self.sensory_noise],
             self.dxdt(
                 h=self.h,
                 states=self.x_sym,

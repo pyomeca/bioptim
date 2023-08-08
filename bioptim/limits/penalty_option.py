@@ -7,6 +7,7 @@ import numpy as np
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule
 from ..misc.options import OptionGeneric
+from ..dynamics.ode_solver import OdeSolver
 
 
 class PenaltyOption(OptionGeneric):
@@ -442,9 +443,8 @@ class PenaltyOption(OptionGeneric):
             state_cx_scaled = ocp.cx()
             control_cx_scaled = ocp.cx()
             stochastic_cx_scaled = ocp.cx()
-            # @Pariterre: Is the last cx_intermediates_list == cx_end? (they have different names)
             for ctrl in controllers:
-                if len(ctrl.states_scaled.cx_intermediates_list) > 0:
+                if isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
                     if ctrl.node_index == controller.ns:
                         state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
                     else:
@@ -459,7 +459,7 @@ class PenaltyOption(OptionGeneric):
         else:
             ocp = controller.ocp
             name = self.name
-            if len(controller.states_scaled.cx_intermediates_list) > 0 and controller.node_index != controller.ns:
+            if isinstance(controller.ode_solver, OdeSolver.COLLOCATION) and controller.node_index != controller.ns:
                 state_cx_scaled = horzcat(
                     *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
                 )
@@ -487,7 +487,7 @@ class PenaltyOption(OptionGeneric):
                 self.weighted_function_non_threaded.append(None)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
-        if hasattr(controller.get_nlp, "motor_noise"):
+        if controller.get_nlp.motor_noise is not None:
             motor_noise = controller.get_nlp.motor_noise
             sensory_noise = controller.get_nlp.sensory_noise
         else:
