@@ -756,16 +756,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 sensory_noise=controller.get_nlp.sensory_noise,
             )
 
-            continuity = controller.states.cx_end[non_root_index_continuity] - dynamics["xf"][non_root_index_continuity]
-            # @Pariterre: shouldn't there be polynomial_degree+1 x n_states constraints here ?
-            defects = dynamics["defects"][non_root_index_defects]
+            final_defect = dynamics["xf"][non_root_index_continuity]
+            first_defect = dynamics["initial_polynomial"][non_root_index_continuity] - controller.states.cx_start[non_root_index_continuity]
+            defects = vertcat(first_defect, dynamics["defects"])[non_root_index_defects]
 
             # Do the order of concatenation matters ?
             df_dz = horzcat(
-                jacobian(continuity, x_q_joints),
-                jacobian(continuity, z_q_joints),
-                jacobian(continuity, x_qdot_joints),
-                jacobian(continuity, z_qdot_joints),
+                jacobian(final_defect, x_q_joints),
+                jacobian(final_defect, z_q_joints),
+                jacobian(final_defect, x_qdot_joints),
+                jacobian(final_defect, z_qdot_joints),
             )
 
             dg_dz = horzcat(

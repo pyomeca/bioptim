@@ -599,9 +599,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             nb_root = controllers[0].model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = len(controllers[0].get_nlp.variable_mappings["tau"].to_first.map_idx)
-            non_root_index = []
-            for i in range(polynomial_degree*2):
-                non_root_index += list(range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu))
+            non_root_index_continuity = []
+            non_root_index_defects = []
+            for i in range(2):
+                for j in range(polynomial_degree+1):
+                    non_root_index_defects += list(range((nb_root + nu) * (i*(polynomial_degree+1)+j) + nb_root, (nb_root + nu) * (i*(polynomial_degree+1)+j) + nb_root + nu))
+                non_root_index_continuity += list(range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu))
 
             if "cholesky_cov" in controllers[0].stochastic_variables.keys():
                 l_cov_matrix = (
@@ -631,7 +634,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0]
                 .stochastic_variables["m"]
                 .reshape_to_matrix(
-                    controllers[0].stochastic_variables, 2 * nu, 2 * nu * polynomial_degree, Node.START, "m"
+                    controllers[0].stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree + 1), Node.START, "m"
                 )
             )
 
@@ -659,8 +662,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 sensory_noise=controllers[0].get_nlp.sensory_noise,
             )
 
-            # @Pariterre: Why are there polynomial_degree x n_states constraints and not (polynomial_degree + 1) x n_states ?
-            defects = dynamics["defects"][non_root_index]
+
+            first_defect = dynamics["initial_polynomial"][non_root_index_continuity] - controllers[0].states.cx_start[non_root_index_continuity]
+            defects = vertcat(first_defect, dynamics["defects"])[non_root_index_defects]
             sigma_w = vertcat(controllers[0].get_nlp.sensory_noise, controllers[0].get_nlp.motor_noise)
             sigma_matrix = sigma_w * MX_eye(sigma_w.shape[0])
 
