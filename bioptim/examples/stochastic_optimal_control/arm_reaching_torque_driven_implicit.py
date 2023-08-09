@@ -10,8 +10,6 @@ covariance matrix always stays positive semi-definite.
 import platform
 
 import pickle
-import biorbd_casadi as biorbd
-import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
 import scipy.io as sio
@@ -37,8 +35,8 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     MultinodeConstraintList,
-    MultinodeObjectiveList,
     InitialGuessList,
+    VariableScalingList,
 )
 
 
@@ -316,30 +314,39 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     n_tau = controller.controls["tau"].cx_start.shape[0]
     n_q = controller.states["q"].cx_start.shape[0]
     n_qdot = controller.states["qdot"].cx_start.shape[0]
+    n_stochastic = controller.stochastic_variables.shape
 
+    states_sym = cas.MX.sym("states_sym", n_q + n_qdot, 1)
+    stochastic_sym = cas.MX.sym("stochastic_sym", n_stochastic, 1)
     sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
 
     # create the casadi function to be evaluated
     # Get the symbolic variables
-    ref = controller.stochastic_variables["ref"].cx_start
+    ref = stochastic_sym[controller.stochastic_variables["ref"].index]
+    stochastic_sym_dict = {
+        key: stochastic_sym[controller.stochastic_variables[key].index]
+        for key in controller.stochastic_variables.keys()
+    }
+    for key in controller.stochastic_variables.keys():
+        stochastic_sym_dict[key].cx_start = stochastic_sym_dict[key]
     if "cholesky_cov" in controller.stochastic_variables.keys():
         l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
-            controller.stochastic_variables,
-            controller.states.cx_start.shape[0],
+            stochastic_sym_dict,
+            n_q + n_qdot,
             Node.START,
             "cholesky_cov",
         )
         cov_matrix = l_cov_matrix @ l_cov_matrix.T
     else:
         cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-            controller.stochastic_variables,
-            controller.states.cx_start.shape[0],
-            controller.states.cx_start.shape[0],
+            stochastic_sym_dict,
+            n_q + n_qdot,
+            n_q + n_qdot,
             Node.START,
             "cov",
         )
 
-    k = controller.stochastic_variables["k"].cx_start
+    k = stochastic_sym_dict["k"].cx_start
     k_matrix = cas.MX(n_q + n_qdot, n_tau)
     for s0 in range(n_q + n_qdot):
         for s1 in range(n_tau):
@@ -347,19 +354,18 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     k_matrix = k_matrix.T
 
     # Compute the expected effort
-    hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
-    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[
-        2
-    ][:2]
+    hand_pos = controller.model.markers(states_sym[:n_q])[2][:2]
+    hand_vel = controller.model.marker_velocities(states_sym[:n_q], states_sym[n_q:])[2][:2]
+
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
     ee = cas.vertcat(hand_pos, hand_vel)
     e_fb = k_matrix @ ((ee - ref) + sensory_noise_magnitude)
-    jac_e_fb_x = cas.jacobian(e_fb, controller.states.cx_start)
+    jac_e_fb_x = cas.jacobian(e_fb, states_sym)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     func = cas.Function(
         "f_expectedEffort_fb",
-        [controller.states.cx_start, controller.stochastic_variables.cx_start],
+        [states_sym, stochastic_sym],
         [expectedEffort_fb_mx],
     )
 
@@ -434,6 +440,7 @@ def prepare_socp(
     force_field_magnitude: float = 0,
     problem_type=ExampleType.CIRCLE,
     with_cholesky: bool = False,
+    with_scaling: bool = False,
     expand_dynamics: bool = True,
 ) -> StochasticOptimalControlProgram:
     """
@@ -675,6 +682,17 @@ def prepare_socp(
             max_bound=stochastic_max[curent_index : curent_index + n_cholesky_cov, :],
         )
 
+    # Vaiables scaling
+    u_scaling = VariableScalingList()
+    if with_scaling:
+        u_scaling["tau"] = [10] * n_tau
+
+    s_scaling = VariableScalingList()
+    if with_scaling:
+        s_scaling["k"] = [100] * (n_tau * (n_q + n_qdot))
+        s_scaling["ref"] = [1] * (n_q + n_qdot)
+        s_scaling["m"] = [1] * (n_states * n_states)
+
     return StochasticOptimalControlProgram(
         bio_model,
         dynamics,
@@ -686,6 +704,8 @@ def prepare_socp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         s_bounds=s_bounds,
+        u_scaling=u_scaling,
+        s_scaling=s_scaling,
         objective_functions=objective_functions,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
@@ -701,6 +721,7 @@ def main():
     # --- Options --- #
     vizualize_sol_flag = True
     with_cholesky = True
+    with_scaling = True
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 
@@ -746,6 +767,7 @@ def main():
         problem_type=problem_type,
         force_field_magnitude=force_field_magnitude,
         with_cholesky=with_cholesky,
+        with_scaling=with_scaling,
     )
 
     sol_socp = socp.solve(solver)

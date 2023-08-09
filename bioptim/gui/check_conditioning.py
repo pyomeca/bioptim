@@ -73,9 +73,9 @@ def check_conditioning(ocp):
                 ):
                     # depends if there are parameters
                     if nlp.parameters.shape == 0:
-                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S)
+                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S_scaled)
                     else:
-                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S])
+                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S_scaled])
 
                     list_constraints.append(
                         jacobian(
@@ -168,9 +168,9 @@ def check_conditioning(ocp):
                     if constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]:
                         # parameters
                         if nlp.parameters.shape == 0:
-                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S)
+                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S_scaled)
                         else:
-                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S])
+                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S_scaled])
 
                         hessian_cas = hessian(
                             constraints.function[node_index](
@@ -394,9 +394,9 @@ def check_conditioning(ocp):
             # create function to build the hessian
             # parameters
             if nlp.parameters.shape == 0:
-                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S)
+                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S_scaled)
             else:
-                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx], *nlp.S)
+                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx], *nlp.S_scaled)
 
             hessian_cas = hessian(objective, vertcat_obj)[0]
 

@@ -75,8 +75,7 @@ class Integrator:
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
-        self.s_sym = ode["stochastic_variables"]
-        self.stochastic_variables_sym = ode["stochastic_variables"]
+        self.s_sym = ode["s_scaled"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
         self.defects_type = ode_opt["defects_type"]
@@ -184,7 +183,7 @@ class Integrator:
                 self.x_sym,
                 self.u_sym,
                 self.param_sym,
-                self.stochastic_variables_sym,
+                self.s_sym,
                 self.motor_noise,
                 self.sensory_noise,
             ],
@@ -194,7 +193,7 @@ class Integrator:
                 controls=self.u_sym,
                 params=self.param_sym,
                 param_scaling=self.param_scaling,
-                stochastic_variables=self.stochastic_variables_sym,
+                stochastic_variables=self.s_sym,
                 motor_noise=self.motor_noise,
                 sensory_noise=self.sensory_noise,
             ),
@@ -801,7 +800,7 @@ class COLLOCATION(Integrator):
                 horzcat(*self.x_sym),
                 self.u_sym,
                 self.param_sym,
-                self.stochastic_variables_sym,
+                self.s_sym,
                 self.motor_noise,
                 self.sensory_noise,
             ],
@@ -811,7 +810,7 @@ class COLLOCATION(Integrator):
                 controls=self.u_sym,
                 params=self.param_sym,
                 param_scaling=self.param_scaling,
-                stochastic_variables=self.stochastic_variables_sym,
+                stochastic_variables=self.s_sym,
                 motor_noise=self.motor_noise,
                 sensory_noise=self.sensory_noise,
             ),
@@ -916,14 +915,14 @@ class IRK(COLLOCATION):
 
         self.function = Function(
             "integrator",
-            [self.x_sym[0], self.u_sym, self.param_sym, self.stochastic_variables_sym, self.motor_noise, self.sensory_noise],
+            [self.x_sym[0], self.u_sym, self.param_sym, self.s_sym, self.motor_noise, self.sensory_noise],
             self.dxdt(
                 h=self.h,
                 states=self.x_sym,
                 controls=self.u_sym,
                 params=self.param_sym,
                 param_scaling=self.param_scaling,
-                stochastic_variables=self.stochastic_variables_sym,
+                stochastic_variables=self.s_sym,
                 motor_noise=self.motor_noise,
                 sensory_noise=self.sensory_noise,
             ),

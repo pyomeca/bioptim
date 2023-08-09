@@ -64,6 +64,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         x_scaling: VariableScalingList = None,
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
+        s_scaling: VariableScalingList = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -113,6 +114,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             x_scaling,
             xdot_scaling,
             u_scaling,
+            s_scaling,
             external_forces,
             ode_solver,
             control_type,
@@ -164,6 +166,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             x_scaling,
             xdot_scaling,
             u_scaling,
+            s_scaling,
             objective_functions,
             constraints,
             parameters,
@@ -252,7 +255,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         """
         penalty_m_dg_dz_list = MultinodeConstraintList()
         for i_phase, nlp in enumerate(self.nlp):
-            for i_node in range(nlp.ns - 1):
+            for i_node in range(nlp.ns - 1):  # TODO: Charbie -> check if this is correct
                 penalty_m_dg_dz_list.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase, i_phase),
@@ -280,7 +283,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         multi_node_penalties = MultinodeConstraintList()
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
-            for i_node in range(nlp.ns):
+            for i_node in range(nlp.ns - 1):  # TODO: Charbie -> check if this is correct
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
@@ -324,7 +327,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         # Constraints for C
         for i_phase, nlp in enumerate(self.nlp):
-            for i_node in range(nlp.ns):
+            for i_node in range(nlp.ns - 1):  # TODO: Charbie -> check if this is correct
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),

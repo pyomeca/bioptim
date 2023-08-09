@@ -183,7 +183,8 @@ class RK(OdeSolverBase):
             "p_scaled": nlp.controls.scaled.cx_start
             if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
             else horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
-            "stochastic_variables": nlp.stochastic_variables.cx_start,
+            "s_unscaled": nlp.stochastic_variables.cx_start,
+            "s_scaled": nlp.stochastic_variables.scaled.cx_start,
             "ode": nlp.dynamics_func,
             "noised_ode": nlp.noised_dynamics_func if with_noise else None,
             "implicit_ode": nlp.implicit_dynamics_func,
@@ -361,7 +362,8 @@ class OdeSolver:
                 "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
                 "p_unscaled": nlp.controls.cx_start,
                 "p_scaled": nlp.controls.scaled.cx_start,
-                "stochastic_variables": nlp.stochastic_variables.cx_start,
+                "s_unscaled": nlp.stochastic_variables.cx_start,
+                "s_scaled": nlp.stochastic_variables.scaled.cx_start,
                 "ode": nlp.dynamics_func,
                 "noised_ode": nlp.noised_dynamics_func if with_noise else None,
                 "implicit_ode": nlp.implicit_dynamics_func,
@@ -491,6 +493,8 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with external_forces")
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
+            if nlp.stochastic_variables.shape != 0:
+                raise RuntimeError("CVODES cannot be used with stochastic variables")
             if with_noise:
                 raise RuntimeError("CVODES cannot be used with_noise=True")
 
@@ -501,7 +505,7 @@ class OdeSolver:
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
-                    nlp.stochastic_variables.cx_start,
+                    nlp.stochastic_variables.scaled.cx_start,
                     nlp.cx(),
                     nlp.cx(),
                 ),
@@ -517,7 +521,7 @@ class OdeSolver:
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.cx,
-                        nlp.stochastic_variables.cx_start,
+                        nlp.stochastic_variables.scaled.cx_start,
                     ],
                     self._adapt_integrator_output(
                         integrator_func,
@@ -542,6 +546,8 @@ class OdeSolver:
                 Symbolic variable of states
             p: MX | SX
                 Symbolic variable of controls
+            s: MX | SX
+                Symbolic variable of stochastic variables
 
             Returns
             -------

@@ -168,6 +168,8 @@ class NonLinearProgram:
         self.s_bounds = BoundsList()
         self.s_init = InitialGuessList()
         self.S = None
+        self.S_scaled = None
+        self.s_scaling = None
         self.assume_phase_dynamics = assume_phase_dynamics
         self.states = OptimizationVariableContainer(assume_phase_dynamics)
         self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
