@@ -65,7 +65,7 @@ def test_initial_guess_linear():
         np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
     init = InitialGuess(None, init_val, interpolation=InterpolationType.LINEAR)
-    init.check_and_adjust_dimensions(n_elements, int(n_shoot/2))
+    init.check_and_adjust_dimensions(n_elements, int(n_shoot / 2))
     for i in range(n_shoot + 1):
         expected_val = init_val[:, 0] + (init_val[:, 1] - init_val[:, 0]) * i / n_shoot
         np.testing.assert_almost_equal(init.init.evaluate_at(i, repeat=2), expected_val)
@@ -82,6 +82,7 @@ def test_initial_guess_each_frame():
     for i in range(n_shoot + 1):
         expected_val = init_val[:, i]
         np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
+
 
 def test_initial_guess_all_points():
     n_elements = 6

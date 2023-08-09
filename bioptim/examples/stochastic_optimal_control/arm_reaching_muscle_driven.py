@@ -732,10 +732,13 @@ def main():
 
     sol_socp = socp.solve(solver)
     from bioptim import Shooting, SolutionIntegrator
-    sol_socp.noisy_integrate(shooting_type=Shooting.SINGLE,
-                            keep_intermediate_points=False,
-                            integrator=SolutionIntegrator.SCIPY_RK45,
-                            n_random=30)
+
+    sol_socp.noisy_integrate(
+        shooting_type=Shooting.SINGLE,
+        keep_intermediate_points=False,
+        integrator=SolutionIntegrator.SCIPY_RK45,
+        n_random=30,
+    )
 
     q_sol = sol_socp.states["q"]
     qdot_sol = sol_socp.states["qdot"]

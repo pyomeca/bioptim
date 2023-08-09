@@ -197,7 +197,6 @@ def configure_stochastic_optimal_control_problem(
     )
 
 
-
 def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.MX:
     """
     Minimize the uncertainty (covariance matrix) of the states "key".

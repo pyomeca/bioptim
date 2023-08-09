@@ -1388,7 +1388,6 @@ class Solution:
 
         return out
 
-
     def __perform_noisy_integration(
         self,
         shooting_type: Shooting,
@@ -1446,7 +1445,9 @@ class Solution:
             )
 
             if self.ocp.nlp[i_phase].stochastic_variables.keys():
-                s = np.concatenate([self._stochastic_variables[i_phase][key] for key in self.ocp.nlp[i_phase].stochastic_variables])
+                s = np.concatenate(
+                    [self._stochastic_variables[i_phase][key] for key in self.ocp.nlp[i_phase].stochastic_variables]
+                )
             else:
                 s = np.array([])
             if integrator == SolutionIntegrator.OCP:

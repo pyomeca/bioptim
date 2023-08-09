@@ -316,7 +316,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
     param = interface.ocp.cx(interface.ocp.parameters.cx)
     out = interface.ocp.cx()
     for penalty in penalties:
-
         if penalty.multinode_penalty:
             phase_idx = penalty.nodes_phase[0]
         else:
