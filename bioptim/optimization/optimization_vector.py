@@ -137,10 +137,15 @@ class OptimizationVectorHelper:
                 x_scaled += nlp.X_scaled
             u_scaled += nlp.U_scaled
             s_scaled += nlp.S_scaled
-            motor_noise += [nlp.motor_noise]
-            sensory_noise += [nlp.sensory_noise]
+            if nlp.motor_noise is not None:
+                motor_noise += [nlp.motor_noise]
+                sensory_noise += [nlp.sensory_noise]
 
-        return vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled, *motor_noise,*sensory_noise)
+        vector = vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled)
+
+        if len(motor_noise) > 0:
+            vector = vertcat(vector, *motor_noise, *sensory_noise)
+        return vector
 
     @staticmethod
     def bounds_vectors(ocp) -> tuple[np.ndarray, np.ndarray]:
@@ -279,6 +284,8 @@ class OptimizationVectorHelper:
                 v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
                 v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
+        for i_phase in range(ocp.n_phases):
+            nlp = ocp.nlp[i_phase]
             if nlp.motor_noise is not None:
                 n_motor_noise = nlp.motor_noise.shape[0]
                 n_sensory_noise = nlp.sensory_noise.shape[0]
@@ -402,6 +409,8 @@ class OptimizationVectorHelper:
 
                 v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
 
+        for i_phase in range(len(ocp.nlp)):
+            nlp = ocp.nlp[i_phase]
             if nlp.motor_noise is not None:
                 n_motor_noise = nlp.motor_noise.shape[0]
                 n_sensory_noise = nlp.sensory_noise.shape[0]

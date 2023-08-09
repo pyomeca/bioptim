@@ -709,6 +709,7 @@ class OptimizationVariableContainer:
         vector = MX.zeros(shape_0 * shape_1)
         for s0 in range(shape_0):
             for s1 in range(shape_1):
+                # vector[shape_0 * s0 + s1] = matrix[s0, s1]
                 vector[shape_0 * s1 + s0] = matrix[s0, s1]
         return vector
 
