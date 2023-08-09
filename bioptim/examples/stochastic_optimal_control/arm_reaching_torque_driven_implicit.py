@@ -193,7 +193,13 @@ def configure_stochastic_optimal_control_problem(
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
     )
-    return
+    ConfigureProblem.configure_stochastic_dynamics_function(
+        ocp,
+        nlp,
+        noised_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
+            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=True
+        ),
+    )
 
 
 def get_ref(controller: PenaltyController, q, qdot) -> cas.MX:

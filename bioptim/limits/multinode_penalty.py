@@ -521,19 +521,17 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             qdot_root = MX.sym("qdot_root", nb_root, 1)
             qdot_joints = MX.sym("qdot_joints", nu, 1)
             tau_joints = MX.sym("tau_joints", nu, 1)
-            parameters_sym = MX.sym("params", controllers[0].parameters.shape)
-            stochastic_sym = MX.sym("stochastic_sym", controllers[0].stochastic_variables.shape)
-            motor_noise = MX.sym("motor_noise", motor_noise_magnitude.shape[0], 1)
-            sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
+            parameters_sym = MX.sym("parameters_sym", controllers[0].parameters.shape, 1)
+            stochastic_sym = MX.sym("stochastic_sym", controllers[0].stochastic_variables.shape, 1)
 
             dx = dynamics(
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
-                tau_joints,  # Controls
-                parameters_sym,  # Parameters
-                stochastic_sym,  # Stochastic variables
+                tau_joints,
+                parameters_sym,
+                stochastic_sym,
                 controllers[0].get_nlp,
-                motor_noise,
-                sensory_noise,
+                controllers[0].motor_noise,
+                controllers[0].sensory_noise,
                 with_gains=True,
             )
 
@@ -551,10 +549,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     tau_joints,
                     parameters_sym,
                     stochastic_sym,
-                    motor_noise,
-                    sensory_noise,
+                    controllers[0].motor_noise,
+                    controllers[0].sensory_noise,
                 ],
-                [jacobian(dx.dxdt[non_root_index], vertcat(motor_noise, sensory_noise))],
+                [jacobian(dx.dxdt[non_root_index], vertcat(controllers[0].motor_noise, controllers[0].sensory_noise))],
             )
 
             DF_DW = DF_DW_fun(

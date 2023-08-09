@@ -756,7 +756,7 @@ class OptimalControlProgram:
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
-            if (isinstance(bio_model, VariationalBiorbdModel)) and self.nlp[i].stochastic_variables.shape > 0:
+            if (isinstance(self.nlp[i].model, VariationalBiorbdModel)) and self.nlp[i].stochastic_variables.shape > 0:
                 raise NotImplementedError(
                     "Stochastic variables were not tested with variational integrators. If you come across this error, "
                     "please notify the developers by opening open an issue on GitHub pinging Ipuch and EveCharbie"

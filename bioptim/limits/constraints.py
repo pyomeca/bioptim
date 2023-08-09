@@ -660,6 +660,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             q_joints = MX.sym("q_joints", nu, 1)
             qdot_root = MX.sym("qdot_root", nb_root, 1)
             qdot_joints = MX.sym("qdot_joints", nu, 1)
+            tau_joints = MX.sym("tau_joints", nu, 1)
+            parameters_sym = MX.sym("parameters_sym", controller.parameters.shape, 1)
+            stochastic_sym = MX.sym("stochastic_sym", controller.stochastic_variables.shape, 1)
+
             dx = dynamics(
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,  # Controls
@@ -684,8 +688,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     tau_joints,
                     parameters_sym,
                     stochastic_sym,
-                    motor_noise,
-                    sensory_noise,
+                    controller.motor_noise,
+                    controller.sensory_noise,
                 ],
                 [jacobian(dx.dxdt[non_root_index], vertcat(q_joints, qdot_joints))],
             )

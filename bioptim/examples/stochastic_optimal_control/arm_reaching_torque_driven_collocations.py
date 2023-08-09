@@ -640,7 +640,7 @@ def main():
     dt = 0.01
     final_time = 0.8
     # n_shooting = int(final_time / dt)
-    n_shooting = 10
+    n_shooting = 5
 
     # --- Noise constants --- #
     motor_noise_std = 0.05

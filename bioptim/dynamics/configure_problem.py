@@ -725,7 +725,7 @@ class ConfigureProblem:
             dynamics_dxdt = vertcat(*dynamics_dxdt)
 
         nlp.noised_dynamics_func = Function(
-            "ForwardDyn",
+            "NoisedForwardDyn",
             [
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
@@ -740,7 +740,7 @@ class ConfigureProblem:
         )
         if nlp.dynamics_type.expand:
             try:
-                nlp.noised_dynamics_func = nlp.dynamics_func.expand()
+                nlp.noised_dynamics_func = nlp.noised_dynamics_func.expand()
             except Exception as me:
                 RuntimeError(
                     f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -753,7 +753,7 @@ class ConfigureProblem:
 
         if dynamics_eval.defects is not None:
             nlp.noised_implicit_dynamics_func = Function(
-                "DynamicsDefects",
+                "NoisedDynamicsDefects",
                 [
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
@@ -769,7 +769,7 @@ class ConfigureProblem:
             )
             if nlp.dynamics_type.expand:
                 try:
-                    nlp.noised_implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
+                    nlp.noised_implicit_dynamics_func = nlp.noised_implicit_dynamics_func.expand()
                 except Exception as me:
                     RuntimeError(
                         f"An error occurred while executing the 'expand()' function for the dynamic function. "
