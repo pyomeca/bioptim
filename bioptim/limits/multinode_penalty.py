@@ -531,6 +531,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             sensory_noise = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0], 1)
 
             dx = dynamics(
+                controllers[0].time.cx_start,
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),
                 controllers[0].controls.cx_start,
                 controllers[0].parameters.cx_start,
@@ -548,6 +549,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             DF_DW_fun = Function(
                 "DF_DW_fun",
                 [
+                    controllers[0].time.cx_start,
                     q_root,
                     q_joints,
                     qdot_root,
@@ -562,6 +564,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )
 
             DF_DW = DF_DW_fun(
+                controllers[0].time.cx_start,
                 controllers[0].states["q"].cx_start[:nb_root],
                 controllers[0].states["q"].cx_start[nb_root:],
                 controllers[0].states["qdot"].cx_start[:nb_root],
@@ -573,6 +576,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 sensory_noise_magnitude,
             )
             DF_DW_plus = DF_DW_fun(
+                controllers[1].time.cx_start,
                 controllers[1].states["q"].cx_start[:nb_root],
                 controllers[1].states["q"].cx_start[nb_root:],
                 controllers[1].states["qdot"].cx_start[:nb_root],

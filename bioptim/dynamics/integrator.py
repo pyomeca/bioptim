@@ -287,7 +287,8 @@ class RK(Integrator):
 
         for i in range(1, self.n_step + 1):
             t_norm_init = (i-1)/self.n_step if self.control_type == ControlType.LINEAR_CONTINUOUS else ((self.t_span[1]-self.t_span[0])*(i-1))/self.n_step
-            x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p, s)
+            # x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p, s)
+            x[:, i] = self.next_x(h, t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
 

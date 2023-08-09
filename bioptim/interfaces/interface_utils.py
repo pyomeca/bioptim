@@ -360,7 +360,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     s = []
                 else:
                     x, u, s = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                time = interface.ocp.node_time(phase_idx=nlp.phase_idx, node_idx=idx)
+                time = interface.ocp.node_time(phase_idx=0 if nlp == [] else nlp.phase_idx, node_idx=idx)
                 p = vertcat(p, penalty.weighted_function[idx](time, x, u, param, s, penalty.weight, target, penalty.dt))
         out = vertcat(out, sum2(p))
     return out

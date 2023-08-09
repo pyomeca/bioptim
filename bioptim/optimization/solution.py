@@ -342,9 +342,11 @@ class Solution:
                     stochastic_variables_cx = nlp.stochastic_variables.cx_start
                     integrated_values_cx = nlp.integrated_values[key].cx_start
 
+
                     time_num = np.array([])
-                    for key_tempo in time[i_phase].keys():
-                        time_num = np.concatenate((time_num, time[i_phase][key_tempo][:, 0]))
+                    if len(time) > 0:
+                        for key_tempo in time[i_phase].keys():
+                            time_num = np.concatenate((time_num, time[i_phase][key_tempo][:, 0]))
 
                     states_num = np.array([])
                     for key_tempo in states[i_phase].keys():
@@ -373,9 +375,10 @@ class Solution:
                         stochastic_variables_cx = vertcat(stochastic_variables_cx, nlp.stochastic_variables.cx_start)
                         integrated_values_cx = vertcat(integrated_values_cx, nlp.integrated_values[key].cx_start)
                         time_num_tempo = np.array([])
-                        for key_tempo in time[i_phase].keys():
-                            time_num_tempo = np.concatenate((time_num_tempo, time[i_phase][key_tempo][:, i_node]))
-                        time_num = vertcat(time_num, time_num_tempo)
+                        if len(time) > 0:
+                            for key_tempo in time[i_phase].keys():
+                                time_num_tempo = np.concatenate((time_num_tempo, time[i_phase][key_tempo][:, i_node]))
+                            time_num = vertcat(time_num, time_num_tempo)
 
                         states_num_tempo = np.array([])
                         for key_tempo in states[i_phase].keys():

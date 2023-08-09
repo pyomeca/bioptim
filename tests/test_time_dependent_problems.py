@@ -49,20 +49,21 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
 
-    t = (
-        MX.sym("t") if nlp.cx.type_name() == "MX" else SX.sym("t")
-    )  # t needs a symbolic value to start computing in custom_configure_dynamics_function
-    # CX.sym à regarder
+    # t = (
+    #     MX.sym("t") if nlp.cx.type_name() == "MX" else SX.sym("t")
+    # )  # t needs a symbolic value to start computing in custom_configure_dynamics_function
+    # # CX.sym à regarder
 
-    configure_dynamics_function(ocp, nlp, time_dynamic, t=t)
+    configure_dynamics_function(ocp, nlp, time_dynamic)
 
 
 def time_dynamic(
+    time: MX | SX,
     states: MX | SX,
     controls: MX | SX,
     parameters: MX | SX,
+    stochastic: MX | SX,
     nlp: NonLinearProgram,
-    t: MX | SX,
 
 ) -> DynamicsEvaluation:
     """
@@ -78,8 +79,6 @@ def time_dynamic(
         The parameters acting on the system
     nlp: NonLinearProgram
         A reference to the phase
-    my_additional_factor: int
-        An example of an extra parameter sent by the user
 
     Returns
     -------
@@ -88,7 +87,7 @@ def time_dynamic(
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * t
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * time
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
@@ -101,7 +100,7 @@ def time_dynamic(
     return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
-def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra_params):
+def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True):
     """
     Configure the dynamics of the system
 
@@ -121,12 +120,12 @@ def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra
     DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
     dynamics_eval = dyn_func(
+        nlp.time.mx,
         nlp.states.scaled.mx_reduced,
         nlp.controls.scaled.mx_reduced,
         nlp.parameters.mx,
         nlp.stochastic_variables.mx,
         nlp,
-        **extra_params,
     )
 
     dynamics_dxdt = dynamics_eval.dxdt
@@ -203,7 +202,6 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
-
     for i in range(len(bio_model)):
         dynamics.add(custom_configure, dynamic_function=time_dynamic, phase=i, expand=expand)
 
@@ -239,7 +237,7 @@ def prepare_ocp(
         x_init=x_init,
         u_init=u_init,
         ode_solver=ode_solver,
-        assume_phase_dynamics=False,
+        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -264,5 +262,4 @@ def test_time_dependent_problem(nb_phase):
 
     # --- Solve the program --- #
     sol = ocp.solve()
-
 
