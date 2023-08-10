@@ -12,7 +12,10 @@ from tests.utils import TestUtils
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION, OdeSolver.TRAPEZOIDAL])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4,
+                                        OdeSolver.IRK,
+                                        OdeSolver.COLLOCATION,
+                                        OdeSolver.TRAPEZOIDAL])
 def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
     from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
 
