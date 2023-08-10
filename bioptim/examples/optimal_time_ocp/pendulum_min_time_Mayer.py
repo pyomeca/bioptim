@@ -22,6 +22,7 @@ from bioptim import (
     OdeSolverBase,
     CostType,
     Solver,
+    ControlType,
 )
 
 
@@ -35,6 +36,7 @@ def prepare_ocp(
     max_time=np.inf,
     assume_phase_dynamics: bool = True,
     expand_dynamics: bool = True,
+    control_type: ControlType = ControlType.CONSTANT,
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program
@@ -108,6 +110,7 @@ def prepare_ocp(
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        control_type=control_type,
     )
 
 
