@@ -629,7 +629,7 @@ class ConfigureProblem:
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
-            nlp.stochastic_variables.mx,
+            nlp.stochastic_variables.scaled.mx,
             nlp,
             **extra_params,
         )
@@ -643,7 +643,7 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
-                nlp.stochastic_variables.mx,
+                nlp.stochastic_variables.scaled.mx,
             ],
             [dynamics_dxdt],
             ["x", "u", "p", "s"],
@@ -669,7 +669,7 @@ class ConfigureProblem:
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
-                    nlp.stochastic_variables.mx,
+                    nlp.stochastic_variables.scaled.mx,
                     nlp.states_dot.scaled.mx_reduced,
                 ],
                 [dynamics_eval.defects],
@@ -710,14 +710,14 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
-                nlp.stochastic_variables.mx,
+                nlp.stochastic_variables.scaled.mx,
             ],
             [
                 dyn_func(
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
-                    nlp.stochastic_variables.mx,
+                    nlp.stochastic_variables.scaled.mx,
                     nlp,
                     **extra_params,
                 )
@@ -1038,6 +1038,8 @@ class ConfigureProblem:
             nlp.x_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls and name not in nlp.u_init:
             nlp.u_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
+        if as_stochastic and name not in nlp.s_init:
+            nlp.s_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         # Declare the scaling for that variable
         if as_states and name not in nlp.x_scaling:
@@ -1046,6 +1048,8 @@ class ConfigureProblem:
             nlp.xdot_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls and name not in nlp.u_scaling:
             nlp.u_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
+        if as_stochastic and name not in nlp.s_scaling:
+            nlp.s_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
         mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[0][name].mx]
@@ -1118,7 +1122,14 @@ class ConfigureProblem:
                 (
                     1
                     if ocp.assume_phase_dynamics
-                    else (nlp.ns + (1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS else 0))
+                    else (
+                        nlp.ns
+                        + (
+                            1
+                            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+                            else 0
+                        )
+                    )
                 )
             ):
                 cx_scaled = (
@@ -1166,8 +1177,9 @@ class ConfigureProblem:
                 if n_cx < 3:
                     n_cx = 3
                 cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
+                cx = define_cx_unscaled(cx_scaled, nlp.s_scaling[name].scaling)
                 nlp.stochastic_variables.append(
-                    name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
+                    name, cx[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
                 )
 
     @staticmethod
@@ -1451,6 +1463,38 @@ class ConfigureProblem:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_cov += [name_1 + "_&_" + name_2]
         nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_cov,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
+    def configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states: int):
+        """
+        Configure the diagonal matrix needed to reconstruct the covariance matrix using L @ L.T.
+        This formulation allows insuring that the covariance matrix is always positive semi-definite.
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "cholesky_cov"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
+        name_cov = []
+        for nb_1, name_1 in enumerate([f"X_{i}" for i in range(n_noised_states)]):
+            for name_2 in [f"X_{i}" for i in range(nb_1 + 1)]:
+                name_cov += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(len(name_cov))), list(range(len(name_cov))))
         ConfigureProblem.configure_new_variable(
             name,
             name_cov,

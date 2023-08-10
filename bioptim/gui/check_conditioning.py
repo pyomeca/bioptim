@@ -72,9 +72,9 @@ def check_conditioning(ocp):
                 ):
                     # depends if there are parameters
                     if nlp.parameters.shape == 0:
-                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S)
+                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S_scaled)
                     else:
-                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S])
+                        vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S_scaled])
 
                     list_constraints.append(
                         jacobian(
@@ -167,9 +167,9 @@ def check_conditioning(ocp):
                     if constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]:
                         # parameters
                         if nlp.parameters.shape == 0:
-                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S)
+                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S_scaled)
                         else:
-                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S])
+                            vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S_scaled])
 
                         hessian_cas = hessian(
                             constraints.function[node_index](
@@ -241,6 +241,7 @@ def check_conditioning(ocp):
             # Jacobian plot
             jacobian_list[ax][(jacobian_list[ax] == 0)] = np.nan
             current_cmap = mcm.get_cmap("seismic")
+            # todo:  The get_cmap function was deprecated. Use ``matplotlib.colormaps[name]`` or ``matplotlib.colormaps.get_cmap(obj)`` instead
             current_cmap.set_bad(color="k")
             norm = mcolors.TwoSlopeNorm(vmin=min_jac - 0.01, vmax=max_jac + 0.01, vcenter=0)
             im = axis[ax].imshow(jacobian_list[ax], aspect="auto", cmap=current_cmap, norm=norm)
@@ -392,9 +393,9 @@ def check_conditioning(ocp):
             # create function to build the hessian
             # parameters
             if nlp.parameters.shape == 0:
-                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S)
+                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S_scaled)
             else:
-                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx], *nlp.S)
+                vertcat_obj = vertcat(*nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx], *nlp.S_scaled)
 
             hessian_cas = hessian(objective, vertcat_obj)[0]
 

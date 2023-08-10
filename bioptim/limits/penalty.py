@@ -92,7 +92,8 @@ class PenaltyFunctionAbstract:
                 target_mapping = BiMapping(
                     to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
                     to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
-                )
+                )  # TODO: why if condition, target_mapping not used (Pariterre?)
+
             if penalty.integration_rule == QuadratureRule.RECTANGLE_LEFT:
                 # TODO: for trapezoidal integration (This should not be done here but in _set_penalty_function)
                 penalty.add_target_to_plot(controller=controller, combine_to=f"{key}_controls")
@@ -100,6 +101,43 @@ class PenaltyFunctionAbstract:
 
             # TODO: We should scale the target here!
             return controller.controls[key].cx_start
+
+        @staticmethod
+        def minimize_power(
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            key_control: str,
+        ):
+            """
+            Minimize a product of states variables x control variable; e.g. joint power; muscle power.
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            key_controls: str
+                The name of the control to select
+            """
+
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+            penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
+
+            controls = controller.controls[key_control].cx_start  # select only actuacted states
+            if key_control == "tau":
+                return controls * controller.states["qdot"].cx_start
+            elif key_control == "muscles":
+                q_mx = controller.states["q"].mx
+                qdot_mx = controller.states["qdot"].mx
+                muscles_dot = controller.model.muscle_velocity(q_mx, qdot_mx)
+                objective = controller.mx_to_cx(
+                    "muscle_velocity", muscles_dot, controller.states["q"], controller.states["qdot"]
+                )
+
+                return controls * objective
 
         @staticmethod
         def stochastic_minimize_variables(penalty: PenaltyOption, controller: PenaltyController, key: str):
@@ -119,6 +157,14 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
+
+            if key in controller.get_nlp.variable_mappings:
+                target_mapping = controller.get_nlp.variable_mappings[key]
+            else:
+                target_mapping = BiMapping(
+                    to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
+                    to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
+                )
 
             return controller.stochastic_variables[key].cx_start
 
@@ -236,6 +282,49 @@ class PenaltyFunctionAbstract:
             markers_objective = controller.mx_to_cx(
                 "markers_velocity", markers, controller.states["q"], controller.states["qdot"]
             )
+            return markers_objective
+
+        @staticmethod
+        def minimize_markers_acceleration(
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            marker_index: tuple | list | int | str = None,
+            axes: tuple | list = None,
+            reference_jcs: str | int = None,
+        ):
+            """
+            Minimize a marker set acecleration by computing the actual acceleration of the markers
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            marker_index: tuple | list | int | str
+                The index of markers to minimize, can be int or str.
+                penalty.cols should not be defined if marker_index is defined
+            axes: tuple | list
+                The axes to project on. Default is all axes
+            reference_jcs: int | str
+                The index or name of the segment to use as reference. Default [None] is the global coordinate system
+            """
+
+            PenaltyFunctionAbstract.set_idx_columns(penalty, controller, marker_index, "marker")
+            PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            q_mx = controller.states["q"].mx
+            qdot_mx = controller.states["qdot"].mx
+            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
+
+            markers = horzcat(
+                *controller.model.marker_accelerations(q_mx, qdot_mx, qddot_mx, reference_index=reference_jcs)
+            )
+            markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, markers, CoM=False)
+
             return markers_objective
 
         @staticmethod
@@ -442,17 +531,7 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True
 
-            if "qddot" not in controller.states and "qddot" not in controller.controls:
-                return controller.dynamics(
-                    controller.states.cx_start,
-                    controller.controls.cx_start,
-                    controller.parameters.cx,
-                    controller.stochastic_variables.cx_start,
-                )[controller.states["qdot"].index, :]
-            elif "qddot" in controller.states:
-                return controller.states["qddot"].cx_start
-            elif "qddot" in controller.controls:
-                return controller.controls["qddot"].cx_start
+            return PenaltyFunctionAbstract._get_qddot(controller, "cx_start")
 
         @staticmethod
         def minimize_predicted_com_height(_: PenaltyOption, controller: PenaltyController):
@@ -549,32 +628,14 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            if "qddot" not in controller.states and "qddot" not in controller.controls:
-                com_ddot = controller.model.center_of_mass_acceleration(
-                    controller.states["q"].mx,
-                    controller.states["qdot"].mx,
-                    controller.dynamics(
-                        controller.states.mx,
-                        controller.controls.mx,
-                        controller.parameters.mx,
-                        controller.stochastic_variables.mx,
-                    )[controller.states["qdot"].index, :],
-                )
-                # TODO scaled?
-                var = []
-                var.extend([controller.states[key] for key in controller.states])
-                var.extend([controller.controls[key] for key in controller.controls])
-                var.extend([controller.parameters[key] for key in controller.parameters])
-                return controller.mx_to_cx("com_ddot", com_ddot, *var)
-            else:
-                qddot = controller.states["qddot"] if "qddot" in controller.states else controller.controls["qddot"]
-                return controller.mx_to_cx(
-                    "com_ddot",
-                    controller.model.center_of_mass_acceleration,
-                    controller.states["q"],
-                    controller.states["qdot"],
-                    qddot,
-                )
+            q_mx = controller.states["q"].mx
+            qdot_mx = controller.states["qdot"].mx
+            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
+
+            marker = controller.model.center_of_mass_acceleration(q_mx, qdot_mx, qddot_mx)
+            com_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, marker, CoM=True)
+
+            return com_objective
 
         @staticmethod
         def minimize_angular_momentum(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
@@ -966,7 +1027,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def continuity(penalty: PenaltyOption, controller: PenaltyController | list):
-            if controller.control_type in (ControlType.CONSTANT, ControlType.NONE):
+            if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE):
                 u = controller.controls.cx_start
             elif controller.control_type == ControlType.LINEAR_CONTINUOUS:
                 # TODO: For cx_end take the previous node
@@ -1231,3 +1292,62 @@ class PenaltyFunctionAbstract:
         """
 
         raise RuntimeError("penalty_nature cannot be called from an abstract class")
+
+    @staticmethod
+    def _get_qddot(controller, attribute: str):
+        """
+        Returns the generalized acceleration by either fetching it directly
+        from the controller's states or controls or from the controller's dynamics.
+
+        Parameters
+        ----------
+        controller : object
+            The controller that has 'states', 'controls', 'parameters', and 'stochastic_variables' attributes.
+        attribute : str
+            Specifies which attribute ('cx_start' or 'mx') to use for the extraction.
+        """
+        if attribute not in ["mx", "cx_start"]:
+            raise ValueError("atrribute should be either mx or cx_start")
+
+        if "qddot" not in controller.states and "qddot" not in controller.controls:
+            return controller.dynamics(
+                getattr(controller.states, attribute),
+                getattr(controller.controls, attribute),
+                getattr(controller.parameters, attribute),
+                getattr(controller.stochastic_variables, attribute),
+            )[controller.states["qdot"].index, :]
+
+        source = controller.states if "qddot" in controller.states else controller.controls
+        return getattr(source["qddot"], attribute)
+
+    @staticmethod
+    def _get_markers_acceleration(controller, markers, CoM=False):
+        """
+        Retrieve the acceleration of either the markers or the center of mass (CoM) from the controller.
+
+        Parameters
+        ----------
+        controller : object
+            An object containing 'states' and 'controls' data.
+
+        markers : MX
+            A generic expression of the marker or CoM acceleration.
+
+        CoM : bool, optional
+            A boolean indicating the type of acceleration to be returned. If True, returns the CoM
+            acceleration. If False, returns the markers acceleration. Defaults to False.
+
+        """
+
+        if "qddot" not in controller.states and "qddot" not in controller.controls:
+            last_param = controller.controls["tau"]
+        else:
+            last_param = controller.states["qddot"] if "qddot" in controller.states else controller.controls["qddot"]
+
+        return controller.mx_to_cx(
+            "com_ddot" if CoM else "markers_acceleration",
+            markers,
+            controller.states["q"],
+            controller.states["qdot"],
+            last_param,
+        )

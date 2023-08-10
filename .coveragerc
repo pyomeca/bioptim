@@ -1,0 +1,10 @@
+[run]
+# Include the directories where your source files reside.
+source =
+    bioptim
+# Omit files/directories you don't want to include.
+omit =
+    tests/*
+    external/*
+    setup.py
+    docs/*

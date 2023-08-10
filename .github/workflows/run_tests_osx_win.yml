@@ -1,0 +1,70 @@
+name: Run the tests
+
+on: [pull_request]
+
+env:
+  PREFIX_MACOS: /Users/runner/miniconda3/envs/bioptim
+  PREFIX_WINDOWS: C:\Miniconda3\envs\bioptim
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, windows-latest]
+        shard: [1, 2, 3, 4]
+    name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash -l {0}
+
+    steps:
+      - name: Set prefix osx
+        run: |
+          echo "PREFIX=${{ env.PREFIX_macOS }}" >> $GITHUB_ENV
+        if: matrix.os == 'macos-latest'
+
+      - name: Set prefix windows
+        run: |
+          echo "PREFIX=${{ env.PREFIX_WINDOWS }}" >> $GITHUB_ENV
+        if: matrix.os == 'windows-latest'
+
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup environment
+        uses: conda-incubator/setup-miniconda@v2
+        with:
+          miniforge-variant: Mambaforge
+          miniforge-version: latest
+          use-mamba: true
+          activate-environment: bioptim
+          environment-file: environment.yml
+
+      - name: Print mamba info
+        run: |
+          mamba config --show
+          mamba info
+          mamba list
+
+      - name: Install extra dependencies
+        run: mamba install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
+
+      - name: Install ACADOS on Mac
+        run: |
+          pwd
+          cd external
+          ./acados_install_mac.sh 4 ${{ env.PREFIX_MACOS }}
+          cd ..
+        if: matrix.os == 'macos-latest' && matrix.shard == 1
+
+      - name: Test installed version of bioptim
+        run: |
+          python setup.py install
+          cd
+          python -c "import bioptim"
+        if: matrix.shard == 1
+
+      - name: Run tests without code coverage
+        run: pytest -v --color=yes tests/shard${{ matrix.shard }}

@@ -23,6 +23,7 @@ from bioptim import (
     CostType,
     Solver,
     BiorbdModel,
+    ControlType,
 )
 
 
@@ -35,6 +36,7 @@ def prepare_ocp(
     n_threads: int = 1,
     assume_phase_dynamics: bool = True,
     expand_dynamics: bool = True,
+    control_type: ControlType = ControlType.CONSTANT,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -112,6 +114,7 @@ def prepare_ocp(
         use_sx=use_sx,
         n_threads=n_threads,
         assume_phase_dynamics=assume_phase_dynamics,
+        control_type=control_type,
     )
 
 

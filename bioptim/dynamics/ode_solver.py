@@ -2,7 +2,7 @@ from typing import Callable
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
 
-from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES
+from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES, TRAPEZOIDAL
 from ..misc.enums import ControlType, DefectType
 
 
@@ -140,12 +140,13 @@ class RK(OdeSolverBase):
             "x_unscaled": nlp.states.cx_start,
             "x_scaled": nlp.states.scaled.cx_start,
             "p_unscaled": nlp.controls.cx_start
-            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
             else horzcat(nlp.controls.cx_start, nlp.controls.cx_end),
             "p_scaled": nlp.controls.scaled.cx_start
-            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE)
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
             else horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
-            "stochastic_variables": nlp.stochastic_variables.cx_start,
+            "s_unscaled": nlp.stochastic_variables.cx_start,
+            "s_scaled": nlp.stochastic_variables.scaled.cx_start,
             "ode": nlp.dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
         }
@@ -233,6 +234,78 @@ class OdeSolver:
             super(OdeSolver.RK8, self).__init__(n_integration_steps)
             self.rk_integrator = RK8
 
+    class TRAPEZOIDAL(OdeSolverBase):
+        """
+        A trapezoidal ode solver
+
+        Methods
+        -------
+        integrator(self, ocp, nlp) -> list
+            The interface of the OdeSolver to the corresponding integrator
+        """
+
+        def __init__(self):
+            super(OdeSolver.TRAPEZOIDAL, self).__init__()
+            self.rk_integrator = TRAPEZOIDAL
+            self.is_direct_shooting = True
+
+        def integrator(self, ocp, nlp, node_index: int) -> list:
+            """
+            The interface of the OdeSolver to the corresponding integrator
+
+            Parameters
+            ----------
+            ocp: OptimalControlProgram
+                A reference to the ocp
+            nlp: NonLinearProgram
+                A reference to the nlp
+            node_index
+                The index of the node currently integrated
+
+            Returns
+            -------
+            A list of integrators
+            """
+
+            if nlp.control_type == ControlType.CONSTANT:
+                raise RuntimeError(
+                    "TRAPEZOIDAL cannot be used with piece-wise constant controls, please use "
+                    "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead."
+                )
+
+            nlp.states.node_index = node_index
+            nlp.states_dot.node_index = node_index
+            nlp.controls.node_index = node_index
+            nlp.stochastic_variables.node_index = node_index
+
+            ode = {
+                "x_unscaled": horzcat(nlp.states.cx_start, nlp.states.cx_end),
+                "x_scaled": horzcat(nlp.states.scaled.cx_start, nlp.states.scaled.cx_end),
+                "p_unscaled": horzcat(nlp.controls.cx_start, nlp.controls.cx_end),
+                "p_scaled": horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
+                "s_unscled": horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end),
+                "s_scaled": horzcat(nlp.stochastic_variables.scaled.cx_start, nlp.stochastic_variables.scaled.cx_end),
+                "ode": nlp.dynamics_func,
+                "implicit_ode": nlp.implicit_dynamics_func,
+            }
+            ode_opt = {
+                "t0": 0,
+                "tf": nlp.dt,
+                "model": nlp.model,
+                "param": nlp.parameters,
+                "cx": nlp.cx,
+                "idx": 0,
+                "control_type": nlp.control_type,
+                "defects_type": DefectType.NOT_APPLICABLE,
+            }
+
+            if ode["ode"].size2_out("xdot") != 1:
+                ode_opt["idx"] = node_index
+            return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
+
+        def __str__(self):
+            return f"{self.rk_integrator.__name__}"
+
     class COLLOCATION(OdeSolverBase):
         """
         An implicit Runge-Kutta solver
@@ -307,7 +380,8 @@ class OdeSolver:
                 "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
                 "p_unscaled": nlp.controls.cx_start,
                 "p_scaled": nlp.controls.scaled.cx_start,
-                "stochastic_variables": nlp.stochastic_variables.cx_start,
+                "s_unscaled": nlp.stochastic_variables.cx_start,
+                "s_scaled": nlp.stochastic_variables.scaled.cx_start,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
@@ -429,10 +503,14 @@ class OdeSolver:
                 raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")
             if ocp.parameters.shape != 0:
                 raise RuntimeError("CVODES cannot be used while optimizing parameters")
+            if nlp.stochastic_variables.cx_start.shape != 0 and nlp.stochastic_variables.cx_start.shape != (0, 0):
+                raise RuntimeError("CVODES cannot be used while optimizing stochastic variables")
             if nlp.external_forces:
                 raise RuntimeError("CVODES cannot be used with external_forces")
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
+            if nlp.stochastic_variables.shape != 0:
+                raise RuntimeError("CVODES cannot be used with stochastic variables")
 
             ode = {
                 "x": nlp.states.scaled.cx_start,
@@ -441,7 +519,7 @@ class OdeSolver:
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
-                    nlp.stochastic_variables.cx_start,
+                    nlp.stochastic_variables.scaled.cx_start,
                 ),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
@@ -455,7 +533,7 @@ class OdeSolver:
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.cx,
-                        nlp.stochastic_variables.cx_start,
+                        nlp.stochastic_variables.scaled.cx_start,
                     ],
                     self._adapt_integrator_output(
                         integrator_func,
@@ -480,6 +558,8 @@ class OdeSolver:
                 Symbolic variable of states
             p: MX | SX
                 Symbolic variable of controls
+            s: MX | SX
+                Symbolic variable of stochastic variables
 
             Returns
             -------
