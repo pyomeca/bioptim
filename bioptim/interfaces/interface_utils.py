@@ -204,6 +204,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             raise NotImplementedError("penalty target with dimension != 2 or 3 is not implemented yet")
         return target_out
 
+
     def get_x_and_u_at_idx(_penalty, _idx, is_unscaled):
         """ """
         if _penalty.multinode_penalty or _penalty.transition:
