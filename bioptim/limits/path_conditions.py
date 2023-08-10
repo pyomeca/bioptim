@@ -286,7 +286,7 @@ class PathCondition(np.ndarray):
                 return self[:, 1]
         elif self.type == InterpolationType.LINEAR:
             return self[:, 0] + (self[:, 1] - self[:, 0]) * shooting_point / (
-                    self.n_shooting * repeat
+                self.n_shooting * repeat
             )  # see if repeat or repeat + 1
         elif self.type == InterpolationType.EACH_FRAME:
             return self[:, shooting_point]
@@ -1017,11 +1017,19 @@ class NoisedInitialGuess(InitialGuess):
         self.bounds.max.n_shooting = ns
         for shooting_point in range(ns):
             if shooting_point == ns - 1:
-                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point + 1, repeat=polynomial_degree)
-                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point + 1, repeat=polynomial_degree)
+                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(
+                    shooting_point + 1, repeat=polynomial_degree
+                )
+                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(
+                    shooting_point + 1, repeat=polynomial_degree
+                )
             else:
-                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(shooting_point, repeat=polynomial_degree)
-                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(shooting_point, repeat=polynomial_degree)
+                bounds_min_matrix[:, shooting_point] = self.bounds.min.evaluate_at(
+                    shooting_point, repeat=polynomial_degree
+                )
+                bounds_max_matrix[:, shooting_point] = self.bounds.max.evaluate_at(
+                    shooting_point, repeat=polynomial_degree
+                )
 
         if self.seed is not None:
             np.random.seed(self.seed)

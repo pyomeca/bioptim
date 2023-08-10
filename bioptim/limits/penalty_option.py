@@ -539,7 +539,7 @@ class PenaltyOption(OptionGeneric):
                     param_cx,
                     controller.stochastic_variables_scaled.cx_start,  # Warning: stochastic_variables.cx_end are not implemented
                     motor_noise,
-                    sensory_noise
+                    sensory_noise,
                 ),
                 state_cx_scaled,
                 control_cx_scaled,
@@ -626,8 +626,14 @@ class PenaltyOption(OptionGeneric):
                     )
                     ** exponent
                     + (
-                        self.function[node](state_cx_end_scaled, control_cx_end_scaled, param_cx, stochastic_cx_scaled,
-                                            motor_noise, sensory_noise)
+                        self.function[node](
+                            state_cx_end_scaled,
+                            control_cx_end_scaled,
+                            param_cx,
+                            stochastic_cx_scaled,
+                            motor_noise,
+                            sensory_noise,
+                        )
                         - target_cx[:, 1]
                     )
                     ** exponent
@@ -643,7 +649,14 @@ class PenaltyOption(OptionGeneric):
                 dt_cx,
             )
             modified_fcn = modified_function(
-                state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, motor_noise, sensory_noise, target_cx, dt_cx
+                state_cx_scaled,
+                control_cx_scaled,
+                param_cx,
+                stochastic_cx_scaled,
+                motor_noise,
+                sensory_noise,
+                target_cx,
+                dt_cx,
             )
         else:
             modified_fcn = (

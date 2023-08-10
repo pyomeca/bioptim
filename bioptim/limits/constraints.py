@@ -733,8 +733,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             non_root_index_defects = []
             for i in range(2):
                 for j in range(polynomial_degree):
-                    non_root_index_defects += list(range((nb_root + nu) * (i*(polynomial_degree)+j) + nb_root, (nb_root + nu) * (i*(polynomial_degree)+j) + nb_root + nu))
-                non_root_index_continuity += list(range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu))
+                    non_root_index_defects += list(
+                        range(
+                            (nb_root + nu) * (i * (polynomial_degree) + j) + nb_root,
+                            (nb_root + nu) * (i * (polynomial_degree) + j) + nb_root + nu,
+                        )
+                    )
+                non_root_index_continuity += list(
+                    range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu)
+                )
 
             x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
             x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
@@ -761,7 +768,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             final_defect = dynamics["xf"][non_root_index_continuity]
-            first_defect = dynamics["initial_polynomial"][non_root_index_continuity] - controller.states.cx_start[non_root_index_continuity]
+            first_defect = (
+                dynamics["initial_polynomial"][non_root_index_continuity]
+                - controller.states.cx_start[non_root_index_continuity]
+            )
             defects = vertcat(first_defect, dynamics["defects"][non_root_index_defects])
 
             # Do the order of concatenation matters ?
@@ -851,7 +861,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
-                controller.stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree+1), Node.START, "m"
+                controller.stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree + 1), Node.START, "m"
             )
 
             constraint = df_dz_evaluated.T - dg_dz_evaluated.T @ m_matrix.T
