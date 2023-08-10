@@ -148,8 +148,9 @@ class DynamicsFunctions:
 
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
-        if (rigidbody_dynamics is not RigidBodyDynamics.ODE or
-                (rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT)):
+        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
+            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
+        ):
             if not with_contact and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.mx_reduced)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
@@ -567,7 +568,9 @@ class DynamicsFunctions:
 
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
-        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT):
+        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
+            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
+        ):
             if not with_contact and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
@@ -682,7 +685,9 @@ class DynamicsFunctions:
 
         # defects
         defects = None
-        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT):
+        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
+            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
+        ):
             qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)
             qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
 
