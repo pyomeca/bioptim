@@ -379,7 +379,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, assume_
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], [] ))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
 
     if with_contact:
         contact_out = np.array(nlp.contact_forces_func(states, controls, params, stochastic_variables))

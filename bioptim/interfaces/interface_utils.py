@@ -211,10 +211,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             return (
                 1
                 if ocp.assume_phase_dynamics
-                   and (
-                           _penalty.nodes[index] == Node.END
-                           or _penalty.nodes[index] == ocp.nlp[_penalty.nodes_phase[index]].ns
-                   )
+                and (
+                    _penalty.nodes[index] == Node.END
+                    or _penalty.nodes[index] == ocp.nlp[_penalty.nodes_phase[index]].ns
+                )
                 else 0
             )
 
@@ -224,17 +224,49 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             u0_mode = get_control_modificator(0)
             u1_mode = get_control_modificator(1)
             if is_unscaled:
-                _x = horzcat(interface.ocp.nlp[_penalty.nodes_phase[0]].X[_penalty.all_nodes_index[0]][:, 0], interface.ocp.nlp[_penalty.nodes_phase[1]].X[_penalty.all_nodes_index[1]][:, 0])
-                _u_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].U[_penalty.all_nodes_index[0] - u0_mode] if ocp.assume_phase_dynamics or _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U) else []
-                _u_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].U[_penalty.all_nodes_index[1] - u1_mode] if ocp.assume_phase_dynamics or _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U) else []
+                _x = horzcat(
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].X[_penalty.all_nodes_index[0]][:, 0],
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].X[_penalty.all_nodes_index[1]][:, 0],
+                )
+                _u_0 = (
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].U[_penalty.all_nodes_index[0] - u0_mode]
+                    if ocp.assume_phase_dynamics
+                    or _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U)
+                    else []
+                )
+                _u_1 = (
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].U[_penalty.all_nodes_index[1] - u1_mode]
+                    if ocp.assume_phase_dynamics
+                    or _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U)
+                    else []
+                )
                 _u = horzcat(_u_0, _u_1)
-                _s = horzcat(interface.ocp.nlp[_penalty.nodes_phase[0]].S[_penalty.all_nodes_index[0]][:, 0], interface.ocp.nlp[_penalty.nodes_phase[1]].S[_penalty.all_nodes_index[1]][:, 0])
+                _s = horzcat(
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].S[_penalty.all_nodes_index[0]][:, 0],
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].S[_penalty.all_nodes_index[1]][:, 0],
+                )
             else:
-                _x = horzcat(interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[_penalty.all_nodes_index[0]][:, 0], interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[_penalty.all_nodes_index[1]][:, 0])
-                _u_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[_penalty.all_nodes_index[0] - u0_mode] if ocp.assume_phase_dynamics or _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled) else []
-                _u_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[_penalty.all_nodes_index[1] - u1_mode] if ocp.assume_phase_dynamics or _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled) else []
+                _x = horzcat(
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[_penalty.all_nodes_index[0]][:, 0],
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[_penalty.all_nodes_index[1]][:, 0],
+                )
+                _u_0 = (
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[_penalty.all_nodes_index[0] - u0_mode]
+                    if ocp.assume_phase_dynamics
+                    or _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled)
+                    else []
+                )
+                _u_1 = (
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[_penalty.all_nodes_index[1] - u1_mode]
+                    if ocp.assume_phase_dynamics
+                    or _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled)
+                    else []
+                )
                 _u = horzcat(_u_0, _u_1)
-                _s = horzcat(interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[_penalty.all_nodes_index[0]][:, 0], interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[_penalty.all_nodes_index[1]][:, 0])
+                _s = horzcat(
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[_penalty.all_nodes_index[0]][:, 0],
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[_penalty.all_nodes_index[1]][:, 0],
+                )
 
         elif _penalty.multinode_penalty:
             ocp = interface.ocp

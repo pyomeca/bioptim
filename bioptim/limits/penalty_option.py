@@ -416,7 +416,6 @@ class PenaltyOption(OptionGeneric):
                 raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
 
         if self.transition:
-
             name = (
                 self.name.replace("->", "_")
                 .replace(" ", "_")
@@ -452,7 +451,9 @@ class PenaltyOption(OptionGeneric):
             else:
                 state_cx_scaled = horzcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
                 control_cx_scaled = horzcat(control_cx_scaled, controllers[0].controls_scaled.cx_start)
-                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx_start)
+                stochastic_cx_scaled = horzcat(
+                    stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx_start
+                )
 
         elif self.multinode_penalty:
             from ..limits.multinode_constraint import MultinodeConstraint
@@ -483,7 +484,11 @@ class PenaltyOption(OptionGeneric):
             control_cx_scaled = ocp.cx()
             stochastic_cx_scaled = ocp.cx()
             for ctrl in controllers:
-                if (self.derivative or self.explicit_derivative or self.transition) and ctrl.node_index == controllers[-1].node_index and ctrl.phase_idx == controllers[-1].phase_idx:
+                if (
+                    (self.derivative or self.explicit_derivative or self.transition)
+                    and ctrl.node_index == controllers[-1].node_index
+                    and ctrl.phase_idx == controllers[-1].phase_idx
+                ):
                     state_cx_scaled = horzcat(state_cx_scaled, ctrl.states_scaled.cx_start)
                     control_cx_scaled = horzcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
                     stochastic_cx_scaled = horzcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
