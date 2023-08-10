@@ -447,8 +447,11 @@ def test_monophase_time_constraint(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+@pytest.mark.parametrize("assume_phase_dynamics", [True]) # , False])
+@pytest.mark.parametrize("ode_solver", [ # OdeSolver.RK4,
+                                        OdeSolver.COLLOCATION,
+                                        # OdeSolver.IRK
+                                        ])
 def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module

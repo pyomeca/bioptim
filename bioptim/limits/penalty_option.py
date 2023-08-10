@@ -444,23 +444,34 @@ class PenaltyOption(OptionGeneric):
             control_cx_scaled = ocp.cx()
             stochastic_cx_scaled = ocp.cx()
             for ctrl in controllers:
-                if isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
-                    if ctrl.node_index == controller.ns:
-                        state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
-                    else:
-                        state_cx_scaled = vertcat(
+                if (self.derivative or self.explicit_derivative or self.transition) and ctrl.node_index == controllers[-1].node_index and ctrl.phase_idx == controllers[-1].phase_idx:
+                    state_cx_scaled = horzcat(state_cx_scaled, ctrl.states_scaled.cx_end)
+                    control_cx_scaled = horzcat(control_cx_scaled, ctrl.controls_scaled.cx_end)
+                    stochastic_cx_scaled = horzcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
+                else:
+                    if isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
+                        # if ctrl.node_index == controller.ns:
+                        #     state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
+                        #     state_cx_scaled = vertcat(state_cx_scaled, ctrl.nlp.cx(ctrl.states_scaled.cx_intermediates_list.shape))
+                        # else:
+                        state_cx_scaled = horzcat(
                             state_cx_scaled, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
                         )
-                else:
-                    state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
-                control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
-                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx)
+                    else:
+                        state_cx_scaled = horzcat(state_cx_scaled, ctrl.states_scaled.cx)
+                    control_cx_scaled = horzcat(control_cx_scaled, ctrl.controls_scaled.cx)
+                    stochastic_cx_scaled = horzcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx)
 
         else:
             ocp = controller.ocp
             name = self.name
             # if self.integrate:
-            if isinstance(controller.ode_solver, OdeSolver.COLLOCATION) and controller.node_index != controller.ns:
+            if isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
+                # if controller.node_index == controller.ns:
+                #     state_cx_scaled = controller.states_scaled.cx_start
+                #     state_cx_scaled = vertcat(state_cx_scaled,
+                #                               controller.cx(controller.states_scaled.cx_intermediates_list.shape))
+                # else:
                 state_cx_scaled = horzcat(
                     *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
                 )

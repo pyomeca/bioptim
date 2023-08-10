@@ -230,11 +230,15 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 ui_mode = get_control_modificator(i)
 
                 if is_unscaled:
-                    _x_tp = nlp_i.X[index_i]
+                    _x_tp = nlp_i.cx()
+                    for i in range(nlp_i.X[index_i].shape[1]):
+                        _x_tp = horzcat(_x_tp, nlp_i.X[index_i][:, i])
                     _u_tp = nlp_i.U[index_i - ui_mode] if ocp.assume_phase_dynamics or index_i < len(nlp_i.U) else []
                     _s_tp = nlp_i.S[index_i]
                 else:
-                    _x_tp = nlp_i.X_scaled[index_i]
+                    _x_tp = nlp_i.cx()
+                    for i in range(nlp_i.X_scaled[index_i].shape[1]):
+                        _x_tp = horzcat(_x_tp, nlp_i.X_scaled[index_i][:, i])
                     _u_tp = (
                         nlp_i.U_scaled[index_i - ui_mode]
                         if ocp.assume_phase_dynamics or index_i < len(nlp_i.U_scaled)
@@ -242,31 +246,38 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     )
                     _s_tp = nlp_i.S_scaled[index_i]
 
-                # 0th column since this constraint can only be applied to a single point. This is to account for
-                # the COLLOCATION which will have multiple column, but are not intended to be used here
-                vertcatted_x_tp = nlp_i.cx()
-                for col in range(_x_tp.shape[1]):
-                    vertcatted_x_tp = vertcat(vertcatted_x_tp, _x_tp[:, col])
-                _x = vertcat(_x, vertcatted_x_tp)
-                _u = vertcat(_u, _u_tp)
-                _s = vertcat(_s, _s_tp)
+                _x = horzcat(_x, _x_tp)
+                _u = horzcat(_u, _u_tp)
+                _s = horzcat(_s, _s_tp)
 
         elif _penalty.integrate:
             if is_unscaled:
-                _x = nlp.X[_idx]
+                # _x = nlp.X[_idx]
+                _x = nlp.cx()
+                for i in range(nlp.X[_idx].shape[1]):
+                    _x = horzcat(_x, nlp.X[_idx][:, i])
                 _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
                 _s = nlp.S[_idx]
             else:
-                _x = nlp.X_scaled[_idx]
+                # _x = nlp.X_scaled[_idx]
+                _x = nlp.cx()
+                for i in range(nlp.X_scaled[_idx].shape[1]):
+                    _x = horzcat(_x, nlp.X_scaled[_idx][:, i])
                 _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
                 _s = nlp.S_scaled[_idx]
-        else:
+        else:  # do we really need this if ?
             if is_unscaled:
-                _x = nlp.X[_idx][:, 0]
+                # _x = nlp.X[_idx][:, 0]
+                _x = nlp.cx()
+                for i in range(nlp.X[_idx].shape[1]):
+                    _x = horzcat(_x, nlp.X[_idx][:, i])
                 _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
                 _s = nlp.S[_idx][:, 0]
             else:
-                _x = nlp.X_scaled[_idx][:, 0]
+                # _x = nlp.X_scaled[_idx][:, 0]
+                _x = nlp.cx()
+                for i in range(nlp.X_scaled[_idx].shape[1]):
+                    _x = horzcat(_x, nlp.X_scaled[_idx][:, i])
                 if sum(_penalty.weighted_function[_idx].size_in(1)) == 0:
                     _u = []
                 else:
@@ -382,12 +393,20 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     s = []
                 else:
                     x, u, s = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                p = vertcat(
-                    p,
-                    penalty.weighted_function[idx](
-                        x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
-                    ),
-                )
+                try:
+                    p = vertcat(
+                        p,
+                        penalty.weighted_function[idx](
+                            x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
+                        ),
+                    )
+                except:
+                    print("ici")
 
         out = vertcat(out, sum2(p))
     return out
+
+
+# state_cx_scaled = horzcat(
+#     *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
+# )

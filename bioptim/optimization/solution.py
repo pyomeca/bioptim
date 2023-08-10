@@ -1261,7 +1261,7 @@ class Solution:
                 )
             if self.parameters.keys():
                 params = np.vstack([self.parameters[key] for key in self.parameters])
-            val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params, s0)
+            val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params, s0, 0, 0)
             if val.shape[0] != x0.shape[0]:
                 raise RuntimeError(
                     f"Phase transition must have the same number of states ({val.shape[0]}) "

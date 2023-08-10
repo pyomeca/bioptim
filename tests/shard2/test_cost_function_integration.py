@@ -188,13 +188,15 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
                 out = 0
                 for i, fcn in enumerate(ocp.nlp[0].J[0].weighted_function):
                     out += fcn(
-                        states[:, i],
-                        controls_faking_constant[:, i],
-                        [],
-                        [],
-                        ocp.nlp[0].J[0].weight,
-                        [],
-                        ocp.nlp[0].J[0].dt,
+                        states[:, i],  # States
+                        controls_faking_constant[:, i],  # Controls
+                        [],  # Parameters
+                        [],  # Stochastic variables
+                        [],  # Motor noise
+                        [],  # Sensory noise
+                        ocp.nlp[0].J[0].weight,  # Weight
+                        [],  # Target
+                        ocp.nlp[0].J[0].dt,  # dt
                     )
                 np.testing.assert_almost_equal(np.array([out])[0][0][0], 36.077211633874185)
             else:
