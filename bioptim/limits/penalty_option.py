@@ -428,6 +428,9 @@ class PenaltyOption(OptionGeneric):
                 .replace("__", "_")
             )
 
+            if len(controller) != 2:
+                raise RuntimeError("Transition penalty must be between two nodes")
+
             controllers = controller
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             ocp = controller.ocp
@@ -437,13 +440,19 @@ class PenaltyOption(OptionGeneric):
             for ctrl in controllers:
                 self.all_nodes_index.extend(ctrl.t)
 
-            state_cx_scaled = ocp.cx()
-            control_cx_scaled = ocp.cx()
-            stochastic_cx_scaled = ocp.cx()
-            for ctrl_idx, ctrl in enumerate(controllers):
-                state_cx_scaled = horzcat(state_cx_scaled, ctrl.states_scaled.cx_start)
-                control_cx_scaled = horzcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
-                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
+            state_cx_scaled = controllers[1].states_scaled.cx
+            control_cx_scaled = controllers[1].controls_scaled.cx
+            stochastic_cx_scaled = controllers[1].stochastic_variables_scaled.cx
+
+            # To deal with cyclic phase transition in assume phase dynamics
+            if controllers[0].cx_index_to_get == 1:
+                state_cx_scaled = horzcat(state_cx_scaled, controllers[0].states_scaled.cx)
+                control_cx_scaled = horzcat(control_cx_scaled, controllers[0].controls_scaled.cx)
+                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx)
+            else:
+                state_cx_scaled = horzcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
+                control_cx_scaled = horzcat(control_cx_scaled, controllers[0].controls_scaled.cx_start)
+                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx_start)
 
         elif self.multinode_penalty:
             from ..limits.multinode_constraint import MultinodeConstraint

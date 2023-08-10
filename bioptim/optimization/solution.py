@@ -1895,6 +1895,7 @@ class Solution:
             s = []
             target = []
             if nlp is not None:
+                # TODO: penalty.multinode_penalty is broken for collocations, it should take into acount the collocation points
                 if penalty.multinode_penalty or penalty.transition:
                     x = np.array(())
                     u = np.array(())
@@ -1903,13 +1904,22 @@ class Solution:
                         node_idx = penalty.multinode_idx[i]
                         phase_idx = penalty.nodes_phase[i]
 
+                        _x = np.array(())
+                        _u = np.array(())
+                        _s = np.array(())
                         for key in nlp.states:
-                            x = np.concatenate((x, self._states["scaled"][phase_idx][key][:, node_idx]))
+                            _x = np.concatenate((_x, self._states["scaled"][phase_idx][key][:, node_idx]))
                         for key in nlp.controls:
                             # Make an exception to the fact that U is not available for the last node
-                            u = np.concatenate((u, self._controls["scaled"][phase_idx][key][:, node_idx]))
+                            _u = np.concatenate((_u, self._controls["scaled"][phase_idx][key][:, node_idx]))
                         for key in nlp.stochastic_variables:
-                            s = np.concatenate((s, self._stochastic_variables["scaled"][phase_idx][key][:, node_idx]))
+                            _s = np.concatenate((_s, self._stochastic_variables["scaled"][phase_idx][key][:, node_idx]))
+                        x = np.vstack((x, _x)) if x.size else _x
+                        u = np.vstack((u, _u)) if u.size else _u
+                        s = np.vstack((s, _s)) if s.size else _s
+                    x = x.T
+                    u = u.T
+                    s = s.T
                 elif (
                     "Lagrange" not in penalty.type.__str__()
                     and "Mayer" not in penalty.type.__str__()
