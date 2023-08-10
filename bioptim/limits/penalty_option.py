@@ -415,7 +415,37 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
 
-        if self.multinode_penalty or self.transition:
+        if self.transition:
+
+            name = (
+                self.name.replace("->", "_")
+                .replace(" ", "_")
+                .replace("(", "_")
+                .replace(")", "_")
+                .replace(",", "_")
+                .replace(":", "_")
+                .replace(".", "_")
+                .replace("__", "_")
+            )
+
+            controllers = controller
+            controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
+            ocp = controller.ocp
+            self.node_idx[0] = controller.node_index
+
+            self.all_nodes_index = []
+            for ctrl in controllers:
+                self.all_nodes_index.extend(ctrl.t)
+
+            state_cx_scaled = ocp.cx()
+            control_cx_scaled = ocp.cx()
+            stochastic_cx_scaled = ocp.cx()
+            for ctrl_idx, ctrl in enumerate(controllers):
+                state_cx_scaled = horzcat(state_cx_scaled, ctrl.states_scaled.cx_start)
+                control_cx_scaled = horzcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
+                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
+
+        elif self.multinode_penalty:
             from ..limits.multinode_constraint import MultinodeConstraint
 
             self: MultinodeConstraint
@@ -445,15 +475,11 @@ class PenaltyOption(OptionGeneric):
             stochastic_cx_scaled = ocp.cx()
             for ctrl in controllers:
                 if (self.derivative or self.explicit_derivative or self.transition) and ctrl.node_index == controllers[-1].node_index and ctrl.phase_idx == controllers[-1].phase_idx:
-                    state_cx_scaled = horzcat(state_cx_scaled, ctrl.states_scaled.cx_end)
-                    control_cx_scaled = horzcat(control_cx_scaled, ctrl.controls_scaled.cx_end)
+                    state_cx_scaled = horzcat(state_cx_scaled, ctrl.states_scaled.cx_start)
+                    control_cx_scaled = horzcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
                     stochastic_cx_scaled = horzcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
                 else:
                     if isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
-                        # if ctrl.node_index == controller.ns:
-                        #     state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
-                        #     state_cx_scaled = vertcat(state_cx_scaled, ctrl.nlp.cx(ctrl.states_scaled.cx_intermediates_list.shape))
-                        # else:
                         state_cx_scaled = horzcat(
                             state_cx_scaled, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
                         )
@@ -467,11 +493,6 @@ class PenaltyOption(OptionGeneric):
             name = self.name
             # if self.integrate:
             if isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
-                # if controller.node_index == controller.ns:
-                #     state_cx_scaled = controller.states_scaled.cx_start
-                #     state_cx_scaled = vertcat(state_cx_scaled,
-                #                               controller.cx(controller.states_scaled.cx_intermediates_list.shape))
-                # else:
                 state_cx_scaled = horzcat(
                     *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
                 )
@@ -484,7 +505,6 @@ class PenaltyOption(OptionGeneric):
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
                 state_cx_scaled = horzcat(state_cx_scaled, controller.states_scaled.cx_end)
                 control_cx_scaled = horzcat(control_cx_scaled, controller.controls_scaled.cx_end)
-                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
 
         # Alias some variables
         node = controller.node_index
