@@ -86,6 +86,7 @@ def generate_data(
     }
 
     # Casadi related stuff
+    symbolic_time = MX.sym("time", 0, 0)
     symbolic_q = MX.sym("q", n_q, 1)
     symbolic_qdot = MX.sym("qdot", n_qdot, 1)
     symbolic_qddot = MX.sym("qddot", n_qddot, 1)
@@ -164,7 +165,7 @@ def generate_data(
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
         dyn_func(
-            time=MX(),
+            time=symbolic_time,
             states=symbolic_states,
             controls=symbolic_controls,
             parameters=symbolic_parameters,

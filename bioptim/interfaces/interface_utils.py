@@ -257,7 +257,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             _s = nlp.S[_idx]
         else:
             if is_unscaled:
-                # TODO : add _t like _x for every if unscaled
                 _x = nlp.X[_idx][:, 0]
                 _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
             else:
@@ -285,7 +284,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
         if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
             if is_unscaled:
-                t = nlp.T[_idx + 1][:, 0]
                 x = nlp.X[_idx + 1][:, 0]
             else:
                 x = nlp.X_scaled[_idx + 1][:, 0]

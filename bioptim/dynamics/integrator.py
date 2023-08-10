@@ -102,7 +102,7 @@ class Integrator:
         """
         return self.function.map(*args, **kwargs)
 
-    def get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray:
+    def get_u(self, u: np.ndarray, t: float) -> np.ndarray:
         """
         Get the control at a given time
 
@@ -110,7 +110,7 @@ class Integrator:
         ----------
         u: np.ndarray
             The control matrix
-        dt_norm: float
+        t: float
             The time a which control should be computed
 
         Returns
@@ -121,6 +121,7 @@ class Integrator:
         if self.control_type == ControlType.CONSTANT:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
+            dt_norm = round(1 - (self.t_span[1]-t)/(self.t_span[1]-self.t_span[0]), 5)
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
         elif self.control_type == ControlType.NONE:
             return np.ndarray((0,))
@@ -169,7 +170,7 @@ class Integrator:
         Prepare the CasADi function from dxdt
         """
 
-        t_sym = self.t_span[0] if isinstance(self.t_span[0], (MX, SX)) else []
+        t_sym = type(self.t_span[0]).sym("time", 1, 1) if isinstance(self.t_span[0], (MX, SX)) else []  # TODO correct nlp.node_time error for symbolic output
 
         self.function = Function(
             "integrator",
@@ -278,16 +279,16 @@ class RK(Integrator):
         -------
         The derivative of the states
         """
-        t = time
         u = controls
         x = self.cx(states.shape[0], self.n_step + 1)
         p = params * param_scaling
         x[:, 0] = states
         s = stochastic_variables
 
+        # This should be the vanilla signature of `next_x` from now on (adjust `get_u` accordingly)
+
         for i in range(1, self.n_step + 1):
-            t_norm_init = (i-1)/self.n_step if self.control_type == ControlType.LINEAR_CONTINUOUS else ((self.t_span[1]-self.t_span[0])*(i-1))/self.n_step
-            # x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p, s)
+            t = ((self.t_span[1] - self.t_span[0]) * (i - 1)) / self.n_step
             x[:, i] = self.next_x(h, t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -443,9 +444,9 @@ class RK4(RK):
         """
 
         k1 = self.fun(t, x_prev, self.get_u(u, t), p, s)[:, self.idx]
-        k2 = self.fun(t + self.h_norm / 2, x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s)[:, self.idx]
-        k3 = self.fun(t + self.h_norm / 2, x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, s)[:, self.idx]
-        k4 = self.fun(t + self.h_norm, x_prev + h * k3, self.get_u(u, t + self.h_norm), p, s)[:, self.idx]
+        k2 = self.fun(t + self.h / 2, x_prev + h / 2 * k1, self.get_u(u, t + self.h / 2), p, s)[:, self.idx]
+        k3 = self.fun(t + self.h / 2, x_prev + h / 2 * k2, self.get_u(u, t + self.h / 2), p, s)[:, self.idx]
+        k4 = self.fun(t + self.h, x_prev + h * k3, self.get_u(u, t + self.h), p, s)[:, self.idx]
 
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
@@ -703,7 +704,7 @@ class COLLOCATION(Integrator):
         Prepare the CasADi function from dxdt
         """
 
-        t_sym = self.t_span[0] if isinstance(self.t_span[0], (MX, SX)) else []
+        t_sym = type(self.t_span[0]).sym("time", 1, 1) if isinstance(self.t_span[0], (MX, SX)) else []  # TODO correct nlp.node_time error for symbolic output
 
         self.function = Function(
             "integrator",
@@ -801,7 +802,7 @@ class IRK(COLLOCATION):
         Prepare the CasADi function from dxdt
         """
 
-        t_sym = self.t_span[0] if isinstance(self.t_span[0], (MX, SX)) else []
+        t_sym = type(self.t_span[0]).sym("time", 1, 1) if isinstance(self.t_span[0], (MX, SX)) else []  # TODO correct nlp.node_time error for symbolic output
 
         self.function = Function(
             "integrator",

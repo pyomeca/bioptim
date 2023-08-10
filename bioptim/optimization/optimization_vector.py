@@ -415,7 +415,6 @@ class OptimizationVectorHelper:
         """
 
         v_array = np.array(data).squeeze()
-
         data_states = []
         data_controls = []
         data_stochastic_variables = []

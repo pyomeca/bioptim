@@ -487,10 +487,10 @@ class Solution:
                     for _ in range(len(self.ns)):
                         tp.add(deepcopy(_sol[i].init), interpolation=_sol[i].init.type)
                     _sol[i] = tp
-            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 4:
+            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 5:
                 raise ValueError(
                     "solution must be a solution dict, "
-                    "an InitialGuess[List] of len 3 or 4 (states, controls, parameters, stochastic_variables), "
+                    "an InitialGuess[List] of len 4 or 5 (states, controls, parameters, time, stochastic_variables), "
                     "or a None"
                 )
             if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
@@ -503,7 +503,7 @@ class Solution:
                     )
 
             self.vector = np.ndarray((0, 1))
-            sol_time, sol_states, sol_controls, sol_stochastic_variables = _sol[3], _sol[0], _sol[1], _sol[2]
+            sol_states, sol_controls, sol_time, sol_stochastic_variables = _sol[0], _sol[1], _sol[3], _sol[4]
 
             # For time
             for p, ss in enumerate(sol_time):
@@ -607,7 +607,7 @@ class Solution:
 
         if isinstance(sol, dict):
             init_from_dict(sol)
-        elif isinstance(sol, (list, tuple)) and len(sol) == 4:
+        elif isinstance(sol, (list, tuple)) and len(sol) == 5:
             init_from_initial_guess(sol)
         elif isinstance(sol, (np.ndarray, DM)):
             init_from_vector(sol)
@@ -692,7 +692,7 @@ class Solution:
 
         if skip_data:
             new._states["unscaled"], new._controls["unscaled"] = [], []
-            new._time["scaled"], new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables = [], [], [], {}, []
+            new._time, new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables = [], [], [], {}, []
         else:
             new._time = deepcopy(self._time)
             new._states["scaled"] = deepcopy(self._states["scaled"])

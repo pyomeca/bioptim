@@ -1217,11 +1217,6 @@ class OptimalControlProgram:
                     raise RuntimeError("t_init should be built from a InitialGuessList")
                 origin_phase = 0 if len(t_init) == 1 else i
                 for key in t_init[origin_phase].keys():
-                    if (
-                        not self.nlp[i].ode_solver.is_direct_collocation
-                        and x_init[origin_phase].type == InterpolationType.ALL_POINTS
-                    ):
-                        raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
                     self.nlp[i].t_init.add(key, t_init[origin_phase][key], phase=0)
 
             if x_init:
