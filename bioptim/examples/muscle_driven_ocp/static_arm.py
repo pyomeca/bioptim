@@ -21,6 +21,7 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     RigidBodyDynamics,
+    ControlType,
 )
 
 
@@ -32,6 +33,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.IRK(),
     assume_phase_dynamics: bool = True,
     expand_dynamics: bool = True,
+    control_type: ControlType = ControlType.CONSTANT,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -115,6 +117,7 @@ def prepare_ocp(
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         assume_phase_dynamics=assume_phase_dynamics,
+        control_type=control_type,
     )
 
 

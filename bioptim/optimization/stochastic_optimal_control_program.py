@@ -215,7 +215,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         """
         penalty_m_dg_dz_list = MultinodeConstraintList()
         for i_phase, nlp in enumerate(self.nlp):
-            for i_node in range(nlp.ns - 1):  # TODO: Charbie -> check if this is correct
+            for i_node in range(nlp.ns):
                 penalty_m_dg_dz_list.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase, i_phase),
@@ -260,25 +260,17 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         for i_phase, nlp in enumerate(self.nlp):
             constraints.add(
                 ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
-                node=Node.ALL_SHOOTING,
+                node=Node.ALL,
                 phase=i_phase,
                 motor_noise_magnitude=motor_noise_magnitude,
                 sensory_noise_magnitude=sensory_noise_magnitude,
             )
-            if i_phase > 0 and i_phase < len(self.nlp) - 1:
-                multi_node_penalties.add(
-                    MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
-                    nodes_phase=(i_phase - 1, i_phase),
-                    nodes=(-1, 0),
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
-                )
 
         # Constraints for A
         for i_phase, nlp in enumerate(self.nlp):
             constraints.add(
                 ConstraintFcn.STOCHASTIC_DG_DX_IMPLICIT,
-                node=Node.ALL_SHOOTING,
+                node=Node.ALL,
                 phase=i_phase,
                 dynamics=nlp.dynamics_type.dynamic_function,
                 motor_noise_magnitude=motor_noise_magnitude,
