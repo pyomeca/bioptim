@@ -500,8 +500,7 @@ class PenaltyOption(OptionGeneric):
         else:
             ocp = controller.ocp
             name = self.name
-            # if self.integrate:
-            if isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
+            if self.integrate or isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
                 state_cx_scaled = horzcat(
                     *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
                 )
