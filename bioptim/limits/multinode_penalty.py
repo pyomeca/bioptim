@@ -671,7 +671,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )
 
             first_defect = (
-                dynamics["initial_polynomial"][non_root_index_continuity]
+                controllers[0].states.cx_start[non_root_index_continuity]
                 - controllers[0].states.cx_start[non_root_index_continuity]
             )
             defects = vertcat(first_defect, dynamics["defects"][non_root_index_defects])

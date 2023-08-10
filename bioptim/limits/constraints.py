@@ -769,7 +769,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             final_defect = dynamics["xf"][non_root_index_continuity]
             first_defect = (
-                dynamics["initial_polynomial"][non_root_index_continuity]
+                controller.states.cx_start[non_root_index_continuity]
                 - controller.states.cx_start[non_root_index_continuity]
             )
             defects = vertcat(first_defect, dynamics["defects"][non_root_index_defects])

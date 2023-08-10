@@ -805,12 +805,9 @@ class COLLOCATION(Integrator):
             The states at each collocation point
         defects: list[MX | SX] (shape = degree)
             The constraints insuring that the polynomial has the right derivative at each collocation point
-        states_start: MX | SX
-            The evaluation of the polynomial at the beginning of the interval
         """
 
         # Total number of variables for one finite element
-        states_start = self._d[0] * states[0]
         states_end = self._d[0] * states[0]
         defects = []
         for j in range(1, self.degree + 1):
@@ -872,7 +869,7 @@ class COLLOCATION(Integrator):
 
         # Concatenate constraints
         defects = vertcat(*defects)
-        return states_end, horzcat(states[0], states_end), defects, states_start
+        return states_end, horzcat(states[0], states_end), defects
 
     def _finish_init(self):
         """
@@ -900,7 +897,7 @@ class COLLOCATION(Integrator):
                 sensory_noise=self.sensory_noise,
             ),
             ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
-            ["xf", "xall", "defects", "initial_polynomial"],
+            ["xf", "xall", "defects"],
         )
 
 
@@ -967,7 +964,7 @@ class IRK(COLLOCATION):
         """
 
         nx = states[0].shape[0]
-        _, _, defect, _ = super(IRK, self).dxdt(
+        _, _, defect = super(IRK, self).dxdt(
             h=h,
             states=states,
             controls=controls,
