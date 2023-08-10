@@ -206,7 +206,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
     def get_x_and_u_at_idx(_penalty, _idx, is_unscaled):
         """ """
-
         def get_control_modificator(index):
             return (
                 1
@@ -224,7 +223,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             u0_mode = get_control_modificator(0)
             u1_mode = get_control_modificator(1)
             if is_unscaled:
-                _x = horzcat(
+                _x = vertcat(
                     interface.ocp.nlp[_penalty.nodes_phase[0]].X[_penalty.all_nodes_index[0]][:, 0],
                     interface.ocp.nlp[_penalty.nodes_phase[1]].X[_penalty.all_nodes_index[1]][:, 0],
                 )
@@ -240,13 +239,13 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     or _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U)
                     else []
                 )
-                _u = horzcat(_u_0, _u_1)
-                _s = horzcat(
+                _u = vertcat(_u_0, _u_1)
+                _s = vertcat(
                     interface.ocp.nlp[_penalty.nodes_phase[0]].S[_penalty.all_nodes_index[0]][:, 0],
                     interface.ocp.nlp[_penalty.nodes_phase[1]].S[_penalty.all_nodes_index[1]][:, 0],
                 )
             else:
-                _x = horzcat(
+                _x = vertcat(
                     interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[_penalty.all_nodes_index[0]][:, 0],
                     interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[_penalty.all_nodes_index[1]][:, 0],
                 )
@@ -262,8 +261,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     or _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled)
                     else []
                 )
-                _u = horzcat(_u_0, _u_1)
-                _s = horzcat(
+                _u = vertcat(_u_0, _u_1)
+                _s = vertcat(
                     interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[_penalty.all_nodes_index[0]][:, 0],
                     interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[_penalty.all_nodes_index[1]][:, 0],
                 )
@@ -283,13 +282,13 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 if is_unscaled:
                     _x_tp = nlp_i.cx()
                     for i in range(nlp_i.X[index_i].shape[1]):
-                        _x_tp = horzcat(_x_tp, nlp_i.X[index_i][:, i])
+                        _x_tp = vertcat(_x_tp, nlp_i.X[index_i][:, i])
                     _u_tp = nlp_i.U[index_i - ui_mode] if ocp.assume_phase_dynamics or index_i < len(nlp_i.U) else []
                     _s_tp = nlp_i.S[index_i]
                 else:
                     _x_tp = nlp_i.cx()
                     for i in range(nlp_i.X_scaled[index_i].shape[1]):
-                        _x_tp = horzcat(_x_tp, nlp_i.X_scaled[index_i][:, i])
+                        _x_tp = vertcat(_x_tp, nlp_i.X_scaled[index_i][:, i])
                     _u_tp = (
                         nlp_i.U_scaled[index_i - ui_mode]
                         if ocp.assume_phase_dynamics or index_i < len(nlp_i.U_scaled)
@@ -297,54 +296,68 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     )
                     _s_tp = nlp_i.S_scaled[index_i]
 
-                _x = horzcat(_x, _x_tp)
-                _u = horzcat(_u, _u_tp)
-                _s = horzcat(_s, _s_tp)
+                _x = vertcat(_x, _x_tp)
+                _u = vertcat(_u, _u_tp)
+                _s = vertcat(_s, _s_tp)
 
         elif _penalty.integrate:
             if is_unscaled:
                 _x = nlp.cx()
                 for i in range(nlp.X[_idx].shape[1]):
-                    _x = horzcat(_x, nlp.X[_idx][:, i])
-                _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+                    _x = vertcat(_x, nlp.X[_idx][:, i])
+                _u = nlp.U[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U) else []
                 _s = nlp.S[_idx]
             else:
                 _x = nlp.cx()
                 for i in range(nlp.X_scaled[_idx].shape[1]):
-                    _x = horzcat(_x, nlp.X_scaled[_idx][:, i])
-                _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
+                    _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
+                _u = nlp.U_scaled[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U_scaled) else []
                 _s = nlp.S_scaled[_idx]
         else:  # do we really need this if ?
             if is_unscaled:
                 _x = nlp.cx()
                 for i in range(nlp.X[_idx].shape[1]):
-                    _x = horzcat(_x, nlp.X[_idx][:, i])
-                _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+                    _x = vertcat(_x, nlp.X[_idx][:, i])
+                _u = nlp.U[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U) else []
                 _s = nlp.S[_idx][:, 0]
             else:
                 _x = nlp.cx()
                 for i in range(nlp.X_scaled[_idx].shape[1]):
-                    _x = horzcat(_x, nlp.X_scaled[_idx][:, i])
+                    _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
                 if sum(_penalty.weighted_function[_idx].size_in(1)) == 0:
                     _u = []
+                elif nlp.assume_phase_dynamics and _idx == len(nlp.U_scaled):
+                    _u = nlp.U_scaled[_idx - 1][:, 0]
+                elif _idx < len(nlp.U_scaled):
+                    _u = nlp.U_scaled[_idx][:, 0]
                 else:
-                    _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
+                    _u = []
                 _s = nlp.S_scaled[_idx][:, 0]
 
         if _penalty.derivative or _penalty.explicit_derivative:
             if _idx < nlp.ns:
                 if is_unscaled:
                     x = nlp.X[_idx + 1][:, 0]
-                    u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                    if nlp.assume_phase_dynamics and _idx + 1 == len(nlp.U):
+                        u = nlp.U[_idx][:, 0]
+                    elif _idx + 1 < len(nlp.U):
+                        u = nlp.U[_idx + 1][:, 0]
+                    else:
+                        u = []
                     s = nlp.S[_idx + 1][:, 0]
                 else:
                     x = nlp.X_scaled[_idx + 1][:, 0]
-                    u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
+                    if nlp.assume_phase_dynamics and _idx + 1 == len(nlp.U_scaled):
+                        u = nlp.U_scaled[_idx][:, 0]
+                    elif _idx + 1 < len(nlp.U_scaled):
+                        u = nlp.U_scaled[_idx + 1][:, 0]
+                    else:
+                        u = []
                     s = nlp.S_scaled[_idx + 1][:, 0]
 
-                _x = horzcat(_x, x)
-                _u = horzcat(_u, u)
-                _s = horzcat(_s, s)
+                _x = vertcat(_x, x)
+                _u = vertcat(_u, u)
+                _s = vertcat(_s, s)
 
         if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
             if is_unscaled:
@@ -353,22 +366,22 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             else:
                 x = nlp.X_scaled[_idx + 1][:, 0]
                 s = nlp.S_scaled[_idx + 1][:, 0]
-            _x = horzcat(_x, x)
-            _s = horzcat(_s, s)
+            _x = vertcat(_x, x)
+            _s = vertcat(_s, s)
             if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 if is_unscaled:
-                    u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                    u = nlp.U[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U) else []
                 else:
-                    u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
-                _u = horzcat(_u, u)
+                    u = nlp.U_scaled[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U_scaled) else []
+                _u = vertcat(_u, u)
 
         if _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
             if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 if is_unscaled:
-                    u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                    u = nlp.U[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U) else []
                 else:
-                    u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
-                _u = horzcat(_u, u)
+                    u = nlp.U_scaled[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U_scaled) else []
+                _u = vertcat(_u, u)
         return _x, _u, _s
 
     param = interface.ocp.cx(interface.ocp.parameters.cx)
@@ -398,13 +411,13 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             s = nlp.cx()
             for idx in penalty.node_idx:
                 x_tp, u_tp, s_tp = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                x = horzcat(x, x_tp)
-                u = horzcat(u, u_tp)
-                s = horzcat(s, s_tp)
+                x = vertcat(x, x_tp)
+                u = vertcat(u, u_tp)
+                s = vertcat(s, s_tp)
             if (
                 penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL
             ) and nlp.control_type == ControlType.CONSTANT:
-                u = horzcat(u, u[:, -1])
+                u = vertcat(u, u[:, -1])
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
             p = reshape(
@@ -438,6 +451,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     u = []
                     s = []
                 else:
+                    if penalty.weighted_function[idx].name() != "MINIMIZE_CONTROL":
+                        print("ici")
                     x, u, s = get_x_and_u_at_idx(penalty, idx, is_unscaled)
                     p = vertcat(
                         p,
@@ -448,8 +463,3 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
         out = vertcat(out, sum2(p))
     return out
-
-
-# state_cx_scaled = horzcat(
-#     *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
-# )

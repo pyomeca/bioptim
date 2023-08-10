@@ -1,7 +1,7 @@
 from typing import Any, Callable
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, Function, MX, SX
+from casadi import vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_controller import PenaltyController
@@ -445,13 +445,13 @@ class PenaltyOption(OptionGeneric):
 
             # To deal with cyclic phase transition in assume phase dynamics
             if controllers[0].cx_index_to_get == 1:
-                state_cx_scaled = horzcat(state_cx_scaled, controllers[0].states_scaled.cx)
-                control_cx_scaled = horzcat(control_cx_scaled, controllers[0].controls_scaled.cx)
-                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx)
+                state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx)
+                control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx)
+                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx)
             else:
-                state_cx_scaled = horzcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
-                control_cx_scaled = horzcat(control_cx_scaled, controllers[0].controls_scaled.cx_start)
-                stochastic_cx_scaled = horzcat(
+                state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
+                control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx_start)
+                stochastic_cx_scaled = vertcat(
                     stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx_start
                 )
 
@@ -485,28 +485,28 @@ class PenaltyOption(OptionGeneric):
             stochastic_cx_scaled = ocp.cx()
             for ctrl in controllers:
                 if (
-                    (self.derivative or self.explicit_derivative or self.transition)
-                    and ctrl.node_index == controllers[-1].node_index
+                    (self.derivative or self.explicit_derivative)
+                    and ctrl.node_index == controllers[-1].node_index ####?
                     and ctrl.phase_idx == controllers[-1].phase_idx
                 ):
-                    state_cx_scaled = horzcat(state_cx_scaled, ctrl.states_scaled.cx_start)
-                    control_cx_scaled = horzcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
-                    stochastic_cx_scaled = horzcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
+                    state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
+                    control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
+                    stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
                 else:
                     if isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
-                        state_cx_scaled = horzcat(
+                        state_cx_scaled = vertcat(
                             state_cx_scaled, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
                         )
                     else:
-                        state_cx_scaled = horzcat(state_cx_scaled, ctrl.states_scaled.cx)
-                    control_cx_scaled = horzcat(control_cx_scaled, ctrl.controls_scaled.cx)
-                    stochastic_cx_scaled = horzcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx)
+                        state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
+                    control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
+                    stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx)
 
         else:
             ocp = controller.ocp
             name = self.name
             if self.integrate or isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
-                state_cx_scaled = horzcat(
+                state_cx_scaled = vertcat(
                     *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
                 )
             else:
@@ -516,8 +516,9 @@ class PenaltyOption(OptionGeneric):
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
-                state_cx_scaled = horzcat(state_cx_scaled, controller.states_scaled.cx_end)
-                control_cx_scaled = horzcat(control_cx_scaled, controller.controls_scaled.cx_end)
+                state_cx_scaled = vertcat(state_cx_scaled, controller.states_scaled.cx_end)
+                if (not (self.node == ocp.nlp[self.phase].ns and ocp.nlp[self.phase].control_type == ControlType.CONSTANT) or ocp.assume_phase_dynamics):
+                    control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
 
         # Alias some variables
         node = controller.node_index
@@ -554,8 +555,11 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded[node] = self.function[node]
 
         if self.derivative:
-            state_cx_scaled = horzcat(controller.states_scaled.cx_end, controller.states_scaled.cx_start)
-            control_cx_scaled = horzcat(controller.controls_scaled.cx_end, controller.controls_scaled.cx_start)
+            state_cx_scaled = vertcat(controller.states_scaled.cx_end, controller.states_scaled.cx_start)
+            if (not (
+                self.node == ocp.nlp[self.phase].ns and ocp.nlp[self.phase].control_type == ControlType.CONSTANT
+            ) or ocp.assume_phase_dynamics):
+                control_cx_scaled = vertcat(controller.controls_scaled.cx_end, controller.controls_scaled.cx_start)
             self.function[node] = biorbd.to_casadi_func(
                 f"{name}",
                 self.function[node](
@@ -601,28 +605,26 @@ class PenaltyOption(OptionGeneric):
             # Hypothesis: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
             state_cx_scaled = (
-                horzcat(controller.states_scaled.cx_start, controller.states_scaled.cx_end)
+                vertcat(controller.states_scaled.cx_start, controller.states_scaled.cx_end)
                 if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 else controller.states_scaled.cx_start
             )
             state_cx = (
-                horzcat(controller.states.cx_start, controller.states.cx_end)
+                vertcat(controller.states.cx_start, controller.states.cx_end)
                 if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 else controller.states.cx_start
             )
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx_scaled = (
-                horzcat(controller.controls_scaled.cx_start)
+                vertcat(controller.controls_scaled.cx_start)
                 if controller.control_type == ControlType.CONSTANT
-                or controller.control_type == ControlType.CONSTANT_WITH_LAST_NODE
-                else horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end)
+                else vertcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end)
             )
             control_cx = (
-                horzcat(controller.controls.cx_start)
+                vertcat(controller.controls.cx_start)
                 if controller.control_type == ControlType.CONSTANT
-                or controller.control_type == ControlType.CONSTANT_WITH_LAST_NODE
-                else horzcat(controller.controls.cx_start, controller.controls.cx_end)
+                else vertcat(controller.controls.cx_start, controller.controls.cx_end)
             )
             control_cx_end_scaled = get_u(control_cx_scaled, dt_cx)
             control_cx_end = get_u(control_cx, dt_cx)
@@ -638,7 +640,7 @@ class PenaltyOption(OptionGeneric):
             )
 
             stochastic_cx_scaled = (
-                horzcat(controller.stochastic_variables_scaled.cx_start, controller.stochastic_variables_scaled.cx_end)
+                vertcat(controller.stochastic_variables_scaled.cx_start, controller.stochastic_variables_scaled.cx_end)
                 if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 else controller.stochastic_variables_scaled.cx_start
             )
