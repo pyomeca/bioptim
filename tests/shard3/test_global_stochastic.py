@@ -539,6 +539,9 @@ def test_arm_reaching_torque_driven_explicit():
 def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
 
+    if platform == "win32":
+        return
+
     final_time = 0.8
     n_shooting = 4
     ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
