@@ -193,7 +193,7 @@ def test_variational_model():
     )
     TestUtils.assert_equal(
         compute_initial_states(time_step, q_cur, qdot, q_next, control_cur, control_next, lambdas),
-        [-1.76170126, -4.45551976, 5.87787293, 4.0, 6.0],
+        [-1.76170126, -4.45551976, 5.87787293, 6.0, 4.0, 2.0],
     )
     compute_final_states = Function(
         "compute_final_states",
@@ -206,5 +206,5 @@ def test_variational_model():
     )
     TestUtils.assert_equal(
         compute_final_states(time_step, q_prev, q_cur, qdot, control_prev, control_cur, lambdas),
-        [2.50463576, 2.32608004, 8.89007052],
+        [2.50463576, 2.32608004, 8.89007052, 2.0],
     )
