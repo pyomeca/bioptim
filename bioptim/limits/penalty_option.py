@@ -646,7 +646,13 @@ class PenaltyOption(OptionGeneric):
 
         if self.derivative:
             if controller.get_nlp.ode_solver.is_direct_collocation and node != ocp.nlp[self.phase].ns:
-                state_cx_scaled = vertcat(*([controller.states_scaled.cx_end] + [controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list))
+                state_cx_scaled = vertcat(
+                    *(
+                        [controller.states_scaled.cx_end]
+                        + [controller.states_scaled.cx_start]
+                        + controller.states_scaled.cx_intermediates_list
+                    )
+                )
             else:
                 state_cx_scaled = vertcat(controller.states_scaled.cx_end, controller.states_scaled.cx_start)
             if (
