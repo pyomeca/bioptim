@@ -450,10 +450,7 @@ def test_monophase_time_constraint(ode_solver, assume_phase_dynamics):
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
 @pytest.mark.parametrize(
     "ode_solver",
-    [OdeSolver.RK4,
-     OdeSolver.COLLOCATION,
-     OdeSolver.IRK
-    ],
+    [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK],
 )
 def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
     # Load time_constraint
