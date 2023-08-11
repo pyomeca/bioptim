@@ -447,13 +447,16 @@ class PenaltyOption(OptionGeneric):
                 state_cx_scaled = vertcat(controllers[1].states_scaled.cx, fake)
             else:
                 state_cx_scaled = controllers[1].states_scaled.cx
-            if controllers[0].controls_scaled.cx.shape[0] > controllers[1].controls_scaled.cx.shape[0]:
-                fake = controllers[0].cx(
-                    controllers[0].controls_scaled.cx.shape[0] - controllers[1].controls_scaled.cx.shape[0], 1
-                )
-                control_cx_scaled = vertcat(controllers[1].controls_scaled.cx, fake)
+            if controllers[1].get_nlp.assume_phase_dynamics or controllers[1].node_index < controllers[1].ns:
+                if controllers[0].controls_scaled.cx.shape[0] > controllers[1].controls_scaled.cx.shape[0]:
+                    fake = controllers[0].cx(
+                        controllers[0].controls_scaled.cx.shape[0] - controllers[1].controls_scaled.cx.shape[0], 1
+                    )
+                    control_cx_scaled = vertcat(controllers[1].controls_scaled.cx, fake)
+                else:
+                    control_cx_scaled = controllers[1].controls_scaled.cx
             else:
-                control_cx_scaled = controllers[1].controls_scaled.cx
+                control_cx_scaled = controllers[0].cx()
             if (
                 controllers[0].stochastic_variables_scaled.cx.shape[0]
                 > controllers[1].stochastic_variables_scaled.cx.shape[0]
@@ -476,13 +479,14 @@ class PenaltyOption(OptionGeneric):
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx, fake)
                 else:
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx)
-                if controllers[1].controls_scaled.cx.shape[0] > controllers[0].controls_scaled.cx.shape[0]:
-                    fake = controllers[0].cx(
-                        controllers[1].controls_scaled.cx.shape[0] - controllers[0].controls_scaled.cx.shape[0], 1
-                    )
-                    control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx, fake)
-                else:
-                    control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx)
+                if controllers[0].get_nlp.assume_phase_dynamics or controllers[0].node_index < controllers[0].ns:
+                    if controllers[1].controls_scaled.cx.shape[0] > controllers[0].controls_scaled.cx.shape[0]:
+                        fake = controllers[0].cx(
+                            controllers[1].controls_scaled.cx.shape[0] - controllers[0].controls_scaled.cx.shape[0], 1
+                        )
+                        control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx, fake)
+                    else:
+                        control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx)
                 if (
                     controllers[1].stochastic_variables_scaled.cx.shape[0]
                     > controllers[0].stochastic_variables_scaled.cx.shape[0]
@@ -506,15 +510,16 @@ class PenaltyOption(OptionGeneric):
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start, fake)
                 else:
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
-                if controllers[1].controls_scaled.cx_start.shape[0] > controllers[0].controls_scaled.cx_start.shape[0]:
-                    fake = controllers[0].cx(
-                        controllers[1].controls_scaled.cx_start.shape[0]
-                        - controllers[0].controls_scaled.cx_start.shape[0],
-                        1,
-                    )
-                    control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx_start, fake)
-                else:
-                    control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx_start)
+                if controllers[0].get_nlp.assume_phase_dynamics or controllers[0].node_index < controllers[0].ns:
+                    if controllers[1].controls_scaled.cx_start.shape[0] > controllers[0].controls_scaled.cx_start.shape[0]:
+                        fake = controllers[0].cx(
+                            controllers[1].controls_scaled.cx_start.shape[0]
+                            - controllers[0].controls_scaled.cx_start.shape[0],
+                            1,
+                        )
+                        control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx_start, fake)
+                    else:
+                        control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx_start)
                 if (
                     controllers[1].stochastic_variables_scaled.cx_start.shape[0]
                     > controllers[0].stochastic_variables_scaled.cx_start.shape[0]
@@ -596,7 +601,7 @@ class PenaltyOption(OptionGeneric):
                 state_cx_scaled = vertcat(state_cx_scaled, controller.states_scaled.cx_end)
                 if (
                     not (
-                        self.node == ocp.nlp[self.phase].ns and ocp.nlp[self.phase].control_type == ControlType.CONSTANT
+                        self.node[0] == controller.ns - 1 and ocp.nlp[self.phase].control_type == ControlType.CONSTANT
                     )
                     or ocp.assume_phase_dynamics
                 ):

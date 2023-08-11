@@ -1439,17 +1439,34 @@ class OptimalControlProgram:
                 )  # dt=1 because multinode penalties behave like Mayer functions
 
             elif penalty.derivative or penalty.explicit_derivative:
+                control_value = u
+                stochastic_value = s
                 if not np.all(
                     x == 0
                 ):  # This is a hack to initialize the plots because it x is (N,2) and we need (N, M) in collocation
                     state_value = x[:, :] if penalty.name == "CONTINUITY" else x[:, [0, -1]]
+                    state_value = state_value.reshape((-1, 1))
+                    control_value = control_value.reshape((-1, 1))
+                    stochastic_value = stochastic_value.reshape((-1, 1))
                 else:
                     state_value = np.zeros(
-                        (x.shape[0], int(penalty.weighted_function_non_threaded[t].nnz_in(0) / x.shape[0]))
+                        (x.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(0) / x.shape[0]))
                     )
+                    if u.size != 0:
+                        control_value = np.zeros(
+                            (u.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(1) / u.shape[0]))
+                        )
+                    if s.size != 0:
+                        stochastic_value = np.zeros(
+                            (s.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(2) / s.shape[0]))
+                        )
 
                 out.append(
-                    penalty.weighted_function_non_threaded[t](state_value, u, p, s, 0, 0, penalty.weight, _target, dt)
+                    penalty.weighted_function_non_threaded[t](state_value,
+                                                              control_value,
+                                                              p,
+                                                              stochastic_value,
+                                                              0, 0, penalty.weight, _target, dt)
                 )
             elif (
                 penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
