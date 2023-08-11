@@ -708,6 +708,8 @@ class TRAPEZOIDAL(Integrator):
         p: MX | SX,
         s_prev: MX | SX,
         s_next: MX | SX,
+        motor_noise: MX | SX = None,
+        sensory_noise: MX | SX = None,
     ):
         """
         Compute the next integrated state
@@ -738,8 +740,8 @@ class TRAPEZOIDAL(Integrator):
         The next integrate states
         """
 
-        dx = self.fun(x_prev, u_prev, p, s_prev)[:, self.idx]
-        dx_next = self.fun(x_next, u_next, p, s_next)[:, self.idx]
+        dx = self.fun(x_prev, u_prev, p, s_prev, motor_noise, sensory_noise)[:, self.idx]
+        dx_next = self.fun(x_next, u_next, p, s_next, motor_noise, sensory_noise)[:, self.idx]
 
         return x_prev + (dx + dx_next) * h / 2
 
@@ -751,6 +753,8 @@ class TRAPEZOIDAL(Integrator):
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
+        motor_noise: MX | SX,
+        sensory_noise: MX | SX,
     ) -> tuple:
         """
         The dynamics of the system
@@ -769,6 +773,10 @@ class TRAPEZOIDAL(Integrator):
             The parameters scaling factor
         stochastic_variables_prev: MX | SX
             The stochastic variables of the system
+        motor_noise: MX | SX
+            The motor noise of the system
+        sensory_noise: MX | SX
+            The sensory noise of the system
 
         Returns
         -------
@@ -813,9 +821,9 @@ class TRAPEZOIDAL(Integrator):
 
         self.function = Function(
             "integrator",
-            [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
-            ["x0", "p", "params", "s"],
+            [self.x_sym, self.u_sym, self.param_sym, self.s_sym, self.motor_noise, self.sensory_noise],
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym, self.motor_noise, self.sensory_noise),
+            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
             ["xf", "xall"],
         )
 
