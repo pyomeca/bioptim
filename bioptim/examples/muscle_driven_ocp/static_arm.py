@@ -20,6 +20,7 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     Solver,
+    RigidBodyDynamics,
     ControlType,
 )
 
@@ -76,7 +77,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand=expand_dynamics)
+    dynamics.add(
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_residual_torque=True,
+        expand=expand_dynamics,
+    )
 
     # Path constraint
     x_bounds = BoundsList()

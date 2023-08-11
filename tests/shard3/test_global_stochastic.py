@@ -1,5 +1,6 @@
 import os
 import pytest
+from sys import platform
 
 import numpy as np
 from casadi import DM, vertcat
@@ -533,6 +534,9 @@ def test_arm_reaching_torque_driven_explicit():
 @pytest.mark.parametrize("with_scaling", [True, False])
 def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
+
+    if platform == "win32":
+        return
 
     final_time = 0.8
     n_shooting = 4

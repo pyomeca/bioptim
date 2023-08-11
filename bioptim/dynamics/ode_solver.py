@@ -248,6 +248,7 @@ class OdeSolver:
             super(OdeSolver.TRAPEZOIDAL, self).__init__()
             self.rk_integrator = TRAPEZOIDAL
             self.is_direct_shooting = True
+            self.defects_type = DefectType.NOT_APPLICABLE
 
         def integrator(self, ocp, nlp, node_index: int) -> list:
             """

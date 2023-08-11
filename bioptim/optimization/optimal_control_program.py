@@ -13,9 +13,8 @@ from matplotlib import pyplot as plt
 
 from .optimization_vector import OptimizationVectorHelper
 from .non_linear_program import NonLinearProgram as NLP
-from ..dynamics.configure_problem import DynamicsList, Dynamics
+from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProblem
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
-from ..dynamics.configure_problem import ConfigureProblem
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..interfaces.biomodel import BioModel
