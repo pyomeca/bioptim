@@ -590,7 +590,7 @@ class PenaltyOption(OptionGeneric):
         else:
             ocp = controller.ocp
             name = self.name
-            if (controller.get_nlp.assume_phase_dynamics or controller.node_index < controller.ns) and (self.integrate or isinstance(controller.ode_solver, OdeSolver.COLLOCATION) or isinstance(controller.ode_solver, OdeSolver.IRK)):
+            if (controller.get_nlp.assume_phase_dynamics or controller.node_index < controller.ns) and (self.integrate or controller.ode_solver.is_direct_collocation):
                 state_cx_scaled = vertcat(
                     *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
                 )
