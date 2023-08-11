@@ -11,7 +11,7 @@ import platform
 import pytest
 import numpy as np
 from casadi import sum1, sum2
-from bioptim import InterpolationType, OdeSolver, MultinodeConstraintList, MultinodeConstraintFcn, Node
+from bioptim import InterpolationType, OdeSolver, MultinodeConstraintList, MultinodeConstraintFcn, Node, ControlType
 
 from tests.utils import TestUtils
 
@@ -29,6 +29,7 @@ from tests.utils import TestUtils
         OdeSolver.RK8,
         OdeSolver.IRK,
         OdeSolver.COLLOCATION,
+        OdeSolver.TRAPEZOIDAL,
     ],
 )
 def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
@@ -67,6 +68,11 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
             )
         return
 
+    if isinstance(ode_solver_obj, (OdeSolver.TRAPEZOIDAL)):
+        control_type = ControlType.CONSTANT_WITH_LAST_NODE
+    else:
+        control_type = ControlType.CONSTANT
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
@@ -76,6 +82,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
         ode_solver=ode_solver_obj,
         assume_phase_dynamics=assume_phase_dynamics,
         expand_dynamics=ode_solver not in (OdeSolver.IRK, OdeSolver.CVODES),
+        control_type=control_type,
     )
     ocp.print(to_console=True, to_graph=False)
 
@@ -133,6 +140,13 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 76.24887695462857)
         np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.652476, -0.496652])
 
+    elif isinstance(ode_solver_obj, OdeSolver.TRAPEZOIDAL):
+        np.testing.assert_almost_equal(f[0, 0], 31.423389566303985)
+        # detailed cost values
+        if detailed_cost is not None:
+            np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 31.423389566303985)
+        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.69364974, -0.48330043])
+
     else:
         np.testing.assert_almost_equal(f[0, 0], 41.58259426)
         # detailed cost values
@@ -177,15 +191,19 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
     elif isinstance(ode_solver_obj, OdeSolver.RK2):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.6934385, 0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-27.6610711, 0)))
+    elif isinstance(ode_solver_obj, OdeSolver.TRAPEZOIDAL):
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.79720006, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-15.23562005, 0.0)))
     else:
-        np.testing.assert_almost_equal(tau[:, 0], np.array((6.01549798, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.68877181, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.01549798, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.68877181, 0.0)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
+    return
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
