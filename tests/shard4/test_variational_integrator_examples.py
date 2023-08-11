@@ -96,6 +96,17 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     np.testing.assert_almost_equal(
+        sol.states["lambdas"][:, 0].squeeze(),
+        [-16.478903],
+        decimal=6,
+    )
+    np.testing.assert_almost_equal(
+        sol.states["lambdas"][:, -1].squeeze(),
+        [7.242878],
+        decimal=6,
+    )
+
+    np.testing.assert_almost_equal(
         sol.states["q"][:, 0].squeeze(),
         [0.0, 0.0, 0.0],
         decimal=6,
@@ -103,7 +114,7 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
 
     np.testing.assert_almost_equal(
         sol.states["q"][:, 10].squeeze(),
-        [-0.325653795765506, 0.0, 0.514317755981258],
+        [-5.307718e-01, -2.969952e-14, 7.052470e-01],
         decimal=6,
     )
 
@@ -115,30 +126,30 @@ def test_variational_pendulum_with_holonomic_constraints(use_sx):
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 0].squeeze(),
-        [9.952650040825121, 0.0, 0.0],
+        [10.502854, 0.0, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, 10].squeeze(),
-        [1.326124390994498, 0.0, 0.0],
+        [12.717297, 0.0, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.controls["tau"][:, -2].squeeze(),
-        [-24.871395482792202, 0.0, 0.0],
+        [-19.131171, 0.0, 0.0],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.parameters["qdot_start"].squeeze(),
-        [0.0, 0.0, 0.0],
+        [1.000001e-02, 1.507920e-16, 1.000001e-02],
         decimal=6,
     )
 
     np.testing.assert_almost_equal(
         sol.parameters["qdot_end"].squeeze(),
-        [0.0, 0.0, 0.0],
+        [-1.000001e-02, 7.028717e-16, 1.000001e-02],
         decimal=6,
     )
