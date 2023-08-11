@@ -917,7 +917,7 @@ class PlotOcp:
                                             :, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size
                                         ]
                                     if self.ocp.assume_phase_dynamics:
-                                        control_tp = control[:, node_idx: node_idx + 1 + 1]
+                                        control_tp = control[:, node_idx : node_idx + 1 + 1]
                                     else:
                                         control_tp = control[:, node_idx : node_idx + 1 + u_mod]
                                         if np.isnan(control_tp).any():

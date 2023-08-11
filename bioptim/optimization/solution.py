@@ -2018,7 +2018,11 @@ class Solution:
             if not self.ocp.assume_phase_dynamics and ((isinstance(u, list) and u != []) or isinstance(u, np.ndarray)):
                 u = u[:, ~np.isnan(np.sum(u, axis=0))]
             val.append(penalty.function[idx](x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), 0, 0))
-            val_weighted.append(penalty.weighted_function[idx](x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), 0, 0, penalty.weight, target, dt))
+            val_weighted.append(
+                penalty.weighted_function[idx](
+                    x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), 0, 0, penalty.weight, target, dt
+                )
+            )
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)

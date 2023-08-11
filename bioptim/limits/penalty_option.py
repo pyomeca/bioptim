@@ -511,7 +511,10 @@ class PenaltyOption(OptionGeneric):
                 else:
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
                 if controllers[0].get_nlp.assume_phase_dynamics or controllers[0].node_index < controllers[0].ns:
-                    if controllers[1].controls_scaled.cx_start.shape[0] > controllers[0].controls_scaled.cx_start.shape[0]:
+                    if (
+                        controllers[1].controls_scaled.cx_start.shape[0]
+                        > controllers[0].controls_scaled.cx_start.shape[0]
+                    ):
                         fake = controllers[0].cx(
                             controllers[1].controls_scaled.cx_start.shape[0]
                             - controllers[0].controls_scaled.cx_start.shape[0],
@@ -600,9 +603,7 @@ class PenaltyOption(OptionGeneric):
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
                 state_cx_scaled = vertcat(state_cx_scaled, controller.states_scaled.cx_end)
                 if (
-                    not (
-                        self.node[0] == controller.ns - 1 and ocp.nlp[self.phase].control_type == ControlType.CONSTANT
-                    )
+                    not (self.node[0] == controller.ns - 1 and ocp.nlp[self.phase].control_type == ControlType.CONSTANT)
                     or ocp.assume_phase_dynamics
                 ):
                     control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)

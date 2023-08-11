@@ -1462,11 +1462,9 @@ class OptimalControlProgram:
                         )
 
                 out.append(
-                    penalty.weighted_function_non_threaded[t](state_value,
-                                                              control_value,
-                                                              p,
-                                                              stochastic_value,
-                                                              0, 0, penalty.weight, _target, dt)
+                    penalty.weighted_function_non_threaded[t](
+                        state_value, control_value, p, stochastic_value, 0, 0, penalty.weight, _target, dt
+                    )
                 )
             elif (
                 penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
