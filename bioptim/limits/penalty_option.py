@@ -578,7 +578,7 @@ class PenaltyOption(OptionGeneric):
                     control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
                     stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
                 else:
-                    if isinstance(controller.ode_solver, OdeSolver.COLLOCATION) and not self.derivative:
+                    if controller.ode_solver.is_direct_collocation and not self.derivative:
                         state_cx_scaled = vertcat(
                             state_cx_scaled, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
                         )
@@ -733,11 +733,7 @@ class PenaltyOption(OptionGeneric):
                 )["xf"]
             )
 
-            stochastic_cx_scaled = (
-                vertcat(controller.stochastic_variables_scaled.cx_start, controller.stochastic_variables_scaled.cx_end)
-                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                else controller.stochastic_variables_scaled.cx_start
-            )
+            stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
 
             modified_function = controller.to_casadi_func(
                 f"{name}",
