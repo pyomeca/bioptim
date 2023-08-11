@@ -592,22 +592,25 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             s = nlp.cx()
             for idx in penalty.node_idx:
                 x_tp, u_tp, s_tp = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                x = vertcat(x, x_tp)
-                u = vertcat(u, u_tp)
-                s = vertcat(s, s_tp)
-            if (
-                penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL
-            ) and nlp.control_type == ControlType.CONSTANT:
-                u = vertcat(u, u[:, -1])
+                x = horzcat(x, x_tp)
+                u = horzcat(u, u_tp)
+                s = horzcat(s, s_tp)
+            # if (
+            #     penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL
+            # ) and nlp.control_type == ControlType.CONSTANT:
+            #     u = horzcat(u, u[:, -1])
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            p = reshape(
-                penalty.weighted_function[0](
-                    x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
-                ),
-                -1,
-                1,
-            )
+            try:
+                p = reshape(
+                    penalty.weighted_function[0](
+                        x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
+                    ),
+                    -1,
+                    1,
+                )
+            except:
+                print("ici")
 
         else:
             p = interface.ocp.cx()

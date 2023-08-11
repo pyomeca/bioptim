@@ -1952,7 +1952,13 @@ class Solution:
                     if penalty.target is not None:
                         target = penalty.target[0]
                 else:
-                    col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
+                    if penalty.integrate or nlp.ode_solver.is_direct_collocation:
+                        if idx != nlp.ns:
+                            col_x_idx = list(range(idx * steps, (idx + 1) * steps))
+                        else:
+                            col_x_idx = [idx * steps]
+                    else:
+                        col_x_idx = [idx]
                     col_u_idx = [idx]
                     col_s_idx = [idx]
                     if (
@@ -1973,16 +1979,19 @@ class Solution:
 
                     x = np.ndarray((nlp.states.shape, len(col_x_idx)))
                     for key in nlp.states:
-                        if nlp.ode_solver.is_direct_collocation and (
-                            "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
-                        ):
-                            x[nlp.states[key].index, :] = (
-                                self.states_no_intermediate[key][:, col_x_idx]
-                                if len(self.phase_time) - 1 == 1
-                                else self.states_no_intermediate[phase_idx][key][:, col_x_idx]
-                            )
-                        else:
-                            x[nlp.states[key].index, :] = self._states["scaled"][phase_idx][key][:, col_x_idx]
+                        # if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and (
+                        #     "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
+                        # ):
+                        #     try:
+                        #         x[nlp.states[key].index, :] = (
+                        #             self.states_no_intermediate[key][:, col_x_idx]
+                        #             if len(self.phase_time) - 1 == 1
+                        #             else self.states_no_intermediate[phase_idx][key][:, col_x_idx]
+                        #         )
+                        #     except:
+                        #         print('ici')
+                        # else:
+                        x[nlp.states[key].index, :] = self._states["scaled"][phase_idx][key][:, col_x_idx]
 
                     u = np.ndarray((nlp.controls.shape, len(col_u_idx)))
                     for key in nlp.controls:
