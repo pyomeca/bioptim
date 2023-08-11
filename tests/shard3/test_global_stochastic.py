@@ -1,5 +1,6 @@
 import os
 import pytest
+from sys import platform
 
 import numpy as np
 from casadi import DM, vertcat
