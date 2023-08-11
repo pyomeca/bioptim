@@ -301,7 +301,9 @@ class NewVariableConfiguration:
             )
 
         if self.as_stochastic and self.name not in self.nlp.s_init:
-            self.nlp.s_init.add(self.name, initial_guess=np.zeros(len(self.nlp.variable_mappings[self.name].to_first.map_idx)))
+            self.nlp.s_init.add(
+                self.name, initial_guess=np.zeros(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
+            )
 
     def _declare_variable_scaling(self):
         if self.as_states and self.name not in self.nlp.x_scaling:
@@ -317,7 +319,9 @@ class NewVariableConfiguration:
                 self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
         if self.as_stochastic and self.name not in self.nlp.s_scaling:
-            self.nlp.s_scaling.add(self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx)))
+            self.nlp.s_scaling.add(
+                self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
+            )
 
     def _use_copy(self):
         """Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True"""
@@ -413,11 +417,15 @@ class NewVariableConfiguration:
                 (
                     1
                     if self.ocp.assume_phase_dynamics
-                    else (self.nlp.ns +  + (
+                    else (
+                        self.nlp.ns
+                        + +(
                             1
-                            if self.nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+                            if self.nlp.control_type
+                            in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
                             else 0
-                        ))
+                        )
+                    )
                 )
             ):
                 cx_scaled = (
