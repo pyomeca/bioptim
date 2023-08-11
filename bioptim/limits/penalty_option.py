@@ -439,21 +439,56 @@ class PenaltyOption(OptionGeneric):
             for ctrl in controllers:
                 self.all_nodes_index.extend(ctrl.t)
 
-            state_cx_scaled = controllers[1].states_scaled.cx
-            control_cx_scaled = controllers[1].controls_scaled.cx
-            stochastic_cx_scaled = controllers[1].stochastic_variables_scaled.cx
+            # To deal with phases with uneven numbers of variables
+            if controllers[0].states_scaled.cx.shape[0] > controllers[1].states_scaled.cx.shape[0]:
+                fake = controllers[0].cx(controllers[0].states_scaled.cx.shape[0] - controllers[1].states_scaled.cx.shape[0], 1)
+                state_cx_scaled = vertcat(controllers[1].states_scaled.cx, fake)
+            else:
+                state_cx_scaled = controllers[1].states_scaled.cx
+            if controllers[0].controls_scaled.cx.shape[0] > controllers[1].controls_scaled.cx.shape[0]:
+                fake = controllers[0].cx(controllers[0].controls_scaled.cx.shape[0] - controllers[1].controls_scaled.cx.shape[0], 1)
+                control_cx_scaled = vertcat(controllers[1].controls_scaled.cx, fake)
+            else:
+                control_cx_scaled = controllers[1].controls_scaled.cx
+            if controllers[0].stochastic_variables_scaled.cx.shape[0] > controllers[1].stochastic_variables_scaled.cx.shape[0]:
+                fake = controllers[0].cx(controllers[0].stochastic_variables_scaled.cx.shape[0] - controllers[1].stochastic_variables_scaled.cx.shape[0], 1)
+                stochastic_cx_scaled = vertcat(controllers[1].stochastic_variables_scaled.cx, fake)
+            else:
+                stochastic_cx_scaled = controllers[1].stochastic_variables_scaled.cx
 
             # To deal with cyclic phase transition in assume phase dynamics
             if controllers[0].cx_index_to_get == 1:
-                state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx)
-                control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx)
-                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx)
+                if controllers[1].states_scaled.cx.shape[0] > controllers[0].states_scaled.cx.shape[0]:
+                    fake = controllers[0].cx(controllers[1].states_scaled.cx.shape[0] - controllers[0].states_scaled.cx.shape[0], 1)
+                    state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx, fake)
+                else:
+                    state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx)
+                if controllers[1].controls_scaled.cx.shape[0] > controllers[0].controls_scaled.cx.shape[0]:
+                    fake = controllers[0].cx(controllers[1].controls_scaled.cx.shape[0] - controllers[0].controls_scaled.cx.shape[0], 1)
+                    control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx, fake)
+                else:
+                    control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx)
+                if controllers[1].stochastic_variables_scaled.cx.shape[0] > controllers[0].stochastic_variables_scaled.cx.shape[0]:
+                    fake = controllers[0].cx(controllers[1].stochastic_variables_scaled.cx.shape[0] - controllers[0].stochastic_variables_scaled.cx.shape[0], 1)
+                    stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx, fake)
+                else:
+                    stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx)
             else:
-                state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
-                control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx_start)
-                stochastic_cx_scaled = vertcat(
-                    stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx_start
-                )
+                if controllers[1].states_scaled.cx_start.shape[0] > controllers[0].states_scaled.cx_start.shape[0]:
+                    fake = controllers[0].cx(controllers[1].states_scaled.cx_start.shape[0] - controllers[0].states_scaled.cx_start.shape[0], 1)
+                    state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start, fake)
+                else:
+                    state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
+                if controllers[1].controls_scaled.cx_start.shape[0] > controllers[0].controls_scaled.cx_start.shape[0]:
+                    fake = controllers[0].cx(controllers[1].controls_scaled.cx_start.shape[0] - controllers[0].controls_scaled.cx_start.shape[0], 1)
+                    control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx_start, fake)
+                else:
+                    control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx_start)
+                if controllers[1].stochastic_variables_scaled.cx_start.shape[0] > controllers[0].stochastic_variables_scaled.cx_start.shape[0]:
+                    fake = controllers[0].cx(controllers[1].stochastic_variables_scaled.cx_start.shape[0] - controllers[0].stochastic_variables_scaled.cx_start.shape[0], 1)
+                    stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx_start, fake)
+                else:
+                    stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx_start)
 
         elif self.multinode_penalty:
             from ..limits.multinode_constraint import MultinodeConstraint
