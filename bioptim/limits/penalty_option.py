@@ -578,7 +578,7 @@ class PenaltyOption(OptionGeneric):
                     control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
                     stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
                 else:
-                    if isinstance(controller.ode_solver, OdeSolver.COLLOCATION):
+                    if isinstance(controller.ode_solver, OdeSolver.COLLOCATION) and not self.derivative:
                         state_cx_scaled = vertcat(
                             state_cx_scaled, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
                         )
@@ -594,11 +594,10 @@ class PenaltyOption(OptionGeneric):
             if controller.get_nlp.assume_phase_dynamics or controller.node_index < controller.ns:
                 if self.integrate or controller.ode_solver.is_direct_collocation:
                     if not (len(self.node_idx) == 1 and self.node_idx[0] == controller.ns):
-                        state_cx_scaled = vertcat(
-                            *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
-                        )
-            else:
-                state_cx_scaled = controller.states_scaled.cx_start
+                        if not self.derivative:
+                            state_cx_scaled = vertcat(
+                                *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
+                            )
             control_cx_scaled = controller.controls_scaled.cx_start
             stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
             if self.explicit_derivative:
@@ -646,9 +645,12 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded[node] = self.function[node]
 
         if self.derivative:
-            state_cx_scaled = vertcat(controller.states_scaled.cx_end, controller.states_scaled.cx_start)
+            if controller.get_nlp.ode_solver.is_direct_collocation and node != ocp.nlp[self.phase].ns:
+                state_cx_scaled = vertcat(*([controller.states_scaled.cx_end] + [controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list))
+            else:
+                state_cx_scaled = vertcat(controller.states_scaled.cx_end, controller.states_scaled.cx_start)
             if (
-                not (self.node == ocp.nlp[self.phase].ns and ocp.nlp[self.phase].control_type == ControlType.CONSTANT)
+                not (node == ocp.nlp[self.phase].ns and ocp.nlp[self.phase].control_type == ControlType.CONSTANT)
                 or ocp.assume_phase_dynamics
             ):
                 control_cx_scaled = vertcat(controller.controls_scaled.cx_end, controller.controls_scaled.cx_start)
@@ -785,6 +787,7 @@ class PenaltyOption(OptionGeneric):
                 target_cx,
                 dt_cx,
             )
+            self.function[node] = modified_function #####
         else:
             modified_fcn = (
                 self.function[node](

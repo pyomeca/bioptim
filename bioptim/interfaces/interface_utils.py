@@ -507,7 +507,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     _u = []
                 _s = nlp.S_scaled[_idx][:, 0]
 
-        if _penalty.derivative or _penalty.explicit_derivative:
+        if _penalty.explicit_derivative:
             if _idx < nlp.ns:
                 if is_unscaled:
                     x = nlp.X[_idx + 1][:, 0]
@@ -521,6 +521,31 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 else:
                     x = nlp.X_scaled[_idx + 1][:, 0]
                     if nlp.assume_phase_dynamics and _idx + 1 == len(nlp.U_scaled):
+                        u = nlp.U_scaled[_idx][:, 0]
+                    elif _idx + 1 < len(nlp.U_scaled):
+                        u = nlp.U_scaled[_idx + 1][:, 0]
+                    else:
+                        u = []
+                    s = nlp.S_scaled[_idx + 1][:, 0]
+
+                _x = vertcat(_x, x)
+                _u = vertcat(_u, u)
+                _s = vertcat(_s, s)
+
+        if _penalty.derivative:
+            if _idx < nlp.ns:
+                if is_unscaled:
+                    x = nlp.X[_idx + 1][:, 0]
+                    if _idx + 1 == len(nlp.U):
+                        u = nlp.U[_idx][:, 0]
+                    elif _idx + 1 < len(nlp.U):
+                        u = nlp.U[_idx + 1][:, 0]
+                    else:
+                        u = []
+                    s = nlp.S[_idx + 1][:, 0]
+                else:
+                    x = nlp.X_scaled[_idx + 1][:, 0]
+                    if _idx + 1 == len(nlp.U_scaled):
                         u = nlp.U_scaled[_idx][:, 0]
                     elif _idx + 1 < len(nlp.U_scaled):
                         u = nlp.U_scaled[_idx + 1][:, 0]
