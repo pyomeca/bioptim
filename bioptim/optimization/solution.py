@@ -1249,7 +1249,7 @@ class Solution:
                 [self._controls["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].controls]
             )
             if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
-                u0 = horzcat(u0, u0)
+                u0 = vertcat(u0, u0)
             params = []
             s0 = []
             if len(self.ocp.nlp[phase - 1].stochastic_variables) > 0:
@@ -1261,7 +1261,7 @@ class Solution:
                 )
             if self.parameters.keys():
                 params = np.vstack([self.parameters[key] for key in self.parameters])
-            val = self.ocp.phase_transitions[phase - 1].function[-1](horzcat(x0, x0), u0, params, s0, 0, 0)
+            val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params, s0, 0, 0)
             if val.shape[0] != x0.shape[0]:
                 raise RuntimeError(
                     f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -2026,7 +2026,11 @@ class Solution:
             # casadi function
             if not self.ocp.assume_phase_dynamics and ((isinstance(u, list) and u != []) or isinstance(u, np.ndarray)):
                 u = u[:, ~np.isnan(np.sum(u, axis=0))]
-            val.append(penalty.function[idx](x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), 0, 0))
+            if (penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                        or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL):
+                val.append(penalty.function[idx](x[:, 0], u[:, 0], p, s[:, 0], 0, 0))
+            else:
+                val.append(penalty.function[idx](x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), 0, 0))
             val_weighted.append(
                 penalty.weighted_function[idx](
                     x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), 0, 0, penalty.weight, target, dt
