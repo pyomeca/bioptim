@@ -16,7 +16,7 @@ from ..misc.mapping import BiMapping
 
 
 def variable_type_from_booleans_to_enums(
-        as_states: bool, as_controls: bool, as_states_dot: bool, as_stochastic: bool
+    as_states: bool, as_controls: bool, as_states_dot: bool, as_stochastic: bool
 ) -> list[VariableType]:
     """
     Convert the booleans to enums
@@ -179,7 +179,9 @@ class NewVariableConfiguration:
         )
 
     @staticmethod
-    def check_variable_copy_condition(nlp, phase_idx: int, use_from_phase_idx: int, name: str, decision_variable_attribute: str):
+    def check_variable_copy_condition(
+        nlp, phase_idx: int, use_from_phase_idx: int, name: str, decision_variable_attribute: str
+    ):
         """
         Check if the copy condition is met, if a NodeMapping exists.
 
@@ -198,9 +200,9 @@ class NewVariableConfiguration:
             True if the copy condition is met, False otherwise
         """
         return (
-                use_from_phase_idx is not None
-                and use_from_phase_idx < phase_idx
-                and name in getattr(nlp[use_from_phase_idx], decision_variable_attribute)
+            use_from_phase_idx is not None
+            and use_from_phase_idx < phase_idx
+            and name in getattr(nlp[use_from_phase_idx], decision_variable_attribute)
         )
 
     def define_cx_scaled(self, n_col: int, n_shooting: int, initial_node) -> list[MX | SX, ...]:

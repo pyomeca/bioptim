@@ -187,4 +187,3 @@ class MultiCyclicCycleSolutions(Enum):
     NONE = "none"
     FIRST_CYCLES = "first_cycles"
     ALL_CYCLES = "all_cycles"
-

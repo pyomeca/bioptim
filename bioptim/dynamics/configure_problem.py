@@ -909,7 +909,6 @@ class ConfigureProblem:
         #     fatigue,
         # )
 
-
         # new_variable_config.add_states()
         # new_variable_config.add_controls()
         # new_variable_config.add_states_dot()
