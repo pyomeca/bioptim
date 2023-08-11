@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from casadi import MX, SX, vertcat, Function, DM
+from casadi import MX, SX, vertcat
 import numpy as np
 
 from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
@@ -39,17 +39,27 @@ def variable_type_from_booleans_to_enums(
 
     variable_type = []
     if as_states:
-        variable_type.append(VariableType.STATE)
+        variable_type.append(VariableType.STATES)
     if as_states_dot:
-        variable_type.append(VariableType.STATE_DOT)
+        variable_type.append(VariableType.STATES_DOT)
     if as_controls:
-        variable_type.append(VariableType.CONTROL)
+        variable_type.append(VariableType.CONTROLS)
     if as_stochastic:
         variable_type.append(VariableType.STOCHASTIC)
     return variable_type
 
 
 class NewVariableConfiguration:
+    # todo: add a way to remove the if as_states, as_controls, as_states_dot, as_stochastic, etc...
+    #   if we want to remove ocp, nlp, it
+    #   should be a method of ocp, and specify the phase_idx where the variable is added
+    #   ocp.configure_new_variable(
+    #     phase_idx,
+    #     name,
+    #     name_elements,
+    #     variable_type=variable_types,
+    #     # VariableType.CONTROL, VariableType.STATE_DOT, VariableType.STOCHASTIC, VariableType.ALGEBRAIC_STATE
+    #   )
     def __init__(
         self,
         name: str,
@@ -138,7 +148,6 @@ class NewVariableConfiguration:
         self._use_copy()
 
         # plot
-
         self.legend = None
 
         self._declare_auto_axes_idx()
@@ -191,6 +200,10 @@ class NewVariableConfiguration:
             The non linear program of the phase of the ocp
         phase_idx:
             The index of the phase
+        use_from_phase_idx: int
+            The index of the phase from which the variable should be copied
+        name: str
+            The name of the variable to copy
         decision_variable_attribute: str
             refers to one property of the nlp, e.g. "states", "states_dot", "controls", ...
 
@@ -287,6 +300,9 @@ class NewVariableConfiguration:
                 self.name, initial_guess=np.zeros(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
 
+        if self.as_stochastic and self.name not in self.nlp.s_init:
+            self.nlp.s_init.add(self.name, initial_guess=np.zeros(len(self.nlp.variable_mappings[self.name].to_first.map_idx)))
+
     def _declare_variable_scaling(self):
         if self.as_states and self.name not in self.nlp.x_scaling:
             self.nlp.x_scaling.add(
@@ -300,6 +316,8 @@ class NewVariableConfiguration:
             self.nlp.u_scaling.add(
                 self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
+        if self.as_stochastic and self.name not in self.nlp.s_scaling:
+            self.nlp.s_scaling.add(self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx)))
 
     def _use_copy(self):
         """Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True"""
@@ -395,7 +413,11 @@ class NewVariableConfiguration:
                 (
                     1
                     if self.ocp.assume_phase_dynamics
-                    else (self.nlp.ns + (1 if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else 0))
+                    else (self.nlp.ns +  + (
+                            1
+                            if self.nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+                            else 0
+                        ))
                 )
             ):
                 cx_scaled = (
