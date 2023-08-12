@@ -289,14 +289,14 @@ class AcadosInterface(SolverInterface):
                     continue
 
                 if G.node[0] == Node.ALL or G.node[0] == Node.ALL_SHOOTING:
-                    self.all_constr = vertcat(self.all_constr, G.function[0](x, u, p, s))
+                    self.all_constr = vertcat(self.all_constr, G.function[0](x, u, p, s, [], []))
                     self.all_g_bounds.concatenate(G.bounds)
                     if G.node[0] == Node.ALL:
-                        self.end_constr = vertcat(self.end_constr, G.function[0](x, u, p, s))
+                        self.end_constr = vertcat(self.end_constr, G.function[0](x, u, p, s, [], []))
                         self.end_g_bounds.concatenate(G.bounds)
 
                 elif G.node[0] == Node.END:
-                    self.end_constr = vertcat(self.end_constr, G.function[0](x, u, p, s))
+                    self.end_constr = vertcat(self.end_constr, G.function[0](x, u, p, s, [], []))
                     self.end_g_bounds.concatenate(G.bounds)
 
                 else:
@@ -470,7 +470,7 @@ class AcadosInterface(SolverInterface):
                 raise RuntimeError(f"{objectives.type.name} is an incompatible objective term with LINEAR_LS cost type")
 
         def add_nonlinear_ls_lagrange(acados, objectives, x, u, p, s):
-            acados.lagrange_costs = vertcat(acados.lagrange_costs, objectives.function[0](x, u, p, s).reshape((-1, 1)))
+            acados.lagrange_costs = vertcat(acados.lagrange_costs, objectives.function[0](x, u, p, s, [], []).reshape((-1, 1)))
             acados.W = linalg.block_diag(acados.W, np.diag([objectives.weight] * objectives.function[0].numel_out()))
 
             node_idx = objectives.node_idx[:-1] if objectives.node[0] == Node.ALL else objectives.node_idx
