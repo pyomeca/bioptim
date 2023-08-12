@@ -491,12 +491,24 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _x = nlp.cx()
                 for i in range(nlp.X[_idx].shape[1]):
                     _x = vertcat(_x, nlp.X[_idx][:, i])
+
+                # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
+                if _idx == nlp.ns and nlp.ode_solver.is_direct_collocation and nlp.assume_phase_dynamics:
+                    for i in range(1, nlp.X[_idx-1].shape[1]):
+                        _x = vertcat(_x, nlp.X[_idx-1][:, i])
+
                 _u = nlp.U[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U) else []
                 _s = nlp.S[_idx][:, 0]
             else:
                 _x = nlp.cx()
                 for i in range(nlp.X_scaled[_idx].shape[1]):
                     _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
+
+                # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
+                if _idx == nlp.ns and nlp.ode_solver.is_direct_collocation and nlp.assume_phase_dynamics:
+                    for i in range(1, nlp.X_scaled[_idx - 1].shape[1]):
+                        _x = vertcat(_x, nlp.X_scaled[_idx - 1][:, i])
+
                 if sum(_penalty.weighted_function[_idx].size_in(1)) == 0:
                     _u = []
                 elif nlp.assume_phase_dynamics and _idx == len(nlp.U_scaled):
@@ -661,12 +673,15 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     s = []
                 else:
                     x, u, s = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                    p = vertcat(
-                        p,
-                        penalty.weighted_function[idx](
-                            x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
-                        ),
-                    )
+                    try:
+                        p = vertcat(
+                            p,
+                            penalty.weighted_function[idx](
+                                x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
+                            ),
+                        )
+                    except:
+                        print('ici')
 
         out = vertcat(out, sum2(p))
     return out
