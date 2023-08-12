@@ -493,7 +493,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     _x = vertcat(_x, nlp.X[_idx][:, i])
 
                 # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
-                if _idx == nlp.ns and nlp.ode_solver.is_direct_collocation and nlp.assume_phase_dynamics:
+                if _idx == nlp.ns and nlp.ode_solver.is_direct_collocation and nlp.assume_phase_dynamics and _penalty.node[0] != Node.END:
                     for i in range(1, nlp.X[_idx-1].shape[1]):
                         _x = vertcat(_x, nlp.X[_idx-1][:, i])
 
@@ -505,7 +505,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
 
                 # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
-                if _idx == nlp.ns and nlp.ode_solver.is_direct_collocation and nlp.assume_phase_dynamics:
+                if _idx == nlp.ns and nlp.ode_solver.is_direct_collocation and nlp.assume_phase_dynamics and _penalty.node[0] != Node.END:
                     for i in range(1, nlp.X_scaled[_idx - 1].shape[1]):
                         _x = vertcat(_x, nlp.X_scaled[_idx - 1][:, i])
 
