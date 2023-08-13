@@ -1925,10 +1925,7 @@ class Solution:
                         x = np.vstack((x, _x)) if x.size else _x
                         u = np.vstack((u, _u)) if u.size else _u
                         s = np.vstack((s, _s)) if s.size else _s
-                    x = x.T
-                    u = u.T
-                    s = s.T
-                if penalty.multinode_penalty:
+                elif penalty.multinode_penalty:
                     x = np.array(())
                     u = np.array(())
                     s = np.array(())
@@ -1949,9 +1946,6 @@ class Solution:
                         x = np.vstack((x, _x)) if x.size else _x
                         u = np.vstack((u, _u)) if u.size else _u
                         s = np.vstack((s, _s)) if s.size else _s
-                    x = x.T
-                    u = u.T
-                    s = s.T
                 elif (
                     "Lagrange" not in penalty.type.__str__()
                     and "Mayer" not in penalty.type.__str__()
