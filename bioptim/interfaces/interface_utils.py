@@ -7,6 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
+from ..limits.phase_transition import PhaseTransitionFcn
 from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule
 from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
@@ -255,7 +256,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     )
                 else:
                     _x_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].X[_penalty.all_nodes_index[1]][:, 0]
-                _x = vertcat(_x_0, _x_1)
 
                 if ocp.assume_phase_dynamics or _penalty.all_nodes_index[0] < len(interface.ocp.nlp[0].U):
                     if (
@@ -295,7 +295,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                         _u_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].U[_penalty.all_nodes_index[1] - u1_mode]
                 else:
                     _u_1 = []
-                _u = vertcat(_u_0, _u_1)
 
                 if (
                     interface.ocp.nlp[_penalty.nodes_phase[1]].S[0].shape[0]
@@ -327,7 +326,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     )
                 else:
                     _s_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].S[_penalty.all_nodes_index[1]]
-                _s = vertcat(_s_0, _s_1)
 
             else:
                 if (
@@ -360,7 +358,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     )
                 else:
                     _x_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[_penalty.all_nodes_index[1]][:, 0]
-                _x = vertcat(_x_0, _x_1)
 
                 if ocp.assume_phase_dynamics or _penalty.all_nodes_index[0] < len(
                     interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled
@@ -406,7 +403,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                         ]
                 else:
                     _u_1 = []
-                _u = vertcat(_u_0, _u_1)
 
                 if (
                     interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[0].shape[0]
@@ -438,7 +434,15 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     )
                 else:
                     _s_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[_penalty.all_nodes_index[1]]
+
+            if penalty.type == PhaseTransitionFcn.CYCLIC:
+                _x = vertcat(_x_0, _x_1)
+                _u = vertcat(_u_0, _u_1)
                 _s = vertcat(_s_0, _s_1)
+            else:
+                _x = vertcat(_x_1, _x_0)
+                _u = vertcat(_u_1, _u_0)
+                _s = vertcat(_s_1, _s_0)
 
         elif _penalty.multinode_penalty:
             ocp = interface.ocp
