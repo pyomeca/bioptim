@@ -708,8 +708,8 @@ class TRAPEZOIDAL(Integrator):
         p: MX | SX,
         s_prev: MX | SX,
         s_next: MX | SX,
-        motor_noise: MX | SX = None,
-        sensory_noise: MX | SX = None,
+        motor_noise: MX | SX,
+        sensory_noise: MX | SX,
     ):
         """
         Compute the next integrated state
@@ -734,6 +734,10 @@ class TRAPEZOIDAL(Integrator):
             The current stochastic variables of the system
         s_next: MX | SX
             The stochastic variables of the system at the next shooting node
+        motor_noise: MX | SX
+            The motor noise
+        sensory_noise: MX | SX
+            The sensory noise
 
         Returns
         -------
@@ -807,6 +811,8 @@ class TRAPEZOIDAL(Integrator):
             p,
             stochastic_variables_prev,
             stochastic_variables_next,
+            motor_noise,
+            sensory_noise,
         )
 
         if self.model.nb_quaternions > 0:

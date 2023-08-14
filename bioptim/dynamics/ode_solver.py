@@ -106,7 +106,7 @@ class RK(OdeSolverBase):
 
     Methods
     -------
-    integrator(self, ocp, nlp, node_index) -> list
+    integrator(self, ocp, nlp, node_index, with_noise) -> list
         The interface of the OdeSolver to the corresponding integrator
     """
 
@@ -123,7 +123,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp, node_index: int, with_noise: bool) -> list:
+    def integrator(self, ocp, nlp, node_index: int, with_noise: bool = False) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -279,7 +279,7 @@ class OdeSolver:
 
         Methods
         -------
-        integrator(self, ocp, nlp) -> list
+        integrator(self, ocp, nlp, node_index, with_noise) -> list
             The interface of the OdeSolver to the corresponding integrator
         """
 
@@ -289,7 +289,7 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, node_index: int) -> list:
+        def integrator(self, ocp, nlp, node_index: int, with_noise: bool = False) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -301,11 +301,18 @@ class OdeSolver:
                 A reference to the nlp
             node_index
                 The index of the node currently integrated
+            with_noise: bool
+                If the noise should be added to the ode
 
             Returns
             -------
             A list of integrators
             """
+
+            nlp.states.node_index = node_index
+            nlp.states_dot.node_index = node_index
+            nlp.controls.node_index = node_index
+            nlp.stochastic_variables.node_index = node_index
 
             if nlp.control_type == ControlType.CONSTANT:
                 raise RuntimeError(
@@ -313,10 +320,16 @@ class OdeSolver:
                     "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead."
                 )
 
-            nlp.states.node_index = node_index
-            nlp.states_dot.node_index = node_index
-            nlp.controls.node_index = node_index
-            nlp.stochastic_variables.node_index = node_index
+            if with_noise:
+                if nlp.motor_noise is None:
+                    raise RuntimeError(
+                        "You can only call integrator with_noise=True while running a " "StochasticOptimalControlProgram."
+                    )
+                motor_noise = nlp.motor_noise
+                sensory_noise = nlp.sensory_noise
+            else:
+                motor_noise = ocp.cx()
+                sensory_noise = ocp.cx()
 
             ode = {
                 "x_unscaled": horzcat(nlp.states.cx_start, nlp.states.cx_end),
@@ -326,13 +339,17 @@ class OdeSolver:
                 "s_unscled": horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end),
                 "s_scaled": horzcat(nlp.stochastic_variables.scaled.cx_start, nlp.stochastic_variables.scaled.cx_end),
                 "ode": nlp.dynamics_func,
+                "noised_ode": nlp.noised_dynamics_func if with_noise else None,
                 "implicit_ode": nlp.implicit_dynamics_func,
+                "noised_implicit_ode": nlp.noised_implicit_dynamics_func if with_noise else None,
             }
             ode_opt = {
                 "t0": 0,
                 "tf": nlp.dt,
                 "model": nlp.model,
                 "param": nlp.parameters,
+                "motor_noise": motor_noise,
+                "sensory_noise": sensory_noise,
                 "cx": nlp.cx,
                 "idx": 0,
                 "control_type": nlp.control_type,
