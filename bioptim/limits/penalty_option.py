@@ -1,7 +1,7 @@
 from typing import Any, Callable
 
 import biorbd_casadi as biorbd
-from casadi import vertcat, Function, MX, SX
+from casadi import horzcat, vertcat, Function, MX, SX
 import numpy as np
 
 from .penalty_controller import PenaltyController
@@ -727,17 +727,13 @@ class PenaltyOption(OptionGeneric):
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx_scaled = (
-                vertcat(controller.controls_scaled.cx_start)
+                controller.controls_scaled.cx_start
                 if controller.control_type == ControlType.CONSTANT
                 else vertcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end)
             )
-            control_cx = (
-                vertcat(controller.controls.cx_start)
-                if controller.control_type == ControlType.CONSTANT
-                else vertcat(controller.controls.cx_start, controller.controls.cx_end)
-            )
-            control_cx_end_scaled = get_u(control_cx_scaled, dt_cx)
-            control_cx_end = get_u(control_cx, dt_cx)
+
+            control_cx_end_scaled = get_u(horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end), dt_cx)
+            control_cx_end = get_u(horzcat(controller.controls.cx_start, controller.controls.cx_end), dt_cx)
             state_cx_end_scaled = (
                 controller.states_scaled.cx_end
                 if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
