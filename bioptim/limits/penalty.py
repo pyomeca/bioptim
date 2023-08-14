@@ -1317,8 +1317,17 @@ class PenaltyFunctionAbstract:
             raise ValueError("atrribute should be either mx or cx_start")
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
-            motor_noise = controller.motor_noise if controller.motor_noise is not None else MX()
-            sensory_noise = controller.sensory_noise if controller.sensory_noise is not None else MX()
+            if controller.motor_noise is not None:
+                motor_noise = controller.motor_noise
+                sensory_noise = controller.sensory_noise
+            else:
+                if attribute == "mx":
+                    motor_noise = MX()
+                    sensory_noise = MX()
+                elif attribute == "cx_start":
+                    motor_noise = controller.cx()
+                    sensory_noise = controller.cx()
+
             return controller.dynamics(
                 getattr(controller.states, attribute),
                 getattr(controller.controls, attribute),

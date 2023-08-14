@@ -351,7 +351,7 @@ class OptimalControlProgram:
             x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
         )
 
-        self.declare_multi_node_penalties(multinode_constraints, multinode_objectives)
+        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
 
         self.finalize_penalties(
             skip_continuity,
@@ -772,7 +772,7 @@ class OptimalControlProgram:
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
-    def declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
+    def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
