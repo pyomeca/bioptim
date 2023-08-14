@@ -728,11 +728,11 @@ class PenaltyOption(OptionGeneric):
             # which only relies on the value of the control at the beginning of the interval
             control_cx_scaled = (
                 controller.controls_scaled.cx_start
-                if controller.control_type == ControlType.CONSTANT
+                if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE)
                 else vertcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end)
             )
 
-            if controller.control_type == ControlType.CONSTANT:
+            if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 control_cx_end_scaled = get_u(controller.controls_scaled.cx_start, dt_cx)
                 control_cx_end = get_u(controller.controls.cx_start, dt_cx)
             else:

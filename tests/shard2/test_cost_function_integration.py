@@ -221,11 +221,11 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 43.72095415269257)
-                np.testing.assert_almost_equal(j_printed, 43.72095415269257)
+                np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
+                np.testing.assert_almost_equal(j_printed, 36.077211633874164)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 42.35668240594397)
-                np.testing.assert_almost_equal(j_printed, 42.35668240594397)
+                np.testing.assert_almost_equal(f[0, 0], 18.91863487850206)
+                np.testing.assert_almost_equal(j_printed, 18.91863487850206)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 26.170949218870444)
@@ -245,11 +245,11 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 43.72095415269257)
-                np.testing.assert_almost_equal(j_printed, 43.72095415269257)
+                np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
+                np.testing.assert_almost_equal(j_printed, 36.077211633874164)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 47.556203254754486)
-                np.testing.assert_almost_equal(j_printed, 47.556203254754486)
+                np.testing.assert_almost_equal(f[0, 0], 17.944878542423062)
+                np.testing.assert_almost_equal(j_printed, 17.944878542423062)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 26.170949218870444)

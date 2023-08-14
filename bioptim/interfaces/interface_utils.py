@@ -604,7 +604,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 s = nlp.S_scaled[_idx + 1][:, 0]
             _x = vertcat(_x, x)
             _s = vertcat(_s, s)
-            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
                     u = nlp.U[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U) else []
                 else:
@@ -616,7 +616,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _u = vertcat(_u, u)
 
         if _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
-            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
                     u = nlp.U[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U) else []
                 else:
