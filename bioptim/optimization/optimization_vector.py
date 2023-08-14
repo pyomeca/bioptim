@@ -172,9 +172,7 @@ class OptimizationVectorHelper:
             for key in nlp.states:
                 if key in nlp.x_bounds.keys():
                     if nlp.x_bounds[key].type == InterpolationType.ALL_POINTS:
-                        nlp.x_bounds[key].check_and_adjust_dimensions(
-                            nlp.states[key].cx.shape[0], nlp.ns * repeat
-                        )
+                        nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns * repeat)
                     else:
                         nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
 
