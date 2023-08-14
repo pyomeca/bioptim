@@ -107,6 +107,9 @@ class VariableType(Enum):
 
     STATES = "states"
     CONTROLS = "controls"
+    STATES_DOT = "states_dot"
+    ALGEBRAIC = "algebraic"
+    STOCHASTIC = "stochastic"
 
 
 class SolutionIntegrator(Enum):
