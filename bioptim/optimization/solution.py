@@ -2020,14 +2020,32 @@ class Solution:
             ):
                 val.append(penalty.function[idx](x[:, 0], u[:, 0], p, s[:, 0], 0, 0))
             else:
-                x_reshaped = x.T.reshape((-1, 1)) if x.shape[1] != 1 else x
-                u_reshaped = u.T.reshape((-1, 1)) if u.shape[1] != 1 else u
-                s_reshaped = s.T.reshape((-1, 1)) if s.shape[1] != 1 else s
+                x_reshaped = x
+                if len(x.shape) > 1:
+                    if x.shape[1] != 1:
+                        x_reshaped = x.T.reshape((-1, 1))
+                u_reshaped = u
+                if len(u.shape) > 1:
+                    if u.shape[1] != 1:
+                        u_reshaped = u.T.reshape((-1, 1))
+                s_reshaped = s
+                if len(s.shape) > 1:
+                    if s.shape[1] != 1:
+                        s_reshaped = s.T.reshape((-1, 1))
                 val.append(penalty.function[idx](x_reshaped, u_reshaped, p, s_reshaped, 0, 0))
 
-            x_reshaped = x.T.reshape((-1, 1)) if x.shape[1] != 1 else x
-            u_reshaped = u.T.reshape((-1, 1)) if u.shape[1] != 1 else u
-            s_reshaped = s.T.reshape((-1, 1)) if s.shape[1] != 1 else s
+                x_reshaped = x
+                if len(x.shape) > 1:
+                    if x.shape[1] != 1:
+                        x_reshaped = x.T.reshape((-1, 1))
+                u_reshaped = u
+                if len(u.shape) > 1:
+                    if u.shape[1] != 1:
+                        u_reshaped = u.T.reshape((-1, 1))
+                s_reshaped = s
+                if len(s.shape) > 1:
+                    if s.shape[1] != 1:
+                        s_reshaped = s.T.reshape((-1, 1))
             val_weighted.append(
                 penalty.weighted_function[idx](x_reshaped, u_reshaped, p, s_reshaped, 0, 0, penalty.weight, target, dt)
             )
