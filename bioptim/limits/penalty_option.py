@@ -577,11 +577,7 @@ class PenaltyOption(OptionGeneric):
             control_cx_scaled = ocp.cx()
             stochastic_cx_scaled = ocp.cx()
             for ctrl in controllers:
-                if (
-                    (self.derivative or self.explicit_derivative)
-                    and ctrl.node_index == controllers[-1].node_index  ####?
-                    and ctrl.phase_idx == controllers[-1].phase_idx
-                ):
+                if ctrl.node_index == controller.get_nlp.ns:
                     state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
                     control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
                     stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)

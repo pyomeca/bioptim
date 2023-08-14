@@ -1982,18 +1982,6 @@ class Solution:
 
                     x = np.ndarray((nlp.states.shape, len(col_x_idx)))
                     for key in nlp.states:
-                        # if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) and (
-                        #     "Lagrange" in penalty.type.__str__() or "Mayer" in penalty.type.__str__()
-                        # ):
-                        #     try:
-                        #         x[nlp.states[key].index, :] = (
-                        #             self.states_no_intermediate[key][:, col_x_idx]
-                        #             if len(self.phase_time) - 1 == 1
-                        #             else self.states_no_intermediate[phase_idx][key][:, col_x_idx]
-                        #         )
-                        #     except:
-                        #         print('ici')
-                        # else:
                         x[nlp.states[key].index, :] = self._states["scaled"][phase_idx][key][:, col_x_idx]
 
                     u = np.ndarray((nlp.controls.shape, len(col_u_idx)))
