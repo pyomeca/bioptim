@@ -1905,26 +1905,37 @@ class Solution:
             target = []
             if nlp is not None:
                 if penalty.transition:
-                    x = np.array(())
-                    u = np.array(())
-                    s = np.array(())
-                    for i in range(len(penalty.nodes_phase)):
-                        node_idx = penalty.multinode_idx[i]
-                        phase_idx = penalty.nodes_phase[i]
 
-                        _x = np.array(())
-                        _u = np.array(())
-                        _s = np.array(())
-                        for key in nlp.states:
-                            _x = np.concatenate((_x, self._states["scaled"][phase_idx][key][:, node_idx]))
-                        for key in nlp.controls:
-                            # Make an exception to the fact that U is not available for the last node
-                            _u = np.concatenate((_u, self._controls["scaled"][phase_idx][key][:, node_idx]))
-                        for key in nlp.stochastic_variables:
-                            _s = np.concatenate((_s, self._stochastic_variables["scaled"][phase_idx][key][:, node_idx]))
-                        x = np.vstack((x, _x)) if x.size else _x
-                        u = np.vstack((u, _u)) if u.size else _u
-                        s = np.vstack((s, _s)) if s.size else _s
+                    _x_0 = np.array(())
+                    _u_0 = np.array(())
+                    _s_0 = np.array(())
+                    for key in nlp.states:
+                        _x_0 = np.concatenate((_x_0, self._states["scaled"][penalty.nodes_phase[0]][key][:, penalty.multinode_idx[0]]))
+                    for key in nlp.controls:
+                        # Make an exception to the fact that U is not available for the last node
+                        _u_0 = np.concatenate((_u_0, self._controls["scaled"][penalty.nodes_phase[0]][key][:, penalty.multinode_idx[0]]))
+                    for key in nlp.stochastic_variables:
+                        _s_0 = np.concatenate((_s_0, self._stochastic_variables["scaled"][penalty.nodes_phase[0]][key][:, penalty.multinode_idx[0]]))
+
+                    _x_1 = np.array(())
+                    _u_1 = np.array(())
+                    _s_1 = np.array(())
+                    for key in nlp.states:
+                        _x_1 = np.concatenate((_x_1, self._states["scaled"][penalty.nodes_phase[1]][key][:,
+                                                     penalty.multinode_idx[1]]))
+                    for key in nlp.controls:
+                        # Make an exception to the fact that U is not available for the last node
+                        _u_1 = np.concatenate((_u_1, self._controls["scaled"][penalty.nodes_phase[1]][key][:,
+                                                     penalty.multinode_idx[1]]))
+                    for key in nlp.stochastic_variables:
+                        _s_1 = np.concatenate((_s_1,
+                                               self._stochastic_variables["scaled"][penalty.nodes_phase[1]][key][:,
+                                               penalty.multinode_idx[1]]))
+
+                    x = np.hstack((_x_0, _x_1))
+                    u = np.hstack((_u_0, _u_1))
+                    s = np.hstack((_s_0, _s_1))
+
                 elif penalty.multinode_penalty:
                     x = np.array(())
                     u = np.array(())
