@@ -492,9 +492,11 @@ class NewVariableConfiguration:
                 if n_cx < 3:
                     n_cx = 3
                 cx_scaled = self.define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
+                cx = self.define_cx_unscaled(cx_scaled, self.nlp.s_scaling[self.name].scaling)
+
                 self.nlp.stochastic_variables.append(
                     self.name,
-                    cx_scaled[0],
+                    cx[0],
                     cx_scaled[0],
                     self.mx_stochastic,
                     self.nlp.variable_mappings[self.name],
