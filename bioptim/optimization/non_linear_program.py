@@ -151,7 +151,6 @@ class NonLinearProgram:
         self.plot = {}
         self.plot_mapping = {}
         self.T = None
-        self.T_scaled = None
         self.t0 = None
         self.tf = None
         self.t_initial_guess = None

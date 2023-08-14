@@ -128,7 +128,6 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-            A reference to the phase
         """
 
         nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.params)

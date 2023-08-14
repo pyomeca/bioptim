@@ -202,23 +202,6 @@ class PenaltyController:
         return self._nlp.dynamics_func
 
     @property
-    def time_scaled(self) -> OptimizationVariableList:
-        """
-        Return the scaled states associated with the current node index.
-
-        Warning: Most of the time, the user does not want that states but the normal `states`, that said, it can
-        sometime be useful for very limited number of use case.
-
-        Returns
-        -------
-        The scaled states at node node_index
-        """
-        self._nlp.time.node_index = self.node_index
-        out = self._nlp.time.scaled
-        out.current_cx_to_get = self.cx_index_to_get
-        return out
-
-    @property
     def states_scaled(self) -> OptimizationVariableList:
         """
         Return the scaled states associated with the current node index.
