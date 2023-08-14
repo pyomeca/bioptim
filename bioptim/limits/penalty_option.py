@@ -404,7 +404,10 @@ class PenaltyOption(OptionGeneric):
             The control at a given time
             """
 
-            if controller.control_type == ControlType.CONSTANT:
+            if (
+                controller.control_type == ControlType.CONSTANT
+                or controller.control_type == ControlType.CONSTANT_WITH_LAST_NODE
+            ):
                 return u
             elif controller.control_type == ControlType.LINEAR_CONTINUOUS:
                 return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
@@ -442,7 +445,7 @@ class PenaltyOption(OptionGeneric):
             for ctrl in controllers:
                 state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
                 control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
-                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables.unscaled.cx)
+                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx)
 
         else:
             ocp = controller.ocp
@@ -455,13 +458,13 @@ class PenaltyOption(OptionGeneric):
             else:
                 state_cx_scaled = controller.states_scaled.cx_start
                 control_cx_scaled = controller.controls_scaled.cx_start
-            stochastic_cx_scaled = controller.stochastic_variables.cx_start
+            stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
                 state_cx_scaled = horzcat(state_cx_scaled, controller.states_scaled.cx_end)
                 control_cx_scaled = horzcat(control_cx_scaled, controller.controls_scaled.cx_end)
-                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, controller.stochastic_variables.cx_end)
+                stochastic_cx_scaled = horzcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
 
         # Alias some variables
         node = controller.node_index
@@ -495,14 +498,14 @@ class PenaltyOption(OptionGeneric):
                     controller.states_scaled.cx_end,
                     controller.controls_scaled.cx_end,
                     param_cx,
-                    controller.stochastic_variables.cx_start,
+                    controller.stochastic_variables_scaled.cx_start,
                 )
                 - self.function[node](
                     time_cx,
                     controller.states_scaled.cx_start,
                     controller.controls_scaled.cx_start,
                     param_cx,
-                    controller.stochastic_variables.cx_start,
+                    controller.stochastic_variables_scaled.cx_start,
                 ),
                 time_cx,
                 state_cx_scaled,
@@ -544,11 +547,13 @@ class PenaltyOption(OptionGeneric):
             control_cx_scaled = (
                 horzcat(controller.controls_scaled.cx_start)
                 if controller.control_type == ControlType.CONSTANT
+                or controller.control_type == ControlType.CONSTANT_WITH_LAST_NODE
                 else horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end)
             )
             control_cx = (
                 horzcat(controller.controls.cx_start)
                 if controller.control_type == ControlType.CONSTANT
+                or controller.control_type == ControlType.CONSTANT_WITH_LAST_NODE
                 else horzcat(controller.controls.cx_start, controller.controls.cx_end)
             )
             control_cx_end_scaled = get_u(control_cx_scaled, dt_cx)
@@ -560,9 +565,9 @@ class PenaltyOption(OptionGeneric):
             )
 
             stochastic_cx_scaled = (
-                horzcat(controller.stochastic_variables.cx_start, controller.stochastic_variables.cx_end)
-                if self.integration_rule == QuadratureRule.TRAPEZOIDAL
-                else controller.stochastic_variables.cx_start
+                horzcat(controller.stochastic_variables_scaled.cx_start, controller.stochastic_variables_scaled.cx_end)
+                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                else controller.stochastic_variables_scaled.cx_start
             )
 
             modified_function = controller.to_casadi_func(
@@ -574,7 +579,7 @@ class PenaltyOption(OptionGeneric):
                             controller.states_scaled.cx_start,
                             controller.controls_scaled.cx_start,
                             param_cx,
-                            controller.stochastic_variables.cx_start,
+                            controller.stochastic_variables_scaled.cx_start,
                         )
                         - target_cx[:, 0]
                     )
@@ -856,4 +861,5 @@ class PenaltyOption(OptionGeneric):
             u = [nlp.U[idx] for idx in t if idx != nlp.ns]
             u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
         s = [nlp.S[idx] for idx in t]
-        return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx, s)
+        s_scaled = [nlp.S_scaled[idx] for idx in t]
+        return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx, s, s_scaled)

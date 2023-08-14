@@ -97,7 +97,7 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         Scalable Variational Integrators for Constrained Mechanical Systems in Generalized Coordinates.
         IEEE Transactions on Robotics, 25(6), 1249–1261. doi:10.1109/tro.2009.2032955
         """
-        if self.control_type == ControlType.CONSTANT:
+        if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return 1 / 2 * control_minus * time_step
 
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -260,7 +260,10 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
 
         if self.has_holonomic_constraints:
             return vertcat(
-                residual, self.holonomic_constraints(q0), self.holonomic_constraints(q1)
+                residual,
+                self.holonomic_constraints(q1),  # consistent with the paper
+                self.holonomic_constraints(q0),  # to make sure the initial position fulfills the constraints
+                self.holonomic_constraints_jacobian(q0) @ qdot0,  # and the initial velocity fulfills its derivative
             )  # constraints(0) is never evaluated if not here
         else:
             return residual
@@ -324,4 +327,8 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         residual = -d2_l_q_ultimate_qdot_ultimate + d2_ld_q_penultimate_q_ultimate + fd_plus - constraint_term
         # constraints(q_ultimate) has already been evaluated in the last constraint calling
         # discrete_euler_lagrange_equations, thus it is not necessary to evaluate it again here.
-        return residual
+        # however it is necessary to evaluate the derivative of the constraints with respect to q_ultimate
+        if self.has_holonomic_constraints:
+            return vertcat(residual, self.holonomic_constraints_jacobian(q_ultimate) @ q_dot_ultimate)
+        else:
+            return residual

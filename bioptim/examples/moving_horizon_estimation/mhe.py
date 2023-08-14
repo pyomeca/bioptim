@@ -99,6 +99,7 @@ def prepare_mhe(
     u_init: np.ndarray,
     assume_phase_dynamics: bool = True,
     n_threads: int = 4,
+    expand_dynamics: bool = True,
 ):
     """
 
@@ -122,6 +123,10 @@ def prepare_mhe(
         different external forces are applied at each node
     n_threads: int
         Number of threads to use
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -145,7 +150,7 @@ def prepare_mhe(
 
     return MovingHorizonEstimator(
         bio_model,
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics),
         window_len,
         window_duration,
         objective_functions=new_objectives,

@@ -75,8 +75,7 @@ class Integrator:
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
-        self.s_sym = ode["stochastic_variables"]
-        self.stochastic_variables_sym = ode["stochastic_variables"]
+        self.s_sym = ode["s_scaled"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
         self.defects_type = ode_opt["defects_type"]
@@ -118,7 +117,7 @@ class Integrator:
         The control at a given time
         """
 
-        if self.control_type == ControlType.CONSTANT:
+        if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             dt_norm = round(1 - (self.t_span[1]-t)/(self.t_span[1]-self.t_span[0]), 5)
@@ -535,6 +534,156 @@ class RK8(RK4):
         return x_prev + h / 840 * (41 * k1 + 27 * k4 + 272 * k5 + 27 * k6 + 216 * k7 + 216 * k9 + 41 * k10)
 
 
+class TRAPEZOIDAL(Integrator):
+    """
+    Numerical integration using trapezoidal method.
+    Not that it is only possible to have one step using trapezoidal.
+    It behaves like an order 1 collocation method meaning that the integration is implicit (but since the polynomial is
+    of order 1, it is not possible to put a constraint on the slopes).
+
+    Methods
+    -------
+    next_x(self, h: float, t: float, x_prev: MX | SX, x_next: MX | SX, u: MX | SX, u_next: MX | SX, p: MX | SX, s: MX | SX)
+        Compute the next integrated state
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
+        The dynamics of the system
+    """
+
+    def __init__(self, ode: dict, ode_opt: dict):
+        """
+        Parameters
+        ----------
+        ode: dict
+            The ode description
+        ode_opt: dict
+            The ode options
+        """
+
+        super(TRAPEZOIDAL, self).__init__(ode, ode_opt)
+        self._finish_init()
+
+    def next_x(
+        self,
+        h: float,
+        x_prev: MX | SX,
+        x_next: MX | SX,
+        u_prev: MX | SX,
+        u_next: MX | SX,
+        p: MX | SX,
+        s_prev: MX | SX,
+        s_next: MX | SX,
+    ):
+        """
+        Compute the next integrated state
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        t: float
+            The initial time of the integration
+        x_prev: MX | SX
+            The current state of the system
+        x_next: MX | SX
+            The state of the system at the next shooting node
+        u_prev: MX | SX
+            The current control of the system
+        u_next: MX | SX
+            The control of the system at the next shooting node
+        p: MX | SX
+            The parameters of the system
+        s_prev: MX | SX
+            The current stochastic variables of the system
+        s_next: MX | SX
+            The stochastic variables of the system at the next shooting node
+
+        Returns
+        -------
+        The next integrate states
+        """
+
+        dx = self.fun(x_prev, u_prev, p, s_prev)[:, self.idx]
+        dx_next = self.fun(x_next, u_next, p, s_next)[:, self.idx]
+
+        return x_prev + (dx + dx_next) * h / 2
+
+    def dxdt(
+        self,
+        h: float,
+        states: MX | SX,
+        controls: MX | SX,
+        params: MX | SX,
+        param_scaling,
+        stochastic_variables: MX | SX,
+    ) -> tuple:
+        """
+        The dynamics of the system
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        states: MX | SX
+            The states of the system
+        controls: MX | SX
+            The controls of the system
+        params: MX | SX
+            The parameters of the system
+        param_scaling
+            The parameters scaling factor
+        stochastic_variables_prev: MX | SX
+            The stochastic variables of the system
+
+        Returns
+        -------
+        The derivative of the states
+        """
+
+        x_prev = self.cx(states.shape[0], 2)
+        p = params * param_scaling
+
+        states_next = states[:, 1]
+        controls_prev = controls[:, 0]
+        controls_next = controls[:, 1]
+        if stochastic_variables.shape != (0, 0):
+            stochastic_variables_prev = stochastic_variables[:, 0]
+            stochastic_variables_next = stochastic_variables[:, 1]
+        else:
+            stochastic_variables_prev = stochastic_variables
+            stochastic_variables_next = stochastic_variables
+
+        x_prev[:, 0] = states[:, 0]
+
+        x_prev[:, 1] = self.next_x(
+            h,
+            x_prev[:, 0],
+            states_next,
+            controls_prev,
+            controls_next,
+            p,
+            stochastic_variables_prev,
+            stochastic_variables_next,
+        )
+
+        if self.model.nb_quaternions > 0:
+            x_prev[:, 1] = self.model.normalize_state_quaternions(x_prev[:, 1])
+
+        return x_prev[:, 1], x_prev
+
+    def _finish_init(self):
+        """
+        Prepare the CasADi function from dxdt
+        """
+
+        self.function = Function(
+            "integrator",
+            [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
+            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            ["x0", "p", "params", "s"],
+            ["xf", "xall"],
+        )
+
+
 class COLLOCATION(Integrator):
     """
     Numerical integration using implicit Runge-Kutta method.
@@ -624,7 +773,7 @@ class COLLOCATION(Integrator):
         The control at a given time
         """
 
-        if self.control_type == ControlType.CONSTANT:
+        if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return super(COLLOCATION, self).get_u(u, dt_norm)
         else:
             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")

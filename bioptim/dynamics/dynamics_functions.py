@@ -1,6 +1,6 @@
 from casadi import horzcat, vertcat, MX, SX
 
-from ..misc.enums import RigidBodyDynamics
+from ..misc.enums import RigidBodyDynamics, DefectType
 from .fatigue.fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
 from ..optimization.non_linear_program import NonLinearProgram
@@ -149,24 +149,27 @@ class DynamicsFunctions:
 
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
-        if not with_contact and fatigue is None:
-            qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.mx_reduced)
-            tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
-            defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
+        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
+            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
+        ):
+            if not with_contact and fatigue is None:
+                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.mx_reduced)
+                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
+                defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
-            dq_defects = []
-            for _ in range(tau_id.shape[1]):
-                dq_defects.append(
-                    dq
-                    - DynamicsFunctions.compute_qdot(
-                        nlp,
-                        q,
-                        DynamicsFunctions.get(nlp.states_dot.scaled["qdot"], nlp.states_dot.scaled.mx_reduced),
+                dq_defects = []
+                for _ in range(tau_id.shape[1]):
+                    dq_defects.append(
+                        dq
+                        - DynamicsFunctions.compute_qdot(
+                            nlp,
+                            q,
+                            DynamicsFunctions.get(nlp.states_dot.scaled["qdot"], nlp.states_dot.scaled.mx_reduced),
+                        )
                     )
-                )
-            defects[: dq.shape[0], :] = horzcat(*dq_defects)
-            # We modified on purpose the size of the tau to keep the zero in the defects in order to respect the dynamics
-            defects[dq.shape[0] :, :] = tau - tau_id
+                defects[: dq.shape[0], :] = horzcat(*dq_defects)
+                # We modified on purpose the size of the tau to keep the zero in the defects in order to respect the dynamics
+                defects[dq.shape[0] :, :] = tau - tau_id
 
         return DynamicsEvaluation(dxdt, defects)
 
@@ -571,23 +574,26 @@ class DynamicsFunctions:
 
         defects = None
         # TODO: contacts and fatigue to be handled with implicit dynamics
-        if not with_contact and fatigue is None:
-            qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
-            tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
-            defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
+        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
+            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
+        ):
+            if not with_contact and fatigue is None:
+                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
+                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
+                defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
-            dq_defects = []
-            for _ in range(tau_id.shape[1]):
-                dq_defects.append(
-                    dq
-                    - DynamicsFunctions.compute_qdot(
-                        nlp,
-                        q,
-                        DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced),
+                dq_defects = []
+                for _ in range(tau_id.shape[1]):
+                    dq_defects.append(
+                        dq
+                        - DynamicsFunctions.compute_qdot(
+                            nlp,
+                            q,
+                            DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced),
+                        )
                     )
-                )
-            defects[: dq.shape[0], :] = horzcat(*dq_defects)
-            defects[dq.shape[0] :, :] = tau - tau_id
+                defects[: dq.shape[0], :] = horzcat(*dq_defects)
+                defects[dq.shape[0] :, :] = tau - tau_id
 
         return DynamicsEvaluation(dxdt=dxdt, defects=defects)
 
@@ -680,31 +686,37 @@ class DynamicsFunctions:
         qddot_root = nlp.model.forward_dynamics_free_floating_base(q, qdot, qddot_joints)
         qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
 
-        # defects
-        qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)
-        qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
-
-        floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered)[: nlp.model.nb_root]
-
         qdot_mapped = nlp.variable_mappings["qdot"].to_first.map(qdot)
         qddot_mapped = nlp.variable_mappings["qdot"].to_first.map(qddot_reordered)
         qddot_root_mapped = nlp.variable_mappings["qddot_roots"].to_first.map(qddot_root)
         qddot_joints_mapped = nlp.variable_mappings["qddot_joints"].to_first.map(qddot_joints)
 
-        defects = MX(qdot_mapped.shape[0] + qddot_root_mapped.shape[0] + qddot_joints_mapped.shape[0], 1)
+        # defects
+        defects = None
+        if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
+            rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
+        ):
+            qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)
+            qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
 
-        defects[: qdot_mapped.shape[0], :] = qdot_mapped - nlp.variable_mappings["qdot"].to_first.map(
-            DynamicsFunctions.compute_qdot(
-                nlp, q, DynamicsFunctions.get((nlp.states_dot["qdot"]), nlp.states_dot.mx_reduced)
+            floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered)[: nlp.model.nb_root]
+
+            defects = MX(qdot_mapped.shape[0] + qddot_root_mapped.shape[0] + qddot_joints_mapped.shape[0], 1)
+
+            defects[: qdot_mapped.shape[0], :] = qdot_mapped - nlp.variable_mappings["qdot"].to_first.map(
+                DynamicsFunctions.compute_qdot(
+                    nlp, q, DynamicsFunctions.get((nlp.states_dot["qdot"]), nlp.states_dot.mx_reduced)
+                )
             )
-        )
 
-        defects[
-            qdot_mapped.shape[0] : (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]), :
-        ] = floating_base_constraint
-        defects[(qdot_mapped.shape[0] + qddot_root_mapped.shape[0]) :, :] = qddot_joints_mapped - nlp.variable_mappings[
-            "qddot_joints"
-        ].to_first.map(DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced))
+            defects[
+                qdot_mapped.shape[0] : (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]), :
+            ] = floating_base_constraint
+            defects[
+                (qdot_mapped.shape[0] + qddot_root_mapped.shape[0]) :, :
+            ] = qddot_joints_mapped - nlp.variable_mappings["qddot_joints"].to_first.map(
+                DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced)
+            )
 
         return DynamicsEvaluation(dxdt=vertcat(qdot_mapped, qddot_mapped), defects=defects)
 

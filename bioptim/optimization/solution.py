@@ -240,6 +240,7 @@ class Solution:
             self.parameters = nlp.parameters
             self.x_scaling = nlp.x_scaling
             self.u_scaling = nlp.u_scaling
+            self.s_scaling = nlp.s_scaling
             self.assume_phase_dynamics = nlp.assume_phase_dynamics
 
     class SimplifiedOCP:
@@ -456,10 +457,14 @@ class Solution:
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
-                self._stochastic_variables,
+                self._stochastic_variables["scaled"],
             ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
-            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
-                self._states["scaled"], self._controls["scaled"]
+            (
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self._stochastic_variables["unscaled"],
+            ) = self._to_unscaled_values(
+                self._states["scaled"], self._controls["scaled"], self._stochastic_variables["scaled"]
             )
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
@@ -532,7 +537,7 @@ class Solution:
                 control_type = self.ocp.nlp[p].control_type
                 if control_type == ControlType.CONSTANT:
                     off = 0
-                elif control_type == ControlType.LINEAR_CONTINUOUS:
+                elif control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                     off = 1
                 else:
                     raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
@@ -567,10 +572,14 @@ class Solution:
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
-                self._stochastic_variables,
+                self._stochastic_variables["scaled"],
             ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
-            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
-                self._states["scaled"], self._controls["scaled"]
+            (
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self._stochastic_variables["unscaled"],
+            ) = self._to_unscaled_values(
+                self._states["scaled"], self._controls["scaled"], self._stochastic_variables["scaled"]
             )
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
@@ -594,10 +603,14 @@ class Solution:
                 self._states["scaled"],
                 self._controls["scaled"],
                 self.parameters,
-                self._stochastic_variables,
+                self._stochastic_variables["scaled"],
             ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
-            self._states["unscaled"], self._controls["unscaled"] = self._to_unscaled_values(
-                self._states["scaled"], self._controls["scaled"]
+            (
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self._stochastic_variables["unscaled"],
+            ) = self._to_unscaled_values(
+                self._states["scaled"], self._controls["scaled"], self._stochastic_variables["scaled"]
             )
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
@@ -616,7 +629,7 @@ class Solution:
         else:
             raise ValueError("Solution called with unknown initializer")
 
-    def _to_unscaled_values(self, states_scaled, controls_scaled) -> tuple:
+    def _to_unscaled_values(self, states_scaled, controls_scaled, stochastic_variables_scaled) -> tuple:
         """
         Convert values of scaled solution to unscaled values
         """
@@ -625,17 +638,23 @@ class Solution:
 
         states = [{} for _ in range(len(states_scaled))]
         controls = [{} for _ in range(len(controls_scaled))]
+        stochastic_variables = [{} for _ in range(len(stochastic_variables_scaled))]
         for phase in range(len(states_scaled)):
             states[phase] = {}
             controls[phase] = {}
+            stochastic_variables[phase] = {}
             for key, value in states_scaled[phase].items():
                 states[phase][key] = value * ocp.nlp[phase].x_scaling[key].to_array(states_scaled[phase][key].shape[1])
             for key, value in controls_scaled[phase].items():
                 controls[phase][key] = value * ocp.nlp[phase].u_scaling[key].to_array(
                     controls_scaled[phase][key].shape[1]
                 )
+            for key, value in stochastic_variables_scaled[phase].items():
+                stochastic_variables[phase][key] = value * ocp.nlp[phase].s_scaling[key].to_array(
+                    stochastic_variables_scaled[phase][key].shape[1]
+                )
 
-        return states, controls
+        return states, controls, stochastic_variables
 
     @property
     def cost(self):
@@ -691,7 +710,7 @@ class Solution:
         new._time_vector = deepcopy(self._time_vector)
 
         if skip_data:
-            new._states["unscaled"], new._controls["unscaled"] = [], []
+            new._states["unscaled"], new._controls["unscaled"], new._stochastic_variables["unscaled"] = [], [], []
             new._time, new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables = [], [], [], {}, []
         else:
             new._time = deepcopy(self._time)
@@ -700,8 +719,8 @@ class Solution:
             new.parameters = deepcopy(self.parameters)
             new._states["unscaled"] = deepcopy(self._states["unscaled"])
             new._controls["unscaled"] = deepcopy(self._controls["unscaled"])
-            new._stochastic_variables = deepcopy(self._stochastic_variables)
-
+            new._stochastic_variables["scaled"] = deepcopy(self._stochastic_variables["scaled"])
+            new._stochastic_variables["unscaled"] = deepcopy(self._stochastic_variables["unscaled"])
         return new
 
     @property
@@ -863,7 +882,26 @@ class Solution:
         The stochastic variables data
         """
 
-        return self._stochastic_variables if len(self._stochastic_variables) > 1 else self._stochastic_variables[0]
+        return (
+            self._stochastic_variables["unscaled"]
+            if len(self._stochastic_variables["unscaled"]) > 1
+            else self._stochastic_variables["unscaled"][0]
+        )
+
+    @property
+    def stochastic_variables_scaled(self) -> list | dict:
+        """
+        Returns the scaled stochastic variables in list if more than one phases, otherwise it returns the only dict
+        Returns
+        -------
+        The stochastic variables data
+        """
+
+        return (
+            self._stochastic_variables["scaled"]
+            if len(self._stochastic_variables["scaled"]) > 1
+            else self._stochastic_variables["scaled"][0]
+        )
 
     @property
     def integrated_values(self) -> list | dict:
@@ -932,6 +970,15 @@ class Solution:
                 "we cannot use the SolutionIntegrator.OCP.\n"
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
+            )
+
+        n_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp])
+        if n_trapezoidal > 0 and integrator == SolutionIntegrator.OCP:
+            raise ValueError(
+                "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
+                "we cannot use the SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             )
 
     def integrate(
@@ -1168,8 +1215,8 @@ class Solution:
             if len(self.ocp.nlp[phase - 1].stochastic_variables) > 0:
                 s0 = np.concatenate(
                     [
-                        self.stochastic_variables[phase - 1][key][:, -1]
-                        for key in self.ocp.nlp[phase - 1].stochastic_variables
+                        self.stochastic_variables["unscaled"][phase - 1][key][:, -1]
+                        for key in self.ocp.nlp[phase - 1].stochastic_variables["unscaled"]
                     ]
                 )
             if self.parameters.keys():
@@ -1260,7 +1307,9 @@ class Solution:
                 )
             )
             if self.ocp.nlp[p].stochastic_variables.keys():
-                s = np.concatenate([self._stochastic_variables[p][key] for key in self.ocp.nlp[p].stochastic_variables])
+                s = np.concatenate(
+                    [self._stochastic_variables["unscaled"][p][key] for key in self.ocp.nlp[p].stochastic_variables]
+                )
             else:
                 s = np.array([])
             if integrator == SolutionIntegrator.OCP:
@@ -1335,9 +1384,8 @@ class Solution:
                 t_all.append(np.linspace(sum(out.phase_time[: p + 1]), sum(out.phase_time[: p + 2]), out.ns[p] + 1))
 
         if isinstance(n_frames, int):
-            _, data_states, _, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
+            _, data_states, _, _, _, _, out.phase_time, out.ns = self._merge_phases(skip_controls=True)
             t_all = [np.concatenate((np.concatenate([_t[:-1] for _t in t_all]), [t_all[-1][-1]]))]
-
             n_frames = [n_frames]
             out.is_merged = True
         elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states["unscaled"]):
@@ -1384,6 +1432,8 @@ class Solution:
             new._states["unscaled"],
             new._controls["scaled"],
             new._controls["unscaled"],
+            new._stochastic_variables["scaled"],
+            new._stochastic_variables["unscaled"],
             new.phase_time,
             new.ns,
         ) = self._merge_phases()
@@ -1391,7 +1441,13 @@ class Solution:
         new.is_merged = True
         return new
 
-    def _merge_phases(self, skip_states: bool = False, skip_controls: bool = False, continuous: bool = True) -> tuple:
+    def _merge_phases(
+        self,
+        skip_states: bool = False,
+        skip_controls: bool = False,
+        skip_stochastic: bool = False,
+        continuous: bool = True,
+    ) -> tuple:
         """
         Actually performing the phase merging
 
@@ -1416,6 +1472,8 @@ class Solution:
                 deepcopy(self._states["unscaled"]),
                 deepcopy(self._controls["scaled"]),
                 deepcopy(self._controls["unscaled"]),
+                deepcopy(self._stochastic_variables["scaled"]),
+                deepcopy(self._stochastic_variables["unscaled"]),
                 deepcopy(self.phase_time),
                 deepcopy(self.ns),
             )
@@ -1489,7 +1547,29 @@ class Solution:
         phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
-        return out_states_scaled, out_states, out_controls_scaled, out_controls, phase_time, ns
+        if len(self._stochastic_variables["scaled"]) == 1:
+            out_stochastic_variables_scaled = deepcopy(self._stochastic_variables["scaled"])
+            out_stochastic_variables = deepcopy(self._stochastic_variables["unscaled"])
+        else:
+            out_stochastic_variables_scaled = (
+                _merge(self._stochastic_variables["scaled"], is_control=False)
+                if not skip_stochastic and self._stochastic_variables["scaled"]
+                else None
+            )
+            out_stochastic_variables = (
+                _merge(self._stochastic_variables["unscaled"], is_control=False) if not skip_stochastic else None
+            )
+
+        return (
+            out_states_scaled,
+            out_states,
+            out_controls_scaled,
+            out_controls,
+            out_stochastic_variables_scaled,
+            out_stochastic_variables,
+            phase_time,
+            ns,
+        )
 
     def _complete_control(self):
         """
@@ -1513,7 +1593,7 @@ class Solution:
                         ),
                         axis=1,
                     )
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 pass
             else:
                 raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
@@ -1697,7 +1777,7 @@ class Solution:
                             # Make an exception to the fact that U is not available for the last node
                             u = np.concatenate((u, self._controls["scaled"][phase_idx][key][:, node_idx]))
                         for key in nlp.stochastic_variables:
-                            s = np.concatenate((s, self._stochastic_variables[phase_idx][key][:, node_idx]))
+                            s = np.concatenate((s, self._stochastic_variables["scaled"][phase_idx][key][:, node_idx]))
                 elif (
                     "Lagrange" not in penalty.type.__str__()
                     and "Mayer" not in penalty.type.__str__()
@@ -1718,12 +1798,13 @@ class Solution:
                     ):
                         col_x_idx.append((idx + 1) * (steps if nlp.ode_solver.is_direct_shooting else 1))
 
-                        if (
-                            penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                        ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        if (penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL) or nlp.control_type in (
+                            ControlType.LINEAR_CONTINUOUS,
+                            ControlType.CONSTANT_WITH_LAST_NODE,
+                        ):
                             col_u_idx.append((idx + 1))
                     elif penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
-                        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                             col_u_idx.append((idx + 1))
 
                     t = np.ndarray((nlp.time.shape, len(col_t_idx)))
@@ -1755,9 +1836,9 @@ class Solution:
 
                     s = np.ndarray((nlp.stochastic_variables.shape, len(col_s_idx)))
                     for key in nlp.stochastic_variables:
-                        s[nlp.stochastic_variables[key].index, :] = self._stochastic_variables[phase_idx][key][
-                            :, col_s_idx
-                        ]
+                        s[nlp.stochastic_variables[key].index, :] = self._stochastic_variables["scaled"][phase_idx][
+                            key
+                        ][:, col_s_idx]
 
                     if penalty.target is None:
                         target = []

@@ -34,7 +34,9 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str = "models/cube_with_forces.bioMod", ode_solver: OdeSolverBase = OdeSolver.RK4()
+    biorbd_model_path: str = "models/cube_with_forces.bioMod",
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -45,6 +47,10 @@ def prepare_ocp(
         The path to the bioMod
     ode_solver: OdeSolverBase
         The ode solver to use
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -63,8 +69,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
 
     # Constraints
     constraints = ConstraintList()

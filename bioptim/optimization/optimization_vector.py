@@ -38,13 +38,20 @@ class OptimizationVectorHelper:
         u = []
         u_scaled = []
         s = []
+        s_scaled = []
         for nlp in ocp.nlp:
             x.append([])
             x_scaled.append([])
             u.append([])
             u_scaled.append([])
             s.append([])
-            if nlp.control_type not in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.NONE):
+            s_scaled.append([])
+            if nlp.control_type not in (
+                ControlType.CONSTANT,
+                ControlType.CONSTANT_WITH_LAST_NODE,
+                ControlType.LINEAR_CONTINUOUS,
+                ControlType.NONE,
+            ):
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
@@ -86,9 +93,16 @@ class OptimizationVectorHelper:
                     u_scaled[nlp.phase_idx] = u_scaled[nlp.use_controls_from_phase_idx]
                     u[nlp.phase_idx] = u[nlp.use_controls_from_phase_idx]
 
-                s[nlp.phase_idx].append(
-                    nlp.cx.sym("S_" + str(nlp.phase_idx) + "_" + str(k), nlp.stochastic_variables.shape, 1)
+                s_scaled[nlp.phase_idx].append(
+                    nlp.cx.sym("S_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.stochastic_variables.shape, 1)
                 )
+                if nlp.stochastic_variables.keys():
+                    s[nlp.phase_idx].append(
+                        s_scaled[nlp.phase_idx][0]
+                        * np.concatenate([nlp.s_scaling[key].scaling for key in nlp.stochastic_variables.keys()])
+                    )
+                else:
+                    s[nlp.phase_idx].append(s_scaled[nlp.phase_idx][0])
 
             OptimizationVectorHelper._set_node_index(nlp, 0)
 
@@ -98,6 +112,7 @@ class OptimizationVectorHelper:
             nlp.U_scaled = u_scaled[nlp.phase_idx]
             nlp.U = u[nlp.phase_idx]
 
+            nlp.S_scaled = s_scaled[nlp.phase_idx]
             nlp.S = s[nlp.phase_idx]
 
     @staticmethod
@@ -112,16 +127,16 @@ class OptimizationVectorHelper:
 
         x_scaled = []
         u_scaled = []
-        s = []
+        s_scaled = []
         for nlp in ocp.nlp:
             if nlp.ode_solver.is_direct_collocation:
                 x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
             else:
                 x_scaled += nlp.X_scaled
             u_scaled += nlp.U_scaled
-            s += nlp.S
+            s_scaled += nlp.S_scaled
 
-        return vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s)
+        return vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled)
 
     @staticmethod
     def bounds_vectors(ocp) -> tuple[np.ndarray, np.ndarray]:
@@ -181,7 +196,7 @@ class OptimizationVectorHelper:
             OptimizationVectorHelper._set_node_index(nlp, 0)
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 ns = nlp.ns
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
@@ -236,8 +251,8 @@ class OptimizationVectorHelper:
                 collapsed_values_max = np.ndarray((nlp.stochastic_variables.shape, 1))
                 for key in nlp.stochastic_variables.keys():
                     if key in nlp.s_bounds.keys():
-                        value_min = nlp.s_bounds[key].min.evaluate_at(shooting_point=k)
-                        value_max = nlp.s_bounds[key].max.evaluate_at(shooting_point=k)
+                        value_min = nlp.s_bounds[key].min.evaluate_at(shooting_point=k) / nlp.s_scaling[key].scaling
+                        value_max = nlp.s_bounds[key].max.evaluate_at(shooting_point=k) / nlp.s_scaling[key].scaling
                     else:
                         value_min = -np.inf
                         value_max = np.inf
@@ -307,7 +322,7 @@ class OptimizationVectorHelper:
             OptimizationVectorHelper._set_node_index(nlp, 0)
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 ns = nlp.ns
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
@@ -355,7 +370,7 @@ class OptimizationVectorHelper:
                 collapsed_values = np.ndarray((nlp.stochastic_variables.shape, 1))
                 for key in nlp.stochastic_variables:
                     if key in nlp.s_init.keys():
-                        value = nlp.s_init[key].init.evaluate_at(shooting_point=k)
+                        value = nlp.s_init[key].init.evaluate_at(shooting_point=k) / nlp.s_scaling[key].scaling
                     else:
                         value = 0
 
@@ -429,7 +444,13 @@ class OptimizationVectorHelper:
                     key: np.ndarray(
                         (
                             nlp.controls[key].shape,
-                            nlp.ns + (1 if nlp.control_type in (ControlType.LINEAR_CONTINUOUS,) else 0),
+                            nlp.ns
+                            + (
+                                1
+                                if nlp.control_type
+                                in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+                                else 0
+                            ),
                         )
                     )
                     for key in ocp.nlp[p].controls
@@ -472,7 +493,7 @@ class OptimizationVectorHelper:
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                 if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                     ns = nlp.ns
-                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                     ns = nlp.ns + 1
                 else:
                     raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")

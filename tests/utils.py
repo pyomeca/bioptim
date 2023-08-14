@@ -38,7 +38,7 @@ class TestUtils:
         return module
 
     @staticmethod
-    def save_and_load(sol, ocp, test_solve_of_loaded=False):
+    def save_and_load(sol, ocp, test_solve_of_loaded=False, solver=None):
         file_path = "test"
         ocp.save(sol, f"{file_path}.bo")
         ocp_load, sol_load = OptimalControlProgram.load(f"{file_path}.bo")
@@ -46,7 +46,7 @@ class TestUtils:
         TestUtils.deep_assert(sol, sol_load)
         TestUtils.deep_assert(sol_load, sol)
         if test_solve_of_loaded:
-            sol_from_load = ocp_load.solve()
+            sol_from_load = ocp_load.solve(solver)
             TestUtils.deep_assert(sol, sol_from_load)
             TestUtils.deep_assert(sol_from_load, sol)
 
@@ -122,6 +122,22 @@ class TestUtils:
             with pytest.raises(
                 ValueError,
                 match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                "we cannot use the SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            ):
+                sol.integrate(
+                    merge_phases=True,
+                    shooting_type=Shooting.SINGLE,
+                    keep_intermediate_points=True,
+                    integrator=SolutionIntegrator.OCP,
+                )
+            return
+
+        if sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in sol.ocp.nlp]):
+            with pytest.raises(
+                ValueError,
+                match="When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
                 "we cannot use the SolutionIntegrator.OCP.\n"
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",

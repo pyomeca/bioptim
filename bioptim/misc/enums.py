@@ -94,9 +94,10 @@ class ControlType(Enum):
     The goto value is CONSTANT
     """
 
-    CONSTANT = 1  # Constant over the integration step (=1 column)
+    CONSTANT = 1  # Constant over the integration step, the last node is a NaN (=1 column)
     LINEAR_CONTINUOUS = 2  # Linear interpolation between integration steps (=2 columns)
     NONE = 0  # Undeclared control type
+    CONSTANT_WITH_LAST_NODE = 3  # Constant over the integration step, the last node exists (=1 columns)
 
 
 class VariableType(Enum):

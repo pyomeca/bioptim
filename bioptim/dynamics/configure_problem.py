@@ -490,12 +490,7 @@ class ConfigureProblem:
             "qddot_joints", name_qddot_joints, ocp, nlp, as_states=False, as_controls=True, as_states_dot=True
         )
 
-        ConfigureProblem.configure_dynamics_function(
-            ocp,
-            nlp,
-            DynamicsFunctions.joints_acceleration_driven,
-            expand=False,
-        )
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.joints_acceleration_driven)
 
     @staticmethod
     def muscle_driven(
@@ -610,10 +605,10 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, names_udot, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven, expand=False)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True, **extra_params):
+    def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
         """
         Configure the dynamics of the system
 
@@ -625,8 +620,6 @@ class ConfigureProblem:
             A reference to the phase
         dyn_func: Callable[time, states, controls, param, stochastic]
             The function to get the derivative of the states
-        expand: bool
-            If the dynamics should be expanded with casadi
         """
 
         nlp.parameters = ocp.parameters
@@ -637,7 +630,7 @@ class ConfigureProblem:
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
-            nlp.stochastic_variables.mx,
+            nlp.stochastic_variables.scaled.mx,
             nlp,
             **extra_params,
         )
@@ -653,15 +646,24 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
-                nlp.stochastic_variables.mx,
+                nlp.stochastic_variables.scaled.mx,
             ],
             [dynamics_dxdt],
             ["t", "x", "u", "p", "s"],
             ["xdot"],
         )
-
-        if expand:
-            nlp.dynamics_func = nlp.dynamics_func.expand()
+        if nlp.dynamics_type.expand:
+            try:
+                nlp.dynamics_func = nlp.dynamics_func.expand()
+            except Exception as me:
+                RuntimeError(
+                    f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                    f"Please review the following casadi error message for more details.\n"
+                    "Several factors could be causing this issue. One of the most likely is the inability to "
+                    "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                    "Original casadi error message:\n"
+                    f"{me}"
+                )
 
         if dynamics_eval.defects is not None:
             nlp.implicit_dynamics_func = Function(
@@ -671,15 +673,25 @@ class ConfigureProblem:
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
-                    nlp.stochastic_variables.mx,
+                    nlp.stochastic_variables.scaled.mx,
                     nlp.states_dot.scaled.mx_reduced,
                 ],
                 [dynamics_eval.defects],
                 ["t", "x", "u", "p", "s", "xdot"],
                 ["defects"],
             )
-            if expand:
-                nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
+            if nlp.dynamics_type.expand:
+                try:
+                    nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
+                except Exception as me:
+                    RuntimeError(
+                        f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                        f"Please review the following casadi error message for more details.\n"
+                        "Several factors could be causing this issue. One of the most likely is the inability to "
+                        "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                        "Original casadi error message:\n"
+                        f"{me}"
+                    )
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -703,7 +715,7 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
-                nlp.stochastic_variables.mx,
+                nlp.stochastic_variables.scaled.mx,
             ],
             [
                 dyn_func(
@@ -711,7 +723,7 @@ class ConfigureProblem:
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
-                    nlp.stochastic_variables.mx,
+                    nlp.stochastic_variables.scaled.mx,
                     nlp,
                     **extra_params,
                 )
@@ -1035,6 +1047,8 @@ class ConfigureProblem:
             nlp.x_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls and name not in nlp.u_init:
             nlp.u_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
+        if as_stochastic and name not in nlp.s_init:
+            nlp.s_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         # Declare the scaling for that variable
         if as_states and name not in nlp.x_scaling:
@@ -1043,6 +1057,8 @@ class ConfigureProblem:
             nlp.xdot_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
         if as_controls and name not in nlp.u_scaling:
             nlp.u_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
+        if as_stochastic and name not in nlp.s_scaling:
+            nlp.s_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
 
         # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
         mx_time = []
@@ -1118,7 +1134,14 @@ class ConfigureProblem:
                 (
                     1
                     if ocp.assume_phase_dynamics
-                    else (nlp.ns + (1 if nlp.control_type == ControlType.LINEAR_CONTINUOUS else 0))
+                    else (
+                        nlp.ns
+                        + (
+                            1
+                            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+                            else 0
+                        )
+                    )
                 )
             ):
                 cx_scaled = (
@@ -1166,8 +1189,9 @@ class ConfigureProblem:
                 if n_cx < 3:
                     n_cx = 3
                 cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
+                cx = define_cx_unscaled(cx_scaled, nlp.s_scaling[name].scaling)
                 nlp.stochastic_variables.append(
-                    name, cx_scaled[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
+                    name, cx[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
                 )
 
         if as_time:
@@ -1478,6 +1502,38 @@ class ConfigureProblem:
         )
 
     @staticmethod
+    def configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states: int):
+        """
+        Configure the diagonal matrix needed to reconstruct the covariance matrix using L @ L.T.
+        This formulation allows insuring that the covariance matrix is always positive semi-definite.
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        """
+        name = "cholesky_cov"
+
+        if name in nlp.variable_mappings:
+            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+
+        name_cov = []
+        for nb_1, name_1 in enumerate([f"X_{i}" for i in range(n_noised_states)]):
+            for name_2 in [f"X_{i}" for i in range(nb_1 + 1)]:
+                name_cov += [name_1 + "_&_" + name_2]
+        nlp.variable_mappings[name] = BiMapping(list(range(len(name_cov))), list(range(len(name_cov))))
+        ConfigureProblem.configure_new_variable(
+            name,
+            name_cov,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=False,
+            as_stochastic=True,
+            skip_plot=True,
+        )
+
+    @staticmethod
     def configure_stochastic_ref(ocp, nlp, n_references: int):
         """
         Configure the reference kinematics.
@@ -1769,14 +1825,14 @@ class Dynamics(OptionGeneric):
         The configuration function provided by the user that declares the NLP (states and controls),
         usually only necessary when defining custom functions
     expand: bool
-        If the continuity constraint should be expand. This can be extensive on RAM
+        If the continuity constraint should be expanded. This can be extensive on RAM
 
     """
 
     def __init__(
         self,
         dynamics_type: Callable | DynamicsFcn,
-        expand: bool = False,
+        expand: bool = True,
         **params: Any,
     ):
         """

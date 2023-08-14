@@ -81,6 +81,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
 def prepare_ocp(
     biorbd_model_path: str = "models/mass_point.bioMod",
     assume_phase_dynamics: bool = True,
+    expand_dynamics: bool = True,
 ):
     # BioModel path
     m = BiorbdModel(biorbd_model_path)
@@ -90,7 +91,7 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", index=0, weight=-1)
 
     # Dynamics
-    dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)
+    dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic, expand=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

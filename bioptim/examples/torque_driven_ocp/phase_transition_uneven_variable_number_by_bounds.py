@@ -20,6 +20,7 @@ def prepare_ocp(
     biorbd_model_path_with_translations: str = "models/double_pendulum_with_translations.bioMod",
     n_shooting: tuple = (40, 40),
     assume_phase_dynamics: bool = True,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     bio_model = (BiorbdModel(biorbd_model_path_with_translations), BiorbdModel(biorbd_model_path_with_translations))
 
@@ -52,8 +53,8 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False, expand=expand_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False, expand=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
