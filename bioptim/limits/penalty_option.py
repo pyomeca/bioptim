@@ -799,7 +799,6 @@ class PenaltyOption(OptionGeneric):
                 target_cx,
                 dt_cx,
             )
-            self.function[node] = modified_function  #####
         else:
             modified_fcn = (
                 self.function[node](

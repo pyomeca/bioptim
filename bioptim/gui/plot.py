@@ -760,7 +760,6 @@ class PlotOcp:
                 u_mod = (
                     1
                     if (nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative)
-                    # and not ("OBJECTIVES" in key or "CONSTRAINTS" in key or "PHASE_TRANSITION" in key)
                     or (
                         (
                             self.plot_func[key][i].integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
@@ -924,17 +923,14 @@ class PlotOcp:
                                             control_tp = np.array(())
                                     stochastic_tp = stochastic[:, node_idx : node_idx + 1 + 1]
 
-                                    try:
-                                        val = self.plot_func[key][i].function(
-                                            node_idx,
-                                            states,
-                                            control_tp,
-                                            data_params_in_dyn,
-                                            stochastic_tp,
-                                            **self.plot_func[key][i].parameters,
-                                        )
-                                    except:
-                                        print("ici")
+                                    val = self.plot_func[key][i].function(
+                                        node_idx,
+                                        states,
+                                        control_tp,
+                                        data_params_in_dyn,
+                                        stochastic_tp,
+                                        **self.plot_func[key][i].parameters,
+                                    )
                                 y[i_node] = val[i_var]
                         self.ydata.append(y)
 
