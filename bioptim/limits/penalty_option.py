@@ -737,7 +737,8 @@ class PenaltyOption(OptionGeneric):
                 control_cx_end = get_u(controller.controls.cx_start, dt_cx)
             else:
                 control_cx_end_scaled = get_u(
-                    horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end), dt_cx)
+                    horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end), dt_cx
+                )
                 control_cx_end = get_u(horzcat(controller.controls.cx_start, controller.controls.cx_end), dt_cx)
             state_cx_end_scaled = (
                 controller.states_scaled.cx_end
