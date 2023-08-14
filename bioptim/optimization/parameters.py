@@ -161,11 +161,21 @@ class Parameter(PenaltyOption):
 
         penalty.function.append(
             NonLinearProgram.to_casadi_func(
-                f"{self.name}", penalty_function, state_cx, control_cx, param_cx, stochastic_cx, motor_noise_cx, sensory_noise_cx, expand=expand
+                f"{self.name}",
+                penalty_function,
+                state_cx,
+                control_cx,
+                param_cx,
+                stochastic_cx,
+                motor_noise_cx,
+                sensory_noise_cx,
+                expand=expand,
             )
         )
 
-        modified_fcn = penalty.function[0](state_cx, control_cx, param_cx, stochastic_cx, motor_noise_cx, sensory_noise_cx)
+        modified_fcn = penalty.function[0](
+            state_cx, control_cx, param_cx, stochastic_cx, motor_noise_cx, sensory_noise_cx
+        )
 
         dt_cx = ocp.cx.sym("dt", 1, 1)
         weight_cx = ocp.cx.sym("weight", 1, 1)
@@ -177,7 +187,17 @@ class Parameter(PenaltyOption):
         penalty.weighted_function.append(
             Function(  # Do not use nlp.add_casadi_func because all of them must be registered
                 f"{self.name}",
-                [state_cx, control_cx, param_cx, stochastic_cx, motor_noise_cx, sensory_noise_cx, weight_cx, target_cx, dt_cx],
+                [
+                    state_cx,
+                    control_cx,
+                    param_cx,
+                    stochastic_cx,
+                    motor_noise_cx,
+                    sensory_noise_cx,
+                    weight_cx,
+                    target_cx,
+                    dt_cx,
+                ],
                 [weight_cx * modified_fcn * dt_cx],
             )
         )

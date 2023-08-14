@@ -828,7 +828,16 @@ class TRAPEZOIDAL(Integrator):
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym, self.s_sym, self.motor_noise, self.sensory_noise],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym, self.motor_noise, self.sensory_noise),
+            self.dxdt(
+                self.h,
+                self.x_sym,
+                self.u_sym,
+                self.param_sym,
+                self.param_scaling,
+                self.s_sym,
+                self.motor_noise,
+                self.sensory_noise,
+            ),
             ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
             ["xf", "xall"],
         )

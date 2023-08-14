@@ -261,7 +261,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     if (
                         interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
                         > interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
-                    ) and (_penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled) or ocp.assume_phase_dynamics):
+                    ) and (
+                        _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled)
+                        or ocp.assume_phase_dynamics
+                    ):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
                             - interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0],
@@ -281,7 +284,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     if (
                         interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
                         > interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
-                    ) and (_penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled) or ocp.assume_phase_dynamics):
+                    ) and (
+                        _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled)
+                        or ocp.assume_phase_dynamics
+                    ):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
                             - interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0],
@@ -365,7 +371,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     if (
                         interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
                         > interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
-                    ) and (_penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled) or ocp.assume_phase_dynamics):
+                    ) and (
+                        _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled)
+                        or ocp.assume_phase_dynamics
+                    ):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
                             - interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0],
@@ -387,7 +396,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     if (
                         interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
                         > interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
-                    ) and (_penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled) or ocp.assume_phase_dynamics):
+                    ) and (
+                        _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled)
+                        or ocp.assume_phase_dynamics
+                    ):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
                             - interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0],
@@ -497,9 +509,14 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     _x = vertcat(_x, nlp.X[_idx][:, i])
 
                 # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
-                if _idx == nlp.ns and nlp.ode_solver.is_direct_collocation and nlp.assume_phase_dynamics and _penalty.node[0] != Node.END:
-                    for i in range(1, nlp.X[_idx-1].shape[1]):
-                        _x = vertcat(_x, nlp.X[_idx-1][:, i])
+                if (
+                    _idx == nlp.ns
+                    and nlp.ode_solver.is_direct_collocation
+                    and nlp.assume_phase_dynamics
+                    and _penalty.node[0] != Node.END
+                ):
+                    for i in range(1, nlp.X[_idx - 1].shape[1]):
+                        _x = vertcat(_x, nlp.X[_idx - 1][:, i])
 
                 _u = nlp.U[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U) else []
                 _s = nlp.S[_idx][:, 0]
@@ -509,7 +526,12 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
 
                 # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
-                if _idx == nlp.ns and nlp.ode_solver.is_direct_collocation and nlp.assume_phase_dynamics and _penalty.node[0] != Node.END:
+                if (
+                    _idx == nlp.ns
+                    and nlp.ode_solver.is_direct_collocation
+                    and nlp.assume_phase_dynamics
+                    and _penalty.node[0] != Node.END
+                ):
                     for i in range(1, nlp.X_scaled[_idx - 1].shape[1]):
                         _x = vertcat(_x, nlp.X_scaled[_idx - 1][:, i])
 
@@ -685,7 +707,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                             ),
                         )
                     except:
-                        print('ici')
+                        print("ici")
 
         out = vertcat(out, sum2(p))
     return out
