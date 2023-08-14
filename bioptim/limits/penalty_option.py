@@ -447,7 +447,7 @@ class PenaltyOption(OptionGeneric):
                 state_cx_scaled = vertcat(controllers[1].states_scaled.cx, fake)
             else:
                 state_cx_scaled = controllers[1].states_scaled.cx
-            if controllers[1].get_nlp.assume_phase_dynamics or controllers[1].node_index < controllers[1].ns:
+            if controllers[1].get_nlp.assume_phase_dynamics or controllers[1].node_index < controllers[1].ns or controllers[1].get_nlp.control_type != ControlType.CONSTANT:
                 if controllers[0].controls_scaled.cx.shape[0] > controllers[1].controls_scaled.cx.shape[0]:
                     fake = controllers[0].cx(
                         controllers[0].controls_scaled.cx.shape[0] - controllers[1].controls_scaled.cx.shape[0], 1
@@ -510,7 +510,7 @@ class PenaltyOption(OptionGeneric):
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start, fake)
                 else:
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
-                if controllers[0].get_nlp.assume_phase_dynamics or controllers[0].node_index < controllers[0].ns:
+                if controllers[0].get_nlp.assume_phase_dynamics or controllers[0].node_index < controllers[0].ns or controllers[1].get_nlp.control_type != ControlType.CONSTANT:
                     if (
                         controllers[1].controls_scaled.cx_start.shape[0]
                         > controllers[0].controls_scaled.cx_start.shape[0]
@@ -603,14 +603,15 @@ class PenaltyOption(OptionGeneric):
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
-                state_cx_scaled = vertcat(state_cx_scaled, controller.states_scaled.cx_end)
-                if (
-                    not (self.node[0] == controller.ns - 1 and ocp.nlp[self.phase].control_type == ControlType.CONSTANT)
-                    or ocp.assume_phase_dynamics
-                ):
-                    control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
-                # Watch out, there is nothing constraining stochastic_variables_scaled.cx_end to an actual value.
-                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
+                if controller.node_index < controller.ns:
+                    state_cx_scaled = vertcat(state_cx_scaled, controller.states_scaled.cx_end)
+                    if (
+                        not (self.node[0] == controller.ns - 1 and ocp.nlp[self.phase].control_type == ControlType.CONSTANT)
+                        or ocp.assume_phase_dynamics
+                    ):
+                        control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
+                    # Watch out, there is nothing constraining stochastic_variables_scaled.cx_end to an actual value.
+                    stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
 
         # Alias some variables
         node = controller.node_index
