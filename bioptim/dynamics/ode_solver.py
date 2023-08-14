@@ -251,7 +251,7 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, node_index: int) -> list:
+        def integrator(self, ocp, nlp, node_index: int, t) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -274,7 +274,7 @@ class OdeSolver:
                     "TRAPEZOIDAL cannot be used with piece-wise constant controls, please use "
                     "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead."
                 )
-
+            nlp.time.node_index = node_index
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -291,8 +291,8 @@ class OdeSolver:
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
             ode_opt = {
-                "t0": 0,
-                "tf": nlp.dt,
+                "t0": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index),
+                "tf": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index) + nlp.dt,
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,

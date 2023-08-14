@@ -470,7 +470,7 @@ class Solution:
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
             self._integrated_values = get_integrated_values(
-                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
+                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables["unscaled"]
             )
 
         def init_from_initial_guess(_sol: list):
@@ -508,7 +508,7 @@ class Solution:
                     )
 
             self.vector = np.ndarray((0, 1))
-            sol_states, sol_controls, sol_time, sol_stochastic_variables = _sol[0], _sol[1], _sol[3], _sol[4]
+            sol_time, sol_states, sol_controls, sol_stochastic_variables = _sol[0], _sol[1], _sol[2], _sol[4]
 
             # For time
             for p, ss in enumerate(sol_time):
@@ -585,7 +585,7 @@ class Solution:
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
             self._integrated_values = get_integrated_values(
-                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
+                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables["unscaled"]
             )
 
         def init_from_vector(_sol: np.ndarray | DM):
@@ -615,7 +615,7 @@ class Solution:
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._integrated_values = get_integrated_values(
-                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables
+                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables["unscaled"]
             )
 
         if isinstance(sol, dict):
@@ -711,7 +711,7 @@ class Solution:
 
         if skip_data:
             new._states["unscaled"], new._controls["unscaled"], new._stochastic_variables["unscaled"] = [], [], []
-            new._time, new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables = [], [], [], {}, []
+            new._time, new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables["unscaled"] = [], [], [], {}, []
         else:
             new._time = deepcopy(self._time)
             new._states["scaled"] = deepcopy(self._states["scaled"])

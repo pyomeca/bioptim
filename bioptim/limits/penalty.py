@@ -1313,6 +1313,7 @@ class PenaltyFunctionAbstract:
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             return controller.dynamics(
+                getattr(controller.time, attribute),
                 getattr(controller.states, attribute),
                 getattr(controller.controls, attribute),
                 getattr(controller.parameters, attribute),

@@ -173,9 +173,9 @@ class Integrator:
 
         self.function = Function(
             "integrator",
-            [t_sym, self.x_sym, self.u_sym, self.param_sym, self.stochastic_variables_sym],
+            [t_sym, self.x_sym, self.u_sym, self.param_sym, self.s_sym],
             self.dxdt(
-                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
+                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
             ),
             ["t", "x0", "p", "params", "s"],
             ["xf", "xall"],
@@ -287,7 +287,8 @@ class RK(Integrator):
         # This should be the vanilla signature of `next_x` from now on (adjust `get_u` accordingly)
 
         for i in range(1, self.n_step + 1):
-            t = ((self.t_span[1] - self.t_span[0]) * (i - 1)) / self.n_step
+            t = self.t_span[0] + (h*(i-1))
+
             x[:, i] = self.next_x(h, t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -392,7 +393,7 @@ class RK2(RK):
         The next integrate states
         """
         k1 = self.fun(t, x_prev, self.get_u(u, t), p, s)[:, self.idx]
-        return x_prev + h * self.fun(t, x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s)[:, self.idx]
+        return x_prev + h * self.fun(t, x_prev + h / 2 * k1, self.get_u(u, t + self.h / 2), p, s)[:, self.idx]
 
 
 class RK4(RK):
@@ -498,35 +499,35 @@ class RK8(RK4):
         """
 
         k1 = self.fun(t, x_prev, self.get_u(u, t), p, s)[:, self.idx]
-        k2 = self.fun(t, x_prev + (h * 4 / 27) * k1, self.get_u(u, t + self.h_norm * (4 / 27)), p, s)[:, self.idx]
-        k3 = self.fun(t, x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t + self.h_norm * (2 / 9)), p, s)[:, self.idx]
-        k4 = self.fun(t, x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t + self.h_norm * (1 / 3)), p, s)[:, self.idx]
-        k5 = self.fun(t, x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t + self.h_norm * (1 / 2)), p, s)[:, self.idx]
+        k2 = self.fun(t, x_prev + (h * 4 / 27) * k1, self.get_u(u, t + self.h * (4 / 27)), p, s)[:, self.idx]
+        k3 = self.fun(t, x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t + self.h * (2 / 9)), p, s)[:, self.idx]
+        k4 = self.fun(t, x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t + self.h * (1 / 3)), p, s)[:, self.idx]
+        k5 = self.fun(t, x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t + self.h * (1 / 2)), p, s)[:, self.idx]
         k6 = self.fun(
-            t, x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t + self.h_norm * (2 / 3)), p, s
+            t, x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t + self.h * (2 / 3)), p, s
         )[:, self.idx]
         k7 = self.fun(
             t, x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
-            self.get_u(u, t + self.h_norm * (1 / 6)),
+            self.get_u(u, t + self.h * (1 / 6)),
             p,
             s,
         )[:, self.idx]
         k8 = self.fun(
             t, x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
-            self.get_u(u, t + self.h_norm),
+            self.get_u(u, t + self.h),
             p,
             s,
         )[:, self.idx]
         k9 = self.fun(
             t, x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
-            self.get_u(u, t + self.h_norm * (5 / 6)),
+            self.get_u(u, t + self.h * (5 / 6)),
             p,
             s,
         )[:, self.idx]
         k10 = self.fun(
             t, x_prev
             + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
-            self.get_u(u, t + self.h_norm),
+            self.get_u(u, t + self.h),
             p,
             s,
         )[:, self.idx]
@@ -565,6 +566,7 @@ class TRAPEZOIDAL(Integrator):
     def next_x(
         self,
         h: float,
+        t: float,
         x_prev: MX | SX,
         x_next: MX | SX,
         u_prev: MX | SX,
@@ -602,14 +604,15 @@ class TRAPEZOIDAL(Integrator):
         The next integrate states
         """
 
-        dx = self.fun(x_prev, u_prev, p, s_prev)[:, self.idx]
-        dx_next = self.fun(x_next, u_next, p, s_next)[:, self.idx]
+        dx = self.fun(t, x_prev, u_prev, p, s_prev)[:, self.idx]
+        dx_next = self.fun(t, x_next, u_next, p, s_next)[:, self.idx]
 
         return x_prev + (dx + dx_next) * h / 2
 
     def dxdt(
         self,
         h: float,
+        t: float,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -656,6 +659,7 @@ class TRAPEZOIDAL(Integrator):
 
         x_prev[:, 1] = self.next_x(
             h,
+            t,
             x_prev[:, 0],
             states_next,
             controls_prev,
@@ -675,11 +679,13 @@ class TRAPEZOIDAL(Integrator):
         Prepare the CasADi function from dxdt
         """
 
+        t_sym = type(self.t_span[0]).sym("time", 1, 1) if isinstance(self.t_span[0], (MX, SX)) else []
+
         self.function = Function(
             "integrator",
-            [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(self.h, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
-            ["x0", "p", "params", "s"],
+            [t_sym, self.x_sym, self.u_sym, self.param_sym, self.s_sym],
+            self.dxdt(self.h, t_sym, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            ["t", "x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 
@@ -857,9 +863,9 @@ class COLLOCATION(Integrator):
 
         self.function = Function(
             "integrator",
-            [t_sym, horzcat(*self.x_sym), self.u_sym, self.param_sym, self.stochastic_variables_sym],
+            [t_sym, horzcat(*self.x_sym), self.u_sym, self.param_sym, self.s_sym],
             self.dxdt(
-                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
+                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
             ),
             ["t", "x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
@@ -955,9 +961,9 @@ class IRK(COLLOCATION):
 
         self.function = Function(
             "integrator",
-            [t_sym, self.x_sym[0], self.u_sym, self.param_sym, self.stochastic_variables_sym],
+            [t_sym, self.x_sym[0], self.u_sym, self.param_sym, self.s_sym],
             self.dxdt(
-                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.stochastic_variables_sym
+                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
             ),
             ["t", "x0", "p", "params", "s"],
             ["xf", "xall"],

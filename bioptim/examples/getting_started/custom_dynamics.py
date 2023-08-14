@@ -31,7 +31,7 @@ from bioptim import (
 )
 
 
-def custom_dynamic(
+def custom_dynamics(
     time: MX | SX,
     states: MX | SX,
     controls: MX | SX,

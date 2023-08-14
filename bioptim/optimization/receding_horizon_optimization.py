@@ -241,7 +241,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             use_sx=self.original_values["use_sx"],
         )
 
-        return Solution(solution_ocp, [x_init, u_init_for_solution, p_init, t_init, s_init])
+        return Solution(solution_ocp, [t_init, x_init, u_init_for_solution, p_init, s_init])
 
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
         state_bounds_have_changed = self.advance_window_bounds_states(sol, **advance_options)
@@ -466,7 +466,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             skip_continuity=True,
             use_sx=self.original_values["use_sx"],
         )
-        return Solution(solution_ocp, [x_init, u_init_for_solution, p_init, t_init, s_init])
+        return Solution(solution_ocp, [t_init, x_init, u_init_for_solution, p_init, s_init])
 
     def _initialize_state_idx_to_cycle(self, options):
         if "states" not in options:
@@ -705,7 +705,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             s_init=s_init,
             use_sx=self.original_values["use_sx"],
         )
-        return Solution(solution_ocp, [x_init, u_init_for_solution, p_init, t_init, s_init])
+        return Solution(solution_ocp, [t_init, x_init, u_init_for_solution, p_init, s_init])
 
     def _initialize_one_cycle(self, states: np.ndarray, controls: np.ndarray):
         """return a solution for a single window kept of the MHE"""
@@ -749,7 +749,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             s_init=s_init,
             use_sx=original_values["use_sx"],
         )
-        return Solution(solution_ocp, [x_init, u_init_for_solution, p_init, t_init, s_init])
+        return Solution(solution_ocp, [t_init, x_init, u_init_for_solution, p_init, s_init])
 
 
 class NonlinearModelPredictiveControl(RecedingHorizonOptimization):

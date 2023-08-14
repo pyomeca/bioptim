@@ -188,6 +188,7 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
                 out = 0
                 for i, fcn in enumerate(ocp.nlp[0].J[0].weighted_function):
                     out += fcn(
+                        [],
                         states[:, i],
                         controls_faking_constant[:, i],
                         [],
