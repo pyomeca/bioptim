@@ -744,9 +744,9 @@ class TRAPEZOIDAL(Integrator):
         The next integrate states
         """
 
-        dx = self.fun(x_prev, u_prev, p, s_prev, motor_noise, sensory_noise)[:, self.idx]
-        dx_next = self.fun(x_next, u_next, p, s_next, motor_noise, sensory_noise)[:, self.idx]
-
+        func = self.noised_fun if self.noised_fun else self.fun
+        dx = func(x_prev, u_prev, p, s_prev, motor_noise, sensory_noise)[:, self.idx]
+        dx_next = func(x_next, u_next, p, s_next, motor_noise, sensory_noise)[:, self.idx]
         return x_prev + (dx + dx_next) * h / 2
 
     def dxdt(

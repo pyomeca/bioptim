@@ -609,6 +609,8 @@ class PenaltyOption(OptionGeneric):
                     or ocp.assume_phase_dynamics
                 ):
                     control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
+                # Watch out, there is nothing constraining stochastic_variables_scaled.cx_end to an actual value.
+                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
 
         # Alias some variables
         node = controller.node_index
