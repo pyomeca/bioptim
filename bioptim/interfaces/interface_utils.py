@@ -261,7 +261,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     if (
                         interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
                         > interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
-                    ):
+                    ) and _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
                             - interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0],
@@ -281,7 +281,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     if (
                         interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
                         > interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
-                    ):
+                    ) and _penalty.all_nodes_index[0] < len(
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
                             - interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0],
@@ -365,7 +366,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     if (
                         interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
                         > interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
-                    ):
+                    ) and _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
                             - interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0],
@@ -387,7 +388,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     if (
                         interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
                         > interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
-                    ):
+                    ) and _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
                             - interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0],

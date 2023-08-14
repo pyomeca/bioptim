@@ -1020,9 +1020,9 @@ class COLLOCATION(Integrator):
                             self.get_u(controls, self.step_time[j]),
                             params * param_scaling,
                             stochastic_variables,
+                            xp_j / h,
                             motor_noise,
                             sensory_noise,
-                            xp_j / h,
                         )
                     )
             else:
