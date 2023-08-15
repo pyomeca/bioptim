@@ -1097,3 +1097,116 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                     ]
                 ),
             )
+
+
+
+def test_arm_reaching_torque_driven_collocations():
+    from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_collocations as ocp_module
+
+    final_time = 0.4
+    n_shooting = 4
+    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+
+    dt = 0.05
+    motor_noise_std = 0.05
+    wPq_std = 3e-4
+    wPqdot_std = 0.0024
+    motor_noise_magnitude = DM(np.array([motor_noise_std**2 / dt, motor_noise_std**2 / dt]))
+    wPq_magnitude = DM(np.array([wPq_std**2 / dt, wPq_std**2 / dt]))
+    wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
+    sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_socp(
+        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+        final_time=final_time,
+        n_shooting=n_shooting,
+        ee_final_position=ee_final_position,
+        motor_noise_magnitude=motor_noise_magnitude,
+        sensory_noise_magnitude=sensory_noise_magnitude,
+    )
+
+    # Solver parameters
+    solver = Solver.IPOPT(show_online_optim=False)
+    solver.set_maximum_iterations(4)
+    solver.set_nlp_scaling_method("none")
+
+    sol = ocp.solve(solver)
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 7066.7926705880955)
+
+    # detailed cost values
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 78.47204821578093)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 6988.320622372315)
+    np.testing.assert_almost_equal(
+        f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
+    )
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (426, 1))
+
+    # Check some of the results
+    states, controls, stochastic_variables = (
+        sol.states,
+        sol.controls,
+        sol.stochastic_variables,
+    )
+    q, qdot = states["q"], states["qdot"]
+    tau = controls["tau"]
+    k, ref, m, cov = stochastic_variables["k"], stochastic_variables["ref"], stochastic_variables["m"], stochastic_variables["cov"]
+
+    # initial and final position
+    np.testing.assert_almost_equal(q[:, 0], np.array([0.41128607, 2.36393904]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.91450978, 1.47825178]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([-0.01227987, -0.00442274]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.01649727, -0.0137153]))
+
+    np.testing.assert_almost_equal(tau[:, 0], np.array([0.28164146, -0.71694685]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([-0.2789166 ,  0.83394751]))
+
+    np.testing.assert_almost_equal(
+        k[:, 0],
+        np.array(
+            [
+                -2.2311138, -7.88424867, 0.10891849, -2.50891714, -2.03501113,
+                -9.14607336, -0.81082578, -3.96627336
+            ]
+        ),
+    )
+    np.testing.assert_almost_equal(
+        ref[:, 0], np.array([0.0102648 , 0.12900788, 0.03473712, 0.01714053])
+    )
+    np.testing.assert_almost_equal(
+        m[:, 0],
+        np.array(
+            [
+                -0.03780896, 0.01428981, 0.01329116, 0.0136845, -0.13110697,
+                0.01511638, 0.01233682, 0.01759883, -0.12401404, 0.00574906,
+                0.00545047, 0.00770349, 0.01409505, -0.03905632, 0.01315758,
+                0.01010664, 0.0132242, -0.13156635, 0.01041309, 0.0114354,
+                0.00522018, -0.12361953, 0.00471038, 0.00646891, 0.01266273,
+                0.01516653, -0.03945049, 0.01487932, 0.01021474, 0.01886193,
+                -0.13657921, 0.01491626, 0.004885, 0.00727845, -0.12477003,
+                0.00625501, 0.002933, 0.0052785, -0.00021098, -0.02575473,
+                -0.03393887, -0.03565643, -0.02612223, -0.11649588, -0.00968069,
+                -0.01105033, -0.0044019, -0.12087302,
+            ]
+        ),
+    )
+
+    np.testing.assert_almost_equal(
+        cov[:, -2],
+        np.array(
+            [
+                0.01362556, 0.01064286, 0.02551549, -0.03343807, 0.01064286,
+                0.00840897, 0.01840482, -0.01834393, 0.02551549, 0.01840482,
+                0.0291329, 0.00457209, -0.03343807, -0.01834393, 0.00457209,
+                -0.12020213,
+            ]
+        ),
+    )
