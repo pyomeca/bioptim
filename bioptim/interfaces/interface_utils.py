@@ -465,14 +465,20 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
                 if is_unscaled:
                     _x_tp = nlp_i.cx()
-                    for i in range(nlp_i.X[index_i].shape[1]):
-                        _x_tp = vertcat(_x_tp, nlp_i.X[index_i][:, i])
+                    if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                        _x_tp = vertcat(_x_tp, nlp_i.X[index_i][:, 0])
+                    else:
+                        for i in range(nlp_i.X[index_i].shape[1]):
+                            _x_tp = vertcat(_x_tp, nlp_i.X[index_i][:, i])
                     _u_tp = nlp_i.U[index_i - ui_mode] if ocp.assume_phase_dynamics or index_i < len(nlp_i.U) else []
                     _s_tp = nlp_i.S[index_i]
                 else:
                     _x_tp = nlp_i.cx()
-                    for i in range(nlp_i.X_scaled[index_i].shape[1]):
-                        _x_tp = vertcat(_x_tp, nlp_i.X_scaled[index_i][:, i])
+                    if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                        _x_tp = vertcat(_x_tp, nlp_i.X_scaled[index_i][:, 0])
+                    else:
+                        for i in range(nlp_i.X_scaled[index_i].shape[1]):
+                            _x_tp = vertcat(_x_tp, nlp_i.X_scaled[index_i][:, i])
                     _u_tp = (
                         nlp_i.U_scaled[index_i - ui_mode]
                         if ocp.assume_phase_dynamics or index_i < len(nlp_i.U_scaled)
@@ -497,11 +503,14 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
                 _u = nlp.U_scaled[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U_scaled) else []
                 _s = nlp.S_scaled[_idx]
-        else:  # do we really need this if ?
+        else:
             if is_unscaled:
                 _x = nlp.cx()
-                for i in range(nlp.X[_idx].shape[1]):
-                    _x = vertcat(_x, nlp.X[_idx][:, i])
+                if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL or _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
+                    _x = vertcat(_x, nlp.X[_idx][:, 0])
+                else:
+                    for i in range(nlp.X[_idx].shape[1]):
+                        _x = vertcat(_x, nlp.X[_idx][:, i])
 
                 # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
                 if (
@@ -509,6 +518,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     and nlp.ode_solver.is_direct_collocation
                     and nlp.assume_phase_dynamics
                     and _penalty.node[0] != Node.END
+                    and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 ):
                     for i in range(1, nlp.X[_idx - 1].shape[1]):
                         _x = vertcat(_x, nlp.X[_idx - 1][:, i])
@@ -517,8 +527,11 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _s = nlp.S[_idx][:, 0]
             else:
                 _x = nlp.cx()
-                for i in range(nlp.X_scaled[_idx].shape[1]):
-                    _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
+                if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL or _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
+                    _x = vertcat(_x, nlp.X_scaled[_idx][:, 0])
+                else:
+                    for i in range(nlp.X_scaled[_idx].shape[1]):
+                        _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
 
                 # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
                 if (
@@ -526,6 +539,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     and nlp.ode_solver.is_direct_collocation
                     and nlp.assume_phase_dynamics
                     and _penalty.node[0] != Node.END
+                    and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 ):
                     for i in range(1, nlp.X_scaled[_idx - 1].shape[1]):
                         _x = vertcat(_x, nlp.X_scaled[_idx - 1][:, i])
@@ -610,7 +624,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     )
                 _u = vertcat(_u, u)
 
-        if _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
+        elif _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
                     u = nlp.U[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U) else []

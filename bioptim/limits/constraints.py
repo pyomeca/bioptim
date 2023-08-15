@@ -774,7 +774,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             defects = vertcat(first_defect, dynamics["defects"][non_root_index_defects])
 
-            # Do the order of concatenation matters ?
             df_dz = horzcat(
                 jacobian(final_defect, x_q_joints),
                 jacobian(final_defect, z_q_joints),

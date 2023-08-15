@@ -660,7 +660,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 horzcat(x_q_joints, z_q_joints),
                 horzcat(x_qdot_root, z_qdot_root),
                 horzcat(x_qdot_joints, z_qdot_joints),
-            )  # TODO: make sure it is the right order
+            )
             dynamics = controllers[0].integrate_noised_dynamics(
                 x0=states_full,
                 p=controllers[0].controls.cx_start,

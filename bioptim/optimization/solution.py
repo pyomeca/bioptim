@@ -1976,70 +1976,103 @@ class Solution:
                             col_x_idx = [idx * steps]
                     else:
                         col_x_idx = [idx]
-                    col_u_idx = [idx]
+                    if nlp.control_type == ControlType.LINEAR_CONTINUOUS and idx < nlp.ns:
+                        col_u_idx = [idx, idx + 1]
+                    else:
+                        col_u_idx = [idx]
                     col_s_idx = [idx]
-                    if (
-                        penalty.derivative
-                        or penalty.explicit_derivative
-                        or penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                    ):
-                        col_x_idx.append((idx + 1) * (steps if nlp.ode_solver.is_direct_shooting else 1))
 
-                        if (
-                            penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                        ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                            col_u_idx.append((idx + 1))
-                    elif penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
-                        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                            col_u_idx.append((idx + 1))
+                    if penalty.explicit_derivative:
+                        if idx < nlp.ns:
+                            col_x_idx += [(idx + 1) * steps]
+                            if (
+                                    not (
+                                            idx == nlp.ns - 1
+                                            and nlp.control_type == ControlType.CONSTANT
+                                    )
+                                    or nlp.assume_phase_dynamics
+                            ):
+                                col_u_idx += [idx + 1] if nlp.control_type != ControlType.LINEAR_CONTINUOUS else []
+                            col_s_idx += [idx + 1]
 
-                    x = np.ndarray((nlp.states.shape, len(col_x_idx)))
+                    x = np.array(()).reshape(0, 0)
+                    u = np.array(()).reshape(0, 0)
+                    s = np.array(()).reshape(0, 0)
                     for key in nlp.states:
-                        x[nlp.states[key].index, :] = self._states["scaled"][phase_idx][key][:, col_x_idx]
-
-                    u = np.ndarray((nlp.controls.shape, len(col_u_idx)))
+                        x = self._states["scaled"][phase_idx][key][:, col_x_idx] if sum(x.shape) == 0 else np.concatenate((x, self._states["scaled"][phase_idx][key][:, col_x_idx]))
                     for key in nlp.controls:
-                        u[nlp.controls[key].index, :] = (
+                        u = self._controls["scaled"][phase_idx][key][:, col_u_idx] if sum(u.shape) == 0 else np.concatenate((u, self._controls["scaled"][phase_idx][key][:, col_u_idx]))
+                    for key in nlp.stochastic_variables:
+                        s = self._stochastic_variables["scaled"][phase_idx][key][:, col_s_idx] if sum(s.shape) == 0 else np.concatenate((s, self._stochastic_variables["scaled"][phase_idx][key][:, col_s_idx]))
+
+                # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
+                # casadi function
+                if not self.ocp.assume_phase_dynamics and (
+                        (isinstance(u, list) and u != []) or isinstance(u, np.ndarray)):
+                    u = u[:, ~np.isnan(np.sum(u, axis=0))]
+                # if (
+                #         penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                #         or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
+                # ):
+                #     val.append(penalty.function[idx](x[:, 0], u[:, 0], p, s[:, 0], 0, 0))
+                # else:
+
+                x_reshaped = x.T.reshape((-1, 1)) if len(x.shape) > 1 and x.shape[1] != 1 else x
+                u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
+                s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
+                try:
+                    val.append(penalty.function[idx](x_reshaped, u_reshaped, p, s_reshaped, 0, 0))
+                except:
+                    print("ici")
+
+                if penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
+                    x = x[:, 0].reshape((-1, 1))
+                col_x_idx = []
+                col_u_idx = []
+                if (
+                    penalty.derivative
+                    or penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                ):
+                    col_x_idx.append((idx + 1) * (steps if (nlp.ode_solver.is_direct_shooting or nlp.ode_solver.is_direct_collocation) else 1))
+
+                    if (
+                        penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    ) or nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        col_u_idx.append((idx + 1))
+                elif penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
+                    if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        col_u_idx.append((idx + 1))
+
+                if len(col_x_idx) > 0:
+                    _x = np.ndarray((nlp.states.shape, len(col_x_idx)))
+                    for key in nlp.states:
+                        _x[nlp.states[key].index, :] = self._states["scaled"][phase_idx][key][:, col_x_idx]
+                    x = np.hstack((x, _x))
+
+                if len(col_u_idx) > 0:
+                    _u = np.ndarray((nlp.controls.shape, len(col_u_idx)))
+                    for key in nlp.controls:
+                        _u[nlp.controls[key].index, :] = (
                             []
                             if nlp.control_type == ControlType.NONE
                             else self._controls["scaled"][phase_idx][key][:, col_u_idx]
                         )
+                    u = np.hstack((u, _u.reshape(nlp.controls.shape, len(col_u_idx))))
 
-                    s = np.ndarray((nlp.stochastic_variables.shape, len(col_s_idx)))
-                    for key in nlp.stochastic_variables:
-                        s[nlp.stochastic_variables[key].index, :] = self._stochastic_variables["scaled"][phase_idx][
-                            key
-                        ][:, col_s_idx]
-
-                    if penalty.target is None:
-                        target = []
-                    elif (
-                        penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                        or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
-                    ):
-                        target = np.vstack(
-                            (
-                                penalty.target[0][:, penalty.node_idx.index(idx)],
-                                penalty.target[1][:, penalty.node_idx.index(idx)],
-                            )
-                        ).T
-                    else:
-                        target = penalty.target[0][..., penalty.node_idx.index(idx)]
-
-            # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
-            # casadi function
-            if not self.ocp.assume_phase_dynamics and ((isinstance(u, list) and u != []) or isinstance(u, np.ndarray)):
-                u = u[:, ~np.isnan(np.sum(u, axis=0))]
-            if (
-                penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
-            ):
-                val.append(penalty.function[idx](x[:, 0], u[:, 0], p, s[:, 0], 0, 0))
-            else:
-                x_reshaped = x.T.reshape((-1, 1)) if len(x.shape) > 1 and x.shape[1] != 1 else x
-                u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
-                s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
-                val.append(penalty.function[idx](x_reshaped, u_reshaped, p, s_reshaped, 0, 0))
+                if penalty.target is None:
+                    target = []
+                elif (
+                    penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
+                ):
+                    target = np.vstack(
+                        (
+                            penalty.target[0][:, penalty.node_idx.index(idx)],
+                            penalty.target[1][:, penalty.node_idx.index(idx)],
+                        )
+                    ).T
+                else:
+                    target = penalty.target[0][..., penalty.node_idx.index(idx)]
 
             x_reshaped = x.T.reshape((-1, 1)) if len(x.shape) > 1 and x.shape[1] != 1 else x
             u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u

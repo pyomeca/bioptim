@@ -582,7 +582,7 @@ class PenaltyOption(OptionGeneric):
                     control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
                     stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
                 else:
-                    if controller.ode_solver.is_direct_collocation and not self.derivative:
+                    if controller.ode_solver.is_direct_collocation and not self.derivative and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
                         state_cx_scaled = vertcat(
                             state_cx_scaled, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
                         )
@@ -598,7 +598,7 @@ class PenaltyOption(OptionGeneric):
             if controller.get_nlp.assume_phase_dynamics or controller.node_index < controller.ns:
                 if self.integrate or controller.ode_solver.is_direct_collocation:
                     if not (len(self.node_idx) == 1 and self.node_idx[0] == controller.ns):
-                        if not self.derivative:
+                        if not self.derivative or self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
                             state_cx_scaled = vertcat(
                                 *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
                             )
@@ -750,6 +750,14 @@ class PenaltyOption(OptionGeneric):
                     s=controller.stochastic_variables.cx_start,
                 )["xf"]
             )
+            if controller.ode_solver.is_direct_collocation:
+                state_cx_start_scaled = vertcat(controller.states_scaled.cx_start, *controller.states_scaled.cx_intermediates_list)
+                state_cx_end_scaled = vertcat(
+                    state_cx_end_scaled,
+                    *controller.states_scaled.cx_intermediates_list,
+                )
+            else:
+                state_cx_start_scaled = controller.states_scaled.cx_start
 
             stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
 
@@ -758,7 +766,7 @@ class PenaltyOption(OptionGeneric):
                 (
                     (
                         self.function[node](
-                            controller.states_scaled.cx_start,
+                            state_cx_start_scaled,
                             controller.controls_scaled.cx_start,
                             param_cx,
                             controller.stochastic_variables_scaled.cx_start,
