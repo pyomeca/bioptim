@@ -767,18 +767,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 sensory_noise=controller.sensory_noise,
             )
 
-            final_defect = dynamics["xf"][non_root_index_continuity]
-            first_defect = (
-                controller.states.cx_start[non_root_index_continuity]
-                - controller.states.cx_start[non_root_index_continuity]
-            )
-            defects = vertcat(first_defect, dynamics["defects"][non_root_index_defects])
+            final_polynomial_evaluation = dynamics["xf"][non_root_index_continuity]
+            defects = dynamics["defects"][non_root_index_defects]
 
             df_dz = horzcat(
-                jacobian(final_defect, x_q_joints),
-                jacobian(final_defect, z_q_joints),
-                jacobian(final_defect, x_qdot_joints),
-                jacobian(final_defect, z_qdot_joints),
+                jacobian(final_polynomial_evaluation, x_q_joints),
+                jacobian(final_polynomial_evaluation, z_q_joints),
+                jacobian(final_polynomial_evaluation, x_qdot_joints),
+                jacobian(final_polynomial_evaluation, z_qdot_joints),
             )
 
             dg_dz = horzcat(
@@ -860,7 +856,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
-                controller.stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree + 1), Node.START, "m"
+                controller.stochastic_variables, 2 * nu, 2 * nu * polynomial_degree, Node.START, "m"
             )
 
             constraint = df_dz_evaluated.T - dg_dz_evaluated.T @ m_matrix.T

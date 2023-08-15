@@ -165,7 +165,7 @@ def configure_stochastic_optimal_control_problem(
     # Stochastic variables
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_collocation_points=3 + 1)
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_collocation_points=3)
     ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
 
     ConfigureProblem.configure_dynamics_function(
@@ -452,25 +452,19 @@ def prepare_socp(
         expand=False,
     )
 
-    states_min = np.ones((n_states, n_shooting * 5 + 1)) * -cas.inf
-    states_max = np.ones((n_states, n_shooting * 5 + 1)) * cas.inf
-
     x_bounds = BoundsList()
     x_bounds.add(
-        "q", min_bound=states_min[:n_q, :], max_bound=states_max[:n_q, :], interpolation=InterpolationType.ALL_POINTS
+        "q", min_bound=[-cas.inf] * n_q, max_bound=[cas.inf] * n_q, interpolation=InterpolationType.CONSTANT
     )
     x_bounds.add(
         "qdot",
-        min_bound=states_min[n_q : n_q + n_qdot, :],
-        max_bound=states_max[n_q : n_q + n_qdot, :],
-        interpolation=InterpolationType.ALL_POINTS,
+        min_bound=[-cas.inf] * n_qdot,
+        max_bound=[cas.inf] * n_qdot,
+        interpolation=InterpolationType.CONSTANT,
     )
 
-    controls_min = np.ones((n_tau, 3)) * -cas.inf
-    controls_max = np.ones((n_tau, 3)) * cas.inf
-
     u_bounds = BoundsList()
-    u_bounds.add("tau", min_bound=controls_min, max_bound=controls_max)
+    u_bounds.add("tau", min_bound=[-cas.inf] * n_tau, max_bound=[cas.inf] * n_tau, interpolation=InterpolationType.CONSTANT)
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
@@ -491,7 +485,7 @@ def prepare_socp(
     s_bounds = BoundsList()
     n_k = 2 * 4
     n_ref = 4
-    n_m = 4 * (3 + 1) * 4
+    n_m = 4 * 3 * 4
     n_cov = 4 * 4
 
     s_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
@@ -511,6 +505,7 @@ def prepare_socp(
         "ref",
         min_bound=[-cas.inf] * n_ref,
         max_bound=[cas.inf] * n_ref,
+        interpolation=InterpolationType.CONSTANT,
     )
 
     s_init.add(
@@ -522,6 +517,7 @@ def prepare_socp(
         "m",
         min_bound=[-cas.inf] * n_m,
         max_bound=[cas.inf] * n_m,
+        interpolation=InterpolationType.CONSTANT,
     )
 
     cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
@@ -539,6 +535,7 @@ def prepare_socp(
         "cov",
         min_bound=[-cas.inf] * n_cov,
         max_bound=[cas.inf] * n_cov,
+        interpolation=InterpolationType.CONSTANT,
     )
 
     return StochasticOptimalControlProgram(

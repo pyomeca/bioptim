@@ -642,7 +642,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0]
                 .stochastic_variables["m"]
                 .reshape_to_matrix(
-                    controllers[0].stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree + 1), Node.START, "m"
+                    controllers[0].stochastic_variables, 2 * nu, 2 * nu * polynomial_degree, Node.START, "m"
                 )
             )
 
@@ -670,11 +670,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 sensory_noise=controllers[0].sensory_noise,
             )
 
-            first_defect = (
-                controllers[0].states.cx_start[non_root_index_continuity]
-                - controllers[0].states.cx_start[non_root_index_continuity]
-            )
-            defects = vertcat(first_defect, dynamics["defects"][non_root_index_defects])
+            defects = dynamics["defects"][non_root_index_defects]
             sigma_w = vertcat(controllers[0].sensory_noise, controllers[0].motor_noise)
             sigma_matrix = sigma_w * MX_eye(sigma_w.shape[0])
 
