@@ -529,7 +529,6 @@ def test_arm_reaching_torque_driven_explicit():
     )
 
 
-# TODO: add test when scaling PR is merged
 @pytest.mark.parametrize("with_cholesky", [True, False])
 @pytest.mark.parametrize("with_scaling", [True, False])
 def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
