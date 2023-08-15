@@ -262,7 +262,7 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     val = fun(
         controllers[-1].states["q"].cx_start,
         controllers[-1].states["qdot"].cx_start,
-        controllers[-1].stochastic_variables["cov"].cx_start
+        controllers[-1].stochastic_variables["cov"].cx_start,
     )
     # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
 
@@ -453,9 +453,7 @@ def prepare_socp(
     )
 
     x_bounds = BoundsList()
-    x_bounds.add(
-        "q", min_bound=[-cas.inf] * n_q, max_bound=[cas.inf] * n_q, interpolation=InterpolationType.CONSTANT
-    )
+    x_bounds.add("q", min_bound=[-cas.inf] * n_q, max_bound=[cas.inf] * n_q, interpolation=InterpolationType.CONSTANT)
     x_bounds.add(
         "qdot",
         min_bound=[-cas.inf] * n_qdot,
@@ -464,7 +462,9 @@ def prepare_socp(
     )
 
     u_bounds = BoundsList()
-    u_bounds.add("tau", min_bound=[-cas.inf] * n_tau, max_bound=[cas.inf] * n_tau, interpolation=InterpolationType.CONSTANT)
+    u_bounds.add(
+        "tau", min_bound=[-cas.inf] * n_tau, max_bound=[cas.inf] * n_tau, interpolation=InterpolationType.CONSTANT
+    )
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
@@ -635,9 +635,7 @@ def main():
     }
 
     # --- Save the results --- #
-    with open(
-        f"leuvenarm_torque_driven_socp_{str(problem_type)}_forcefield{force_field_magnitude}.pkl", "wb"
-    ) as file:
+    with open(f"leuvenarm_torque_driven_socp_{str(problem_type)}_forcefield{force_field_magnitude}.pkl", "wb") as file:
         pickle.dump(data, file)
 
     # --- Visualize the results --- #
