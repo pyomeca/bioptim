@@ -582,7 +582,11 @@ class PenaltyOption(OptionGeneric):
                     control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
                     stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
                 else:
-                    if controller.ode_solver.is_direct_collocation and not self.derivative and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                    if (
+                        controller.ode_solver.is_direct_collocation
+                        and not self.derivative
+                        and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    ):
                         state_cx_scaled = vertcat(
                             state_cx_scaled, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
                         )
@@ -751,7 +755,9 @@ class PenaltyOption(OptionGeneric):
                 )["xf"]
             )
             if controller.ode_solver.is_direct_collocation:
-                state_cx_start_scaled = vertcat(controller.states_scaled.cx_start, *controller.states_scaled.cx_intermediates_list)
+                state_cx_start_scaled = vertcat(
+                    controller.states_scaled.cx_start, *controller.states_scaled.cx_intermediates_list
+                )
                 state_cx_end_scaled = vertcat(
                     state_cx_end_scaled,
                     *controller.states_scaled.cx_intermediates_list,

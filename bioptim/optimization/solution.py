@@ -1905,32 +1905,49 @@ class Solution:
             target = []
             if nlp is not None:
                 if penalty.transition:
-
                     _x_0 = np.array(())
                     _u_0 = np.array(())
                     _s_0 = np.array(())
                     for key in nlp.states:
-                        _x_0 = np.concatenate((_x_0, self._states["scaled"][penalty.nodes_phase[0]][key][:, penalty.multinode_idx[0]]))
+                        _x_0 = np.concatenate(
+                            (_x_0, self._states["scaled"][penalty.nodes_phase[0]][key][:, penalty.multinode_idx[0]])
+                        )
                     for key in nlp.controls:
                         # Make an exception to the fact that U is not available for the last node
-                        _u_0 = np.concatenate((_u_0, self._controls["scaled"][penalty.nodes_phase[0]][key][:, penalty.multinode_idx[0]]))
+                        _u_0 = np.concatenate(
+                            (_u_0, self._controls["scaled"][penalty.nodes_phase[0]][key][:, penalty.multinode_idx[0]])
+                        )
                     for key in nlp.stochastic_variables:
-                        _s_0 = np.concatenate((_s_0, self._stochastic_variables["scaled"][penalty.nodes_phase[0]][key][:, penalty.multinode_idx[0]]))
+                        _s_0 = np.concatenate(
+                            (
+                                _s_0,
+                                self._stochastic_variables["scaled"][penalty.nodes_phase[0]][key][
+                                    :, penalty.multinode_idx[0]
+                                ],
+                            )
+                        )
 
                     _x_1 = np.array(())
                     _u_1 = np.array(())
                     _s_1 = np.array(())
                     for key in nlp.states:
-                        _x_1 = np.concatenate((_x_1, self._states["scaled"][penalty.nodes_phase[1]][key][:,
-                                                     penalty.multinode_idx[1]]))
+                        _x_1 = np.concatenate(
+                            (_x_1, self._states["scaled"][penalty.nodes_phase[1]][key][:, penalty.multinode_idx[1]])
+                        )
                     for key in nlp.controls:
                         # Make an exception to the fact that U is not available for the last node
-                        _u_1 = np.concatenate((_u_1, self._controls["scaled"][penalty.nodes_phase[1]][key][:,
-                                                     penalty.multinode_idx[1]]))
+                        _u_1 = np.concatenate(
+                            (_u_1, self._controls["scaled"][penalty.nodes_phase[1]][key][:, penalty.multinode_idx[1]])
+                        )
                     for key in nlp.stochastic_variables:
-                        _s_1 = np.concatenate((_s_1,
-                                               self._stochastic_variables["scaled"][penalty.nodes_phase[1]][key][:,
-                                               penalty.multinode_idx[1]]))
+                        _s_1 = np.concatenate(
+                            (
+                                _s_1,
+                                self._stochastic_variables["scaled"][penalty.nodes_phase[1]][key][
+                                    :, penalty.multinode_idx[1]
+                                ],
+                            )
+                        )
 
                     x = np.hstack((_x_0, _x_1))
                     u = np.hstack((_u_0, _u_1))
@@ -1983,11 +2000,8 @@ class Solution:
                         if idx < nlp.ns:
                             col_x_idx += [(idx + 1) * steps]
                             if (
-                                    not (
-                                            idx == nlp.ns - 1
-                                            and nlp.control_type == ControlType.CONSTANT
-                                    )
-                                    or nlp.assume_phase_dynamics
+                                not (idx == nlp.ns - 1 and nlp.control_type == ControlType.CONSTANT)
+                                or nlp.assume_phase_dynamics
                             ):
                                 col_u_idx += [idx + 1]
                             col_s_idx += [idx + 1]
@@ -1996,16 +2010,29 @@ class Solution:
                     u = np.array(()).reshape(0, 0)
                     s = np.array(()).reshape(0, 0)
                     for key in nlp.states:
-                        x = self._states["scaled"][phase_idx][key][:, col_x_idx] if sum(x.shape) == 0 else np.concatenate((x, self._states["scaled"][phase_idx][key][:, col_x_idx]))
+                        x = (
+                            self._states["scaled"][phase_idx][key][:, col_x_idx]
+                            if sum(x.shape) == 0
+                            else np.concatenate((x, self._states["scaled"][phase_idx][key][:, col_x_idx]))
+                        )
                     for key in nlp.controls:
-                        u = self._controls["scaled"][phase_idx][key][:, col_u_idx] if sum(u.shape) == 0 else np.concatenate((u, self._controls["scaled"][phase_idx][key][:, col_u_idx]))
+                        u = (
+                            self._controls["scaled"][phase_idx][key][:, col_u_idx]
+                            if sum(u.shape) == 0
+                            else np.concatenate((u, self._controls["scaled"][phase_idx][key][:, col_u_idx]))
+                        )
                     for key in nlp.stochastic_variables:
-                        s = self._stochastic_variables["scaled"][phase_idx][key][:, col_s_idx] if sum(s.shape) == 0 else np.concatenate((s, self._stochastic_variables["scaled"][phase_idx][key][:, col_s_idx]))
+                        s = (
+                            self._stochastic_variables["scaled"][phase_idx][key][:, col_s_idx]
+                            if sum(s.shape) == 0
+                            else np.concatenate((s, self._stochastic_variables["scaled"][phase_idx][key][:, col_s_idx]))
+                        )
 
                 # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
                 # casadi function
                 if not self.ocp.assume_phase_dynamics and (
-                        (isinstance(u, list) and u != []) or isinstance(u, np.ndarray)):
+                    (isinstance(u, list) and u != []) or isinstance(u, np.ndarray)
+                ):
                     u = u[:, ~np.isnan(np.sum(u, axis=0))]
                 # if (
                 #         penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
@@ -2019,15 +2046,18 @@ class Solution:
                 s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
                 val.append(penalty.function[idx](x_reshaped, u_reshaped, p, s_reshaped, 0, 0))
 
-                if penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
+                if (
+                    penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
+                ):
                     x = x[:, 0].reshape((-1, 1))
                 col_x_idx = []
                 col_u_idx = []
-                if (
-                    penalty.derivative
-                    or penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                ):
-                    col_x_idx.append((idx + 1) * (steps if (nlp.ode_solver.is_direct_shooting or nlp.ode_solver.is_direct_collocation) else 1))
+                if penalty.derivative or penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                    col_x_idx.append(
+                        (idx + 1)
+                        * (steps if (nlp.ode_solver.is_direct_shooting or nlp.ode_solver.is_direct_collocation) else 1)
+                    )
 
                     if (
                         penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
