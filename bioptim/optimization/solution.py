@@ -1976,10 +1976,7 @@ class Solution:
                             col_x_idx = [idx * steps]
                     else:
                         col_x_idx = [idx]
-                    if nlp.control_type == ControlType.LINEAR_CONTINUOUS and idx < nlp.ns:
-                        col_u_idx = [idx, idx + 1]
-                    else:
-                        col_u_idx = [idx]
+                    col_u_idx = [idx]
                     col_s_idx = [idx]
 
                     if penalty.explicit_derivative:
@@ -1992,7 +1989,7 @@ class Solution:
                                     )
                                     or nlp.assume_phase_dynamics
                             ):
-                                col_u_idx += [idx + 1] if nlp.control_type != ControlType.LINEAR_CONTINUOUS else []
+                                col_u_idx += [idx + 1]
                             col_s_idx += [idx + 1]
 
                     x = np.array(()).reshape(0, 0)
@@ -2020,10 +2017,7 @@ class Solution:
                 x_reshaped = x.T.reshape((-1, 1)) if len(x.shape) > 1 and x.shape[1] != 1 else x
                 u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
                 s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
-                try:
-                    val.append(penalty.function[idx](x_reshaped, u_reshaped, p, s_reshaped, 0, 0))
-                except:
-                    print("ici")
+                val.append(penalty.function[idx](x_reshaped, u_reshaped, p, s_reshaped, 0, 0))
 
                 if penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
                     x = x[:, 0].reshape((-1, 1))
