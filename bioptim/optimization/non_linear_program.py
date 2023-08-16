@@ -177,6 +177,7 @@ class NonLinearProgram:
         self.s_scaling = None
         self.assume_phase_dynamics = assume_phase_dynamics
         self.time = None
+        self.time_mx = None
         self.states = OptimizationVariableContainer(assume_phase_dynamics)
         self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
         self.controls = OptimizationVariableContainer(assume_phase_dynamics)

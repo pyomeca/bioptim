@@ -82,6 +82,7 @@ class NonControlledMethod:
         states: MX | SX,
         controls: MX | SX,
         parameters: MX | SX,
+        stochastic_variables: MX | SX,
         nlp: NonLinearProgram,
     ) -> DynamicsEvaluation:
         t_phase = nlp.parameters.cx[-1]
@@ -158,17 +159,19 @@ class NonControlledMethod:
             as_states_dot=False,
         )
 
-        name = "t"
-        name_t = [name]
-        ConfigureProblem.configure_new_variable(
-            name,
-            name_t,
-            ocp,
-            nlp,
-            as_states=False,
-            as_controls=False,
-            as_states_dot=False,
-        )
+        # name = "t"
+        # name_t = [name]
+        # ConfigureProblem.configure_new_variable(
+        #     name,
+        #     name_t,
+        #     ocp,
+        #     nlp,
+        #     as_states=False,
+        #     as_controls=False,
+        #     as_states_dot=False,
+        # )
+
+        ConfigureProblem.configure_t(ocp, nlp, as_states=False, as_controls=False)
 
         # t = MX.sym("t")  # t needs a symbolic value to start computing in custom_configure_dynamics_function
         # self.custom_configure_dynamics_function(ocp, nlp, t=t)

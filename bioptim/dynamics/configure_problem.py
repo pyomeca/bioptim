@@ -1427,11 +1427,11 @@ class ConfigureProblem:
             If the dynamics with fatigue should be declared
         """
 
-        name = "t"
-        name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        name = "time"
+        name_t = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_tau, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
+            name, name_t, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
         )
 
     @staticmethod

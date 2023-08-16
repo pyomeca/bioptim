@@ -69,7 +69,6 @@ def solve_ivp_interface(
             y = run_solve_ivp(
                 dynamics_func=dynamics_func,
                 t_eval=t_eval_step,
-                t=t,
                 x0=x0i,
                 u=ui,
                 s=s,
@@ -117,7 +116,6 @@ def solve_ivp_interface(
             y = run_solve_ivp(
                 dynamics_func=dynamics_func,
                 t_eval=t_eval_step,
-                t=t,
                 x0=x0i,
                 u=ui,
                 s=s,
@@ -137,7 +135,6 @@ def solve_ivp_interface(
 def run_solve_ivp(
     dynamics_func: Callable,
     t_eval: np.ndarray | List[float],
-    t: np.ndarray,
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
@@ -155,8 +152,6 @@ def run_solve_ivp(
         function that computes the dynamics of the system
     t_eval : np.ndarray | List[float]
         array of times t the controls u are evaluated at
-    t : np.ndarray
-        array of time
     x0 : np.ndarray
         array of initial conditions
     u : np.ndarray
