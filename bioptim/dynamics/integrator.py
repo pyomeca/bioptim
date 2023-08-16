@@ -283,6 +283,7 @@ class RK(Integrator):
 
         for i in range(1, self.n_step + 1):
             t = self.t_span[i-1]
+
             x[:, i] = self.next_x(h, t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])

@@ -126,7 +126,7 @@ class RK(OdeSolverBase):
         t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
         tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
         dt = (tf - t0) / self.steps
-        t_span = [t0] + [dt * i for i in range(1, self.steps)]
+        t_span = [t0+ dt * i for i in range(0, self.steps)]
         ode_opt = {
             "t0": t0,
             "tf": tf,
@@ -295,7 +295,7 @@ class OdeSolver:
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
             dt = (tf - t0) / self.steps
-            t_span = [t0] + [dt * i for i in range(1, self.steps)]
+            t_span = [t0+ dt * i for i in range(0, self.steps)]
             ode_opt = {
                 "t0": t0,
                 "tf": tf,
@@ -396,8 +396,8 @@ class OdeSolver:
             }
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
-            dt = (tf - t0) / self.steps
-            t_span = [t0] + collocation_points(self.polynomial_degree, self.method)
+            dt = collocation_points(self.polynomial_degree, self.method)
+            t_span = [t0 + dt[i] for i in range(0, self.steps)]
             ode_opt = {
                 "t0": t0,
                 "tf": tf,
@@ -540,7 +540,8 @@ class OdeSolver:
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
             dt = (tf - t0) / self.steps
-            t_span = [t0] + [dt * i for i in range(1, self.steps)]
+            t_span = [t0 + dt * i for i in range(0, self.steps)]
+
             ode_opt = {
                 "t0": t0,
                 "tf": tf,
