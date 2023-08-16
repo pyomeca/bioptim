@@ -591,6 +591,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
 
+            if controller.integrate_noised_dynamics is None:
+                raise RuntimeError("This function is only valid for stochastic problems")
+
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
 
@@ -646,6 +649,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             A = dG/dx
             TODO: Charbie -> This is only true for trapezoidal integration
             """
+            if controller.integrate_noised_dynamics is None:
+                raise RuntimeError("This function is only valid for stochastic problems")
+
             dt = controller.tf / controller.ns
 
             nb_root = controller.model.nb_root
@@ -724,6 +730,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             where z = states at the collocation points, F = collocation continuity constraint (dxdt - x_k+1),
             and G = collocation slope constraints (defects).
             """
+
+            if controller.integrate_noised_dynamics is None:
+                raise RuntimeError("This function is only valid for stochastic problems")
 
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             nb_root = controller.model.nb_root

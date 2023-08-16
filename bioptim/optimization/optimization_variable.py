@@ -150,30 +150,33 @@ class OptimizationVariable:
         return vector
 
     @staticmethod
-    def reshape_to_matrix(variable, shape_0, shape_1, node: Node = None, key: str = None):
+    def reshape_to_matrix(variable, shape_0, shape_1, node: Node, key: str):
         """
         Restore the matrix form of the variables
         """
-        if hasattr(variable, "keys"):
-            if key is None:
-                raise RuntimeError("The key must be specified")
-            if node is None:
-                raise RuntimeError(
-                    "The node must be specified, you have the choice between Node.START, Node.MID, and" "Node.END"
-                )
-            if node == Node.START:
-                var = variable[key].cx_start
-            elif node == Node.MID:
-                var = variable[key].cx_mid
-            elif node == Node.END:
-                var = variable[key].cx_end
-            else:
-                raise RuntimeError(
-                    "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-                )
+        if node == Node.START:
+            var = variable[key].cx_start
+        elif node == Node.MID:
+            var = variable[key].cx_mid
+        elif node == Node.END:
+            var = variable[key].cx_end
         else:
-            var = variable
+            raise RuntimeError(
+                "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
+            )
 
+        matrix = MX(shape_0, shape_1)
+        for s0 in range(shape_1):
+            for s1 in range(shape_0):
+                matrix[s1, s0] = var[s0 * shape_0 + s1]
+        return matrix
+
+    @staticmethod
+    def reshape_sym_to_matrix(variable, shape_0, shape_1):
+        """
+        Restore the matrix form of the variables
+        """
+        var = variable
         matrix = MX(shape_0, shape_1)
         for s0 in range(shape_1):
             for s1 in range(shape_0):
@@ -732,30 +735,33 @@ class OptimizationVariableContainer:
                 vector[shape_0 * s1 + s0] = matrix[s0, s1]
         return vector
 
-    def reshape_to_matrix(self, variable, shape_0, shape_1, node: Node = None, key: str = None):
+    def reshape_to_matrix(self, variable, shape_0, shape_1, node: Node, key: str):
         """
         Restore the matrix form of the variables
         """
-        if hasattr(variable, "keys"):
-            if key is None:
-                raise RuntimeError("The key must be specified")
-            if node is None:
-                raise RuntimeError(
-                    "The node must be specified, you have the choice between Node.START, Node.MID, and" "Node.END"
-                )
-            if node == Node.START:
-                var = variable[key].cx_start
-            elif node == Node.MID:
-                var = variable[key].cx_mid
-            elif node == Node.END:
-                var = variable[key].cx_end
-            else:
-                raise RuntimeError(
-                    "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-                )
+        if node == Node.START:
+            var = variable[key].cx_start
+        elif node == Node.MID:
+            var = variable[key].cx_mid
+        elif node == Node.END:
+            var = variable[key].cx_end
         else:
-            var = variable
+            raise RuntimeError(
+                "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
+            )
 
+        matrix = MX(shape_0, shape_1)
+        for s0 in range(shape_1):
+            for s1 in range(shape_0):
+                matrix[s1, s0] = var[s0 * shape_0 + s1]
+        return matrix
+
+
+    def reshape_sym_to_matrix(self, variable, shape_0, shape_1):
+        """
+        Restore the matrix form of the variables
+        """
+        var = variable
         matrix = MX(shape_0, shape_1)
         for s0 in range(shape_1):
             for s1 in range(shape_0):

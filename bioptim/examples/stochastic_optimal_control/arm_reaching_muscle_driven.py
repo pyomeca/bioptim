@@ -70,7 +70,7 @@ def stochastic_forward_dynamics(
     if with_gains:
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = nlp.stochastic_variables["k"].reshape_to_matrix(k, 6, 4)
+        k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k, 6, 4)
 
         hand_pos = nlp.model.end_effector_position(q)
         hand_vel = nlp.model.end_effector_velocity(q, qdot)
@@ -179,7 +179,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
 
     sigma_w = cas.vertcat(nlp.sensory_noise, nlp.motor_noise) * cas.MX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
-    cov_matrix = nlp.integrated_values.reshape_to_matrix(cov_sym, nx, nx)
+    cov_matrix = nlp.integrated_values.reshape_sym_to_matrix(cov_sym, nx, nx)
 
     dx = stochastic_forward_dynamics(
         nlp.states.cx_start,
@@ -237,7 +237,7 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     cov_matrix = (
         controllers[-1]
         .integrated_values["cov"]
-        .reshape_to_matrix(
+        .reshape_sym_to_matrix(
             cov_sym,
             controllers[-1].states.cx_start.shape[0],
             controllers[-1].states.cx_start.shape[0],
@@ -293,7 +293,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     cov_matrix = (
         controllers[0]
         .integrated_values["cov"]
-        .reshape_to_matrix(
+        .reshape_sym_to_matrix(
             cov_sym,
             controllers[0].states.cx_start.shape[0],
             controllers[0].states.cx_start.shape[0],
@@ -301,7 +301,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     )
 
     k = controllers[0].stochastic_variables["k"].cx_start
-    k_matrix = controllers[0].stochastic_variables["k"].reshape_to_matrix(k, 6, 4)
+    k_matrix = controllers[0].stochastic_variables["k"].reshape_sym_to_matrix(k, 6, 4)
 
     # Compute the expected effort
     hand_pos = controllers[0].model.end_effector_position(controllers[0].states["q"].cx_start)
