@@ -102,7 +102,7 @@ class PathCondition(np.ndarray):
         elif interpolation == InterpolationType.LINEAR:
             if input_array.shape[1] != 2:
                 raise RuntimeError(
-                    f"Invalid number of column for InterpolationType.LINEAR_CONTINUOUS "
+                    f"Invalid number of column for InterpolationType.LINEAR "
                     f"(ncols = {input_array.shape[1]}), the expected number of column is 2"
                 )
         elif interpolation == InterpolationType.EACH_FRAME or interpolation == InterpolationType.ALL_POINTS:
