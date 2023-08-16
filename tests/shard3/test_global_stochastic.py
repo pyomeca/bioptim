@@ -621,7 +621,8 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                 k[:, 0],
                 np.array(
                     [0.00357632, 0.02445081, -0.00986843, 0.06489354, -0.09927389, -0.05395245, 0.02192656, -0.11455955]
-                ), decimal=3
+                ),
+                decimal=3,
             )
             np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907942e-02, 2.84412566e-01, 0, 0]))
             np.testing.assert_almost_equal(
@@ -645,7 +646,8 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                         2.43275276e-03,
                         1.11728557e00,
                     ]
-                ), decimal=3
+                ),
+                decimal=3,
             )
 
             np.testing.assert_almost_equal(cov[:, -2], np.zeros((16,)))
@@ -671,7 +673,8 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                         3.49290194e-02,
                         9.93850189e-01,
                     ]
-                ), decimal=3
+                ),
+                decimal=3,
             )
 
             np.testing.assert_almost_equal(
@@ -703,7 +706,8 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                         -5.45976741e-02,
                         1.56733807e-01,
                     ]
-                ), decimal=3
+                ),
+                decimal=3,
             )
     else:
         # Check some of the results
