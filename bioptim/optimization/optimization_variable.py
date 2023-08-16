@@ -158,8 +158,9 @@ class OptimizationVariable:
             if key is None:
                 raise RuntimeError("The key must be specified")
             if node is None:
-                raise RuntimeError("The node must be specified, you have the choice between Node.START, Node.MID, and"
-                                   "Node.END")
+                raise RuntimeError(
+                    "The node must be specified, you have the choice between Node.START, Node.MID, and" "Node.END"
+                )
             if node == Node.START:
                 var = variable[key].cx_start
             elif node == Node.MID:
@@ -188,8 +189,9 @@ class OptimizationVariable:
             if key is None:
                 raise RuntimeError("The key must be specified")
             if node is None:
-                raise RuntimeError("The node must be specified, you have the choice between Node.START, Node.MID, and"
-                                   "Node.END")
+                raise RuntimeError(
+                    "The node must be specified, you have the choice between Node.START, Node.MID, and" "Node.END"
+                )
             if node == Node.START:
                 var = variable[key].cx_start
             elif node == Node.MID:
@@ -738,8 +740,9 @@ class OptimizationVariableContainer:
             if key is None:
                 raise RuntimeError("The key must be specified")
             if node is None:
-                raise RuntimeError("The node must be specified, you have the choice between Node.START, Node.MID, and"
-                                   "Node.END")
+                raise RuntimeError(
+                    "The node must be specified, you have the choice between Node.START, Node.MID, and" "Node.END"
+                )
             if node == Node.START:
                 var = variable[key].cx_start
             elif node == Node.MID:
