@@ -48,7 +48,7 @@ class Integrator:
         Interface to self.function
     map(self, *args, **kwargs) -> Function
         Get the multithreaded CasADi graph of the integration
-    get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
+    get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
     dxdt(self, h: float, time: MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
@@ -68,7 +68,8 @@ class Integrator:
         """
 
         self.model = ode_opt["model"]
-        self.t_span = ode_opt["t0"], ode_opt["tf"]
+        self.t_span = ode_opt["t_span"]
+        self.tf = ode_opt["tf"]
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
         self.x_sym = ode["x_scaled"]
@@ -80,7 +81,7 @@ class Integrator:
         self.implicit_fun = ode["implicit_ode"]
         self.defects_type = ode_opt["defects_type"]
         self.control_type = ode_opt["control_type"]
-        self.step_time = self.t_span[1] - self.t_span[0]
+        self.step_time = ode_opt["tf"] - ode_opt["t0"]
         self.h = self.step_time
         self.function = None
 
@@ -120,7 +121,7 @@ class Integrator:
         if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
-            dt_norm = round(1 - (self.t_span[1]-t)/(self.t_span[1]-self.t_span[0]), 5)
+            dt_norm = round(1 - (self.tf-t)/self.step_time, 5)
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
         elif self.control_type == ControlType.NONE:
             return np.ndarray((0,))
@@ -169,15 +170,11 @@ class Integrator:
         Prepare the CasADi function from dxdt
         """
 
-        t_sym = type(self.t_span[0]).sym("time", 1, 1) if isinstance(self.t_span[0], (MX, SX)) else []  # TODO correct nlp.node_time error for symbolic output
-
         self.function = Function(
             "integrator",
-            [t_sym, self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(
-                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
-            ),
-            ["t", "x0", "p", "params", "s"],
+            [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
+            self.dxdt(self.h, self.t_span, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 
@@ -247,7 +244,7 @@ class RK(Integrator):
     def dxdt(
         self,
         h: float,
-        time: list[MX | SX],
+        time: MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -261,7 +258,7 @@ class RK(Integrator):
         ----------
         h: float
             The time step
-        time: list[MX | SX | DM]
+        time: MX | SX
             The time of the system
         states: MX | SX
             The states of the system
@@ -284,12 +281,8 @@ class RK(Integrator):
         x[:, 0] = states
         s = stochastic_variables
 
-        # This should be the vanilla signature of `next_x` from now on (adjust `get_u` accordingly)
-
         for i in range(1, self.n_step + 1):
-            t = self.t_span[0] + (h*(i-1))
-            # TODO replace self.t_span[i]
-            # TODO: time[i]
+            t = self.t_span[i-1]
             x[:, i] = self.next_x(h, t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -680,17 +673,6 @@ class TRAPEZOIDAL(Integrator):
         Prepare the CasADi function from dxdt
         """
 
-        t_sym = type(self.t_span[0]).sym("time", 1, 1) if isinstance(self.t_span[0], (MX, SX)) else []
-        t_sym = ocp.node_time
-
-        # self.function = Function(
-        #     "integrator",
-        #     [t_sym, self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-        #     self.dxdt(self.h, t_sym, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
-        #     ["t", "x0", "p", "params", "s"],
-        #     ["xf", "xall"],
-        # )
-
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
@@ -711,7 +693,7 @@ class COLLOCATION(Integrator):
 
     Methods
     -------
-    get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
+    get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
     dxdt(self, h: float, time: MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
@@ -773,7 +755,7 @@ class COLLOCATION(Integrator):
 
         self._finish_init()
 
-    def get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray:
+    def get_u(self, u: np.ndarray, t: float) -> np.ndarray:
         """
         Get the control at a given time
 
@@ -781,7 +763,7 @@ class COLLOCATION(Integrator):
         ----------
         u: np.ndarray
             The control matrix
-        dt_norm: float
+        t: float
             The time a which control should be computed
 
         Returns
@@ -790,7 +772,7 @@ class COLLOCATION(Integrator):
         """
 
         if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-            return super(COLLOCATION, self).get_u(u, dt_norm)
+            return super(COLLOCATION, self).get_u(u, t)
         else:
             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
 
@@ -840,7 +822,7 @@ class COLLOCATION(Integrator):
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
-                    time, states[j], self.get_u(controls, self.step_time[j]), params * param_scaling, stochastic_variables
+                    time, states[j], self.get_u(controls, time), params * param_scaling, stochastic_variables
                 )[:, self.idx]
                 defects.append(h * f_j - xp_j)
             elif self.defects_type == DefectType.IMPLICIT:
@@ -848,7 +830,7 @@ class COLLOCATION(Integrator):
                     self.implicit_fun(
                         time,
                         states[j],
-                        self.get_u(controls, self.step_time[j]),
+                        self.get_u(controls, time),
                         params * param_scaling,
                         stochastic_variables,
                         xp_j / h,
@@ -869,15 +851,13 @@ class COLLOCATION(Integrator):
         Prepare the CasADi function from dxdt
         """
 
-        t_sym = type(self.t_span[0]).sym("time", 1, 1) if isinstance(self.t_span[0], (MX, SX)) else []  # TODO correct nlp.node_time error for symbolic output
-
         self.function = Function(
             "integrator",
-            [t_sym, horzcat(*self.x_sym), self.u_sym, self.param_sym, self.s_sym],
+            [horzcat(*self.x_sym), self.u_sym, self.param_sym, self.s_sym],
             self.dxdt(
                 self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
             ),
-            ["t", "x0", "p", "params", "s"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
         )
 
@@ -888,7 +868,7 @@ class IRK(COLLOCATION):
 
     Methods
     -------
-    get_u(self, u: np.ndarray, dt_norm: float) -> np.ndarray
+    get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
     dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
@@ -967,15 +947,13 @@ class IRK(COLLOCATION):
         Prepare the CasADi function from dxdt
         """
 
-        t_sym = type(self.t_span[0]).sym("time", 1, 1) if isinstance(self.t_span[0], (MX, SX)) else []  # TODO correct nlp.node_time error for symbolic output
-
         self.function = Function(
             "integrator",
-            [t_sym, self.x_sym[0], self.u_sym, self.param_sym, self.s_sym],
+            [self.x_sym[0], self.u_sym, self.param_sym, self.s_sym],
             self.dxdt(
                 self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
             ),
-            ["t", "x0", "p", "params", "s"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 

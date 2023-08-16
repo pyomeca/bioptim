@@ -724,7 +724,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             contact_force = controller.get_nlp.contact_forces_func(
-                controller.time.cx_start,
+                controller.time,
                 controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx,
@@ -1050,16 +1050,18 @@ class PenaltyFunctionAbstract:
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-                continuity -= controller.integrate(x0=cx, p=u, params=controller.parameters.cx, t = controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index))["xf"]
+
+                continuity -= controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["xf"]
                 continuity = vertcat(
                     continuity,
-                    controller.integrate(x0=cx, p=u, params=controller.parameters.cx, t = controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index))["defects"],
+                    controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["defects"],
                 )
 
                 penalty.integrate = True
 
             else:
-                continuity -= controller.integrate(x0=controller.states.cx_start, p=u, params=controller.parameters.cx, t = controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index))[
+
+                continuity -= controller.integrate(x0=controller.states.cx_start, p=u, params=controller.parameters.cx)[
                     "xf"
                 ]
 

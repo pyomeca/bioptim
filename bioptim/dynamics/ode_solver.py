@@ -1,6 +1,6 @@
 from typing import Callable
 
-from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
+from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, collocation_points
 
 from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES, TRAPEZOIDAL
 from ..misc.enums import ControlType, DefectType
@@ -119,18 +119,18 @@ class RK(OdeSolverBase):
         -------
         A list of integrators
         """
-        nlp.time.node_index = node_index
         nlp.states.node_index = node_index
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
         nlp.stochastic_variables.node_index = node_index
-
+        t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+        tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
+        dt = (tf - t0) / self.steps
+        t_span = [t0] + [dt * i for i in range(1, self.steps)]
         ode_opt = {
-            "t0": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index),
-            "tf": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1),
-            # grid = [0, dt/5, 2*dt/5, 3dt/5,..., dt] if dms else collocation_points("legendre", polynomial_order=5)
-            # "t_span": t0 + grid
-            # TODO replace t_span[i]
+            "t0": t0,
+            "tf": tf,
+            "t_span": t_span,
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
@@ -277,7 +277,6 @@ class OdeSolver:
                     "TRAPEZOIDAL cannot be used with piece-wise constant controls, please use "
                     "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead."
                 )
-            nlp.time.node_index = node_index
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -293,9 +292,14 @@ class OdeSolver:
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
             }
+            t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+            tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
+            dt = (tf - t0) / self.steps
+            t_span = [t0] + [dt * i for i in range(1, self.steps)]
             ode_opt = {
-                "t0": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index),
-                "tf": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index) + nlp.dt,
+                "t0": t0,
+                "tf": tf,
+                "t_span": t_span,
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
@@ -365,7 +369,6 @@ class OdeSolver:
             -------
             A list of integrators
             """
-            nlp.time.node_index = node_index
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -391,9 +394,14 @@ class OdeSolver:
                 "implicit_ode": nlp.implicit_dynamics_func,
 
             }
+            t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+            tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
+            dt = (tf - t0) / self.steps
+            t_span = [t0] + collocation_points(self.polynomial_degree, self.method)
             ode_opt = {
-                "t0": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index),
-                "tf": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index) + nlp.dt,
+                "t0": t0,
+                "tf": tf,
+                "t_span": t_span,
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
@@ -499,7 +507,6 @@ class OdeSolver:
             -------
             A list of integrators
             """
-            nlp.time.node_index = node_index
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -522,16 +529,22 @@ class OdeSolver:
                 "x": nlp.states.scaled.cx_start,
                 "p": nlp.controls.scaled.cx_start,
                 "ode": nlp.dynamics_func(
-                    nlp.time.cx,
+                    nlp.time,
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
                     nlp.stochastic_variables.scaled.cx_start,
                 ),
             }
+
+            t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+            tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
+            dt = (tf - t0) / self.steps
+            t_span = [t0] + [dt * i for i in range(1, self.steps)]
             ode_opt = {
-                "t0": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index),
-                "tf": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index) + nlp.dt,
+                "t0": t0,
+                "tf": tf,
+                "t_span": t_span
                        }
 
             integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)
@@ -540,7 +553,7 @@ class OdeSolver:
                 Function(
                     "integrator",
                     [
-                        nlp.time.cx,
+                        nlp.time,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.cx,

@@ -626,8 +626,7 @@ class ConfigureProblem:
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
         dynamics_eval = dyn_func(
-            # nlp.time.mx,
-            nlp.time,
+            nlp.time_mx,
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
@@ -643,8 +642,7 @@ class ConfigureProblem:
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [
-                # nlp.time.mx,
-                nlp.time,
+                nlp.time_mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
@@ -671,8 +669,7 @@ class ConfigureProblem:
             nlp.implicit_dynamics_func = Function(
                 "DynamicsDefects",
                 [
-                    # nlp.time.mx,
-                    nlp.time,
+                    nlp.time_mx,
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
@@ -714,7 +711,7 @@ class ConfigureProblem:
         nlp.contact_forces_func = Function(
             "contact_forces_func",
             [
-                nlp.time.mx,
+                nlp.time_mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
@@ -722,7 +719,7 @@ class ConfigureProblem:
             ],
             [
                 dyn_func(
-                    nlp.time.mx,
+                    nlp.time_mx,
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
@@ -779,7 +776,7 @@ class ConfigureProblem:
         )
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
-            [nlp.time.mx, nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+            [nlp.time_mx, nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
             [global_soft_contact_force_func],
             ["t", "x", "u", "p"],
             ["soft_contact_forces"],
@@ -937,7 +934,6 @@ class ConfigureProblem:
         as_controls: bool,
         as_states_dot: bool = False,
         as_stochastic: bool = False,
-        as_time: bool = False,
         fatigue: FatigueList = None,
         combine_name: str = None,
         combine_state_control_plot: bool = False,
@@ -957,8 +953,6 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        as_time: bool
-            If the new variable should be added to the time variable set
         as_states: bool
             If the new variable should be added to the state variable set
         as_states_dot: bool
@@ -1085,10 +1079,8 @@ class ConfigureProblem:
             if not copy_controls:
                 mx_controls.append(MX.sym(var_name, 1, 1))
 
-            mx_time.append(MX.sym(var_name, 1, 1))
             mx_stochastic.append(MX.sym(var_name, 1, 1))
 
-        mx_time = vertcat(*mx_time)
         mx_states = vertcat(*mx_states)
         mx_states_dot = vertcat(*mx_states_dot)
         mx_controls = vertcat(*mx_controls)
@@ -1195,16 +1187,6 @@ class ConfigureProblem:
                 cx = define_cx_unscaled(cx_scaled, nlp.s_scaling[name].scaling)
                 nlp.stochastic_variables.append(
                     name, cx[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
-                )
-
-        if as_time:
-            for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
-                n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
-                if n_cx < 3:
-                    n_cx = 3
-                cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
-                nlp.time.append(
-                    name, cx_scaled[0], cx_scaled[0], mx_time, nlp.variable_mappings[name], node_index
                 )
 
     @staticmethod
@@ -1375,7 +1357,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
-            as_time=False,
             skip_plot=True,
         )
 
@@ -1408,7 +1389,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
-            as_time=False,
             skip_plot=True,
         )
 
@@ -1441,7 +1421,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
-            as_time=False,
             skip_plot=True,
         )
 
@@ -1500,7 +1479,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
-            as_time=False,
             skip_plot=True,
         )
 
@@ -1561,7 +1539,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
-            as_time=False,
             skip_plot=True,
         )
 
@@ -1593,7 +1570,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_stochastic=True,
-            as_time=False,
             skip_plot=True,
         )
 
@@ -1763,7 +1739,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_t(ocp, nlp, as_states: bool, as_controls: bool, as_time: bool, fatigue: FatigueList = None):
+    def configure_t(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
         """
         Configure the generalized forces
 

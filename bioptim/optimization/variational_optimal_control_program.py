@@ -237,7 +237,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [
-                nlp.time.scaled.mx_reduced,
+                nlp.time_mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,

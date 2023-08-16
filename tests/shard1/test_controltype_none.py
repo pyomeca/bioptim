@@ -168,7 +168,6 @@ class NonControlledMethod:
             as_states=False,
             as_controls=False,
             as_states_dot=False,
-            as_time=True,
         )
 
         # t = MX.sym("t")  # t needs a symbolic value to start computing in custom_configure_dynamics_function

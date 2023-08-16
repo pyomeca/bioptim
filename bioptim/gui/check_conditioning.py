@@ -59,7 +59,6 @@ def check_conditioning(ocp):
             list_constraints = []
             for constraints in nlp.g:
                 node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
-                nlp.time.node_index = node_index
                 nlp.states.node_index = node_index
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
@@ -166,7 +165,7 @@ def check_conditioning(ocp):
                 for axis in range(
                     0,
                     constraints.function[node_index](
-                        nlp.time.cx_start, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx, nlp.stochastic_variables.cx_start
+                        nlp.time, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx, nlp.stochastic_variables.cx_start
                     ).shape[0],
                 ):
                     # find all equality constraints
@@ -312,7 +311,6 @@ def check_conditioning(ocp):
                 objective = 0
 
                 node_index = obj.node_idx[0]  # TODO deal with assume_phase_dynamics=False
-                nlp.time.node_index = node_index
                 nlp.states.node_index = node_index
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
@@ -340,19 +338,16 @@ def check_conditioning(ocp):
                         state_cx = horzcat(*([nlp.states.cx_start] + nlp.states.cx_intermediates_list))
                     else:
                         state_cx = nlp.states.cx_start
-                    time_cx = nlp.time.cx_start
                     control_cx = nlp.controls.cx_start
                     stochastic_cx = nlp.stochastic_variables.cx_start
                     if obj.explicit_derivative:
                         if obj.derivative:
                             raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
-                        time_cx = horzcat(time_cx, nlp.time_cx_end)
                         state_cx = horzcat(state_cx, nlp.states.cx_end)
                         control_cx = horzcat(control_cx, nlp.controls.cx_end)
                         stochastic_cx = horzcat(stochastic_cx, nlp.stochastic_cx_end)
 
                 if obj.derivative:
-                    time_cx = horzcat(nlp.time.cx_end, nlp.time.cx_start)
                     state_cx = horzcat(nlp.states.cx_end, nlp.states.cx_start)
                     control_cx = horzcat(nlp.controls.cx_end, nlp.controls.cx_start)
                     stochastic_cx = horzcat(nlp.stochastic.cx_end, nlp.stochastic.cx_start)
@@ -364,11 +359,6 @@ def check_conditioning(ocp):
                 )
 
                 if is_trapezoidal:
-                    time_cx = (
-                        horzcat(nlp.time.cx_start, nlp.time.cx_end)
-                        if obj.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                        else nlp.time.cx_start
-                    )
                     state_cx = (
                         horzcat(nlp.states.cx_start, nlp.states.cx_end)
                         if obj.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
@@ -387,7 +377,7 @@ def check_conditioning(ocp):
 
                 if obj.target is None:
                     p = obj.weighted_function[node_index](
-                        time_cx,
+                        nlp.time,
                         state_cx,
                         control_cx,
                         nlp.parameters.cx,
@@ -398,7 +388,7 @@ def check_conditioning(ocp):
                     )
                 else:
                     p = obj.weighted_function[node_index](
-                        time_cx,
+                        nlp.time,
                         state_cx,
                         control_cx,
                         nlp.parameters.cx,

@@ -280,7 +280,7 @@ class AcadosInterface(SolverInterface):
         self.all_g_bounds = Bounds(None, interpolation=InterpolationType.CONSTANT)
         self.end_g_bounds = Bounds(None, interpolation=InterpolationType.CONSTANT)
         for i, nlp in enumerate(ocp.nlp):
-            t = nlp.time.cx_start
+            t = nlp.time
             x = nlp.states.cx_start
             u = nlp.controls.cx_start
             p = nlp.parameters.cx
@@ -597,7 +597,7 @@ class AcadosInterface(SolverInterface):
                         add_nonlinear_ls_lagrange(
                             self,
                             J,
-                            nlp.time.cx_start,
+                            nlp.time,
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
@@ -608,7 +608,7 @@ class AcadosInterface(SolverInterface):
                         add_nonlinear_ls_mayer(
                             self,
                             J,
-                            nlp.time.cx_start,
+                            nlp.time,
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
@@ -619,7 +619,7 @@ class AcadosInterface(SolverInterface):
                         add_nonlinear_ls_mayer(
                             self,
                             J,
-                            nlp.time.cx_start,
+                            nlp.time,
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
@@ -637,7 +637,7 @@ class AcadosInterface(SolverInterface):
                     add_nonlinear_ls_mayer(
                         self,
                         J,
-                        nlp.time.cx_start,
+                        nlp.time,
                         nlp.states.cx_start,
                         nlp.controls.cx_start,
                         nlp.parameters.cx,

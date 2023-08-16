@@ -331,23 +331,15 @@ class Solution:
         def get_integrated_values(time, states, controls, parameters, stochastic_variables):
             integrated_values_num = [{} for _ in self.ocp.nlp]
             for i_phase, nlp in enumerate(self.ocp.nlp):
-                nlp.time.node_index = 0
                 nlp.states.node_index = 0
                 nlp.controls.node_index = 0
                 nlp.parameters.node_index = 0
                 nlp.stochastic_variables.node_index = 0
                 for key in nlp.integrated_values:
-                    time_cx = nlp.time.cx_start
                     states_cx = nlp.states.cx_start
                     controls_cx = nlp.controls.cx_start
                     stochastic_variables_cx = nlp.stochastic_variables.cx_start
                     integrated_values_cx = nlp.integrated_values[key].cx_start
-
-
-                    time_num = np.array([])
-                    if len(time) > 0:
-                        for key_tempo in time[i_phase].keys():
-                            time_num = np.concatenate((time_num, time[i_phase][key_tempo][:, 0]))
 
                     states_num = np.array([])
                     for key_tempo in states[i_phase].keys():
@@ -364,22 +356,15 @@ class Solution:
                         )
 
                     for i_node in range(1, nlp.ns):
-                        nlp.time.node_index = i_node
                         nlp.states.node_index = i_node
                         nlp.controls.node_index = i_node
                         nlp.stochastic_variables.node_index = i_node
                         nlp.integrated_values.node_index = i_node
 
-                        time_cx = vertcat(time_cx, nlp.time.cx_start)
                         states_cx = vertcat(states_cx, nlp.states.cx_start)
                         controls_cx = vertcat(controls_cx, nlp.controls.cx_start)
                         stochastic_variables_cx = vertcat(stochastic_variables_cx, nlp.stochastic_variables.cx_start)
                         integrated_values_cx = vertcat(integrated_values_cx, nlp.integrated_values[key].cx_start)
-                        time_num_tempo = np.array([])
-                        if len(time) > 0:
-                            for key_tempo in time[i_phase].keys():
-                                time_num_tempo = np.concatenate((time_num_tempo, time[i_phase][key_tempo][:, i_node]))
-                            time_num = vertcat(time_num, time_num_tempo)
 
                         states_num_tempo = np.array([])
                         for key_tempo in states[i_phase].keys():
@@ -404,17 +389,18 @@ class Solution:
                                 )
                             stochastic_variables_num = vertcat(stochastic_variables_num, stochastic_variables_num_tempo)
 
+                    time_tempo = np.array([])
                     parameters_tempo = np.array([])
                     if len(parameters) > 0:
                         for key_tempo in parameters[i_phase].keys():
                             parameters_tempo = np.concatenate((parameters_tempo, parameters[i_phase][key_tempo]))
                     casadi_func = Function(
                         "integrate_values",
-                        [time_cx, states_cx, controls_cx, nlp.parameters.cx_start, stochastic_variables_cx],
+                        [nlp.time, states_cx, controls_cx, nlp.parameters.cx_start, stochastic_variables_cx],
                         [integrated_values_cx],
                     )
                     integrated_values_this_time = casadi_func(
-                        time_num, states_num, controls_num, parameters_tempo, stochastic_variables_num
+                        time_tempo, states_num, controls_num, parameters_tempo, stochastic_variables_num
                     )
                     nb_elements = nlp.integrated_values[key].cx_start.shape[0]
                     integrated_values_data = np.zeros((nb_elements, nlp.ns))
@@ -1318,7 +1304,7 @@ class Solution:
                 integrated_sol = solve_ivp_bioptim_interface(
                     dynamics_func=nlp.dynamics,
                     keep_intermediate_points=keep_intermediate_points,
-                    t=t_eval,
+                    # t=t_eval,
                     x0=x0,
                     u=u,
                     s=s,
@@ -1771,8 +1757,8 @@ class Solution:
                         node_idx = penalty.multinode_idx[i]
                         phase_idx = penalty.nodes_phase[i]
 
-                        for key in nlp.time:
-                            t = np.concatenate((t, self._time[phase_idx][key][:, node_idx]))
+                        # for key in nlp.time:
+                        #     t = np.concatenate((t, self._time[phase_idx][key][:, node_idx]))
                         for key in nlp.states:
                             x = np.concatenate((x, self._states["scaled"][phase_idx][key][:, node_idx]))
                         for key in nlp.controls:
@@ -1789,7 +1775,7 @@ class Solution:
                     if penalty.target is not None:
                         target = penalty.target[0]
                 else:
-                    col_t_idx = [idx]
+                    # col_t_idx = [idx]
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
                     col_s_idx = [idx]
@@ -1809,11 +1795,11 @@ class Solution:
                         if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                             col_u_idx.append((idx + 1))
 
-                    t = np.ndarray((nlp.time.shape, len(col_t_idx)))
-                    for key in nlp.time:
-                        t[nlp.time[key].index, :] = self._time[phase_idx][key][
-                                                                    :, col_t_idx
-                                                                    ]
+                    # t = np.ndarray((1, len(col_t_idx)))
+                    # for key in nlp.time:
+                    #     t[nlp.time[key].index, :] = self._time[phase_idx][key][
+                    #                                                 :, col_t_idx
+                    #                                                 ]
 
                     x = np.ndarray((nlp.states.shape, len(col_x_idx)))
                     for key in nlp.states:

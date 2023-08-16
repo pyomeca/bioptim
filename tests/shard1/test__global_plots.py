@@ -226,7 +226,6 @@ def test_console_objective_functions(assume_phase_dynamics):
         for cmp, p in enumerate(pen):
             if p:
                 for node_index in p.node_idx:
-                    nlp.time.node_index = node_index
                     nlp.states.node_index = node_index
                     nlp.states_dot.node_index = node_index
                     nlp.controls.node_index = node_index
