@@ -247,7 +247,7 @@ class RK(Integrator):
     def dxdt(
         self,
         h: float,
-        time: MX | SX,
+        time: list[MX | SX],
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -261,7 +261,7 @@ class RK(Integrator):
         ----------
         h: float
             The time step
-        time: MX | SX
+        time: list[MX | SX | DM]
             The time of the system
         states: MX | SX
             The states of the system
@@ -288,7 +288,8 @@ class RK(Integrator):
 
         for i in range(1, self.n_step + 1):
             t = self.t_span[0] + (h*(i-1))
-
+            # TODO replace self.t_span[i]
+            # TODO: time[i]
             x[:, i] = self.next_x(h, t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -680,11 +681,20 @@ class TRAPEZOIDAL(Integrator):
         """
 
         t_sym = type(self.t_span[0]).sym("time", 1, 1) if isinstance(self.t_span[0], (MX, SX)) else []
+        t_sym = ocp.node_time
+
+        # self.function = Function(
+        #     "integrator",
+        #     [t_sym, self.x_sym, self.u_sym, self.param_sym, self.s_sym],
+        #     self.dxdt(self.h, t_sym, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+        #     ["t", "x0", "p", "params", "s"],
+        #     ["xf", "xall"],
+        # )
 
         self.function = Function(
             "integrator",
-            [t_sym, self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(self.h, t_sym, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
+            self.dxdt(self.h, self.t_span, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["t", "x0", "p", "params", "s"],
             ["xf", "xall"],
         )

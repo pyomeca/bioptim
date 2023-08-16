@@ -10,10 +10,12 @@ import importlib.util
 from pathlib import Path
 
 import numpy as np
-from casadi import MX, SX, vertcat, Function
+from casadi import MX, SX, vertcat, sin
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
+    ObjectiveList,
+    ObjectiveFcn,
     DynamicsList,
     BoundsList,
     OdeSolver,
@@ -23,6 +25,9 @@ from bioptim import (
     DynamicsFunctions,
     DynamicsEvaluation,
     InitialGuessList,
+    ConstraintList,
+    ConstraintFcn,
+    Node,
 )
 
 # Load track_segment_on_rt
@@ -49,12 +54,20 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
 
-    # t = (
-    #     MX.sym("t") if nlp.cx.type_name() == "MX" else SX.sym("t")
-    # )  # t needs a symbolic value to start computing in custom_configure_dynamics_function
-    # # CX.sym à regarder
+    # name = "time"
+    # name_t = [name]
+    # ConfigureProblem.configure_new_variable(
+    #     name,
+    #     name_t,
+    #     ocp,
+    #     nlp,
+    #     as_states=False,
+    #     as_controls=False,
+    #     as_states_dot=False,
+    #     as_time=True,
+    # )
 
-    configure_dynamics_function(ocp, nlp, time_dynamic)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, time_dynamic)
 
 
 def time_dynamic(
@@ -87,7 +100,7 @@ def time_dynamic(
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) * time
+    tau = DynamicsFunctions.get(nlp.controls["tau"], controls) + sin(time) * time.ones(nlp.model.nb_tau)
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
@@ -100,70 +113,70 @@ def time_dynamic(
     return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
-def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True):
-    """
-    Configure the dynamics of the system
-
-    Parameters
-    ----------
-    ocp: OptimalControlProgram
-        A reference to the ocp
-    nlp: NonLinearProgram
-        A reference to the phase
-    dyn_func: Callable[states, controls, param]
-        The function to get the derivative of the states
-    expand: bool
-        If the dynamics should be expanded with casadi
-    """
-
-    nlp.parameters = ocp.parameters
-    DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
-
-    dynamics_eval = dyn_func(
-        nlp.time.mx,
-        nlp.states.scaled.mx_reduced,
-        nlp.controls.scaled.mx_reduced,
-        nlp.parameters.mx,
-        nlp.stochastic_variables.mx,
-        nlp,
-    )
-
-    dynamics_dxdt = dynamics_eval.dxdt
-    if isinstance(dynamics_dxdt, (list, tuple)):
-        dynamics_dxdt = vertcat(*dynamics_dxdt)
-
-    nlp.dynamics_func = Function(
-        "ForwardDyn",
-        [
-            nlp.time.scaled.mx_reduced,
-            nlp.states.scaled.mx_reduced,
-            nlp.controls.scaled.mx_reduced,
-            nlp.parameters.mx,
-            nlp.stochastic_variables.mx,
-        ],
-        [dynamics_dxdt],
-        ["t", "x", "u", "p", "s"],
-        ["xdot"],
-    )
-
-    if expand:
-        nlp.dynamics_func = nlp.dynamics_func.expand()
-
-    if dynamics_eval.defects is not None:
-        nlp.implicit_dynamics_func = Function(
-            "DynamicsDefects",
-            [
-                nlp.time.scaled.mx_reduced,
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.mx,
-                nlp.stochastic_variables.mx,
-                nlp.states_dot.scaled.mx_reduced,
-            ],
-            [dynamics_eval.defects],
-            ["t", "x", "u", "p", "s", "xdot"],
-            ["defects"],
-        ).expand()
+# def configure_dynamics_function(ocp, nlp, dyn_func, expand: bool = True):
+#     """
+#     Configure the dynamics of the system
+#
+#     Parameters
+#     ----------
+#     ocp: OptimalControlProgram
+#         A reference to the ocp
+#     nlp: NonLinearProgram
+#         A reference to the phase
+#     dyn_func: Callable[states, controls, param]
+#         The function to get the derivative of the states
+#     expand: bool
+#         If the dynamics should be expanded with casadi
+#     """
+#
+#     nlp.parameters = ocp.parameters
+#     DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
+#
+#     dynamics_eval = dyn_func(
+#         ocp.nlp[nlp.phase_idx].t0,
+#         nlp.states.scaled.mx_reduced,
+#         nlp.controls.scaled.mx_reduced,
+#         nlp.parameters.mx,
+#         nlp.stochastic_variables.mx,
+#         nlp,
+#     )
+#
+#     dynamics_dxdt = dynamics_eval.dxdt
+#     if isinstance(dynamics_dxdt, (list, tuple)):
+#         dynamics_dxdt = vertcat(*dynamics_dxdt)
+#
+#     nlp.dynamics_func = Function(
+#         "ForwardDyn",
+#         [
+#             nlp.time.mx,
+#             nlp.states.scaled.mx_reduced,
+#             nlp.controls.scaled.mx_reduced,
+#             nlp.parameters.mx,
+#             nlp.stochastic_variables.mx,
+#         ],
+#         [dynamics_dxdt],
+#         ["t", "x", "u", "p", "s"],
+#         ["xdot"],
+#     )
+#
+#     if expand:
+#         nlp.dynamics_func = nlp.dynamics_func.expand()
+#
+#     if dynamics_eval.defects is not None:
+#         nlp.implicit_dynamics_func = Function(
+#             "DynamicsDefects",
+#             [
+#                 nlp.time.mx,
+#                 nlp.states.scaled.mx_reduced,
+#                 nlp.controls.scaled.mx_reduced,
+#                 nlp.parameters.mx,
+#                 nlp.stochastic_variables.mx,
+#                 nlp.states_dot.scaled.mx_reduced,
+#             ],
+#             [dynamics_eval.defects],
+#             ["t", "x", "u", "p", "s", "xdot"],
+#             ["defects"],
+#         ).expand()
 
 def prepare_ocp(
     bio_model: list[BiorbdModel],
@@ -198,6 +211,10 @@ def prepare_ocp(
     -------
     The OptimalControlProgram ready to be solved
     """
+    # Add objective functions
+    objective_functions = ObjectiveList()
+    for i in range(len(bio_model)):
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=i)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -207,12 +224,8 @@ def prepare_ocp(
 
     x_bounds = BoundsList()
     for i in range(len(bio_model)):
-        x_bounds.add("q", bio_model[i].bounds_from_ranges("q"), phase=i)
-        x_bounds.add("qdot", bio_model[i].bounds_from_ranges("qdot"), phase=i)
-
-    for bounds in x_bounds:
-        bounds["q"][:, [0, -1]] = 0
-        bounds["qdot"][:, [0, -1]] = 0
+        x_bounds.add("q", bounds=bio_model[i].bounds_from_ranges("q"), phase=i)
+        x_bounds.add("qdot", bounds=bio_model[i].bounds_from_ranges("qdot"), phase=i)
 
     # Define control path constraint
     tau_min, tau_max = -100, 100
@@ -223,9 +236,9 @@ def prepare_ocp(
     x_init = InitialGuessList()
     u_init = InitialGuessList()
     for i in range(len(bio_model)):
-        x_init["q"] = [1.57] * bio_model[i].nb_q
-        x_init["qdot"] = [0] * bio_model[i].nb_qdot
-        u_init["muscles"] = [0] * bio_model[i].nb_muscles
+        x_init.add(key="q", initial_guess=[1.57, 1.57], phase=i)
+        x_init.add(key="qdot", initial_guess=[0, 0], phase=i)
+        u_init.add(key="muscles", initial_guess=[0, 0], phase=i)
 
     return OptimalControlProgram(
         bio_model,
@@ -241,7 +254,10 @@ def prepare_ocp(
     )
 
 
-@pytest.mark.parametrize("nb_phase", [1, 2])
+@pytest.mark.parametrize("nb_phase", [
+    1,
+    2,
+])
 def test_time_dependent_problem(nb_phase):
     """
     Firstly, it solves the getting_started/pendulum.py example. Afterward, it gets the marker positions and joint
@@ -251,7 +267,7 @@ def test_time_dependent_problem(nb_phase):
     biorbd_path = str(EXAMPLES_FOLDER)[:-5] + "bioptim/examples/getting_started/models/pendulum.bioMod"
     bio_model = BiorbdModel(biorbd_path)
     bio_model = [bio_model] * nb_phase
-    final_time = 1
+    final_time = [1] * nb_phase
     n_shooting = [20] * nb_phase
 
     ocp = prepare_ocp(
@@ -262,4 +278,4 @@ def test_time_dependent_problem(nb_phase):
 
     # --- Solve the program --- #
     sol = ocp.solve()
-
+    # sol.graphs()

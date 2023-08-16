@@ -176,7 +176,8 @@ class NonLinearProgram:
         self.S_scaled = None
         self.s_scaling = None
         self.assume_phase_dynamics = assume_phase_dynamics
-        self.time = OptimizationVariableContainer(assume_phase_dynamics)
+        # self.time = OptimizationVariableContainer(assume_phase_dynamics)
+        self.time = None
         self.states = OptimizationVariableContainer(assume_phase_dynamics)
         self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
         self.controls = OptimizationVariableContainer(assume_phase_dynamics)
@@ -200,7 +201,8 @@ class NonLinearProgram:
         self.g = []
         self.g_internal = []
         self.casadi_func = {}
-        self.time.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+        # self.time.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+        self.time = self.cx.sym("time",1,1)
         self.states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
@@ -241,9 +243,16 @@ class NonLinearProgram:
 
         else:
             if ocp.n_phases != 1 and not duplicate_singleton:
-                raise RuntimeError(
-                    f"{param_name} size({len(param)}) does not correspond " f"to the number of phases({ocp.n_phases})."
-                )
+                if isinstance(param, int):
+                    raise RuntimeError(
+                        f"{param_name} size({1}) does not correspond " f"to the number of phases({ocp.n_phases})."
+                        f"List length of model, final time and node shooting must be equivalent to phase number"
+                    )
+                else:
+                    raise RuntimeError(
+                        f"{param_name} size({len(param)}) does not correspond " f"to the number of phases({ocp.n_phases})."
+                        f"List length of model, final time and node shooting must be equivalent to phase number"
+                    )
 
             for i in range(ocp.n_phases):
                 NonLinearProgram.__setattr(ocp.nlp[i], name, param_name, param)

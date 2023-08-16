@@ -1291,10 +1291,12 @@ class Solution:
             controls_phase_idx = self.ocp.nlp[p].use_controls_from_phase_idx
             param_scaling = nlp.parameters.scaling
             x0 = self._get_first_frame_states(out, shooting_type, phase=p)
-            if self.ocp.nlp[p].time.keys():
-                t = np.concatenate([self._time[p][key] for key in self.ocp.nlp[p].time])
-            else:
-                t = np.array([])
+
+            # todo : the time is wrong, it must be evaluated in function of parameters
+            # if self.ocp.nlp[p].time:
+            #     t = np.concatenate([self._time[p][key] for key in self.ocp.nlp[p].time])
+            # else:
+            # t = np.array([self.ocp.nlp[p].node_time(phase_idx=nlp.phase_idx, node_idx)])
 
             u = (
                 np.array([])
@@ -1316,7 +1318,7 @@ class Solution:
                 integrated_sol = solve_ivp_bioptim_interface(
                     dynamics_func=nlp.dynamics,
                     keep_intermediate_points=keep_intermediate_points,
-                    t=t,
+                    t=t_eval,
                     x0=x0,
                     u=u,
                     s=s,
@@ -1330,7 +1332,7 @@ class Solution:
                     dynamics_func=nlp.dynamics_func,
                     keep_intermediate_points=keep_intermediate_points,
                     t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
-                    t=t,
+                    t=t_eval,
                     x0=x0,
                     u=u,
                     s=s,

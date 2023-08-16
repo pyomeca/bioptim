@@ -118,7 +118,8 @@ class PenaltyController:
         return self._nlp.model
 
     @property
-    def time(self) -> OptimizationVariableList:
+    def time(self) -> MX | SX:
+        # def time(self) -> OptimizationVariableList:
         """
         Return the time associated with the current node index
 
@@ -126,9 +127,10 @@ class PenaltyController:
         -------
         The time at node node_index
         """
-        self._nlp.time.node_index = self.node_index
-        out = self._nlp.time.unscaled
-        out.current_cx_to_get = self.cx_index_to_get
+        # self._nlp.time.node_index = self.node_index
+        # out = self._nlp.time.unscaled
+        out = self._nlp.time
+        # out.current_cx_to_get = self.cx_index_to_get
         return out
 
     @property

@@ -626,7 +626,8 @@ class ConfigureProblem:
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
         dynamics_eval = dyn_func(
-            nlp.time.mx,
+            # nlp.time.mx,
+            nlp.time,
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
@@ -642,7 +643,8 @@ class ConfigureProblem:
         nlp.dynamics_func = Function(
             "ForwardDyn",
             [
-                nlp.time.mx,
+                # nlp.time.mx,
+                nlp.time,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
@@ -669,7 +671,8 @@ class ConfigureProblem:
             nlp.implicit_dynamics_func = Function(
                 "DynamicsDefects",
                 [
-                    nlp.time.mx,
+                    # nlp.time.mx,
+                    nlp.time,
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
@@ -1757,6 +1760,30 @@ class ConfigureProblem:
             as_controls,
             combine_state_control_plot=True,
             fatigue=fatigue,
+        )
+
+    @staticmethod
+    def configure_t(ocp, nlp, as_states: bool, as_controls: bool, as_time: bool, fatigue: FatigueList = None):
+        """
+        Configure the generalized forces
+
+        Parameters
+        ----------
+        nlp: NonLinearProgram
+            A reference to the phase
+        as_states: bool
+            If the generalized forces should be a state
+        as_controls: bool
+            If the generalized forces should be a control
+        fatigue: FatigueList
+            If the dynamics with fatigue should be declared
+        """
+
+        name = "t"
+        name_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
+        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
+        ConfigureProblem.configure_new_variable(
+            name, name_tau, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
         )
 
     @staticmethod

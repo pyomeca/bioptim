@@ -127,7 +127,10 @@ class RK(OdeSolverBase):
 
         ode_opt = {
             "t0": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index),
-            "tf": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index) + nlp.dt,
+            "tf": ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1),
+            # grid = [0, dt/5, 2*dt/5, 3dt/5,..., dt] if dms else collocation_points("legendre", polynomial_order=5)
+            # "t_span": t0 + grid
+            # TODO replace t_span[i]
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
