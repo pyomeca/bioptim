@@ -2034,12 +2034,6 @@ class Solution:
                     (isinstance(u, list) and u != []) or isinstance(u, np.ndarray)
                 ):
                     u = u[:, ~np.isnan(np.sum(u, axis=0))]
-                # if (
-                #         penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                #         or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
-                # ):
-                #     val.append(penalty.function[idx](x[:, 0], u[:, 0], p, s[:, 0], 0, 0))
-                # else:
 
                 x_reshaped = x.T.reshape((-1, 1)) if len(x.shape) > 1 and x.shape[1] != 1 else x
                 u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
