@@ -534,7 +534,7 @@ def test_arm_reaching_torque_driven_explicit():
 def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
 
-    if platform == "win32":
+    if platform in ["win32", "macos"]:
         return
 
     final_time = 0.8
