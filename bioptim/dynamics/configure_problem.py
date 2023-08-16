@@ -3,6 +3,7 @@ from typing import Callable, Any
 from casadi import DM, MX, SX, vertcat, Function
 import numpy as np
 
+from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
 from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from .ode_solver import OdeSolver
@@ -820,111 +821,6 @@ class ConfigureProblem:
             )
 
     @staticmethod
-    def _manage_fatigue_to_new_variable(
-        name: str,
-        name_elements: list,
-        ocp,
-        nlp,
-        as_states: bool,
-        as_controls: bool,
-        fatigue: FatigueList = None,
-    ):
-        if fatigue is None or name not in fatigue:
-            return False
-
-        if not as_controls:
-            raise NotImplementedError("Fatigue not applied on controls is not implemented yet")
-
-        fatigue_var = fatigue[name]
-        meta_suffixes = fatigue_var.suffix
-
-        # Only homogeneous fatigue model are implement
-        fatigue_suffix = fatigue_var[0].models.models[meta_suffixes[0]].suffix(VariableType.STATES)
-        multi_interface = isinstance(fatigue_var[0].models, MultiFatigueInterface)
-        split_controls = fatigue_var[0].models.split_controls
-        for dof in fatigue_var:
-            for key in dof.models.models:
-                if dof.models.models[key].suffix(VariableType.STATES) != fatigue_suffix:
-                    raise ValueError(f"Fatigue for {name} must be of all same types")
-                if isinstance(dof.models, MultiFatigueInterface) != multi_interface:
-                    raise ValueError("multi_interface must be the same for all the elements")
-                if dof.models.split_controls != split_controls:
-                    raise ValueError("split_controls must be the same for all the elements")
-
-        # Prepare the plot that will combine everything
-        n_elements = len(name_elements)
-
-        legend = [f"{name}_{i}" for i in name_elements]
-        fatigue_plot_name = f"fatigue_{name}"
-        nlp.plot[fatigue_plot_name] = CustomPlot(
-            lambda t, x, u, p, s: x[:n_elements, :] * np.nan,
-            plot_type=PlotType.INTEGRATED,
-            legend=legend,
-            bounds=Bounds(None, -1, 1),
-        )
-        control_plot_name = f"{name}_controls" if not multi_interface and split_controls else f"{name}"
-        nlp.plot[control_plot_name] = CustomPlot(
-            lambda t, x, u, p, s: u[:n_elements, :] * np.nan, plot_type=PlotType.STEP, legend=legend
-        )
-
-        var_names_with_suffix = []
-        color = fatigue_var[0].models.color()
-        fatigue_color = [fatigue_var[0].models.models[m].color() for m in fatigue_var[0].models.models]
-        plot_factor = fatigue_var[0].models.plot_factor()
-        for i, meta_suffix in enumerate(meta_suffixes):
-            var_names_with_suffix.append(f"{name}_{meta_suffix}" if not multi_interface else f"{name}")
-
-            if split_controls:
-                ConfigureProblem.configure_new_variable(
-                    var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
-                )
-                nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
-                    lambda t, x, u, p, s, key: u[nlp.controls[key].index, :],
-                    plot_type=PlotType.STEP,
-                    combine_to=control_plot_name,
-                    key=var_names_with_suffix[-1],
-                    color=color[i],
-                )
-            elif i == 0:
-                ConfigureProblem.configure_new_variable(
-                    f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
-                )
-                nlp.plot[f"{name}_controls"] = CustomPlot(
-                    lambda t, x, u, p, s, key: u[nlp.controls[key].index, :],
-                    plot_type=PlotType.STEP,
-                    combine_to=control_plot_name,
-                    key=f"{name}",
-                    color=color[i],
-                )
-
-            for p, params in enumerate(fatigue_suffix):
-                name_tp = f"{var_names_with_suffix[-1]}_{params}"
-                ConfigureProblem.configure_new_variable(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
-                nlp.plot[name_tp] = CustomPlot(
-                    lambda t, x, u, p, s, key, mod: mod * x[nlp.states[key].index, :],
-                    plot_type=PlotType.INTEGRATED,
-                    combine_to=fatigue_plot_name,
-                    key=name_tp,
-                    color=fatigue_color[i][p],
-                    mod=plot_factor[i],
-                )
-
-        # Create a fake accessor for the name of the controls so it can be directly accessed in nlp.controls
-        for node_index in range(nlp.ns):
-            nlp.controls.node_index = node_index
-            if split_controls:
-                ConfigureProblem.append_faked_optim_var(name, nlp.controls.scaled, var_names_with_suffix)
-                ConfigureProblem.append_faked_optim_var(name, nlp.controls.unscaled, var_names_with_suffix)
-            else:
-                for meta_suffix in var_names_with_suffix:
-                    ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.scaled, [name])
-                    ConfigureProblem.append_faked_optim_var(meta_suffix, nlp.controls.unscaled, [name])
-
-        nlp.controls.node_index = nlp.states.node_index
-        nlp.states_dot.node_index = nlp.states.node_index
-        return True
-
-    @staticmethod
     def configure_new_variable(
         name: str,
         name_elements: list,
@@ -972,222 +868,21 @@ class ConfigureProblem:
         axes_idx: BiMapping
             The axes index to use for the plot
         """
-
-        if combine_state_control_plot and combine_name is not None:
-            raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
-
-        def define_cx_scaled(n_col: int, n_shooting: int, initial_node) -> list:
-            _cx = [nlp.cx() for _ in range(n_shooting + 1)]
-            for node_index in range(n_shooting + 1):
-                _cx[node_index] = [nlp.cx() for _ in range(n_col)]
-            for idx in nlp.variable_mappings[name].to_first.map_idx:
-                for node_index in range(n_shooting + 1):
-                    for j in range(n_col):
-                        sign = "-" if np.sign(idx) < 0 else ""
-                        _cx[node_index][j] = vertcat(
-                            _cx[node_index][j],
-                            nlp.cx.sym(
-                                f"{sign}{name}_{name_elements[abs(idx)]}_phase{nlp.phase_idx}_node{node_index + initial_node}.{j}",
-                                1,
-                                1,
-                            ),
-                        )
-            return _cx
-
-        def define_cx_unscaled(_cx_scaled: list, scaling: np.ndarray) -> list:
-            _cx = [nlp.cx() for _ in range(len(_cx_scaled))]
-            for node_index in range(len(_cx_scaled)):
-                _cx[node_index] = [nlp.cx() for _ in range(len(_cx_scaled[0]))]
-
-            for node_index in range(len(_cx_scaled)):
-                for j in range(len(_cx_scaled[0])):
-                    _cx[node_index][j] = _cx_scaled[node_index][j] * scaling
-            return _cx
-
-        if ConfigureProblem._manage_fatigue_to_new_variable(
-            name, name_elements, ocp, nlp, as_states, as_controls, fatigue
-        ):
-            # If the element is fatigable, this function calls back configure_new_variable to fill everything.
-            # Therefore, we can exit now
-            return
-
-        if name not in nlp.variable_mappings:
-            nlp.variable_mappings[name] = BiMapping(range(len(name_elements)), range(len(name_elements)))
-
-        if not ocp.assume_phase_dynamics and (
-            nlp.use_states_from_phase_idx != nlp.phase_idx
-            or nlp.use_states_dot_from_phase_idx != nlp.phase_idx
-            or nlp.use_controls_from_phase_idx != nlp.phase_idx
-        ):
-            # This check allows to use states[0], controls[0] in the following copy
-            raise ValueError("map_state=True must be used alongside with assume_phase_dynamics=True")
-
-        # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
-        copy_states = (
-            nlp.use_states_from_phase_idx is not None
-            and nlp.use_states_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_states_from_phase_idx].states[0]
+        new_variable_config = NewVariableConfiguration(
+            name,
+            name_elements,
+            ocp,
+            nlp,
+            as_states,
+            as_controls,
+            as_states_dot,
+            as_stochastic,
+            fatigue,
+            combine_name,
+            combine_state_control_plot,
+            skip_plot,
+            axes_idx,
         )
-        copy_controls = (
-            nlp.use_controls_from_phase_idx is not None
-            and nlp.use_controls_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_controls_from_phase_idx].controls[0]
-        )
-        copy_states_dot = (
-            nlp.use_states_dot_from_phase_idx is not None
-            and nlp.use_states_dot_from_phase_idx < nlp.phase_idx
-            and name in ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0]
-        )
-
-        # Declare the x_init for that variable
-        if as_states and name not in nlp.x_init:
-            nlp.x_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
-        if as_controls and name not in nlp.u_init:
-            nlp.u_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
-        if as_stochastic and name not in nlp.s_init:
-            nlp.s_init.add(name, initial_guess=np.zeros(len(nlp.variable_mappings[name].to_first.map_idx)))
-
-        # Declare the scaling for that variable
-        if as_states and name not in nlp.x_scaling:
-            nlp.x_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
-        if as_states_dot and name not in nlp.xdot_scaling:
-            nlp.xdot_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
-        if as_controls and name not in nlp.u_scaling:
-            nlp.u_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
-        if as_stochastic and name not in nlp.s_scaling:
-            nlp.s_scaling.add(name, scaling=np.ones(len(nlp.variable_mappings[name].to_first.map_idx)))
-
-        # Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True
-        mx_time = []
-        mx_states = [] if not copy_states else [ocp.nlp[nlp.use_states_from_phase_idx].states[0][name].mx]
-        mx_states_dot = (
-            [] if not copy_states_dot else [ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[0][name].mx]
-        )
-        mx_controls = [] if not copy_controls else [ocp.nlp[nlp.use_controls_from_phase_idx].controls[0][name].mx]
-        mx_stochastic = []
-
-        # todo: if mapping on variables, what do we do with mapping on the nodes
-        for i in nlp.variable_mappings[name].to_second.map_idx:
-            var_name = f"{'-' if np.sign(i) < 0 else ''}{name}_{name_elements[abs(i)]}_MX" if i is not None else "zero"
-
-            if not copy_states:
-                mx_states.append(MX.sym(var_name, 1, 1))
-
-            if not copy_states_dot:
-                mx_states_dot.append(MX.sym(var_name, 1, 1))
-
-            if not copy_controls:
-                mx_controls.append(MX.sym(var_name, 1, 1))
-
-            mx_stochastic.append(MX.sym(var_name, 1, 1))
-
-        mx_states = vertcat(*mx_states)
-        mx_states_dot = vertcat(*mx_states_dot)
-        mx_controls = vertcat(*mx_controls)
-        mx_stochastic = vertcat(*mx_stochastic)
-
-        if not axes_idx:
-            axes_idx = BiMapping(to_first=range(len(name_elements)), to_second=range(len(name_elements)))
-
-        if not skip_plot:
-            legend = []
-            for idx, name_el in enumerate(name_elements):
-                if idx is not None and idx in axes_idx.to_first.map_idx:
-                    current_legend = f"{name}_{name_el}"
-                    for i in range(ocp.n_phases):
-                        if as_states:
-                            current_legend += f"-{ocp.nlp[i].use_states_from_phase_idx}"
-                        if as_controls:
-                            current_legend += f"-{ocp.nlp[i].use_controls_from_phase_idx}"
-                    legend += [current_legend]
-
-        if as_states:
-            for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
-                n_cx = nlp.ode_solver.polynomial_degree + 2 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
-                cx_scaled = (
-                    ocp.nlp[nlp.use_states_from_phase_idx].states[node_index][name].original_cx
-                    if copy_states
-                    else define_cx_scaled(n_col=n_cx, n_shooting=0, initial_node=node_index)
-                )
-                cx = (
-                    ocp.nlp[nlp.use_states_from_phase_idx].states[node_index][name].original_cx
-                    if copy_states
-                    else define_cx_unscaled(cx_scaled, nlp.x_scaling[name].scaling)
-                )
-                nlp.states.append(name, cx[0], cx_scaled[0], mx_states, nlp.variable_mappings[name], node_index)
-                if not skip_plot:
-                    nlp.plot[f"{name}_states"] = CustomPlot(
-                        lambda t, x, u, p, s: x[nlp.states[name].index, :],
-                        plot_type=PlotType.INTEGRATED,
-                        axes_idx=axes_idx,
-                        legend=legend,
-                        combine_to=combine_name,
-                    )
-
-        if as_controls:
-            for node_index in range(
-                (
-                    1
-                    if ocp.assume_phase_dynamics
-                    else (
-                        nlp.ns
-                        + (
-                            1
-                            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
-                            else 0
-                        )
-                    )
-                )
-            ):
-                cx_scaled = (
-                    ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx
-                    if copy_controls
-                    else define_cx_scaled(n_col=3, n_shooting=0, initial_node=node_index)
-                )
-                cx = (
-                    ocp.nlp[nlp.use_controls_from_phase_idx].controls[node_index][name].original_cx
-                    if copy_controls
-                    else define_cx_unscaled(cx_scaled, nlp.u_scaling[name].scaling)
-                )
-                nlp.controls.append(name, cx[0], cx_scaled[0], mx_controls, nlp.variable_mappings[name], node_index)
-
-                plot_type = PlotType.PLOT if nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
-                if not skip_plot:
-                    nlp.plot[f"{name}_controls"] = CustomPlot(
-                        lambda t, x, u, p, s: u[nlp.controls[name].index, :],
-                        plot_type=plot_type,
-                        axes_idx=axes_idx,
-                        legend=legend,
-                        combine_to=f"{name}_states" if as_states and combine_state_control_plot else combine_name,
-                    )
-
-        if as_states_dot:
-            for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
-                n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
-                if n_cx < 3:
-                    n_cx = 3
-                cx_scaled = (
-                    ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[node_index][name].original_cx
-                    if copy_states_dot
-                    else define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
-                )
-                cx = (
-                    ocp.nlp[nlp.use_states_dot_from_phase_idx].states_dot[node_index][name].original_cx
-                    if copy_states_dot
-                    else define_cx_unscaled(cx_scaled, nlp.xdot_scaling[name].scaling)
-                )
-                nlp.states_dot.append(name, cx[0], cx_scaled[0], mx_states_dot, nlp.variable_mappings[name], node_index)
-
-        if as_stochastic:
-            for node_index in range((0 if ocp.assume_phase_dynamics else nlp.ns) + 1):
-                n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
-                if n_cx < 3:
-                    n_cx = 3
-                cx_scaled = define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
-                cx = define_cx_unscaled(cx_scaled, nlp.s_scaling[name].scaling)
-                nlp.stochastic_variables.append(
-                    name, cx[0], cx_scaled[0], mx_stochastic, nlp.variable_mappings[name], node_index
-                )
 
     @staticmethod
     def configure_integrated_value(
@@ -1518,6 +1213,7 @@ class ConfigureProblem:
     def configure_stochastic_ref(ocp, nlp, n_references: int):
         """
         Configure the reference kinematics.
+
         Parameters
         ----------
         nlp: NonLinearProgram
@@ -1546,6 +1242,7 @@ class ConfigureProblem:
     def configure_stochastic_m(ocp, nlp, n_noised_states: int):
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
+
         Parameters
         ----------
         nlp: NonLinearProgram
@@ -1618,31 +1315,6 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(
             name, name_residual_tau, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
         )
-
-    @staticmethod
-    def append_faked_optim_var(name, optim_var, keys: list):
-        """
-        Add a fake optim var by combining vars in keys
-
-        Parameters
-        ----------
-        optim_var: OptimizationVariableList
-            states or controls
-        keys: list
-            The list of keys to combine
-        """
-
-        index = []
-        mx = MX()
-        to_second = []
-        to_first = []
-        for key in keys:
-            index.extend(list(optim_var[key].index))
-            mx = vertcat(mx, optim_var[key].mx)
-            to_second.extend(list(np.array(optim_var[key].mapping.to_second.map_idx) + len(to_second)))
-            to_first.extend(list(np.array(optim_var[key].mapping.to_first.map_idx) + len(to_first)))
-
-        optim_var.append_fake(name, index, mx, BiMapping(to_second, to_first))
 
     @staticmethod
     def configure_taudot(ocp, nlp, as_states: bool, as_controls: bool):
