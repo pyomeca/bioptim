@@ -161,9 +161,7 @@ class OptimizationVariable:
         elif node == Node.END:
             var = variable[key].cx_end
         else:
-            raise RuntimeError(
-                "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-            )
+            raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
 
         matrix = MX(shape_0, shape_1)
         for s0 in range(shape_1):
@@ -746,16 +744,13 @@ class OptimizationVariableContainer:
         elif node == Node.END:
             var = variable[key].cx_end
         else:
-            raise RuntimeError(
-                "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-            )
+            raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
 
         matrix = MX(shape_0, shape_1)
         for s0 in range(shape_1):
             for s1 in range(shape_0):
                 matrix[s1, s0] = var[s0 * shape_0 + s1]
         return matrix
-
 
     def reshape_sym_to_matrix(self, variable, shape_0, shape_1):
         """
