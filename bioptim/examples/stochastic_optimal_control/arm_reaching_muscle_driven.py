@@ -627,8 +627,7 @@ def main():
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
-    # n_shooting = int(final_time / dt)
-    n_shooting = 5
+    n_shooting = int(final_time / dt)
 
     # --- Noise constants --- #
     motor_noise_std = 0.05
@@ -646,7 +645,7 @@ def main():
     solver.set_tol(1e-3)
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
-    solver.set_maximum_iterations(0)
+    solver.set_maximum_iterations(1000)
     solver.set_hessian_approximation("limited-memory")
     solver.set_bound_frac(1e-8)
     solver.set_bound_push(1e-8)
