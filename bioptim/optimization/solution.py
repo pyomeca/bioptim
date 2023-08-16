@@ -1181,13 +1181,7 @@ class Solution:
                 return np.hstack([self._states["unscaled"][0][key][:, 0] for key in self.ocp.nlp[phase].states])
 
             t0 = []
-            if len(self.ocp.nlp[phase - 1].time) > 0:
-                t0 = np.concatenate(
-                    [
-                        self._time[phase - 1][key][:, -1]
-                        for key in self.ocp.nlp[phase - 1].time
-                    ]
-                )
+
             x0 = np.concatenate(
                 [self._states["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].states]
             )
