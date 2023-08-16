@@ -484,13 +484,7 @@ class NewVariableConfiguration:
 
         if self.as_stochastic:
             for node_index in range((0 if self.ocp.assume_phase_dynamics else self.nlp.ns) + 1):
-                n_cx = (
-                    self.nlp.ode_solver.polynomial_degree + 1
-                    if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION)
-                    else 3
-                )
-                if n_cx < 3:
-                    n_cx = 3
+                n_cx = 3
                 cx_scaled = self.define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.s_scaling[self.name].scaling)
 

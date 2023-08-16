@@ -300,6 +300,15 @@ class OptimalControlProgram:
             parameter_objectives,
             multinode_constraints,
             multinode_objectives,
+            phase_transitions,
+            x_bounds,
+            u_bounds,
+            parameter_bounds,
+            s_bounds,
+            x_init,
+            u_init,
+            parameter_init,
+            s_init,
         ) = self.check_arguments_and_build_nlp(
             dynamics,
             n_threads,
@@ -335,8 +344,11 @@ class OptimalControlProgram:
             control_type,
             variable_mappings,
             integrated_value_functions,
-            node_mappings,
-            state_continuity_weight,
+        )
+        self.prepare_node_mapping(node_mappings)
+        self.prepare_dynamics()
+        self.prepare_bounds_and_init(
+            x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
         )
 
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
@@ -348,6 +360,7 @@ class OptimalControlProgram:
             parameter_constraints,
             objective_functions,
             parameter_objectives,
+            phase_transitions,
         )
 
     def check_bioptim_version(self):
@@ -481,8 +494,6 @@ class OptimalControlProgram:
         control_type,
         variable_mappings,
         integrated_value_functions,
-        node_mappings,
-        state_continuity_weight,
     ):
         if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
             raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
@@ -706,7 +717,25 @@ class OptimalControlProgram:
         NLP.add(self, "s_scaling", s_scaling, True)
 
         NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
+        return (
+            constraints,
+            objective_functions,
+            parameter_constraints,
+            parameter_objectives,
+            multinode_constraints,
+            multinode_objectives,
+            phase_transitions,
+            x_bounds,
+            u_bounds,
+            parameter_bounds,
+            s_bounds,
+            x_init,
+            u_init,
+            parameter_init,
+            s_init,
+        )
 
+    def prepare_node_mapping(self, node_mappings):
         # Prepare the node mappings
         if node_mappings is None:
             node_mappings = NodeMappingList()
@@ -720,17 +749,21 @@ class OptimalControlProgram:
             use_states_from_phase_idx, use_controls_from_phase_idx
         )
 
+    def prepare_dynamics(self):
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
-            if (isinstance(bio_model, VariationalBiorbdModel)) and self.nlp[i].stochastic_variables.shape > 0:
+            if (isinstance(self.nlp[i].model, VariationalBiorbdModel)) and self.nlp[i].stochastic_variables.shape > 0:
                 raise NotImplementedError(
                     "Stochastic variables were not tested with variational integrators. If you come across this error, "
                     "please notify the developers by opening open an issue on GitHub pinging Ipuch and EveCharbie"
                 )
 
+    def prepare_bounds_and_init(
+        self, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
+    ):
         self.parameter_bounds = BoundsList()
         self.parameter_init = InitialGuessList()
 
@@ -739,19 +772,9 @@ class OptimalControlProgram:
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
-        # Define continuity constraints
-        # Prepare phase transitions (Reminder, it is important that parameters are declared before,
-        # otherwise they will erase the phase_transitions)
-        self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
-
-        return (
-            constraints,
-            objective_functions,
-            parameter_constraints,
-            parameter_objectives,
-            multinode_constraints,
-            multinode_objectives,
-        )
+    def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
+        multinode_constraints.add_or_replace_to_penalty_pool(self)
+        multinode_objectives.add_or_replace_to_penalty_pool(self)
 
     def finalize_penalties(
         self,
@@ -761,7 +784,13 @@ class OptimalControlProgram:
         parameter_constraints,
         objective_functions,
         parameter_objectives,
+        phase_transitions,
     ):
+        # Define continuity constraints
+        # Prepare phase transitions (Reminder, it is important that parameters are declared before,
+        # otherwise they will erase the phase_transitions)
+        self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
+
         # Skipping creates an OCP without built-in continuity constraints, make sure you declared constraints elsewhere
         if not skip_continuity:
             self._declare_continuity(state_continuity_weight)
@@ -967,10 +996,6 @@ class OptimalControlProgram:
             pt.name = f"PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
-
-    def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
-        multinode_constraints.add_or_replace_to_penalty_pool(self)
-        multinode_objectives.add_or_replace_to_penalty_pool(self)
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """
@@ -1408,33 +1433,50 @@ class OptimalControlProgram:
             if penalty.transition or penalty.multinode_penalty:
                 out.append(
                     penalty.weighted_function_non_threaded[t](
-                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), penalty.weight, _target, 1
+                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), 0, 0, penalty.weight, _target, 1
                     )
                 )  # dt=1 because multinode penalties behave like Mayer functions
 
             elif penalty.derivative or penalty.explicit_derivative:
+                control_value = u
+                stochastic_value = s
                 if not np.all(
                     x == 0
                 ):  # This is a hack to initialize the plots because it x is (N,2) and we need (N, M) in collocation
                     state_value = x[:, :] if penalty.name == "CONTINUITY" else x[:, [0, -1]]
+                    state_value = state_value.reshape((-1, 1))
+                    control_value = control_value.reshape((-1, 1))
+                    stochastic_value = stochastic_value.reshape((-1, 1))
                 else:
                     state_value = np.zeros(
-                        (x.shape[0], int(penalty.weighted_function_non_threaded[t].nnz_in(0) / x.shape[0]))
+                        (x.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(0) / x.shape[0]))
                     )
+                    if u.size != 0:
+                        control_value = np.zeros(
+                            (u.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(1) / u.shape[0]))
+                        )
+                    if s.size != 0:
+                        stochastic_value = np.zeros(
+                            (s.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(2) / s.shape[0]))
+                        )
 
-                out.append(penalty.weighted_function_non_threaded[t](state_value, u, p, s, penalty.weight, _target, dt))
+                out.append(
+                    penalty.weighted_function_non_threaded[t](
+                        state_value, control_value, p, stochastic_value, 0, 0, penalty.weight, _target, dt
+                    )
+                )
             elif (
                 penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
             ):
                 out = [
                     penalty.weighted_function_non_threaded[t](
-                        x[:, [i, i + 1]], u[:, i], p, s, penalty.weight, _target, dt
+                        x[:, [i, i + 1]], u[:, i], p, s, 0, 0, penalty.weight, _target, dt
                     )
                     for i in range(x.shape[1] - 1)
                 ]
             else:
-                out.append(penalty.weighted_function_non_threaded[t](x, u, p, s, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded[t](x, u, p, s, 0, 0, penalty.weight, _target, dt))
             return sum1(horzcat(*out))
 
         def add_penalty(_penalties):
