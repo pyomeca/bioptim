@@ -59,12 +59,12 @@ def check_conditioning(ocp):
         for nlp in ocp.nlp:
             list_constraints = []
 
+            motor_noise = nlp.cx()
+            sensor_noise = nlp.cx()
             if nlp.motor_noise is not None:
                 motor_noise = nlp.motor_noise
                 sensor_noise = nlp.sensor_noise
-            else:
-                motor_noise = nlp.cx()
-                sensor_noise = nlp.cx()
+
             for constraints in nlp.g:
                 node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
                 nlp.states.node_index = node_index
@@ -340,12 +340,11 @@ def check_conditioning(ocp):
 
         hessian_obj_list = []
         for phase, nlp in enumerate(ocp.nlp):
+            motor_noise = nlp.cx()
+            sensory_noise = nlp.cx()
             if nlp.motor_noise is not None:
                 motor_noise = nlp.motor_noise
                 sensory_noise = nlp.sensor_noise
-            else:
-                motor_noise = nlp.cx()
-                sensory_noise = nlp.cx()
 
             for obj in nlp.J:
                 objective = 0

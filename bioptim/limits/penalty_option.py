@@ -637,12 +637,11 @@ class PenaltyOption(OptionGeneric):
                 self.weighted_function_non_threaded.append(None)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
+        motor_noise = controller.cx()
+        sensory_noise = controller.cx()
         if controller.motor_noise is not None:
             motor_noise = controller.motor_noise
             sensory_noise = controller.sensory_noise
-        else:
-            motor_noise = controller.cx()
-            sensory_noise = controller.cx()
 
         sub_fcn = fcn[self.rows, self.cols]
         self.function[node] = controller.to_casadi_func(

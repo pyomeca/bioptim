@@ -146,9 +146,7 @@ class OptimizationVariable:
         vector = MX.zeros(shape_0 * shape_1)
         for s0 in range(shape_0):
             for s1 in range(shape_1):
-                # TODO: Charbie -> will change the order in a separate PR
-                vector[shape_0 * s0 + s1] = matrix[s0, s1]
-                # vector[shape_0 * s1 + s0] = matrix[s0, s1]
+                vector[shape_0 * s1 + s0] = matrix[s0, s1]
         return vector
 
     @staticmethod
@@ -156,21 +154,31 @@ class OptimizationVariable:
         """
         Restore the matrix form of the variables
         """
+        if node == Node.START:
+            var = variable[key].cx_start
+        elif node == Node.MID:
+            var = variable[key].cx_mid
+        elif node == Node.END:
+            var = variable[key].cx_end
+        else:
+            raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
+
         matrix = MX(shape_0, shape_1)
-        i = 0
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                if node == Node.START:
-                    matrix[s0, s1] = variable[key].cx_start[i]
-                elif node == Node.MID:
-                    matrix[s0, s1] = variable[key].cx_mid[i]
-                elif node == Node.END:
-                    matrix[s0, s1] = variable[key].cx_end[i]
-                else:
-                    raise RuntimeError(
-                        "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-                    )
-                i += 1
+        for s0 in range(shape_1):
+            for s1 in range(shape_0):
+                matrix[s1, s0] = var[s0 * shape_0 + s1]
+        return matrix
+
+    @staticmethod
+    def reshape_sym_to_matrix(variable, shape_0, shape_1):
+        """
+        Restore the matrix form of the variables
+        """
+        var = variable
+        matrix = MX(shape_0, shape_1)
+        for s0 in range(shape_1):
+            for s1 in range(shape_0):
+                matrix[s1, s0] = var[s0 * shape_0 + s1]
         return matrix
 
     @staticmethod
@@ -178,20 +186,41 @@ class OptimizationVariable:
         """
         Restore the lower diagonal matrix form of the variables vector
         """
+        if key is None:
+            raise RuntimeError("The key must be specified")
+        if node is None:
+            raise RuntimeError(
+                "The node must be specified, you have the choice between Node.START, Node.MID, and" "Node.END"
+            )
+        if node == Node.START:
+            var = variable[key].cx_start
+        elif node == Node.MID:
+            var = variable[key].cx_mid
+        elif node == Node.END:
+            var = variable[key].cx_end
+        else:
+            raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
+
         matrix = MX.zeros(shape_0, shape_0)
         i = 0
         for s0 in range(shape_0):
             for s1 in range(s0 + 1):
-                if node == Node.START:
-                    matrix[s0, s1] = variable[key].cx_start[i]
-                elif node == Node.MID:
-                    matrix[s0, s1] = variable[key].cx_mid[i]
-                elif node == Node.END:
-                    matrix[s0, s1] = variable[key].cx_end[i]
-                else:
-                    raise RuntimeError(
-                        "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-                    )
+                matrix[s1, s0] = var[i]
+                i += 1
+        return matrix
+
+    @staticmethod
+    def reshape_sym_to_cholesky_matrix(variable, shape_0):
+        """
+        Restore the lower diagonal matrix form of the variables vector
+        """
+        var = variable
+
+        matrix = MX.zeros(shape_0, shape_0)
+        i = 0
+        for s0 in range(shape_0):
+            for s1 in range(s0 + 1):
+                matrix[s1, s0] = var[i]
                 i += 1
         return matrix
 
@@ -711,28 +740,35 @@ class OptimizationVariableContainer:
         vector = MX.zeros(shape_0 * shape_1)
         for s0 in range(shape_0):
             for s1 in range(shape_1):
-                # TODO: Charbie -> will change the order in a separate PR
-                vector[shape_0 * s0 + s1] = matrix[s0, s1]
-                # vector[shape_0 * s1 + s0] = matrix[s0, s1]
+                vector[shape_0 * s1 + s0] = matrix[s0, s1]
         return vector
 
     def reshape_to_matrix(self, variable, shape_0, shape_1, node: Node, key: str):
         """
         Restore the matrix form of the variables
         """
+        if node == Node.START:
+            var = variable[key].cx_start
+        elif node == Node.MID:
+            var = variable[key].cx_mid
+        elif node == Node.END:
+            var = variable[key].cx_end
+        else:
+            raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
+
         matrix = MX(shape_0, shape_1)
-        i = 0
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                if node == Node.START:
-                    matrix[s0, s1] = variable[key].cx_start[i]
-                elif node == Node.MID:
-                    matrix[s0, s1] = variable[key].cx_mid[i]
-                elif node == Node.END:
-                    matrix[s0, s1] = variable[key].cx_end[i]
-                else:
-                    raise RuntimeError(
-                        "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-                    )
-                i += 1
+        for s0 in range(shape_1):
+            for s1 in range(shape_0):
+                matrix[s1, s0] = var[s0 * shape_0 + s1]
+        return matrix
+
+    def reshape_sym_to_matrix(self, variable, shape_0, shape_1):
+        """
+        Restore the matrix form of the variables
+        """
+        var = variable
+        matrix = MX(shape_0, shape_1)
+        for s0 in range(shape_1):
+            for s1 in range(shape_0):
+                matrix[s1, s0] = var[s0 * shape_0 + s1]
         return matrix

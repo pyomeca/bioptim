@@ -70,11 +70,7 @@ def stochastic_forward_dynamics(
     if with_gains:
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = cas.MX(4, 6)
-        for s0 in range(4):
-            for s1 in range(6):
-                k_matrix[s0, s1] = k[s0 * 6 + s1]
-        k_matrix = k_matrix.T
+        k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k, 6, 4)
 
         hand_pos = nlp.model.end_effector_position(q)
         hand_vel = nlp.model.end_effector_velocity(q, qdot)
@@ -183,9 +179,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
 
     sigma_w = cas.vertcat(nlp.sensory_noise, nlp.motor_noise) * cas.MX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
-    cov_sym_dict = {"cov": cov_sym}
-    cov_sym_dict["cov"].cx_start = cov_sym
-    cov_matrix = nlp.integrated_values.reshape_to_matrix(cov_sym_dict, nx, nx, Node.START, "cov")
+    cov_matrix = nlp.integrated_values.reshape_sym_to_matrix(cov_sym, nx, nx)
 
     dx = stochastic_forward_dynamics(
         nlp.states.cx_start,
@@ -240,17 +234,13 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     q_sym = cas.MX.sym("q_sym", controllers[-1].states["q"].cx_start.shape[0])
     qdot_sym = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx_start.shape[0])
     cov_sym = cas.MX.sym("cov", controllers[-1].integrated_values.cx_start.shape[0])
-    cov_sym_dict = {"cov": cov_sym}
-    cov_sym_dict["cov"].cx_start = cov_sym
     cov_matrix = (
         controllers[-1]
         .integrated_values["cov"]
-        .reshape_to_matrix(
-            cov_sym_dict,
+        .reshape_sym_to_matrix(
+            cov_sym,
             controllers[-1].states.cx_start.shape[0],
             controllers[-1].states.cx_start.shape[0],
-            Node.START,
-            "cov",
         )
     )
 
@@ -300,26 +290,18 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     # Get the symbolic variables
     ref = controllers[0].stochastic_variables["ref"].cx_start
     cov_sym = cas.MX.sym("cov", controllers[0].integrated_values.cx_start.shape[0])
-    cov_sym_dict = {"cov": cov_sym}
-    cov_sym_dict["cov"].cx_start = cov_sym
     cov_matrix = (
         controllers[0]
         .integrated_values["cov"]
-        .reshape_to_matrix(
-            cov_sym_dict,
+        .reshape_sym_to_matrix(
+            cov_sym,
             controllers[0].states.cx_start.shape[0],
             controllers[0].states.cx_start.shape[0],
-            Node.START,
-            "cov",
         )
     )
 
     k = controllers[0].stochastic_variables["k"].cx_start
-    k_matrix = cas.MX(4, 6)
-    for s0 in range(4):
-        for s1 in range(6):
-            k_matrix[s0, s1] = k[s0 * 6 + s1]
-    k_matrix = k_matrix.T
+    k_matrix = controllers[0].stochastic_variables["k"].reshape_sym_to_matrix(k, 6, 4)
 
     # Compute the expected effort
     hand_pos = controllers[0].model.end_effector_position(controllers[0].states["q"].cx_start)
@@ -663,7 +645,7 @@ def main():
     solver.set_tol(1e-3)
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
-    solver.set_maximum_iterations(10000)
+    solver.set_maximum_iterations(1000)
     solver.set_hessian_approximation("limited-memory")
     solver.set_bound_frac(1e-8)
     solver.set_bound_push(1e-8)

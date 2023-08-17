@@ -334,6 +334,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             sensory_noise_magnitude: DM
                 The magnitude of the sensory noise
             """
+            if not controllers[0].get_nlp.is_stochastic:
+                raise RuntimeError("This function is only valid for stochastic problems")
             if controllers[0].phase_idx != controllers[1].phase_idx:
                 raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
 
@@ -414,6 +416,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             sensory_noise_magnitude: DM
                 The magnitude of the sensory noise
             """
+            if not controllers[0].get_nlp.is_stochastic:
+                raise RuntimeError("This function is only valid for stochastic problems")
             if controllers[0].phase_idx != controllers[1].phase_idx:
                 raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
 
@@ -450,6 +454,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             This functions allows to implicitly integrate the covariance matrix.
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
+
+            if not controllers[0].get_nlp.is_stochastic:
+                raise RuntimeError("This function is only valid for stochastic problems")
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = len(controllers[0].get_nlp.variable_mappings["tau"].to_first.map_idx)
@@ -504,6 +511,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             A = dG/dw
             TODO: Charbie -> This is only true for trapezoidal integration
             """
+
+            if not controllers[0].get_nlp.is_stochastic:
+                raise RuntimeError("This function is only valid for stochastic problems")
+
             dt = controllers[0].tf / controllers[0].ns
 
             nb_root = controllers[0].model.nb_root
@@ -596,6 +607,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             P_k+1 = M_k @ (dg/dx @ P_k @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
 
+            if not controllers[0].get_nlp.is_stochastic:
+                raise RuntimeError("This function is only valid for stochastic problems")
+
             polynomial_degree = controllers[0].get_nlp.ode_solver.polynomial_degree
             nb_root = controllers[0].model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
@@ -603,11 +617,11 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             non_root_index_continuity = []
             non_root_index_defects = []
             for i in range(2):
-                for j in range(polynomial_degree):
+                for j in range(polynomial_degree + 1):
                     non_root_index_defects += list(
                         range(
-                            (nb_root + nu) * (i * (polynomial_degree) + j) + nb_root,
-                            (nb_root + nu) * (i * (polynomial_degree) + j) + nb_root + nu,
+                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root,
+                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root + nu,
                         )
                     )
                 non_root_index_continuity += list(
@@ -642,7 +656,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0]
                 .stochastic_variables["m"]
                 .reshape_to_matrix(
-                    controllers[0].stochastic_variables, 2 * nu, 2 * nu * polynomial_degree, Node.START, "m"
+                    controllers[0].stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree + 1), Node.START, "m"
                 )
             )
 
@@ -670,7 +684,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 sensory_noise=controllers[0].sensory_noise,
             )
 
-            defects = dynamics["defects"][non_root_index_defects]
+            initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
+            defects = dynamics["defects"]
+            defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
+
             sigma_w = vertcat(controllers[0].sensory_noise, controllers[0].motor_noise)
             sigma_matrix = sigma_w * MX_eye(sigma_w.shape[0])
 

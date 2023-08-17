@@ -717,6 +717,7 @@ class OptimalControlProgram:
         NLP.add(self, "s_scaling", s_scaling, True)
 
         NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
+        NLP.add(self, "is_stochastic", False, True)
         return (
             constraints,
             objective_functions,
