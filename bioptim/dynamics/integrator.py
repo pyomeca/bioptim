@@ -121,7 +121,7 @@ class Integrator:
         if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
-            dt_norm = round(1 - (self.tf-t)/self.step_time, 5)
+            dt_norm = 1 - (self.tf-t)/self.step_time
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
         elif self.control_type == ControlType.NONE:
             return np.ndarray((0,))
@@ -677,7 +677,7 @@ class TRAPEZOIDAL(Integrator):
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
             self.dxdt(self.h, self.t_span, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
-            ["t", "x0", "p", "params", "s"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 

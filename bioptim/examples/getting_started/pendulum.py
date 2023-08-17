@@ -63,6 +63,8 @@ def prepare_ocp(
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
         (for instance IRK is not compatible with expanded dynamics)
+    control_type: ControlType
+        The type of the controls
 
     Returns
     -------
@@ -137,7 +139,7 @@ def main():
 
     # --- Solve the ocp --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
-    # sol.graphs(show_bounds=True)
+    sol.graphs(show_bounds=True)
 
     # --- Show the results in a bioviz animation --- #
     sol.print_cost()
