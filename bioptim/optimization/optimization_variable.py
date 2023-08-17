@@ -199,9 +199,7 @@ class OptimizationVariable:
         elif node == Node.END:
             var = variable[key].cx_end
         else:
-            raise RuntimeError(
-                "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-            )
+            raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
 
         matrix = MX.zeros(shape_0, shape_0)
         i = 0
@@ -225,6 +223,7 @@ class OptimizationVariable:
                 matrix[s1, s0] = var[i]
                 i += 1
         return matrix
+
 
 class OptimizationVariableList:
     """
