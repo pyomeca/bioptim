@@ -617,11 +617,11 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             non_root_index_continuity = []
             non_root_index_defects = []
             for i in range(2):
-                for j in range(polynomial_degree+1):
+                for j in range(polynomial_degree + 1):
                     non_root_index_defects += list(
                         range(
-                            (nb_root + nu) * (i * (polynomial_degree+1) + j) + nb_root,
-                            (nb_root + nu) * (i * (polynomial_degree+1) + j) + nb_root + nu,
+                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root,
+                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root + nu,
                         )
                     )
                 non_root_index_continuity += list(
@@ -656,7 +656,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0]
                 .stochastic_variables["m"]
                 .reshape_to_matrix(
-                    controllers[0].stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree+1), Node.START, "m"
+                    controllers[0].stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree + 1), Node.START, "m"
                 )
             )
 
