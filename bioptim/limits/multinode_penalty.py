@@ -334,7 +334,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             sensory_noise_magnitude: DM
                 The magnitude of the sensory noise
             """
-            if controllers[0].integrate_noised_dynamics is None:
+            if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
             if controllers[0].phase_idx != controllers[1].phase_idx:
                 raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
@@ -416,7 +416,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             sensory_noise_magnitude: DM
                 The magnitude of the sensory noise
             """
-            if controllers[0].integrate_noised_dynamics is None:
+            if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
             if controllers[0].phase_idx != controllers[1].phase_idx:
                 raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
@@ -455,7 +455,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
 
-            if controllers[0].integrate_noised_dynamics is None:
+            if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
@@ -512,7 +512,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             TODO: Charbie -> This is only true for trapezoidal integration
             """
 
-            if controllers[0].integrate_noised_dynamics is None:
+            if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             dt = controllers[0].tf / controllers[0].ns
@@ -607,7 +607,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             P_k+1 = M_k @ (dg/dx @ P_k @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
 
-            if controllers[0].integrate_noised_dynamics is None:
+            if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             polynomial_degree = controllers[0].get_nlp.ode_solver.polynomial_degree
