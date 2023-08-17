@@ -685,8 +685,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-            defects = dynamics["defects"][non_root_index_defects]
-            defects = vertcat(initial_polynomial_evaluation, defects)
+            defects = dynamics["defects"]
+            defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
 
             sigma_w = vertcat(controllers[0].sensory_noise, controllers[0].motor_noise)
             sigma_matrix = sigma_w * MX_eye(sigma_w.shape[0])

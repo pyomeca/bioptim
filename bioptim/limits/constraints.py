@@ -778,8 +778,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
             final_polynomial_evaluation = dynamics["xf"][non_root_index_continuity]
-            defects = dynamics["defects"][non_root_index_defects]
-            defects = vertcat(initial_polynomial_evaluation, defects)
+            defects = dynamics["defects"]
+            defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
 
             df_dz = horzcat(
                 jacobian(final_polynomial_evaluation, x_q_joints),
