@@ -182,29 +182,26 @@ class OptimizationVariable:
         return matrix
 
     @staticmethod
-    def reshape_to_cholesky_matrix(variable, shape_0, node: Node = None, key: str = None):
+    def reshape_to_cholesky_matrix(variable, shape_0, node: Node, key: str):
         """
         Restore the lower diagonal matrix form of the variables vector
         """
-        if hasattr(variable, "keys"):
-            if key is None:
-                raise RuntimeError("The key must be specified")
-            if node is None:
-                raise RuntimeError(
-                    "The node must be specified, you have the choice between Node.START, Node.MID, and" "Node.END"
-                )
-            if node == Node.START:
-                var = variable[key].cx_start
-            elif node == Node.MID:
-                var = variable[key].cx_mid
-            elif node == Node.END:
-                var = variable[key].cx_end
-            else:
-                raise RuntimeError(
-                    "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-                )
+        if key is None:
+            raise RuntimeError("The key must be specified")
+        if node is None:
+            raise RuntimeError(
+                "The node must be specified, you have the choice between Node.START, Node.MID, and" "Node.END"
+            )
+        if node == Node.START:
+            var = variable[key].cx_start
+        elif node == Node.MID:
+            var = variable[key].cx_mid
+        elif node == Node.END:
+            var = variable[key].cx_end
         else:
-            var = variable
+            raise RuntimeError(
+                "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
+            )
 
         matrix = MX.zeros(shape_0, shape_0)
         i = 0
@@ -214,6 +211,20 @@ class OptimizationVariable:
                 i += 1
         return matrix
 
+    @staticmethod
+    def reshape_sym_to_cholesky_matrix(variable, shape_0):
+        """
+        Restore the lower diagonal matrix form of the variables vector
+        """
+        var = variable
+
+        matrix = MX.zeros(shape_0, shape_0)
+        i = 0
+        for s0 in range(shape_0):
+            for s1 in range(s0 + 1):
+                matrix[s1, s0] = var[i]
+                i += 1
+        return matrix
 
 class OptimizationVariableList:
     """

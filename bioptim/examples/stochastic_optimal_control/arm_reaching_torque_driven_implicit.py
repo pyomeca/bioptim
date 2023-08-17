@@ -243,7 +243,7 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
         l_cov_matrix = (
             controllers[0]
             .stochastic_variables["cholesky_cov"]
-            .reshape_to_cholesky_matrix(
+            .reshape_sym_to_cholesky_matrix(
                 cov_sym,
                 controllers[0].states.cx_start.shape[0],
             )
@@ -321,7 +321,7 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
         for key in controller.stochastic_variables.keys()
     }
     if "cholesky_cov" in controller.stochastic_variables.keys():
-        l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
+        l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_sym_to_cholesky_matrix(
             stochastic_sym_dict["cholesky_cov"],
             n_q + n_qdot,
         )
