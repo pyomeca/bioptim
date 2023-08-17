@@ -3,7 +3,7 @@ Test for file IO.
 """
 
 from typing import Callable
-from casadi import vertcat, SX, MX, Function, sum1, horzcat
+from casadi import vertcat, SX, MX
 import numpy as np
 import pytest
 from bioptim import (
@@ -13,7 +13,6 @@ from bioptim import (
     ConstraintList,
     ControlType,
     DynamicsEvaluation,
-    DynamicsFunctions,
     DynamicsList,
     ObjectiveFcn,
     ObjectiveList,
@@ -23,7 +22,6 @@ from bioptim import (
     Node,
     NonLinearProgram,
     Solver,
-    InitialGuessList,
 )
 
 
@@ -85,42 +83,12 @@ class NonControlledMethod:
         stochastic_variables: MX | SX,
         nlp: NonLinearProgram,
     ) -> DynamicsEvaluation:
-        t_phase = nlp.parameters.cx[-1]
+        t_phase = nlp.parameters.mx[-1]
 
         return DynamicsEvaluation(
             dxdt=nlp.model.system_dynamics(a=states[0], b=states[1], c=states[2], t=time, t_phase=t_phase),
             defects=None,
         )
-
-    # def custom_configure_dynamics_function(self, ocp, nlp, **extra_params):
-    #     """
-    #     Configure the dynamics of the system
-    #     """
-    #
-    #     nlp.parameters = ocp.parameters
-    #     DynamicsFunctions.apply_parameters(nlp.parameters.cx, nlp)
-    #
-    #     dynamics_eval = self.custom_dynamics(
-    #         nlp.t0, nlp.states.scaled.cx, nlp.controls.scaled.cx, nlp.parameters.cx, nlp, **extra_params
-    #     )
-    #
-    #     dynamics_dxdt = dynamics_eval.dxdt
-    #     if isinstance(dynamics_dxdt, (list, tuple)):
-    #         dynamics_dxdt = vertcat(*dynamics_dxdt)
-    #
-    #     nlp.dynamics_func = Function(
-    #         "ForwardDyn",
-    #         [
-    #             nlp.time.mx,
-    #             nlp.states.scaled.mx_reduced,
-    #             nlp.controls.scaled.mx_reduced,
-    #             nlp.parameters.mx,
-    #             nlp.stochastic_variables.scaled.mx,
-    #         ],
-    #         [dynamics_dxdt],
-    #         ["t", "x", "u", "p", "s"],
-    #         ["xdot"],
-    #     )
 
     def declare_variables(self, ocp: OptimalControlProgram, nlp: NonLinearProgram):
         name = "a"
@@ -159,23 +127,6 @@ class NonControlledMethod:
             as_states_dot=False,
         )
 
-        # name = "t"
-        # name_t = [name]
-        # ConfigureProblem.configure_new_variable(
-        #     name,
-        #     name_t,
-        #     ocp,
-        #     nlp,
-        #     as_states=False,
-        #     as_controls=False,
-        #     as_states_dot=False,
-        # )
-
-        ConfigureProblem.configure_t(ocp, nlp, as_states=False, as_controls=False)
-
-        # t = MX.sym("t")  # t needs a symbolic value to start computing in custom_configure_dynamics_function
-        # self.custom_configure_dynamics_function(ocp, nlp, t=t)
-        # self.custom_configure_dynamics_function(ocp, nlp)
         ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics)
 
 
@@ -212,7 +163,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
     custom_model = NonControlledMethod()
-    models = [custom_model for i in range(n_phase)]  # Gives custom_model as model for n phases
+    models = (NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod())
     n_shooting = [5 for i in range(n_phase)]  # Gives m node shooting for my n phases problem
     final_time = [0.01 for i in range(n_phase)]  # Set the final time for all my n phases
 
@@ -245,29 +196,12 @@ def prepare_ocp(
         x_bounds.add("b", min_bound=[[0, 0, 0]], max_bound=[[0 if i == 0 else 1000, 1000, 1000]], phase=i)
         x_bounds.add("c", min_bound=[[0, 0, 0]], max_bound=[[0 if i == 0 else 1000, 1000, 1000]], phase=i)
 
-    # x_init = InitialGuessList()
-    # variable_bound_list = NonControlledMethod().name_dof
-    # for i in range(n_phase):
-    #     for j in range(len(variable_bound_list)):
-    #         x_init.add(variable_bound_list[j], [0])
-    #
-    # # Creates the controls of our problem (in our case, equals to an empty list)
-    # u_bounds = BoundsList()
-    # for i in range(n_phase):
-    #     u_bounds.add("", min_bound=[], max_bound=[])
-    #
-    # u_init = InitialGuessList()
-    # for i in range(n_phase):
-    #     u_init.add("", min_bound=[], max_bound=[])
-
     return OptimalControlProgram(
         models,
         dynamics,
         n_shooting,
         final_time,
         x_bounds=x_bounds,
-        # x_init=x_init,
-        # u_init=u_init,
         objective_functions=objective_functions,
         constraints=constraints,
         ode_solver=ode_solver,
@@ -309,6 +243,7 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 1.0546674423227002e-12)
 
+    # TODO : Only once the PR is validated, change the assert value because time dependent problems before this PR where wrongly calculated
     # Check constraints
     g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (187, 1))

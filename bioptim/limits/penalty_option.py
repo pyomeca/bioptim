@@ -561,7 +561,7 @@ class PenaltyOption(OptionGeneric):
             state_cx_end_scaled = (
                 controller.states_scaled.cx_end
                 if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                else controller.integrate(t=controller.ocp.node_time(phase_idx=controller.get_nlp.phase_idx, node_idx=controller.node_index), x0=state_cx, p=control_cx_end, params=controller.parameters.cx)["xf"]
+                else controller.integrate(x0=state_cx, p=control_cx_end, params=controller.parameters.cx)["xf"]
             )
 
             stochastic_cx_scaled = (

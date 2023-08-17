@@ -1315,7 +1315,7 @@ class PenaltyFunctionAbstract:
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             return controller.dynamics(
-                getattr(controller.time, attribute),
+                controller.time,  # ERROR can't send a mx when attribute is mx and controller.time is sx type
                 getattr(controller.states, attribute),
                 getattr(controller.controls, attribute),
                 getattr(controller.parameters, attribute),

@@ -1411,30 +1411,6 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_t(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
-        """
-        Configure the generalized forces
-
-        Parameters
-        ----------
-        nlp: NonLinearProgram
-            A reference to the phase
-        as_states: bool
-            If the generalized forces should be a state
-        as_controls: bool
-            If the generalized forces should be a control
-        fatigue: FatigueList
-            If the dynamics with fatigue should be declared
-        """
-
-        name = "time"
-        name_t = ConfigureProblem._get_kinematics_based_names(nlp, name)
-        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, name_t, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
-        )
-
-    @staticmethod
     def _apply_phase_mapping(ocp, nlp, name: str) -> BiMapping | None:
         """
         Apply the phase mapping to the variable

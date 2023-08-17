@@ -142,7 +142,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
+    expand = not isinstance(ode_solver, OdeSolver.IRK)
     dynamics.add(custom_configure, dynamic_function=time_dependent_dynamic, expand=expand)
 
     # Path constraint
