@@ -213,6 +213,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         n_sensory_noise = self.problem_type.sensory_noise_magnitude.shape[0]
         motor_noise = self.cx.sym("motor_noise", n_motor_noise, 1)
         sensory_noise = self.cx.sym("sensory_noise", n_sensory_noise, 1)
+        NLP.add(self, "is_stochastic", True, True)
         NLP.add(self, "motor_noise", motor_noise, True)
         NLP.add(self, "sensory_noise", sensory_noise, True)
 

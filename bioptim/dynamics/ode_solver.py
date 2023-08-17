@@ -151,7 +151,7 @@ class RK(OdeSolverBase):
         motor_noise = ocp.cx()
         sensory_noise = ocp.cx()
         if with_noise:
-            if nlp.motor_noise is None:
+            if not nlp.is_stochastic:
                 raise RuntimeError(
                     "You can only call integrator with_noise=True while running a " "StochasticOptimalControlProgram."
                 )
@@ -322,7 +322,7 @@ class OdeSolver:
             motor_noise = ocp.cx()
             sensory_noise = ocp.cx()
             if with_noise:
-                if nlp.motor_noise is None:
+                if not nlp.is_stochastic:
                     raise RuntimeError(
                         "You can only call integrator with_noise=True while running a "
                         "StochasticOptimalControlProgram."
@@ -436,7 +436,7 @@ class OdeSolver:
             motor_noise = ocp.cx()
             sensory_noise = ocp.cx()
             if with_noise:
-                if nlp.motor_noise is None:
+                if not nlp.is_stochastic:
                     raise RuntimeError(
                         "You can only call integrator with_noise=True while running a "
                         "StochasticOptimalControlProgram."
