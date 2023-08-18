@@ -604,21 +604,21 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             if "cholesky_cov" in controller.stochastic_variables.keys():
                 l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
-                    controller.stochastic_variables, Node.START, "cholesky_cov"
+                    controller.stochastic_variables, Node.START
                 )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
             else:
                 cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-                    controller.stochastic_variables, Node.START, "cov"
+                    controller.stochastic_variables, Node.START
                 )
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
-                controller.stochastic_variables, Node.START, "a"
+                controller.stochastic_variables, Node.START
             )
             c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
-                controller.stochastic_variables, Node.START, "c"
+                controller.stochastic_variables, Node.START
             )
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
-                controller.stochastic_variables, Node.START, "m"
+                controller.stochastic_variables, Node.START
             )
 
             sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude) * MX_eye(
@@ -664,7 +664,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nu = controller.model.nb_q - controller.model.nb_root
 
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
-                controller.stochastic_variables, Node.START, "a"
+                controller.stochastic_variables, Node.START
             )
 
             q_root = MX.sym("q_root", nb_root, 1)
@@ -872,7 +872,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
-                controller.stochastic_variables, Node.START, "m"
+                controller.stochastic_variables, Node.START
             )
 
             constraint = df_dz_evaluated.T - dg_dz_evaluated.T @ m_matrix.T

@@ -151,7 +151,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     out = 0
     for i, ctrl in enumerate(controllers):
         cov_matrix = ctrl.integrated_values["cov"].reshape_to_matrix(
-            ctrl.integrated_values, Node.START, "cov"
+            ctrl.integrated_values, Node.START
         )
         p_partial = cov_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(p_partial) * dt
@@ -175,7 +175,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     nlp.integrated_values.node_index = node_index - 1
 
     nx = nlp.states.cx_start.shape[0]
-    m_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(nlp.stochastic_variables, Node.START, "m")
+    m_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(nlp.stochastic_variables, Node.START)
 
     sigma_w = cas.vertcat(nlp.sensory_noise, nlp.motor_noise) * cas.MX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])

@@ -286,7 +286,6 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
         controller.stochastic_variables,
         Node.START,
-        "cov",
     )
 
     k = controller.stochastic_variables["k"].cx_start

@@ -398,7 +398,6 @@ class PenaltyOption(OptionGeneric):
                     .reshape_to_cholesky_matrix(
                     controller.stochastic_variables,
                     Node.START,
-                    "cholesky_cov",
                 )
             )
             cov_matrix = l_cov_matrix @ l_cov_matrix.T
@@ -409,7 +408,6 @@ class PenaltyOption(OptionGeneric):
                     .reshape_to_matrix(
                     controller.stochastic_variables,
                     Node.START,
-                    "cov",
                 )
             )
 
