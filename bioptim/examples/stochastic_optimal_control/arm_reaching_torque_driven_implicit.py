@@ -410,7 +410,7 @@ def prepare_socp(
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
     force_field_magnitude: float = 0,
-    problem_type=ExampleType.CIRCLE,
+    example_type=ExampleType.CIRCLE,
     with_cholesky: bool = False,
     with_scaling: bool = False,
 ) -> StochasticOptimalControlProgram:
@@ -432,7 +432,7 @@ def prepare_socp(
         The magnitude of the sensory noise
     force_field_magnitude: float
         The magnitude of the force field
-    problem_type
+    example_type
         The type of problem to solve (CIRCLE or BAR)
     with_cholesky: bool
         If True, whether to use the Cholesky factorization of the covariance matrix or not
@@ -489,9 +489,9 @@ def prepare_socp(
                     axes=[Axis.X, Axis.Y])  ## merge conflict
     # While this constraint insures that the hand still reaches the target with the proper position and velocity even
     # in the presence of noise
-    if problem_type == ExampleType.BAR:
+    if example_type == ExampleType.BAR:
         max_bounds_lateral_variation = cas.inf
-    elif problem_type == ExampleType.CIRCLE:
+    elif example_type == ExampleType.CIRCLE:
         max_bounds_lateral_variation = 0.004
     else:
         raise NotImplementedError("Wrong problem type")
@@ -738,7 +738,7 @@ def main():
     solver.set_bound_push(1e-8)
     solver.set_nlp_scaling_method("none")
 
-    problem_type = ExampleType.CIRCLE
+    example_type = ExampleType.CIRCLE
     force_field_magnitude = 0
     socp = prepare_socp(
         biorbd_model_path=biorbd_model_path,
@@ -747,7 +747,7 @@ def main():
         ee_final_position=ee_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
-        problem_type=problem_type,
+        example_type=example_type,
         force_field_magnitude=force_field_magnitude,
         with_cholesky=with_cholesky,
         with_scaling=with_scaling,
@@ -787,7 +787,7 @@ def main():
 
     # --- Save the results --- #
     with open(
-        f"leuvenarm_torque_driven_socp_{str(problem_type)}_forcefield{force_field_magnitude}_{with_cholesky}.pkl", "wb"
+        f"leuvenarm_torque_driven_socp_{str(example_type)}_forcefield{force_field_magnitude}_{with_cholesky}.pkl", "wb"
     ) as file:
         pickle.dump(data, file)
 
