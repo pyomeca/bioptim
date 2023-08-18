@@ -178,15 +178,15 @@ class DynamicsFunctions:
 
     @staticmethod
     def stochastic_torque_driven(
-            states: MX.sym,
-            controls: MX.sym,
-            parameters: MX.sym,
-            stochastic_variables: MX.sym,
-            nlp,
-            motor_noise: MX.sym,
-            sensory_noise: MX.sym,
-            with_contact: bool,
-            with_friction: bool,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        stochastic_variables: MX.sym,
+        nlp,
+        motor_noise: MX.sym,
+        sensory_noise: MX.sym,
+        with_contact: bool,
+        with_friction: bool,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics subject to motor and sensory noise driven by joint torques, optional external forces can be declared.

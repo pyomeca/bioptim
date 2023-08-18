@@ -51,6 +51,7 @@ class ExampleType(Enum):
     CIRCLE = "CIRCLE"
     BAR = "BAR"
 
+
 def sensory_reference_function(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
@@ -277,12 +278,13 @@ def prepare_socp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
-                 problem_type=problem_type,
-                 n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
-                 with_cholesky=with_cholesky,
-                 expand=False,
-                 )
+    dynamics.add(
+        DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
+        problem_type=problem_type,
+        n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
+        with_cholesky=with_cholesky,
+        expand=False,
+    )
     # dynamics.add(
     #     configure_stochastic_optimal_control_problem,
     #     dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
@@ -538,9 +540,7 @@ def main():
     }
 
     # --- Save the results --- #
-    with open(
-        f"leuvenarm_torque_driven_socp_{str(example_type)}_{with_cholesky}.pkl", "wb"
-    ) as file:
+    with open(f"leuvenarm_torque_driven_socp_{str(example_type)}_{with_cholesky}.pkl", "wb") as file:
         pickle.dump(data, file)
 
     # --- Visualize the results --- #

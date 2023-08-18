@@ -338,7 +338,7 @@ class ConfigureProblem:
             n_noised_tau = nlp.model.nb_tau
         n_noise = problem_type.motor_noise_magnitude.shape[0] + problem_type.sensory_noise_magnitude.shape[0]
         n_noised_states = 2 * n_noised_tau
-        
+
         # Stochastic variables
         ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=n_noised_tau, n_references=n_references)
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=n_references)
@@ -346,8 +346,12 @@ class ConfigureProblem:
 
         if isinstance(problem_type, SocpType.SOCP_TRAPEZOIDAL_EXPLICIT):
             if initial_matrix is None:
-                raise RuntimeError("The initial value for the covariance matrix must be provided for SOCP_TRAPEZOIDAL_EXPLICIT")
-            ConfigureProblem.configure_stochastic_cov_explicit(ocp, nlp, n_noised_states=n_noised_states, initial_matrix=initial_matrix)
+                raise RuntimeError(
+                    "The initial value for the covariance matrix must be provided for SOCP_TRAPEZOIDAL_EXPLICIT"
+                )
+            ConfigureProblem.configure_stochastic_cov_explicit(
+                ocp, nlp, n_noised_states=n_noised_states, initial_matrix=initial_matrix
+            )
         else:
             if with_cholesky:
                 ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=n_noised_states)
@@ -376,7 +380,6 @@ class ConfigureProblem:
             with_contact=with_contact,
             with_friction=with_friction,
         )
-
 
     @staticmethod
     def torque_derivative_driven(
@@ -1280,7 +1283,9 @@ class ConfigureProblem:
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noise)]:
                 name_c += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states * n_noise)), list(range(n_noised_states * n_noise)))
+        nlp.variable_mappings[name] = BiMapping(
+            list(range(n_noised_states * n_noise)), list(range(n_noised_states * n_noise))
+        )
 
         ConfigureProblem.configure_new_variable(
             name,
