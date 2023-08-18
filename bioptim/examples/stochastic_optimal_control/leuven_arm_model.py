@@ -6,6 +6,8 @@ from typing import Callable
 import casadi as cas
 import numpy as np
 
+from bioptim import NonLinearProgram, DynamicsFunctions
+
 
 class LeuvenArmModel:
     """
@@ -90,7 +92,7 @@ class LeuvenArmModel:
         self.I1 = 0.025
         self.I2 = 0.045
 
-        self.friction = np.array([[0.05, 0.025], [0.025, 0.05]])
+        self.friction_coefficients = np.array([[0.05, 0.025], [0.025, 0.05]])
 
     def serialize(self) -> tuple[Callable, dict]:
         return LeuvenArmModel, dict(
@@ -102,7 +104,7 @@ class LeuvenArmModel:
             Fvparam=self.Fvparam,
             Fpparam=self.Fpparam,
             muscleDampingCoefficient=self.muscleDampingCoefficient,
-            friction=self.friction,
+            friction_coefficients=self.friction_coefficients,
         )
 
     @property
@@ -215,7 +217,7 @@ class LeuvenArmModel:
         muscles_tau = self.torque_force_relationship(Fm, q)
         return muscles_tau
 
-    def get_force_field(self, q, force_field_magnitude):
+    def force_field(self, q, force_field_magnitude):
         F_forceField = force_field_magnitude * (self.l1 * cas.cos(q[0]) + self.l2 * cas.cos(q[0] + q[1]))
         hand_pos = cas.MX(2, 1)
         hand_pos[0] = self.l2 * cas.sin(q[0] + q[1]) + self.l1 * cas.sin(q[0])
@@ -253,3 +255,17 @@ class LeuvenArmModel:
         hand_vel = self.end_effector_velocity(q, qdot)
         ee = cas.vertcat(hand_pos, hand_vel)
         return ee
+
+    def sensory_reference_function(self,
+                                   states: cas.MX | cas.SX,
+                                      controls: cas.MX | cas.SX,
+                                      parameters: cas.MX | cas.SX,
+                                      stochastic_variables: cas.MX | cas.SX,
+                                      nlp: NonLinearProgram):
+        """
+        This functions returns the sensory reference for the feedback gains.
+        """
+        q = states[nlp.states["q"].index]
+        qdot = states[nlp.states["qdot"].index]
+        hand_pos_velo = self.end_effector_pos_velo(q, qdot)
+        return hand_pos_velo

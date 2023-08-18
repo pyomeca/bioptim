@@ -80,8 +80,8 @@ def sensory_reference_function(states: cas.MX | cas.SX,
     """
     This functions returns the sensory reference for the feedback gains.
     """
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+    q = states[nlp.states["q"].index]
+    qdot = states[nlp.states["qdot"].index]
     hand_pos = nlp.model.markers(q)[2][:2]
     hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
     hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
@@ -189,19 +189,6 @@ def configure_stochastic_optimal_control_problem(
         ),
     )
 
-def hand_equals_ref(controller: PenaltyController) -> cas.MX:
-    """
-    Get the error between the hand position and the reference.
-    """
-    ref = controller.stochastic_variables["ref"].cx_start
-    ee = controller.model.sensory_reference_function(states=controller.states.cx_start,
-                                                controls=controller.controls.cx_start,
-                                                parameters=controller.parameters.cx_start,
-                                                stochastic_variables=controller.stochastic_variables.cx_start,
-                                                nlp=controller.get_nlp)
-    return ee - ref
-
-
 def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnitude: cas.DM) -> cas.MX:
     """
     This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
@@ -239,13 +226,13 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     k_matrix = k_matrix.T
 
     # Compute the expected effort
-    hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
-    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[
-        2
-    ][:2]
+    hand_pos_velo = controller.model.sensory_reference_function(controller.states.cx_start,
+                                                                controller.controls.cx_start,
+                                                                controller.parameters.cx_start,
+                                                                controller.stochastic_variables.cx_start,
+                                                                controller.get_nlp)
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-    ee = cas.vertcat(hand_pos, hand_vel)
-    e_fb = k_matrix @ ((ee - ref) + sensory_noise_magnitude)
+    e_fb = k_matrix @ ((hand_pos_velo - ref) + sensory_noise_magnitude)
     jac_e_fb_x = cas.jacobian(e_fb, controller.states.cx_start)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
@@ -330,7 +317,6 @@ def prepare_socp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(hand_equals_ref, node=Node.ALL)
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )

@@ -72,15 +72,13 @@ def stochastic_forward_dynamics(
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
         k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k)
 
-        hand_pos = nlp.model.end_effector_position(q)
-        hand_vel = nlp.model.end_effector_velocity(q, qdot)
-        ee = cas.vertcat(hand_pos, hand_vel)
+        hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
-        mus_excitations_fb += nlp.model.get_excitation_with_feedback(k_matrix, ee, ref, sensory_noise)
+        mus_excitations_fb += nlp.model.get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, sensory_noise)
 
     muscles_tau = nlp.model.get_muscle_torque(q, qdot, mus_activations)
 
-    tau_force_field = nlp.model.get_force_field(q, force_field_magnitude)
+    tau_force_field = nlp.model.force_field(q, force_field_magnitude)
 
     torques_computed = muscles_tau + motor_noise + tau_force_field
     dq_computed = qdot
@@ -104,7 +102,9 @@ def stochastic_forward_dynamics(
     nleffects[0] = a2 * cas.sin(theta_elbow) * (-dtheta_elbow * (2 * dtheta_shoulder + dtheta_elbow))
     nleffects[1] = a2 * cas.sin(theta_elbow) * dtheta_shoulder**2
 
-    dqdot_computed = cas.inv(mass_matrix) @ (torques_computed - nleffects - nlp.model.friction @ qdot)
+    friction = nlp.model.friction_coefficients
+
+    dqdot_computed = cas.inv(mass_matrix) @ (torques_computed - nleffects - friction @ qdot)
 
     return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dactivations_computed), defects=None)
 
@@ -155,15 +155,6 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
         out += cas.trace(p_partial) * dt
     return out
 
-
-def hand_equals_ref(controller: PenaltyController) -> cas.MX:
-    q = controller.states["q"].cx_start
-    qdot = controller.states["qdot"].cx_start
-    ref = controller.stochastic_variables["ref"].cx_start
-    ee = controller.model.end_effector_pos_velo(q, qdot)
-    return ee - ref
-
-
 def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, sensory_noise_magnitude):
     dt = nlp.tf / nlp.ns
 
@@ -172,7 +163,6 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     nlp.stochastic_variables.node_index = node_index - 1
     nlp.integrated_values.node_index = node_index - 1
 
-    nx = nlp.states.cx_start.shape[0]
     m_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(Node.START)
 
     sigma_w = cas.vertcat(nlp.sensory_noise, nlp.motor_noise) * cas.MX_eye(6)
@@ -298,13 +288,13 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     k_matrix = controllers[0].stochastic_variables["k"].reshape_sym_to_matrix(k)
 
     # Compute the expected effort
-    hand_pos = controllers[0].model.end_effector_position(controllers[0].states["q"].cx_start)
-    hand_vel = controllers[0].model.end_effector_velocity(
-        controllers[0].states["q"].cx_start, controllers[0].states["qdot"].cx_start
-    )
+    hand_pos_velo = controllers[0].model.sensory_reference_function(controllers[0].states.cx_start,
+                                                                    controllers[0].controls.cx_start,
+                                                                    controllers[0].parameters.cx_start,
+                                                                    controllers[0].stochastic_variables.cx_start,
+                                                                    controllers[0].get_nlp)
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-    ee = cas.vertcat(hand_pos, hand_vel)
-    e_fb = k_matrix @ ((ee - ref) + sensory_noise_magnitude)
+    e_fb = k_matrix @ ((hand_pos_velo - ref) + sensory_noise_magnitude)
     jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx_start)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
@@ -421,7 +411,6 @@ def prepare_socp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(hand_equals_ref, node=Node.ALL)
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )

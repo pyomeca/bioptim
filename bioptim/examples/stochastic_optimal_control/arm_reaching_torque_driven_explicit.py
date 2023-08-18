@@ -129,18 +129,16 @@ def stochastic_forward_dynamics(
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
         k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k)
 
-        hand_pos = nlp.model.markers(q)[2][:2]
-        hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
-        ee = cas.vertcat(hand_pos, hand_vel)
+        hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
-        tau_fb += get_excitation_with_feedback(k_matrix, ee, ref, sensory_noise)
+        tau_fb += get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, sensory_noise)
 
     tau_force_field = get_force_field(q, force_field_magnitude)
 
     torques_computed = tau_fb + motor_noise + tau_force_field
     dq_computed = qdot
 
-    friction = np.array([[0.05, 0.025], [0.025, 0.05]])
+    friction = nlp.model.friction_coefficients
 
     mass_matrix = nlp.model.mass_matrix(q)
     non_linear_effects = nlp.model.non_linear_effects(q, qdot)
@@ -206,35 +204,20 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     return out
 
 
-def get_ref(controller: PenaltyController, q, qdot) -> cas.MX:
+def sensory_reference_function(states: cas.MX | cas.SX,
+                          controls: cas.MX | cas.SX,
+                          parameters: cas.MX | cas.SX,
+                          stochastic_variables: cas.MX | cas.SX,
+                          nlp: NonLinearProgram):
     """
-    Get the reference had position and velocity.
-
-    Parameters
-    ----------
-    controller: PenaltyController
-        The controller.
-    q: cas.MX
-        The current joint position.
-    qdot: cas.MX
-        The current joint velocity.
+    This functions returns the sensory reference for the feedback gains.
     """
-    hand_pos = controller.model.markers(q)[2][:2]
-    hand_vel = controller.model.marker_velocities(q, qdot)[2][:2]
-    ee = cas.vertcat(hand_pos, hand_vel)
-    return ee
-
-
-def hand_equals_ref(controller: PenaltyController) -> cas.MX:
-    """
-    Get the error between the hand position and the reference.
-    """
-    q = controller.states["q"].cx_start
-    qdot = controller.states["qdot"].cx_start
-    ref = controller.stochastic_variables["ref"].cx_start
-    ee = get_ref(controller, q, qdot)
-    return ee - ref
-
+    q = states[nlp.states["q"].index]
+    qdot = states[nlp.states["qdot"].index]
+    hand_pos = nlp.model.markers(q)[2][:2]
+    hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
+    hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
+    return hand_pos_velo
 
 def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, sensory_noise_magnitude):
     """
@@ -265,7 +248,6 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     n_q = nlp.states["q"].cx_start.shape[0]
     n_qdot = nlp.states["qdot"].cx_start.shape[0]
     n_tau = nlp.controls["tau"].cx_start.shape[0]
-    nx = nlp.states.cx_start.shape[0]
 
     M_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(Node.START)
 
@@ -375,10 +357,6 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     sensory_noise_magnitude : cas.DM
         Magnitude of the sensory noise.
     """
-    n_tau = controllers[0].controls["tau"].cx_start.shape[0]
-    n_q = controllers[0].states["q"].cx_start.shape[0]
-    n_qdot = controllers[0].states["qdot"].cx_start.shape[0]
-
     dt = controllers[0].tf / controllers[0].ns
     sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
 
@@ -398,13 +376,13 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     k_matrix = controllers[0].stochastic_variables["k"].reshape_sym_to_matrix(k)
 
     # Compute the expected effort
-    hand_pos = controllers[0].model.markers(controllers[0].states["q"].cx_start)[2][:2]
-    hand_vel = controllers[0].model.marker_velocities(
-        controllers[0].states["q"].cx_start, controllers[0].states["qdot"].cx_start
-    )[2][:2]
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-    ee = cas.vertcat(hand_pos, hand_vel)
-    e_fb = k_matrix @ ((ee - ref) + sensory_noise_magnitude)
+    hand_pos_velo = controllers[0].model.sensory_reference_function(controllers[0].states.cx_start,
+                                                                    controllers[0].controls.cx_start,
+                                                                    controllers[0].parameters.cx_start,
+                                                                    controllers[0].stochastic_variables.cx_start,
+                                                                    controllers[0].get_nlp)
+    e_fb = k_matrix @ ((hand_pos_velo - ref) + sensory_noise_magnitude)
     jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx_start)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
@@ -468,12 +446,13 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
     # TODO: Add get_excitation_with_feedback as a built-in constraint + add the necessity to declare it.
-    # TODO: Include the stochastic dynamics in bioptim (@Pariterre: where?)
-    # TODO: Add the stochastic constraints
     # TODO: Add on objective to minimize the trace of a matrix
     # TODO: change constraints with bounds, as it should be
 
     bio_model = BiorbdModel(biorbd_model_path)
+    bio_model.sensory_reference_function = sensory_reference_function
+    bio_model.force_field = get_force_field
+    bio_model.friction_coefficients = np.array([[0.05, 0.025], [0.025, 0.05]])
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q
@@ -512,7 +491,6 @@ def prepare_socp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(hand_equals_ref, node=Node.ALL)
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )

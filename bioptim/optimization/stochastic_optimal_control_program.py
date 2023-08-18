@@ -236,6 +236,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             self._prepare_stochastic_dynamics_explicit(
                 motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
                 sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
+                constraints=constraints,
             )
         elif isinstance(self.problem_type, SocpType.SOCP_IMPLICIT):
             self._prepare_stochastic_dynamics_implicit(
@@ -250,10 +251,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 constraints=constraints,
             )
 
-    def _prepare_stochastic_dynamics_explicit(self, motor_noise_magnitude, sensory_noise_magnitude):
+    def _prepare_stochastic_dynamics_explicit(self, motor_noise_magnitude, sensory_noise_magnitude, constraints):
         """
         Adds the internal constraint needed for the explicit formulation of the stochastic ocp.
         """
+
+        constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+
         penalty_m_dg_dz_list = MultinodeConstraintList()
         for i_phase, nlp in enumerate(self.nlp):
             for i_node in range(nlp.ns):
@@ -280,6 +284,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         """
         Adds the internal constraint needed for the implicit formulation of the stochastic ocp.
         """
+
+        constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+
         # constraint A, C, P, M
         multi_node_penalties = MultinodeConstraintList()
         # Constraints for M
@@ -346,6 +353,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         Adds the internal constraint needed for the implicit formulation of the stochastic ocp using collocation
         integration. This is the real implementation suggested in Gillis 2013.
         """
+
+        constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
 
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
