@@ -133,9 +133,11 @@ class NonControlledMethod:
     def declare_variables(self, ocp: OptimalControlProgram, nlp: NonLinearProgram):
         name = "a"
         name_a = [name]
+        matrix_shape = (len(name_a), 1)
         ConfigureProblem.configure_new_variable(
             name,
             name_a,
+            matrix_shape,
             ocp,
             nlp,
             as_states=True,
@@ -145,9 +147,11 @@ class NonControlledMethod:
 
         name = "b"
         name_b = [name]
+        matrix_shape = (len(name_b), 1)
         ConfigureProblem.configure_new_variable(
             name,
             name_b,
+            matrix_shape,
             ocp,
             nlp,
             as_states=True,
@@ -157,9 +161,11 @@ class NonControlledMethod:
 
         name = "c"
         name_c = [name]
+        matrix_shape = (len(name_c), 1)
         ConfigureProblem.configure_new_variable(
             name,
             name_c,
+            matrix_shape,
             ocp,
             nlp,
             as_states=True,

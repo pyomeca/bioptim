@@ -58,7 +58,7 @@ class ConfigureProblem:
     configure_soft_contact_function
         Configure the soft contact function
     configure_new_variable(
-        name: str, name_elements: list, nlp, as_states: bool, as_controls: bool, combine_state_control_plot: bool = False
+        name: str, name_elements: list, matrix_shape: tuple[int], nlp, as_states: bool, as_controls: bool, combine_state_control_plot: bool = False
     )
         Add a new variable to the states/controls pool
     configure_q(nlp, as_states: bool, as_controls: bool)
@@ -548,13 +548,15 @@ class ConfigureProblem:
             raise RuntimeError("BioModel must have at least one DoF on root.")
 
         name_qddot_roots = [str(i) for i in range(nb_root)]
+        matrix_shape = (len(nb_root), 1)
         ConfigureProblem.configure_new_variable(
-            "qddot_roots", name_qddot_roots, ocp, nlp, as_states=False, as_controls=False, as_states_dot=True
+            "qddot_roots", name_qddot_roots, matrix_shape, ocp, nlp, as_states=False, as_controls=False, as_states_dot=True
         )
 
         name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot - nb_root)]
+        matrix_shape = (len(nlp.model.nb_qddot - nb_root), 1)
         ConfigureProblem.configure_new_variable(
-            "qddot_joints", name_qddot_joints, ocp, nlp, as_states=False, as_controls=True, as_states_dot=True
+            "qddot_joints", name_qddot_joints, matrix_shape, ocp, nlp, as_states=False, as_controls=True, as_states_dot=True
         )
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.joints_acceleration_driven)
@@ -663,13 +665,15 @@ class ConfigureProblem:
         name = "q_u"
         names_u = [nlp.model.name_dof[i] for i in nlp.variable_mappings["q"].to_first.map_idx]
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, names_u, ocp, nlp, True, False, False, axes_idx=axes_idx)
+        matrix_shape = (len(names_u), 1)
+        ConfigureProblem.configure_new_variable(name, names_u, matrix_shape, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
         name = "qdot_u"
         names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
         names_udot = [names_qdot[i] for i in nlp.variable_mappings["qdot"].to_first.map_idx]
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, names_udot, ocp, nlp, True, False, False, axes_idx=axes_idx)
+        matrix_shape = (len(names_udot), 1)
+        ConfigureProblem.configure_new_variable(name, names_udot, matrix_shape, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
@@ -997,6 +1001,8 @@ class ConfigureProblem:
             The name of the new variable to add
         name_elements: list[str]
             The name of each element of the vector
+        matrix_shape: tuple
+            The shape of the matrix to reconstruct from the variable vector
         ocp: OptimalControlProgram
             A reference to the ocp
         nlp: NonLinearProgram
@@ -1023,6 +1029,7 @@ class ConfigureProblem:
         new_variable_config = NewVariableConfiguration(
             name,
             name_elements,
+            matrix_shape,
             ocp,
             nlp,
             as_states,
@@ -1186,7 +1193,8 @@ class ConfigureProblem:
         name = "qdddot"
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        matrix_shape = (len(name_qdddot), 1)
+        ConfigureProblem.configure_new_variable(name, name_qdddot, matrix_shape, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_feedbacks: int):
@@ -1440,7 +1448,7 @@ class ConfigureProblem:
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
-        matrix_shape = (n_noised_states, n_noised_states)
+        matrix_shape = (n_noised_states, n_noised_states * n_collocation_points)
 
         name_m = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1514,8 +1522,9 @@ class ConfigureProblem:
         name = "residual_tau"
         name_residual_tau = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
+        matrix_shape = (len(name_residual_tau), 1)
         ConfigureProblem.configure_new_variable(
-            name, name_residual_tau, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
+            name, name_residual_tau, matrix_shape, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1536,7 +1545,8 @@ class ConfigureProblem:
         name = "taudot"
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        matrix_shape = (len(name_taudot), 1)
+        ConfigureProblem.configure_new_variable(name, name_taudot, matrix_shape, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1554,7 +1564,8 @@ class ConfigureProblem:
         """
 
         name_contact_forces = [name for name in nlp.model.contact_names]
-        ConfigureProblem.configure_new_variable("fext", name_contact_forces, ocp, nlp, as_states, as_controls)
+        matrix_shape = (len(name_contact_forces), 1)
+        ConfigureProblem.configure_new_variable("fext", name_contact_forces, matrix_shape, ocp, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1580,8 +1591,8 @@ class ConfigureProblem:
                     if nlp.model.soft_contact_name(ii) not in name_soft_contact_forces
                 ]
             )
-
-        ConfigureProblem.configure_new_variable("fext", name_soft_contact_forces, ocp, nlp, as_states, as_controls)
+        matrix_shape = (len(name_soft_contact_forces), 1)
+        ConfigureProblem.configure_new_variable("fext", name_soft_contact_forces, matrix_shape, ocp, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
@@ -1601,9 +1612,11 @@ class ConfigureProblem:
         """
 
         muscle_names = nlp.model.muscle_names
+        matrix_shape = (len(muscle_names), 1)
         ConfigureProblem.configure_new_variable(
             "muscles",
             muscle_names,
+            matrix_shape,
             ocp,
             nlp,
             as_states,

@@ -356,9 +356,11 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             lambdas = []
             for i in range(self.bio_model.nb_holonomic_constraints):
                 lambdas.append(f"lambda_{i}")
+            matrix_shape = (len(lambdas), 1)
             ConfigureProblem.configure_new_variable(
                 "lambdas",
                 lambdas,
+                matrix_shape,
                 ocp,
                 nlp,
                 as_states=True,

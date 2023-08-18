@@ -64,6 +64,7 @@ class NewVariableConfiguration:
         self,
         name: str,
         name_elements: list,
+        matrix_shape: tuple,
         ocp,
         nlp,
         as_states: bool,
@@ -85,6 +86,8 @@ class NewVariableConfiguration:
             The name of the new variable to add
         name_elements: list[str]
             The name of each element of the vector
+        matrix_shape: tuple
+            The shape of the matrix to reconstruct from this variable vector
         ocp: OptimalControlProgram
             A reference to the ocp
         nlp: NonLinearProgram
@@ -111,6 +114,7 @@ class NewVariableConfiguration:
 
         self.name = name
         self.name_elements = name_elements
+        self.matrix_shape = matrix_shape
         self.ocp = ocp
         self.nlp = nlp
         self.as_states = as_states
@@ -401,7 +405,7 @@ class NewVariableConfiguration:
                     else self.define_cx_unscaled(cx_scaled, self.nlp.x_scaling[self.name].scaling)
                 )
                 self.nlp.states.append(
-                    self.name, cx[0], cx_scaled[0], self.mx_states, self.nlp.variable_mappings[self.name], node_index
+                    self.name, cx[0], cx_scaled[0], self.mx_states, self.nlp.variable_mappings[self.name], self.matrix_shape, node_index
                 )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_states"] = CustomPlot(
@@ -439,7 +443,7 @@ class NewVariableConfiguration:
                     else self.define_cx_unscaled(cx_scaled, self.nlp.u_scaling[self.name].scaling)
                 )
                 self.nlp.controls.append(
-                    self.name, cx[0], cx_scaled[0], self.mx_controls, self.nlp.variable_mappings[self.name], node_index
+                    self.name, cx[0], cx_scaled[0], self.mx_controls, self.nlp.variable_mappings[self.name], self.matrix_shape, node_index
                 )
 
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
@@ -479,6 +483,7 @@ class NewVariableConfiguration:
                     cx_scaled[0],
                     self.mx_states_dot,
                     self.nlp.variable_mappings[self.name],
+                    self.matrix_shape,
                     node_index,
                 )
 
@@ -494,6 +499,7 @@ class NewVariableConfiguration:
                     cx_scaled[0],
                     self.mx_stochastic,
                     self.nlp.variable_mappings[self.name],
+                    self.matrix_shape,
                     node_index,
                 )
 

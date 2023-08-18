@@ -143,16 +143,14 @@ class OptimizationVariable:
         """
         Restore the vector form of the matrix
         """
-        shape_0 = matrix.shape[0]
-        shape_1 = matrix.shape[1]
+        shape_0, shape_1 = matrix.shape[0], matrix.shape[1]
         vector = MX.zeros(shape_0 * shape_1)
         for s0 in range(shape_0):
             for s1 in range(shape_1):
                 vector[shape_0 * s1 + s0] = matrix[s0, s1]
         return vector
 
-    @staticmethod
-    def reshape_to_matrix(variable, shape_0, shape_1, node: Node, key: str):
+    def reshape_to_matrix(self, variable, node: Node, key: str):
         """
         Restore the matrix form of the variables
         """
@@ -165,26 +163,25 @@ class OptimizationVariable:
         else:
             raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
 
+        shape_0, shape_1 = self.matrix_shape[0], self.matrix_shape[1]
         matrix = MX(shape_0, shape_1)
         for s0 in range(shape_1):
             for s1 in range(shape_0):
                 matrix[s1, s0] = var[s0 * shape_0 + s1]
         return matrix
 
-    @staticmethod
-    def reshape_sym_to_matrix(variable, shape_0, shape_1):
+    def reshape_sym_to_matrix(self, variable):
         """
         Restore the matrix form of the variables
         """
-        var = variable
+        shape_0, shape_1 = self.matrix_shape[0], self.matrix_shape[1]
         matrix = MX(shape_0, shape_1)
         for s0 in range(shape_1):
             for s1 in range(shape_0):
-                matrix[s1, s0] = var[s0 * shape_0 + s1]
+                matrix[s1, s0] = variable[s0 * shape_0 + s1]
         return matrix
 
-    @staticmethod
-    def reshape_to_cholesky_matrix(variable, shape_0, node: Node, key: str):
+    def reshape_to_cholesky_matrix(self, variable, node: Node, key: str):
         """
         Restore the lower diagonal matrix form of the variables vector
         """
@@ -203,6 +200,7 @@ class OptimizationVariable:
         else:
             raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
 
+        shape_0 = self.matrix_shape[0]
         matrix = MX.zeros(shape_0, shape_0)
         i = 0
         for s0 in range(shape_0):
@@ -211,18 +209,16 @@ class OptimizationVariable:
                 i += 1
         return matrix
 
-    @staticmethod
-    def reshape_sym_to_cholesky_matrix(variable, shape_0):
+    def reshape_sym_to_cholesky_matrix(self, variable):
         """
         Restore the lower diagonal matrix form of the variables vector
         """
-        var = variable
-
+        shape_0 = self.matrix_shape[0]
         matrix = MX.zeros(shape_0, shape_0)
         i = 0
         for s0 in range(shape_0):
             for s1 in range(s0 + 1):
-                matrix[s1, s0] = var[i]
+                matrix[s1, s0] = variable[i]
                 i += 1
         return matrix
 
@@ -738,40 +734,10 @@ class OptimizationVariableContainer:
         """
         Restore the vector form of the matrix
         """
-        shape_0 = matrix.shape[0]
-        shape_1 = matrix.shape[1]
+        shape_0, shape_1 = matrix.shape[0], matrix.shape[1]
         vector = MX.zeros(shape_0 * shape_1)
         for s0 in range(shape_0):
             for s1 in range(shape_1):
                 vector[shape_0 * s1 + s0] = matrix[s0, s1]
         return vector
 
-    def reshape_to_matrix(self, variable, shape_0, shape_1, node: Node, key: str):
-        """
-        Restore the matrix form of the variables
-        """
-        if node == Node.START:
-            var = variable[key].cx_start
-        elif node == Node.MID:
-            var = variable[key].cx_mid
-        elif node == Node.END:
-            var = variable[key].cx_end
-        else:
-            raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
-
-        matrix = MX(shape_0, shape_1)
-        for s0 in range(shape_1):
-            for s1 in range(shape_0):
-                matrix[s1, s0] = var[s0 * shape_0 + s1]
-        return matrix
-
-    def reshape_sym_to_matrix(self, variable, shape_0, shape_1):
-        """
-        Restore the matrix form of the variables
-        """
-        var = variable
-        matrix = MX(shape_0, shape_1)
-        for s0 in range(shape_1):
-            for s1 in range(shape_0):
-                matrix[s1, s0] = var[s0 * shape_0 + s1]
-        return matrix
