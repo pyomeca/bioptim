@@ -600,7 +600,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+            nu = controller.model.nb_q - controller.model.nb_root
 
             if "cholesky_cov" in controller.stochastic_variables.keys():
                 l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
@@ -661,7 +661,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             nb_root = controller.model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+            nu = controller.model.nb_q - controller.model.nb_root
 
             a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
                 controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "a"
@@ -742,7 +742,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             nb_root = controller.model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+            nu = controller.model.nb_q - controller.model.nb_root
             non_root_index_continuity = []
             non_root_index_defects = []
             for i in range(2):

@@ -424,7 +424,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             dt = controllers[0].tf / controllers[0].ns
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controllers[0].get_nlp.variable_mappings["tau"].to_first.map_idx)
+            nu = controllers[0].model.nb_q - controllers[0].model.nb_root
             m_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
@@ -459,7 +459,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controllers[0].get_nlp.variable_mappings["tau"].to_first.map_idx)
+            nu = controllers[0].model.nb_q - controllers[0].model.nb_root
 
             cov_matrix = (
                 controllers[0]
@@ -519,7 +519,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             nb_root = controllers[0].model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controllers[0].get_nlp.variable_mappings["tau"].to_first.map_idx)
+            nu = controllers[0].model.nb_q - controllers[0].model.nb_root
 
             c_matrix = (
                 controllers[0]
@@ -613,7 +613,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             polynomial_degree = controllers[0].get_nlp.ode_solver.polynomial_degree
             nb_root = controllers[0].model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controllers[0].get_nlp.variable_mappings["tau"].to_first.map_idx)
+            nu = controllers[0].model.nb_q - nb_root
             non_root_index_continuity = []
             non_root_index_defects = []
             for i in range(2):
