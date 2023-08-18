@@ -342,12 +342,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             dt = controllers[0].tf / controllers[0].ns
 
             # TODO: Charbie -> This is only True for not mapped variables (have to think on how to generalize it)
-            nx = controllers[0].states.cx_start.shape[0]
-
             M_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, nx, nx, Node.START, "m")
+                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START, "m")
             )
 
             dx = dynamics(
@@ -385,7 +383,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
 
-            val = M_matrix @ DG_DZ - MX_eye(nx)
+            val = M_matrix @ DG_DZ - MX_eye(controllers[0].stochastic_variables["m"].matrix_shape[0])
 
             out_vector = controllers[0].stochastic_variables["m"].reshape_to_vector(val)
             return out_vector
@@ -428,12 +426,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             m_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 2 * nu, Node.START, "m")
+                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START, "m")
             )
             a_plus_matrix = (
                 controllers[1]
                 .stochastic_variables["a"]
-                .reshape_to_matrix(controllers[1].stochastic_variables, 2 * nu, 2 * nu, Node.START, "a")
+                .reshape_to_matrix(controllers[1].stochastic_variables, Node.START, "a")
             )
 
             DG_DZ = MX_eye(a_plus_matrix.shape[0]) - a_plus_matrix * dt / 2
@@ -464,27 +462,27 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             cov_matrix = (
                 controllers[0]
                 .stochastic_variables["cov"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov")
+                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START, "cov")
             )
             cov_matrix_next = (
                 controllers[1]
                 .stochastic_variables["cov"]
-                .reshape_to_matrix(controllers[1].stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov")
+                .reshape_to_matrix(controllers[1].stochastic_variables, Node.START, "cov")
             )
             a_matrix = (
                 controllers[0]
                 .stochastic_variables["a"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 2 * nu, Node.START, "a")
+                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START, "a")
             )
             c_matrix = (
                 controllers[0]
                 .stochastic_variables["c"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 3 * nu, Node.START, "c")
+                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START, "c")
             )
             m_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 2 * nu, Node.START, "m")
+                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START, "m")
             )
 
             sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude)
@@ -524,7 +522,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             c_matrix = (
                 controllers[0]
                 .stochastic_variables["c"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 3 * nu, Node.START, "c")
+                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START, "c")
             )
 
             q_root = MX.sym("q_root", nb_root, 1)
@@ -632,12 +630,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 l_cov_matrix = (
                     controllers[0]
                     .stochastic_variables["cholesky_cov"]
-                    .reshape_to_cholesky_matrix(controllers[0].stochastic_variables, 2 * nu, Node.START, "cholesky_cov")
+                    .reshape_to_cholesky_matrix(controllers[0].stochastic_variables, Node.START, "cholesky_cov")
                 )
                 l_cov_matrix_next = (
                     controllers[1]
                     .stochastic_variables["cholesky_cov"]
-                    .reshape_to_cholesky_matrix(controllers[1].stochastic_variables, 2 * nu, Node.START, "cholesky_cov")
+                    .reshape_to_cholesky_matrix(controllers[1].stochastic_variables, Node.START, "cholesky_cov")
                 )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
                 cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
@@ -645,18 +643,18 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 cov_matrix = (
                     controllers[0]
                     .stochastic_variables["cov"]
-                    .reshape_to_matrix(controllers[0].stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov")
+                    .reshape_to_matrix(controllers[0].stochastic_variables, Node.START, "cov")
                 )
                 cov_matrix_next = (
                     controllers[1]
                     .stochastic_variables["cov"]
-                    .reshape_to_matrix(controllers[1].stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov")
+                    .reshape_to_matrix(controllers[1].stochastic_variables, Node.START, "cov")
                 )
             m_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
                 .reshape_to_matrix(
-                    controllers[0].stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree + 1), Node.START, "m"
+                    controllers[0].stochastic_variables, Node.START, "m"
                 )
             )
 

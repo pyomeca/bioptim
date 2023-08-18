@@ -127,7 +127,7 @@ def stochastic_forward_dynamics(
     if with_gains:
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k, n_tau, n_q + n_qdot)
+        k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k)
 
         hand_pos = nlp.model.markers(q)[2][:2]
         hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
@@ -201,7 +201,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     out = 0
     for i, ctrl in enumerate(controllers):
         cov_matrix = ctrl.integrated_values["cov"].reshape_to_matrix(
-            ctrl.integrated_values, ctrl.states.cx.shape[0], ctrl.states.cx.shape[0], Node.START, "cov"
+            ctrl.integrated_values, Node.START, "cov"
         )
         p_partial = cov_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(p_partial) * dt
@@ -269,13 +269,13 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     n_tau = nlp.controls["tau"].cx_start.shape[0]
     nx = nlp.states.cx_start.shape[0]
 
-    M_matrix = nlp.stochastic_variables.reshape_to_matrix(nlp.stochastic_variables, nx, nx, Node.START, "m")
+    M_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(nlp.stochastic_variables, Node.START, "m")
 
     motor_noise = cas.MX.sym("motor_noise", n_tau)
     sensory_noise = cas.MX.sym("sensory_noise", n_q + n_qdot)
     sigma_w = cas.vertcat(sensory_noise, motor_noise) * cas.MX_eye(cas.vertcat(sensory_noise, motor_noise).shape[0])
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
-    cov_matrix = nlp.integrated_values.reshape_sym_to_matrix(cov_sym, nx, nx)
+    cov_matrix = nlp.integrated_values["cov"].reshape_sym_to_matrix(cov_sym)
 
     dx = stochastic_forward_dynamics(
         nlp.states.cx_start,
@@ -334,9 +334,7 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
         controllers[-1]
         .integrated_values["cov"]
         .reshape_sym_to_matrix(
-            cov_sym,
-            controllers[-1].states.cx_start.shape[0],
-            controllers[-1].states.cx_start.shape[0],
+            cov_sym
         )
     )
 
@@ -395,13 +393,11 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
         .integrated_values["cov"]
         .reshape_sym_to_matrix(
             cov_sym,
-            controllers[0].states.cx_start.shape[0],
-            controllers[0].states.cx_start.shape[0],
         )
     )
 
     k = controllers[0].stochastic_variables["k"].cx_start
-    k_matrix = controllers[0].stochastic_variables["k"].reshape_sym_to_matrix(k, n_tau, n_q + n_qdot)
+    k_matrix = controllers[0].stochastic_variables["k"].reshape_sym_to_matrix(k)
 
     # Compute the expected effort
     hand_pos = controllers[0].model.markers(controllers[0].states["q"].cx_start)[2][:2]

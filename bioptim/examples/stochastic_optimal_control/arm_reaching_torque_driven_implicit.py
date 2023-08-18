@@ -130,11 +130,7 @@ def stochastic_forward_dynamics(
     if with_gains:
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = cas.MX(n_q + n_qdot, n_tau)
-        for s0 in range(n_q + n_qdot):
-            for s1 in range(n_tau):
-                k_matrix[s0, s1] = k[s0 * n_tau + s1]
-        k_matrix = k_matrix.T
+        k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k)
 
         hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
@@ -226,7 +222,6 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
             .stochastic_variables["cholesky_cov"]
             .reshape_to_cholesky_matrix(
                 cov_sym_dict,
-                controllers[0].states.cx_start.shape[0],
                 Node.START,
                 "cholesky_cov",
             )
@@ -241,8 +236,6 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
             .stochastic_variables["cov"]
             .reshape_to_matrix(
                 cov_sym_dict,
-                controllers[0].states.cx_start.shape[0],
-                controllers[0].states.cx_start.shape[0],
                 Node.START,
                 "cov",
             )
@@ -303,7 +296,6 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     if "cholesky_cov" in controller.stochastic_variables.keys():
         l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
             controller.stochastic_variables,
-            controller.states.cx_start.shape[0],
             Node.START,
             "cholesky_cov",
         )
@@ -311,8 +303,6 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     else:
         cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
             controller.stochastic_variables,
-            controller.states.cx_start.shape[0],
-            controller.states.cx_start.shape[0],
             Node.START,
             "cov",
         )
@@ -442,7 +432,7 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    problem_type = SocpType.SOCP_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
+    problem_type = SocpType.SOCP_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude)
 
     bio_model = BiorbdModel(biorbd_model_path)
     bio_model.sensory_reference_function = sensory_reference_function
@@ -671,6 +661,7 @@ def prepare_socp(
     if with_scaling:
         u_scaling["tau"] = [10] * n_tau
 
+    # TODO: fix scaling is_symbolic
     s_scaling = VariableScalingList()
     if with_scaling:
         s_scaling["k"] = [100] * (n_tau * (n_q + n_qdot))
@@ -705,7 +696,7 @@ def main():
     # --- Options --- #
     vizualize_sol_flag = True
     with_cholesky = True
-    with_scaling = True
+    with_scaling = False # True
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 

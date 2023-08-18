@@ -397,7 +397,6 @@ class PenaltyOption(OptionGeneric):
                     .stochastic_variables["cholesky_cov"]
                     .reshape_to_cholesky_matrix(
                     controller.stochastic_variables,
-                    2 * n_joints,
                     Node.START,
                     "cholesky_cov",
                 )
@@ -409,8 +408,6 @@ class PenaltyOption(OptionGeneric):
                     .stochastic_variables["cov"]
                     .reshape_to_matrix(
                     controller.stochastic_variables,
-                    2 * n_joints,
-                    2 * n_joints,
                     Node.START,
                     "cov",
                 )

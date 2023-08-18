@@ -191,7 +191,6 @@ class PenaltyFunctionAbstract:
             if "cholesky_cov" in controller.stochastic_variables.keys():
                 l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
                     controller.stochastic_variables,
-                    controller.states.cx_start.shape[0],
                     Node.START,
                     "cholesky_cov",
                 )
@@ -199,22 +198,13 @@ class PenaltyFunctionAbstract:
             elif "cov" in controller.stochastic_variables.keys():
                 cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
                     controller.stochastic_variables,
-                    controller.states.cx_start.shape[0],
-                    controller.states.cx_start.shape[0],
                     Node.START,
                     "cov",
                 )
             else:
                 raise RuntimeError("The covariance matrix must be provided in the stochastic variables to compute the expected efforts.")
 
-            k = controller.stochastic_variables["k"].cx_start
-            k_matrix = MX(controller.stochastic_variables["k"].matrix_shape[1],
-                              controller.stochastic_variables["k"].matrix_shape[0])
-            for s0 in range(controller.stochastic_variables["k"].matrix_shape[1]):
-                for s1 in range(controller.stochastic_variables["k"].matrix_shape[0]):
-                    k_matrix[s0, s1] = k[s0 * controller.stochastic_variables["k"].matrix_shape[0] + s1]
-            k_matrix = k_matrix.T
-            #TODO: change for the real .reshape_to_matrix
+            k_matrix = controller.stochastic_variables["k"].reshape_to_matrix(controller.stochastic_variables, Node.START, "k")
 
             # Compute the expected effort
             trace_k_sensor_k = trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
