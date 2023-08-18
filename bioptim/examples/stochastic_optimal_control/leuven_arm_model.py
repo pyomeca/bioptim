@@ -256,12 +256,14 @@ class LeuvenArmModel:
         ee = cas.vertcat(hand_pos, hand_vel)
         return ee
 
-    def sensory_reference_function(self,
-                                   states: cas.MX | cas.SX,
-                                      controls: cas.MX | cas.SX,
-                                      parameters: cas.MX | cas.SX,
-                                      stochastic_variables: cas.MX | cas.SX,
-                                      nlp: NonLinearProgram):
+    def sensory_reference_function(
+        self,
+        states: cas.MX | cas.SX,
+        controls: cas.MX | cas.SX,
+        parameters: cas.MX | cas.SX,
+        stochastic_variables: cas.MX | cas.SX,
+        nlp: NonLinearProgram,
+    ):
         """
         This functions returns the sensory reference for the feedback gains.
         """

@@ -354,14 +354,16 @@ class ConfigureProblem:
             ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
             ConfigureProblem.configure_stochastic_c(ocp, nlp, n_feedbacks=4, n_noise=6)
 
-        ConfigureProblem.torque_driven(ocp=ocp,
-                           nlp=nlp,
-                           with_contact=with_contact,
-                           with_passive_torque=with_passive_torque,
-                           with_ligament=with_ligament,
-                           rigidbody_dynamics=rigidbody_dynamics,
-                           soft_contacts_dynamics=soft_contacts_dynamics,
-                           fatigue=fatigue)
+        ConfigureProblem.torque_driven(
+            ocp=ocp,
+            nlp=nlp,
+            with_contact=with_contact,
+            with_passive_torque=with_passive_torque,
+            with_ligament=with_ligament,
+            rigidbody_dynamics=rigidbody_dynamics,
+            soft_contacts_dynamics=soft_contacts_dynamics,
+            fatigue=fatigue,
+        )
 
         # To be continued when collocations is merged
 
@@ -550,13 +552,27 @@ class ConfigureProblem:
         name_qddot_roots = [str(i) for i in range(nb_root)]
         matrix_shape = (len(nb_root), 1)
         ConfigureProblem.configure_new_variable(
-            "qddot_roots", name_qddot_roots, matrix_shape, ocp, nlp, as_states=False, as_controls=False, as_states_dot=True
+            "qddot_roots",
+            name_qddot_roots,
+            matrix_shape,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=True,
         )
 
         name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot - nb_root)]
         matrix_shape = (len(nlp.model.nb_qddot - nb_root), 1)
         ConfigureProblem.configure_new_variable(
-            "qddot_joints", name_qddot_joints, matrix_shape, ocp, nlp, as_states=False, as_controls=True, as_states_dot=True
+            "qddot_joints",
+            name_qddot_joints,
+            matrix_shape,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=True,
+            as_states_dot=True,
         )
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.joints_acceleration_driven)
@@ -666,14 +682,18 @@ class ConfigureProblem:
         names_u = [nlp.model.name_dof[i] for i in nlp.variable_mappings["q"].to_first.map_idx]
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         matrix_shape = (len(names_u), 1)
-        ConfigureProblem.configure_new_variable(name, names_u, matrix_shape, ocp, nlp, True, False, False, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, names_u, matrix_shape, ocp, nlp, True, False, False, axes_idx=axes_idx
+        )
 
         name = "qdot_u"
         names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
         names_udot = [names_qdot[i] for i in nlp.variable_mappings["qdot"].to_first.map_idx]
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         matrix_shape = (len(names_udot), 1)
-        ConfigureProblem.configure_new_variable(name, names_udot, matrix_shape, ocp, nlp, True, False, False, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, names_udot, matrix_shape, ocp, nlp, True, False, False, axes_idx=axes_idx
+        )
 
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
@@ -1080,19 +1100,19 @@ class ConfigureProblem:
         initial_vector = nlp.integrated_values.reshape_to_vector(initial_matrix)
         cx_scaled_next_formatted = [initial_vector for _ in range(n_cx)]
         nlp.integrated_values.append(
-            name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix,
-            dummy_mapping,
-            matrix_shape,
-            0
+            name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, matrix_shape, 0
         )
         for node_index in range(1, nlp.ns + 1):  # cannot use assume_phase_dynamics = True
             cx_scaled_next = nlp.integrated_value_functions[name](nlp, node_index)
             cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
             nlp.integrated_values.append(
-                name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next,
+                name,
+                cx_scaled_next_formatted,
+                cx_scaled_next_formatted,
+                cx_scaled_next,
                 dummy_mapping,
                 matrix_shape,
-                node_index
+                node_index,
             )
 
     @staticmethod
@@ -1116,9 +1136,7 @@ class ConfigureProblem:
         matrix_shape = (len(nlp.model.name_dof), 1)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_q,
-            matrix_shape,
-            ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
+            name, name_q, matrix_shape, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1143,9 +1161,7 @@ class ConfigureProblem:
         matrix_shape = (len(name_qdot), 1)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_qdot,
-            matrix_shape,
-            ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
+            name, name_qdot, matrix_shape, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1170,9 +1186,7 @@ class ConfigureProblem:
         matrix_shape = (len(name_qddot), 1)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name, name_qddot,
-            matrix_shape,
-            ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
+            name, name_qddot, matrix_shape, ocp, nlp, as_states, as_controls, as_states_dot, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1194,7 +1208,9 @@ class ConfigureProblem:
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         matrix_shape = (len(name_qdddot), 1)
-        ConfigureProblem.configure_new_variable(name, name_qdddot, matrix_shape, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_qdddot, matrix_shape, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_feedbacks: int):
@@ -1493,15 +1509,7 @@ class ConfigureProblem:
         matrix_shape = (len(name_tau), 1)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         ConfigureProblem.configure_new_variable(
-            name,
-            name_tau,
-            matrix_shape,
-            ocp,
-            nlp,
-            as_states,
-            as_controls,
-            fatigue=fatigue,
-            axes_idx=axes_idx
+            name, name_tau, matrix_shape, ocp, nlp, as_states, as_controls, fatigue=fatigue, axes_idx=axes_idx
         )
 
     @staticmethod
@@ -1546,7 +1554,9 @@ class ConfigureProblem:
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
         matrix_shape = (len(name_taudot), 1)
-        ConfigureProblem.configure_new_variable(name, name_taudot, matrix_shape, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
+        ConfigureProblem.configure_new_variable(
+            name, name_taudot, matrix_shape, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
+        )
 
     @staticmethod
     def configure_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1565,7 +1575,9 @@ class ConfigureProblem:
 
         name_contact_forces = [name for name in nlp.model.contact_names]
         matrix_shape = (len(name_contact_forces), 1)
-        ConfigureProblem.configure_new_variable("fext", name_contact_forces, matrix_shape, ocp, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable(
+            "fext", name_contact_forces, matrix_shape, ocp, nlp, as_states, as_controls
+        )
 
     @staticmethod
     def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1592,7 +1604,9 @@ class ConfigureProblem:
                 ]
             )
         matrix_shape = (len(name_soft_contact_forces), 1)
-        ConfigureProblem.configure_new_variable("fext", name_soft_contact_forces, matrix_shape, ocp, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable(
+            "fext", name_soft_contact_forces, matrix_shape, ocp, nlp, as_states, as_controls
+        )
 
     @staticmethod
     def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):

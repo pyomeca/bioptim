@@ -72,11 +72,14 @@ def get_force_field(q, force_field_magnitude):
     tau_force_field = -f_force_field @ hand_pos
     return tau_force_field
 
-def sensory_reference_function(states: cas.MX | cas.SX,
-                          controls: cas.MX | cas.SX,
-                          parameters: cas.MX | cas.SX,
-                          stochastic_variables: cas.MX | cas.SX,
-                          nlp: NonLinearProgram):
+
+def sensory_reference_function(
+    states: cas.MX | cas.SX,
+    controls: cas.MX | cas.SX,
+    parameters: cas.MX | cas.SX,
+    stochastic_variables: cas.MX | cas.SX,
+    nlp: NonLinearProgram,
+):
     """
     This functions returns the sensory reference for the feedback gains.
     """
@@ -86,6 +89,7 @@ def sensory_reference_function(states: cas.MX | cas.SX,
     hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
     hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
     return hand_pos_velo
+
 
 def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
@@ -189,6 +193,7 @@ def configure_stochastic_optimal_control_problem(
         ),
     )
 
+
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
@@ -251,12 +256,14 @@ def prepare_socp(
     objective_functions.add(
         ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=1e3 / 2, quadratic=True
     )
-    objective_functions.add(ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
-                            sensory_noise_magnitude=sensory_noise_magnitude,
-                            node=Node.ALL,
-                            weight=1e3/2,
-                            quadratic=True,
-                            phase=0)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
+        sensory_noise_magnitude=sensory_noise_magnitude,
+        node=Node.ALL,
+        weight=1e3 / 2,
+        quadratic=True,
+        phase=0,
+    )
 
     # Constraints
     constraints = ConstraintList()
@@ -270,8 +277,9 @@ def prepare_socp(
     )  # This is a bug, it should be in radians
 
     # This constraint insures that the hand reaches the target with x_mean
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, target=ee_final_position, marker_index=2,
-                    axes=[Axis.X, Axis.Y])  ## merge conflict
+    constraints.add(
+        ConstraintFcn.TRACK_MARKERS, node=Node.END, target=ee_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
+    )  ## merge conflict
     # While this constraint insures that the hand still reaches the target with the proper position and velocity even
     # in the presence of noise
     if example_type == ExampleType.BAR:
@@ -280,13 +288,26 @@ def prepare_socp(
         max_bounds_lateral_variation = 0.004
     else:
         raise NotImplementedError("Wrong problem type")
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index=2, axes=[Axis.X, Axis.Y],
-                    phase=0, min_bound=np.array([-cas.inf, -cas.inf]),
-                    max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2]), is_stochastic=True,)  ## merge conflict
-    constraints.add(ConstraintFcn.TRACK_MARKERS_VELOCITY, node=Node.END, marker_index=2, axes=[Axis.X, Axis.Y],
-                    phase=0, min_bound=np.array([-cas.inf, -cas.inf]),
-                    max_bound=np.array([0.05**2, 0.05**2]),
-                    is_stochastic=True, )  ## merge conflict
+    constraints.add(
+        ConstraintFcn.TRACK_MARKERS,
+        node=Node.END,
+        marker_index=2,
+        axes=[Axis.X, Axis.Y],
+        phase=0,
+        min_bound=np.array([-cas.inf, -cas.inf]),
+        max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2]),
+        is_stochastic=True,
+    )  ## merge conflict
+    constraints.add(
+        ConstraintFcn.TRACK_MARKERS_VELOCITY,
+        node=Node.END,
+        marker_index=2,
+        axes=[Axis.X, Axis.Y],
+        phase=0,
+        min_bound=np.array([-cas.inf, -cas.inf]),
+        max_bound=np.array([0.05**2, 0.05**2]),
+        is_stochastic=True,
+    )  ## merge conflict
 
     # Dynamics
     dynamics = DynamicsList()

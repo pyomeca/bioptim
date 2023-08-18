@@ -177,11 +177,14 @@ def configure_stochastic_optimal_control_problem(
     )
     return
 
-def sensory_reference_function(states: cas.MX | cas.SX,
-                          controls: cas.MX | cas.SX,
-                          parameters: cas.MX | cas.SX,
-                          stochastic_variables: cas.MX | cas.SX,
-                          nlp: NonLinearProgram):
+
+def sensory_reference_function(
+    states: cas.MX | cas.SX,
+    controls: cas.MX | cas.SX,
+    parameters: cas.MX | cas.SX,
+    stochastic_variables: cas.MX | cas.SX,
+    nlp: NonLinearProgram,
+):
     """
     This functions returns the sensory reference for the feedback gains.
     """
@@ -191,6 +194,7 @@ def sensory_reference_function(states: cas.MX | cas.SX,
     hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
     hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
     return hand_pos_velo
+
 
 def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     """
@@ -303,12 +307,14 @@ def prepare_socp(
     objective_functions.add(
         ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=1e3 / 2, quadratic=True
     )
-    objective_functions.add(ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
-                            sensory_noise_magnitude=sensory_noise_magnitude,
-                            node=Node.ALL,
-                            weight=1e3/2,
-                            quadratic=False,
-                            phase=0)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
+        sensory_noise_magnitude=sensory_noise_magnitude,
+        node=Node.ALL,
+        weight=1e3 / 2,
+        quadratic=False,
+        phase=0,
+    )
 
     # Constraints
     constraints = ConstraintList()

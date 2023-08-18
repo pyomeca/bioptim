@@ -392,24 +392,15 @@ class PenaltyOption(OptionGeneric):
         n_joints = nx - n_root
 
         if "cholesky_cov" in controller.stochastic_variables.keys():
-            l_cov_matrix = (
-                controller
-                    .stochastic_variables["cholesky_cov"]
-                    .reshape_to_cholesky_matrix(Node.START)
-            )
+            l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(Node.START)
             cov_matrix = l_cov_matrix @ l_cov_matrix.T
         else:
-            cov_matrix = (
-                controller
-                    .stochastic_variables["cov"]
-                    .reshape_to_matrix(Node.START)
-            )
+            cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(Node.START)
 
         jac_fcn_states = jacobian(fcn, state_cx_scaled)
         fcn_variation = jac_fcn_states @ cov_matrix @ jac_fcn_states.T
 
         return diag(fcn_variation)
-
 
     def _set_penalty_function(
         self, controller: PenaltyController | list[PenaltyController, PenaltyController], fcn: MX | SX

@@ -167,8 +167,11 @@ class PenaltyFunctionAbstract:
                 )
 
             return controller.stochastic_variables[key].cx_start
+
         @staticmethod
-        def stochastic_minimize_expected_feedback_efforts(penalty: PenaltyOption, controller: PenaltyController, sensory_noise_magnitude: DM):
+        def stochastic_minimize_expected_feedback_efforts(
+            penalty: PenaltyOption, controller: PenaltyController, sensory_noise_magnitude: DM
+        ):
             """
             This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
             magnitude.
@@ -194,7 +197,9 @@ class PenaltyFunctionAbstract:
             elif "cov" in controller.stochastic_variables.keys():
                 cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(Node.START)
             else:
-                raise RuntimeError("The covariance matrix must be provided in the stochastic variables to compute the expected efforts.")
+                raise RuntimeError(
+                    "The covariance matrix must be provided in the stochastic variables to compute the expected efforts."
+                )
 
             k_matrix = controller.stochastic_variables["k"].reshape_to_matrix(Node.START)
 
@@ -1150,7 +1155,7 @@ class PenaltyFunctionAbstract:
                 "custom_function",
                 "weight",
                 "expand",
-                "is_stochastic"
+                "is_stochastic",
             ]
             for keyword in inspect.signature(penalty.custom_function).parameters:
                 if keyword in invalid_keywords:

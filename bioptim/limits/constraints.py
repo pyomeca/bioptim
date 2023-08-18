@@ -57,8 +57,12 @@ class Constraint(PenaltyOption):
             constraint = ConstraintFcn.CUSTOM
 
         super(Constraint, self).__init__(
-            penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function,
-            is_stochastic=is_stochastic, **params
+            penalty=constraint,
+            phase=phase,
+            quadratic=quadratic,
+            custom_function=custom_function,
+            is_stochastic=is_stochastic,
+            **params,
         )
 
         if isinstance(constraint, ImplicitConstraintFcn):
@@ -865,20 +869,23 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             out_vector = controller.stochastic_variables["m"].reshape_to_vector(constraint)
             return out_vector
+
         @staticmethod
         def stochastic_mean_sensory_input_equals_reference(
-                penalty: Constraint,
-                controller: PenaltyController,
+            penalty: Constraint,
+            controller: PenaltyController,
         ):
             """
             Get the error between the hand position and the reference.
             """
             ref = controller.stochastic_variables["ref"].cx_start
-            sensory_input = controller.model.sensory_reference_function(states=controller.states.cx_start,
-                                                             controls=controller.controls.cx_start,
-                                                             parameters=controller.parameters.cx_start,
-                                                             stochastic_variables=controller.stochastic_variables.cx_start,
-                                                             nlp=controller.get_nlp)
+            sensory_input = controller.model.sensory_reference_function(
+                states=controller.states.cx_start,
+                controls=controller.controls.cx_start,
+                parameters=controller.parameters.cx_start,
+                stochastic_variables=controller.stochastic_variables.cx_start,
+                nlp=controller.get_nlp,
+            )
             return sensory_input - ref
 
     @staticmethod
@@ -910,7 +917,9 @@ class ConstraintFcn(FcnEnum):
     )
     STOCHASTIC_DG_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_dg_dx_implicit,)
     STOCHASTIC_HELPER_MATRIX_COLLOCATION = (ConstraintFunction.Functions.stochastic_helper_matrix_collocation,)
-    STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,)
+    STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (
+        ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,
+    )
     SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
     SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)

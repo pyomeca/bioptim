@@ -155,6 +155,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
         out += cas.trace(p_partial) * dt
     return out
 
+
 def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, sensory_noise_magnitude):
     dt = nlp.tf / nlp.ns
 
@@ -288,11 +289,13 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     k_matrix = controllers[0].stochastic_variables["k"].reshape_sym_to_matrix(k)
 
     # Compute the expected effort
-    hand_pos_velo = controllers[0].model.sensory_reference_function(controllers[0].states.cx_start,
-                                                                    controllers[0].controls.cx_start,
-                                                                    controllers[0].parameters.cx_start,
-                                                                    controllers[0].stochastic_variables.cx_start,
-                                                                    controllers[0].get_nlp)
+    hand_pos_velo = controllers[0].model.sensory_reference_function(
+        controllers[0].states.cx_start,
+        controllers[0].controls.cx_start,
+        controllers[0].parameters.cx_start,
+        controllers[0].stochastic_variables.cx_start,
+        controllers[0].get_nlp,
+    )
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
     e_fb = k_matrix @ ((hand_pos_velo - ref) + sensory_noise_magnitude)
     jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx_start)

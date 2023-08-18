@@ -204,11 +204,13 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     return out
 
 
-def sensory_reference_function(states: cas.MX | cas.SX,
-                          controls: cas.MX | cas.SX,
-                          parameters: cas.MX | cas.SX,
-                          stochastic_variables: cas.MX | cas.SX,
-                          nlp: NonLinearProgram):
+def sensory_reference_function(
+    states: cas.MX | cas.SX,
+    controls: cas.MX | cas.SX,
+    parameters: cas.MX | cas.SX,
+    stochastic_variables: cas.MX | cas.SX,
+    nlp: NonLinearProgram,
+):
     """
     This functions returns the sensory reference for the feedback gains.
     """
@@ -218,6 +220,7 @@ def sensory_reference_function(states: cas.MX | cas.SX,
     hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
     hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
     return hand_pos_velo
+
 
 def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, sensory_noise_magnitude):
     """
@@ -310,13 +313,7 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     q_sym = cas.MX.sym("q_sym", controllers[-1].states["q"].cx_start.shape[0])
     qdot_sym = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx_start.shape[0])
     cov_sym = cas.MX.sym("cov", controllers[-1].integrated_values.cx_start.shape[0])
-    cov_matrix = (
-        controllers[-1]
-        .integrated_values["cov"]
-        .reshape_sym_to_matrix(
-            cov_sym
-        )
-    )
+    cov_matrix = controllers[-1].integrated_values["cov"].reshape_sym_to_matrix(cov_sym)
 
     hand_pos = controllers[0].model.markers(q_sym)[2][:2]
     hand_vel = controllers[0].model.marker_velocities(q_sym, qdot_sym)[2][:2]
@@ -377,11 +374,13 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
 
     # Compute the expected effort
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-    hand_pos_velo = controllers[0].model.sensory_reference_function(controllers[0].states.cx_start,
-                                                                    controllers[0].controls.cx_start,
-                                                                    controllers[0].parameters.cx_start,
-                                                                    controllers[0].stochastic_variables.cx_start,
-                                                                    controllers[0].get_nlp)
+    hand_pos_velo = controllers[0].model.sensory_reference_function(
+        controllers[0].states.cx_start,
+        controllers[0].controls.cx_start,
+        controllers[0].parameters.cx_start,
+        controllers[0].stochastic_variables.cx_start,
+        controllers[0].get_nlp,
+    )
     e_fb = k_matrix @ ((hand_pos_velo - ref) + sensory_noise_magnitude)
     jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx_start)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
@@ -496,8 +495,9 @@ def prepare_socp(
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
     constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.START, target=0)
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, target=ee_final_position, marker_index=2,
-                    axes=[Axis.X, Axis.Y])
+    constraints.add(
+        ConstraintFcn.TRACK_MARKERS, node=Node.END, target=ee_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
+    )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
     constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.END, target=0)
     constraints.add(
