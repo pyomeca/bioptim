@@ -189,63 +189,6 @@ def configure_stochastic_optimal_control_problem(
         ),
     )
 
-def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnitude: cas.DM) -> cas.MX:
-    """
-    This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
-    magnitude.
-    It is computed as Jacobian(effort, states) @ cov @ Jacobian(effort, states) +
-                        Jacobian(efforst, motor_noise) @ sigma_w @ Jacobian(efforst, motor_noise)
-
-    Parameters
-    ----------
-    controller : PenaltyController
-        Controller to be used to compute the expected effort.
-    sensory_noise_magnitude : cas.DM
-        Magnitude of the sensory noise.
-    """
-    n_tau = controller.controls["tau"].cx_start.shape[0]
-    n_q = controller.states["q"].cx_start.shape[0]
-    n_qdot = controller.states["qdot"].cx_start.shape[0]
-
-    sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
-
-    # create the casadi function to be evaluated
-    # Get the symbolic variables
-    ref = controller.stochastic_variables["ref"].cx_start
-    if "cholesky_cov" in controller.stochastic_variables.keys():
-        l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(Node.START)
-        cov_matrix = l_cov_matrix @ l_cov_matrix.T
-    else:
-        cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(Node.START)
-
-    k = controller.stochastic_variables["k"].cx_start
-    k_matrix = cas.MX(n_q + n_qdot, n_tau)
-    for s0 in range(n_q + n_qdot):
-        for s1 in range(n_tau):
-            k_matrix[s0, s1] = k[s0 * n_tau + s1]
-    k_matrix = k_matrix.T
-
-    # Compute the expected effort
-    hand_pos_velo = controller.model.sensory_reference_function(controller.states.cx_start,
-                                                                controller.controls.cx_start,
-                                                                controller.parameters.cx_start,
-                                                                controller.stochastic_variables.cx_start,
-                                                                controller.get_nlp)
-    trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-    e_fb = k_matrix @ ((hand_pos_velo - ref) + sensory_noise_magnitude)
-    jac_e_fb_x = cas.jacobian(e_fb, controller.states.cx_start)
-    trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
-    expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
-    func = cas.Function(
-        "f_expectedEffort_fb",
-        [controller.states.cx_start, controller.stochastic_variables.cx_start],
-        [expectedEffort_fb_mx],
-    )
-
-    out = func(controller.states.cx_start, controller.stochastic_variables.cx_start)
-
-    return out
-
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
@@ -308,9 +251,9 @@ def prepare_socp(
     objective_functions.add(
         ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=1e3 / 2, quadratic=True
     )
-
     objective_functions.add(ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
                             sensory_noise_magnitude=sensory_noise_magnitude,
+                            node=Node.ALL,
                             weight=1e3/2,
                             quadratic=True,
                             phase=0)
@@ -497,7 +440,6 @@ def prepare_socp(
     if with_scaling:
         u_scaling["tau"] = [10] * n_tau
 
-    # TODO: fix scaling is_symbolic
     s_scaling = VariableScalingList()
     if with_scaling:
         s_scaling["k"] = [100] * (n_tau * (n_q + n_qdot))
@@ -531,7 +473,7 @@ def main():
     # --- Options --- #
     vizualize_sol_flag = True
     with_cholesky = True
-    with_scaling = False # True
+    with_scaling = True
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 

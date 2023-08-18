@@ -211,15 +211,7 @@ class PenaltyFunctionAbstract:
             jac_e_fb_x = jacobian(e_fb, controller.states.cx_start)
             trace_jac_p_jack = trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
             expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
-            func = Function(
-                "f_expectedEffort_fb",
-                [controller.states.cx_start, controller.stochastic_variables.cx_start],
-                [expectedEffort_fb_mx],
-            )
-
-            out = func(controller.states.cx_start, controller.stochastic_variables.cx_start)
-
-            return out
+            return expectedEffort_fb_mx
 
         @staticmethod
         def minimize_fatigue(penalty: PenaltyOption, controller: PenaltyController, key: str):

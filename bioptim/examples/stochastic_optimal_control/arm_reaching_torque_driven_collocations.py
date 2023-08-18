@@ -238,54 +238,6 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     return val
 
 
-def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnitude: cas.DM) -> cas.MX:
-    """
-    This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
-    magnitude.
-    It is computed as Jacobian(effort, states) @ cov @ Jacobian(effort, states) +
-                        Jacobian(efforst, motor_noise) @ sigma_w @ Jacobian(efforst, motor_noise)
-
-    Parameters
-    ----------
-    controller : PenaltyController
-        Controller to be used to compute the expected effort.
-    sensory_noise_magnitude : cas.DM
-        Magnitude of the sensory noise.
-    """
-
-    sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
-
-    # create the casadi function to be evaluated
-    # Get the symbolic variables
-    ref = controller.stochastic_variables["ref"].cx_start
-
-    cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(Node.START)
-
-    k = controller.stochastic_variables["k"].cx_start
-    k_matrix = controller.stochastic_variables["k"].reshape_sym_to_matrix(k)
-
-    # Compute the expected effort
-    hand_pos_velo = controller.model.sensory_reference_function(controller.states.cx_start,
-                                                                controller.controls.cx_start,
-                                                                controller.parameters.cx_start,
-                                                                controller.stochastic_variables.cx_start,
-                                                                controller.get_nlp)
-    trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-    e_fb = k_matrix @ ((hand_pos_velo - ref) + sensory_noise_magnitude)
-    jac_e_fb_x = cas.jacobian(e_fb, controller.states.cx_start)
-    trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
-    expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
-    func = cas.Function(
-        "f_expectedEffort_fb",
-        [controller.states.cx_start, controller.stochastic_variables.cx_start],
-        [expectedEffort_fb_mx],
-    )
-
-    out = func(controller.states.cx_start, controller.stochastic_variables.cx_start)
-
-    return out
-
-
 def track_final_marker(controller: PenaltyController) -> cas.MX:
     """
     Track the hand position.
@@ -351,16 +303,12 @@ def prepare_socp(
     objective_functions.add(
         ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=1e3 / 2, quadratic=True
     )
-
-    objective_functions.add(
-        expected_feedback_effort,
-        custom_type=ObjectiveFcn.Lagrange,
-        node=Node.ALL,
-        sensory_noise_magnitude=sensory_noise_magnitude,
-        weight=1e3 / 2,
-        quadratic=False,
-        phase=0,
-    )
+    objective_functions.add(ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
+                            sensory_noise_magnitude=sensory_noise_magnitude,
+                            node=Node.ALL,
+                            weight=1e3/2,
+                            quadratic=False,
+                            phase=0)
 
     # Constraints
     constraints = ConstraintList()
