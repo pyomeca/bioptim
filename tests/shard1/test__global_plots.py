@@ -252,12 +252,12 @@ def test_console_objective_functions(assume_phase_dynamics):
                     dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i6").shape)
 
                     p.function[node_index] = Function(
-                        name, [x, u, param, s], [np.array([range(cmp, len(p.rows) + cmp)]).T]
+                        name, [x, u, param, s, MX(), MX()], [np.array([range(cmp, len(p.rows) + cmp)]).T]
                     )
                     p.function_non_threaded[node_index] = p.function[node_index]
                     p.weighted_function[node_index] = Function(
                         name,
-                        [x, u, param, s, weight, target, dt],
+                        [x, u, param, s, MX(), MX(), weight, target, dt],
                         [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T],
                     )
                     p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]

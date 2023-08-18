@@ -1120,17 +1120,24 @@ class PenaltyFunctionAbstract:
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-                continuity -= controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["xf"]
+                continuity -= controller.integrate(
+                    x0=cx, p=u, params=controller.parameters.cx, s=controller.stochastic_variables.cx_start
+                )["xf"]
                 continuity = vertcat(
                     continuity,
-                    controller.integrate(x0=cx, p=u, params=controller.parameters.cx)["defects"],
+                    controller.integrate(
+                        x0=cx, p=u, params=controller.parameters.cx, s=controller.stochastic_variables.cx_start
+                    )["defects"],
                 )
                 penalty.integrate = True
 
             else:
-                continuity -= controller.integrate(x0=controller.states.cx_start, p=u, params=controller.parameters.cx)[
-                    "xf"
-                ]
+                continuity -= controller.integrate(
+                    x0=controller.states.cx_start,
+                    p=u,
+                    params=controller.parameters.cx,
+                    s=controller.stochastic_variables.cx_start,
+                )["xf"]
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True
@@ -1383,11 +1390,24 @@ class PenaltyFunctionAbstract:
             raise ValueError("atrribute should be either mx or cx_start")
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
+            if controller.motor_noise is not None:
+                motor_noise = controller.motor_noise
+                sensory_noise = controller.sensory_noise
+            else:
+                if attribute == "mx":
+                    motor_noise = MX()
+                    sensory_noise = MX()
+                elif attribute == "cx_start":
+                    motor_noise = controller.cx()
+                    sensory_noise = controller.cx()
+
             return controller.dynamics(
                 getattr(controller.states, attribute),
                 getattr(controller.controls, attribute),
                 getattr(controller.parameters, attribute),
                 getattr(controller.stochastic_variables, attribute),
+                motor_noise,
+                sensory_noise,
             )[controller.states["qdot"].index, :]
 
         source = controller.states if "qddot" in controller.states else controller.controls

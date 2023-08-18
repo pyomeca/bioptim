@@ -1,7 +1,7 @@
 """
 This example is adapted from arm_reaching_muscle_driven.py to make it torque driven.
 The states dynamics is explicit, while the stochastic variables dynamics is implicit.
-This formulation allow to decouple the covariance matrix with the previous states reducing the comlexity of resolution,
+This formulation allow to decouple the covariance matrix with the previous states reducing the complexity of resolution,
 but increases largely the number of variables to optimize.
 Decomposing the covariance matrix using Cholesky L @ @.T allows to reduce the number of variables and ensures that the
 covariance matrix always stays positive semi-definite.
@@ -10,11 +10,8 @@ covariance matrix always stays positive semi-definite.
 import platform
 
 import pickle
-import biorbd_casadi as biorbd
-import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
-import scipy.io as sio
 from enum import Enum
 
 from bioptim import (
@@ -40,6 +37,9 @@ from bioptim import (
     InitialGuessList,
     Axis,
     DynamicsFcn,
+    OdeSolver,
+    ControlType,
+    VariableScalingList,
 )
 
 
@@ -50,8 +50,6 @@ class ExampleType(Enum):
 
     CIRCLE = "CIRCLE"
     BAR = "BAR"
-    SQP = "SqpMethod"
-    NONE = None
 
 
 def get_force_field(q, force_field_magnitude):
@@ -132,10 +130,10 @@ def stochastic_forward_dynamics(
     if with_gains:
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = cas.MX(nlp.stochastic_variables["k"].matrix_shape[1], nlp.stochastic_variables["k"].matrix_shape[0])
-        for s0 in range(nlp.stochastic_variables["k"].matrix_shape[1]):
-            for s1 in range(nlp.stochastic_variables["k"].matrix_shape[0]):
-                k_matrix[s0, s1] = k[s0 * nlp.stochastic_variables["k"].matrix_shape[0] + s1]
+        k_matrix = cas.MX(n_q + n_qdot, n_tau)
+        for s0 in range(n_q + n_qdot):
+            for s1 in range(n_tau):
+                k_matrix[s0, s1] = k[s0 * n_tau + s1]
         k_matrix = k_matrix.T
 
         hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
@@ -187,7 +185,13 @@ def configure_stochastic_optimal_control_problem(
         motor_noise=motor_noise,
         sensory_noise=sensory_noise,
     )
-    return
+    ConfigureProblem.configure_stochastic_dynamics_function(
+        ocp,
+        nlp,
+        noised_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
+            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=True
+        ),
+    )
 
 def hand_equals_ref(controller: PenaltyController) -> cas.MX:
     """
@@ -200,6 +204,156 @@ def hand_equals_ref(controller: PenaltyController) -> cas.MX:
                                                 stochastic_variables=controller.stochastic_variables.cx_start,
                                                 nlp=controller.get_nlp)
     return ee - ref
+
+
+def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
+    """
+    Constraint the hand to reach the target consistently.
+    This is a multi-node constraint because the covariance matrix depends on all the precedent nodes, but it only
+    applies at the END node.
+    """
+
+    nx = controllers[-1].states["q"].cx_start.shape[0]
+
+    q_sym = cas.MX.sym("q_sym", nx)
+    qdot_sym = cas.MX.sym("qdot_sym", nx)
+    if "cholesky_cov" in controllers[0].stochastic_variables.keys():
+        cov_sym = cas.MX.sym("cov", controllers[0].stochastic_variables["cholesky_cov"].cx_start.shape[0])
+        cov_sym_dict = {"cholesky_cov": cov_sym}
+        cov_sym_dict["cholesky_cov"].cx_start = cov_sym
+        l_cov_matrix = (
+            controllers[0]
+            .stochastic_variables["cholesky_cov"]
+            .reshape_to_cholesky_matrix(
+                cov_sym_dict,
+                controllers[0].states.cx_start.shape[0],
+                Node.START,
+                "cholesky_cov",
+            )
+        )
+        cov_matrix = l_cov_matrix @ l_cov_matrix.T
+    else:
+        cov_sym = cas.MX.sym("cov", controllers[0].stochastic_variables["cov"].cx_start.shape[0])
+        cov_sym_dict = {"cov": cov_sym}
+        cov_sym_dict["cov"].cx_start = cov_sym
+        cov_matrix = (
+            controllers[0]
+            .stochastic_variables["cov"]
+            .reshape_to_matrix(
+                cov_sym_dict,
+                controllers[0].states.cx_start.shape[0],
+                controllers[0].states.cx_start.shape[0],
+                Node.START,
+                "cov",
+            )
+        )
+
+    hand_pos = controllers[0].model.markers(q_sym)[2][:2]
+    hand_vel = controllers[0].model.marker_velocities(q_sym, qdot_sym)[2][:2]
+
+    jac_marker_q = cas.jacobian(hand_pos, q_sym)
+    jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(q_sym, qdot_sym))
+
+    cov_matrix_q = cov_matrix[:2, :2]
+    cov_matrix_qdot = cov_matrix[:4, :4]
+
+    pos_constraint = jac_marker_q @ cov_matrix_q @ jac_marker_q.T
+    vel_constraint = jac_marker_qdot @ cov_matrix_qdot @ jac_marker_qdot.T
+
+    out = cas.vertcat(pos_constraint[0, 0], pos_constraint[1, 1], vel_constraint[0, 0], vel_constraint[1, 1])
+
+    fun = cas.Function("reach_target_consistantly", [q_sym, qdot_sym, cov_sym], [out])
+    val = fun(
+        controllers[-1].states["q"].cx_start,
+        controllers[-1].states["qdot"].cx_start,
+        (
+            controllers[-1].stochastic_variables["cholesky_cov"].cx_start
+            if "cholesky_cov" in controllers[-1].stochastic_variables.keys()
+            else controllers[-1].stochastic_variables["cov"].cx_start
+        ),
+    )
+    # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
+
+    return val
+
+
+def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnitude: cas.DM) -> cas.MX:
+    """
+    This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
+    magnitude.
+    It is computed as Jacobian(effort, states) @ cov @ Jacobian(effort, states) +
+                        Jacobian(efforst, motor_noise) @ sigma_w @ Jacobian(efforst, motor_noise)
+
+    Parameters
+    ----------
+    controller : PenaltyController
+        Controller to be used to compute the expected effort.
+    sensory_noise_magnitude : cas.DM
+        Magnitude of the sensory noise.
+    """
+    n_tau = controller.controls["tau"].cx_start.shape[0]
+    n_q = controller.states["q"].cx_start.shape[0]
+    n_qdot = controller.states["qdot"].cx_start.shape[0]
+
+    sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
+
+    # create the casadi function to be evaluated
+    # Get the symbolic variables
+    ref = controller.stochastic_variables["ref"].cx_start
+    if "cholesky_cov" in controller.stochastic_variables.keys():
+        l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
+            controller.stochastic_variables,
+            controller.states.cx_start.shape[0],
+            Node.START,
+            "cholesky_cov",
+        )
+        cov_matrix = l_cov_matrix @ l_cov_matrix.T
+    else:
+        cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
+            controller.stochastic_variables,
+            controller.states.cx_start.shape[0],
+            controller.states.cx_start.shape[0],
+            Node.START,
+            "cov",
+        )
+
+    k = controller.stochastic_variables["k"].cx_start
+    k_matrix = cas.MX(n_q + n_qdot, n_tau)
+    for s0 in range(n_q + n_qdot):
+        for s1 in range(n_tau):
+            k_matrix[s0, s1] = k[s0 * n_tau + s1]
+    k_matrix = k_matrix.T
+
+    # Compute the expected effort
+    hand_pos = controller.model.markers(controller.states["q"].cx_start)[2][:2]
+    hand_vel = controller.model.marker_velocities(controller.states["q"].cx_start, controller.states["qdot"].cx_start)[
+        2
+    ][:2]
+    trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
+    ee = cas.vertcat(hand_pos, hand_vel)
+    e_fb = k_matrix @ ((ee - ref) + sensory_noise_magnitude)
+    jac_e_fb_x = cas.jacobian(e_fb, controller.states.cx_start)
+    trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
+    expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
+    func = cas.Function(
+        "f_expectedEffort_fb",
+        [controller.states.cx_start, controller.stochastic_variables.cx_start],
+        [expectedEffort_fb_mx],
+    )
+
+    out = func(controller.states.cx_start, controller.stochastic_variables.cx_start)
+
+    return out
+
+
+def track_final_marker(controller: PenaltyController) -> cas.MX:
+    """
+    Track the hand position.
+    """
+    q = controller.states["q"].cx_start
+    ee_pos = controller.model.markers(q)[2][:2]
+    return ee_pos
+
 
 def trapezoidal_integration_continuity_constraint(
     controllers: list[PenaltyController], force_field_magnitude
@@ -258,7 +412,7 @@ def prepare_socp(
     force_field_magnitude: float = 0,
     problem_type=ExampleType.CIRCLE,
     with_cholesky: bool = False,
-    expand_dynamics: bool = True,
+    with_scaling: bool = False,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -282,10 +436,6 @@ def prepare_socp(
         The type of problem to solve (CIRCLE or BAR)
     with_cholesky: bool
         If True, whether to use the Cholesky factorization of the covariance matrix or not
-    expand_dynamics: bool
-        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
-        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
-        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -312,7 +462,7 @@ def prepare_socp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL_SHOOTING, key="tau", weight=1e3 / 2, quadratic=True
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=1e3 / 2, quadratic=True
     )
 
     objective_functions.add(ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
@@ -324,18 +474,18 @@ def prepare_socp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(hand_equals_ref, node=Node.ALL_SHOOTING)
+    constraints.add(hand_equals_ref, node=Node.ALL)
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.PENULTIMATE, target=np.array([0, 0]))
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
 
     # This constraint insures that the hand reaches the target with x_mean
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.PENULTIMATE, target=ee_final_position, marker_index=2,
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, target=ee_final_position, marker_index=2,
                     axes=[Axis.X, Axis.Y])  ## merge conflict
     # While this constraint insures that the hand still reaches the target with the proper position and velocity even
     # in the presence of noise
@@ -354,6 +504,13 @@ def prepare_socp(
                     is_stochastic=True, )  ## merge conflict
 
     multinode_constraints = MultinodeConstraintList()
+    multinode_constraints.add(
+        reach_target_consistantly,
+        nodes_phase=[0 for _ in range(n_shooting)],
+        nodes=[i for i in range(n_shooting)],
+        min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
+        max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
+    )
     for i in range(n_shooting - 1):
         multinode_constraints.add(
             trapezoidal_integration_continuity_constraint,
@@ -386,7 +543,7 @@ def prepare_socp(
         motor_noise=np.zeros((n_tau, 1)),
         sensory_noise=np.zeros((n_q + n_qdot, 1)),
         with_cholesky=with_cholesky,
-        expand=expand_dynamics,
+        expand=False,
     )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf
@@ -411,17 +568,15 @@ def prepare_socp(
 
     # Initial guesses
     states_init = np.zeros((n_states, n_shooting + 1))
-    states_init[0, :-1] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting)
-    states_init[0, -1] = shoulder_pos_final
-    states_init[1, :-1] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting)
-    states_init[1, -1] = elbow_pos_final
+    states_init[0, :] = np.linspace(shoulder_pos_initial, shoulder_pos_final, n_shooting + 1)
+    states_init[1, :] = np.linspace(elbow_pos_initial, elbow_pos_final, n_shooting + 1)
     states_init[n_states:, :] = 0.01
 
     x_init = InitialGuessList()
     x_init.add("q", initial_guess=states_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
     x_init.add("qdot", initial_guess=states_init[n_q : n_q + n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
 
-    controls_init = np.ones((n_tau, n_shooting)) * 0.01
+    controls_init = np.ones((n_tau, n_shooting + 1)) * 0.01
 
     u_init = InitialGuessList()
     u_init.add("tau", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
@@ -511,6 +666,17 @@ def prepare_socp(
             max_bound=stochastic_max[curent_index : curent_index + n_cholesky_cov, :],
         )
 
+    # Vaiables scaling
+    u_scaling = VariableScalingList()
+    if with_scaling:
+        u_scaling["tau"] = [10] * n_tau
+
+    s_scaling = VariableScalingList()
+    if with_scaling:
+        s_scaling["k"] = [100] * (n_tau * (n_q + n_qdot))
+        s_scaling["ref"] = [1] * (n_q + n_qdot)
+        s_scaling["m"] = [1] * (n_states * n_states)
+
     return StochasticOptimalControlProgram(
         bio_model,
         dynamics,
@@ -522,11 +688,13 @@ def prepare_socp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         s_bounds=s_bounds,
+        u_scaling=u_scaling,
+        s_scaling=s_scaling,
         objective_functions=objective_functions,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
-        ode_solver=None,
-        skip_continuity=True,
+        ode_solver=OdeSolver.TRAPEZOIDAL(),
+        control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
         problem_type=problem_type,
@@ -537,6 +705,7 @@ def main():
     # --- Options --- #
     vizualize_sol_flag = True
     with_cholesky = True
+    with_scaling = True
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 
@@ -545,9 +714,7 @@ def main():
     # --- Prepare the ocp --- #
     dt = 0.01
     final_time = 0.8
-    # n_shooting = int(final_time / dt) + 1
-    final_time += dt
-    n_shooting = 5
+    n_shooting = int(final_time / dt)
 
     # --- Noise constants --- #
     motor_noise_std = 0.05
@@ -583,6 +750,7 @@ def main():
         problem_type=problem_type,
         force_field_magnitude=force_field_magnitude,
         with_cholesky=with_cholesky,
+        with_scaling=with_scaling,
     )
 
     sol_socp = socp.solve(solver)
@@ -628,7 +796,7 @@ def main():
         import bioviz
 
         b = bioviz.Viz(model_path=biorbd_model_path)
-        b.load_movement(q_sol[:, :-1])
+        b.load_movement(q_sol)
         b.exec()
 
 

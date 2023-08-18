@@ -128,7 +128,9 @@ class NonLinearProgram:
         self.dynamics = []
         self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func = None
+        self.noised_dynamics_func = None
         self.implicit_dynamics_func = None
+        self.noised_implicit_dynamics_func = None
         self.dynamics_type = None
         self.external_forces: list[Any] = []
         self.g = []
@@ -166,12 +168,16 @@ class NonLinearProgram:
         self.s_bounds = BoundsList()
         self.s_init = InitialGuessList()
         self.S = None
+        self.S_scaled = None
+        self.s_scaling = None
         self.assume_phase_dynamics = assume_phase_dynamics
         self.states = OptimizationVariableContainer(assume_phase_dynamics)
         self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
         self.controls = OptimizationVariableContainer(assume_phase_dynamics)
         self.stochastic_variables = OptimizationVariableContainer(assume_phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(assume_phase_dynamics)
+        self.motor_noise = None
+        self.sensory_noise = None
 
     def initialize(self, cx: Callable = None):
         """

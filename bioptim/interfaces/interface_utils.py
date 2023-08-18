@@ -7,6 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
+from ..limits.phase_transition import PhaseTransitionFcn
 from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule
 from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
@@ -206,19 +207,252 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
     def get_x_and_u_at_idx(_penalty, _idx, is_unscaled):
         """ """
-        if _penalty.multinode_penalty or _penalty.transition:
+
+        def get_control_modificator(index):
+            return (
+                1
+                if ocp.assume_phase_dynamics
+                and (
+                    _penalty.nodes[index] == Node.END
+                    or _penalty.nodes[index] == ocp.nlp[_penalty.nodes_phase[index]].ns
+                )
+                else 0
+            )
+
+        if _penalty.transition:
             ocp = interface.ocp
 
-            def get_control_modificator(index):
-                return (
-                    1
-                    if ocp.assume_phase_dynamics
-                    and (
-                        _penalty.nodes[index] == Node.END
-                        or _penalty.nodes[index] == ocp.nlp[_penalty.nodes_phase[index]].ns
+            u0_mode = get_control_modificator(0)
+            u1_mode = get_control_modificator(1)
+
+            if is_unscaled:
+                if (
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].X[0][:, 0].shape[0]
+                    > interface.ocp.nlp[_penalty.nodes_phase[0]].X[0][:, 0].shape[0]
+                ):
+                    fake = interface.ocp.cx(
+                        interface.ocp.nlp[_penalty.nodes_phase[1]].X[0][:, 0].shape[0]
+                        - interface.ocp.nlp[_penalty.nodes_phase[0]].X[0][:, 0].shape[0],
+                        1,
                     )
-                    else 0
-                )
+                    _x_0 = vertcat(
+                        interface.ocp.nlp[_penalty.nodes_phase[0]].X[_penalty.all_nodes_index[0]][:, 0],
+                        fake,
+                    )
+                else:
+                    _x_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].X[_penalty.all_nodes_index[0]][:, 0]
+                if (
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].X[0][:, 0].shape[0]
+                    > interface.ocp.nlp[_penalty.nodes_phase[1]].X[0][:, 0].shape[0]
+                ):
+                    fake = interface.ocp.cx(
+                        interface.ocp.nlp[_penalty.nodes_phase[0]].X[0][:, 0].shape[0]
+                        - interface.ocp.nlp[_penalty.nodes_phase[1]].X[0][:, 0].shape[0],
+                        1,
+                    )
+                    _x_1 = vertcat(
+                        interface.ocp.nlp[_penalty.nodes_phase[1]].X[_penalty.all_nodes_index[1]][:, 0],
+                        fake,
+                    )
+                else:
+                    _x_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].X[_penalty.all_nodes_index[1]][:, 0]
+
+                if ocp.assume_phase_dynamics or _penalty.all_nodes_index[0] < len(interface.ocp.nlp[0].U):
+                    if (
+                        interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
+                        > interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
+                    ) and (
+                        _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled)
+                        or ocp.assume_phase_dynamics
+                    ):
+                        fake = interface.ocp.cx(
+                            interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
+                            - interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0],
+                            1,
+                        )
+                        _u_0 = vertcat(
+                            interface.ocp.nlp[_penalty.nodes_phase[0]].U[_penalty.all_nodes_index[0] - u0_mode],
+                            fake,
+                        )
+                    else:
+                        _u_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].U[_penalty.all_nodes_index[0] - u0_mode]
+                else:
+                    _u_0 = []
+                if ocp.assume_phase_dynamics or _penalty.all_nodes_index[1] < len(
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].U
+                ):
+                    if (
+                        interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
+                        > interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
+                    ) and (
+                        _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled)
+                        or ocp.assume_phase_dynamics
+                    ):
+                        fake = interface.ocp.cx(
+                            interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
+                            - interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0],
+                            1,
+                        )
+                        _u_1 = vertcat(
+                            interface.ocp.nlp[_penalty.nodes_phase[1]].U[_penalty.all_nodes_index[1] - u1_mode],
+                            fake,
+                        )
+                    else:
+                        _u_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].U[_penalty.all_nodes_index[1] - u1_mode]
+                else:
+                    _u_1 = []
+
+                if (
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].S[0].shape[0]
+                    > interface.ocp.nlp[_penalty.nodes_phase[0]].S[0].shape[0]
+                ):
+                    fake = interface.ocp.cx(
+                        interface.ocp.nlp[_penalty.nodes_phase[1]].S[0].shape[0]
+                        - interface.ocp.nlp[_penalty.nodes_phase[0]].S[0].shape[0],
+                        1,
+                    )
+                    _s_0 = vertcat(
+                        interface.ocp.nlp[_penalty.nodes_phase[0]].S[_penalty.all_nodes_index[0]],
+                        fake,
+                    )
+                else:
+                    _s_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].S[_penalty.all_nodes_index[0]]
+                if (
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].S[0].shape[0]
+                    > interface.ocp.nlp[_penalty.nodes_phase[1]].S[0].shape[0]
+                ):
+                    fake = interface.ocp.cx(
+                        interface.ocp.nlp[_penalty.nodes_phase[0]].S[0].shape[0]
+                        - interface.ocp.nlp[_penalty.nodes_phase[1]].S[0].shape[0],
+                        1,
+                    )
+                    _s_1 = vertcat(
+                        interface.ocp.nlp[_penalty.nodes_phase[1]].S[_penalty.all_nodes_index[1]],
+                        fake,
+                    )
+                else:
+                    _s_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].S[_penalty.all_nodes_index[1]]
+
+            else:
+                if (
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[0][:, 0].shape[0]
+                    > interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[0][:, 0].shape[0]
+                ):
+                    fake = interface.ocp.cx(
+                        interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[0][:, 0].shape[0]
+                        - interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[0][:, 0].shape[0],
+                        1,
+                    )
+                    _x_0 = vertcat(
+                        interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[_penalty.all_nodes_index[0]][:, 0],
+                        fake,
+                    )
+                else:
+                    _x_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[_penalty.all_nodes_index[0]][:, 0]
+                if (
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[0][:, 0].shape[0]
+                    > interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[0][:, 0].shape[0]
+                ):
+                    fake = interface.ocp.cx(
+                        interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[0][:, 0].shape[0]
+                        - interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[0][:, 0].shape[0],
+                        1,
+                    )
+                    _x_1 = vertcat(
+                        interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[_penalty.all_nodes_index[1]][:, 0],
+                        fake,
+                    )
+                else:
+                    _x_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[_penalty.all_nodes_index[1]][:, 0]
+
+                if ocp.assume_phase_dynamics or _penalty.all_nodes_index[0] < len(
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled
+                ):
+                    if (
+                        interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
+                        > interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
+                    ) and (
+                        _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled)
+                        or ocp.assume_phase_dynamics
+                    ):
+                        fake = interface.ocp.cx(
+                            interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
+                            - interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0],
+                            1,
+                        )
+                        _u_0 = vertcat(
+                            interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[_penalty.all_nodes_index[0] - u0_mode],
+                            fake,
+                        )
+                    else:
+                        _u_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[
+                            _penalty.all_nodes_index[0] - u0_mode
+                        ]
+                else:
+                    _u_0 = []
+                if ocp.assume_phase_dynamics or _penalty.all_nodes_index[1] < len(
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled
+                ):
+                    if (
+                        interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
+                        > interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
+                    ) and (
+                        _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled)
+                        or ocp.assume_phase_dynamics
+                    ):
+                        fake = interface.ocp.cx(
+                            interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
+                            - interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0],
+                            1,
+                        )
+                        _u_1 = vertcat(
+                            interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[_penalty.all_nodes_index[1] - u1_mode],
+                            fake,
+                        )
+                    else:
+                        _u_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[
+                            _penalty.all_nodes_index[1] - u1_mode
+                        ]
+                else:
+                    _u_1 = []
+
+                if (
+                    interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[0].shape[0]
+                    > interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[0].shape[0]
+                ):
+                    fake = interface.ocp.cx(
+                        interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[0].shape[0]
+                        - interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[0].shape[0],
+                        1,
+                    )
+                    _s_0 = vertcat(
+                        interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[_penalty.all_nodes_index[0]],
+                        fake,
+                    )
+                else:
+                    _s_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[_penalty.all_nodes_index[0]]
+                if (
+                    interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[0].shape[0]
+                    > interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[0].shape[0]
+                ):
+                    fake = interface.ocp.cx(
+                        interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[0].shape[0]
+                        - interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[0].shape[0],
+                        1,
+                    )
+                    _s_1 = vertcat(
+                        interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[_penalty.all_nodes_index[1]],
+                        fake,
+                    )
+                else:
+                    _s_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[_penalty.all_nodes_index[1]]
+
+            _x = vertcat(_x_1, _x_0)
+            _u = vertcat(_u_1, _u_0)
+            _s = vertcat(_s_1, _s_0)
+
+        elif _penalty.multinode_penalty:
+            ocp = interface.ocp
 
             # Make an exception to the fact that U is not available for the last node
             _x = ocp.cx()
@@ -230,84 +464,199 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 ui_mode = get_control_modificator(i)
 
                 if is_unscaled:
-                    _x_tp = nlp_i.X[index_i]
+                    _x_tp = nlp_i.cx()
+                    if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                        _x_tp = vertcat(_x_tp, nlp_i.X[index_i][:, 0])
+                    else:
+                        for i in range(nlp_i.X[index_i].shape[1]):
+                            _x_tp = vertcat(_x_tp, nlp_i.X[index_i][:, i])
                     _u_tp = nlp_i.U[index_i - ui_mode] if ocp.assume_phase_dynamics or index_i < len(nlp_i.U) else []
+                    _s_tp = nlp_i.S[index_i]
                 else:
-                    _x_tp = nlp_i.X_scaled[index_i]
+                    _x_tp = nlp_i.cx()
+                    if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                        _x_tp = vertcat(_x_tp, nlp_i.X_scaled[index_i][:, 0])
+                    else:
+                        for i in range(nlp_i.X_scaled[index_i].shape[1]):
+                            _x_tp = vertcat(_x_tp, nlp_i.X_scaled[index_i][:, i])
                     _u_tp = (
                         nlp_i.U_scaled[index_i - ui_mode]
                         if ocp.assume_phase_dynamics or index_i < len(nlp_i.U_scaled)
                         else []
                     )
-                _s_tp = nlp_i.S[index_i]
+                    _s_tp = nlp_i.S_scaled[index_i]
 
-                # 0th column since this constraint can only be applied to a single point. This is to account for
-                # the COLLOCATION which will have multiple column, but are not intended to be used here
-                _x = vertcat(_x, _x_tp[:, 0])
+                _x = vertcat(_x, _x_tp)
                 _u = vertcat(_u, _u_tp)
                 _s = vertcat(_s, _s_tp)
 
         elif _penalty.integrate:
             if is_unscaled:
-                _x = nlp.X[_idx]
-                _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+                _x = nlp.cx()
+                for i in range(nlp.X[_idx].shape[1]):
+                    _x = vertcat(_x, nlp.X[_idx][:, i])
+                _u = nlp.U[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U) else []
+                _s = nlp.S[_idx]
             else:
-                _x = nlp.X_scaled[_idx]
-                _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
-            _s = nlp.S[_idx]
+                _x = nlp.cx()
+                for i in range(nlp.X_scaled[_idx].shape[1]):
+                    _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
+                _u = nlp.U_scaled[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U_scaled) else []
+                _s = nlp.S_scaled[_idx]
         else:
             if is_unscaled:
-                _x = nlp.X[_idx][:, 0]
-                _u = nlp.U[_idx][:, 0] if _idx < len(nlp.U) else []
+                _x = nlp.cx()
+                if (
+                    _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    or _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
+                ):
+                    _x = vertcat(_x, nlp.X[_idx][:, 0])
+                else:
+                    for i in range(nlp.X[_idx].shape[1]):
+                        _x = vertcat(_x, nlp.X[_idx][:, i])
+
+                # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
+                if (
+                    _idx == nlp.ns
+                    and nlp.ode_solver.is_direct_collocation
+                    and nlp.assume_phase_dynamics
+                    and _penalty.node[0] != Node.END
+                    and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                ):
+                    for i in range(1, nlp.X[_idx - 1].shape[1]):
+                        _x = vertcat(_x, nlp.X[_idx - 1][:, i])
+
+                _u = nlp.U[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U) else []
+                _s = nlp.S[_idx][:, 0]
             else:
-                _x = nlp.X_scaled[_idx][:, 0]
+                _x = nlp.cx()
+                if (
+                    _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    or _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
+                ):
+                    _x = vertcat(_x, nlp.X_scaled[_idx][:, 0])
+                else:
+                    for i in range(nlp.X_scaled[_idx].shape[1]):
+                        _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
+
+                # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
+                if (
+                    _idx == nlp.ns
+                    and nlp.ode_solver.is_direct_collocation
+                    and nlp.assume_phase_dynamics
+                    and _penalty.node[0] != Node.END
+                    and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                ):
+                    for i in range(1, nlp.X_scaled[_idx - 1].shape[1]):
+                        _x = vertcat(_x, nlp.X_scaled[_idx - 1][:, i])
+
                 if sum(_penalty.weighted_function[_idx].size_in(1)) == 0:
                     _u = []
+                elif nlp.assume_phase_dynamics and _idx == len(nlp.U_scaled):
+                    _u = nlp.U_scaled[_idx - 1][:, 0]
+                elif _idx < len(nlp.U_scaled):
+                    _u = nlp.U_scaled[_idx][:, 0]
                 else:
-                    _u = nlp.U_scaled[_idx][:, 0] if _idx < len(nlp.U_scaled) else []
-            _s = nlp.S[_idx][:, 0]
+                    _u = []
+                _s = nlp.S_scaled[_idx][:, 0]
 
-        if _penalty.derivative or _penalty.explicit_derivative:
+        if _penalty.explicit_derivative:
             if _idx < nlp.ns:
                 if is_unscaled:
                     x = nlp.X[_idx + 1][:, 0]
-                    u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                    if nlp.assume_phase_dynamics and _idx + 1 == len(nlp.U):
+                        u = nlp.U[_idx][:, 0]
+                    elif _idx + 1 < len(nlp.U):
+                        u = nlp.U[_idx + 1][:, 0]
+                    else:
+                        u = []
+                    s = nlp.S[_idx + 1][:, 0]
                 else:
                     x = nlp.X_scaled[_idx + 1][:, 0]
-                    u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
-                s = nlp.S[_idx + 1][:, 0]
+                    if nlp.assume_phase_dynamics and _idx + 1 == len(nlp.U_scaled):
+                        u = nlp.U_scaled[_idx][:, 0]
+                    elif _idx + 1 < len(nlp.U_scaled):
+                        u = nlp.U_scaled[_idx + 1][:, 0]
+                    else:
+                        u = []
+                    s = nlp.S_scaled[_idx + 1][:, 0]
 
-                _x = horzcat(_x, x)
-                _u = horzcat(_u, u)
-                _s = horzcat(_s, s)
+                _x = vertcat(_x, x)
+                _u = vertcat(_u, u)
+                _s = vertcat(_s, s)
+
+        if _penalty.derivative:
+            if _idx < nlp.ns:
+                if is_unscaled:
+                    x = nlp.X[_idx + 1][:, 0]
+                    if _idx + 1 == len(nlp.U):
+                        u = nlp.U[_idx][:, 0]
+                    elif _idx + 1 < len(nlp.U):
+                        u = nlp.U[_idx + 1][:, 0]
+                    else:
+                        u = []
+                    s = nlp.S[_idx + 1][:, 0]
+                else:
+                    x = nlp.X_scaled[_idx + 1][:, 0]
+                    if _idx + 1 == len(nlp.U_scaled):
+                        u = nlp.U_scaled[_idx][:, 0]
+                    elif _idx + 1 < len(nlp.U_scaled):
+                        u = nlp.U_scaled[_idx + 1][:, 0]
+                    else:
+                        u = []
+                    s = nlp.S_scaled[_idx + 1][:, 0]
+
+                _x = vertcat(_x, x)
+                _u = vertcat(_u, u)
+                _s = vertcat(_s, s)
 
         if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
             if is_unscaled:
                 x = nlp.X[_idx + 1][:, 0]
+                s = nlp.S[_idx + 1][:, 0]
             else:
                 x = nlp.X_scaled[_idx + 1][:, 0]
-            _x = horzcat(_x, x)
-            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+                s = nlp.S_scaled[_idx + 1][:, 0]
+            _x = vertcat(_x, x)
+            _s = vertcat(_s, s)
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
-                    u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                    u = nlp.U[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U) else []
                 else:
-                    u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
-                _u = horzcat(_u, u)
-            s = nlp.S[_idx + 1][:, 0]
-            _s = horzcat(_s, s)
+                    u = (
+                        nlp.U_scaled[_idx + 1][:, 0]
+                        if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U_scaled)
+                        else []
+                    )
+                _u = vertcat(_u, u)
 
-        if _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
-            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+        elif _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
-                    u = nlp.U[_idx + 1][:, 0] if _idx + 1 < len(nlp.U) else []
+                    u = nlp.U[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U) else []
                 else:
-                    u = nlp.U_scaled[_idx + 1][:, 0] if _idx + 1 < len(nlp.U_scaled) else []
-                _u = horzcat(_u, u)
+                    u = (
+                        nlp.U_scaled[_idx + 1][:, 0]
+                        if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U_scaled)
+                        else []
+                    )
+                _u = vertcat(_u, u)
         return _x, _u, _s
 
     param = interface.ocp.cx(interface.ocp.parameters.cx)
     out = interface.ocp.cx()
     for penalty in penalties:
+        if penalty.multinode_penalty:
+            phase_idx = penalty.nodes_phase[0]
+        else:
+            phase_idx = penalty.phase
+        if interface.ocp.nlp[phase_idx].motor_noise is not None:
+            motor_noise = interface.ocp.nlp[phase_idx].motor_noise
+            sensory_noise = interface.ocp.nlp[phase_idx].sensory_noise
+        else:
+            motor_noise = interface.ocp.nlp[phase_idx].cx()
+            sensory_noise = interface.ocp.nlp[phase_idx].cx()
+
         if not penalty:
             continue
 
@@ -324,13 +673,15 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 x = horzcat(x, x_tp)
                 u = horzcat(u, u_tp)
                 s = horzcat(s, s_tp)
-            if (
-                penalty.derivative or penalty.explicit_derivative or penalty.node[0] == Node.ALL
-            ) and nlp.control_type == ControlType.CONSTANT:
-                u = horzcat(u, u[:, -1])
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            p = reshape(penalty.weighted_function[0](x, u, param, s, penalty.weight, target, penalty.dt), -1, 1)
+            p = reshape(
+                penalty.weighted_function[0](
+                    x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
+                ),
+                -1,
+                1,
+            )
 
         else:
             p = interface.ocp.cx()
@@ -356,7 +707,12 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     s = []
                 else:
                     x, u, s = get_x_and_u_at_idx(penalty, idx, is_unscaled)
-                p = vertcat(p, penalty.weighted_function[idx](x, u, param, s, penalty.weight, target, penalty.dt))
+                    p = vertcat(
+                        p,
+                        penalty.weighted_function[idx](
+                            x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
+                        ),
+                    )
 
         out = vertcat(out, sum2(p))
     return out

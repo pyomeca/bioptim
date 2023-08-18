@@ -20,13 +20,14 @@ from bioptim import (
     ObjectiveFcn,
     OptimalControlProgram,
     OdeSolver,
+    ControlType,
 )
 
 from tests.utils import TestUtils
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK, OdeSolver.TRAPEZOIDAL])
 def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
@@ -41,6 +42,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    control_type = ControlType.CONSTANT
     if ode_solver == OdeSolver.IRK:
         ft = 2
         ns = 35
@@ -53,6 +55,11 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
         ft = 2
         ns = 30
         max_ft = 1
+    elif ode_solver == OdeSolver.TRAPEZOIDAL:
+        ft = 2
+        ns = 15
+        max_ft = 1
+        control_type = ControlType.CONSTANT_WITH_LAST_NODE
     else:
         raise ValueError("Test not implemented")
 
@@ -65,6 +72,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
         weight=-1,
         assume_phase_dynamics=assume_phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
+        control_type=control_type,
     )
     sol = ocp.solve()
 
@@ -448,7 +456,10 @@ def test_monophase_time_constraint(ode_solver, assume_phase_dynamics):
 
 
 @pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+@pytest.mark.parametrize(
+    "ode_solver",
+    [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK],
+)
 def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
