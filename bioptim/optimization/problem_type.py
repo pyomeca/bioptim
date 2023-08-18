@@ -9,7 +9,7 @@ class SocpType:
     def __init__(self):
         pass
 
-    class SOCP_EXPLICIT:
+    class SOCP_TRAPEZOIDAL_EXPLICIT:
         """
         The class used to declare a stochastic problem with explicit stochastic dynamics
         Attributes
@@ -24,7 +24,7 @@ class SocpType:
             self.motor_noise_magnitude = motor_noise_magnitude
             self.sensory_noise_magnitude = sensory_noise_magnitude
 
-    class SOCP_IMPLICIT:
+    class SOCP_TRAPEZOIDAL_IMPLICIT:
         """
         The class used to declare a stochastic problem with implicit stochastic dynamics
         Attributes

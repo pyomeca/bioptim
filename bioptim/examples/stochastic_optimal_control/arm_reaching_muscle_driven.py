@@ -592,7 +592,7 @@ def prepare_socp(
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
-        problem_type=SocpType.SOCP_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
+        problem_type=SocpType.SOCP_TRAPEZOIDAL_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
         integrated_value_functions=integrated_value_functions,
     )
 

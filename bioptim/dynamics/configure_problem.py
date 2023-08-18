@@ -342,7 +342,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
         ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
 
-        if problem_type == SocpType.SOCP_EXPLICIT:
+        if problem_type == SocpType.SOCP_TRAPEZOIDAL_EXPLICIT:
             ConfigureProblem.configure_stochastic_cov_explicit(ocp, nlp, n_noised_states=4)
         else:
             if with_cholesky:
@@ -350,7 +350,7 @@ class ConfigureProblem:
             else:
                 ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
 
-        if problem_type == SocpType.SOCP_IMPLICIT:
+        if problem_type == SocpType.SOCP_TRAPEZOIDAL_IMPLICIT:
             ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
             ConfigureProblem.configure_stochastic_c(ocp, nlp, n_feedbacks=4, n_noise=6)
 
