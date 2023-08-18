@@ -345,7 +345,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             M_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START)
+                .reshape_to_matrix(Node.START)
             )
 
             dx = dynamics(
@@ -426,12 +426,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             m_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START)
+                .reshape_to_matrix(Node.START)
             )
             a_plus_matrix = (
                 controllers[1]
                 .stochastic_variables["a"]
-                .reshape_to_matrix(controllers[1].stochastic_variables, Node.START)
+                .reshape_to_matrix(Node.START)
             )
 
             DG_DZ = MX_eye(a_plus_matrix.shape[0]) - a_plus_matrix * dt / 2
@@ -457,32 +457,30 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = controllers[0].model.nb_q - controllers[0].model.nb_root
-
             cov_matrix = (
                 controllers[0]
                 .stochastic_variables["cov"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START)
+                .reshape_to_matrix(Node.START)
             )
             cov_matrix_next = (
                 controllers[1]
                 .stochastic_variables["cov"]
-                .reshape_to_matrix(controllers[1].stochastic_variables, Node.START)
+                .reshape_to_matrix(Node.START)
             )
             a_matrix = (
                 controllers[0]
                 .stochastic_variables["a"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START)
+                .reshape_to_matrix(Node.START)
             )
             c_matrix = (
                 controllers[0]
                 .stochastic_variables["c"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START)
+                .reshape_to_matrix(Node.START)
             )
             m_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START)
+                .reshape_to_matrix(Node.START)
             )
 
             sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude)
@@ -522,7 +520,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             c_matrix = (
                 controllers[0]
                 .stochastic_variables["c"]
-                .reshape_to_matrix(controllers[0].stochastic_variables, Node.START)
+                .reshape_to_matrix(Node.START)
             )
 
             q_root = MX.sym("q_root", nb_root, 1)
@@ -630,12 +628,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 l_cov_matrix = (
                     controllers[0]
                     .stochastic_variables["cholesky_cov"]
-                    .reshape_to_cholesky_matrix(controllers[0].stochastic_variables, Node.START)
+                    .reshape_to_cholesky_matrix(Node.START)
                 )
                 l_cov_matrix_next = (
                     controllers[1]
                     .stochastic_variables["cholesky_cov"]
-                    .reshape_to_cholesky_matrix(controllers[1].stochastic_variables, Node.START)
+                    .reshape_to_cholesky_matrix(Node.START)
                 )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
                 cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
@@ -643,19 +641,17 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 cov_matrix = (
                     controllers[0]
                     .stochastic_variables["cov"]
-                    .reshape_to_matrix(controllers[0].stochastic_variables, Node.START)
+                    .reshape_to_matrix(Node.START)
                 )
                 cov_matrix_next = (
                     controllers[1]
                     .stochastic_variables["cov"]
-                    .reshape_to_matrix(controllers[1].stochastic_variables, Node.START)
+                    .reshape_to_matrix(Node.START)
                 )
             m_matrix = (
                 controllers[0]
                 .stochastic_variables["m"]
-                .reshape_to_matrix(
-                    controllers[0].stochastic_variables, Node.START
-                )
+                .reshape_to_matrix(Node.START)
             )
 
             x_q_root = controllers[0].cx.sym("x_q_root", nb_root, 1)

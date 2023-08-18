@@ -150,16 +150,16 @@ class OptimizationVariable:
                 vector[shape_0 * s1 + s0] = matrix[s0, s1]
         return vector
 
-    def reshape_to_matrix(self, variable, node: Node):
+    def reshape_to_matrix(self, node: Node):
         """
         Restore the matrix form of the variables
         """
         if node == Node.START:
-            var = variable[self.name].cx_start
+            var = self.cx_start
         elif node == Node.MID:
-            var = variable[self.name].cx_mid
+            var = self.cx_mid
         elif node == Node.END:
-            var = variable[self.name].cx_end
+            var = self.cx_end
         else:
             raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
 
@@ -181,20 +181,16 @@ class OptimizationVariable:
                 matrix[s1, s0] = variable[s0 * shape_0 + s1]
         return matrix
 
-    def reshape_to_cholesky_matrix(self, variable, node: Node):
+    def reshape_to_cholesky_matrix(self, node: Node):
         """
         Restore the lower diagonal matrix form of the variables vector
         """
-        if node is None:
-            raise RuntimeError(
-                "The node must be specified, you have the choice between Node.START, Node.MID, and" "Node.END"
-            )
         if node == Node.START:
-            var = variable[self.name].cx_start
+            var = self.cx_start
         elif node == Node.MID:
-            var = variable[self.name].cx_mid
+            var = self.cx_mid
         elif node == Node.END:
-            var = variable[self.name].cx_end
+            var = self.cx_end
         else:
             raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
 

@@ -226,16 +226,10 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     # Get the symbolic variables
     ref = controller.stochastic_variables["ref"].cx_start
     if "cholesky_cov" in controller.stochastic_variables.keys():
-        l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
-            controller.stochastic_variables,
-            Node.START,
-        )
+        l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(Node.START)
         cov_matrix = l_cov_matrix @ l_cov_matrix.T
     else:
-        cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-            controller.stochastic_variables,
-            Node.START,
-        )
+        cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(Node.START)
 
     k = controller.stochastic_variables["k"].cx_start
     k_matrix = cas.MX(n_q + n_qdot, n_tau)

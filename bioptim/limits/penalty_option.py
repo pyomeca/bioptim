@@ -395,20 +395,14 @@ class PenaltyOption(OptionGeneric):
             l_cov_matrix = (
                 controller
                     .stochastic_variables["cholesky_cov"]
-                    .reshape_to_cholesky_matrix(
-                    controller.stochastic_variables,
-                    Node.START,
-                )
+                    .reshape_to_cholesky_matrix(Node.START)
             )
             cov_matrix = l_cov_matrix @ l_cov_matrix.T
         else:
             cov_matrix = (
                 controller
                     .stochastic_variables["cov"]
-                    .reshape_to_matrix(
-                    controller.stochastic_variables,
-                    Node.START,
-                )
+                    .reshape_to_matrix(Node.START)
             )
 
         jac_fcn_states = jacobian(fcn, state_cx_scaled)
