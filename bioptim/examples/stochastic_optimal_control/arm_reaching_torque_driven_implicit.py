@@ -202,74 +202,6 @@ def hand_equals_ref(controller: PenaltyController) -> cas.MX:
     return ee - ref
 
 
-def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
-    """
-    Constraint the hand to reach the target consistently.
-    This is a multi-node constraint because the covariance matrix depends on all the precedent nodes, but it only
-    applies at the END node.
-    """
-
-    nx = controllers[-1].states["q"].cx_start.shape[0]
-
-    q_sym = cas.MX.sym("q_sym", nx)
-    qdot_sym = cas.MX.sym("qdot_sym", nx)
-    if "cholesky_cov" in controllers[0].stochastic_variables.keys():
-        cov_sym = cas.MX.sym("cov", controllers[0].stochastic_variables["cholesky_cov"].cx_start.shape[0])
-        cov_sym_dict = {"cholesky_cov": cov_sym}
-        cov_sym_dict["cholesky_cov"].cx_start = cov_sym
-        l_cov_matrix = (
-            controllers[0]
-            .stochastic_variables["cholesky_cov"]
-            .reshape_to_cholesky_matrix(
-                cov_sym_dict,
-                Node.START,
-                "cholesky_cov",
-            )
-        )
-        cov_matrix = l_cov_matrix @ l_cov_matrix.T
-    else:
-        cov_sym = cas.MX.sym("cov", controllers[0].stochastic_variables["cov"].cx_start.shape[0])
-        cov_sym_dict = {"cov": cov_sym}
-        cov_sym_dict["cov"].cx_start = cov_sym
-        cov_matrix = (
-            controllers[0]
-            .stochastic_variables["cov"]
-            .reshape_to_matrix(
-                cov_sym_dict,
-                Node.START,
-                "cov",
-            )
-        )
-
-    hand_pos = controllers[0].model.markers(q_sym)[2][:2]
-    hand_vel = controllers[0].model.marker_velocities(q_sym, qdot_sym)[2][:2]
-
-    jac_marker_q = cas.jacobian(hand_pos, q_sym)
-    jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(q_sym, qdot_sym))
-
-    cov_matrix_q = cov_matrix[:2, :2]
-    cov_matrix_qdot = cov_matrix[:4, :4]
-
-    pos_constraint = jac_marker_q @ cov_matrix_q @ jac_marker_q.T
-    vel_constraint = jac_marker_qdot @ cov_matrix_qdot @ jac_marker_qdot.T
-
-    out = cas.vertcat(pos_constraint[0, 0], pos_constraint[1, 1], vel_constraint[0, 0], vel_constraint[1, 1])
-
-    fun = cas.Function("reach_target_consistantly", [q_sym, qdot_sym, cov_sym], [out])
-    val = fun(
-        controllers[-1].states["q"].cx_start,
-        controllers[-1].states["qdot"].cx_start,
-        (
-            controllers[-1].stochastic_variables["cholesky_cov"].cx_start
-            if "cholesky_cov" in controllers[-1].stochastic_variables.keys()
-            else controllers[-1].stochastic_variables["cov"].cx_start
-        ),
-    )
-    # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
-
-    return val
-
-
 def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnitude: cas.DM) -> cas.MX:
     """
     This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
@@ -334,63 +266,6 @@ def expected_feedback_effort(controller: PenaltyController, sensory_noise_magnit
     out = func(controller.states.cx_start, controller.stochastic_variables.cx_start)
 
     return out
-
-
-def track_final_marker(controller: PenaltyController) -> cas.MX:
-    """
-    Track the hand position.
-    """
-    q = controller.states["q"].cx_start
-    ee_pos = controller.model.markers(q)[2][:2]
-    return ee_pos
-
-
-def trapezoidal_integration_continuity_constraint(
-    controllers: list[PenaltyController], force_field_magnitude
-) -> cas.MX:
-    """
-    This function computes the continuity constraint for the trapezoidal integration scheme.
-    It is computed as:
-        x_i_plus - x_i - dt/2 * (f(x_i, u_i) + f(x_i_plus, u_i_plus)) = 0
-    """
-    n_q = controllers[0].model.nb_q
-    n_qdot = controllers[0].model.nb_qdot
-    n_tau = controllers[0].model.nb_tau
-
-    motor_noise = np.zeros((n_tau, 1))
-    sensory_noise = np.zeros((n_q + n_qdot, 1))
-    dt = controllers[0].tf / controllers[0].ns
-
-    dyn = stochastic_forward_dynamics(
-        controllers[0].states.cx_start,
-        controllers[0].controls.cx_start,
-        controllers[0].parameters.cx_start,
-        controllers[0].stochastic_variables.cx_start,
-        controllers[0].get_nlp,
-        motor_noise,
-        sensory_noise,
-        force_field_magnitude=force_field_magnitude,
-        with_gains=False,
-    )
-    dx_i = dyn.dxdt
-
-    dx_i_plus = stochastic_forward_dynamics(
-        controllers[1].states.cx_start,
-        controllers[1].controls.cx_start,
-        controllers[1].parameters.cx_start,
-        controllers[1].stochastic_variables.cx_start,
-        controllers[1].get_nlp,
-        motor_noise,
-        sensory_noise,
-        force_field_magnitude=force_field_magnitude,
-        with_gains=False,
-    ).dxdt
-
-    continuity = controllers[1].states.cx_start - (controllers[0].states.cx_start + (dx_i + dx_i_plus) / 2 * dt)
-    continuity *= 1e3
-
-    return continuity
-
 
 def prepare_socp(
     biorbd_model_path: str,
@@ -458,8 +333,7 @@ def prepare_socp(
     objective_functions.add(ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
                             sensory_noise_magnitude=sensory_noise_magnitude,
                             weight=1e3/2,
-                            quadratic=False,
-                            # quadratic=True,
+                            quadratic=True,
                             phase=0)
 
     # Constraints
@@ -485,29 +359,13 @@ def prepare_socp(
         max_bounds_lateral_variation = 0.004
     else:
         raise NotImplementedError("Wrong problem type")
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.PENULTIMATE, marker_index=2, axes=[Axis.X, Axis.Y],
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, marker_index=2, axes=[Axis.X, Axis.Y],
                     phase=0, min_bound=np.array([-cas.inf, -cas.inf]),
                     max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2]), is_stochastic=True,)  ## merge conflict
-    constraints.add(ConstraintFcn.TRACK_MARKERS_VELOCITY, node=Node.PENULTIMATE, marker_index=2, axes=[Axis.X, Axis.Y],
+    constraints.add(ConstraintFcn.TRACK_MARKERS_VELOCITY, node=Node.END, marker_index=2, axes=[Axis.X, Axis.Y],
                     phase=0, min_bound=np.array([-cas.inf, -cas.inf]),
                     max_bound=np.array([0.05**2, 0.05**2]),
                     is_stochastic=True, )  ## merge conflict
-
-    multinode_constraints = MultinodeConstraintList()
-    multinode_constraints.add(
-        reach_target_consistantly,
-        nodes_phase=[0 for _ in range(n_shooting)],
-        nodes=[i for i in range(n_shooting)],
-        min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
-        max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
-    )
-    for i in range(n_shooting - 1):
-        multinode_constraints.add(
-            trapezoidal_integration_continuity_constraint,
-            nodes_phase=[0, 0],
-            nodes=[i, i + 1],
-            force_field_magnitude=force_field_magnitude,
-        )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -683,7 +541,6 @@ def prepare_socp(
         s_scaling=s_scaling,
         objective_functions=objective_functions,
         constraints=constraints,
-        multinode_constraints=multinode_constraints,
         ode_solver=OdeSolver.TRAPEZOIDAL(),
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
