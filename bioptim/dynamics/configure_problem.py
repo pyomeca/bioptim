@@ -156,6 +156,7 @@ class ConfigureProblem:
         with_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
+        with_friction: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
@@ -175,6 +176,8 @@ class ConfigureProblem:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_friction: bool
+            If the dynamic with joint friction should be used (friction = coefficients * qdot)
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
@@ -234,6 +237,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                with_friction=with_friction,
             )
             if with_contact:
                 # qddot is continuous with RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
@@ -265,6 +269,7 @@ class ConfigureProblem:
                 phase=nlp.phase_idx,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                with_friction=with_friction,
             )
 
         # Declared soft contacts controls
@@ -284,6 +289,7 @@ class ConfigureProblem:
                 rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                with_friction=with_friction,
             )
 
         # Configure the contact forces
@@ -305,13 +311,11 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
+        n_references: int,
         with_contact: bool = False,
-        with_passive_torque: bool = False,
-        with_ligament: bool = False,
-        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
-        fatigue: FatigueList = None,
+        with_friction: bool = True,
         with_cholesky: bool = False,
+        initial_matrix: DM = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -324,48 +328,55 @@ class ConfigureProblem:
             A reference to the phase
         with_contact: bool
             If the dynamic with contact should be used
-        with_passive_torque: bool
-            If the dynamic with passive torque should be used
-        with_ligament: bool
-            If the dynamic with ligament should be used
-        rigidbody_dynamics: RigidBodyDynamics
-            which rigidbody dynamics should be used
-        soft_contacts_dynamics: SoftContactDynamics
-            which soft contact dynamic should be used
-        fatigue: FatigueList
-            A list of fatigue elements
-
+        with_friction: bool
+            If the dynamic with joint friction should be used (friction = coefficient * qdot)
         """
 
+        if "tau" in nlp.variable_mappings:
+            n_noised_tau = len(nlp.variable_mappings["tau"].map_idx)
+        else:
+            n_noised_tau = nlp.model.nb_tau
+        n_noise = problem_type.motor_noise_magnitude.shape[0] + problem_type.sensory_noise_magnitude.shape[0]
+        n_noised_states = 2 * n_noised_tau
+        
         # Stochastic variables
-        ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
-        ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
-        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
+        ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=n_noised_tau, n_references=n_references)
+        ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=n_references)
+        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states)
 
-        if problem_type == SocpType.SOCP_TRAPEZOIDAL_EXPLICIT:
-            ConfigureProblem.configure_stochastic_cov_explicit(ocp, nlp, n_noised_states=4)
+        if isinstance(problem_type, SocpType.SOCP_TRAPEZOIDAL_EXPLICIT):
+            if initial_matrix is None:
+                raise RuntimeError("The initial value for the covariance matrix must be provided for SOCP_TRAPEZOIDAL_EXPLICIT")
+            ConfigureProblem.configure_stochastic_cov_explicit(ocp, nlp, n_noised_states=n_noised_states, initial_matrix=initial_matrix)
         else:
             if with_cholesky:
-                ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=4)
+                ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=n_noised_states)
             else:
-                ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
+                ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=n_noised_states)
 
-        if problem_type == SocpType.SOCP_TRAPEZOIDAL_IMPLICIT:
-            ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
-            ConfigureProblem.configure_stochastic_c(ocp, nlp, n_feedbacks=4, n_noise=6)
+        if isinstance(problem_type, SocpType.SOCP_TRAPEZOIDAL_IMPLICIT):
+            ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=n_noised_states)
+            ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=n_noised_states, n_noise=n_noise)
 
         ConfigureProblem.torque_driven(
             ocp=ocp,
             nlp=nlp,
             with_contact=with_contact,
-            with_passive_torque=with_passive_torque,
-            with_ligament=with_ligament,
-            rigidbody_dynamics=rigidbody_dynamics,
-            soft_contacts_dynamics=soft_contacts_dynamics,
-            fatigue=fatigue,
+            with_friction=with_friction,
         )
 
-        # To be continued when collocations is merged
+        # @pariterre: what is this, how to set it ?
+        # if nlp.dynamics_type.noised_dynamic_function:
+        #     ConfigureProblem.configure_stochastic_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+        # else:
+        ConfigureProblem.configure_stochastic_dynamics_function(
+            ocp,
+            nlp,
+            DynamicsFunctions.stochastic_torque_driven,
+            with_contact=with_contact,
+            with_friction=with_friction,
+        )
+
 
     @staticmethod
     def torque_derivative_driven(
@@ -1213,7 +1224,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_feedbacks: int):
+    def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_references: int):
         """
         Configure the optimal feedback gain matrix K.
         Parameters
@@ -1228,13 +1239,13 @@ class ConfigureProblem:
 
         name_k = []
         control_names = [f"control_{i}" for i in range(n_noised_controls)]
-        feedback_names = [f"feedback_{i}" for i in range(n_feedbacks)]
-        matrix_shape = (n_noised_controls, n_feedbacks)
+        ref_names = [f"feedback_{i}" for i in range(n_references)]
+        matrix_shape = (n_noised_controls, n_references)
         for name_1 in control_names:
-            for name_2 in feedback_names:
+            for name_2 in ref_names:
                 name_k += [name_1 + "_&_" + name_2]
         nlp.variable_mappings[name] = BiMapping(
-            list(range(len(control_names) * len(feedback_names))), list(range(len(control_names) * len(feedback_names)))
+            list(range(len(control_names) * len(ref_names))), list(range(len(control_names) * len(ref_names)))
         )
         ConfigureProblem.configure_new_variable(
             name,
@@ -1250,7 +1261,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_c(ocp, nlp, n_feedbacks: int, n_noise: int):
+    def configure_stochastic_c(ocp, nlp, n_noised_states: int, n_noise: int):
         """
         Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
         Parameters
@@ -1263,13 +1274,13 @@ class ConfigureProblem:
         if name in nlp.variable_mappings:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
-        matrix_shape = (n_feedbacks, n_noise)
+        matrix_shape = (n_noised_states, n_noise)
 
         name_c = []
-        for name_1 in [f"X_{i}" for i in range(n_feedbacks)]:
+        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noise)]:
                 name_c += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_feedbacks * n_noise)), list(range(n_feedbacks * n_noise)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states * n_noise)), list(range(n_noised_states * n_noise)))
 
         ConfigureProblem.configure_new_variable(
             name,

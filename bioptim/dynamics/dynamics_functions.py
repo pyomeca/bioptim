@@ -79,6 +79,7 @@ class DynamicsFunctions:
         with_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
+        with_friction: bool,
         rigidbody_dynamics: RigidBodyDynamics,
         fatigue: FatigueList,
     ) -> DynamicsEvaluation:
@@ -101,6 +102,8 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_friction: bool
+            If the dynamic with friction should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         fatigue : FatigueList
@@ -120,6 +123,7 @@ class DynamicsFunctions:
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -171,6 +175,72 @@ class DynamicsFunctions:
                 defects[dq.shape[0] :, :] = tau - tau_id
 
         return DynamicsEvaluation(dxdt, defects)
+
+    @staticmethod
+    def stochastic_torque_driven(
+            states: MX.sym,
+            controls: MX.sym,
+            parameters: MX.sym,
+            stochastic_variables: MX.sym,
+            nlp,
+            motor_noise: MX.sym,
+            sensory_noise: MX.sym,
+            with_contact: bool,
+            with_friction: bool,
+    ) -> DynamicsEvaluation:
+        """
+        Forward dynamics subject to motor and sensory noise driven by joint torques, optional external forces can be declared.
+
+        Parameters
+        ----------
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic variables of the system
+        nlp: NonLinearProgram
+            The definition of the system
+        motor_noise: MX.sym
+            The motor noise of the system
+        sensory_noise: MX.sym
+            The sensory noise of the system
+        with_contact: bool
+            If the dynamic with contact should be used
+        with_friction: bool
+            If the dynamic with friction should be used
+
+        Returns
+        ----------
+        DynamicsEvaluation
+            The derivative of the states and the defects of the implicit dynamics
+        """
+
+        q = DynamicsFunctions.get(nlp.states["q"], states)
+        qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+
+        ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
+        k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
+        k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k)
+
+        sensory_input = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
+
+        noised_idx = nlp.variable_mappings["tau"].to_second.map_idx
+        tau[noised_idx] += k_matrix @ ((sensory_input - ref) + sensory_noise)
+        tau[noised_idx] += motor_noise
+        tau[noised_idx] = tau[noised_idx] + nlp.model.friction_coefficients @ qdot if with_friction else tau
+
+        # dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
+        dq = qdot
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
+        dxdt = MX(nlp.states.shape, ddq.shape[1])
+        dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[nlp.states["qdot"].index, :] = ddq
+
+        return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
     def __get_fatigable_tau(nlp: NonLinearProgram, states: MX, controls: MX, fatigue: FatigueList) -> MX:

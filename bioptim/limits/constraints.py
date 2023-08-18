@@ -636,17 +636,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return out_vector
 
         @staticmethod
-        def stochastic_dg_dx_implicit(
+        def stochastic_df_dx_implicit(
             penalty: Constraint,
             controller: PenaltyController,
-            dynamics: Callable,
             motor_noise_magnitude: DM,
             sensory_noise_magnitude: DM,
         ):
             """
             This function constrains the stochastic matrix A to its actual value which is
-            A = dG/dx
-            TODO: Charbie -> This is only true for trapezoidal integration
+            A = df/dx
             """
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
@@ -667,15 +665,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controller.parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controller.stochastic_variables.shape, 1)
 
-            dx = dynamics(
+            dx = controller.noised_dynamics(
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,  # Controls
                 parameters_sym,  # Parameters
                 stochastic_sym,  # Stochastic variables
-                controller.get_nlp,
                 controller.motor_noise,
                 controller.sensory_noise,
-                with_gains=True,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -694,7 +690,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.motor_noise,
                     controller.sensory_noise,
                 ],
-                [jacobian(dx.dxdt[non_root_index], vertcat(q_joints, qdot_joints))],
+                [jacobian(dx[non_root_index], vertcat(q_joints, qdot_joints))],
             )
 
             DF_DX = DF_DX_fun(
@@ -915,7 +911,7 @@ class ConstraintFcn(FcnEnum):
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
-    STOCHASTIC_DG_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_dg_dx_implicit,)
+    STOCHASTIC_DF_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_df_dx_implicit,)
     STOCHASTIC_HELPER_MATRIX_COLLOCATION = (ConstraintFunction.Functions.stochastic_helper_matrix_collocation,)
     STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (
         ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,

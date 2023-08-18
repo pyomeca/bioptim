@@ -154,7 +154,7 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_tau(ocp, nlp, False, True)
 
     # Stochastic variables
-    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
+    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_references=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
     ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_collocation_points=3 + 1)
     ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
@@ -313,7 +313,6 @@ def prepare_socp(
         node=Node.ALL,
         weight=1e3 / 2,
         quadratic=False,
-        phase=0,
     )
 
     # Constraints

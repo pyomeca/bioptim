@@ -211,6 +211,10 @@ class PenaltyController:
         return self._nlp.dynamics_func
 
     @property
+    def noised_dynamics(self):
+        return self._nlp.noised_dynamics_func
+
+    @property
     def states_scaled(self) -> OptimizationVariableList:
         """
         Return the scaled states associated with the current node index.

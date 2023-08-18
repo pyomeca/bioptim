@@ -166,7 +166,7 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_tau(ocp, nlp, False, True)
 
     # Stochastic variables
-    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
+    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_references=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
     ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=6)
     mat_p_init = cas.DM_eye(6) * np.array(

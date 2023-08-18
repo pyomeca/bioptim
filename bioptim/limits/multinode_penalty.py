@@ -309,7 +309,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         def stochastic_helper_matrix_explicit(
             penalty,
             controllers: list[PenaltyController, PenaltyController],
-            dynamics: Callable,
             motor_noise_magnitude: DM,
             sensory_noise_magnitude: DM,
         ):
@@ -319,7 +318,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             0 = df/dz - dg/dz @ M
             Note that here, we assume that the only z (collocation states) is the next interval states, therefore M is
             not computed at the same node as the other values.
-            TODO: Charbie -> This implementation is only true for Trapezoidal, should generalize for collocations
 
             Parameters
             ----------
@@ -327,8 +325,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 A reference to the phase penalty
             controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
-            dynamics: Callable
-                The states dynamics function
             motor_noise_magnitude: DM
                 The magnitude of the motor noise
             sensory_noise_magnitude: DM
@@ -344,15 +340,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             # TODO: Charbie -> This is only True for not mapped variables (have to think on how to generalize it)
             M_matrix = controllers[0].stochastic_variables["m"].reshape_to_matrix(Node.START)
 
-            dx = dynamics(
+            dx = controllers[0].noised_dynamics(
                 controllers[0].states.cx_start,
                 controllers[0].controls.cx_start,
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
-                controllers[0].get_nlp,
                 controllers[0].motor_noise,
                 controllers[0].sensory_noise,
-                with_gains=True,
             )
 
             DdZ_DX_fun = Function(
@@ -365,7 +359,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].motor_noise,
                     controllers[0].sensory_noise,
                 ],
-                [jacobian(dx.dxdt, controllers[0].states.cx_start)],
+                [jacobian(dx, controllers[0].states.cx_start)],
             )
 
             DdZ_DX = DdZ_DX_fun(
@@ -463,17 +457,15 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out_vector
 
         @staticmethod
-        def stochastic_dg_dw_implicit(
+        def stochastic_df_dw_implicit(
             penalty,
             controllers: list[PenaltyController],
-            dynamics: Callable,
             motor_noise_magnitude: DM,
             sensory_noise_magnitude: DM,
         ):
             """
             This function constrains the stochastic matrix C to its actual value which is
-            A = dG/dw
-            TODO: Charbie -> This is only true for trapezoidal integration
+            C = df/dw
             """
 
             if not controllers[0].get_nlp.is_stochastic:
@@ -495,15 +487,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controllers[0].parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controllers[0].stochastic_variables.shape, 1)
 
-            dx = dynamics(
+            dx = controllers[0].noised_dynamics(
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,
                 parameters_sym,
                 stochastic_sym,
-                controllers[0].get_nlp,
                 controllers[0].motor_noise,
                 controllers[0].sensory_noise,
-                with_gains=True,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -523,7 +513,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].motor_noise,
                     controllers[0].sensory_noise,
                 ],
-                [jacobian(dx.dxdt[non_root_index], vertcat(controllers[0].motor_noise, controllers[0].sensory_noise))],
+                [jacobian(dx[non_root_index], vertcat(controllers[0].motor_noise, controllers[0].sensory_noise))],
             )
 
             DF_DW = DF_DW_fun(

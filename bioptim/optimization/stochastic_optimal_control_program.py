@@ -265,7 +265,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    dynamics=nlp.dynamics_type.dynamic_function,
                     motor_noise_magnitude=motor_noise_magnitude,
                     sensory_noise_magnitude=sensory_noise_magnitude,
                 )
@@ -274,7 +273,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
-                    dynamics=nlp.dynamics_type.dynamic_function,
                     motor_noise_magnitude=motor_noise_magnitude,
                     sensory_noise_magnitude=sensory_noise_magnitude,
                 )
@@ -287,7 +285,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
 
-        # constraint A, C, P, M
         multi_node_penalties = MultinodeConstraintList()
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
@@ -317,10 +314,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         # Constraints for A
         for i_phase, nlp in enumerate(self.nlp):
             constraints.add(
-                ConstraintFcn.STOCHASTIC_DG_DX_IMPLICIT,
+                ConstraintFcn.STOCHASTIC_DF_DX_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
-                dynamics=nlp.dynamics_type.dynamic_function,
                 motor_noise_magnitude=motor_noise_magnitude,
                 sensory_noise_magnitude=sensory_noise_magnitude,
             )
@@ -329,19 +325,17 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         for i_phase, nlp in enumerate(self.nlp):
             for i_node in range(nlp.ns):
                 multi_node_penalties.add(
-                    MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
+                    MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    dynamics=nlp.dynamics_type.dynamic_function,
                     motor_noise_magnitude=motor_noise_magnitude,
                     sensory_noise_magnitude=sensory_noise_magnitude,
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
-                    MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
+                    MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase + 1),
                     nodes=(-1, 0),
-                    dynamics=nlp.dynamics_type.dynamic_function,
                     motor_noise_magnitude=motor_noise_magnitude,
                     sensory_noise_magnitude=sensory_noise_magnitude,
                 )

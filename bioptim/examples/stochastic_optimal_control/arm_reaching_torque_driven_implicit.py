@@ -51,28 +51,6 @@ class ExampleType(Enum):
     CIRCLE = "CIRCLE"
     BAR = "BAR"
 
-
-def get_force_field(q, force_field_magnitude):
-    """
-    Get the effect of the force field.
-
-    Parameters
-    ----------
-    q: MX.sym
-        The generalized coordinates
-    force_field_magnitude: float
-        The magnitude of the force field
-    """
-    l1 = 0.3
-    l2 = 0.33
-    f_force_field = force_field_magnitude * (l1 * cas.cos(q[0]) + l2 * cas.cos(q[0] + q[1]))
-    hand_pos = cas.MX(2, 1)
-    hand_pos[0] = l2 * cas.sin(q[0] + q[1]) + l1 * cas.sin(q[0])
-    hand_pos[1] = l2 * cas.sin(q[0] + q[1])
-    tau_force_field = -f_force_field @ hand_pos
-    return tau_force_field
-
-
 def sensory_reference_function(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
@@ -99,7 +77,6 @@ def stochastic_forward_dynamics(
     nlp: NonLinearProgram,
     motor_noise,
     sensory_noise,
-    force_field_magnitude,
     with_gains,
 ) -> DynamicsEvaluation:
     """
@@ -121,8 +98,6 @@ def stochastic_forward_dynamics(
         The motor noise
     sensory_noise: MX.sym
         The sensory noise
-    force_field_magnitude: float
-        The magnitude of the force field
     with_gains: bool
         If the feedback gains are included or not to the torques
     """
@@ -140,9 +115,7 @@ def stochastic_forward_dynamics(
 
         tau_fb += k_matrix @ ((hand_pos_velo - ref) + sensory_noise)
 
-    tau_force_field = nlp.model.force_field(q, force_field_magnitude)
-
-    torques_computed = tau_fb + motor_noise + tau_force_field
+    torques_computed = tau_fb + motor_noise
 
     friction = nlp.model.friction_coefficients
 
@@ -166,7 +139,7 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_tau(ocp, nlp, False, True)
 
     # Stochastic variables
-    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_feedbacks=4)
+    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_references=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
     ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
     if with_cholesky:
@@ -174,7 +147,7 @@ def configure_stochastic_optimal_control_problem(
     else:
         ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
     ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
-    ConfigureProblem.configure_stochastic_c(ocp, nlp, n_feedbacks=4, n_noise=6)
+    ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=4, n_noise=6)
 
     ConfigureProblem.configure_dynamics_function(
         ocp,
@@ -201,7 +174,6 @@ def prepare_socp(
     ee_final_position: np.ndarray,
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
-    force_field_magnitude: float = 0,
     example_type=ExampleType.CIRCLE,
     with_cholesky: bool = False,
     with_scaling: bool = False,
@@ -222,8 +194,6 @@ def prepare_socp(
         The magnitude of the motor noise
     sensory_noise_magnitude: cas.DM
         The magnitude of the sensory noise
-    force_field_magnitude: float
-        The magnitude of the force field
     example_type
         The type of problem to solve (CIRCLE or BAR)
     with_cholesky: bool
@@ -234,11 +204,10 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    problem_type = SocpType.SOCP_TRAPEZOIDAL_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude)
+    problem_type = SocpType.SOCP_TRAPEZOIDAL_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude, with_cholesky)
 
     bio_model = BiorbdModel(biorbd_model_path)
     bio_model.sensory_reference_function = sensory_reference_function
-    bio_model.force_field = get_force_field
     bio_model.friction_coefficients = np.array([[0.05, 0.025], [0.025, 0.05]])
 
     n_tau = bio_model.nb_tau
@@ -262,7 +231,6 @@ def prepare_socp(
         node=Node.ALL,
         weight=1e3 / 2,
         quadratic=True,
-        phase=0,
     )
 
     # Constraints
@@ -279,7 +247,7 @@ def prepare_socp(
     # This constraint insures that the hand reaches the target with x_mean
     constraints.add(
         ConstraintFcn.TRACK_MARKERS, node=Node.END, target=ee_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
-    )  ## merge conflict
+    )
     # While this constraint insures that the hand still reaches the target with the proper position and velocity even
     # in the presence of noise
     if example_type == ExampleType.BAR:
@@ -293,48 +261,45 @@ def prepare_socp(
         node=Node.END,
         marker_index=2,
         axes=[Axis.X, Axis.Y],
-        phase=0,
         min_bound=np.array([-cas.inf, -cas.inf]),
         max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2]),
         is_stochastic=True,
-    )  ## merge conflict
+    )
     constraints.add(
         ConstraintFcn.TRACK_MARKERS_VELOCITY,
         node=Node.END,
         marker_index=2,
         axes=[Axis.X, Axis.Y],
-        phase=0,
         min_bound=np.array([-cas.inf, -cas.inf]),
         max_bound=np.array([0.05**2, 0.05**2]),
         is_stochastic=True,
-    )  ## merge conflict
+    )
 
     # Dynamics
     dynamics = DynamicsList()
-    # dynamics.add(DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
-    #              expand=False,
-    #              with_cholesky=with_cholesky,
-    #              problem_type=problem_type,
-    #              )
-    # Fuck, merge with collocations needed to continue
-    dynamics.add(
-        configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
-            states,
-            controls,
-            parameters,
-            stochastic_variables,
-            nlp,
-            motor_noise,
-            sensory_noise,
-            force_field_magnitude=force_field_magnitude,
-            with_gains=with_gains,
-        ),
-        motor_noise=np.zeros((n_tau, 1)),
-        sensory_noise=np.zeros((n_q + n_qdot, 1)),
-        with_cholesky=with_cholesky,
-        expand=False,
-    )
+    dynamics.add(DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
+                 problem_type=problem_type,
+                 n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
+                 with_cholesky=with_cholesky,
+                 expand=False,
+                 )
+    # dynamics.add(
+    #     configure_stochastic_optimal_control_problem,
+    #     dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
+    #         states,
+    #         controls,
+    #         parameters,
+    #         stochastic_variables,
+    #         nlp,
+    #         motor_noise,
+    #         sensory_noise,
+    #         with_gains=with_gains,
+    #     ),
+    #     motor_noise=np.zeros((n_tau, 1)),
+    #     sensory_noise=np.zeros((n_q + n_qdot, 1)),
+    #     with_cholesky=with_cholesky,
+    #     expand=False,
+    # )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf
     states_max = np.ones((n_states, n_shooting + 1)) * cas.inf
@@ -528,7 +493,6 @@ def main():
     solver.set_nlp_scaling_method("none")
 
     example_type = ExampleType.CIRCLE
-    force_field_magnitude = 0
     socp = prepare_socp(
         biorbd_model_path=biorbd_model_path,
         final_time=final_time,
@@ -537,7 +501,6 @@ def main():
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         example_type=example_type,
-        force_field_magnitude=force_field_magnitude,
         with_cholesky=with_cholesky,
         with_scaling=with_scaling,
     )
@@ -576,7 +539,7 @@ def main():
 
     # --- Save the results --- #
     with open(
-        f"leuvenarm_torque_driven_socp_{str(example_type)}_forcefield{force_field_magnitude}_{with_cholesky}.pkl", "wb"
+        f"leuvenarm_torque_driven_socp_{str(example_type)}_{with_cholesky}.pkl", "wb"
     ) as file:
         pickle.dump(data, file)
 

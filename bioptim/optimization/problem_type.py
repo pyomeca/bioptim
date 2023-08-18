@@ -18,11 +18,14 @@ class SocpType:
             The magnitude of the motor noise
         sensory_noise_magnitude: DM
             The magnitude of the sensory noise
+        with_cholesky: bool
+            If True, the Cholesky decomposition is used to reduce the number of optimization variables
         """
 
-        def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM):
+        def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM, with_cholesky: bool = False):
             self.motor_noise_magnitude = motor_noise_magnitude
             self.sensory_noise_magnitude = sensory_noise_magnitude
+            self.with_cholesky = with_cholesky
 
     class SOCP_TRAPEZOIDAL_IMPLICIT:
         """
@@ -33,11 +36,14 @@ class SocpType:
             The magnitude of the motor noise
         sensory_noise_magnitude: DM
             The magnitude of the sensory noise
+        with_cholesky: bool
+            If True, the Cholesky decomposition is used to reduce the number of optimization variables
         """
 
-        def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM):
+        def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM, with_cholesky: bool = False):
             self.motor_noise_magnitude = motor_noise_magnitude
             self.sensory_noise_magnitude = sensory_noise_magnitude
+            self.with_cholesky = with_cholesky
 
     class SOCP_COLLOCATION:
         """
@@ -49,8 +55,11 @@ class SocpType:
             The magnitude of the motor noise
         sensory_noise_magnitude: DM
             The magnitude of the sensory noise
+        with_cholesky: bool
+            If True, the Cholesky decomposition is used to reduce the number of optimization variables
         """
 
-        def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM):
+        def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM, with_cholesky: bool = False):
             self.motor_noise_magnitude = motor_noise_magnitude
             self.sensory_noise_magnitude = sensory_noise_magnitude
+            self.with_cholesky = with_cholesky
