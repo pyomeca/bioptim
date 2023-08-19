@@ -202,7 +202,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             integrated_value_functions,
         )
         self.problem_type = problem_type
-        self.initialize_stochastic_variables()
+        # self.initialize_stochastic_variables()
         self.prepare_node_mapping(node_mappings)
         self.prepare_dynamics()
         self.prepare_bounds_and_init(
@@ -221,14 +221,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             phase_transitions,
         )
 
-    def initialize_stochastic_variables(self):
-        n_motor_noise = self.problem_type.motor_noise_magnitude.shape[0]
-        n_sensory_noise = self.problem_type.sensory_noise_magnitude.shape[0]
-        motor_noise = self.cx.sym("motor_noise", n_motor_noise, 1)
-        sensory_noise = self.cx.sym("sensory_noise", n_sensory_noise, 1)
-        NLP.add(self, "is_stochastic", True, True)
-        NLP.add(self, "motor_noise", motor_noise, True)
-        NLP.add(self, "sensory_noise", sensory_noise, True)
+    # def initialize_stochastic_variables(self):
+    #     n_motor_noise = self.problem_type.motor_noise_magnitude.shape[0]
+    #     n_sensory_noise = self.problem_type.sensory_noise_magnitude.shape[0]
+    #     motor_noise = self.cx.sym("motor_noise", n_motor_noise, 1)
+    #     sensory_noise = self.cx.sym("sensory_noise", n_sensory_noise, 1)
+    #     NLP.add(self, "is_stochastic", True, True)
+    #     NLP.add(self, "motor_noise", motor_noise, True)
+    #     NLP.add(self, "sensory_noise", sensory_noise, True)
 
     def prepare_dynamics(self):
         # Prepare the dynamics
@@ -247,20 +247,20 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         # Add the internal multi-node constraints for the stochastic ocp
         if isinstance(self.problem_type, SocpType.SOCP_TRAPEZOIDAL_EXPLICIT):
             self._prepare_stochastic_dynamics_explicit(
-                motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
-                sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
+                # motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
+                # sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
                 constraints=constraints,
             )
         elif isinstance(self.problem_type, SocpType.SOCP_TRAPEZOIDAL_IMPLICIT):
             self._prepare_stochastic_dynamics_implicit(
-                motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
-                sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
+                # motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
+                # sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
                 constraints=constraints,
             )
         elif isinstance(self.problem_type, SocpType.SOCP_COLLOCATION):
             self._prepare_stochastic_dynamics_collocation(
-                motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
-                sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
+                # motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
+                # sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
                 constraints=constraints,
             )
 
@@ -278,16 +278,16 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
+                    # motor_noise_magnitude=motor_noise_magnitude,
+                    # sensory_noise_magnitude=sensory_noise_magnitude,
                 )
             if i_phase > 0:
                 penalty_m_dg_dz_list.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
+                    # motor_noise_magnitude=motor_noise_magnitude,
+                    # sensory_noise_magnitude=sensory_noise_magnitude,
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
@@ -320,8 +320,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
-                motor_noise_magnitude=motor_noise_magnitude,
-                sensory_noise_magnitude=sensory_noise_magnitude,
+                # motor_noise_magnitude=motor_noise_magnitude,
+                # sensory_noise_magnitude=sensory_noise_magnitude,
             )
 
         # Constraints for A
@@ -330,8 +330,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_DF_DX_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
-                motor_noise_magnitude=motor_noise_magnitude,
-                sensory_noise_magnitude=sensory_noise_magnitude,
+                # motor_noise_magnitude=motor_noise_magnitude,
+                # sensory_noise_magnitude=sensory_noise_magnitude,
             )
 
         # Constraints for C
@@ -341,16 +341,16 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
+                    # motor_noise_magnitude=motor_noise_magnitude,
+                    # sensory_noise_magnitude=sensory_noise_magnitude,
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase + 1),
                     nodes=(-1, 0),
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
+                    # motor_noise_magnitude=motor_noise_magnitude,
+                    # sensory_noise_magnitude=sensory_noise_magnitude,
                 )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)
@@ -367,8 +367,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         for i_phase, nlp in enumerate(self.nlp):
             constraints.add(
                 ConstraintFcn.STOCHASTIC_HELPER_MATRIX_COLLOCATION,
-                motor_noise_magnitude=motor_noise_magnitude,
-                sensory_noise_magnitude=sensory_noise_magnitude,
+                # motor_noise_magnitude=motor_noise_magnitude,
+                # sensory_noise_magnitude=sensory_noise_magnitude,
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
             )
@@ -379,16 +379,16 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             for i_node in range(nlp.ns):
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
+                    # motor_noise_magnitude=motor_noise_magnitude,
+                    # sensory_noise_magnitude=sensory_noise_magnitude,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
+                    # motor_noise_magnitude=motor_noise_magnitude,
+                    # sensory_noise_magnitude=sensory_noise_magnitude,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
                 )
