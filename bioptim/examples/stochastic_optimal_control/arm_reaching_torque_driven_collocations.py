@@ -15,8 +15,6 @@ from bioptim import (
     DynamicsFunctions,
     ConfigureProblem,
     PenaltyController,
-    MultinodeConstraintList,
-    DefectType,
     StochasticOptimalControlProgram,
     ObjectiveFcn,
     Solver,
@@ -38,164 +36,6 @@ from bioptim import (
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 
-def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
-    """
-    Get the effect of the feedback.
-
-    Parameters
-    ----------
-    k: MX.sym
-        The feedback gains
-    hand_pos_velo: MX.sym
-        The position and velocity of the hand
-    ref: MX.sym
-        The reference position and velocity of the hand
-    sensory_noise: MX.sym
-        The sensory noise
-    """
-    return k @ ((hand_pos_velo - ref) + sensory_noise)
-
-
-def stochastic_forward_dynamics(
-    states: cas.MX | cas.SX,
-    controls: cas.MX | cas.SX,
-    parameters: cas.MX | cas.SX,
-    stochastic_variables: cas.MX | cas.SX,
-    nlp: NonLinearProgram,
-    motor_noise,
-    sensory_noise,
-    with_gains,
-) -> DynamicsEvaluation:
-    """
-    The dynamic function of the states including feedback gains.
-
-    Parameters
-    ----------
-    states: MX.sym
-        The states
-    controls: MX.sym
-        The controls
-    parameters: MX.sym
-        The parameters
-    stochastic_variables: MX.sym
-        The stochastic variables
-    nlp: NonLinearProgram
-        The current non-linear program
-    motor_noise: MX.sym
-        The motor noise
-    sensory_noise: MX.sym
-        The sensory noise
-    with_gains: bool
-        If the feedback gains are included or not to the torques
-    """
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-
-    tau_fb = tau
-    if with_gains:
-        ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
-        k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k)
-
-        hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
-
-        tau_fb += k_matrix @ ((hand_pos_velo - ref) + sensory_noise) + motor_noise
-
-    torques_computed = tau_fb + nlp.model.friction_coefficients @ qdot
-    dqdot_computed = nlp.model.forward_dynamics(q, qdot, torques_computed)
-
-    return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_computed))
-
-
-def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, motor_noise, sensory_noise
-):
-    """
-    Configure the stochastic optimal control problem.
-    """
-    ConfigureProblem.configure_q(ocp, nlp, True, False, False)
-    ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-    ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
-    ConfigureProblem.configure_tau(ocp, nlp, False, True)
-
-    # Stochastic variables
-    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_references=4)
-    ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_collocation_points=3 + 1)
-    ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
-
-    ConfigureProblem.configure_dynamics_function(
-        ocp,
-        nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=False
-        ),
-        motor_noise=motor_noise,
-        sensory_noise=sensory_noise,
-    )
-    ConfigureProblem.configure_stochastic_dynamics_function(
-        ocp,
-        nlp,
-        noised_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=True
-        ),
-    )
-    return
-
-def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
-    """
-    Constraint the hand to reach the target consistently.
-    This is a multi-node constraint because the covariance matrix depends on all the precedent nodes, but it only
-    applies at the END node.
-    """
-
-    nx = controllers[-1].states["q"].cx_start.shape[0]
-
-    q_sym = cas.MX.sym("q_sym", nx)
-    qdot_sym = cas.MX.sym("qdot_sym", nx)
-
-    cov_sym = cas.MX.sym("cov", controllers[0].stochastic_variables["cov"].cx_start.shape[0])
-    cov_matrix = (
-        controllers[0]
-        .stochastic_variables["cov"]
-        .reshape_sym_to_matrix(
-            cov_sym,
-        )
-    )
-
-    hand_pos = controllers[0].model.markers(q_sym)[2][:2]
-    hand_vel = controllers[0].model.marker_velocities(q_sym, qdot_sym)[2][:2]
-
-    jac_marker_q = cas.jacobian(hand_pos, q_sym)
-    jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(q_sym, qdot_sym))
-
-    cov_matrix_q = cov_matrix[:2, :2]
-    cov_matrix_qdot = cov_matrix[:4, :4]
-
-    pos_constraint = jac_marker_q @ cov_matrix_q @ jac_marker_q.T
-    vel_constraint = jac_marker_qdot @ cov_matrix_qdot @ jac_marker_qdot.T
-
-    out = cas.vertcat(pos_constraint[0, 0], pos_constraint[1, 1], vel_constraint[0, 0], vel_constraint[1, 1])
-
-    fun = cas.Function("reach_target_consistantly", [q_sym, qdot_sym, cov_sym], [out])
-    val = fun(
-        controllers[-1].states["q"].cx_start,
-        controllers[-1].states["qdot"].cx_start,
-        controllers[-1].stochastic_variables["cov"].cx_start,
-    )
-    # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
-
-    return val
-
-
-def track_final_marker(controller: PenaltyController) -> cas.MX:
-    """
-    Track the hand position.
-    """
-    q = controller.states["q"].cx_start
-    ee_pos = controller.model.markers(q)[2][:2]
-    return ee_pos
 
 def sensory_reference_function(
     states: cas.MX | cas.SX,
@@ -288,12 +128,10 @@ def prepare_socp(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
 
-    constraints.add(track_final_marker, node=Node.END, target=hand_final_position)
-
     # This constraint insures that the hand reaches the target with x_mean
-    # constraints.add(
-    #     ConstraintFcn.TRACK_MARKERS, node=Node.END, target=hand_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
-    # )
+    constraints.add(
+        ConstraintFcn.TRACK_MARKERS, node=Node.END, target=hand_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
+    )
     # While this constraint insures that the hand still reaches the target with the proper position and velocity even
     # in the presence of noise
     if example_type == ExampleType.BAR:
@@ -303,57 +141,33 @@ def prepare_socp(
     else:
         raise NotImplementedError("Wrong problem type")
 
-    multinode_constraints = MultinodeConstraintList()
-    multinode_constraints.add(
-        reach_target_consistantly,
-        nodes_phase=[0 for _ in range(n_shooting + 1)],
-        nodes=[i for i in range(n_shooting + 1)],
-        min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
-        max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
+    constraints.add(
+        ConstraintFcn.TRACK_MARKERS,
+        node=Node.END,
+        marker_index=2,
+        axes=[Axis.X, Axis.Y],
+        min_bound=np.array([-cas.inf, -cas.inf]),
+        max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2]),
+        is_stochastic=True,
     )
-    # constraints.add(
-    #     ConstraintFcn.TRACK_MARKERS,
-    #     node=Node.END,
-    #     marker_index=2,
-    #     axes=[Axis.X, Axis.Y],
-    #     min_bound=np.array([-cas.inf, -cas.inf]),
-    #     max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2]),
-    #     is_stochastic=True,
-    # )
-    # constraints.add(
-    #     ConstraintFcn.TRACK_MARKERS_VELOCITY,
-    #     node=Node.END,
-    #     marker_index=2,
-    #     axes=[Axis.X, Axis.Y],
-    #     min_bound=np.array([-cas.inf, -cas.inf]),
-    #     max_bound=np.array([0.05**2, 0.05**2]),
-    #     is_stochastic=True,
-    # )
+    constraints.add(
+        ConstraintFcn.TRACK_MARKERS_VELOCITY,
+        node=Node.END,
+        marker_index=2,
+        axes=[Axis.X, Axis.Y],
+        min_bound=np.array([-cas.inf, -cas.inf]),
+        max_bound=np.array([0.05**2, 0.05**2]),
+        is_stochastic=True,
+    )
 
     # Dynamics
     dynamics = DynamicsList()
-    # dynamics.add(
-    #     DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
-    #     problem_type=problem_type,
-    #     n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
-    #     with_cholesky=False,
-    #     expand=False,
-    # )
     dynamics.add(
-        configure_stochastic_optimal_control_problem,
-        dynamic_function = lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise,
-                                  with_gains: stochastic_forward_dynamics(
-            states,
-            controls,
-            parameters,
-            stochastic_variables,
-            nlp,
-            motor_noise,
-            sensory_noise,
-            with_gains=with_gains,
-        ),
-        motor_noise = np.zeros((n_tau, 1)),
-        sensory_noise = np.zeros((n_q + n_qdot, 1)),
+        DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
+        problem_type=problem_type,
+        n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
+        with_cholesky=False,
+        expand=False,
     )
 
     x_bounds = BoundsList()
@@ -454,7 +268,6 @@ def prepare_socp(
         u_bounds=u_bounds,
         s_bounds=s_bounds,
         objective_functions=objective_functions,
-        multinode_constraints=multinode_constraints,
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
