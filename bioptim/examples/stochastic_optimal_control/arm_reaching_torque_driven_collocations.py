@@ -10,11 +10,6 @@ import casadi as cas
 import numpy as np
 
 from bioptim import (
-    OptimalControlProgram,
-    DynamicsEvaluation,
-    DynamicsFunctions,
-    ConfigureProblem,
-    PenaltyController,
     StochasticOptimalControlProgram,
     ObjectiveFcn,
     Solver,
