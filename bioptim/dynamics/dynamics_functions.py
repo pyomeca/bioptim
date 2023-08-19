@@ -231,7 +231,7 @@ class DynamicsFunctions:
         noised_idx = nlp.variable_mappings["tau"].to_second.map_idx
         tau[noised_idx] += k_matrix @ ((sensory_input - ref) + sensory_noise)
         tau[noised_idx] += motor_noise
-        tau[noised_idx] = tau[noised_idx] + nlp.model.friction_coefficients @ qdot if with_friction else tau
+        tau[noised_idx] = tau[noised_idx] + nlp.model.friction_coefficients @ qdot if with_friction else tau[noised_idx]
 
         # dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dq = qdot

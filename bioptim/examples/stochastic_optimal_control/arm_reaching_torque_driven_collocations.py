@@ -126,18 +126,12 @@ def stochastic_forward_dynamics(
 
         hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
-        tau_fb += get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, sensory_noise)
+        tau_fb += k_matrix @ ((hand_pos_velo - ref) + sensory_noise) + motor_noise
 
     tau_force_field = get_force_field(q, force_field_magnitude)
 
-    torques_computed = tau_fb + motor_noise + tau_force_field
-
-    friction = nlp.model.friction_coefficients
-
-    mass_matrix = nlp.model.mass_matrix(q)
-    non_linear_effects = nlp.model.non_linear_effects(q, qdot)
-
-    dqdot_computed = cas.inv(mass_matrix) @ (torques_computed - non_linear_effects - friction @ qdot)
+    torques_computed = tau_fb + tau_force_field + nlp.model.friction_coefficients @ qdot
+    dqdot_computed = nlp.model.forward_dynamics(q, qdot, torques_computed)
 
     return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_computed))
 

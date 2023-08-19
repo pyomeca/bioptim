@@ -114,16 +114,12 @@ def stochastic_forward_dynamics(
 
         hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
-        tau_fb += k_matrix @ ((hand_pos_velo - ref) + sensory_noise)
+        tau_fb += k_matrix @ ((hand_pos_velo - ref) + sensory_noise) + motor_noise
 
-    torques_computed = tau_fb + motor_noise
+    torques_computed = tau_fb
+    torques_computed += nlp.model.friction_coefficients @ qdot
 
-    friction = nlp.model.friction_coefficients
-
-    mass_matrix = nlp.model.mass_matrix(q)
-    non_linear_effects = nlp.model.non_linear_effects(q, qdot)
-
-    dqdot_computed = cas.inv(mass_matrix) @ (torques_computed - non_linear_effects - friction @ qdot)
+    dqdot_computed = nlp.model.forward_dynamics(q, qdot, torques_computed)
 
     return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_computed))
 
@@ -278,30 +274,30 @@ def prepare_socp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
-        problem_type=problem_type,
-        n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
-        with_cholesky=with_cholesky,
-        expand=False,
-    )
     # dynamics.add(
-    #     configure_stochastic_optimal_control_problem,
-    #     dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
-    #         states,
-    #         controls,
-    #         parameters,
-    #         stochastic_variables,
-    #         nlp,
-    #         motor_noise,
-    #         sensory_noise,
-    #         with_gains=with_gains,
-    #     ),
-    #     motor_noise=np.zeros((n_tau, 1)),
-    #     sensory_noise=np.zeros((n_q + n_qdot, 1)),
+    #     DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
+    #     problem_type=problem_type,
+    #     n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
     #     with_cholesky=with_cholesky,
     #     expand=False,
     # )
+    dynamics.add(
+        configure_stochastic_optimal_control_problem,
+        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
+            states,
+            controls,
+            parameters,
+            stochastic_variables,
+            nlp,
+            motor_noise,
+            sensory_noise,
+            with_gains=with_gains,
+        ),
+        motor_noise=np.zeros((n_tau, 1)),
+        sensory_noise=np.zeros((n_q + n_qdot, 1)),
+        with_cholesky=with_cholesky,
+        expand=False,
+    )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf
     states_max = np.ones((n_states, n_shooting + 1)) * cas.inf

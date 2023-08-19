@@ -4,8 +4,7 @@ The states dynamics is implicit. which allows to minimize the uncertainty on the
 The stochastic variables dynamics is explicit.
 """
 
-import platform
-
+import biorbd_casadi as biorbd
 import pickle
 import casadi as cas
 import numpy as np
@@ -119,9 +118,6 @@ def stochastic_forward_dynamics(
     qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
     qdddot = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-    n_q = q.shape[0]
-    n_qdot = qdot.shape[0]
-    n_tau = tau.shape[0]
 
     tau_fb = tau
     if with_gains:
@@ -136,21 +132,14 @@ def stochastic_forward_dynamics(
     tau_force_field = get_force_field(q, force_field_magnitude)
 
     torques_computed = tau_fb + motor_noise + tau_force_field
-    dq_computed = qdot
 
-    friction = nlp.model.friction_coefficients
+    biorbd_model = biorbd.Model(nlp.model.path)
+    dqdot_computed = biorbd_model.ForwardDynamics(q, qdot, torques_computed).to_mx()
 
-    mass_matrix = nlp.model.mass_matrix(q)
-    non_linear_effects = nlp.model.non_linear_effects(q, qdot)
+    defects = cas.vertcat(dqdot_computed - qddot)
 
-    dqdot_computed = qddot
-    dqddot_computed = qdddot
-
-    dqdot_constraint = cas.inv(mass_matrix) @ (torques_computed - non_linear_effects - friction @ qdot)
-
-    defects = cas.vertcat(dqdot_constraint - qddot)
-
-    return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dqddot_computed), defects=defects)
+    # Where are the defects added to the problem?
+    return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_computed, qdddot), defects=defects)
 
 
 def configure_stochastic_optimal_control_problem(
@@ -241,22 +230,17 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     sensory_noise_magnitude: DM
         The magnitude of the sensory noise.
     """
+
+    nlp.states.node_index = 0
+    nlp.controls.node_index = 0
+    nlp.stochastic_variables.node_index = 0
+    nlp.integrated_values.node_index = 0
+
     dt = nlp.tf / nlp.ns
-
-    nlp.states.node_index = node_index - 1
-    nlp.controls.node_index = node_index - 1
-    nlp.stochastic_variables.node_index = node_index - 1
-    nlp.integrated_values.node_index = node_index - 1
-
-    n_q = nlp.states["q"].cx_start.shape[0]
-    n_qdot = nlp.states["qdot"].cx_start.shape[0]
-    n_tau = nlp.controls["tau"].cx_start.shape[0]
 
     M_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(Node.START)
 
-    motor_noise = cas.MX.sym("motor_noise", n_tau)
-    sensory_noise = cas.MX.sym("sensory_noise", n_q + n_qdot)
-    sigma_w = cas.vertcat(sensory_noise, motor_noise) * cas.MX_eye(cas.vertcat(sensory_noise, motor_noise).shape[0])
+    sigma_w = cas.vertcat(nlp.sensory_noise, nlp.motor_noise) * cas.MX_eye(cas.vertcat(nlp.sensory_noise, nlp.motor_noise).shape[0])
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
     cov_matrix = nlp.integrated_values["cov"].reshape_sym_to_matrix(cov_sym)
 
@@ -266,19 +250,19 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
         nlp.parameters,
         nlp.stochastic_variables.cx_start,
         nlp,
-        motor_noise,
-        sensory_noise,
+        nlp.motor_noise,
+        nlp.sensory_noise,
         force_field_magnitude=force_field_magnitude,
         with_gains=True,
     )
 
-    ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(sensory_noise, motor_noise))
+    ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.sensory_noise, nlp.motor_noise))
     dg_dw = -ddx_dwm * dt
     ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx_start)
     dg_dx = -(ddx_dx * dt / 2 + cas.MX_eye(ddx_dx.shape[0]))
 
     p_next = M_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
-    func_eval = cas.Function(
+    func = cas.Function(
         "p_next",
         [
             nlp.states.cx_start,
@@ -286,11 +270,18 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
             nlp.parameters,
             nlp.stochastic_variables.cx_start,
             cov_sym,
-            motor_noise,
-            sensory_noise,
+            nlp.motor_noise,
+            nlp.sensory_noise,
         ],
         [p_next],
-    )(
+    )
+
+    nlp.states.node_index = node_index - 1
+    nlp.controls.node_index = node_index - 1
+    nlp.stochastic_variables.node_index = node_index - 1
+    nlp.integrated_values.node_index = node_index - 1
+
+    func_eval = func(
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,
