@@ -5,61 +5,38 @@ commits less integration errors than using a trapezoidal scheme and is closer to
 2013 insuring that the covariance matrix always stays positive semi-definite).
 """
 
-import platform
-
 import pickle
 import casadi as cas
 import numpy as np
 
 from bioptim import (
     OptimalControlProgram,
+    DynamicsEvaluation,
+    DynamicsFunctions,
+    ConfigureProblem,
+    PenaltyController,
+    MultinodeConstraintList,
+    DefectType,
     StochasticOptimalControlProgram,
     ObjectiveFcn,
     Solver,
     BiorbdModel,
     ObjectiveList,
     NonLinearProgram,
-    DynamicsEvaluation,
-    DynamicsFunctions,
-    ConfigureProblem,
     DynamicsList,
+    DynamicsFcn,
     BoundsList,
     InterpolationType,
     SocpType,
-    PenaltyController,
     Node,
     ConstraintList,
     ConstraintFcn,
-    MultinodeConstraintList,
     InitialGuessList,
-    OdeSolver,
     ControlType,
-    DefectType,
+    Axis,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
-
-
-def get_force_field(q, force_field_magnitude):
-    """
-    Get the effect of the force field.
-
-    Parameters
-    ----------
-    q: MX.sym
-        The generalized coordinates
-    force_field_magnitude: float
-        The magnitude of the force field
-    """
-    l1 = 0.3
-    l2 = 0.33
-    f_force_field = force_field_magnitude * (l1 * cas.cos(q[0]) + l2 * cas.cos(q[0] + q[1]))
-    hand_pos = cas.MX(2, 1)
-    hand_pos[0] = l2 * cas.sin(q[0] + q[1]) + l1 * cas.sin(q[0])
-    hand_pos[1] = l2 * cas.sin(q[0] + q[1])
-    tau_force_field = -f_force_field @ hand_pos
-    return tau_force_field
-
 
 def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
     """
@@ -87,7 +64,6 @@ def stochastic_forward_dynamics(
     nlp: NonLinearProgram,
     motor_noise,
     sensory_noise,
-    force_field_magnitude,
     with_gains,
 ) -> DynamicsEvaluation:
     """
@@ -109,8 +85,6 @@ def stochastic_forward_dynamics(
         The motor noise
     sensory_noise: MX.sym
         The sensory noise
-    force_field_magnitude: float
-        The magnitude of the force field
     with_gains: bool
         If the feedback gains are included or not to the torques
     """
@@ -128,9 +102,7 @@ def stochastic_forward_dynamics(
 
         tau_fb += k_matrix @ ((hand_pos_velo - ref) + sensory_noise) + motor_noise
 
-    tau_force_field = get_force_field(q, force_field_magnitude)
-
-    torques_computed = tau_fb + tau_force_field + nlp.model.friction_coefficients @ qdot
+    torques_computed = tau_fb + nlp.model.friction_coefficients @ qdot
     dqdot_computed = nlp.model.forward_dynamics(q, qdot, torques_computed)
 
     return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_computed))
@@ -170,25 +142,6 @@ def configure_stochastic_optimal_control_problem(
         ),
     )
     return
-
-
-def sensory_reference_function(
-    states: cas.MX | cas.SX,
-    controls: cas.MX | cas.SX,
-    parameters: cas.MX | cas.SX,
-    stochastic_variables: cas.MX | cas.SX,
-    nlp: NonLinearProgram,
-):
-    """
-    This functions returns the sensory reference for the feedback gains.
-    """
-    q = states[nlp.states["q"].index]
-    qdot = states[nlp.states["qdot"].index]
-    hand_pos = nlp.model.markers(q)[2][:2]
-    hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
-    hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
-    return hand_pos_velo
-
 
 def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     """
@@ -244,15 +197,31 @@ def track_final_marker(controller: PenaltyController) -> cas.MX:
     ee_pos = controller.model.markers(q)[2][:2]
     return ee_pos
 
+def sensory_reference_function(
+    states: cas.MX | cas.SX,
+    controls: cas.MX | cas.SX,
+    parameters: cas.MX | cas.SX,
+    stochastic_variables: cas.MX | cas.SX,
+    nlp: NonLinearProgram,
+):
+    """
+    This functions returns the sensory reference for the feedback gains.
+    """
+    q = states[nlp.states["q"].index]
+    qdot = states[nlp.states["qdot"].index]
+    hand_pos = nlp.model.markers(q)[2][:2]
+    hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
+    hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
+    return hand_pos_velo
+
 
 def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ee_final_position: np.ndarray,
+    hand_final_position: np.ndarray,
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
-    force_field_magnitude: float = 0,
     example_type=ExampleType.CIRCLE,
 ) -> StochasticOptimalControlProgram:
     """
@@ -265,14 +234,12 @@ def prepare_socp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
-    ee_final_position: np.ndarray
+    hand_final_position: np.ndarray
         The final position of the end effector
     motor_noise_magnitude: cas.DM
         The magnitude of the motor noise
     sensory_noise_magnitude: cas.DM
         The magnitude of the sensory noise
-    force_field_magnitude: float
-        The magnitude of the force field
     example_type
         The type of problem to solve (CIRCLE or BAR)
 
@@ -282,9 +249,9 @@ def prepare_socp(
     """
 
     problem_type = SocpType.SOCP_COLLOCATION(motor_noise_magnitude, sensory_noise_magnitude, polynomial_degree=3, method="legendre")
+
     bio_model = BiorbdModel(biorbd_model_path)
     bio_model.sensory_reference_function = sensory_reference_function
-    bio_model.force_field = get_force_field
     bio_model.friction_coefficients = np.array([[0.05, 0.025], [0.025, 0.05]])
 
     n_tau = bio_model.nb_tau
@@ -316,12 +283,19 @@ def prepare_socp(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
-    constraints.add(track_final_marker, node=Node.END, target=ee_final_position)
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
 
+    constraints.add(track_final_marker, node=Node.END, target=hand_final_position)
+
+    # This constraint insures that the hand reaches the target with x_mean
+    # constraints.add(
+    #     ConstraintFcn.TRACK_MARKERS, node=Node.END, target=hand_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
+    # )
+    # While this constraint insures that the hand still reaches the target with the proper position and velocity even
+    # in the presence of noise
     if example_type == ExampleType.BAR:
         max_bounds_lateral_variation = cas.inf
     elif example_type == ExampleType.CIRCLE:
@@ -337,12 +311,38 @@ def prepare_socp(
         min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
         max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2, 0.05**2, 0.05**2]),
     )
+    # constraints.add(
+    #     ConstraintFcn.TRACK_MARKERS,
+    #     node=Node.END,
+    #     marker_index=2,
+    #     axes=[Axis.X, Axis.Y],
+    #     min_bound=np.array([-cas.inf, -cas.inf]),
+    #     max_bound=np.array([max_bounds_lateral_variation**2, 0.004**2]),
+    #     is_stochastic=True,
+    # )
+    # constraints.add(
+    #     ConstraintFcn.TRACK_MARKERS_VELOCITY,
+    #     node=Node.END,
+    #     marker_index=2,
+    #     axes=[Axis.X, Axis.Y],
+    #     min_bound=np.array([-cas.inf, -cas.inf]),
+    #     max_bound=np.array([0.05**2, 0.05**2]),
+    #     is_stochastic=True,
+    # )
 
     # Dynamics
     dynamics = DynamicsList()
+    # dynamics.add(
+    #     DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
+    #     problem_type=problem_type,
+    #     n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
+    #     with_cholesky=False,
+    #     expand=False,
+    # )
     dynamics.add(
         configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
+        dynamic_function = lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise,
+                                  with_gains: stochastic_forward_dynamics(
             states,
             controls,
             parameters,
@@ -350,12 +350,10 @@ def prepare_socp(
             nlp,
             motor_noise,
             sensory_noise,
-            force_field_magnitude=force_field_magnitude,
             with_gains=with_gains,
         ),
-        motor_noise=np.zeros((n_tau, 1)),
-        sensory_noise=np.zeros((n_q + n_qdot, 1)),
-        expand=False,
+        motor_noise = np.zeros((n_tau, 1)),
+        sensory_noise = np.zeros((n_q + n_qdot, 1)),
     )
 
     x_bounds = BoundsList()
@@ -456,8 +454,8 @@ def prepare_socp(
         u_bounds=u_bounds,
         s_bounds=s_bounds,
         objective_functions=objective_functions,
-        constraints=constraints,
         multinode_constraints=multinode_constraints,
+        constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
@@ -471,7 +469,7 @@ def main():
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
+    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 
     # --- Prepare the ocp --- #
     dt = 0.01
@@ -506,11 +504,10 @@ def main():
         biorbd_model_path=biorbd_model_path,
         final_time=final_time,
         n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
+        hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         example_type=example_type,
-        force_field_magnitude=force_field_magnitude,
     )
 
     sol_socp = socp.solve(solver)
