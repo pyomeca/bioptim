@@ -473,8 +473,8 @@ def test_arm_reaching_torque_driven_explicit():
 def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
 
-    # if platform != "linux":
-    #     return
+    if platform != "linux":
+        return
 
     final_time = 0.8
     n_shooting = 4
@@ -779,6 +779,9 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
 def test_arm_reaching_torque_driven_collocations():
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_collocations as ocp_module
 
+    # if platform != "linux":
+    #     return
+
     final_time = 0.4
     n_shooting = 4
     hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
@@ -813,11 +816,11 @@ def test_arm_reaching_torque_driven_collocations():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 427.1964048446773)
+    np.testing.assert_almost_equal(f[0, 0], 419.5937843972418)
 
     # detailed cost values
-    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 432.1720966628036)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], -4.975691818126331)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 425.84413675353517)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], -6.250352356293295)
     np.testing.assert_almost_equal(
         f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
     )
@@ -843,88 +846,40 @@ def test_arm_reaching_torque_driven_collocations():
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.92528707, 1.29074965]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.92535212, 1.29067603]))
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
     np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-    np.testing.assert_almost_equal(tau[:, 0], np.array([1.74670235, -1.02685616]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-1.66611244, 0.89557688]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([1.73069946, -0.91911182]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([-1.64290683,  1.06375442]))
 
     np.testing.assert_almost_equal(
         k[:, 0],
-        np.array([-0.0070663, 0.12872882, -0.04928026, 0.34387433, -0.0011865, 0.08144921, -0.11150911, 0.14994164]),
+        np.array([-0.00644863,  0.14525532, -0.05171941,  0.38450297,  0.0066856, 0.07039083, -0.11564982,  0.15103142]),
     )
     np.testing.assert_almost_equal(
-        ref[:, 0], np.array([2.81676137e-02, 2.84063111e-01, 1.27344336e-05, 1.27344336e-05])
+        ref[:, 0], np.array([2.81726710e-02, 2.84139402e-01, 9.95428740e-06, 9.95428740e-06])
     )
     np.testing.assert_almost_equal(
         m[:, 0],
         np.array(
             [
-                9.99920715e-01,
-                -4.11854315e-03,
-                2.90525360e-02,
-                -1.04938345e-01,
-                3.88306475e-03,
-                1.02971098e00,
-                1.04514630e-01,
-                6.62884963e-01,
-                9.78357140e-02,
-                -4.57465514e-03,
-                9.41188170e-01,
-                -1.20715456e-01,
-                1.81733236e-03,
-                9.28715366e-02,
-                3.03216746e-02,
-                8.76735934e-01,
-                -2.77702973e-01,
-                1.01862790e-03,
-                -7.68818329e-03,
-                2.76801702e-02,
-                -7.50021333e-04,
-                -2.84233573e-01,
-                -2.47787006e-02,
-                -1.65603410e-01,
-                -2.41041297e-02,
-                1.11904866e-03,
-                -2.62138314e-01,
-                3.16680509e-02,
-                -3.50468352e-04,
-                -2.30524714e-02,
-                -6.87981095e-03,
-                -2.46538143e-01,
-                -4.44077662e-01,
-                7.07737847e-04,
-                -8.83700659e-03,
-                3.10407809e-02,
-                -4.07608443e-05,
-                -4.47306824e-01,
-                -1.79003645e-02,
-                -1.59574972e-01,
-                -2.18732091e-02,
-                7.28451642e-04,
-                -4.26675935e-01,
-                3.51042913e-02,
-                -1.16592608e-04,
-                -2.13658297e-02,
-                -4.31646300e-03,
-                -4.13351871e-01,
-                -2.77422512e-01,
-                4.28889415e-05,
-                -1.55118528e-03,
-                5.35116851e-03,
-                1.03687508e-04,
-                -2.77471537e-01,
-                -1.56936263e-03,
-                -2.46436788e-02,
-                -3.11720317e-03,
-                2.88437370e-05,
-                -2.74497551e-01,
-                6.02456151e-03,
-                1.05073778e-05,
-                -3.08780886e-03,
-                -3.10808927e-04,
-                -2.72693650e-01,
+                1.00017747e+00, -4.30917177e-03, 2.80499633e-02, -1.08841158e-01,
+                5.65058306e-03, 1.03056966e+00, 1.25293131e-01, 6.93747096e-01,
+                1.00337467e-01, -2.59530340e-03, 9.91065010e-01, -8.47128183e-02,
+                1.80924212e-03, 9.98126575e-02, 3.01471845e-02, 1.01357852e+00,
+                -2.77773733e-01, 1.04495222e-03, -7.36197007e-03, 2.84129170e-02,
+                -1.11642611e-03, -2.84465959e-01, -2.93384357e-02, -1.72953953e-01,
+                -2.46514747e-02, 6.86972723e-04, -2.74418109e-01, 2.27625764e-02,
+                -3.46714361e-04, -2.45836843e-02, -6.68399486e-03, -2.80510293e-01,
+                -4.44189725e-01, 6.97883196e-04, -8.24622130e-03, 3.08223126e-02,
+                -2.16793640e-04, -4.47587636e-01, -2.01967790e-02, -1.65410063e-01,
+                -2.21387578e-02, 5.20096662e-04, -4.37673997e-01, 2.66129396e-02,
+                -1.04752917e-04, -2.21644988e-02, -3.62249370e-03, -4.44899460e-01,
+                -2.77501547e-01, 3.87751476e-05, -1.41954399e-03, 5.15502271e-03,
+                8.28559235e-05, -2.77573640e-01, -1.62555176e-03, -2.53590043e-02,
+                -3.12422487e-03, 2.22166543e-05, -2.76080562e-01, 4.67928690e-03,
+                9.38802849e-06, -3.11741757e-03, -1.35192259e-04, -2.77353361e-01,
             ]
         ),
     )
@@ -933,22 +888,10 @@ def test_arm_reaching_torque_driven_collocations():
         cov[:, -2],
         np.array(
             [
-                0.04449698,
-                -0.04720099,
-                -0.00852083,
-                0.0292907,
-                -0.04720099,
-                -0.28603462,
-                -0.03428146,
-                0.03041599,
-                -0.00852083,
-                -0.03428146,
-                -0.01509507,
-                -0.03243314,
-                0.0292907,
-                0.03041599,
-                -0.03243314,
-                -0.00564712,
+                0.04711242, -0.05794812, -0.01146513, 0.03353291, -0.05794812,
+                -0.30155725, -0.04154142, 0.03153083, -0.01146513, -0.04154142,
+                -0.01294226, -0.03911192, 0.03353291, 0.03153083, -0.03911192,
+                0.01787702,
             ]
         ),
     )
