@@ -152,7 +152,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     return out
 
 
-def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, sensory_noise_magnitude):
+def get_cov_mat(nlp, node_index):
     dt = nlp.tf / nlp.ns
 
     nlp.states.node_index = node_index - 1

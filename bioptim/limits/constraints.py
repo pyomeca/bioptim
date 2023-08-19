@@ -591,8 +591,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def stochastic_covariance_matrix_continuity_implicit(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
         ):
             """
             This functions constrain the covariance matrix to its actual value as in Gillis 2013.
@@ -615,8 +613,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(Node.START)
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(Node.START)
 
-            sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude) * MX_eye(
-                vertcat(sensory_noise_magnitude, motor_noise_magnitude).shape[0]
+            sigma_w = vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude) * MX_eye(
+                vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude).shape[0]
             )
             dt = controller.tf / controller.ns
             dg_dw = -dt * c_matrix
@@ -639,8 +637,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def stochastic_df_dx_implicit(
             penalty: Constraint,
             controller: PenaltyController,
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
         ):
             """
             This function constrains the stochastic matrix A to its actual value which is
@@ -701,8 +697,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controller.model.motor_noise_magnitude,
+                controller.model.sensory_noise_magnitude,
             )
 
             out = a_matrix - (MX_eye(DF_DX.shape[0]) - DF_DX * dt / 2)
@@ -714,8 +710,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def stochastic_helper_matrix_collocation(
             penalty: Constraint,
             controller: PenaltyController,
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
         ):
             """
             This function constrains the stochastic matrix M to its actual value which is
@@ -840,8 +834,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controller.model.motor_noise_magnitude,
+                controller.model.sensory_noise_magnitude,
             )
             dg_dz_evaluated = dg_dz_fun(
                 non_sym_states[:nb_root, 0],
@@ -855,8 +849,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controller.model.motor_noise_magnitude,
+                controller.model.sensory_noise_magnitude,
             )
 
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(Node.START)

@@ -4,17 +4,18 @@ The states dynamics is implicit. which allows to minimize the uncertainty on the
 The stochastic variables dynamics is explicit.
 """
 
-import biorbd_casadi as biorbd
+from typing import Any
 import pickle
-import casadi as cas
 import numpy as np
+import casadi as cas
+import biorbd_casadi as biorbd
 
 from bioptim import (
     OptimalControlProgram,
     StochasticOptimalControlProgram,
     ObjectiveFcn,
     Solver,
-    BiorbdModel,
+    StochasticBiorbdModel,
     ObjectiveList,
     NonLinearProgram,
     DynamicsEvaluation,
@@ -185,7 +186,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     Minimize the uncertainty (covariance matrix) of the states "key".
     """
     dt = controllers[0].tf / controllers[0].ns
-    out = 0
+    out: Any = 0
     for i, ctrl in enumerate(controllers):
         cov_matrix = ctrl.integrated_values["cov"].reshape_to_matrix(Node.START)
         p_partial = cov_matrix[ctrl.states[key].index, ctrl.states[key].index]
@@ -211,10 +212,10 @@ def sensory_reference_function(
     return hand_pos_velo
 
 
-def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, sensory_noise_magnitude):
+def get_cov_mat(nlp, node_index):
     """
     Perform a trapezoidal integration to get the covariance matrix at the next node.
-    It is conputed as:
+    It is computed as:
     P_k+1 = M_k(dg/dx @ P_k @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
 
     Parameters
@@ -223,12 +224,6 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
         The current non-linear program.
     node_index: int
         The node index at hich we want to compute the covariance matrix.
-    force_field_magnitude: float
-        The magnitude of the force field.
-    motor_noise_magnitude: DM
-        The magnitude of the motor noise.
-    sensory_noise_magnitude: DM
-        The magnitude of the sensory noise.
     """
 
     nlp.states.node_index = 0
@@ -252,7 +247,6 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
         nlp,
         nlp.motor_noise,
         nlp.sensory_noise,
-        force_field_magnitude=force_field_magnitude,
         with_gains=True,
     )
 
@@ -287,14 +281,14 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
         nlp.parameters,
         nlp.stochastic_variables.cx_start,
         nlp.integrated_values["cov"].cx_start,  # Should be the right shape to work
-        motor_noise_magnitude,
-        sensory_noise_magnitude,
+        nlp.model.motor_noise_magnitude,
+        nlp.model.sensory_noise_magnitude,
     )
     p_vector = nlp.integrated_values.reshape_to_vector(func_eval)
     return p_vector
 
 
-def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
+def reach_target_consistently(controllers: list[PenaltyController]) -> cas.MX:
     """
     Constraint the hand to reach the target consistently.
     This is a multi-node constraint because the covariance matrix depends on all the precedent nodes, but it only
@@ -331,7 +325,7 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     return val
 
 
-def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise_magnitude: cas.DM) -> cas.MX:
+def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     """
     This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
     magnitude.
@@ -342,11 +336,9 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     ----------
     controllers : list[PenaltyController]
         List of controllers to be used to compute the expected effort.
-    sensory_noise_magnitude : cas.DM
-        Magnitude of the sensory noise.
     """
     dt = controllers[0].tf / controllers[0].ns
-    sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
+    sensory_noise_matrix = controllers[0].model.sensory_noise_magnitude * cas.MX_eye(4)
 
     # create the casadi function to be evaluated
     # Get the symbolic variables
@@ -372,23 +364,23 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
         controllers[0].stochastic_variables.cx_start,
         controllers[0].get_nlp,
     )
-    e_fb = k_matrix @ ((hand_pos_velo - ref) + sensory_noise_magnitude)
+    e_fb = k_matrix @ ((hand_pos_velo - ref) + controllers[0].model.sensory_noise_magnitude)
     jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx_start)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
-    expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
+    expected_effort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     func = cas.Function(
-        "f_expectedEffort_fb",
+        "expected_effort_fb_mx",
         [controllers[0].states.cx_start, controllers[0].stochastic_variables.cx_start, cov_sym],
-        [expectedEffort_fb_mx],
+        [expected_effort_fb_mx],
     )
 
-    f_expectedEffort_fb = 0
+    f_expected_effort_fb: Any = 0
     for i, ctrl in enumerate(controllers):
         P_vector = ctrl.integrated_values.cx_start
         out = func(ctrl.states.cx_start, ctrl.stochastic_variables.cx_start, P_vector)
-        f_expectedEffort_fb += out * dt
+        f_expected_effort_fb += out * dt
 
-    return f_expectedEffort_fb
+    return f_expected_effort_fb
 
 
 def track_final_marker(controller: PenaltyController) -> cas.MX:
@@ -428,7 +420,7 @@ def prepare_socp(
         The magnitude of the sensory noise
     force_field_magnitude: float
         The magnitude of the force field
-    example_type: str
+    example_type: ExampleType
         The type of problem to solve (ExampleType.CIRCLE or ExampleType.BAR)
 
     Returns
@@ -436,7 +428,13 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = StochasticBiorbdModel(
+        biorbd_model_path,
+        sensory_noise_magnitude=sensory_noise_magnitude,
+        motor_noise_magnitude=motor_noise_magnitude,
+    )
+    bio_model.force_field_magnitude = force_field_magnitude
+    ### to be added to StochasticBiorbdModel
     bio_model.sensory_reference_function = sensory_reference_function
     bio_model.force_field = get_force_field
     bio_model.friction_coefficients = np.array([[0.05, 0.025], [0.025, 0.05]])
@@ -471,7 +469,6 @@ def prepare_socp(
         expected_feedback_effort,
         nodes_phase=[0 for _ in range(n_shooting + 1)],
         nodes=[i for i in range(n_shooting + 1)],
-        sensory_noise_magnitude=sensory_noise_magnitude,
         weight=1e3 / 2,
         quadratic=False,
     )
@@ -501,7 +498,7 @@ def prepare_socp(
 
     multinode_constraints = MultinodeConstraintList()
     multinode_constraints.add(
-        reach_target_consistantly,
+        reach_target_consistently,
         nodes_phase=[0 for _ in range(n_shooting + 1)],
         nodes=[i for i in range(n_shooting + 1)],
         min_bound=np.array([-cas.inf, -cas.inf, -cas.inf, -cas.inf]),
@@ -621,9 +618,6 @@ def prepare_socp(
         "cov": lambda nlp, node_index: get_cov_mat(
             nlp,
             node_index,
-            force_field_magnitude=force_field_magnitude,
-            motor_noise_magnitude=motor_noise_magnitude,
-            sensory_noise_magnitude=sensory_noise_magnitude,
         )
     }
 

@@ -309,8 +309,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         def stochastic_helper_matrix_explicit(
             penalty,
             controllers: list[PenaltyController, PenaltyController],
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
         ):
             """
             This functions constrain the helper matrix to its actual value as in Gillis 2013.
@@ -325,10 +323,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 A reference to the phase penalty
             controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
-            motor_noise_magnitude: DM
-                The magnitude of the motor noise
-            sensory_noise_magnitude: DM
-                The magnitude of the sensory noise
             """
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
@@ -367,8 +361,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[1].controls.cx_start,
                 controllers[1].parameters.cx_start,
                 controllers[1].stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controllers[1].model.motor_noise_magnitude,
+                controllers[1].model.sensory_noise_magnitude,
             )
 
             DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
@@ -389,7 +383,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             0 = df/dz - dg/dz @ M
             Note that here, we assume that the only z (collocation states) is the next interval states, therefore M is
             not computed at the same node as the other values.
-            TODO: Charbie -> This implementation is only true for Trapezoidal, should generalize for collocations
 
             Parameters
             ----------
@@ -399,10 +392,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     The penalty node elements
             dynamics: Callable
                 The states dynamics function
-            motor_noise_magnitude: DM
-                The magnitude of the motor noise
-            sensory_noise_magnitude: DM
-                The magnitude of the sensory noise
             """
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
@@ -427,8 +416,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         def stochastic_covariance_matrix_continuity_implicit(
             penalty,
             controllers: list[PenaltyController, PenaltyController],
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
         ):
             """
             This functions allows to implicitly integrate the covariance matrix.
@@ -445,7 +432,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             c_matrix = controllers[0].stochastic_variables["c"].reshape_to_matrix(Node.START)
             m_matrix = controllers[0].stochastic_variables["m"].reshape_to_matrix(Node.START)
 
-            sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude)
+            sigma_w = vertcat(controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude)
             dt = controllers[0].tf / controllers[0].ns
             dg_dw = -dt * c_matrix
             dg_dx = -MX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
@@ -460,8 +447,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         def stochastic_df_dw_implicit(
             penalty,
             controllers: list[PenaltyController],
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
         ):
             """
             This function constrains the stochastic matrix C to its actual value which is
@@ -524,8 +509,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].controls["tau"].cx_start,
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controllers[0].model.motor_noise_magnitude,
+                controllers[0].model.sensory_noise_magnitude,
             )
             DF_DW_plus = DF_DW_fun(
                 controllers[1].states["q"].cx_start[:nb_root],
@@ -535,8 +520,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[1].controls.cx_start,
                 controllers[1].parameters.cx_start,
                 controllers[1].stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controllers[1].model.motor_noise_magnitude,
+                controllers[1].model.sensory_noise_magnitude,
             )
 
             out = c_matrix - (-(DF_DW + DF_DW_plus) / 2 * dt)
@@ -548,8 +533,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         def stochastic_covariance_matrix_continuity_collocation(
             penalty,
             controllers: list[PenaltyController, PenaltyController],
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
         ):
             """
             This functions allows to implicitly integrate the covariance matrix as in Gillis 2013.
@@ -658,8 +641,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].controls.cx_start,
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controllers[0].model.motor_noise_magnitude,
+                controllers[0].model.sensory_noise_magnitude,
             )
 
             dg_dw_fun = Function(
@@ -693,8 +676,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].controls.cx_start,
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controllers[0].model.motor_noise_magnitude,
+                controllers[0].model.sensory_noise_magnitude,
             )
 
             cov_next_computed = (

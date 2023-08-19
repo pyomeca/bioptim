@@ -16,7 +16,7 @@ from bioptim import (
     StochasticOptimalControlProgram,
     ObjectiveFcn,
     Solver,
-    BiorbdModel,
+    StochasticBiorbdModel,
     ObjectiveList,
     NonLinearProgram,
     DynamicsList,
@@ -101,7 +101,10 @@ def prepare_socp(
 
     problem_type = SocpType.SOCP_TRAPEZOIDAL_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude, with_cholesky)
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = StochasticBiorbdModel(biorbd_model_path,
+                                      sensory_noise_magnitude=sensory_noise_magnitude,
+                                      motor_noise_magnitude=motor_noise_magnitude)
+    # Add the other ones
     bio_model.sensory_reference_function = sensory_reference_function
     bio_model.friction_coefficients = np.array([[0.05, 0.025], [0.025, 0.05]])
 
@@ -219,10 +222,10 @@ def prepare_socp(
     s_bounds = BoundsList()
     # K(2x4) + ref(4x1) + M(4x4)
     n_stochastic = n_tau * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states
+    n_cholesky_cov = 0
     if not with_cholesky:
         n_stochastic += n_states * n_states  # + cov(4, 4)
     else:
-        n_cholesky_cov = 0
         for i in range(n_states):
             for j in range(i + 1):
                 n_cholesky_cov += 1
