@@ -11,15 +11,11 @@ constraint, this feature is not implemented in bioptim (if you really want this 
 by opening an issue on GitHub). However, the equivalence of our implementation has been tested.
 """
 
-import platform
-
-from typing import Callable
 import pickle
-import biorbd_casadi as biorbd
+
 import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
-import scipy.io as sio
 
 from bioptim import (
     OptimalControlProgram,
@@ -348,7 +344,7 @@ def track_final_marker(controller: PenaltyController) -> cas.MX:
 def prepare_socp(
     final_time: float,
     n_shooting: int,
-    ee_final_position: np.ndarray,
+    hand_final_position: np.ndarray,
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
     force_field_magnitude: float = 0,
@@ -362,7 +358,7 @@ def prepare_socp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
-    ee_final_position: np.ndarray
+    hand_final_position: np.ndarray
         The final position of the end effector
     motor_noise_magnitude: cas.DM
         The magnitude of the motor noise
@@ -425,7 +421,7 @@ def prepare_socp(
         sensory_noise=np.zeros((4, 1)),
         force_field_magnitude=force_field_magnitude,
     )
-    constraints.add(track_final_marker, node=Node.END, target=ee_final_position)
+    constraints.add(track_final_marker, node=Node.END, target=hand_final_position)
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
     constraints.add(
         zero_acceleration,
@@ -591,7 +587,6 @@ def prepare_socp(
         multinode_objectives=multinode_objectives,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
-        ode_solver=OdeSolver.TRAPEZOIDAL(),
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
@@ -607,8 +602,8 @@ def main():
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 
-    ee_initial_position = np.array([0.0, 0.2742])  # Directly from Tom's version
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
+    hand_initial_position = np.array([0.0, 0.2742])  # Directly from Tom's version
+    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 
     # --- Prepare the ocp --- #
     dt = 0.01
@@ -642,7 +637,7 @@ def main():
     socp = prepare_socp(
         final_time=final_time,
         n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
+        hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         example_type=example_type,
@@ -781,8 +776,8 @@ def main():
         for i_node in range(n_shooting + 1):
             hand_pos_without_noise[:, i_node] = np.reshape(hand_pos_fcn(q_sol[:, i_node])[:2], (2,))
         axs[0, 0].plot(hand_pos_without_noise[0, :], hand_pos_without_noise[1, :], color="k")
-        axs[0, 0].plot(ee_initial_position[0], ee_initial_position[1], color="tab:green", marker="o")
-        axs[0, 0].plot(ee_final_position[0], ee_final_position[1], color="tab:red", marker="o")
+        axs[0, 0].plot(hand_initial_position[0], hand_initial_position[1], color="tab:green", marker="o")
+        axs[0, 0].plot(hand_final_position[0], hand_final_position[1], color="tab:red", marker="o")
         axs[0, 0].set_xlabel("X [m]")
         axs[0, 0].set_ylabel("Y [m]")
         axs[0, 0].set_title("Hand position simulated")

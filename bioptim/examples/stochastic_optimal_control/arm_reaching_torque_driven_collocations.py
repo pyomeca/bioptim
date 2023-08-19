@@ -281,6 +281,7 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
+    problem_type = SocpType.SOCP_COLLOCATION(motor_noise_magnitude, sensory_noise_magnitude, polynomial_degree=3, method="legendre")
     bio_model = BiorbdModel(biorbd_model_path)
     bio_model.sensory_reference_function = sensory_reference_function
     bio_model.force_field = get_force_field
@@ -457,11 +458,10 @@ def prepare_socp(
         objective_functions=objective_functions,
         constraints=constraints,
         multinode_constraints=multinode_constraints,
-        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=3, method="legendre"),
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
-        problem_type=SocpType.SOCP_COLLOCATION(motor_noise_magnitude, sensory_noise_magnitude),
+        problem_type=problem_type,
     )
 
 

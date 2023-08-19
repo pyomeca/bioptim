@@ -7,8 +7,6 @@ Decomposing the covariance matrix using Cholesky L @ @.T allows to reduce the nu
 covariance matrix always stays positive semi-definite.
 """
 
-import platform
-
 import pickle
 import casadi as cas
 import numpy as np
@@ -68,7 +66,7 @@ def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ee_final_position: np.ndarray,
+    hand_final_position: np.ndarray,
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
     example_type=ExampleType.CIRCLE,
@@ -85,7 +83,7 @@ def prepare_socp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
-    ee_final_position: np.ndarray
+    hand_final_position: np.ndarray
         The final position of the end effector
     motor_noise_magnitude: cas.DM
         The magnitude of the motor noise
@@ -143,7 +141,7 @@ def prepare_socp(
 
     # This constraint insures that the hand reaches the target with x_mean
     constraints.add(
-        ConstraintFcn.TRACK_MARKERS, node=Node.END, target=ee_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
+        ConstraintFcn.TRACK_MARKERS, node=Node.END, target=hand_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
     )
     # While this constraint insures that the hand still reaches the target with the proper position and velocity even
     # in the presence of noise
@@ -328,7 +326,6 @@ def prepare_socp(
         s_scaling=s_scaling,
         objective_functions=objective_functions,
         constraints=constraints,
-        ode_solver=OdeSolver.TRAPEZOIDAL(),
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
@@ -344,7 +341,7 @@ def main():
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
 
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
+    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])  # Directly from Tom's version
 
     # --- Prepare the ocp --- #
     dt = 0.01
@@ -378,7 +375,7 @@ def main():
         biorbd_model_path=biorbd_model_path,
         final_time=final_time,
         n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
+        hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         example_type=example_type,

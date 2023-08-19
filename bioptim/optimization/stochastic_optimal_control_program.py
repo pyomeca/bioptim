@@ -52,7 +52,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         parameter_objectives: ParameterObjectiveList = None,
         parameter_constraints: ParameterConstraintList = None,
         external_forces: list[list[Any], ...] | tuple[list[Any], ...] = None,
-        ode_solver: list | OdeSolverBase | OdeSolver = None,
         control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
         time_phase_mapping: BiMapping = None,
@@ -65,7 +64,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
         s_scaling: VariableScalingList = None,
-        state_continuity_weight: float = None,  # TODO: docstring
+        state_continuity_weight: float = None,
         n_threads: int = 1,
         use_sx: bool = False,
         skip_continuity: bool = False,
@@ -85,6 +84,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     "n_thread is set to 1 by default."
                 )
 
+        if "ode_solver" in kwargs:
+            raise ValueError(
+                "The ode_solver cannot be defined for a stochastic ocp. The value is chosen based on the type of problem solved:"
+                "\n- SOCP_TRAPEZOIDAL_EXPLICIT: OdeSolver.TRAPEZOIDAL(), "
+                "\n- SOCP_TRAPEZOIDAL_IMPLICIT: OdeSolver.TRAPEZOIDAL(), "
+                "\n- SOCP_COLLOCATION: OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)"
+            )
+
         self.n_threads = 1
 
         if "assume_phase_dynamics" in kwargs:
@@ -99,6 +106,12 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         self.check_bioptim_version()
 
         bio_model = self.initialize_model(bio_model)
+
+        if isinstance(problem_type, SocpType.SOCP_TRAPEZOIDAL_IMPLICIT) or isinstance(
+            problem_type, SocpType.SOCP_TRAPEZOIDAL_EXPLICIT):
+            ode_solver = OdeSolver.TRAPEZOIDAL()
+        elif isinstance(problem_type, SocpType.SOCP_COLLOCATION):
+            ode_solver = OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)
 
         self.set_original_values(
             bio_model,

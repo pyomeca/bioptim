@@ -14,7 +14,7 @@ def test_arm_reaching_muscle_driven():
 
     final_time = 0.8
     n_shooting = 4
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
     example_type = ExampleType.CIRCLE
     force_field_magnitude = 0
 
@@ -30,7 +30,7 @@ def test_arm_reaching_muscle_driven():
     ocp = ocp_module.prepare_socp(
         final_time=final_time,
         n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
+        hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         force_field_magnitude=force_field_magnitude,
@@ -350,7 +350,7 @@ def test_arm_reaching_torque_driven_explicit():
 
     final_time = 0.8
     n_shooting = 4
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
 
     dt = 0.01
     motor_noise_std = 0.05
@@ -367,7 +367,7 @@ def test_arm_reaching_torque_driven_explicit():
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
+        hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
     )
@@ -478,7 +478,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
 
     final_time = 0.8
     n_shooting = 4
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
 
     dt = 0.01
     motor_noise_std = 0.05
@@ -495,7 +495,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
+        hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         with_cholesky=with_cholesky,
@@ -781,7 +781,7 @@ def test_arm_reaching_torque_driven_collocations():
 
     final_time = 0.4
     n_shooting = 4
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
 
     dt = 0.05
     motor_noise_std = 0.05
@@ -798,7 +798,7 @@ def test_arm_reaching_torque_driven_collocations():
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
+        hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
     )
