@@ -15,25 +15,19 @@ import numpy as np
 from enum import Enum
 
 from bioptim import (
-    OptimalControlProgram,
     StochasticOptimalControlProgram,
     ObjectiveFcn,
     Solver,
     BiorbdModel,
     ObjectiveList,
     NonLinearProgram,
-    DynamicsEvaluation,
-    DynamicsFunctions,
-    ConfigureProblem,
     DynamicsList,
     BoundsList,
     InterpolationType,
     SocpType,
-    PenaltyController,
     Node,
     ConstraintList,
     ConstraintFcn,
-    MultinodeConstraintList,
     InitialGuessList,
     Axis,
     DynamicsFcn,
@@ -68,100 +62,6 @@ def sensory_reference_function(
     hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
     hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
     return hand_pos_velo
-
-
-def stochastic_forward_dynamics(
-    states: cas.MX | cas.SX,
-    controls: cas.MX | cas.SX,
-    parameters: cas.MX | cas.SX,
-    stochastic_variables: cas.MX | cas.SX,
-    nlp: NonLinearProgram,
-    motor_noise,
-    sensory_noise,
-    with_gains,
-) -> DynamicsEvaluation:
-    """
-    The dynamic function of the states including feedback gains.
-
-    Parameters
-    ----------
-    states: MX.sym
-        The states
-    controls: MX.sym
-        The controls
-    parameters: MX.sym
-        The parameters
-    stochastic_variables: MX.sym
-        The stochastic variables
-    nlp: NonLinearProgram
-        The current non-linear program
-    motor_noise: MX.sym
-        The motor noise
-    sensory_noise: MX.sym
-        The sensory noise
-    with_gains: bool
-        If the feedback gains are included or not to the torques
-    """
-    q = DynamicsFunctions.get(nlp.states["q"], states)
-    qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
-    tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-
-    tau_fb = tau
-    if with_gains:
-        ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
-        k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k)
-
-        hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
-
-        tau_fb += k_matrix @ ((hand_pos_velo - ref) + sensory_noise) + motor_noise
-
-    torques_computed = tau_fb
-    torques_computed += nlp.model.friction_coefficients @ qdot
-
-    dqdot_computed = nlp.model.forward_dynamics(q, qdot, torques_computed)
-
-    return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_computed))
-
-
-def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, motor_noise, sensory_noise, with_cholesky
-):
-    """
-    Configure the stochastic optimal control problem.
-    """
-    ConfigureProblem.configure_q(ocp, nlp, True, False, False)
-    ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-    ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
-    ConfigureProblem.configure_tau(ocp, nlp, False, True)
-
-    # Stochastic variables
-    ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=2, n_references=4)
-    ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
-    if with_cholesky:
-        ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=4)
-    else:
-        ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
-    ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=4)
-    ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=4, n_noise=6)
-
-    ConfigureProblem.configure_dynamics_function(
-        ocp,
-        nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=False
-        ),
-        motor_noise=motor_noise,
-        sensory_noise=sensory_noise,
-    )
-    ConfigureProblem.configure_stochastic_dynamics_function(
-        ocp,
-        nlp,
-        noised_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=True
-        ),
-    )
 
 
 def prepare_socp(
@@ -274,27 +174,10 @@ def prepare_socp(
 
     # Dynamics
     dynamics = DynamicsList()
-    # dynamics.add(
-    #     DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
-    #     problem_type=problem_type,
-    #     n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
-    #     with_cholesky=with_cholesky,
-    #     expand=False,
-    # )
     dynamics.add(
-        configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
-            states,
-            controls,
-            parameters,
-            stochastic_variables,
-            nlp,
-            motor_noise,
-            sensory_noise,
-            with_gains=with_gains,
-        ),
-        motor_noise=np.zeros((n_tau, 1)),
-        sensory_noise=np.zeros((n_q + n_qdot, 1)),
+        DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
+        problem_type=problem_type,
+        n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
         with_cholesky=with_cholesky,
         expand=False,
     )
