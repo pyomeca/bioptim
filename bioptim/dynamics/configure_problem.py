@@ -336,7 +336,7 @@ class ConfigureProblem:
             n_noised_tau = len(nlp.variable_mappings["tau"].map_idx)
         else:
             n_noised_tau = nlp.model.nb_tau
-        n_noise = problem_type.motor_noise_magnitude.shape[0] + problem_type.sensory_noise_magnitude.shape[0]
+        n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
         n_noised_states = 2 * n_noised_tau
 
         # Stochastic variables

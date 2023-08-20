@@ -19,9 +19,7 @@ class SocpType:
             If True, the Cholesky decomposition is used to reduce the number of optimization variables
         """
 
-        def __init__(self, motor_noise_magnitude: DM, sensory_noise_magnitude: DM, with_cholesky: bool = False):
-            self.motor_noise_magnitude = motor_noise_magnitude
-            self.sensory_noise_magnitude = sensory_noise_magnitude
+        def __init__(self, with_cholesky: bool = False):
             self.with_cholesky = with_cholesky
 
     class TRAPEZOIDAL_IMPLICIT:

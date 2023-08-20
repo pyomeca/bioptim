@@ -47,7 +47,6 @@ from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_impl
 
 
 def sensory_reference_function(
-        self,
         states: cas.MX | cas.SX,
         controls: cas.MX | cas.SX,
         parameters: cas.MX | cas.SX,
@@ -59,7 +58,7 @@ def sensory_reference_function(
     """
     q = states[nlp.states["q"].index]
     qdot = states[nlp.states["qdot"].index]
-    hand_pos_velo = self.end_effector_pos_velo(q, qdot)
+    hand_pos_velo = nlp.model.end_effector_pos_velo(q, qdot)
     return hand_pos_velo
 
 def stochastic_forward_dynamics(
@@ -190,7 +189,7 @@ def get_cov_mat(nlp, node_index):
         nlp,
         nlp.motor_noise,
         nlp.sensory_noise,
-        force_field_magnitude=force_field_magnitude,
+        force_field_magnitude=nlp.model.force_field_magnitude,
         with_gains=True,
     )
 
@@ -393,6 +392,7 @@ def prepare_socp(
     bio_model = LeuvenArmModel(sensory_noise_magnitude=sensory_noise_magnitude,
                                motor_noise_magnitude=motor_noise_magnitude,
                                sensory_reference_function=sensory_reference_function)
+    bio_model.force_field_magnitude = force_field_magnitude
 
     shoulder_pos_initial = 0.349065850398866
     shoulder_pos_final = 0.959931088596881
@@ -584,9 +584,6 @@ def prepare_socp(
         "cov": lambda nlp, node_index: get_cov_mat(
             nlp,
             node_index,
-            force_field_magnitude=force_field_magnitude,
-            motor_noise_magnitude=motor_noise_magnitude,
-            sensory_noise_magnitude=sensory_noise_magnitude,
         )
     }
 

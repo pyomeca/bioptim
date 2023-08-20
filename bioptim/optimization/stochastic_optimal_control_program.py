@@ -221,8 +221,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         )
 
     def initialize_stochastic_variables(self):
-        n_motor_noise = self.problem_type.motor_noise_magnitude.shape[0]
-        n_sensory_noise = self.problem_type.sensory_noise_magnitude.shape[0]
+        n_motor_noise = self.nlp[0].model.motor_noise_magnitude.shape[0]
+        n_sensory_noise = self.nlp[0].model.sensory_noise_magnitude.shape[0]
         motor_noise = self.cx.sym("motor_noise", n_motor_noise, 1)
         sensory_noise = self.cx.sym("sensory_noise", n_sensory_noise, 1)
         NLP.add(self, "motor_noise", motor_noise, True)

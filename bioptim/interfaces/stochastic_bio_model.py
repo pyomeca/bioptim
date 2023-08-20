@@ -12,8 +12,8 @@ class StochasticBioModel(BioModel):
     sensory_noise_magnitude: float
     motor_noise_magnitude: float
 
-    sensory_noise_sym: MX.sym | SX.sym
-    motor_noise_sym: MX.sym | SX.sym
+    sensory_noise_sym: MX.sym
+    motor_noise_sym: MX.sym
 
     sensory_reference_function: Callable
 

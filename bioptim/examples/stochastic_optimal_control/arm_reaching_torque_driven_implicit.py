@@ -99,7 +99,7 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    problem_type = SocpType.TRAPEZOIDAL_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude, with_cholesky)
+    problem_type = SocpType.TRAPEZOIDAL_IMPLICIT(with_cholesky)
 
     bio_model = StochasticBiorbdModel(biorbd_model_path,
                                       sensory_noise_magnitude=sensory_noise_magnitude,

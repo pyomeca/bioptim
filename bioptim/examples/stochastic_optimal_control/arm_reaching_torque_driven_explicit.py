@@ -247,6 +247,7 @@ def get_cov_mat(nlp, node_index):
         nlp,
         nlp.motor_noise,
         nlp.sensory_noise,
+        force_field_magnitude=nlp.model.force_field_magnitude,
         with_gains=True,
     )
 
