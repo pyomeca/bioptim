@@ -183,8 +183,6 @@ class DynamicsFunctions:
         parameters: MX.sym,
         stochastic_variables: MX.sym,
         nlp,
-        motor_noise: MX.sym,
-        sensory_noise: MX.sym,
         with_contact: bool,
         with_friction: bool,
     ) -> DynamicsEvaluation:
@@ -203,10 +201,6 @@ class DynamicsFunctions:
             The stochastic variables of the system
         nlp: NonLinearProgram
             The definition of the system
-        motor_noise: MX.sym
-            The motor noise of the system
-        sensory_noise: MX.sym
-            The sensory noise of the system
         with_contact: bool
             If the dynamic with contact should be used
         with_friction: bool
@@ -229,8 +223,8 @@ class DynamicsFunctions:
         sensory_input = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
         noised_idx = nlp.variable_mappings["tau"].to_second.map_idx
-        tau[noised_idx] += k_matrix @ ((sensory_input - ref) + sensory_noise)
-        tau[noised_idx] += motor_noise
+        tau[noised_idx] += k_matrix @ ((sensory_input - ref) + nlp.model.sensory_noise_sym)
+        tau[noised_idx] += nlp.model.motor_noise_sym
         tau[noised_idx] = tau[noised_idx] + nlp.model.friction_coefficients @ qdot if with_friction else tau[noised_idx]
 
         # dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)

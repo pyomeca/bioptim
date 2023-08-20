@@ -124,7 +124,7 @@ def stochastic_forward_dynamics(
         hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
         tau_fb += get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, nlp.model.sensory_noise_sym)
-        noise_torque = nlp.model.sensory_noise_sym
+        noise_torque = nlp.model.motor_noise_sym
 
     tau_force_field = get_force_field(q, force_field_magnitude)
 
