@@ -87,8 +87,6 @@ class Integrator:
         # Relating to stochastic OCP
         self.noised_fun = ode["noised_ode"]
         self.noised_implicit_fun = ode["noised_implicit_ode"]
-        self.motor_noise = ode_opt["motor_noise"]
-        self.sensory_noise = ode_opt["sensory_noise"]
 
     def __call__(self, *args, **kwargs):
         """
@@ -140,8 +138,6 @@ class Integrator:
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ) -> tuple:
         """
         The dynamics of the system
@@ -160,10 +156,6 @@ class Integrator:
             The parameters scaling factor
         stochastic_variables: MX | SX
             The stochastic variables of the system
-        motor_noise: MX | SX
-            The motor noise of the system
-        sensory_noise: MX | SX
-            The sensory noise of the system
 
         Returns
         -------
@@ -184,8 +176,6 @@ class Integrator:
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
-                self.motor_noise,
-                self.sensory_noise,
             ],
             self.dxdt(
                 h=self.h,
@@ -194,10 +184,8 @@ class Integrator:
                 params=self.param_sym,
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
-                motor_noise=self.motor_noise,
-                sensory_noise=self.sensory_noise,
             ),
-            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 
@@ -219,7 +207,7 @@ class RK(Integrator):
     -------
     next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
-    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX, motor_noise: MX | SX, sensory_noise: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -246,8 +234,6 @@ class RK(Integrator):
         u: MX | SX,
         p: MX | SX,
         s: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ) -> MX | SX:
         """
         Compute the next integrated state (abstract)
@@ -266,10 +252,6 @@ class RK(Integrator):
             The parameters of the system
         s: MX | SX
             The stochastic variables of the system
-        motor_noise: MX | SX
-            The motor noise of the system
-        sensory_noise: MX | SX
-            The sensory noise of the system
 
         Returns
         -------
@@ -286,8 +268,6 @@ class RK(Integrator):
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ) -> tuple:
         """
         The dynamics of the system
@@ -306,10 +286,6 @@ class RK(Integrator):
             The parameters scaling factor
         stochastic_variables: MX | SX
             The stochastic variables of the system
-        motor_noise: MX | SX
-            The motor noise of the system
-        sensory_noise: MX | SX
-            The sensory noise of the system
 
         Returns
         -------
@@ -324,7 +300,7 @@ class RK(Integrator):
 
         for i in range(1, self.n_step + 1):
             t_norm_init = (i - 1) / self.n_step
-            x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p, s, motor_noise, sensory_noise)
+            x[:, i] = self.next_x(h, t_norm_init, x[:, i - 1], u, p, s)
 
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -363,8 +339,6 @@ class RK1(RK):
         u: MX | SX,
         p: MX | SX,
         s: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ) -> MX | SX:
         """
         Compute the next integrated state
@@ -383,17 +357,13 @@ class RK1(RK):
             The parameters of the system
         s: MX | SX
             The stochastic variables of the system
-        motor_noise: MX | SX
-            The motor noise of the system
-        sensory_noise: MX | SX
-            The sensory noise of the system
 
         Returns
         -------
         The next integrate states
         """
         func = self.noised_fun if self.noised_fun else self.fun
-        return x_prev + h * func(x_prev, self.get_u(u, t), p, s, motor_noise, sensory_noise)[:, self.idx]
+        return x_prev + h * func(x_prev, self.get_u(u, t), p, s)[:, self.idx]
 
 
 class RK2(RK):
@@ -427,8 +397,6 @@ class RK2(RK):
         u: MX | SX,
         p: MX | SX,
         s: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ):
         """
         Compute the next integrated state
@@ -447,21 +415,17 @@ class RK2(RK):
             The parameters of the system
         s: MX | SX
             The stochastic variables of the system
-        motor_noise: MX | SX
-            The motor noise of the system
-        sensory_noise: MX | SX
-            The sensory noise of the system
 
         Returns
         -------
         The next integrate states
         """
         func = self.noised_fun if self.noised_fun else self.fun
-        k1 = func(x_prev, self.get_u(u, t), p, s, motor_noise, sensory_noise)[:, self.idx]
+        k1 = func(x_prev, self.get_u(u, t), p, s)[:, self.idx]
         return (
             x_prev
             + h
-            * func(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s, motor_noise, sensory_noise)[
+            * func(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s)[
                 :, self.idx
             ]
         )
@@ -498,8 +462,6 @@ class RK4(RK):
         u: MX | SX,
         p: MX | SX,
         s: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ):
         """
         Compute the next integrated state
@@ -518,10 +480,6 @@ class RK4(RK):
             The parameters of the system
         s: MX | SX
             The stochastic variables of the system
-        motor_noise: MX | SX
-            The motor noise of the system
-        sensory_noise: MX | SX
-            The sensory noise of the system
 
         Returns
         -------
@@ -529,14 +487,14 @@ class RK4(RK):
         """
 
         func = self.noised_fun if self.noised_fun else self.fun
-        k1 = func(x_prev, self.get_u(u, t), p, s, motor_noise, sensory_noise)[:, self.idx]
-        k2 = func(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s, motor_noise, sensory_noise)[
+        k1 = func(x_prev, self.get_u(u, t), p, s)[:, self.idx]
+        k2 = func(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s)[
             :, self.idx
         ]
-        k3 = func(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, s, motor_noise, sensory_noise)[
+        k3 = func(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, s)[
             :, self.idx
         ]
-        k4 = func(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, s, motor_noise, sensory_noise)[:, self.idx]
+        k4 = func(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, s)[:, self.idx]
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
@@ -571,8 +529,6 @@ class RK8(RK4):
         u: MX | SX,
         p: MX | SX,
         s: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ):
         """
         Compute the next integrated state
@@ -591,10 +547,6 @@ class RK8(RK4):
             The parameters of the system
         s: MX | SX
             The stochastic variables of the system
-        motor_noise: MX | SX
-            The motor noise of the system
-        sensory_noise: MX | SX
-            The sensory noise of the system
 
         Returns
         -------
@@ -602,60 +554,48 @@ class RK8(RK4):
         """
 
         func = self.noised_fun if self.noised_fun else self.fun
-        k1 = func(x_prev, self.get_u(u, t), p, s, motor_noise, sensory_noise)[:, self.idx]
+        k1 = func(x_prev, self.get_u(u, t), p, s)[:, self.idx]
         k2 = func(
-            x_prev + (h * 4 / 27) * k1, self.get_u(u, t + self.h_norm * (4 / 27)), p, s, motor_noise, sensory_noise
+            x_prev + (h * 4 / 27) * k1, self.get_u(u, t + self.h_norm * (4 / 27)), p, s
         )[:, self.idx]
         k3 = func(
             x_prev + (h / 18) * (k1 + 3 * k2),
             self.get_u(u, t + self.h_norm * (2 / 9)),
             p,
             s,
-            motor_noise,
-            sensory_noise,
         )[:, self.idx]
         k4 = func(
             x_prev + (h / 12) * (k1 + 3 * k3),
             self.get_u(u, t + self.h_norm * (1 / 3)),
             p,
             s,
-            motor_noise,
-            sensory_noise,
         )[:, self.idx]
         k5 = func(
-            x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t + self.h_norm * (1 / 2)), p, s, motor_noise, sensory_noise
+            x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t + self.h_norm * (1 / 2)), p, s
         )[:, self.idx]
         k6 = func(
             x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5),
             self.get_u(u, t + self.h_norm * (2 / 3)),
             p,
             s,
-            motor_noise,
-            sensory_noise,
         )[:, self.idx]
         k7 = func(
             x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
             self.get_u(u, t + self.h_norm * (1 / 6)),
             p,
             s,
-            motor_noise,
-            sensory_noise,
         )[:, self.idx]
         k8 = func(
             x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
             self.get_u(u, t + self.h_norm),
             p,
             s,
-            motor_noise,
-            sensory_noise,
         )[:, self.idx]
         k9 = func(
             x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
             self.get_u(u, t + self.h_norm * (5 / 6)),
             p,
             s,
-            motor_noise,
-            sensory_noise,
         )[:, self.idx]
         k10 = func(
             x_prev
@@ -663,8 +603,6 @@ class RK8(RK4):
             self.get_u(u, t + self.h_norm),
             p,
             s,
-            motor_noise,
-            sensory_noise,
         )[:, self.idx]
 
         return x_prev + h / 840 * (41 * k1 + 27 * k4 + 272 * k5 + 27 * k6 + 216 * k7 + 216 * k9 + 41 * k10)
@@ -708,8 +646,6 @@ class TRAPEZOIDAL(Integrator):
         p: MX | SX,
         s_prev: MX | SX,
         s_next: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ):
         """
         Compute the next integrated state
@@ -718,8 +654,6 @@ class TRAPEZOIDAL(Integrator):
         ----------
         h: float
             The time step
-        t: float
-            The initial time of the integration
         x_prev: MX | SX
             The current state of the system
         x_next: MX | SX
@@ -734,19 +668,17 @@ class TRAPEZOIDAL(Integrator):
             The current stochastic variables of the system
         s_next: MX | SX
             The stochastic variables of the system at the next shooting node
-        motor_noise: MX | SX
-            The motor noise
-        sensory_noise: MX | SX
-            The sensory noise
 
         Returns
         -------
         The next integrate states
         """
-
-        func = self.noised_fun if self.noised_fun else self.fun
-        dx = func(x_prev, u_prev, p, s_prev, motor_noise, sensory_noise)[:, self.idx]
-        dx_next = func(x_next, u_next, p, s_next, motor_noise, sensory_noise)[:, self.idx]
+        if self.noised_fun is not None:
+            dx = self.noised_fun(x_prev, u_prev, p, s_prev, self.model.motor_noise_sym, self.model.sensory_noise_sym)[:, self.idx]
+            dx_next = self.noised_fun(x_next, u_next, p, s_next, self.model.motor_noise_sym, self.model.sensory_noise_sym)[:, self.idx]
+        else:
+            dx = self.fun(x_prev, u_prev, p, s_prev)[:, self.idx]
+            dx_next = self.fun(x_next, u_next, p, s_next)[:, self.idx]
         return x_prev + (dx + dx_next) * h / 2
 
     def dxdt(
@@ -757,8 +689,6 @@ class TRAPEZOIDAL(Integrator):
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ) -> tuple:
         """
         The dynamics of the system
@@ -775,12 +705,8 @@ class TRAPEZOIDAL(Integrator):
             The parameters of the system
         param_scaling
             The parameters scaling factor
-        stochastic_variables_prev: MX | SX
+        stochastic_variables: MX | SX
             The stochastic variables of the system
-        motor_noise: MX | SX
-            The motor noise of the system
-        sensory_noise: MX | SX
-            The sensory noise of the system
 
         Returns
         -------
@@ -811,8 +737,6 @@ class TRAPEZOIDAL(Integrator):
             p,
             stochastic_variables_prev,
             stochastic_variables_next,
-            motor_noise,
-            sensory_noise,
         )
 
         if self.model.nb_quaternions > 0:
@@ -827,7 +751,12 @@ class TRAPEZOIDAL(Integrator):
 
         self.function = Function(
             "integrator",
-            [self.x_sym, self.u_sym, self.param_sym, self.s_sym, self.motor_noise, self.sensory_noise],
+            [self.x_sym,
+             self.u_sym,
+             self.param_sym,
+             self.s_sym,
+             self.model.motor_noise_sym if self.noised_fun is not None else self.cx(),
+             self.model.sensory_noise_sym if self.noised_fun is not None else self.cx()],
             self.dxdt(
                 self.h,
                 self.x_sym,
@@ -835,8 +764,6 @@ class TRAPEZOIDAL(Integrator):
                 self.param_sym,
                 self.param_scaling,
                 self.s_sym,
-                self.motor_noise,
-                self.sensory_noise,
             ),
             ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
             ["xf", "xall"],
@@ -945,8 +872,6 @@ class COLLOCATION(Integrator):
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ) -> tuple:
         """
         The dynamics of the system
@@ -965,10 +890,6 @@ class COLLOCATION(Integrator):
             The parameters scaling of the system
         stochastic_variables: MX | SX
             The stochastic variables of the system
-        motor_noise: MX | SX
-            The motor noise of the system
-        sensory_noise: MX | SX
-            The sensory noise of the system
 
         Returns
         -------
@@ -996,8 +917,6 @@ class COLLOCATION(Integrator):
                         self.get_u(controls, self.step_time[j]),
                         params * param_scaling,
                         stochastic_variables,
-                        motor_noise,
-                        sensory_noise,
                     )[:, self.idx]
                 else:
                     f_j = self.fun(
@@ -1005,8 +924,6 @@ class COLLOCATION(Integrator):
                         self.get_u(controls, self.step_time[j]),
                         params * param_scaling,
                         stochastic_variables,
-                        motor_noise,
-                        sensory_noise,
                     )[:, self.idx]
                 defects.append(h * f_j - xp_j)
             elif self.defects_type == DefectType.IMPLICIT:
@@ -1017,8 +934,6 @@ class COLLOCATION(Integrator):
                             self.get_u(controls, self.step_time[j]),
                             params * param_scaling,
                             stochastic_variables,
-                            motor_noise,
-                            sensory_noise,
                             xp_j / h,
                         )
                     )
@@ -1030,8 +945,6 @@ class COLLOCATION(Integrator):
                             params * param_scaling,
                             stochastic_variables,
                             xp_j / h,
-                            motor_noise,
-                            sensory_noise,
                         )
                     )
             else:
@@ -1056,8 +969,6 @@ class COLLOCATION(Integrator):
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
-                self.motor_noise,
-                self.sensory_noise,
             ],
             self.dxdt(
                 h=self.h,
@@ -1066,10 +977,8 @@ class COLLOCATION(Integrator):
                 params=self.param_sym,
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
-                motor_noise=self.motor_noise,
-                sensory_noise=self.sensory_noise,
             ),
-            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
         )
 
@@ -1106,8 +1015,6 @@ class IRK(COLLOCATION):
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
-        motor_noise: MX | SX,
-        sensory_noise: MX | SX,
     ) -> tuple:
         """
         The dynamics of the system
@@ -1126,10 +1033,6 @@ class IRK(COLLOCATION):
             The parameters scaling of the system
         stochastic_variables: MX | SX
             The stochastic variables of the system
-        motor_noise: MX | SX
-            The motor noise of the system
-        sensory_noise: MX | SX
-            The sensory noise of the system
 
         Returns
         -------
@@ -1144,20 +1047,18 @@ class IRK(COLLOCATION):
             params=params,
             param_scaling=param_scaling,
             stochastic_variables=stochastic_variables,
-            motor_noise=motor_noise,
-            sensory_noise=sensory_noise,
         )
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         vfcn = Function(
             "vfcn",
-            [vertcat(*states[1:]), states[0], controls, params, stochastic_variables, motor_noise, sensory_noise],
+            [vertcat(*states[1:]), states[0], controls, params, stochastic_variables],
             [defect],
         ).expand()
 
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
-        x_irk_points = ifcn(self.cx(), states[0], controls, params, stochastic_variables, motor_noise, sensory_noise)
+        x_irk_points = ifcn(self.cx(), states[0], controls, params, stochastic_variables)
         x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
@@ -1174,7 +1075,7 @@ class IRK(COLLOCATION):
 
         self.function = Function(
             "integrator",
-            [self.x_sym[0], self.u_sym, self.param_sym, self.s_sym, self.motor_noise, self.sensory_noise],
+            [self.x_sym[0], self.u_sym, self.param_sym, self.s_sym],
             self.dxdt(
                 h=self.h,
                 states=self.x_sym,
@@ -1182,10 +1083,8 @@ class IRK(COLLOCATION):
                 params=self.param_sym,
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
-                motor_noise=self.motor_noise,
-                sensory_noise=self.sensory_noise,
             ),
-            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 

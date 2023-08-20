@@ -666,8 +666,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 tau_joints,  # Controls
                 parameters_sym,  # Parameters
                 stochastic_sym,  # Stochastic variables
-                controller.motor_noise,
-                controller.sensory_noise,
+                controller.model.motor_noise_sym,
+                controller.model.sensory_noise_sym,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -683,8 +683,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     tau_joints,
                     parameters_sym,
                     stochastic_sym,
-                    controller.motor_noise,
-                    controller.sensory_noise,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
                 ],
                 [jacobian(dx[non_root_index], vertcat(q_joints, qdot_joints))],
             )
@@ -759,8 +759,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 p=controller.controls.cx_start,
                 params=controller.parameters.cx_start,
                 s=controller.stochastic_variables.cx_start,
-                motor_noise=controller.motor_noise,
-                sensory_noise=controller.sensory_noise,
+                motor_noise=controller.model.motor_noise_sym,
+                sensory_noise=controller.model.sensory_noise_sym,
             )
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
@@ -797,8 +797,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
-                    controller.motor_noise,
-                    controller.sensory_noise,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
                 ],
                 [df_dz],
             )
@@ -816,8 +816,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
-                    controller.motor_noise,
-                    controller.sensory_noise,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
                 ],
                 [dg_dz],
             )

@@ -85,8 +85,6 @@ def stochastic_forward_dynamics(
     parameters: cas.MX | cas.SX,
     stochastic_variables: cas.MX | cas.SX,
     nlp: NonLinearProgram,
-    motor_noise,
-    sensory_noise,
     force_field_magnitude,
     with_gains,
 ) -> DynamicsEvaluation:
@@ -105,10 +103,6 @@ def stochastic_forward_dynamics(
         The stochastic variables
     nlp: NonLinearProgram
         The current non-linear program
-    motor_noise: MX.sym
-        The motor noise
-    sensory_noise: MX.sym
-        The sensory noise
     force_field_magnitude: float
         The magnitude of the force field
     with_gains: bool
@@ -121,6 +115,7 @@ def stochastic_forward_dynamics(
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
     tau_fb = tau
+    noise_torque = np.zeros(nlp.model.motor_noise_magnitude.shape)
     if with_gains:
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
@@ -128,11 +123,12 @@ def stochastic_forward_dynamics(
 
         hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
-        tau_fb += get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, sensory_noise)
+        tau_fb += get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, nlp.model.sensory_noise_sym)
+        noise_torque = nlp.model.sensory_noise_sym
 
     tau_force_field = get_force_field(q, force_field_magnitude)
 
-    torques_computed = tau_fb + motor_noise + tau_force_field
+    torques_computed = tau_fb + noise_torque + tau_force_field
 
     biorbd_model = biorbd.Model(nlp.model.path)
     dqdot_computed = biorbd_model.ForwardDynamics(q, qdot, torques_computed).to_mx()
@@ -144,7 +140,7 @@ def stochastic_forward_dynamics(
 
 
 def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, motor_noise, sensory_noise
+    ocp: OptimalControlProgram, nlp: NonLinearProgram
 ):
     """
     Configure the stochastic optimal control problem.
@@ -166,17 +162,15 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=False
+        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
+            states, controls, parameters, stochastic_variables, nlp, with_gains=False
         ),
-        motor_noise=motor_noise,
-        sensory_noise=sensory_noise,
     )
     ConfigureProblem.configure_stochastic_dynamics_function(
         ocp,
         nlp,
-        noised_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains=True
+        noised_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
+            states, controls, parameters, stochastic_variables, nlp, with_gains=True
         ),
     )
 
@@ -235,7 +229,7 @@ def get_cov_mat(nlp, node_index):
 
     M_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(Node.START)
 
-    sigma_w = cas.vertcat(nlp.sensory_noise, nlp.motor_noise) * cas.MX_eye(cas.vertcat(nlp.sensory_noise, nlp.motor_noise).shape[0])
+    sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * cas.MX_eye(cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym).shape[0])
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
     cov_matrix = nlp.integrated_values["cov"].reshape_sym_to_matrix(cov_sym)
 
@@ -245,13 +239,11 @@ def get_cov_mat(nlp, node_index):
         nlp.parameters,
         nlp.stochastic_variables.cx_start,
         nlp,
-        nlp.motor_noise,
-        nlp.sensory_noise,
         force_field_magnitude=nlp.model.force_field_magnitude,
         with_gains=True,
     )
 
-    ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.sensory_noise, nlp.motor_noise))
+    ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym))
     dg_dw = -ddx_dwm * dt
     ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx_start)
     dg_dx = -(ddx_dx * dt / 2 + cas.MX_eye(ddx_dx.shape[0]))
@@ -265,8 +257,8 @@ def get_cov_mat(nlp, node_index):
             nlp.parameters,
             nlp.stochastic_variables.cx_start,
             cov_sym,
-            nlp.motor_noise,
-            nlp.sensory_noise,
+            nlp.model.motor_noise_sym,
+            nlp.model.sensory_noise_sym,
         ],
         [p_next],
     )
@@ -506,19 +498,15 @@ def prepare_socp(
     dynamics = DynamicsList()
     dynamics.add(
         configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, motor_noise, sensory_noise, with_gains: stochastic_forward_dynamics(
+        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_gains: stochastic_forward_dynamics(
             states,
             controls,
             parameters,
             stochastic_variables,
             nlp,
-            motor_noise,
-            sensory_noise,
             force_field_magnitude=force_field_magnitude,
             with_gains=with_gains,
         ),
-        motor_noise=np.zeros((n_tau, 1)),
-        sensory_noise=np.zeros((n_q + n_qdot, 1)),
         expand=False,
     )
 
@@ -636,7 +624,7 @@ def prepare_socp(
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
-        problem_type=SocpType.TRAPEZOIDAL_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
+        problem_type=SocpType.TRAPEZOIDAL_EXPLICIT(),
         integrated_value_functions=integrated_value_functions,
     )
 

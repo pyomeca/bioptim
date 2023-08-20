@@ -148,23 +148,17 @@ class RK(OdeSolverBase):
         nlp.controls.node_index = node_index
         nlp.stochastic_variables.node_index = node_index
 
-        motor_noise = ocp.cx()
-        sensory_noise = ocp.cx()
         if with_noise:
             if not nlp.is_stochastic:
                 raise RuntimeError(
                     "You can only call integrator with_noise=True while running a " "StochasticOptimalControlProgram."
                 )
-            motor_noise = nlp.motor_noise
-            sensory_noise = nlp.sensory_noise
 
         ode_opt = {
             "t0": 0,
             "tf": nlp.dt,
             "model": nlp.model,
             "param": nlp.parameters,
-            "motor_noise": motor_noise,
-            "sensory_noise": sensory_noise,
             "cx": nlp.cx,
             "idx": 0,
             "control_type": nlp.control_type,
@@ -319,16 +313,12 @@ class OdeSolver:
                     "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead."
                 )
 
-            motor_noise = ocp.cx()
-            sensory_noise = ocp.cx()
             if with_noise:
                 if not nlp.is_stochastic:
                     raise RuntimeError(
                         "You can only call integrator with_noise=True while running a "
                         "StochasticOptimalControlProgram."
                     )
-                motor_noise = nlp.motor_noise
-                sensory_noise = nlp.sensory_noise
 
             ode = {
                 "x_unscaled": horzcat(nlp.states.cx_start, nlp.states.cx_end),
@@ -347,8 +337,6 @@ class OdeSolver:
                 "tf": nlp.dt,
                 "model": nlp.model,
                 "param": nlp.parameters,
-                "motor_noise": motor_noise,
-                "sensory_noise": sensory_noise,
                 "cx": nlp.cx,
                 "idx": 0,
                 "control_type": nlp.control_type,
@@ -433,16 +421,12 @@ class OdeSolver:
                     "developers and ping @EveCharbie"
                 )
 
-            motor_noise = ocp.cx()
-            sensory_noise = ocp.cx()
             if with_noise:
                 if not nlp.is_stochastic:
                     raise RuntimeError(
                         "You can only call integrator with_noise=True while running a "
                         "StochasticOptimalControlProgram."
                     )
-                motor_noise = nlp.motor_noise
-                sensory_noise = nlp.sensory_noise
 
             ode = {
                 "x_unscaled": [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
@@ -461,8 +445,6 @@ class OdeSolver:
                 "tf": nlp.dt,
                 "model": nlp.model,
                 "param": nlp.parameters,
-                "motor_noise": motor_noise,
-                "sensory_noise": sensory_noise,
                 "cx": nlp.cx,
                 "idx": 0,
                 "control_type": nlp.control_type,

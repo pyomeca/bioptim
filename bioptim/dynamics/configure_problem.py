@@ -752,11 +752,9 @@ class ConfigureProblem:
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.scaled.mx,
-                MX(),
-                MX(),
             ],
             [dynamics_dxdt],
-            ["x", "u", "p", "s", "motor_noise", "sensory_noise"],
+            ["x", "u", "p", "s"],
             ["xdot"],
         )
         if nlp.dynamics_type.expand:
@@ -781,11 +779,9 @@ class ConfigureProblem:
                     nlp.parameters.mx,
                     nlp.stochastic_variables.scaled.mx,
                     nlp.states_dot.scaled.mx_reduced,
-                    MX(),
-                    MX(),
                 ],
                 [dynamics_eval.defects],
-                ["x", "u", "p", "s", "xdot", "motor_noise", "sensory_noise"],
+                ["x", "u", "p", "s", "xdot"],
                 ["defects"],
             )
             if nlp.dynamics_type.expand:
@@ -824,8 +820,6 @@ class ConfigureProblem:
             nlp.parameters.mx,
             nlp.stochastic_variables.mx,
             nlp,
-            nlp.motor_noise,
-            nlp.sensory_noise,
             **extra_params,
         )
         dynamics_dxdt = dynamics_eval.dxdt
@@ -839,8 +833,8 @@ class ConfigureProblem:
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.mx,
-                nlp.motor_noise,
-                nlp.sensory_noise,
+                nlp.model.motor_noise_sym,
+                nlp.model.sensory_noise_sym,
             ],
             [dynamics_dxdt],
             ["x", "u", "p", "s", "motor_noise", "sensory_noise"],
@@ -868,8 +862,8 @@ class ConfigureProblem:
                     nlp.parameters.mx,
                     nlp.stochastic_variables.mx,
                     nlp.states_dot.scaled.mx_reduced,
-                    nlp.motor_noise,
-                    nlp.sensory_noise,
+                    nlp.model.motor_noise_sym,
+                    nlp.model.sensory_noise_sym,
                 ],
                 [dynamics_eval.defects],
                 ["x", "u", "p", "s", "xdot", "motor_noise", "sensory_noise"],

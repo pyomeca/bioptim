@@ -83,7 +83,7 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    problem_type = SocpType.COLLOCATION(motor_noise_magnitude, sensory_noise_magnitude, polynomial_degree=3, method="legendre")
+    problem_type = SocpType.COLLOCATION(polynomial_degree=3, method="legendre")
 
     bio_model = StochasticBiorbdModel(biorbd_model_path,
                                       sensory_noise_magnitude=sensory_noise_magnitude,

@@ -200,7 +200,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             integrated_value_functions,
         )
         self.problem_type = problem_type
-        self.initialize_stochastic_variables()  # to be removed
         NLP.add(self, "is_stochastic", True, True)
         self.prepare_node_mapping(node_mappings)
         self.prepare_dynamics()
@@ -219,14 +218,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_objectives,
             phase_transitions,
         )
-
-    def initialize_stochastic_variables(self):
-        n_motor_noise = self.nlp[0].model.motor_noise_magnitude.shape[0]
-        n_sensory_noise = self.nlp[0].model.sensory_noise_magnitude.shape[0]
-        motor_noise = self.cx.sym("motor_noise", n_motor_noise, 1)
-        sensory_noise = self.cx.sym("sensory_noise", n_sensory_noise, 1)
-        NLP.add(self, "motor_noise", motor_noise, True)
-        NLP.add(self, "sensory_noise", sensory_noise, True)
 
     def prepare_dynamics(self):
         # Prepare the dynamics

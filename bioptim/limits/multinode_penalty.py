@@ -339,8 +339,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].controls.cx_start,
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
-                controllers[0].motor_noise,
-                controllers[0].sensory_noise,
+                controllers[0].model.motor_noise_sym,
+                controllers[0].model.sensory_noise_sym,
             )
 
             DdZ_DX_fun = Function(
@@ -350,8 +350,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].controls.cx_start,
                     controllers[0].parameters.cx_start,
                     controllers[0].stochastic_variables.cx_start,
-                    controllers[0].motor_noise,
-                    controllers[0].sensory_noise,
+                    controllers[0].model.motor_noise_sym,
+                    controllers[0].model.sensory_noise_sym,
                 ],
                 [jacobian(dx, controllers[0].states.cx_start)],
             )
@@ -477,8 +477,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 tau_joints,
                 parameters_sym,
                 stochastic_sym,
-                controllers[0].motor_noise,
-                controllers[0].sensory_noise,
+                controllers[0].model.motor_noise_sym,
+                controllers[0].model.sensory_noise_sym,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -495,10 +495,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     tau_joints,
                     parameters_sym,
                     stochastic_sym,
-                    controllers[0].motor_noise,
-                    controllers[0].sensory_noise,
+                    controllers[0].model.motor_noise_sym,
+                    controllers[0].model.sensory_noise_sym,
                 ],
-                [jacobian(dx[non_root_index], vertcat(controllers[0].motor_noise, controllers[0].sensory_noise))],
+                [jacobian(dx[non_root_index], vertcat(controllers[0].model.motor_noise_sym, controllers[0].model.sensory_noise_sym))],
             )
 
             DF_DW = DF_DW_fun(
@@ -595,15 +595,15 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 p=controllers[0].controls.cx_start,
                 params=controllers[0].parameters.cx_start,
                 s=controllers[0].stochastic_variables.cx_start,
-                motor_noise=controllers[0].motor_noise,
-                sensory_noise=controllers[0].sensory_noise,
+                motor_noise=controllers[0].model.motor_noise_sym,
+                sensory_noise=controllers[0].model.sensory_noise_sym,
             )
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
             defects = dynamics["defects"]
             defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
 
-            sigma_w = vertcat(controllers[0].sensory_noise, controllers[0].motor_noise)
+            sigma_w = vertcat(controllers[0].model.sensory_noise_sym, controllers[0].model.motor_noise_sym)
             sigma_matrix = sigma_w * MX_eye(sigma_w.shape[0])
 
             dg_dx = jacobian(defects, vertcat(x_q_joints, x_qdot_joints))
@@ -623,8 +623,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].controls.cx_start,
                     controllers[0].parameters.cx_start,
                     controllers[0].stochastic_variables.cx_start,
-                    controllers[0].motor_noise,
-                    controllers[0].sensory_noise,
+                    controllers[0].model.motor_noise_sym,
+                    controllers[0].model.sensory_noise_sym,
                 ],
                 [dg_dx],
             )
@@ -659,8 +659,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].controls.cx_start,
                     controllers[0].parameters.cx_start,
                     controllers[0].stochastic_variables.cx_start,
-                    controllers[0].motor_noise,
-                    controllers[0].sensory_noise,
+                    controllers[0].model.motor_noise_sym,
+                    controllers[0].model.sensory_noise_sym,
                 ],
                 [dg_dw],
             )
