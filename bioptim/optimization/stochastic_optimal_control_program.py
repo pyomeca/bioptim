@@ -70,7 +70,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
-        problem_type = SocpType.SOCP_TRAPEZOIDAL_IMPLICIT,
+        problem_type = SocpType.TRAPEZOIDAL_IMPLICIT,
         **kwargs,
     ):
         """ """
@@ -85,9 +85,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         if "ode_solver" in kwargs:
             raise ValueError(
                 "The ode_solver cannot be defined for a stochastic ocp. The value is chosen based on the type of problem solved:"
-                "\n- SOCP_TRAPEZOIDAL_EXPLICIT: OdeSolver.TRAPEZOIDAL(), "
-                "\n- SOCP_TRAPEZOIDAL_IMPLICIT: OdeSolver.TRAPEZOIDAL(), "
-                "\n- SOCP_COLLOCATION: OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)"
+                "\n- TRAPEZOIDAL_EXPLICIT: OdeSolver.TRAPEZOIDAL(), "
+                "\n- TRAPEZOIDAL_IMPLICIT: OdeSolver.TRAPEZOIDAL(), "
+                "\n- COLLOCATION: OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)"
             )
 
         self.n_threads = 1
@@ -105,10 +105,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         bio_model = self.initialize_model(bio_model)
 
-        if isinstance(problem_type, SocpType.SOCP_TRAPEZOIDAL_IMPLICIT) or isinstance(
-            problem_type, SocpType.SOCP_TRAPEZOIDAL_EXPLICIT):
+        if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT) or isinstance(
+            problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             ode_solver = OdeSolver.TRAPEZOIDAL()
-        elif isinstance(problem_type, SocpType.SOCP_COLLOCATION):
+        elif isinstance(problem_type, SocpType.COLLOCATION):
             ode_solver = OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)
 
         self.set_original_values(
@@ -243,15 +243,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
         # Add the internal multi-node constraints for the stochastic ocp
-        if isinstance(self.problem_type, SocpType.SOCP_TRAPEZOIDAL_EXPLICIT):
+        if isinstance(self.problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             self._prepare_stochastic_dynamics_explicit(
                 constraints=constraints,
             )
-        elif isinstance(self.problem_type, SocpType.SOCP_TRAPEZOIDAL_IMPLICIT):
+        elif isinstance(self.problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
             self._prepare_stochastic_dynamics_implicit(
                 constraints=constraints,
             )
-        elif isinstance(self.problem_type, SocpType.SOCP_COLLOCATION):
+        elif isinstance(self.problem_type, SocpType.COLLOCATION):
             self._prepare_stochastic_dynamics_collocation(
                 constraints=constraints,
             )

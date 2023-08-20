@@ -428,16 +428,12 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = StochasticBiorbdModel(
-        biorbd_model_path,
-        sensory_noise_magnitude=sensory_noise_magnitude,
-        motor_noise_magnitude=motor_noise_magnitude,
-    )
+    bio_model = StochasticBiorbdModel(biorbd_model_path,
+                                      sensory_noise_magnitude=sensory_noise_magnitude,
+                                      motor_noise_magnitude=motor_noise_magnitude,
+                                      sensory_reference_function=sensory_reference_function)
+    bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
     bio_model.force_field_magnitude = force_field_magnitude
-    ### to be added to StochasticBiorbdModel
-    bio_model.sensory_reference_function = sensory_reference_function
-    bio_model.force_field = get_force_field
-    bio_model.friction_coefficients = np.array([[0.05, 0.025], [0.025, 0.05]])
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q
@@ -639,7 +635,7 @@ def prepare_socp(
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
-        problem_type=SocpType.SOCP_TRAPEZOIDAL_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
+        problem_type=SocpType.TRAPEZOIDAL_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
         integrated_value_functions=integrated_value_functions,
     )
 

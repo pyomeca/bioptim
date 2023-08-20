@@ -343,14 +343,14 @@ class ConfigureProblem:
         ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=n_noised_tau, n_references=n_references)
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=n_references)
         n_collocation_points = 1
-        if isinstance(problem_type, SocpType.SOCP_COLLOCATION):
+        if isinstance(problem_type, SocpType.COLLOCATION):
             n_collocation_points += problem_type.polynomial_degree
         ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states, n_collocation_points=n_collocation_points)
 
-        if isinstance(problem_type, SocpType.SOCP_TRAPEZOIDAL_EXPLICIT):
+        if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             if initial_matrix is None:
                 raise RuntimeError(
-                    "The initial value for the covariance matrix must be provided for SOCP_TRAPEZOIDAL_EXPLICIT"
+                    "The initial value for the covariance matrix must be provided for TRAPEZOIDAL_EXPLICIT"
                 )
             ConfigureProblem.configure_stochastic_cov_explicit(
                 ocp, nlp, n_noised_states=n_noised_states, initial_matrix=initial_matrix
@@ -361,7 +361,7 @@ class ConfigureProblem:
             else:
                 ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=n_noised_states)
 
-        if isinstance(problem_type, SocpType.SOCP_TRAPEZOIDAL_IMPLICIT):
+        if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
             ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=n_noised_states)
             ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=n_noised_states, n_noise=n_noise)
 

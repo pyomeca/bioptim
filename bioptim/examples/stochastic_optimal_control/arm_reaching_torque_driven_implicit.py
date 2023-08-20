@@ -99,14 +99,13 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    problem_type = SocpType.SOCP_TRAPEZOIDAL_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude, with_cholesky)
+    problem_type = SocpType.TRAPEZOIDAL_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude, with_cholesky)
 
     bio_model = StochasticBiorbdModel(biorbd_model_path,
                                       sensory_noise_magnitude=sensory_noise_magnitude,
-                                      motor_noise_magnitude=motor_noise_magnitude)
-    # Add the other ones
-    bio_model.sensory_reference_function = sensory_reference_function
-    bio_model.friction_coefficients = np.array([[0.05, 0.025], [0.025, 0.05]])
+                                      motor_noise_magnitude=motor_noise_magnitude,
+                                      sensory_reference_function=sensory_reference_function)
+    bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q

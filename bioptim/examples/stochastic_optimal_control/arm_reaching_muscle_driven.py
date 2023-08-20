@@ -46,6 +46,22 @@ from bioptim.examples.stochastic_optimal_control.leuven_arm_model import LeuvenA
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 
 
+def sensory_reference_function(
+        self,
+        states: cas.MX | cas.SX,
+        controls: cas.MX | cas.SX,
+        parameters: cas.MX | cas.SX,
+        stochastic_variables: cas.MX | cas.SX,
+        nlp: NonLinearProgram,
+):
+    """
+    This functions returns the sensory reference for the feedback gains.
+    """
+    q = states[nlp.states["q"].index]
+    qdot = states[nlp.states["qdot"].index]
+    hand_pos_velo = self.end_effector_pos_velo(q, qdot)
+    return hand_pos_velo
+
 def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
@@ -202,8 +218,8 @@ def get_cov_mat(nlp, node_index):
         nlp.parameters,
         nlp.stochastic_variables.cx_start,
         nlp.integrated_values["cov"].cx_start,
-        motor_noise_magnitude,
-        sensory_noise_magnitude,
+        nlp.model.motor_noise_magnitude,
+        nlp.model.sensory_noise_magnitude,
     )
     p_vector = nlp.integrated_values.reshape_to_vector(func_eval)
     return p_vector
@@ -374,7 +390,9 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = LeuvenArmModel()
+    bio_model = LeuvenArmModel(sensory_noise_magnitude=sensory_noise_magnitude,
+                               motor_noise_magnitude=motor_noise_magnitude,
+                               sensory_reference_function=sensory_reference_function)
 
     shoulder_pos_initial = 0.349065850398866
     shoulder_pos_final = 0.959931088596881
@@ -590,7 +608,7 @@ def prepare_socp(
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
-        problem_type=SocpType.SOCP_TRAPEZOIDAL_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
+        problem_type=SocpType.TRAPEZOIDAL_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude),
         integrated_value_functions=integrated_value_functions,
     )
 

@@ -7,7 +7,7 @@ from biorbd_casadi import (
     GeneralizedTorque,
     GeneralizedAcceleration,
 )
-from casadi import SX, MX, vertcat, horzcat, norm_fro
+from casadi import SX, MX, vertcat, horzcat, norm_fro, DM
 import numpy as np
 
 from ..misc.utils import check_version
@@ -112,6 +112,10 @@ class BiorbdModel:
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
+        self.friction_coefficients = None
+
+    def set_friction_coefficients(self, friction_coefficients: np.ndarray | DM):
+        self.friction_coefficients = friction_coefficients
 
     @property
     def path(self) -> str:
