@@ -246,12 +246,14 @@ class NonLinearProgram:
             if ocp.n_phases != 1 and not duplicate_singleton:
                 if isinstance(param, int):
                     raise RuntimeError(
-                        f"{param_name} size({1}) does not correspond " f"to the number of phases({ocp.n_phases})."
+                        f"{param_name} size({1}) does not correspond "
+                        f"to the number of phases({ocp.n_phases})."
                         f"List length of model, final time and node shooting must be equivalent to phase number"
                     )
                 else:
                     raise RuntimeError(
-                        f"{param_name} size({len(param)}) does not correspond " f"to the number of phases({ocp.n_phases})."
+                        f"{param_name} size({len(param)}) does not correspond "
+                        f"to the number of phases({ocp.n_phases})."
                         f"List length of model, final time and node shooting must be equivalent to phase number"
                     )
 

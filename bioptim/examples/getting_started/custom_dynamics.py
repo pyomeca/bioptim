@@ -39,7 +39,6 @@ def custom_dynamics(
     stochastic_variables: MX | SX,
     nlp: NonLinearProgram,
     my_additional_factor=1,
-
 ) -> DynamicsEvaluation:
     """
     The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)

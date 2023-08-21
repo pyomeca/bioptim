@@ -68,7 +68,11 @@ def check_conditioning(ocp):
                 for axis in range(
                     0,
                     constraints.function[node_index](
-                        time, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx, nlp.stochastic_variables.cx_start
+                        time,
+                        nlp.states.cx_start,
+                        nlp.controls.cx_start,
+                        nlp.parameters.cx,
+                        nlp.stochastic_variables.cx_start,
                     ).shape[0],
                 ):
                     # depends if there are parameters
@@ -165,7 +169,11 @@ def check_conditioning(ocp):
                 for axis in range(
                     0,
                     constraints.function[node_index](
-                        nlp.time, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx, nlp.stochastic_variables.cx_start
+                        nlp.time,
+                        nlp.states.cx_start,
+                        nlp.controls.cx_start,
+                        nlp.parameters.cx,
+                        nlp.stochastic_variables.cx_start,
                     ).shape[0],
                 ):
                     # find all equality constraints

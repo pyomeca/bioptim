@@ -121,7 +121,7 @@ class Integrator:
         if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
-            dt_norm = 1 - (self.tf-t)/self.step_time
+            dt_norm = 1 - (self.tf - t) / self.step_time
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
         elif self.control_type == ControlType.NONE:
             return np.ndarray((0,))
@@ -173,7 +173,7 @@ class Integrator:
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(self.h, self.t_span, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            self.dxdt(self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
@@ -282,7 +282,7 @@ class RK(Integrator):
         s = stochastic_variables
 
         for i in range(1, self.n_step + 1):
-            t = self.t_span[i-1]
+            t = self.t_span[i - 1]
             x[:, i] = self.next_x(h, t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -501,25 +501,29 @@ class RK8(RK4):
             t, x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t + self.h * (2 / 3)), p, s
         )[:, self.idx]
         k7 = self.fun(
-            t, x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
+            t,
+            x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
             self.get_u(u, t + self.h * (1 / 6)),
             p,
             s,
         )[:, self.idx]
         k8 = self.fun(
-            t, x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
+            t,
+            x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
             self.get_u(u, t + self.h),
             p,
             s,
         )[:, self.idx]
         k9 = self.fun(
-            t, x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
+            t,
+            x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
             self.get_u(u, t + self.h * (5 / 6)),
             p,
             s,
         )[:, self.idx]
         k10 = self.fun(
-            t, x_prev
+            t,
+            x_prev
             + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
             self.get_u(u, t + self.h),
             p,
@@ -620,6 +624,8 @@ class TRAPEZOIDAL(Integrator):
         ----------
         h: float
             The time step
+        t: MX | SX
+            The time of the system
         states: MX | SX
             The states of the system
         controls: MX | SX
@@ -676,7 +682,7 @@ class TRAPEZOIDAL(Integrator):
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(self.h, self.t_span, self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            self.dxdt(self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
@@ -854,9 +860,7 @@ class COLLOCATION(Integrator):
         self.function = Function(
             "integrator",
             [horzcat(*self.x_sym), self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(
-                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
-            ),
+            self.dxdt(self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
         )
@@ -950,9 +954,7 @@ class IRK(COLLOCATION):
         self.function = Function(
             "integrator",
             [self.x_sym[0], self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(
-                self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym
-            ),
+            self.dxdt(self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )

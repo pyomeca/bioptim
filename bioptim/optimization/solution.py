@@ -456,7 +456,11 @@ class Solution:
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
             self._integrated_values = get_integrated_values(
-                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables["unscaled"]
+                self._time,
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self.parameters,
+                self._stochastic_variables["unscaled"],
             )
 
         def init_from_initial_guess(_sol: list):
@@ -487,22 +491,25 @@ class Solution:
             if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
                 raise ValueError("The InitialGuessList len must match the number of phases")
             if n_param != 0:
-                if len(_sol) != 3 and len(_sol[2]) != 1 and _sol[2][0].shape != (n_param, 1):
+                if len(_sol) != 3 and len(_sol[3]) != 1 and _sol[3][0].shape != (n_param, 1):
                     raise ValueError(
                         "The 3rd element is the InitialGuess of the parameter and "
                         "should be a unique vector of size equal to n_param"
                     )
 
             self.vector = np.ndarray((0, 1))
-            sol_time, sol_states, sol_controls, sol_stochastic_variables = _sol[0], _sol[1], _sol[2], _sol[4]
-
+            sol_time, sol_states, sol_controls, sol_params, sol_stochastic_variables = (
+                _sol[0],
+                _sol[1],
+                _sol[2],
+                _sol[3],
+                _sol[4],
+            )
             # For time
             for p, ss in enumerate(sol_time):
                 for key in ss.keys():
                     self.ocp.nlp[p].time[key].node_index = 0
-                    ss[key].init.check_and_adjust_dimensions(
-                        len(self.ocp.nlp[p].time[key]), self.ns[p], "time"
-                    )
+                    ss[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].time[key]), self.ns[p], "time")
 
             # For states
             for p, ss in enumerate(sol_states):
@@ -538,7 +545,6 @@ class Solution:
 
             # For parameters
             if n_param:
-                sol_params = _sol[2]
                 for p, ss in enumerate(sol_params):
                     self.vector = np.concatenate((self.vector, np.repeat(ss.init, self.ns[p] + 1)[:, np.newaxis]))
 
@@ -571,7 +577,11 @@ class Solution:
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
             self._integrated_values = get_integrated_values(
-                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables["unscaled"]
+                self._time,
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self.parameters,
+                self._stochastic_variables["unscaled"],
             )
 
         def init_from_vector(_sol: np.ndarray | DM):
@@ -601,7 +611,11 @@ class Solution:
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._integrated_values = get_integrated_values(
-                self._time, self._states["unscaled"], self._controls["unscaled"], self.parameters, self._stochastic_variables["unscaled"]
+                self._time,
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self.parameters,
+                self._stochastic_variables["unscaled"],
             )
 
         if isinstance(sol, dict):
@@ -697,7 +711,13 @@ class Solution:
 
         if skip_data:
             new._states["unscaled"], new._controls["unscaled"], new._stochastic_variables["unscaled"] = [], [], []
-            new._time, new._states["scaled"], new._controls["scaled"], new.parameters, new._stochastic_variables["unscaled"] = [], [], [], {}, []
+            (
+                new._time,
+                new._states["scaled"],
+                new._controls["scaled"],
+                new.parameters,
+                new._stochastic_variables["unscaled"],
+            ) = ([], [], [], {}, [])
         else:
             new._time = deepcopy(self._time)
             new._states["scaled"] = deepcopy(self._states["scaled"])
@@ -1298,7 +1318,7 @@ class Solution:
                 integrated_sol = solve_ivp_bioptim_interface(
                     dynamics_func=nlp.dynamics,
                     keep_intermediate_points=keep_intermediate_points,
-                    # t=t_eval,
+                    t=t_eval,
                     x0=x0,
                     u=u,
                     s=s,
@@ -1769,7 +1789,6 @@ class Solution:
                     if penalty.target is not None:
                         target = penalty.target[0]
                 else:
-                    # col_t_idx = [idx]
                     col_x_idx = list(range(idx * steps, (idx + 1) * steps)) if penalty.integrate else [idx]
                     col_u_idx = [idx]
                     col_s_idx = [idx]
@@ -1789,11 +1808,7 @@ class Solution:
                         if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                             col_u_idx.append((idx + 1))
 
-                    # t = np.ndarray((1, len(col_t_idx)))
-                    # for key in nlp.time:
-                    #     t[nlp.time[key].index, :] = self._time[phase_idx][key][
-                    #                                                 :, col_t_idx
-                    #                                                 ]
+                    t = nlp.time
 
                     x = np.ndarray((nlp.states.shape, len(col_x_idx)))
                     for key in nlp.states:

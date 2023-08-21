@@ -71,12 +71,16 @@ class OdeSolverBase:
         """
         nlp.dynamics = []
 
-        nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0, t=ocp.node_time(phase_idx=nlp.phase_idx, node_idx=0))
+        nlp.dynamics += nlp.ode_solver.integrator(
+            ocp, nlp, node_index=0, t=ocp.node_time(phase_idx=nlp.phase_idx, node_idx=0)
+        )
         if ocp.assume_phase_dynamics:
             nlp.dynamics = nlp.dynamics * nlp.ns
         else:
             for node_index in range(1, nlp.ns):
-                nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index, t=ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index))
+                nlp.dynamics += nlp.ode_solver.integrator(
+                    ocp, nlp, node_index, t=ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+                )
 
 
 class RK(OdeSolverBase):
@@ -295,7 +299,7 @@ class OdeSolver:
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
             dt = (tf - t0) / self.steps
-            t_span = [t0+ dt * i for i in range(0, self.steps)]
+            t_span = [t0 + dt * i for i in range(0, self.steps)]
             ode_opt = {
                 "t0": t0,
                 "tf": tf,
@@ -392,7 +396,6 @@ class OdeSolver:
                 "s_scaled": nlp.stochastic_variables.scaled.cx_start,
                 "ode": nlp.dynamics_func,
                 "implicit_ode": nlp.implicit_dynamics_func,
-
             }
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
@@ -542,11 +545,7 @@ class OdeSolver:
             dt = (tf - t0) / self.steps
             t_span = [t0 + dt * i for i in range(0, self.steps)]
 
-            ode_opt = {
-                "t0": t0,
-                "tf": tf,
-                "t_span": t_span
-                       }
+            ode_opt = {"t0": t0, "tf": tf, "t_span": t_span}
 
             integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)
 

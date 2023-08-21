@@ -51,7 +51,7 @@ from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_impl
 
 
 def stochastic_forward_dynamics(
-    time : cas.MX | cas.SX,
+    time: cas.MX | cas.SX,
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,

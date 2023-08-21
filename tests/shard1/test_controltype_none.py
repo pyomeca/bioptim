@@ -43,7 +43,7 @@ class NonControlledMethod:
         return NonControlledMethod, dict()
 
     @property
-    def name_dof(self)->list[str]:
+    def name_dof(self) -> list[str]:
         return ["a", "b", "c"]
 
     @property
@@ -163,7 +163,18 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
     custom_model = NonControlledMethod()
-    models = (NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod(), NonControlledMethod())
+    models = (
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+    )
     n_shooting = [5 for i in range(n_phase)]  # Gives m node shooting for my n phases problem
     final_time = [0.01 for i in range(n_phase)]  # Set the final time for all my n phases
 

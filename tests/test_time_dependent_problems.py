@@ -34,7 +34,6 @@ def time_dynamic(
     parameters: MX | SX,
     stochastic_variables: MX | SX,
     nlp: NonLinearProgram,
-
 ) -> DynamicsEvaluation:
     """
     The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, s)
@@ -126,16 +125,20 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = [BiorbdModel(biorbd_model_path)] if n_phase == 1 else [BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path)]
+    bio_model = (
+        [BiorbdModel(biorbd_model_path)]
+        if n_phase == 1
+        else [BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path)]
+    )
     final_time = [1] * n_phase
-    n_shooting = [10] * n_phase
+    n_shooting = [30] * n_phase
 
     # Add objective functions
     objective_functions = ObjectiveList()
     for i in range(len(bio_model)):
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", phase=i)
         if minimize_time:
-            objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=100)
+            objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=100, phase=i)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -146,13 +149,28 @@ def prepare_ocp(
     # Define states path constraint
     x_bounds = BoundsList()
     x_bounds_q = bio_model[0].bounds_from_ranges("q")
-    x_bounds_q[:, [0, -1]] = 0  # Start and end at 0...
-    x_bounds_q[1, -1] = 3.14  # ...but end with pendulum 180 degrees rotated
     x_bounds_qdot = bio_model[0].bounds_from_ranges("qdot")
-    x_bounds_qdot[:, [0, -1]] = 0  # Start and end without any velocity
-    for i in range(len(bio_model)):
-        x_bounds.add("q", bounds=x_bounds_q, phase=i)
-        x_bounds.add("qdot", bounds=x_bounds_qdot, phase=i)
+
+    if n_phase == 1:
+        x_bounds_qdot[:, [0, -1]] = 0  # Start and end without any velocity
+        x_bounds_q[:, [0, -1]] = 0  # Start and end at 0...
+        x_bounds_q[1, -1] = 3.14  # ...but end with pendulum 180 degrees rotated
+        x_bounds.add("q", bounds=x_bounds_q, phase=0)
+        x_bounds.add("qdot", bounds=x_bounds_qdot, phase=0)
+    else:
+        x_bounds_q_start = x_bounds_q
+        x_bounds_q_end = bio_model[1].bounds_from_ranges("q")
+        x_bounds_qdot_start = x_bounds_qdot
+        x_bounds_qdot_end = bio_model[1].bounds_from_ranges("qdot")
+        x_bounds_q_start[:, [0]] = 0  # Start and end at 0...
+        x_bounds_q_end[1, -1] = 3.14  # ...but end with pendulum 180 degrees rotated
+        x_bounds_q_end[0, -1] = 0
+        x_bounds_qdot_start[:, [0]] = 0
+        x_bounds_qdot_end[:, [-1]] = 0
+        x_bounds.add("q", bounds=x_bounds_q_start, phase=0)
+        x_bounds.add("qdot", bounds=x_bounds_qdot_start, phase=0)
+        x_bounds.add("q", bounds=x_bounds_q_end, phase=1)
+        x_bounds.add("qdot", bounds=x_bounds_qdot_end, phase=1)
 
     # Define control path constraint
     n_tau = bio_model[0].nb_tau
@@ -184,12 +202,16 @@ def prepare_ocp(
 
 
 @pytest.mark.parametrize("n_phase", [1, 2])
-@pytest.mark.parametrize("integrator", [OdeSolver.RK4(),
-                                        # OdeSolver.IRK(), stuck into infinite loop
-                                        OdeSolver.COLLOCATION(),
-                                        OdeSolver.TRAPEZOIDAL()])
-@pytest.mark.parametrize("control_type", [ControlType.CONSTANT,
-                                          ControlType.LINEAR_CONTINUOUS])
+@pytest.mark.parametrize(
+    "integrator",
+    [
+        OdeSolver.RK4(),
+        # OdeSolver.IRK(),  # stuck into infinite loop
+        OdeSolver.COLLOCATION(),
+        OdeSolver.TRAPEZOIDAL(),
+    ],
+)
+@pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS])
 @pytest.mark.parametrize("minimize_time", [False, True])
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time, use_sx):
@@ -200,24 +222,46 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
-    ocp = prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        n_phase=n_phase,
-        ode_solver=integrator,
-        control_type=control_type,
-        minimize_time=minimize_time,
-        use_sx=use_sx,
-    )
 
-    if integrator.__str__() == 'TRAPEZOIDAL' and control_type == ControlType.CONSTANT:
-        with pytest.raises(RuntimeError, match="TRAPEZOIDAL cannot be used with piece-wise constant controls, please use ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead."):
-            ocp.solve()
+    if integrator.__str__() == "TRAPEZOIDAL" and control_type.name == "CONSTANT":
+        with pytest.raises(
+            RuntimeError,
+            match="TRAPEZOIDAL cannot be used with piece-wise constant controls, please use ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead.",
+        ):
+            ocp = prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                n_phase=n_phase,
+                ode_solver=integrator,
+                control_type=control_type,
+                minimize_time=minimize_time,
+                use_sx=use_sx,
+            )
 
-    elif integrator.__str__() == 'COLLOCATION legendre 4' and control_type == ControlType.LINEAR_CONTINUOUS:
-        with pytest.raises(NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"):
-            ocp.solve()
+    elif integrator.__str__() == "COLLOCATION legendre 4" and control_type.name == "LINEAR_CONTINUOUS":
+        with pytest.raises(
+            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
+        ):
+            ocp = prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                n_phase=n_phase,
+                ode_solver=integrator,
+                control_type=control_type,
+                minimize_time=minimize_time,
+                use_sx=use_sx,
+            )
 
     # --- Solve the program --- #
     else:
-        ocp.solve()
-    # sol.graphs(show_bounds=True)
+        ocp = prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+            n_phase=n_phase,
+            ode_solver=integrator,
+            control_type=control_type,
+            minimize_time=minimize_time,
+            use_sx=use_sx,
+        )
+        sol = ocp.solve()
+        # sol.graphs(show_bounds=True)
+
+
+#         TODO : Once all bioptim tests are passed, add "np.assert" values

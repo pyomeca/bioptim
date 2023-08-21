@@ -483,7 +483,14 @@ class PenaltyOption(OptionGeneric):
         # Do not use nlp.add_casadi_func because all functions must be registered
         sub_fcn = fcn[self.rows, self.cols]
         self.function[node] = controller.to_casadi_func(
-            name, sub_fcn, time_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, expand=self.expand
+            name,
+            sub_fcn,
+            time_cx,
+            state_cx_scaled,
+            control_cx_scaled,
+            param_cx,
+            stochastic_cx_scaled,
+            expand=self.expand,
         )
         self.function_non_threaded[node] = self.function[node]
 
@@ -585,7 +592,9 @@ class PenaltyOption(OptionGeneric):
                     )
                     ** exponent
                     + (
-                        self.function[node](time_cx, state_cx_end_scaled, control_cx_end_scaled, param_cx, stochastic_cx_scaled)
+                        self.function[node](
+                            time_cx, state_cx_end_scaled, control_cx_end_scaled, param_cx, stochastic_cx_scaled
+                        )
                         - target_cx[:, 1]
                     )
                     ** exponent
@@ -604,9 +613,9 @@ class PenaltyOption(OptionGeneric):
                 time_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled, target_cx, dt_cx
             )
         else:
-
             modified_fcn = (
-                self.function[node](time_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled) - target_cx
+                self.function[node](time_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled)
+                - target_cx
             ) ** exponent
 
         # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.

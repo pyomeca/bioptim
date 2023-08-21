@@ -39,7 +39,6 @@ def time_dependent_dynamic(
     parameters: MX | SX,
     stochastic_variables: MX | SX,
     nlp: NonLinearProgram,
-
 ) -> DynamicsEvaluation:
     """
     The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, s)
