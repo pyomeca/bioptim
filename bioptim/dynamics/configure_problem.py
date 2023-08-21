@@ -332,8 +332,8 @@ class ConfigureProblem:
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
         """
 
-        if "tau" in nlp.variable_mappings:
-            n_noised_tau = len(nlp.variable_mappings["tau"].map_idx)
+        if "tau" in nlp.model.motor_noise_mapping:
+            n_noised_tau = len(nlp.model.motor_noise_mapping["tau"].to_first.map_idx)
         else:
             n_noised_tau = nlp.model.nb_tau
         n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
@@ -569,7 +569,7 @@ class ConfigureProblem:
             raise RuntimeError("BioModel must have at least one DoF on root.")
 
         name_qddot_roots = [str(i) for i in range(nb_root)]
-        matrix_shape = (len(nb_root), 1)
+        matrix_shape = (nb_root, 1)
         ConfigureProblem.configure_new_variable(
             "qddot_roots",
             name_qddot_roots,

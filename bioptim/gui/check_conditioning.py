@@ -385,8 +385,6 @@ def check_conditioning(ocp):
                         control_cx,
                         nlp.parameters.cx,
                         stochastic_cx,
-                        motor_noise,
-                        sensory_noise,
                         obj.weight,
                         [],
                         obj.dt,
@@ -397,8 +395,6 @@ def check_conditioning(ocp):
                         control_cx,
                         nlp.parameters.cx,
                         stochastic_cx,
-                        motor_noise,
-                        sensory_noise,
                         obj.weight,
                         obj.target,
                         obj.dt,
@@ -415,9 +411,6 @@ def check_conditioning(ocp):
                 vertcat_obj = vertcat(vertcat_obj, *[nlp.parameters.cx])
             if vertcat(*nlp.S_scaled).shape[0] > 0:
                 vertcat_obj = vertcat(vertcat_obj, *nlp.S_scaled)
-            if nlp.motor_noise is not None:
-                vertcat_obj = vertcat(vertcat_obj, *nlp.motor_noise)
-                vertcat_obj = vertcat(vertcat_obj, *nlp.sensory_noise)
 
             hessian_cas = hessian(objective, vertcat_obj)[0]
 
@@ -460,10 +453,6 @@ def check_conditioning(ocp):
             param_init = param_init.reshape((param_init.size, 1))
             s_init = s_init.reshape((s_init.size, 1))
             vector_init = np.vstack((x_init, u_init, param_init, s_init))
-            if nlp.motor_noise is not None:
-                vector_init = np.vstack(
-                    (vector_init, np.zeros((nlp.motor_noise.shape[0], 1)), np.zeros((nlp.sensory_noise.shape[0], 1)))
-                )
 
             hessian_obj_matrix = np.array(hes_func(vector_init))
             hessian_obj_list.append(hessian_obj_matrix)

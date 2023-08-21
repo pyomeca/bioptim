@@ -222,12 +222,14 @@ class DynamicsFunctions:
 
         sensory_input = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
+        mapped_motor_noise = nlp.model.sensory_noise_sym
+        mapped_sensory_feedback_torque = k_matrix @ ((sensory_input - ref) + nlp.model.sensory_noise_sym)
         if "tau" in nlp.model.motor_noise_mapping:
             mapped_motor_noise = nlp.model.motor_noise_mapping["tau"].to_second.map(nlp.model.sensory_noise_sym)
-        else:
-            mapped_motor_noise = nlp.model.sensory_noise_sym
-        tau += k_matrix @ ((sensory_input - ref) + nlp.model.sensory_noise_sym)
-        tau += mapped_motor_noise
+            mapped_sensory_feedback_torque = nlp.model.motor_noise_mapping["tau"].to_second.map(
+                mapped_sensory_feedback_torque
+            )
+        tau += mapped_motor_noise + mapped_sensory_feedback_torque
         tau = tau + nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         # dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)

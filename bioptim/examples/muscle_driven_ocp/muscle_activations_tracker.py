@@ -103,55 +103,61 @@ def generate_data(
 
     for node_index in range(n_shooting):
         nlp.states.append(
-            "q",
-            [symbolic_q, symbolic_q, symbolic_q],
-            [symbolic_q, symbolic_q, symbolic_q],
-            symbolic_q,
-            nlp.variable_mappings["q"],
-            node_index,
+            name="q",
+            cx=[symbolic_q, symbolic_q, symbolic_q],
+            cx_scaled=[symbolic_q, symbolic_q, symbolic_q],
+            mx=symbolic_q,
+            mapping=nlp.variable_mappings["q"],
+            matrix_shape=(3, 1),
+            node_index=node_index,
         )
         nlp.states.append(
-            "qdot",
-            [symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            [symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            symbolic_qdot,
-            nlp.variable_mappings["qdot"],
-            node_index,
+            name="qdot",
+            cx=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
+            cx_scaled=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
+            mx=symbolic_qdot,
+            mapping=nlp.variable_mappings["qdot"],
+            matrix_shape=(3, 1),
+            node_index=node_index,
         )
 
         nlp.states_dot.append(
-            "qdot",
-            [symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            [symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            symbolic_qdot,
-            nlp.variable_mappings["qdot"],
-            node_index,
+            name="qdot",
+            cx=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
+            cx_scaled=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
+            mx=symbolic_qdot,
+            mapping=nlp.variable_mappings["qdot"],
+            matrix_shape=(3, 1),
+            node_index=node_index,
         )
         nlp.states_dot.append(
-            "qddot",
-            [symbolic_qddot, symbolic_qddot, symbolic_qddot],
-            [symbolic_qddot, symbolic_qddot, symbolic_qddot],
-            symbolic_qddot,
-            nlp.variable_mappings["qddot"],
-            node_index,
+            name="qddot",
+            cx=[symbolic_qddot, symbolic_qddot, symbolic_qddot],
+            cx_scaled=[symbolic_qddot, symbolic_qddot, symbolic_qddot],
+            mx=symbolic_qddot,
+            mapping=nlp.variable_mappings["qddot"],
+            matrix_shape=(3, 1),
+            node_index=node_index,
         )
 
         if use_residual_torque:
             nlp.controls.append(
-                "tau",
-                [symbolic_tau, symbolic_tau, symbolic_tau],
-                [symbolic_tau, symbolic_tau, symbolic_tau],
-                symbolic_tau,
-                nlp.variable_mappings["tau"],
-                node_index,
+                name="tau",
+                cx=[symbolic_tau, symbolic_tau, symbolic_tau],
+                cx_scaled=[symbolic_tau, symbolic_tau, symbolic_tau],
+                mx=symbolic_tau,
+                mapping=nlp.variable_mappings["tau"],
+                matrix_shape=(3, 1),
+                node_index=node_index,
             )
         nlp.controls.append(
-            "muscles",
-            [symbolic_mus, symbolic_mus, symbolic_mus],
-            [symbolic_mus, symbolic_mus, symbolic_mus],
-            symbolic_mus,
-            nlp.variable_mappings["muscles"],
-            node_index,
+            name="muscles",
+            cx=[symbolic_mus, symbolic_mus, symbolic_mus],
+            cx_scaled=[symbolic_mus, symbolic_mus, symbolic_mus],
+            mx=symbolic_mus,
+            mapping=nlp.variable_mappings["muscles"],
+            matrix_shape=(3, 1),
+            node_index=node_index,
         )
 
     if use_residual_torque:

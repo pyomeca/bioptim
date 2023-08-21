@@ -589,10 +589,11 @@ def _manage_fatigue_to_new_variable(
     plot_factor = fatigue_var[0].models.plot_factor()
     for i, meta_suffix in enumerate(meta_suffixes):
         var_names_with_suffix.append(f"{name}_{meta_suffix}" if not multi_interface else f"{name}")
+        matrix_shape = (n_elements, 1)
 
         if split_controls:
             NewVariableConfiguration(
-                var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
+                var_names_with_suffix[-1], name_elements, matrix_shape, ocp, nlp, as_states, as_controls, skip_plot=True
             )
             nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
                 lambda t, x, u, p, s, key: u[nlp.controls[key].index, :],
@@ -602,7 +603,7 @@ def _manage_fatigue_to_new_variable(
                 color=color[i],
             )
         elif i == 0:
-            NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True)
+            NewVariableConfiguration(f"{name}", name_elements, matrix_shape, ocp, nlp, as_states, as_controls, skip_plot=True)
             nlp.plot[f"{name}_controls"] = CustomPlot(
                 lambda t, x, u, p, s, key: u[nlp.controls[key].index, :],
                 plot_type=PlotType.STEP,
@@ -613,7 +614,7 @@ def _manage_fatigue_to_new_variable(
 
         for p, params in enumerate(fatigue_suffix):
             name_tp = f"{var_names_with_suffix[-1]}_{params}"
-            NewVariableConfiguration(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
+            NewVariableConfiguration(name_tp, name_elements, matrix_shape, ocp, nlp, True, False, skip_plot=True)
             nlp.plot[name_tp] = CustomPlot(
                 lambda t, x, u, p, s, key, mod: mod * x[nlp.states[key].index, :],
                 plot_type=PlotType.INTEGRATED,
