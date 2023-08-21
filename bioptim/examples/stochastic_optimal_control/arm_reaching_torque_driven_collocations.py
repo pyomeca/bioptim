@@ -110,7 +110,6 @@ def prepare_socp(
     )
     objective_functions.add(
         ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
-        sensory_noise_magnitude=sensory_noise_magnitude,
         node=Node.ALL,
         weight=1e3 / 2,
         quadratic=False,
