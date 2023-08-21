@@ -20,7 +20,7 @@ class StochasticBiorbdModel(BiorbdModel):
         sensory_noise_magnitude: np.ndarray | DM,
         motor_noise_magnitude: np.ndarray | DM,
         sensory_reference_function: callable,
-        motor_noise_mapping: BiMappingList = None,
+        motor_noise_mapping: BiMappingList = BiMappingList(),
     ):
         super().__init__(bio_model if isinstance(bio_model, str) else bio_model.model)
 

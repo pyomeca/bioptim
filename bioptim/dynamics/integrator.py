@@ -447,9 +447,7 @@ class RK2(RK):
                 )[:, self.idx]
             )
         else:
-            k1 = self.fun(x_prev, self.get_u(u, t), p, s)[
-                :, self.idx
-            ]
+            k1 = self.fun(x_prev, self.get_u(u, t), p, s)[:, self.idx]
             return x_prev + h * self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s)[:, self.idx]
 
 

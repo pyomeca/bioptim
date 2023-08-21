@@ -470,9 +470,7 @@ class AcadosInterface(SolverInterface):
                 raise RuntimeError(f"{objectives.type.name} is an incompatible objective term with LINEAR_LS cost type")
 
         def add_nonlinear_ls_lagrange(acados, objectives, x, u, p, s):
-            acados.lagrange_costs = vertcat(
-                acados.lagrange_costs, objectives.function[0](x, u, p, s).reshape((-1, 1))
-            )
+            acados.lagrange_costs = vertcat(acados.lagrange_costs, objectives.function[0](x, u, p, s).reshape((-1, 1)))
             acados.W = linalg.block_diag(acados.W, np.diag([objectives.weight] * objectives.function[0].numel_out()))
 
             node_idx = objectives.node_idx[:-1] if objectives.node[0] == Node.ALL else objectives.node_idx
@@ -488,9 +486,7 @@ class AcadosInterface(SolverInterface):
                 )
                 x = x if objectives.function[0].sparsity_in("i0").shape != (0, 0) else []
                 u = u if objectives.function[0].sparsity_in("i1").shape != (0, 0) else []
-                acados.mayer_costs = vertcat(
-                    acados.mayer_costs, objectives.function[0](x, u, p, s).reshape((-1, 1))
-                )
+                acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function[0](x, u, p, s).reshape((-1, 1)))
 
                 if objectives.target is not None:
                     acados.y_ref_start.append(objectives.target[0][..., 0].T.reshape((-1, 1)))

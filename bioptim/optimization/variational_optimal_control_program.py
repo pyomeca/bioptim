@@ -241,11 +241,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.scaled.mx,
-                MX(),
-                MX(),
             ],
             [dynamics_dxdt],
-            ["x", "u", "p", "s", "motor_noise", "sensory_noise"],
+            ["x", "u", "p", "s"],
             ["xdot"],
         )
 

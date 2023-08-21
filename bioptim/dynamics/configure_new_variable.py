@@ -603,7 +603,9 @@ def _manage_fatigue_to_new_variable(
                 color=color[i],
             )
         elif i == 0:
-            NewVariableConfiguration(f"{name}", name_elements, matrix_shape, ocp, nlp, as_states, as_controls, skip_plot=True)
+            NewVariableConfiguration(
+                f"{name}", name_elements, matrix_shape, ocp, nlp, as_states, as_controls, skip_plot=True
+            )
             nlp.plot[f"{name}_controls"] = CustomPlot(
                 lambda t, x, u, p, s, key: u[nlp.controls[key].index, :],
                 plot_type=PlotType.STEP,

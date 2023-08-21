@@ -582,7 +582,7 @@ class ConfigureProblem:
         )
 
         name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot - nb_root)]
-        matrix_shape = (len(nlp.model.nb_qddot - nb_root), 1)
+        matrix_shape = (nlp.model.nb_qddot - nb_root, 1)
         ConfigureProblem.configure_new_variable(
             "qddot_joints",
             name_qddot_joints,
