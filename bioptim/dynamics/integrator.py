@@ -917,6 +917,8 @@ class COLLOCATION(Integrator):
                         self.get_u(controls, self.step_time[j]),
                         params * param_scaling,
                         stochastic_variables,
+                        self.model.motor_noise_sym,
+                        self.model.sensory_noise_sym,
                     )[:, self.idx]
                 else:
                     f_j = self.fun(
@@ -935,6 +937,8 @@ class COLLOCATION(Integrator):
                             params * param_scaling,
                             stochastic_variables,
                             xp_j / h,
+                            self.model.motor_noise_sym,
+                            self.model.sensory_noise_sym,
                         )
                     )
                 else:
@@ -969,6 +973,8 @@ class COLLOCATION(Integrator):
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
+                self.model.motor_noise_sym if self.noised_fun is not None else self.cx(),
+                self.model.sensory_noise_sym if self.noised_fun is not None else self.cx(),
             ],
             self.dxdt(
                 h=self.h,
@@ -978,7 +984,7 @@ class COLLOCATION(Integrator):
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
             ["xf", "xall", "defects"],
         )
 

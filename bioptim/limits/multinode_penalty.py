@@ -604,7 +604,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
 
             sigma_w = vertcat(controllers[0].model.sensory_noise_sym, controllers[0].model.motor_noise_sym)
-            sigma_matrix = sigma_w * MX_eye(sigma_w.shape[0])
 
             dg_dx = jacobian(defects, vertcat(x_q_joints, x_qdot_joints))
             dg_dw = jacobian(defects, sigma_w)
@@ -679,6 +678,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].model.motor_noise_magnitude,
                 controllers[0].model.sensory_noise_magnitude,
             )
+
+            sigma_w_num = vertcat(controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude)
+            sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
 
             cov_next_computed = (
                 m_matrix

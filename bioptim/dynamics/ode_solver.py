@@ -577,8 +577,6 @@ class OdeSolver:
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
                     nlp.stochastic_variables.scaled.cx_start,
-                    nlp.cx(),
-                    nlp.cx(),
                 ),
             }
             ode_opt = {"t0": 0, "tf": nlp.dt}
