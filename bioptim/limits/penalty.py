@@ -182,7 +182,9 @@ class PenaltyFunctionAbstract:
                 Controller to be used to compute the expected effort.
             """
 
-            sensory_noise_matrix = controller.model.sensory_noise_magnitude * MX_eye(controller.model.sensory_noise_magnitude.shape[0])
+            sensory_noise_matrix = controller.model.sensory_noise_magnitude * MX_eye(
+                controller.model.sensory_noise_magnitude.shape[0]
+            )
 
             # create the casadi function to be evaluated
             # Get the symbolic variables

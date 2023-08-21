@@ -664,9 +664,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
             p = reshape(
-                penalty.weighted_function[0](
-                    x, u, param, s, penalty.weight, target, penalty.dt
-                ),
+                penalty.weighted_function[0](x, u, param, s, penalty.weight, target, penalty.dt),
                 -1,
                 1,
             )
@@ -697,9 +695,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     x, u, s = get_x_and_u_at_idx(penalty, idx, is_unscaled)
                     p = vertcat(
                         p,
-                        penalty.weighted_function[idx](
-                            x, u, param, s, penalty.weight, target, penalty.dt
-                        ),
+                        penalty.weighted_function[idx](x, u, param, s, penalty.weight, target, penalty.dt),
                     )
 
         out = vertcat(out, sum2(p))

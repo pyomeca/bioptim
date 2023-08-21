@@ -85,10 +85,12 @@ def prepare_socp(
 
     problem_type = SocpType.COLLOCATION(polynomial_degree=3, method="legendre")
 
-    bio_model = StochasticBiorbdModel(biorbd_model_path,
-                                      sensory_noise_magnitude=sensory_noise_magnitude,
-                                      motor_noise_magnitude=motor_noise_magnitude,
-                                      sensory_reference_function=sensory_reference_function)
+    bio_model = StochasticBiorbdModel(
+        biorbd_model_path,
+        sensory_noise_magnitude=sensory_noise_magnitude,
+        motor_noise_magnitude=motor_noise_magnitude,
+        sensory_reference_function=sensory_reference_function,
+    )
     bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
 
     n_tau = bio_model.nb_tau

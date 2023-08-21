@@ -611,7 +611,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(Node.START)
             m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(Node.START)
 
-            sigma_w = vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude) * MX_eye(
+            sigma_w = vertcat(
+                controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude
+            ) * MX_eye(
                 vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude).shape[0]
             )
             dt = controller.tf / controller.ns

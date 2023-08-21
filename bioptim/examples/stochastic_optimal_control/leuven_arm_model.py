@@ -14,10 +14,12 @@ class LeuvenArmModel:
     This allows to generate the same model as in the paper.
     """
 
-    def __init__(self, sensory_noise_magnitude: np.ndarray | DM,
-                 motor_noise_magnitude: np.ndarray | DM,
-                 sensory_reference_function: callable):
-
+    def __init__(
+        self,
+        sensory_noise_magnitude: np.ndarray | DM,
+        motor_noise_magnitude: np.ndarray | DM,
+        sensory_reference_function: callable,
+    ):
         self.motor_noise_magnitude = motor_noise_magnitude
         self.sensory_noise_magnitude = sensory_noise_magnitude
         self.sensory_reference_function = sensory_reference_function
@@ -264,4 +266,3 @@ class LeuvenArmModel:
         hand_vel = self.end_effector_velocity(q, qdot)
         ee = vertcat(hand_pos, hand_vel)
         return ee
-

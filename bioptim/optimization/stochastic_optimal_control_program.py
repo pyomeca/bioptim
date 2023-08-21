@@ -105,10 +105,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         bio_model = self.initialize_model(bio_model)
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT) or isinstance(
-            problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
+            problem_type, SocpType.TRAPEZOIDAL_EXPLICIT
+        ):
             ode_solver = OdeSolver.TRAPEZOIDAL()
         elif isinstance(problem_type, SocpType.COLLOCATION):
-            ode_solver = OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)
+            ode_solver = OdeSolver.COLLOCATION(
+                method=problem_type.method, polynomial_degree=problem_type.polynomial_degree
+            )
 
         self.set_original_values(
             bio_model,

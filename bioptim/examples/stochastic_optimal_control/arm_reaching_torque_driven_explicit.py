@@ -139,9 +139,7 @@ def stochastic_forward_dynamics(
     return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_computed, qdddot), defects=defects)
 
 
-def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram
-):
+def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     """
     Configure the stochastic optimal control problem.
     """
@@ -229,7 +227,9 @@ def get_cov_mat(nlp, node_index):
 
     M_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(Node.START)
 
-    sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * cas.MX_eye(cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym).shape[0])
+    sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * cas.MX_eye(
+        cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym).shape[0]
+    )
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
     cov_matrix = nlp.integrated_values["cov"].reshape_sym_to_matrix(cov_sym)
 
@@ -414,10 +414,12 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = StochasticBiorbdModel(biorbd_model_path,
-                                      sensory_noise_magnitude=sensory_noise_magnitude,
-                                      motor_noise_magnitude=motor_noise_magnitude,
-                                      sensory_reference_function=sensory_reference_function)
+    bio_model = StochasticBiorbdModel(
+        biorbd_model_path,
+        sensory_noise_magnitude=sensory_noise_magnitude,
+        motor_noise_magnitude=motor_noise_magnitude,
+        sensory_reference_function=sensory_reference_function,
+    )
     bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
     bio_model.force_field_magnitude = force_field_magnitude
 

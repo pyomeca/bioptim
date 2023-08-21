@@ -497,7 +497,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].model.motor_noise_sym,
                     controllers[0].model.sensory_noise_sym,
                 ],
-                [jacobian(dx[non_root_index], vertcat(controllers[0].model.motor_noise_sym, controllers[0].model.sensory_noise_sym))],
+                [
+                    jacobian(
+                        dx[non_root_index],
+                        vertcat(controllers[0].model.motor_noise_sym, controllers[0].model.sensory_noise_sym),
+                    )
+                ],
             )
 
             DF_DW = DF_DW_fun(
@@ -679,7 +684,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].model.sensory_noise_magnitude,
             )
 
-            sigma_w_num = vertcat(controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude)
+            sigma_w_num = vertcat(
+                controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude
+            )
             sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
 
             cov_next_computed = (

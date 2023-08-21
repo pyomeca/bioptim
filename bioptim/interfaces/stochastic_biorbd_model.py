@@ -13,11 +13,13 @@ class StochasticBiorbdModel(BiorbdModel):
     This class allows to define a biorbd model.
     """
 
-    def __init__(self, bio_model: str | BiorbdModel,
-                 sensory_noise_magnitude: np.ndarray | DM,
-                 motor_noise_magnitude: np.ndarray | DM,
-                 sensory_reference_function: callable):
-
+    def __init__(
+        self,
+        bio_model: str | BiorbdModel,
+        sensory_noise_magnitude: np.ndarray | DM,
+        motor_noise_magnitude: np.ndarray | DM,
+        sensory_reference_function: callable,
+    ):
         super().__init__(bio_model if isinstance(bio_model, str) else bio_model.model)
 
         self.motor_noise_magnitude = motor_noise_magnitude

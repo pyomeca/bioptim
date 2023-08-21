@@ -345,7 +345,9 @@ class ConfigureProblem:
         n_collocation_points = 1
         if isinstance(problem_type, SocpType.COLLOCATION):
             n_collocation_points += problem_type.polynomial_degree
-        ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=n_noised_states, n_collocation_points=n_collocation_points)
+        ConfigureProblem.configure_stochastic_m(
+            ocp, nlp, n_noised_states=n_noised_states, n_collocation_points=n_collocation_points
+        )
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             if initial_matrix is None:

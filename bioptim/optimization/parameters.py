@@ -169,9 +169,7 @@ class Parameter(PenaltyOption):
             )
         )
 
-        modified_fcn = penalty.function[0](
-            state_cx, control_cx, param_cx, stochastic_cx
-        )
+        modified_fcn = penalty.function[0](state_cx, control_cx, param_cx, stochastic_cx)
 
         dt_cx = ocp.cx.sym("dt", 1, 1)
         weight_cx = ocp.cx.sym("weight", 1, 1)

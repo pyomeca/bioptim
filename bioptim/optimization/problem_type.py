@@ -1,4 +1,3 @@
-
 class SocpType:
     """
     Selection of the type of optimization problem to be solved.
@@ -46,11 +45,7 @@ class SocpType:
             The method to use during the collocation integration
         """
 
-        def __init__(self,
-                     with_cholesky: bool = False,
-                     polynomial_degree: int = 4,
-                     method: str = "legendre"
-                     ):
+        def __init__(self, with_cholesky: bool = False, polynomial_degree: int = 4, method: str = "legendre"):
             self.with_cholesky = with_cholesky
             self.polynomial_degree = polynomial_degree
             self.method = method

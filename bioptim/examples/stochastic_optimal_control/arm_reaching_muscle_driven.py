@@ -47,11 +47,11 @@ from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_impl
 
 
 def sensory_reference_function(
-        states: cas.MX | cas.SX,
-        controls: cas.MX | cas.SX,
-        parameters: cas.MX | cas.SX,
-        stochastic_variables: cas.MX | cas.SX,
-        nlp: NonLinearProgram,
+    states: cas.MX | cas.SX,
+    controls: cas.MX | cas.SX,
+    parameters: cas.MX | cas.SX,
+    stochastic_variables: cas.MX | cas.SX,
+    nlp: NonLinearProgram,
 ):
     """
     This functions returns the sensory reference for the feedback gains.
@@ -60,6 +60,7 @@ def sensory_reference_function(
     qdot = states[nlp.states["qdot"].index]
     hand_pos_velo = nlp.model.end_effector_pos_velo(q, qdot)
     return hand_pos_velo
+
 
 def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
@@ -84,7 +85,9 @@ def stochastic_forward_dynamics(
 
         hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
-        mus_excitations_fb += nlp.model.get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, nlp.model.sensory_noise_sym)
+        mus_excitations_fb += nlp.model.get_excitation_with_feedback(
+            k_matrix, hand_pos_velo, ref, nlp.model.sensory_noise_sym
+        )
         noise_torque = nlp.model.motor_noise_sym
 
     muscles_tau = nlp.model.get_muscle_torque(q, qdot, mus_activations)
@@ -120,9 +123,7 @@ def stochastic_forward_dynamics(
     return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dactivations_computed), defects=None)
 
 
-def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram
-):
+def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
@@ -323,9 +324,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     return f_expectedEffort_fb
 
 
-def zero_acceleration(
-    controller: PenaltyController, force_field_magnitude: float
-) -> cas.MX:
+def zero_acceleration(controller: PenaltyController, force_field_magnitude: float) -> cas.MX:
     """
     No acceleration of the joints at the beginning and end of the movement.
     """
@@ -383,9 +382,11 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = LeuvenArmModel(sensory_noise_magnitude=sensory_noise_magnitude,
-                               motor_noise_magnitude=motor_noise_magnitude,
-                               sensory_reference_function=sensory_reference_function)
+    bio_model = LeuvenArmModel(
+        sensory_noise_magnitude=sensory_noise_magnitude,
+        motor_noise_magnitude=motor_noise_magnitude,
+        sensory_reference_function=sensory_reference_function,
+    )
     bio_model.force_field_magnitude = force_field_magnitude
 
     shoulder_pos_initial = 0.349065850398866
