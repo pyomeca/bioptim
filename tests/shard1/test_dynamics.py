@@ -94,7 +94,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_contact:
             contact_out = np.array(nlp.contact_forces_func(states, controls, params, stochastic_variables))
@@ -236,7 +236,7 @@ def test_torque_driven_implicit(with_contact, cx, assume_phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
     if with_contact:
         contact_out = np.array(nlp.contact_forces_func(states, controls, params, stochastic_variables))
@@ -304,7 +304,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
     if with_contact:
         contact_out = np.array(nlp.contact_forces_func(states, controls, params, stochastic_variables))
@@ -379,7 +379,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, assume_
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
     if with_contact:
         contact_out = np.array(nlp.contact_forces_func(states, controls, params, stochastic_variables))
@@ -512,7 +512,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx, assume_phase_dynami
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
     if with_contact:
         contact_out = np.array(nlp.contact_forces_func(states, controls, params, stochastic_variables))
@@ -615,7 +615,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
     if with_contact:
         contact_out = np.array(nlp.contact_forces_func(states, controls, params, stochastic_variables))
@@ -795,7 +795,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, assume_
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
     if with_contact:
         contact_out = np.array(nlp.contact_forces_func(states, controls, params, stochastic_variables))
@@ -902,7 +902,7 @@ def test_torque_activation_driven_with_residual_torque(
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
     if with_residual_torque:
         if with_external_force:
@@ -1031,7 +1031,7 @@ def test_muscle_driven(
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
     if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
@@ -1535,7 +1535,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, assume_phase_dynami
         controls = np.random.rand(nlp.controls.shape, nlp.ns)
         params = np.random.rand(nlp.parameters.shape, nlp.ns)
         stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-        x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+        x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
         # obtained using Ipuch reference implementation. [https://github.com/Ipuch/OnDynamicsForSomersaults]
         np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
@@ -1607,7 +1607,7 @@ def test_custom_dynamics(with_contact, assume_phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables, [], []))
+    x_out = np.array(nlp.dynamics_func(states, controls, params, stochastic_variables))
 
     if with_contact:
         contact_out = np.array(nlp.contact_forces_func(states, controls, params, stochastic_variables))
