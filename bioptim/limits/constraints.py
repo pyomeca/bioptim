@@ -750,14 +750,29 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(x_qdot_root, z_qdot_root),
                 horzcat(x_qdot_joints, z_qdot_joints),
             )
-            dynamics = controller.integrate_secondary_dynamics(
+
+            # Restate the dynamics function so noise_sym can be used
+            dynamics_tp = Function(
+                "dynamics_with_noise",
+                [
+                    states_full,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ]
+                [controller.integrate_extra_dynamics(1)],
+                ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
+                ["xf"],
+            )
+            dynamics = dynamics_tp(
                 x0=states_full,
                 p=controller.controls.cx_start,
                 params=controller.parameters.cx_start,
                 s=controller.stochastic_variables.cx_start,
                 motor_noise=controller.model.motor_noise_sym,
-                sensory_noise=controller.model.sensory_noise_sym,
-            )
+                sensory_noise=controller.model.sensory_noise_sym)
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
             final_polynomial_evaluation = dynamics["xf"][non_root_index_continuity]

@@ -202,7 +202,8 @@ class PenaltyController:
         return self._nlp.dynamics_func[0]
 
     def extra_dynamics(self, dynamics_index):
-        # +1 - index so dynamics_func matches integrated_extra_dynamics. This is a hack that should be dealt properly
+        # +1 - index so "integrate_extra_dynamics" and "extra_dynamics" share the same index.
+        # This is a hack which should be dealt properly at some point
         return self._nlp.dynamics_func[dynamics_index + 1]
 
     @property
