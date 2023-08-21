@@ -191,14 +191,6 @@ class PenaltyController:
         return out
 
     @property
-    def motor_noise(self):
-        return self._nlp.motor_noise
-
-    @property
-    def sensory_noise(self):
-        return self._nlp.sensory_noise
-
-    @property
     def integrate(self):
         return self._nlp.dynamics[self.node_index]
 

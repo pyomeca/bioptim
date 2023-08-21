@@ -169,9 +169,7 @@ class PenaltyFunctionAbstract:
             return controller.stochastic_variables[key].cx_start
 
         @staticmethod
-        def stochastic_minimize_expected_feedback_efforts(
-            penalty: PenaltyOption, controller: PenaltyController, sensory_noise_magnitude: DM
-        ):
+        def stochastic_minimize_expected_feedback_efforts(penalty: PenaltyOption, controller: PenaltyController):
             """
             This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
             magnitude.
@@ -182,11 +180,9 @@ class PenaltyFunctionAbstract:
             ----------
             controller : PenaltyController
                 Controller to be used to compute the expected effort.
-            sensory_noise_magnitude : DM
-                Magnitude of the sensory noise.
             """
 
-            sensory_noise_matrix = sensory_noise_magnitude * MX_eye(sensory_noise_magnitude.shape[0])
+            sensory_noise_matrix = controller.model.sensory_noise_magnitude * MX_eye(controller.model.sensory_noise_magnitude.shape[0])
 
             # create the casadi function to be evaluated
             # Get the symbolic variables
@@ -212,7 +208,7 @@ class PenaltyFunctionAbstract:
                 stochastic_variables=controller.stochastic_variables.cx_start,
                 nlp=controller.get_nlp,
             )
-            e_fb = k_matrix @ ((ee - ref) + sensory_noise_magnitude)
+            e_fb = k_matrix @ ((ee - ref) + controller.model.sensory_noise_magnitude)
             jac_e_fb_x = jacobian(e_fb, controller.states.cx_start)
             trace_jac_p_jack = trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
             expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
@@ -1369,24 +1365,11 @@ class PenaltyFunctionAbstract:
             raise ValueError("atrribute should be either mx or cx_start")
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
-            if controller.motor_noise is not None:
-                motor_noise = controller.motor_noise
-                sensory_noise = controller.sensory_noise
-            else:
-                if attribute == "mx":
-                    motor_noise = MX()
-                    sensory_noise = MX()
-                elif attribute == "cx_start":
-                    motor_noise = controller.cx()
-                    sensory_noise = controller.cx()
-
             return controller.dynamics(
                 getattr(controller.states, attribute),
                 getattr(controller.controls, attribute),
                 getattr(controller.parameters, attribute),
                 getattr(controller.stochastic_variables, attribute),
-                motor_noise,
-                sensory_noise,
             )[controller.states["qdot"].index, :]
 
         source = controller.states if "qddot" in controller.states else controller.controls

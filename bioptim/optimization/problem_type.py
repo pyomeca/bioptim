@@ -1,5 +1,3 @@
-from casadi import DM
-
 
 class SocpType:
     """

@@ -122,11 +122,9 @@ class NonControlledMethod:
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.scaled.mx,
-                MX(),
-                MX(),
             ],
             [dynamics_eval_horzcat],
-            ["x", "u", "p", "s", "motor_noise", "sensory_noise"],
+            ["x", "u", "p", "s"],
             ["xdot"],
         )
 

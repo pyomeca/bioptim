@@ -2,7 +2,7 @@ from typing import Callable, Any
 
 from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics
-from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
+from ..dynamics.ode_solver import OdeSolver
 from ..dynamics.configure_problem import ConfigureProblem
 from ..interfaces.stochastic_bio_model import StochasticBioModel
 from ..limits.constraints import (
@@ -10,20 +10,19 @@ from ..limits.constraints import (
     ConstraintList,
     Constraint,
     ParameterConstraintList,
-    ParameterConstraint,
 )
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraintFcn
 from ..limits.multinode_objective import MultinodeObjectiveList
-from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList, ParameterObjective
-from ..limits.path_conditions import BoundsList, Bounds
-from ..limits.path_conditions import InitialGuess, InitialGuessList
+from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList
+from ..limits.path_conditions import BoundsList
+from ..limits.path_conditions import InitialGuessList
 from ..misc.enums import Node, ControlType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
-from ..optimization.parameters import ParameterList, Parameter
+from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
 from ..optimization.optimal_control_program import OptimalControlProgram
-from ..optimization.variable_scaling import VariableScalingList, VariableScaling
+from ..optimization.variable_scaling import VariableScalingList
 
 
 class StochasticOptimalControlProgram(OptimalControlProgram):
@@ -70,7 +69,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
-        problem_type = SocpType.TRAPEZOIDAL_IMPLICIT,
+        problem_type=SocpType.TRAPEZOIDAL_IMPLICIT,
         **kwargs,
     ):
         """ """

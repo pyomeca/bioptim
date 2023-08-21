@@ -7,7 +7,6 @@ import numpy as np
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule
 from ..misc.options import OptionGeneric
-from ..dynamics.ode_solver import OdeSolver
 
 
 class PenaltyOption(OptionGeneric):
@@ -671,16 +670,11 @@ class PenaltyOption(OptionGeneric):
                 self.function_non_threaded.append(None)
                 self.weighted_function_non_threaded.append(None)
 
-        # Do not use nlp.add_casadi_func because all functions must be registered
-        motor_noise = controller.cx()
-        sensory_noise = controller.cx()
-        if controller.motor_noise is not None:
-            motor_noise = controller.motor_noise
-            sensory_noise = controller.sensory_noise
-
         sub_fcn = fcn[self.rows, self.cols]
         if self.is_stochastic:
             sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, state_cx_scaled)
+
+        # Do not use nlp.add_casadi_func because all functions must be registered
         self.function[node] = controller.to_casadi_func(
             name,
             sub_fcn,
@@ -688,8 +682,6 @@ class PenaltyOption(OptionGeneric):
             control_cx_scaled,
             param_cx,
             stochastic_cx_scaled,
-            motor_noise,
-            sensory_noise,
             expand=self.expand,
         )
         self.function_non_threaded[node] = self.function[node]
@@ -717,23 +709,17 @@ class PenaltyOption(OptionGeneric):
                     controller.controls_scaled.cx_end,
                     param_cx,
                     controller.stochastic_variables_scaled.cx_start,
-                    motor_noise,
-                    sensory_noise,
                 )
                 - self.function[node](
                     controller.states_scaled.cx_start,
                     controller.controls_scaled.cx_start,
                     param_cx,
                     controller.stochastic_variables_scaled.cx_start,  # Warning: stochastic_variables.cx_end are not implemented
-                    motor_noise,
-                    sensory_noise,
                 ),
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
                 stochastic_cx_scaled,
-                motor_noise,
-                sensory_noise,
             )
 
         dt_cx = controller.cx.sym("dt", 1, 1)
@@ -812,8 +798,6 @@ class PenaltyOption(OptionGeneric):
                             controller.controls_scaled.cx_start,
                             param_cx,
                             controller.stochastic_variables_scaled.cx_start,
-                            motor_noise,
-                            sensory_noise,
                         )
                         - target_cx[:, 0]
                     )
@@ -824,8 +808,6 @@ class PenaltyOption(OptionGeneric):
                             control_cx_end_scaled,
                             param_cx,
                             stochastic_cx_scaled,
-                            motor_noise,
-                            sensory_noise,
                         )
                         - target_cx[:, 1]
                     )
@@ -836,8 +818,6 @@ class PenaltyOption(OptionGeneric):
                 control_cx_scaled,
                 param_cx,
                 stochastic_cx_scaled,
-                motor_noise,
-                sensory_noise,
                 target_cx,
                 dt_cx,
             )
@@ -846,8 +826,6 @@ class PenaltyOption(OptionGeneric):
                 control_cx_scaled,
                 param_cx,
                 stochastic_cx_scaled,
-                motor_noise,
-                sensory_noise,
                 target_cx,
                 dt_cx,
             )
@@ -858,8 +836,6 @@ class PenaltyOption(OptionGeneric):
                     control_cx_scaled,
                     param_cx,
                     stochastic_cx_scaled,
-                    motor_noise,
-                    sensory_noise,
                 )
                 - target_cx
             ) ** exponent
@@ -875,8 +851,6 @@ class PenaltyOption(OptionGeneric):
                 control_cx_scaled,
                 param_cx,
                 stochastic_cx_scaled,
-                motor_noise,
-                sensory_noise,
                 weight_cx,
                 target_cx,
                 dt_cx,

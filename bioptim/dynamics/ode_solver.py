@@ -62,7 +62,7 @@ class OdeSolverBase:
     @staticmethod
     def prepare_dynamic_integrator(ocp, nlp):
         """
-        Properly set the integration in an nlp
+        Properly set the integration in a nlp
 
         Parameters
         ----------

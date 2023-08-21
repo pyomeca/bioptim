@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, DM, horzcat
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -597,12 +597,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
-
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = controller.model.nb_q - controller.model.nb_root
 
             if "cholesky_cov" in controller.stochastic_variables.keys():
                 l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(Node.START)

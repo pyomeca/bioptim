@@ -176,6 +176,8 @@ class Integrator:
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
+                self.model.motor_noise_sym if self.noised_fun is not None else self.cx(),
+                self.model.sensory_noise_sym if self.noised_fun is not None else self.cx(),
             ],
             self.dxdt(
                 h=self.h,
@@ -185,7 +187,7 @@ class Integrator:
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
             ["xf", "xall"],
         )
 
@@ -362,8 +364,10 @@ class RK1(RK):
         -------
         The next integrate states
         """
-        func = self.noised_fun if self.noised_fun else self.fun
-        return x_prev + h * func(x_prev, self.get_u(u, t), p, s)[:, self.idx]
+        if self.noised_fun is not None:
+            return x_prev + h * self.noised_fun(x_prev, self.get_u(u, t), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym)[:, self.idx]
+        else:
+            return x_prev + h * self.fun(x_prev, self.get_u(u, t), p, s)[:, self.idx]
 
 
 class RK2(RK):
@@ -420,15 +424,12 @@ class RK2(RK):
         -------
         The next integrate states
         """
-        func = self.noised_fun if self.noised_fun else self.fun
-        k1 = func(x_prev, self.get_u(u, t), p, s)[:, self.idx]
-        return (
-            x_prev
-            + h
-            * func(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s)[
-                :, self.idx
-            ]
-        )
+        if self.noised_fun is not None:
+            k1 = self.noised_fun(x_prev, self.get_u(u, t), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym)[:, self.idx]
+            return x_prev + h * self.noised_fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym)[:, self.idx]
+        else:
+            k1 = self.fun(x_prev, self.get_u(u, t), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym)[:, self.idx]
+            return x_prev + h * self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s)[:, self.idx]
 
 
 class RK4(RK):
@@ -485,17 +486,26 @@ class RK4(RK):
         -------
         The next integrate states
         """
-
-        func = self.noised_fun if self.noised_fun else self.fun
-        k1 = func(x_prev, self.get_u(u, t), p, s)[:, self.idx]
-        k2 = func(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s)[
-            :, self.idx
-        ]
-        k3 = func(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, s)[
-            :, self.idx
-        ]
-        k4 = func(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, s)[:, self.idx]
-        return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        if self.noised_fun is not None:
+            k1 = self.noised_fun(x_prev, self.get_u(u, t), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym)[:, self.idx]
+            k2 = self.noised_fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym)[
+                :, self.idx
+            ]
+            k3 = self.noised_fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym)[
+                :, self.idx
+            ]
+            k4 = self.noised_fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym)[:, self.idx]
+            return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        else:
+            k1 = self.fun(x_prev, self.get_u(u, t), p, s)[:, self.idx]
+            k2 = self.fun(x_prev + h / 2 * k1, self.get_u(u, t + self.h_norm / 2), p, s)[
+                 :, self.idx
+                 ]
+            k3 = self.fun(x_prev + h / 2 * k2, self.get_u(u, t + self.h_norm / 2), p, s)[
+                 :, self.idx
+                 ]
+            k4 = self.fun(x_prev + h * k3, self.get_u(u, t + self.h_norm), p, s)[:, self.idx]
+            return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
 class RK8(RK4):
@@ -553,59 +563,110 @@ class RK8(RK4):
         The next integrate states
         """
 
-        func = self.noised_fun if self.noised_fun else self.fun
-        k1 = func(x_prev, self.get_u(u, t), p, s)[:, self.idx]
-        k2 = func(
-            x_prev + (h * 4 / 27) * k1, self.get_u(u, t + self.h_norm * (4 / 27)), p, s
-        )[:, self.idx]
-        k3 = func(
-            x_prev + (h / 18) * (k1 + 3 * k2),
-            self.get_u(u, t + self.h_norm * (2 / 9)),
-            p,
-            s,
-        )[:, self.idx]
-        k4 = func(
-            x_prev + (h / 12) * (k1 + 3 * k3),
-            self.get_u(u, t + self.h_norm * (1 / 3)),
-            p,
-            s,
-        )[:, self.idx]
-        k5 = func(
-            x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t + self.h_norm * (1 / 2)), p, s
-        )[:, self.idx]
-        k6 = func(
-            x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5),
-            self.get_u(u, t + self.h_norm * (2 / 3)),
-            p,
-            s,
-        )[:, self.idx]
-        k7 = func(
-            x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
-            self.get_u(u, t + self.h_norm * (1 / 6)),
-            p,
-            s,
-        )[:, self.idx]
-        k8 = func(
-            x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
-            self.get_u(u, t + self.h_norm),
-            p,
-            s,
-        )[:, self.idx]
-        k9 = func(
-            x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
-            self.get_u(u, t + self.h_norm * (5 / 6)),
-            p,
-            s,
-        )[:, self.idx]
-        k10 = func(
-            x_prev
-            + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
-            self.get_u(u, t + self.h_norm),
-            p,
-            s,
-        )[:, self.idx]
-
-        return x_prev + h / 840 * (41 * k1 + 27 * k4 + 272 * k5 + 27 * k6 + 216 * k7 + 216 * k9 + 41 * k10)
+        if self.noised_fun is not None:
+            k1 = self.noised_fun(x_prev, self.get_u(u, t), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym)[:, self.idx]
+            k2 = self.noised_fun(
+                x_prev + (h * 4 / 27) * k1, self.get_u(u, t + self.h_norm * (4 / 27)), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym
+            )[:, self.idx]
+            k3 = self.noised_fun(
+                x_prev + (h / 18) * (k1 + 3 * k2),
+                self.get_u(u, t + self.h_norm * (2 / 9)),
+                p,
+                s, self.model.motor_noise_sym, self.model.sensory_noise_sym
+            )[:, self.idx]
+            k4 = self.noised_fun(
+                x_prev + (h / 12) * (k1 + 3 * k3),
+                self.get_u(u, t + self.h_norm * (1 / 3)),
+                p,
+                s, self.model.motor_noise_sym, self.model.sensory_noise_sym
+            )[:, self.idx]
+            k5 = self.noised_fun(
+                x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t + self.h_norm * (1 / 2)), p, s, self.model.motor_noise_sym, self.model.sensory_noise_sym
+            )[:, self.idx]
+            k6 = self.noised_fun(
+                x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5),
+                self.get_u(u, t + self.h_norm * (2 / 3)),
+                p,
+                s, self.model.motor_noise_sym, self.model.sensory_noise_sym
+            )[:, self.idx]
+            k7 = self.noised_fun(
+                x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
+                self.get_u(u, t + self.h_norm * (1 / 6)),
+                p,
+                s, self.model.motor_noise_sym, self.model.sensory_noise_sym
+            )[:, self.idx]
+            k8 = self.noised_fun(
+                x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
+                self.get_u(u, t + self.h_norm),
+                p,
+                s, self.model.motor_noise_sym, self.model.sensory_noise_sym
+            )[:, self.idx]
+            k9 = self.noised_fun(
+                x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
+                self.get_u(u, t + self.h_norm * (5 / 6)),
+                p,
+                s, self.model.motor_noise_sym, self.model.sensory_noise_sym
+            )[:, self.idx]
+            k10 = self.noised_fun(
+                x_prev
+                + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
+                self.get_u(u, t + self.h_norm),
+                p,
+                s, self.model.motor_noise_sym, self.model.sensory_noise_sym
+            )[:, self.idx]
+            return x_prev + h / 840 * (41 * k1 + 27 * k4 + 272 * k5 + 27 * k6 + 216 * k7 + 216 * k9 + 41 * k10)
+        else:
+            k1 = self.fun(x_prev, self.get_u(u, t), p, s)[:, self.idx]
+            k2 = self.fun(
+                x_prev + (h * 4 / 27) * k1, self.get_u(u, t + self.h_norm * (4 / 27)), p, s
+            )[:, self.idx]
+            k3 = self.fun(
+                x_prev + (h / 18) * (k1 + 3 * k2),
+                self.get_u(u, t + self.h_norm * (2 / 9)),
+                p,
+                s,
+            )[:, self.idx]
+            k4 = self.fun(
+                x_prev + (h / 12) * (k1 + 3 * k3),
+                self.get_u(u, t + self.h_norm * (1 / 3)),
+                p,
+                s,
+            )[:, self.idx]
+            k5 = self.fun(
+                x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t + self.h_norm * (1 / 2)), p, s
+            )[:, self.idx]
+            k6 = self.fun(
+                x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5),
+                self.get_u(u, t + self.h_norm * (2 / 3)),
+                p,
+                s,
+            )[:, self.idx]
+            k7 = self.fun(
+                x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
+                self.get_u(u, t + self.h_norm * (1 / 6)),
+                p,
+                s,
+            )[:, self.idx]
+            k8 = self.fun(
+                x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
+                self.get_u(u, t + self.h_norm),
+                p,
+                s,
+            )[:, self.idx]
+            k9 = self.fun(
+                x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
+                self.get_u(u, t + self.h_norm * (5 / 6)),
+                p,
+                s,
+            )[:, self.idx]
+            k10 = self.fun(
+                x_prev
+                + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
+                self.get_u(u, t + self.h_norm),
+                p,
+                s,
+            )[:, self.idx]
+            return x_prev + h / 840 * (41 * k1 + 27 * k4 + 272 * k5 + 27 * k6 + 216 * k7 + 216 * k9 + 41 * k10)
 
 
 class TRAPEZOIDAL(Integrator):
@@ -617,7 +678,7 @@ class TRAPEZOIDAL(Integrator):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, x_next: MX | SX, u: MX | SX, u_next: MX | SX, p: MX | SX, s: MX | SX)
+    next_x(self, h: float, x_prev: MX | SX, x_next: MX | SX, u: MX | SX, u_next: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state
     dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
@@ -723,7 +784,7 @@ class TRAPEZOIDAL(Integrator):
             stochastic_variables_prev = stochastic_variables[:, 0]
             stochastic_variables_next = stochastic_variables[:, 1]
         else:
-            stochastic_variables_prev = stochastic_variables
+            stochastic_variables_prev = stochastic_variables  # TOD0: Charbie-> to be changed for cx_end
             stochastic_variables_next = stochastic_variables
 
         x_prev[:, 0] = states[:, 0]
@@ -1081,7 +1142,12 @@ class IRK(COLLOCATION):
 
         self.function = Function(
             "integrator",
-            [self.x_sym[0], self.u_sym, self.param_sym, self.s_sym],
+            [self.x_sym[0],
+             self.u_sym,
+             self.param_sym,
+             self.s_sym,
+             self.model.motor_noise_sym if self.noised_fun is not None else self.cx(),
+             self.model.sensory_noise_sym if self.noised_fun is not None else self.cx(),],
             self.dxdt(
                 h=self.h,
                 states=self.x_sym,
@@ -1090,7 +1156,7 @@ class IRK(COLLOCATION):
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
             ["xf", "xall"],
         )
 

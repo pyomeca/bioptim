@@ -7,7 +7,6 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
-from ..limits.phase_transition import PhaseTransitionFcn
 from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule
 from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
@@ -646,17 +645,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
     param = interface.ocp.cx(interface.ocp.parameters.cx)
     out = interface.ocp.cx()
     for penalty in penalties:
-        if penalty.multinode_penalty:
-            phase_idx = penalty.nodes_phase[0]
-        else:
-            phase_idx = penalty.phase
-        if interface.ocp.nlp[phase_idx].motor_noise is not None:
-            motor_noise = interface.ocp.nlp[phase_idx].motor_noise
-            sensory_noise = interface.ocp.nlp[phase_idx].sensory_noise
-        else:
-            motor_noise = interface.ocp.nlp[phase_idx].cx()
-            sensory_noise = interface.ocp.nlp[phase_idx].cx()
-
         if not penalty:
             continue
 
@@ -677,7 +665,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
             p = reshape(
                 penalty.weighted_function[0](
-                    x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
+                    x, u, param, s, penalty.weight, target, penalty.dt
                 ),
                 -1,
                 1,
@@ -710,7 +698,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     p = vertcat(
                         p,
                         penalty.weighted_function[idx](
-                            x, u, param, s, motor_noise, sensory_noise, penalty.weight, target, penalty.dt
+                            x, u, param, s, penalty.weight, target, penalty.dt
                         ),
                     )
 

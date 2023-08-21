@@ -1,12 +1,12 @@
 from typing import Callable, Any
 
 import casadi
-from casadi import SX, MX, Function, horzcat, jacobian, MX_eye
+from casadi import SX, MX, Function, horzcat
 
 from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
-from ..misc.enums import ControlType, Node
+from ..misc.enums import ControlType
 from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
@@ -177,8 +177,6 @@ class NonLinearProgram:
         self.controls = OptimizationVariableContainer(assume_phase_dynamics)
         self.stochastic_variables = OptimizationVariableContainer(assume_phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(assume_phase_dynamics)
-        self.motor_noise = None
-        self.sensory_noise = None
 
     def initialize(self, cx: Callable = None):
         """

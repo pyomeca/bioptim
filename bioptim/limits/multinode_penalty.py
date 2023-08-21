@@ -1,6 +1,5 @@
 from typing import Callable, Any
-from casadi import DM, horzcat, MX_eye, jacobian, Function, MX, vertcat
-from numpy import sqrt
+from casadi import horzcat, MX_eye, jacobian, Function, MX, vertcat
 
 from .constraints import PenaltyOption
 from .objective_functions import ObjectiveFunction
@@ -322,8 +321,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             penalty : MultinodePenalty
                 A reference to the phase penalty
             controllers: list[PenaltyController, PenaltyController]
-                    The penalty node elements
             """
+
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
             if controllers[0].phase_idx != controllers[1].phase_idx:
@@ -421,11 +420,11 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             This functions allows to implicitly integrate the covariance matrix.
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             cov_matrix = controllers[0].stochastic_variables["cov"].reshape_to_matrix(Node.START)
             cov_matrix_next = controllers[1].stochastic_variables["cov"].reshape_to_matrix(Node.START)
             a_matrix = controllers[0].stochastic_variables["a"].reshape_to_matrix(Node.START)
@@ -452,6 +451,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             This function constrains the stochastic matrix C to its actual value which is
             C = df/dw
             """
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
@@ -459,7 +459,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             dt = controllers[0].tf / controllers[0].ns
 
             nb_root = controllers[0].model.nb_root
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
 
             c_matrix = controllers[0].stochastic_variables["c"].reshape_to_matrix(Node.START)
@@ -539,13 +538,14 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
             P_k+1 = M_k @ (dg/dx @ P_k @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             polynomial_degree = controllers[0].get_nlp.ode_solver.polynomial_degree
             nb_root = controllers[0].model.nb_root
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
+
             nu = controllers[0].model.nb_q - nb_root
             non_root_index_continuity = []
             non_root_index_defects = []

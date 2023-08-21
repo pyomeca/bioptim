@@ -246,7 +246,7 @@ def get_cov_mat(nlp, node_index):
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym))
     dg_dw = -ddx_dwm * dt
     ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx_start)
-    dg_dx = -(ddx_dx * dt / 2 + cas.MX_eye(ddx_dx.shape[0]))
+    dg_dx: Any = -(ddx_dx * dt / 2 + cas.MX_eye(ddx_dx.shape[0]))
 
     p_next = M_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
     func = cas.Function(
@@ -307,13 +307,14 @@ def reach_target_consistently(controllers: list[PenaltyController]) -> cas.MX:
 
     out = cas.vertcat(pos_constraint[0, 0], pos_constraint[1, 1], vel_constraint[0, 0], vel_constraint[1, 1])
 
-    fun = cas.Function("reach_target_consistantly", [q_sym, qdot_sym, cov_sym], [out])
+    fun = cas.Function("reach_target_consistently", [q_sym, qdot_sym, cov_sym], [out])
     val = fun(
         controllers[-1].states["q"].cx_start,
         controllers[-1].states["qdot"].cx_start,
         controllers[-1].integrated_values.cx_start,
     )
-    # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
+    # Since the stochastic variables are defined with ns+1,
+    # the cx_start actually refers to the last node (when using node=Node.END)
 
     return val
 
@@ -330,6 +331,7 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     controllers : list[PenaltyController]
         List of controllers to be used to compute the expected effort.
     """
+
     dt = controllers[0].tf / controllers[0].ns
     sensory_noise_matrix = controllers[0].model.sensory_noise_magnitude * cas.MX_eye(4)
 
@@ -374,15 +376,6 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
         f_expected_effort_fb += out * dt
 
     return f_expected_effort_fb
-
-
-def track_final_marker(controller: PenaltyController) -> cas.MX:
-    """
-    Track the hand position.
-    """
-    q = controller.states["q"].cx_start
-    ee_pos = controller.model.markers(q)[2][:2]
-    return ee_pos
 
 
 def prepare_socp(
