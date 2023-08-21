@@ -8,6 +8,7 @@ from ..misc.enums import Node, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 from ..misc.mapping import BiMapping
+from ..interfaces.stochastic_bio_model import StochasticBioModel
 
 
 class MultinodePenalty(PenaltyOption):
@@ -331,7 +332,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             dt = controllers[0].tf / controllers[0].ns
 
             # TODO: Charbie -> This is only True for not mapped variables (have to think on how to generalize it)
-            M_matrix = controllers[0].stochastic_variables["m"].reshape_to_matrix(Node.START)
+            M_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
 
             dx = controllers[0].noised_dynamics(
                 controllers[0].states.cx_start,
@@ -368,7 +369,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             val = M_matrix @ DG_DZ - MX_eye(controllers[0].stochastic_variables["m"].matrix_shape[0])
 
-            out_vector = controllers[0].stochastic_variables["m"].reshape_to_vector(val)
+            out_vector = StochasticBioModel.reshape_to_vector(val)
             return out_vector
 
         @staticmethod
@@ -401,14 +402,14 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
-            m_matrix = controllers[0].stochastic_variables["m"].reshape_to_matrix(Node.START)
-            a_plus_matrix = controllers[1].stochastic_variables["a"].reshape_to_matrix(Node.START)
+            m_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
+            a_plus_matrix = StochasticBioModel.reshape_to_matrix(controllers[1].stochastic_variables["a"].cx_start, controllers[1].model.matrix_shape_a)
 
             DG_DZ = MX_eye(a_plus_matrix.shape[0]) - a_plus_matrix * dt / 2
 
             val = m_matrix @ DG_DZ - MX_eye(2 * nu)
 
-            out_vector = controllers[0].stochastic_variables["m"].reshape_to_vector(val)
+            out_vector =StochasticBioModel.reshape_to_vector(val)
             return out_vector
 
         @staticmethod
@@ -425,11 +426,11 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            cov_matrix = controllers[0].stochastic_variables["cov"].reshape_to_matrix(Node.START)
-            cov_matrix_next = controllers[1].stochastic_variables["cov"].reshape_to_matrix(Node.START)
-            a_matrix = controllers[0].stochastic_variables["a"].reshape_to_matrix(Node.START)
-            c_matrix = controllers[0].stochastic_variables["c"].reshape_to_matrix(Node.START)
-            m_matrix = controllers[0].stochastic_variables["m"].reshape_to_matrix(Node.START)
+            cov_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["cov"].cx_start, controllers[0].model.matrix_shape_cov)
+            cov_matrix_next = StochasticBioModel.reshape_to_matrix(controllers[1].stochastic_variables["cov"].cx_start, controllers[1].model.matrix_shape_cov)
+            a_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["a"].cx_start, controllers[0].model.matrix_shape_a)
+            c_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["c"].cx_start, controllers[0].model.matrix_shape_c)
+            m_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
 
             sigma_w = vertcat(controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude)
             dt = controllers[0].tf / controllers[0].ns
@@ -439,7 +440,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             cov_next_computed = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
             cov_implicit_deffect = cov_next_computed - cov_matrix_next
 
-            out_vector = controllers[0].integrated_values["cov"].reshape_to_vector(cov_implicit_deffect)
+            out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
             return out_vector
 
         @staticmethod
@@ -461,7 +462,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             nb_root = controllers[0].model.nb_root
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
 
-            c_matrix = controllers[0].stochastic_variables["c"].reshape_to_matrix(Node.START)
+            c_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["c"].cx_start, controllers[0].model.matrix_shape_c)
 
             q_root = MX.sym("q_root", nb_root, 1)
             q_joints = MX.sym("q_joints", nu, 1)
@@ -530,7 +531,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             out = c_matrix - (-(DF_DW + DF_DW_plus) / 2 * dt)
 
-            out_vector = controllers[0].stochastic_variables["c"].reshape_to_vector(out)
+            out_vector = StochasticBioModel.reshape_to_vector(out)
             return out_vector
 
         @staticmethod
@@ -568,17 +569,17 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             if "cholesky_cov" in controllers[0].stochastic_variables.keys():
                 l_cov_matrix = (
-                    controllers[0].stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(Node.START)
+                    StochasticBioModel.reshape_to_cholesky_matrix(controllers[0].stochastic_variables["cholesky_cov"].cx_start, controllers[0].model.matrix_shape_cov_cholesky)
                 )
                 l_cov_matrix_next = (
-                    controllers[1].stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(Node.START)
+                    StochasticBioModel.reshape_to_cholesky_matrix(controllers[1].stochastic_variables["cholesky_cov"].cx_start, controllers[1].model.matrix_shape_cov_cholesky)
                 )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
                 cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
             else:
-                cov_matrix = controllers[0].stochastic_variables["cov"].reshape_to_matrix(Node.START)
-                cov_matrix_next = controllers[1].stochastic_variables["cov"].reshape_to_matrix(Node.START)
-            m_matrix = controllers[0].stochastic_variables["m"].reshape_to_matrix(Node.START)
+                cov_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["cov"].cx_start, controllers[0].model.matrix_shape_cov)
+                cov_matrix_next =StochasticBioModel.reshape_to_matrix( controllers[1].stochastic_variables["cov"].cx_start, controllers[1].model.matrix_shape_cov)
+            m_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
 
             x_q_root = controllers[0].cx.sym("x_q_root", nb_root, 1)
             x_q_joints = controllers[0].cx.sym("x_q_joints", nu, 1)
@@ -699,7 +700,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )
             cov_implicit_deffect = cov_next_computed - cov_matrix_next
 
-            out_vector = controllers[0].stochastic_variables["m"].reshape_to_vector(cov_implicit_deffect)
+            out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
             return out_vector
 
         @staticmethod

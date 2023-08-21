@@ -22,6 +22,7 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
+from ..interfaces.stochastic_bio_model import StochasticBioModel
 from ..optimization.problem_type import SocpType
 
 
@@ -311,7 +312,6 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
-        n_references: int,
         with_contact: bool = False,
         with_friction: bool = True,
         with_cholesky: bool = False,
@@ -340,8 +340,8 @@ class ConfigureProblem:
         n_noised_states = 2 * n_noised_tau
 
         # Stochastic variables
-        ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=n_noised_tau, n_references=n_references)
-        ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=n_references)
+        ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references)
+        ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
         n_collocation_points = 1
         if isinstance(problem_type, SocpType.COLLOCATION):
             n_collocation_points += problem_type.polynomial_degree
@@ -1110,7 +1110,7 @@ class ConfigureProblem:
             n_cx = 3
 
         dummy_mapping = Mapping(list(range(len(name_elements))))
-        initial_vector = nlp.integrated_values.reshape_to_vector(initial_matrix)
+        initial_vector = StochasticBioModel.reshape_to_vector(initial_matrix)
         cx_scaled_next_formatted = [initial_vector for _ in range(n_cx)]
         nlp.integrated_values.append(
             name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, matrix_shape, 0

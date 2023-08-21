@@ -90,6 +90,7 @@ def prepare_socp(
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_reference_function=sensory_reference_function,
+        n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
     )
     bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
 
@@ -163,7 +164,6 @@ def prepare_socp(
     dynamics.add(
         DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
         problem_type=problem_type,
-        n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
         with_cholesky=False,
         expand=False,
     )

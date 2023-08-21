@@ -8,6 +8,7 @@ from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
+from ..interfaces.stochastic_bio_model import StochasticBioModel
 
 
 class Constraint(PenaltyOption):
@@ -606,10 +607,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(Node.START)
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
             else:
-                cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(Node.START)
-            a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(Node.START)
-            c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(Node.START)
-            m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(Node.START)
+                cov_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov)
+            a_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["a"].cx_start, controller.model.matrix_shape_a)
+            c_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["c"].cx_start, controller.model.matrix_shape_c)
+            m_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m)
 
             sigma_w = vertcat(
                 controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude
@@ -627,10 +628,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            if "cholesky_cov" in controller.stochastic_variables.keys():
-                out_vector = controller.stochastic_variables["cholesky_cov"].reshape_to_vector(cov_implicit_deffect)
-            else:
-                out_vector = controller.stochastic_variables["cov"].reshape_to_vector(cov_implicit_deffect)
+            out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
             return out_vector
 
         @staticmethod
@@ -651,7 +649,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = controller.model.nb_q - controller.model.nb_root
 
-            a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(Node.START)
+            a_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["a"].cx_start, controller.model.matrix_shape_a)
 
             q_root = MX.sym("q_root", nb_root, 1)
             q_joints = MX.sym("q_joints", nu, 1)
@@ -703,7 +701,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             out = a_matrix - (MX_eye(DF_DX.shape[0]) - DF_DX * dt / 2)
 
-            out_vector = controller.stochastic_variables["a"].reshape_to_vector(out)
+            out_vector = StochasticBioModel.reshape_to_vector(out)
             return out_vector
 
         @staticmethod
@@ -853,11 +851,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.model.sensory_noise_magnitude,
             )
 
-            m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(Node.START)
+            m_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m)
 
             constraint = df_dz_evaluated.T - dg_dz_evaluated.T @ m_matrix.T
 
-            out_vector = controller.stochastic_variables["m"].reshape_to_vector(constraint)
+            out_vector = StochasticBioModel.reshape_to_vector(constraint)
             return out_vector
 
         @staticmethod

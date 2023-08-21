@@ -9,6 +9,7 @@ from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, Axis, ControlType, QuadratureRule
 from ..misc.mapping import BiMapping
+from ..interfaces.stochastic_bio_model import StochasticBioModel
 
 
 class PenaltyFunctionAbstract:
@@ -190,16 +191,16 @@ class PenaltyFunctionAbstract:
             # Get the symbolic variables
             ref = controller.stochastic_variables["ref"].cx_start
             if "cholesky_cov" in controller.stochastic_variables.keys():
-                l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(Node.START)
+                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(controller.stochastic_variables["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky)
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
             elif "cov" in controller.stochastic_variables.keys():
-                cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(Node.START)
+                cov_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov)
             else:
                 raise RuntimeError(
                     "The covariance matrix must be provided in the stochastic variables to compute the expected efforts."
                 )
 
-            k_matrix = controller.stochastic_variables["k"].reshape_to_matrix(Node.START)
+            k_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["k"].cx_start, controller.model.matrix_shape_k)
 
             # Compute the expected effort
             trace_k_sensor_k = trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)

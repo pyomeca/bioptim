@@ -5,6 +5,7 @@ from .fatigue.fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
 from ..optimization.non_linear_program import NonLinearProgram
 from .dynamics_evaluation import DynamicsEvaluation
+from ..interfaces.stochastic_bio_model import StochasticBioModel
 
 
 class DynamicsFunctions:
@@ -218,7 +219,7 @@ class DynamicsFunctions:
 
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k)
+        k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, nlp.model.matrix_shape_k)
 
         sensory_input = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 

@@ -20,6 +20,9 @@ import numpy as np
 from bioptim import (
     OptimalControlProgram,
     StochasticOptimalControlProgram,
+    StochasticBioModel,
+    StochasticBiorbdModel,
+    BioModel,
     InitialGuessList,
     ObjectiveFcn,
     Solver,
@@ -81,7 +84,7 @@ def stochastic_forward_dynamics(
     if with_gains:
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = nlp.stochastic_variables["k"].reshape_sym_to_matrix(k)
+        k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, nlp.model.matrix_shape_k)
 
         hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
 
@@ -160,7 +163,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     dt = controllers[0].tf / controllers[0].ns
     out = 0
     for i, ctrl in enumerate(controllers):
-        cov_matrix = ctrl.integrated_values["cov"].reshape_to_matrix(Node.START)
+        cov_matrix = StochasticBioModel.reshape_to_matrix(ctrl.integrated_values["cov"].cx_start, ctrl.model.matrix_shape_cov)
         p_partial = cov_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(p_partial) * dt
     return out
@@ -174,11 +177,11 @@ def get_cov_mat(nlp, node_index):
     nlp.stochastic_variables.node_index = node_index - 1
     nlp.integrated_values.node_index = node_index - 1
 
-    m_matrix = nlp.stochastic_variables["m"].reshape_to_matrix(Node.START)
+    m_matrix = StochasticBioModel.reshape_to_matrix(nlp.stochastic_variables["m"].cx_start, nlp.model.matrix_shape_m)
 
     sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * cas.MX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
-    cov_matrix = nlp.integrated_values["cov"].reshape_sym_to_matrix(cov_sym)
+    cov_matrix = StochasticBioModel.reshape_sym_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(
         nlp.states.cx_start,
@@ -217,7 +220,7 @@ def get_cov_mat(nlp, node_index):
         nlp.model.motor_noise_magnitude,
         nlp.model.sensory_noise_magnitude,
     )
-    p_vector = nlp.integrated_values.reshape_to_vector(func_eval)
+    p_vector = StochasticBioModel.reshape_to_vector(func_eval)
     return p_vector
 
 
@@ -231,13 +234,7 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
     q_sym = cas.MX.sym("q_sym", controllers[-1].states["q"].cx_start.shape[0])
     qdot_sym = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx_start.shape[0])
     cov_sym = cas.MX.sym("cov", controllers[-1].integrated_values.cx_start.shape[0])
-    cov_matrix = (
-        controllers[-1]
-        .integrated_values["cov"]
-        .reshape_sym_to_matrix(
-            cov_sym,
-        )
-    )
+    cov_matrix = StochasticBioModel.reshape_sym_to_matrix(cov_sym, controllers[-1].model.matrix_shape_cov)
 
     hand_pos = controllers[0].model.end_effector_position(q_sym)
     hand_vel = controllers[0].model.end_effector_velocity(q_sym, qdot_sym)
@@ -294,7 +291,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     )
 
     k = controllers[0].stochastic_variables["k"].cx_start
-    k_matrix = controllers[0].stochastic_variables["k"].reshape_sym_to_matrix(k)
+    k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, controllers[0].model.matrix_shape_k)
 
     # Compute the expected effort
     hand_pos_velo = controllers[0].model.sensory_reference_function(
@@ -382,11 +379,9 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = LeuvenArmModel(
-        sensory_noise_magnitude=sensory_noise_magnitude,
+    bio_model = LeuvenArmModel(sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
-        sensory_reference_function=sensory_reference_function,
-    )
+        sensory_reference_function=sensory_reference_function)
     bio_model.force_field_magnitude = force_field_magnitude
 
     shoulder_pos_initial = 0.349065850398866
