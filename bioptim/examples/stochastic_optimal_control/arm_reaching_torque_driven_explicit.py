@@ -8,7 +8,6 @@ from typing import Any
 import pickle
 import numpy as np
 import casadi as cas
-import biorbd_casadi as biorbd
 
 from bioptim import (
     OptimalControlProgram,
@@ -34,50 +33,11 @@ from bioptim import (
     MultinodeObjectiveList,
     InitialGuessList,
     Axis,
-    OdeSolver,
     ControlType,
+    NoiseType,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
-
-
-def get_force_field(q, force_field_magnitude):
-    """
-    Get the effect of the force field.
-
-    Parameters
-    ----------
-    q: MX.sym
-        The generalized coordinates
-    force_field_magnitude: float
-        The magnitude of the force field
-    """
-    l1 = 0.3
-    l2 = 0.33
-    f_force_field = force_field_magnitude * (l1 * cas.cos(q[0]) + l2 * cas.cos(q[0] + q[1]))
-    hand_pos = cas.MX(2, 1)
-    hand_pos[0] = l2 * cas.sin(q[0] + q[1]) + l1 * cas.sin(q[0])
-    hand_pos[1] = l2 * cas.sin(q[0] + q[1])
-    tau_force_field = -f_force_field @ hand_pos
-    return tau_force_field
-
-
-def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
-    """
-    Get the effect of the feedback.
-
-    Parameters
-    ----------
-    k: MX.sym
-        The feedback gains
-    hand_pos_velo: MX.sym
-        The position and velocity of the hand
-    ref: MX.sym
-        The reference position and velocity of the hand
-    sensory_noise: MX.sym
-        The sensory noise
-    """
-    return k @ ((hand_pos_velo - ref) + sensory_noise)
 
 
 def stochastic_forward_dynamics(
@@ -86,8 +46,8 @@ def stochastic_forward_dynamics(
     parameters: cas.MX | cas.SX,
     stochastic_variables: cas.MX | cas.SX,
     nlp: NonLinearProgram,
-    force_field_magnitude,
-    with_gains,
+    with_gains: bool,
+    noise_type: NoiseType,
 ) -> DynamicsEvaluation:
     """
     The dynamic function of the states including feedback gains.
@@ -104,10 +64,10 @@ def stochastic_forward_dynamics(
         The stochastic variables
     nlp: NonLinearProgram
         The current non-linear program
-    force_field_magnitude: float
-        The magnitude of the force field
+    noise_type: NoiseType
+        If the noise should be symbolic or numeric (being equal to 0 or magnitude)
     with_gains: bool
-        If the feedback gains are included or not to the torques
+        If the feedback gains should be used
     """
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -115,29 +75,13 @@ def stochastic_forward_dynamics(
     qdddot = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-    tau_fb = tau
-    noise_torque = np.zeros(nlp.model.motor_noise_magnitude.shape)
-    if with_gains:
-        ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
-        k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, nlp.model.matrix_shape_k)
+    ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
+    k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
 
-        hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
+    dqdot_constraint = nlp.model.stochastic_dynamics(q, qdot, tau, ref, k, noise_type=noise_type, with_gains=with_gains)
+    defects = cas.vertcat(dqdot_constraint - qddot)
 
-        tau_fb += get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, nlp.model.sensory_noise_sym)
-        noise_torque = nlp.model.motor_noise_sym
-
-    tau_force_field = get_force_field(q, force_field_magnitude)
-
-    torques_computed = tau_fb + noise_torque + tau_force_field
-
-    biorbd_model = biorbd.Model(nlp.model.path)
-    dqdot_computed = biorbd_model.ForwardDynamics(q, qdot, torques_computed).to_mx()
-
-    defects = cas.vertcat(dqdot_computed - qddot)
-
-    # Where are the defects added to the problem?
-    return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_computed, qdddot), defects=defects)
+    return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_constraint, qdddot), defects=defects)
 
 
 def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
@@ -162,15 +106,23 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
         ocp,
         nlp,
         dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, with_gains=False
+            states, controls, parameters, stochastic_variables, nlp, noise_type=NoiseType.NONE, with_gains=False
         ),
     )
-    ConfigureProblem.configure_secondary_dynamics_function(
+    ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        secondary_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, with_gains=True
+        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
+            states, controls, parameters, stochastic_variables, nlp, noise_type=NoiseType.MAGNITUDE, with_gains=True
         ),
+    )
+    ConfigureProblem.configure_dynamics_function(
+        ocp,
+        nlp,
+        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
+            states, controls, parameters, stochastic_variables, nlp, noise_type=NoiseType.SYMBOLIC, with_gains=True,
+        ),
+        allow_free_variables=True,
     )
 
 
@@ -187,20 +139,14 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     return out
 
 
-def sensory_reference_function(
-    states: cas.MX | cas.SX,
-    controls: cas.MX | cas.SX,
-    parameters: cas.MX | cas.SX,
-    stochastic_variables: cas.MX | cas.SX,
-    nlp: NonLinearProgram,
-):
+def sensory_reference(model, q, qdot):
     """
     This functions returns the sensory reference for the feedback gains.
     """
-    q = states[nlp.states["q"].index]
-    qdot = states[nlp.states["qdot"].index]
-    hand_pos = nlp.model.markers(q)[2][:2]
-    hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
+    # TODO Charbie -> I've made this less generic, but I feel it may be better to keep states, instead of breaking it down... To cogitate
+
+    hand_pos = model.markers(q)[2][:2]
+    hand_vel = model.marker_velocities(q, qdot)[2][:2]
     hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
     return hand_pos_velo
 
@@ -240,7 +186,7 @@ def get_cov_mat(nlp, node_index):
         nlp.parameters,
         nlp.stochastic_variables.cx_start,
         nlp,
-        force_field_magnitude=nlp.model.force_field_magnitude,
+        noise_type=NoiseType.SYMBOLIC,  # TO BE VERIFIED
         with_gains=True,
     )
 
@@ -278,7 +224,7 @@ def get_cov_mat(nlp, node_index):
         nlp.model.motor_noise_magnitude,
         nlp.model.sensory_noise_magnitude,
     )
-    p_vector = nlp.integrated_values.reshape_to_vector(func_eval)
+    p_vector = StochasticBioModel.reshape_to_vector(func_eval)
     return p_vector
 
 
@@ -292,7 +238,7 @@ def reach_target_consistently(controllers: list[PenaltyController]) -> cas.MX:
     q_sym = cas.MX.sym("q_sym", controllers[-1].states["q"].cx_start.shape[0])
     qdot_sym = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx_start.shape[0])
     cov_sym = cas.MX.sym("cov", controllers[-1].integrated_values.cx_start.shape[0])
-    cov_matrix = StochasticBioModel.reshape_sym_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
+    cov_matrix = StochasticBioModel.reshape_sym_to_matrix(cov_sym, controllers[-1].model.matrix_shape_cov)
 
     hand_pos = controllers[0].model.markers(q_sym)[2][:2]
     hand_vel = controllers[0].model.marker_velocities(q_sym, qdot_sym)[2][:2]
@@ -347,14 +293,12 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
 
     # Compute the expected effort
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-    hand_pos_velo = controllers[0].model.sensory_reference_function(
-        controllers[0].states.cx_start,
-        controllers[0].controls.cx_start,
-        controllers[0].parameters.cx_start,
-        controllers[0].stochastic_variables.cx_start,
-        controllers[0].get_nlp,
+    estimated_ref = controllers[0].model.sensory_reference(
+        controllers[0].model,
+        q=controllers[0].states["q"].cx_start,
+        qdot=controllers[0].states["qdot"].cx_start,
     )
-    e_fb = k_matrix @ ((hand_pos_velo - ref) + controllers[0].model.sensory_noise_magnitude)
+    e_fb = k_matrix @ ((estimated_ref - ref) + controllers[0].model.sensory_noise_magnitude)
     jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx_start)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
     expected_effort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
@@ -411,12 +355,13 @@ def prepare_socp(
 
     bio_model = StochasticBiorbdModel(
         biorbd_model_path,
+        n_references=4,
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
-        sensory_reference_function=sensory_reference_function,
+        friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
+        force_field_magnitude=force_field_magnitude,
+        sensory_reference=sensory_reference,
     )
-    bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
-    bio_model.force_field_magnitude = force_field_magnitude
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q
@@ -488,15 +433,7 @@ def prepare_socp(
     dynamics = DynamicsList()
     dynamics.add(
         configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_gains: stochastic_forward_dynamics(
-            states,
-            controls,
-            parameters,
-            stochastic_variables,
-            nlp,
-            force_field_magnitude=force_field_magnitude,
-            with_gains=with_gains,
-        ),
+        dynamic_function=stochastic_forward_dynamics,
         expand=False,
     )
 

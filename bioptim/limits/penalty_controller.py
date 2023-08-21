@@ -4,7 +4,7 @@ from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList
-from ..misc.enums import ControlType, Node
+from ..misc.enums import ControlType
 
 
 class PenaltyController:
@@ -194,17 +194,16 @@ class PenaltyController:
     def integrate(self):
         return self._nlp.dynamics[self.node_index]
 
-    @property
-    def integrate_secondary_dynamics(self):
-        return self._nlp.secondary_dynamics[self.node_index]
+    def integrate_extra_dynamics(self, dynamics_index):
+        return self._nlp.extra_dynamics[dynamics_index][self.node_index]
 
     @property
     def dynamics(self):
-        return self._nlp.dynamics_func
+        return self._nlp.dynamics_func[0]
 
-    @property
-    def secondary_dynamics(self):
-        return self._nlp.secondary_dynamics_func
+    def extra_dynamics(self, dynamics_index):
+        # +1 - index so dynamics_func matches integrated_extra_dynamics. This is a hack that should be dealt properly
+        return self._nlp.dynamics_func[dynamics_index + 1]
 
     @property
     def states_scaled(self) -> OptimizationVariableList:

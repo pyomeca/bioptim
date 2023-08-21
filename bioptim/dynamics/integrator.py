@@ -83,7 +83,6 @@ class Integrator:
         self.step_time = self.t_span[1] - self.t_span[0]
         self.h = self.step_time
         self.function = None
-        self.is_secondary_dynamics = ode["is_secondary_dynamics"],
 
     def __call__(self, *args, **kwargs):
         """
@@ -173,8 +172,6 @@ class Integrator:
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
-                self.model.motor_noise_sym if self.is_secondary_dynamics else self.cx(),
-                self.model.sensory_noise_sym if self.is_secondary_dynamics else self.cx(),
             ],
             self.dxdt(
                 h=self.h,
@@ -184,7 +181,7 @@ class Integrator:
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 
@@ -730,8 +727,6 @@ class TRAPEZOIDAL(Integrator):
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
-                self.model.motor_noise_sym if self.noised_fun is not None else self.cx(),
-                self.model.sensory_noise_sym if self.noised_fun is not None else self.cx(),
             ],
             self.dxdt(
                 self.h,
@@ -741,7 +736,7 @@ class TRAPEZOIDAL(Integrator):
                 self.param_scaling,
                 self.s_sym,
             ),
-            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 
@@ -887,46 +882,23 @@ class COLLOCATION(Integrator):
                 xp_j += self._c[r, j] * states[r]
 
             if self.defects_type == DefectType.EXPLICIT:
-                if self.noised_fun:
-                    f_j = self.noised_fun(
-                        states[j],
-                        self.get_u(controls, self.step_time[j]),
-                        params * param_scaling,
-                        stochastic_variables,
-                        self.model.motor_noise_sym,
-                        self.model.sensory_noise_sym,
-                    )[:, self.idx]
-                else:
-                    f_j = self.fun(
-                        states[j],
-                        self.get_u(controls, self.step_time[j]),
-                        params * param_scaling,
-                        stochastic_variables,
-                    )[:, self.idx]
+                f_j = self.fun(
+                    states[j],
+                    self.get_u(controls, self.step_time[j]),
+                    params * param_scaling,
+                    stochastic_variables,
+                )[:, self.idx]
                 defects.append(h * f_j - xp_j)
             elif self.defects_type == DefectType.IMPLICIT:
-                if self.noised_implicit_fun:
-                    defects.append(
-                        self.noised_implicit_fun(
-                            states[j],
-                            self.get_u(controls, self.step_time[j]),
-                            params * param_scaling,
-                            stochastic_variables,
-                            xp_j / h,
-                            self.model.motor_noise_sym,
-                            self.model.sensory_noise_sym,
-                        )
+                defects.append(
+                    self.implicit_fun(
+                        states[j],
+                        self.get_u(controls, self.step_time[j]),
+                        params * param_scaling,
+                        stochastic_variables,
+                        xp_j / h,
                     )
-                else:
-                    defects.append(
-                        self.implicit_fun(
-                            states[j],
-                            self.get_u(controls, self.step_time[j]),
-                            params * param_scaling,
-                            stochastic_variables,
-                            xp_j / h,
-                        )
-                    )
+                )
             else:
                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 
@@ -949,8 +921,6 @@ class COLLOCATION(Integrator):
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
-                self.model.motor_noise_sym if self.noised_fun is not None else self.cx(),
-                self.model.sensory_noise_sym if self.noised_fun is not None else self.cx(),
             ],
             self.dxdt(
                 h=self.h,
@@ -960,7 +930,7 @@ class COLLOCATION(Integrator):
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
         )
 
@@ -1062,8 +1032,6 @@ class IRK(COLLOCATION):
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
-                self.model.motor_noise_sym if self.noised_fun is not None else self.cx(),
-                self.model.sensory_noise_sym if self.noised_fun is not None else self.cx(),
             ],
             self.dxdt(
                 h=self.h,
@@ -1073,7 +1041,7 @@ class IRK(COLLOCATION):
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
+            ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
 

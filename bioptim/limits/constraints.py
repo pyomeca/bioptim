@@ -865,12 +865,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Get the error between the hand position and the reference.
             """
             ref = controller.stochastic_variables["ref"].cx_start
-            sensory_input = controller.model.sensory_reference_function(
-                states=controller.states.cx_start,
-                controls=controller.controls.cx_start,
-                parameters=controller.parameters.cx_start,
-                stochastic_variables=controller.stochastic_variables.cx_start,
-                nlp=controller.get_nlp,
+            sensory_input = controller.model.sensory_reference(
+                model=controller.model,
+                q=controller.states["q"].cx_start,
+                qdot=controller.states["qdot"].cx_start,
             )
             return sensory_input - ref
 

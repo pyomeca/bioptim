@@ -369,13 +369,6 @@ class ConfigureProblem:
             with_contact=with_contact,
             with_friction=with_friction,
         )
-        ConfigureProblem.configure_secondary_dynamics_function(
-            ocp,
-            nlp,
-            DynamicsFunctions.stochastic_torque_driven,
-            with_contact=with_contact,
-            with_friction=with_friction,
-        )
 
     @staticmethod
     def torque_derivative_driven(
@@ -703,7 +696,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
+    def configure_dynamics_function(ocp, nlp, dyn_func, allow_free_variables: bool = False, **extra_params):
         """
         Configure the dynamics of the system
 
@@ -713,67 +706,52 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[states, controls, param]
+        dyn_func: Callable[states, controls, param] | tuple[Callable[states, controls, param], ...]
             The function to get the derivative of the states
+        allow_free_variables: bool
+            If it is expected the dynamics depends on more than the variable provided by bioptim. It is therefore to the
+            user prerogative to wrap the Function around another function to lift the free variable
         """
 
         nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
-        dynamics_eval = dyn_func(
-            nlp.states.scaled.mx_reduced,
-            nlp.controls.scaled.mx_reduced,
-            nlp.parameters.mx,
-            nlp.stochastic_variables.scaled.mx,
-            nlp,
-            **extra_params,
-        )
-        dynamics_dxdt = dynamics_eval.dxdt
-        if isinstance(dynamics_dxdt, (list, tuple)):
-            dynamics_dxdt = vertcat(*dynamics_dxdt)
+        if not isinstance(dyn_func, (tuple, list)):
+            dyn_func = (dyn_func,)
 
-        nlp.dynamics_func = Function(
-            "ForwardDyn",
-            [
+        for func in dyn_func:
+            dynamics_eval = func(
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.scaled.mx,
-            ],
-            [dynamics_dxdt],
-            ["x", "u", "p", "s"],
-            ["xdot"],
-        )
-        if nlp.dynamics_type.expand:
-            try:
-                nlp.dynamics_func = nlp.dynamics_func.expand()
-            except Exception as me:
-                RuntimeError(
-                    f"An error occurred while executing the 'expand()' function for the dynamic function. "
-                    f"Please review the following casadi error message for more details.\n"
-                    "Several factors could be causing this issue. One of the most likely is the inability to "
-                    "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
-                    "Original casadi error message:\n"
-                    f"{me}"
-                )
-
-        if dynamics_eval.defects is not None:
-            nlp.implicit_dynamics_func = Function(
-                "DynamicsDefects",
-                [
-                    nlp.states.scaled.mx_reduced,
-                    nlp.controls.scaled.mx_reduced,
-                    nlp.parameters.mx,
-                    nlp.stochastic_variables.scaled.mx,
-                    nlp.states_dot.scaled.mx_reduced,
-                ],
-                [dynamics_eval.defects],
-                ["x", "u", "p", "s", "xdot"],
-                ["defects"],
+                nlp,
+                **extra_params,
             )
+            dynamics_dxdt = dynamics_eval.dxdt
+            if isinstance(dynamics_dxdt, (list, tuple)):
+                dynamics_dxdt = vertcat(*dynamics_dxdt)
+
+            nlp.dynamics_func.append(
+                Function(
+                    "ForwardDyn",
+                    [
+                        nlp.states.scaled.mx_reduced,
+                        nlp.controls.scaled.mx_reduced,
+                        nlp.parameters.mx,
+                        nlp.stochastic_variables.scaled.mx,
+                    ],
+                    [dynamics_dxdt],
+                    ["x", "u", "p", "s"],
+                    ["xdot"],
+                    {"allow_free": allow_free_variables}
+                ),
+            )
+
+            # TODO: allow expand for each dynamics independently
             if nlp.dynamics_type.expand:
                 try:
-                    nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
+                    nlp.dynamics_func[-1] = nlp.dynamics_func[-1].expand()
                 except Exception as me:
                     RuntimeError(
                         f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -784,86 +762,35 @@ class ConfigureProblem:
                         f"{me}"
                     )
 
-    @staticmethod
-    def configure_secondary_dynamics_function(ocp, nlp, secondary_dyn_func, **extra_params):
-        """
-        Configure the dynamics of the stochastic system that is impacted by motor and sensory noise
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the phase
-        secondary_dyn_func: Callable[states, controls, param]
-            The function to get the derivative of the states
-        """
-        nlp.parameters = ocp.parameters
-        DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
-
-        dynamics_eval = secondary_dyn_func(
-            nlp.states.scaled.mx_reduced,
-            nlp.controls.scaled.mx_reduced,
-            nlp.parameters.mx,
-            nlp.stochastic_variables.mx,
-            nlp,
-            **extra_params,
-        )
-        dynamics_dxdt = dynamics_eval.dxdt
-        if isinstance(dynamics_dxdt, (list, tuple)):
-            dynamics_dxdt = vertcat(*dynamics_dxdt)
-
-        nlp.secondary_dynamics_func = Function(
-            "NoisedForwardDyn",
-            [
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.mx,
-                nlp.stochastic_variables.mx,
-            ],
-            [dynamics_dxdt],
-            ["x", "u", "p", "s"],
-            ["xdot"],
-        )
-        if nlp.dynamics_type.expand:
-            try:
-                nlp.secondary_dynamics_func = nlp.secondary_dynamics_func.expand()
-            except Exception as me:
-                RuntimeError(
-                    f"An error occurred while executing the 'expand()' function for the dynamic function. "
-                    f"Please review the following casadi error message for more details.\n"
-                    "Several factors could be causing this issue. One of the most likely is the inability to "
-                    "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
-                    "Original casadi error message:\n"
-                    f"{me}"
-                )
-
-        if dynamics_eval.defects is not None:
-            nlp.noised_implicit_dynamics_func = Function(
-                "NoisedDynamicsDefects",
-                [
-                    nlp.states.scaled.mx_reduced,
-                    nlp.controls.scaled.mx_reduced,
-                    nlp.parameters.mx,
-                    nlp.stochastic_variables.mx,
-                    nlp.states_dot.scaled.mx_reduced,
-                ],
-                [dynamics_eval.defects],
-                ["x", "u", "p", "s", "xdot"],
-                ["defects"],
-            )
-            if nlp.dynamics_type.expand:
-                try:
-                    nlp.noised_implicit_dynamics_func = nlp.noised_implicit_dynamics_func.expand()
-                except Exception as me:
-                    RuntimeError(
-                        f"An error occurred while executing the 'expand()' function for the dynamic function. "
-                        f"Please review the following casadi error message for more details.\n"
-                        "Several factors could be causing this issue. One of the most likely is the inability to "
-                        "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
-                        "Original casadi error message:\n"
-                        f"{me}"
+            if dynamics_eval.defects is not None:
+                nlp.implicit_dynamics_func.append(
+                    Function(
+                        "DynamicsDefects",
+                        [
+                            nlp.states.scaled.mx_reduced,
+                            nlp.controls.scaled.mx_reduced,
+                            nlp.parameters.mx,
+                            nlp.stochastic_variables.scaled.mx,
+                            nlp.states_dot.scaled.mx_reduced,
+                        ],
+                        [dynamics_eval.defects],
+                        ["x", "u", "p", "s", "xdot"],
+                        ["defects"],
+                        {"allow_free": allow_free_variables},
                     )
+                )
+                if nlp.dynamics_type.expand:
+                    try:
+                        nlp.implicit_dynamics_func[-1] = nlp.implicit_dynamics_func[-1].expand()
+                    except Exception as me:
+                        RuntimeError(
+                            f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                            f"Please review the following casadi error message for more details.\n"
+                            "Several factors could be causing this issue. One of the most likely is the inability to "
+                            "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                            "Original casadi error message:\n"
+                            f"{me}"
+                        )
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):

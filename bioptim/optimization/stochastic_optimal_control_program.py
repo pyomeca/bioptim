@@ -227,7 +227,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
-            self.nlp[i].ode_solver.prepare_noised_dynamic_integrator(self, self.nlp[i])
 
     def _declare_multi_node_penalties(
         self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList, constraints: ConstraintList

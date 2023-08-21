@@ -1,8 +1,15 @@
+from enum import Enum
 from typing import Callable
-from casadi import MX, SX
+from casadi import MX
 
 from .biomodel import BioModel
 from ..misc.mapping import BiMappingList
+
+
+class NoiseType(Enum):
+    NONE = "none"
+    MAGNITUDE = "magnitude"
+    SYMBOLIC = "symbolic"
 
 
 class StochasticBioModel(BioModel):
@@ -19,7 +26,14 @@ class StochasticBioModel(BioModel):
     sensory_reference_function: Callable
     motor_noise_mapping: BiMappingList
 
-    def stochastic_dynamics(self, q, qdot, tau, ref, k, symbolic_noise=False, with_gains=True):
+    matrix_shape_k: tuple[int, int]
+    matrix_shape_c: tuple[int, int]
+    matrix_shape_a: tuple[int, int]
+    matrix_shape_cov: tuple[int, int]
+    matrix_shape_cov_cholesky: tuple[int, int]
+    matrix_shape_m: tuple[int, int]
+
+    def stochastic_dynamics(self, q, qdot, tau, ref, k, noise_type: NoiseType, with_gains=True):
         """The stochastic dynamics that should be applied to the model"""
 
     @staticmethod
