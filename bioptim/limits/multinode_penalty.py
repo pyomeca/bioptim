@@ -365,7 +365,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
 
-            val = M_matrix @ DG_DZ - MX_eye(controllers[0].stochastic_variables["m"].matrix_shape[0])
+            val = M_matrix @ DG_DZ - MX_eye(M_matrix.shape[0])
 
             out_vector = StochasticBioModel.reshape_to_vector(val)
             return out_vector

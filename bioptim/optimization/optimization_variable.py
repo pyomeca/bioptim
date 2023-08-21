@@ -4,7 +4,6 @@ import numpy as np
 from casadi import MX, SX, vertcat
 
 from ..misc.mapping import BiMapping
-from ..misc.enums import Node
 
 
 class OptimizationVariable:
@@ -42,7 +41,6 @@ class OptimizationVariable:
         index: [range, list],
         mapping: BiMapping = None,
         parent_list=None,
-        matrix_shape: tuple = None,
     ):
         """
         Parameters
@@ -61,7 +59,6 @@ class OptimizationVariable:
         self.original_cx: list = cx_start
         self.index: [range, list] = index
         self.mapping: BiMapping = mapping
-        self.matrix_shape = matrix_shape
         self.parent_list: OptimizationVariableList = parent_list
 
     def __len__(self):
@@ -137,84 +134,6 @@ class OptimizationVariable:
                 "Typically 'all' cannot be used"
             )
         return self.parent_list.cx_end[self.index, :]
-
-    @staticmethod
-    def reshape_to_vector(matrix):
-        """
-        Restore the vector form of the matrix
-        """
-        shape_0, shape_1 = matrix.shape[0], matrix.shape[1]
-        vector = MX.zeros(shape_0 * shape_1)
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                vector[shape_0 * s1 + s0] = matrix[s0, s1]
-        return vector
-
-    def reshape_to_matrix(self, node: Node):
-        """
-        Restore the matrix form of the variables
-        """
-        if node == Node.START:
-            var = self.cx_start
-        elif node == Node.MID:
-            var = self.cx_mid
-        elif node == Node.END:
-            var = self.cx_end
-        else:
-            raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
-
-        shape_0, shape_1 = self.matrix_shape[0], self.matrix_shape[1]
-        matrix = MX(shape_0, shape_1)
-        for s0 in range(shape_1):
-            for s1 in range(shape_0):
-                matrix[s1, s0] = var[s0 * shape_0 + s1]
-        return matrix
-
-    def reshape_sym_to_matrix(self, variable):
-        """
-        Restore the matrix form of the variables
-        """
-        shape_0, shape_1 = self.matrix_shape[0], self.matrix_shape[1]
-        matrix = MX(shape_0, shape_1)
-        for s0 in range(shape_1):
-            for s1 in range(shape_0):
-                matrix[s1, s0] = variable[s0 * shape_0 + s1]
-        return matrix
-
-    def reshape_to_cholesky_matrix(self, node: Node):
-        """
-        Restore the lower diagonal matrix form of the variables vector
-        """
-        if node == Node.START:
-            var = self.cx_start
-        elif node == Node.MID:
-            var = self.cx_mid
-        elif node == Node.END:
-            var = self.cx_end
-        else:
-            raise RuntimeError("Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end")
-
-        shape_0 = self.matrix_shape[0]
-        matrix = MX.zeros(shape_0, shape_0)
-        i = 0
-        for s0 in range(shape_0):
-            for s1 in range(s0 + 1):
-                matrix[s1, s0] = var[i]
-                i += 1
-        return matrix
-
-    def reshape_sym_to_cholesky_matrix(self, variable):
-        """
-        Restore the lower diagonal matrix form of the variables vector
-        """
-        shape_0 = self.matrix_shape[0]
-        matrix = MX.zeros(shape_0, shape_0)
-        i = 0
-        for s0 in range(shape_0):
-            for s1 in range(s0 + 1):
-                matrix[s1, s0] = variable[i]
-                i += 1
-        return matrix
 
 
 class OptimizationVariableList:
@@ -358,7 +277,7 @@ class OptimizationVariableList:
 
         self.fake_elements.append(OptimizationVariable(name, mx, None, index, bimapping, self))
 
-    def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping, matrix_shape: tuple):
+    def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
         """
         Add a new variable to the list
 
@@ -370,8 +289,6 @@ class OptimizationVariableList:
             The list of SX or MX variable associated with this variable
         mx: MX
             The MX variable associated with this variable
-        bimapping: BiMapping
-            The Mapping of the MX against CX
         """
 
         if len(cx) < 3:
@@ -390,7 +307,7 @@ class OptimizationVariableList:
 
         self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
         self.elements.append(
-            OptimizationVariable(name, mx, cx, index, bimapping, parent_list=self, matrix_shape=matrix_shape)
+            OptimizationVariable(name, mx, cx, index, bimapping, parent_list=self)
         )
 
     def append_from_scaled(
@@ -427,7 +344,7 @@ class OptimizationVariableList:
 
         self.mx_reduced = scaled_optimization_variable.mx_reduced
         var = scaled_optimization_variable[name]
-        self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self, var.matrix_shape))
+        self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self))
 
     @property
     def cx(self):
@@ -660,7 +577,6 @@ class OptimizationVariableContainer:
         cx_scaled: list,
         mx: MX,
         mapping: BiMapping,
-        matrix_shape: tuple[int, int],
         node_index: int,
     ):
         """
@@ -681,7 +597,7 @@ class OptimizationVariableContainer:
         node_index
             The index of the node for the scaled variable
         """
-        self._scaled[node_index].append(name, cx_scaled, mx, mapping, matrix_shape)
+        self._scaled[node_index].append(name, cx_scaled, mx, mapping)
         self._unscaled[node_index].append_from_scaled(name, cx, self._scaled[node_index])
 
     def __contains__(self, item: str):
@@ -725,14 +641,3 @@ class OptimizationVariableContainer:
         if self._iter_idx > len(self):
             raise StopIteration
         return self.unscaled[self._iter_idx - 1].name
-
-    def reshape_to_vector(self, matrix):
-        """
-        Restore the vector form of the matrix
-        """
-        shape_0, shape_1 = matrix.shape[0], matrix.shape[1]
-        vector = MX.zeros(shape_0 * shape_1)
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                vector[shape_0 * s1 + s0] = matrix[s0, s1]
-        return vector

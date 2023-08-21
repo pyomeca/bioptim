@@ -344,8 +344,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             A reference to the ocp.
         nlp: NonLinearProgram
             A reference to the phase.
-        expand: bool
-            If the dynamics should be expanded with casadi.
         """
 
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -354,11 +352,9 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             lambdas = []
             for i in range(self.bio_model.nb_holonomic_constraints):
                 lambdas.append(f"lambda_{i}")
-            matrix_shape = (len(lambdas), 1)
             ConfigureProblem.configure_new_variable(
                 "lambdas",
                 lambdas,
-                matrix_shape,
                 ocp,
                 nlp,
                 as_states=True,

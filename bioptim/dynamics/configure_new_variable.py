@@ -1,5 +1,3 @@
-from typing import Callable, Any
-
 from casadi import MX, SX, vertcat
 import numpy as np
 
@@ -64,7 +62,6 @@ class NewVariableConfiguration:
         self,
         name: str,
         name_elements: list,
-        matrix_shape: tuple,
         ocp,
         nlp,
         as_states: bool,
@@ -86,8 +83,6 @@ class NewVariableConfiguration:
             The name of the new variable to add
         name_elements: list[str]
             The name of each element of the vector
-        matrix_shape: tuple
-            The shape of the matrix to reconstruct from this variable vector
         ocp: OptimalControlProgram
             A reference to the ocp
         nlp: NonLinearProgram
@@ -114,7 +109,6 @@ class NewVariableConfiguration:
 
         self.name = name
         self.name_elements = name_elements
-        self.matrix_shape = matrix_shape
         self.ocp = ocp
         self.nlp = nlp
         self.as_states = as_states
@@ -410,7 +404,6 @@ class NewVariableConfiguration:
                     cx_scaled[0],
                     self.mx_states,
                     self.nlp.variable_mappings[self.name],
-                    self.matrix_shape,
                     node_index,
                 )
                 if not self.skip_plot:
@@ -454,7 +447,6 @@ class NewVariableConfiguration:
                     cx_scaled[0],
                     self.mx_controls,
                     self.nlp.variable_mappings[self.name],
-                    self.matrix_shape,
                     node_index,
                 )
 
@@ -495,7 +487,6 @@ class NewVariableConfiguration:
                     cx_scaled[0],
                     self.mx_states_dot,
                     self.nlp.variable_mappings[self.name],
-                    self.matrix_shape,
                     node_index,
                 )
 
@@ -511,7 +502,6 @@ class NewVariableConfiguration:
                     cx_scaled[0],
                     self.mx_stochastic,
                     self.nlp.variable_mappings[self.name],
-                    self.matrix_shape,
                     node_index,
                 )
 
@@ -589,11 +579,10 @@ def _manage_fatigue_to_new_variable(
     plot_factor = fatigue_var[0].models.plot_factor()
     for i, meta_suffix in enumerate(meta_suffixes):
         var_names_with_suffix.append(f"{name}_{meta_suffix}" if not multi_interface else f"{name}")
-        matrix_shape = (n_elements, 1)
 
         if split_controls:
             NewVariableConfiguration(
-                var_names_with_suffix[-1], name_elements, matrix_shape, ocp, nlp, as_states, as_controls, skip_plot=True
+                var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
             )
             nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
                 lambda t, x, u, p, s, key: u[nlp.controls[key].index, :],
@@ -603,9 +592,7 @@ def _manage_fatigue_to_new_variable(
                 color=color[i],
             )
         elif i == 0:
-            NewVariableConfiguration(
-                f"{name}", name_elements, matrix_shape, ocp, nlp, as_states, as_controls, skip_plot=True
-            )
+            NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True)
             nlp.plot[f"{name}_controls"] = CustomPlot(
                 lambda t, x, u, p, s, key: u[nlp.controls[key].index, :],
                 plot_type=PlotType.STEP,
@@ -616,7 +603,7 @@ def _manage_fatigue_to_new_variable(
 
         for p, params in enumerate(fatigue_suffix):
             name_tp = f"{var_names_with_suffix[-1]}_{params}"
-            NewVariableConfiguration(name_tp, name_elements, matrix_shape, ocp, nlp, True, False, skip_plot=True)
+            NewVariableConfiguration(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
             nlp.plot[name_tp] = CustomPlot(
                 lambda t, x, u, p, s, key, mod: mod * x[nlp.states[key].index, :],
                 plot_type=PlotType.INTEGRATED,

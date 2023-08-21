@@ -108,7 +108,6 @@ def generate_data(
             cx_scaled=[symbolic_q, symbolic_q, symbolic_q],
             mx=symbolic_q,
             mapping=nlp.variable_mappings["q"],
-            matrix_shape=(3, 1),
             node_index=node_index,
         )
         nlp.states.append(
@@ -117,7 +116,6 @@ def generate_data(
             cx_scaled=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
             mx=symbolic_qdot,
             mapping=nlp.variable_mappings["qdot"],
-            matrix_shape=(3, 1),
             node_index=node_index,
         )
 
@@ -127,7 +125,6 @@ def generate_data(
             cx_scaled=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
             mx=symbolic_qdot,
             mapping=nlp.variable_mappings["qdot"],
-            matrix_shape=(3, 1),
             node_index=node_index,
         )
         nlp.states_dot.append(
@@ -136,7 +133,6 @@ def generate_data(
             cx_scaled=[symbolic_qddot, symbolic_qddot, symbolic_qddot],
             mx=symbolic_qddot,
             mapping=nlp.variable_mappings["qddot"],
-            matrix_shape=(3, 1),
             node_index=node_index,
         )
 
@@ -147,7 +143,6 @@ def generate_data(
                 cx_scaled=[symbolic_tau, symbolic_tau, symbolic_tau],
                 mx=symbolic_tau,
                 mapping=nlp.variable_mappings["tau"],
-                matrix_shape=(3, 1),
                 node_index=node_index,
             )
         nlp.controls.append(
@@ -156,7 +151,6 @@ def generate_data(
             cx_scaled=[symbolic_mus, symbolic_mus, symbolic_mus],
             mx=symbolic_mus,
             mapping=nlp.variable_mappings["muscles"],
-            matrix_shape=(3, 1),
             node_index=node_index,
         )
 
