@@ -334,13 +334,11 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             # TODO: Charbie -> This is only True for not mapped variables (have to think on how to generalize it)
             M_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
 
-            dx = controllers[0].noised_dynamics(
+            dx = controllers[0].secondary_dynamics(
                 controllers[0].states.cx_start,
                 controllers[0].controls.cx_start,
                 controllers[0].parameters.cx_start,
                 controllers[0].stochastic_variables.cx_start,
-                controllers[0].model.motor_noise_sym,
-                controllers[0].model.sensory_noise_sym,
             )
 
             DdZ_DX_fun = Function(
@@ -472,7 +470,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controllers[0].parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controllers[0].stochastic_variables.shape, 1)
 
-            dx = controllers[0].noised_dynamics(
+            dx = controllers[0].secondary_dynamics(
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,
                 parameters_sym,
@@ -596,7 +594,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 horzcat(x_qdot_root, z_qdot_root),
                 horzcat(x_qdot_joints, z_qdot_joints),
             )
-            dynamics = controllers[0].integrate_noised_dynamics(
+            dynamics = controllers[0].integrate_secondary_dynamics(
                 x0=states_full,
                 p=controllers[0].controls.cx_start,
                 params=controllers[0].parameters.cx_start,

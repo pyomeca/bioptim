@@ -373,12 +373,7 @@ class ConfigureProblem:
             with_contact=with_contact,
             with_friction=with_friction,
         )
-
-        # @pariterre: what is this, how to set it ?
-        # if nlp.dynamics_type.noised_dynamic_function:
-        #     ConfigureProblem.configure_stochastic_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
-        # else:
-        ConfigureProblem.configure_stochastic_dynamics_function(
+        ConfigureProblem.configure_secondary_dynamics_function(
             ocp,
             nlp,
             DynamicsFunctions.stochastic_torque_driven,
@@ -800,7 +795,7 @@ class ConfigureProblem:
                     )
 
     @staticmethod
-    def configure_stochastic_dynamics_function(ocp, nlp, noised_dyn_func, **extra_params):
+    def configure_secondary_dynamics_function(ocp, nlp, secondary_dyn_func, **extra_params):
         """
         Configure the dynamics of the stochastic system that is impacted by motor and sensory noise
 
@@ -810,13 +805,13 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        noised_dyn_func: Callable[states, controls, param]
+        secondary_dyn_func: Callable[states, controls, param]
             The function to get the derivative of the states
         """
         nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
-        dynamics_eval = noised_dyn_func(
+        dynamics_eval = secondary_dyn_func(
             nlp.states.scaled.mx_reduced,
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.mx,
@@ -828,23 +823,21 @@ class ConfigureProblem:
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
 
-        nlp.noised_dynamics_func = Function(
+        nlp.secondary_dynamics_func = Function(
             "NoisedForwardDyn",
             [
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.mx,
-                nlp.model.motor_noise_sym,
-                nlp.model.sensory_noise_sym,
             ],
             [dynamics_dxdt],
-            ["x", "u", "p", "s", "motor_noise", "sensory_noise"],
+            ["x", "u", "p", "s"],
             ["xdot"],
         )
         if nlp.dynamics_type.expand:
             try:
-                nlp.noised_dynamics_func = nlp.noised_dynamics_func.expand()
+                nlp.secondary_dynamics_func = nlp.secondary_dynamics_func.expand()
             except Exception as me:
                 RuntimeError(
                     f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -864,11 +857,9 @@ class ConfigureProblem:
                     nlp.parameters.mx,
                     nlp.stochastic_variables.mx,
                     nlp.states_dot.scaled.mx_reduced,
-                    nlp.model.motor_noise_sym,
-                    nlp.model.sensory_noise_sym,
                 ],
                 [dynamics_eval.defects],
-                ["x", "u", "p", "s", "xdot", "motor_noise", "sensory_noise"],
+                ["x", "u", "p", "s", "xdot"],
                 ["defects"],
             )
             if nlp.dynamics_type.expand:

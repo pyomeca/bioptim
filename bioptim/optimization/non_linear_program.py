@@ -129,9 +129,9 @@ class NonLinearProgram:
         self.dynamics = []
         self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func = None
-        self.noised_dynamics_func = None
+        self.secondary_dynamics_func = None
         self.implicit_dynamics_func = None
-        self.noised_implicit_dynamics_func = None
+        self.secondary_implicit_dynamics_func = None
         self.dynamics_type = None
         self.external_forces: list[Any] = []
         self.g = []

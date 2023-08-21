@@ -195,16 +195,16 @@ class PenaltyController:
         return self._nlp.dynamics[self.node_index]
 
     @property
-    def integrate_noised_dynamics(self):
-        return self._nlp.noised_dynamics[self.node_index]
+    def integrate_secondary_dynamics(self):
+        return self._nlp.secondary_dynamics[self.node_index]
 
     @property
     def dynamics(self):
         return self._nlp.dynamics_func
 
     @property
-    def noised_dynamics(self):
-        return self._nlp.noised_dynamics_func
+    def secondary_dynamics(self):
+        return self._nlp.secondary_dynamics_func
 
     @property
     def states_scaled(self) -> OptimizationVariableList:

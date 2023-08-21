@@ -147,10 +147,10 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
             states, controls, parameters, stochastic_variables, nlp, with_gains=False
         ),
     )
-    ConfigureProblem.configure_stochastic_dynamics_function(
+    ConfigureProblem.configure_secondary_dynamics_function(
         ocp,
         nlp,
-        noised_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
+        secondary_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
             states, controls, parameters, stochastic_variables, nlp, with_gains=True
         ),
     )

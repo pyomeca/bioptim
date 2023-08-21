@@ -659,13 +659,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controller.parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controller.stochastic_variables.shape, 1)
 
-            dx = controller.noised_dynamics(
+            dx = controller.secondary_dynamics(
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,  # Controls
                 parameters_sym,  # Parameters
                 stochastic_sym,  # Stochastic variables
-                controller.model.motor_noise_sym,
-                controller.model.sensory_noise_sym,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -752,7 +750,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(x_qdot_root, z_qdot_root),
                 horzcat(x_qdot_joints, z_qdot_joints),
             )
-            dynamics = controller.integrate_noised_dynamics(
+            dynamics = controller.integrate_secondary_dynamics(
                 x0=states_full,
                 p=controller.controls.cx_start,
                 params=controller.parameters.cx_start,
