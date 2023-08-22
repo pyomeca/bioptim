@@ -659,33 +659,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controller.parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controller.stochastic_variables.shape, 1)
 
-            dynamics_with_noise = Function(
-                "dynamics_with_noise",
-                [q_root,
-                 q_joints,
-                 qdot_root,
-                 qdot_joints,
-                 tau_joints,
-                 parameters_sym,
-                 stochastic_sym,
-                 controller.model.motor_noise_sym,
-                 controller.model.sensory_noise_sym
-                 ],
-                [controller.extra_dynamics(0)(vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
+            dx = controller.extra_dynamics(0)(vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                     tau_joints,
                     parameters_sym,
-                    stochastic_sym,)]
-            )
-            dx = dynamics_with_noise(
-                q_root,
-                q_joints,
-                qdot_root,
-                qdot_joints,
-                tau_joints,
-                parameters_sym,
-                stochastic_sym,
-                controller.model.motor_noise_sym,
-                controller.model.sensory_noise_sym)
+                    stochastic_sym,)
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
                 range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu)
@@ -772,32 +749,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(x_qdot_joints, z_qdot_joints),
             )
 
-            # Restate the dynamics function so noise_sym can be used
-            dynamics_tp = Function(
-                "dynamics_with_noise",
-                [
-                    states_full,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ]
-                [controller.integrate_extra_dynamics(0)],
-                ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
-                ["xf"],
-            )
-            dynamics = dynamics_tp(
-                x0=states_full,
-                p=controller.controls.cx_start,
-                params=controller.parameters.cx_start,
-                s=controller.stochastic_variables.cx_start,
-                motor_noise=controller.model.motor_noise_sym,
-                sensory_noise=controller.model.sensory_noise_sym)
+            dynamics_xf, dynamics_xall, dynamics_defects = controller.integrate_extra_dynamics(0)(states_full,
+                                controller.controls.cx_start,
+                                controller.parameters.cx_start,
+                                controller.stochastic_variables.cx_start,)
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-            final_polynomial_evaluation = dynamics["xf"][non_root_index_continuity]
-            defects = dynamics["defects"]
+            final_polynomial_evaluation = dynamics_xf[non_root_index_continuity]
+            defects = dynamics_defects
             defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
 
             df_dz = horzcat(

@@ -399,7 +399,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             val = m_matrix @ DG_DZ - MX_eye(2 * nu)
 
-            out_vector =StochasticBioModel.reshape_to_vector(val)
+            out_vector = StochasticBioModel.reshape_to_vector(val)
             return out_vector
 
         @staticmethod
@@ -462,34 +462,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controllers[0].parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controllers[0].stochastic_variables.shape, 1)
 
-            dynamics_with_noise = Function(
-                "dynamics_with_noise",
-                [q_root,
-                 q_joints,
-                 qdot_root,
-                 qdot_joints,
-                 tau_joints,
-                 parameters_sym,
-                 stochastic_sym,
-                 controllers[0].model.motor_noise_sym,
-                 controllers[0].model.sensory_noise_sym
-                 ],
-                [controllers[0].extra_dynamics(0)(vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
+            dx = controllers[0].extra_dynamics(0)(vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                     tau_joints,
                     parameters_sym,
-                    stochastic_sym,)]
-            )
-            dx = dynamics_with_noise(
-                q_root,
-                q_joints,
-                qdot_root,
-                qdot_joints,
-                tau_joints,
-                parameters_sym,
-                stochastic_sym,
-                controllers[0].model.motor_noise_sym,
-                controllers[0].model.sensory_noise_sym)
-
+                    stochastic_sym,)
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
                 range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu)
@@ -588,7 +564,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
             else:
                 cov_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["cov"].cx_start, controllers[0].model.matrix_shape_cov)
-                cov_matrix_next =StochasticBioModel.reshape_to_matrix( controllers[1].stochastic_variables["cov"].cx_start, controllers[1].model.matrix_shape_cov)
+                cov_matrix_next = StochasticBioModel.reshape_to_matrix( controllers[1].stochastic_variables["cov"].cx_start, controllers[1].model.matrix_shape_cov)
             m_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
 
             x_q_root = controllers[0].cx.sym("x_q_root", nb_root, 1)
@@ -607,23 +583,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 horzcat(x_qdot_joints, z_qdot_joints),
             )
 
-            dynamics = Function(
-                "dynamics_with_noise",
-                [
-                    states_full,
-                    controllers[0].controls.cx_start,
-                    controllers[0].parameters.cx_start,
-                    controllers[0].stochastic_variables.cx_start,
-                    controllers[0].model.motor_noise_sym,
-                    controllers[0].model.sensory_noise_sym,
-                ]
-                [controllers[0].integrate_extra_dynamics(0)],
-                ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
-                ["xf", "defects"],
-            )
+            dynamics_xf, dynamics_xall, dynamics_defects = controllers[0].integrate_extra_dynamics(0)(states_full,
+                                controllers[0].controls.cx_start,
+                                controllers[0].parameters.cx_start,
+                                controllers[0].stochastic_variables.cx_start,)
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-            defects = dynamics["defects"]
+            defects = dynamics_defects
             defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
 
             sigma_w = vertcat(controllers[0].model.sensory_noise_sym, controllers[0].model.motor_noise_sym)
