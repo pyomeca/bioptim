@@ -331,7 +331,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             dt = controllers[0].tf / controllers[0].ns
 
-            # TODO: Charbie -> This is only True for not mapped variables (have to think on how to generalize it)
             M_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
 
             dx = controllers[0].extra_dynamics(0)(controllers[0].states.cx_start, controllers[0].controls.cx_start, controllers[0].parameters.cx_start, controllers[0].stochastic_variables.cx_start)

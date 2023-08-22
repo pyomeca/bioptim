@@ -18,9 +18,6 @@ def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochast
     if noise_type == NoiseType.NONE:
         motor_noise = 0
         sensory_noise = 0
-    # elif noise_type == NoiseType.MAGNITUDE:
-    #     motor_noise = self.motor_noise_magnitude
-    #     sensory_noise = self.sensory_noise_magnitude
     elif noise_type == NoiseType.SYMBOLIC:
         motor_noise = nlp.model.motor_noise_sym
         sensory_noise = nlp.model.sensory_noise_sym

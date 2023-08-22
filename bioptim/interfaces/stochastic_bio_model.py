@@ -8,7 +8,6 @@ from ..misc.mapping import BiMappingList
 
 class NoiseType(Enum):
     NONE = "none"
-    # MAGNITUDE = "magnitude"
     SYMBOLIC = "symbolic"
 
 
