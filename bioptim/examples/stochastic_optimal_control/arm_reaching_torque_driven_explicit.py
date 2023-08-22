@@ -425,7 +425,14 @@ def prepare_socp(
     dynamics = DynamicsList()
     dynamics.add(
         configure_stochastic_optimal_control_problem,
-        dynamic_function=stochastic_forward_dynamics,
+        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: stochastic_forward_dynamics(
+            states,
+            controls,
+            parameters,
+            stochastic_variables,
+            nlp,
+            with_noise=with_noise,
+        ),
         expand=False,
     )
 
