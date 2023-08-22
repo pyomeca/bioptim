@@ -7,7 +7,6 @@ import numpy as np
 from ..misc.utils import check_version
 from ..misc.mapping import BiMappingList
 from .biorbd_model import BiorbdModel
-from .stochastic_bio_model import StochasticBioModel, NoiseType
 
 check_version(biorbd, "1.9.9", "1.10.0")
 

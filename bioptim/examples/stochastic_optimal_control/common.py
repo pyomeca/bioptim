@@ -3,10 +3,10 @@ This file contains the functions that are common for multiple stochastic example
 """
 
 import casadi as cas
-from bioptim import NoiseType, StochasticBioModel, DynamicsFunctions
+from bioptim import StochasticBioModel, DynamicsFunctions
 
 
-def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, noise_type: NoiseType, with_gains=True):
+def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, with_noise=True):
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -15,18 +15,15 @@ def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochast
     k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
     k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, nlp.model.matrix_shape_k)
 
-    if noise_type == NoiseType.NONE:
-        motor_noise = 0
-        sensory_noise = 0
-    elif noise_type == NoiseType.SYMBOLIC:
+    motor_noise = 0
+    sensory_noise = 0
+    if with_noise:
         motor_noise = nlp.model.motor_noise_sym
         sensory_noise = nlp.model.sensory_noise_sym
-    else:
-        ValueError("Wrong noise_type")
 
     tau_fb = tau
 
-    if with_gains:
+    if with_noise:
         end_effector = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
         tau_fb += get_excitation_with_feedback(k_matrix, end_effector, ref, sensory_noise)
 

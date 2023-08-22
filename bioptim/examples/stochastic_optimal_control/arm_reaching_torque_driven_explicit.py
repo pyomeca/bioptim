@@ -34,7 +34,6 @@ from bioptim import (
     InitialGuessList,
     Axis,
     ControlType,
-    NoiseType,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
@@ -46,8 +45,7 @@ def stochastic_forward_dynamics(
     parameters: cas.MX | cas.SX,
     stochastic_variables: cas.MX | cas.SX,
     nlp: NonLinearProgram,
-    with_gains: bool,
-    noise_type: NoiseType,
+    with_noise: bool,
 ) -> DynamicsEvaluation:
     """
     The dynamic function of the states including feedback gains.
@@ -64,17 +62,15 @@ def stochastic_forward_dynamics(
         The stochastic variables
     nlp: NonLinearProgram
         The current non-linear program
-    noise_type: NoiseType
-        If the noise should be symbolic or numeric (being equal to 0 or magnitude)
-    with_gains: bool
-        If the feedback gains should be used
+    with_noise: bool
+        If noise should be added (including feedback gains)
     """
 
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
     qdddot = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
 
-    dqdot_constraint = dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, noise_type=noise_type, with_gains=with_gains)
+    dqdot_constraint = dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, with_noise=with_noise)
     defects = cas.vertcat(dqdot_constraint - qddot)
 
     return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_constraint, qdddot), defects=defects)
@@ -102,14 +98,14 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
         ocp,
         nlp,
         dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, noise_type=NoiseType.NONE, with_gains=False
+            states, controls, parameters, stochastic_variables, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
         dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, noise_type=NoiseType.SYMBOLIC, with_gains=True,
+            states, controls, parameters, stochastic_variables, nlp, with_noise=True,
         ),
         allow_free_variables=True,
     )
@@ -179,8 +175,7 @@ def get_cov_mat(nlp, node_index):
         nlp.parameters,
         nlp.stochastic_variables.cx_start,
         nlp,
-        noise_type=NoiseType.SYMBOLIC,
-        with_gains=True,
+        with_noise=True,
     )
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym))

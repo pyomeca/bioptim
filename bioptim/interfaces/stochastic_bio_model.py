@@ -6,11 +6,6 @@ from .biomodel import BioModel
 from ..misc.mapping import BiMappingList
 
 
-class NoiseType(Enum):
-    NONE = "none"
-    SYMBOLIC = "symbolic"
-
-
 class StochasticBioModel(BioModel):
     """
     This class allows to define a model that can be used in a stochastic optimal control problem.
@@ -32,7 +27,7 @@ class StochasticBioModel(BioModel):
     matrix_shape_cov_cholesky: tuple[int, int]
     matrix_shape_m: tuple[int, int]
 
-    def stochastic_dynamics(self, q, qdot, tau, ref, k, noise_type: NoiseType, with_gains=True):
+    def stochastic_dynamics(self, q, qdot, tau, ref, k, with_noise=True):
         """The stochastic dynamics that should be applied to the model"""
 
     @staticmethod

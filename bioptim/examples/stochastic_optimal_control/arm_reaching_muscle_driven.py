@@ -42,7 +42,6 @@ from bioptim import (
     MultinodeConstraintList,
     MultinodeObjectiveList,
     ControlType,
-    NoiseType,
 )
 
 from bioptim.examples.stochastic_optimal_control.leuven_arm_model import LeuvenArmModel
@@ -71,8 +70,7 @@ def stochastic_forward_dynamics(
     stochastic_variables: cas.MX | cas.SX,
     nlp: NonLinearProgram,
     force_field_magnitude,
-    with_gains,
-    noise_type: NoiseType,
+    with_noise,
 ) -> DynamicsEvaluation:
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
@@ -80,18 +78,15 @@ def stochastic_forward_dynamics(
     mus_activations = DynamicsFunctions.get(nlp.states["muscles"], states)
     mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
 
-    if noise_type == NoiseType.NONE:
-        motor_noise = 0
-        sensory_noise = 0
-    elif noise_type == NoiseType.SYMBOLIC:
+    motor_noise = 0
+    sensory_noise = 0
+    if with_noise:
         motor_noise = nlp.model.motor_noise_sym
         sensory_noise = nlp.model.sensory_noise_sym
-    else:
-        ValueError("Wrong noise_type")
 
     mus_excitations_fb = mus_excitations
     noise_torque = np.zeros(nlp.model.motor_noise_magnitude.shape)
-    if with_gains:
+    if with_noise:
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
         k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, nlp.model.matrix_shape_k)
@@ -154,14 +149,14 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
         ocp,
         nlp,
         dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, noise_type=NoiseType.NONE, with_gains=False
+            states, controls, parameters, stochastic_variables, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
         dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, noise_type=NoiseType.SYMBOLIC, with_gains=True
+            states, controls, parameters, stochastic_variables, nlp, with_noise=True
         ),
         allow_free_variables=True,
     )
@@ -201,8 +196,7 @@ def get_cov_mat(nlp, node_index):
         nlp.stochastic_variables.cx_start,
         nlp,
         force_field_magnitude=nlp.model.force_field_magnitude,
-        with_gains=True,
-        noise_type=NoiseType.SYMBOLIC,
+        with_noise=True,
     )
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym))
@@ -338,8 +332,7 @@ def zero_acceleration(controller: PenaltyController, force_field_magnitude: floa
         controller.stochastic_variables.cx_start,
         controller.get_nlp,
         force_field_magnitude=force_field_magnitude,
-        with_gains=False,
-        noise_type=NoiseType.NONE,
+        with_noise=False,
     )
     return dx.dxdt[2:4]
 
@@ -467,15 +460,14 @@ def prepare_socp(
     dynamics = DynamicsList()
     dynamics.add(
         configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_gains, noise_type: stochastic_forward_dynamics(
+        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise, noise_type: stochastic_forward_dynamics(
             states,
             controls,
             parameters,
             stochastic_variables,
             nlp,
             force_field_magnitude=force_field_magnitude,
-            with_gains=with_gains,
-            noise_type=noise_type
+            with_noise=with_noise,
         ),
         expand=False,
     )
@@ -719,7 +711,7 @@ def main():
             stochastic_variables,
             nlp,
             force_field_magnitude=force_field_magnitude,
-            with_gains=True,
+            with_noise=True,
         )
         dyn_fun = cas.Function(
             "dyn_fun",
