@@ -6,29 +6,25 @@ import casadi as cas
 from bioptim import StochasticBioModel, DynamicsFunctions
 
 
-def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, with_noise=True):
+def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, with_noise):
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-    ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
-    k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-    k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, nlp.model.matrix_shape_k)
 
+    tau_feedback = 0
     motor_noise = 0
-    sensory_noise = 0
     if with_noise:
+        ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
+        k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
+        k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, nlp.model.matrix_shape_k)
+
         motor_noise = nlp.model.motor_noise_sym
         sensory_noise = nlp.model.sensory_noise_sym
-
-    tau_fb = tau
-
-    if with_noise:
         end_effector = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
-        tau_fb += get_excitation_with_feedback(k_matrix, end_effector, ref, sensory_noise)
+        tau_feedback = get_excitation_with_feedback(k_matrix, end_effector, ref, sensory_noise)
 
     tau_force_field = get_force_field(q, nlp.model.force_field_magnitude)
-
-    torques_computed = tau_fb + motor_noise + tau_force_field
+    torques_computed = tau + tau_feedback + motor_noise + tau_force_field
 
     mass_matrix = nlp.model.mass_matrix(q)
     non_linear_effects = nlp.model.non_linear_effects(q, qdot)
