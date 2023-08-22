@@ -1371,7 +1371,7 @@ class Solution:
                 )
             else:
                 integrated_sol = solve_ivp_interface(
-                    dynamics_func=nlp.dynamics_func,
+                    dynamics_func=nlp.dynamics_func[0],
                     keep_intermediate_points=keep_intermediate_points,
                     t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
                     x0=x0,
@@ -1473,7 +1473,7 @@ class Solution:
                 )
             else:
                 integrated_sol = solve_ivp_interface(
-                    dynamics_func=nlp.dynamics_func,
+                    dynamics_func=nlp.dynamics_func[0],
                     keep_intermediate_points=keep_intermediate_points,
                     t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
                     x0=x0,

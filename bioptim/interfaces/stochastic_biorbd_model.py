@@ -45,7 +45,7 @@ class StochasticBiorbdModel(BiorbdModel):
         self.n_noise = motor_noise_magnitude.shape[0] + sensory_noise_magnitude.shape[0]
         self.n_noised_controls = n_noised_controls
         if motor_noise_mapping is not None and "tau" in motor_noise_mapping:
-            if self.n_noised_controls != len(motor_noise_mapping["tau"].to_second.map_idx):
+            if self.n_noised_controls != len(motor_noise_mapping["tau"].to_first.map_idx):
                 raise RuntimeError("The number of noised controls must be equal to the number of tau mapping.")
         self.n_collocation_points = n_collocation_points
 
