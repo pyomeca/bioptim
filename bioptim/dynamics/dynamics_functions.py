@@ -221,7 +221,7 @@ class DynamicsFunctions:
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
         k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, nlp.model.matrix_shape_k)
 
-        sensory_input = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
+        sensory_input = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
 
         mapped_motor_noise = nlp.model.motor_noise_sym
         mapped_sensory_feedback_torque = k_matrix @ ((sensory_input - ref) + nlp.model.sensory_noise_sym)

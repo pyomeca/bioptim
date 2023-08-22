@@ -48,8 +48,7 @@ from bioptim import (
 from bioptim.examples.stochastic_optimal_control.leuven_arm_model import LeuvenArmModel
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 
-
-def sensory_reference_function(
+def sensory_reference(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
@@ -74,6 +73,7 @@ def stochastic_forward_dynamics(
     force_field_magnitude,
     with_gains,
 ) -> DynamicsEvaluation:
+
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     mus_activations = DynamicsFunctions.get(nlp.states["muscles"], states)
@@ -86,7 +86,7 @@ def stochastic_forward_dynamics(
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
         k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, nlp.model.matrix_shape_k)
 
-        hand_pos_velo = nlp.model.sensory_reference_function(states, controls, parameters, stochastic_variables, nlp)
+        hand_pos_velo = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
 
         mus_excitations_fb += nlp.model.get_excitation_with_feedback(
             k_matrix, hand_pos_velo, ref, nlp.model.sensory_noise_sym
@@ -294,7 +294,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, controllers[0].model.matrix_shape_k)
 
     # Compute the expected effort
-    hand_pos_velo = controllers[0].model.sensory_reference_function(
+    hand_pos_velo = controllers[0].model.sensory_reference(
         controllers[0].states.cx_start,
         controllers[0].controls.cx_start,
         controllers[0].parameters.cx_start,
@@ -381,7 +381,7 @@ def prepare_socp(
 
     bio_model = LeuvenArmModel(sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
-        sensory_reference_function=sensory_reference_function)
+        sensory_reference=sensory_reference)
     bio_model.force_field_magnitude = force_field_magnitude
 
     shoulder_pos_initial = 0.349065850398866

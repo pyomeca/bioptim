@@ -762,7 +762,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.model.motor_noise_sym,
                     controller.model.sensory_noise_sym,
                 ]
-                [controller.integrate_extra_dynamics(1)],
+                [controller.integrate_extra_dynamics(0)],
                 ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
                 ["xf"],
             )
@@ -881,9 +881,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             ref = controller.stochastic_variables["ref"].cx_start
             sensory_input = controller.model.sensory_reference(
-                model=controller.model,
-                q=controller.states["q"].cx_start,
-                qdot=controller.states["qdot"].cx_start,
+                states=controller.states.cx_start,
+                controls=controller.controls.cx_start,
+                parameters=controller.parameters.cx_start,
+                stochastic_variables=controller.stochastic_variables.cx_start,
+                nlp=controller.get_nlp,
             )
             return sensory_input - ref
 

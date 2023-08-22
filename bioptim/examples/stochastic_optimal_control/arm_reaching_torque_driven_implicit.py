@@ -44,7 +44,7 @@ class ExampleType(Enum):
     BAR = "BAR"
 
 
-def sensory_reference_function(
+def sensory_reference(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
@@ -105,8 +105,10 @@ def prepare_socp(
         biorbd_model_path,
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
-        sensory_reference_function=sensory_reference_function,
-        n_references=4,  # This number must be in agreement with what is declared in sensory_reference_function
+        sensory_reference=sensory_reference,
+        n_references=4,  # This number must be in agreement with what is declared in sensory_reference
+        n_noised_states=4,
+        n_noised_controls=2,
     )
     bio_model.set_friction_coefficients(np.array([[0.05, 0.025], [0.025, 0.05]]))
 

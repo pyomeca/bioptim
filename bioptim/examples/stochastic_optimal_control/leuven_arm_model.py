@@ -18,11 +18,11 @@ class LeuvenArmModel:
             self,
             sensory_noise_magnitude: np.ndarray | DM,
             motor_noise_magnitude: np.ndarray | DM,
-            sensory_reference_function: callable,
+            sensory_reference: callable,
     ):
         self.motor_noise_magnitude = motor_noise_magnitude
         self.sensory_noise_magnitude = sensory_noise_magnitude
-        self.sensory_reference_function = sensory_reference_function
+        self.sensory_reference = sensory_reference
         self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
         self.sensory_noise_sym = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0])
 

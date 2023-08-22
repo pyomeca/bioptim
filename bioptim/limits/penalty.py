@@ -204,7 +204,7 @@ class PenaltyFunctionAbstract:
 
             # Compute the expected effort
             trace_k_sensor_k = trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-            ee = controller.model.sensory_reference_function(
+            ee = controller.model.sensory_reference(
                 states=controller.states.cx_start,
                 controls=controller.controls.cx_start,
                 parameters=controller.parameters.cx_start,

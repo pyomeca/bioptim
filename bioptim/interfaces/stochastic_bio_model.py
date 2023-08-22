@@ -8,7 +8,7 @@ from ..misc.mapping import BiMappingList
 
 class NoiseType(Enum):
     NONE = "none"
-    MAGNITUDE = "magnitude"
+    # MAGNITUDE = "magnitude"
     SYMBOLIC = "symbolic"
 
 
@@ -23,7 +23,7 @@ class StochasticBioModel(BioModel):
     sensory_noise_sym: MX.sym
     motor_noise_sym: MX.sym
 
-    sensory_reference_function: Callable
+    sensory_reference: Callable
     motor_noise_mapping: BiMappingList
 
     matrix_shape_k: tuple[int, int]
