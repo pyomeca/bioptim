@@ -172,7 +172,7 @@ class AcadosInterface(SolverInterface):
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
-        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(x[self.nparams :, :], u, p, s))
+        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func[0](x[self.nparams :, :], u, p, s))
         f_impl = x_dot - f_expl
 
         self.acados_model.f_impl_expr = f_impl
