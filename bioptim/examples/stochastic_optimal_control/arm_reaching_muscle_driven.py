@@ -41,8 +41,8 @@ from bioptim import (
     ConstraintFcn,
     MultinodeConstraintList,
     MultinodeObjectiveList,
-    OdeSolver,
     ControlType,
+    NoiseType,
 )
 
 from bioptim.examples.stochastic_optimal_control.leuven_arm_model import LeuvenArmModel
@@ -72,12 +72,22 @@ def stochastic_forward_dynamics(
     nlp: NonLinearProgram,
     force_field_magnitude,
     with_gains,
+    noise_type: NoiseType,
 ) -> DynamicsEvaluation:
 
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     mus_activations = DynamicsFunctions.get(nlp.states["muscles"], states)
     mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
+
+    if noise_type == NoiseType.NONE:
+        motor_noise = 0
+        sensory_noise = 0
+    elif noise_type == NoiseType.SYMBOLIC:
+        motor_noise = nlp.model.motor_noise_sym
+        sensory_noise = nlp.model.sensory_noise_sym
+    else:
+        ValueError("Wrong noise_type")
 
     mus_excitations_fb = mus_excitations
     noise_torque = np.zeros(nlp.model.motor_noise_magnitude.shape)
@@ -89,9 +99,9 @@ def stochastic_forward_dynamics(
         hand_pos_velo = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
 
         mus_excitations_fb += nlp.model.get_excitation_with_feedback(
-            k_matrix, hand_pos_velo, ref, nlp.model.sensory_noise_sym
+            k_matrix, hand_pos_velo, ref, sensory_noise
         )
-        noise_torque = nlp.model.motor_noise_sym
+        noise_torque = motor_noise
 
     muscles_tau = nlp.model.get_muscle_torque(q, qdot, mus_activations)
 
@@ -138,21 +148,22 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=6, n_references=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
     ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=10)
-    mat_p_init = cas.DM_eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])  # P
-    ConfigureProblem.configure_stochastic_cov_explicit(ocp, nlp, n_noised_states=10, initial_matrix=mat_p_init)
+    mat_cov_init = cas.DM_eye(10) * np.array([1e-4, 1e-4, 1e-7, 1e-7, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6])
+    ConfigureProblem.configure_stochastic_cov_explicit(ocp, nlp, n_noised_states=10, initial_matrix=mat_cov_init)
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
         dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, with_gains=False
+            states, controls, parameters, stochastic_variables, nlp, noise_type=NoiseType.NONE, with_gains=False
         ),
     )
-    ConfigureProblem.configure_secondary_dynamics_function(
+    ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        secondary_dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, with_gains=True
+        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
+            states, controls, parameters, stochastic_variables, nlp, noise_type=NoiseType.SYMBOLIC, with_gains=True
         ),
+        allow_free_variables=True,
     )
 
 
@@ -191,6 +202,7 @@ def get_cov_mat(nlp, node_index):
         nlp,
         force_field_magnitude=nlp.model.force_field_magnitude,
         with_gains=True,
+        noise_type=NoiseType.SYMBOLIC,
     )
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym))
@@ -282,13 +294,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     # Get the symbolic variables
     ref = controllers[0].stochastic_variables["ref"].cx_start
     cov_sym = cas.MX.sym("cov", controllers[0].integrated_values.cx_start.shape[0])
-    cov_matrix = (
-        controllers[0]
-        .integrated_values["cov"]
-        .reshape_sym_to_matrix(
-            cov_sym,
-        )
-    )
+    cov_matrix = StochasticBioModel.reshape_sym_to_matrix(cov_sym, controllers[0].model.matrix_shape_cov)
 
     k = controllers[0].stochastic_variables["k"].cx_start
     k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, controllers[0].model.matrix_shape_k)
@@ -333,6 +339,7 @@ def zero_acceleration(controller: PenaltyController, force_field_magnitude: floa
         controller.get_nlp,
         force_field_magnitude=force_field_magnitude,
         with_gains=False,
+        noise_type=NoiseType.NONE,
     )
     return dx.dxdt[2:4]
 
@@ -460,7 +467,7 @@ def prepare_socp(
     dynamics = DynamicsList()
     dynamics.add(
         configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_gains: stochastic_forward_dynamics(
+        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_gains, noise_type: stochastic_forward_dynamics(
             states,
             controls,
             parameters,
@@ -468,6 +475,7 @@ def prepare_socp(
             nlp,
             force_field_magnitude=force_field_magnitude,
             with_gains=with_gains,
+            noise_type=noise_type
         ),
         expand=False,
     )

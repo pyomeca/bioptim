@@ -142,7 +142,8 @@ class RK(OdeSolverBase):
             "s_unscaled": nlp.stochastic_variables.cx_start,
             "s_scaled": nlp.stochastic_variables.scaled.cx_start,
             "ode": nlp.dynamics_func[dynamics_index],
-            "implicit_ode": nlp.implicit_dynamics_func[dynamics_index],
+            "implicit_ode": nlp.implicit_dynamics_func[dynamics_index] if len(
+                nlp.implicit_dynamics_func) > 0 else nlp.implicit_dynamics_func,
         }
 
         if ode["ode"].size2_out("xdot") != 1:
@@ -264,7 +265,7 @@ class OdeSolver:
                 "s_unscled": horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end),
                 "s_scaled": horzcat(nlp.stochastic_variables.scaled.cx_start, nlp.stochastic_variables.scaled.cx_end),
                 "ode": nlp.dynamics_func[dynamics_index],
-                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index],
+                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index] if len(nlp.implicit_dynamics_func) > 0 else nlp.implicit_dynamics_func,
             }
             ode_opt = {
                 "t0": 0,
@@ -345,7 +346,7 @@ class OdeSolver:
                 "s_unscaled": nlp.stochastic_variables.cx_start,
                 "s_scaled": nlp.stochastic_variables.scaled.cx_start,
                 "ode": nlp.dynamics_func[dynamics_index],
-                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index],
+                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index] if len(nlp.implicit_dynamics_func) > 0 else nlp.implicit_dynamics_func,
             }
             ode_opt = {
                 "t0": 0,
