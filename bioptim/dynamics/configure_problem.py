@@ -336,7 +336,9 @@ class ConfigureProblem:
         n_noised_states = 2 * n_noised_tau
 
         # Stochastic variables
-        ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references)
+        ConfigureProblem.configure_stochastic_k(
+            ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
+        )
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
         n_collocation_points = 1
         if isinstance(problem_type, SocpType.COLLOCATION):
@@ -378,7 +380,6 @@ class ConfigureProblem:
             with_friction=with_friction,
             allow_free_variables=True,
         )
-
 
     @staticmethod
     def torque_derivative_driven(
@@ -690,17 +691,13 @@ class ConfigureProblem:
         name = "q_u"
         names_u = [nlp.model.name_dof[i] for i in nlp.variable_mappings["q"].to_first.map_idx]
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, names_u, ocp, nlp, True, False, False, axes_idx=axes_idx
-        )
+        ConfigureProblem.configure_new_variable(name, names_u, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
         name = "qdot_u"
         names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
         names_udot = [names_qdot[i] for i in nlp.variable_mappings["qdot"].to_first.map_idx]
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, names_udot, ocp, nlp, True, False, False, axes_idx=axes_idx
-        )
+        ConfigureProblem.configure_new_variable(name, names_udot, ocp, nlp, True, False, False, axes_idx=axes_idx)
 
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
@@ -754,7 +751,7 @@ class ConfigureProblem:
                     [dynamics_dxdt],
                     ["x", "u", "p", "s"],
                     ["xdot"],
-                    {"allow_free": allow_free_variables}
+                    {"allow_free": allow_free_variables},
                 ),
             )
 
@@ -1129,9 +1126,7 @@ class ConfigureProblem:
         name = "qdddot"
         name_qdddot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
-        )
+        ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_references: int):
@@ -1452,9 +1447,7 @@ class ConfigureProblem:
         name = "taudot"
         name_taudot = ConfigureProblem._get_kinematics_based_names(nlp, name)
         axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(
-            name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx
-        )
+        ConfigureProblem.configure_new_variable(name, name_taudot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
     def configure_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1472,9 +1465,7 @@ class ConfigureProblem:
         """
 
         name_contact_forces = [name for name in nlp.model.contact_names]
-        ConfigureProblem.configure_new_variable(
-            "fext", name_contact_forces, ocp, nlp, as_states, as_controls
-        )
+        ConfigureProblem.configure_new_variable("fext", name_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1500,9 +1491,7 @@ class ConfigureProblem:
                     if nlp.model.soft_contact_name(ii) not in name_soft_contact_forces
                 ]
             )
-        ConfigureProblem.configure_new_variable(
-            "fext", name_soft_contact_forces, ocp, nlp, as_states, as_controls
-        )
+        ConfigureProblem.configure_new_variable("fext", name_soft_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
     def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):

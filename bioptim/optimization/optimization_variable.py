@@ -306,9 +306,7 @@ class OptimizationVariableList:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
 
         self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
-        self.elements.append(
-            OptimizationVariable(name, mx, cx, index, bimapping, parent_list=self)
-        )
+        self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, parent_list=self))
 
     def append_from_scaled(
         self,

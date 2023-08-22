@@ -15,10 +15,10 @@ class LeuvenArmModel:
     """
 
     def __init__(
-            self,
-            sensory_noise_magnitude: np.ndarray | DM,
-            motor_noise_magnitude: np.ndarray | DM,
-            sensory_reference: callable,
+        self,
+        sensory_noise_magnitude: np.ndarray | DM,
+        motor_noise_magnitude: np.ndarray | DM,
+        sensory_reference: callable,
     ):
         self.motor_noise_magnitude = motor_noise_magnitude
         self.sensory_noise_magnitude = sensory_noise_magnitude

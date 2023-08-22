@@ -331,9 +331,16 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             dt = controllers[0].tf / controllers[0].ns
 
-            M_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
+            M_matrix = StochasticBioModel.reshape_to_matrix(
+                controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m
+            )
 
-            dx = controllers[0].extra_dynamics(0)(controllers[0].states.cx_start, controllers[0].controls.cx_start, controllers[0].parameters.cx_start, controllers[0].stochastic_variables.cx_start)
+            dx = controllers[0].extra_dynamics(0)(
+                controllers[0].states.cx_start,
+                controllers[0].controls.cx_start,
+                controllers[0].parameters.cx_start,
+                controllers[0].stochastic_variables.cx_start,
+            )
 
             DdZ_DX_fun = Function(
                 "DdZ_DX_fun",
@@ -392,8 +399,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
-            m_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
-            a_plus_matrix = StochasticBioModel.reshape_to_matrix(controllers[1].stochastic_variables["a"].cx_start, controllers[1].model.matrix_shape_a)
+            m_matrix = StochasticBioModel.reshape_to_matrix(
+                controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m
+            )
+            a_plus_matrix = StochasticBioModel.reshape_to_matrix(
+                controllers[1].stochastic_variables["a"].cx_start, controllers[1].model.matrix_shape_a
+            )
 
             DG_DZ = MX_eye(a_plus_matrix.shape[0]) - a_plus_matrix * dt / 2
 
@@ -416,11 +427,21 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            cov_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["cov"].cx_start, controllers[0].model.matrix_shape_cov)
-            cov_matrix_next = StochasticBioModel.reshape_to_matrix(controllers[1].stochastic_variables["cov"].cx_start, controllers[1].model.matrix_shape_cov)
-            a_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["a"].cx_start, controllers[0].model.matrix_shape_a)
-            c_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["c"].cx_start, controllers[0].model.matrix_shape_c)
-            m_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
+            cov_matrix = StochasticBioModel.reshape_to_matrix(
+                controllers[0].stochastic_variables["cov"].cx_start, controllers[0].model.matrix_shape_cov
+            )
+            cov_matrix_next = StochasticBioModel.reshape_to_matrix(
+                controllers[1].stochastic_variables["cov"].cx_start, controllers[1].model.matrix_shape_cov
+            )
+            a_matrix = StochasticBioModel.reshape_to_matrix(
+                controllers[0].stochastic_variables["a"].cx_start, controllers[0].model.matrix_shape_a
+            )
+            c_matrix = StochasticBioModel.reshape_to_matrix(
+                controllers[0].stochastic_variables["c"].cx_start, controllers[0].model.matrix_shape_c
+            )
+            m_matrix = StochasticBioModel.reshape_to_matrix(
+                controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m
+            )
 
             sigma_w = vertcat(controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude)
             dt = controllers[0].tf / controllers[0].ns
@@ -452,7 +473,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             nb_root = controllers[0].model.nb_root
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
 
-            c_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["c"].cx_start, controllers[0].model.matrix_shape_c)
+            c_matrix = StochasticBioModel.reshape_to_matrix(
+                controllers[0].stochastic_variables["c"].cx_start, controllers[0].model.matrix_shape_c
+            )
 
             q_root = MX.sym("q_root", nb_root, 1)
             q_joints = MX.sym("q_joints", nu, 1)
@@ -462,10 +485,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controllers[0].parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controllers[0].stochastic_variables.shape, 1)
 
-            dx = controllers[0].extra_dynamics(0)(vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
-                    tau_joints,
-                    parameters_sym,
-                    stochastic_sym,)
+            dx = controllers[0].extra_dynamics(0)(
+                vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
+                tau_joints,
+                parameters_sym,
+                stochastic_sym,
+            )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
                 range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu)
@@ -554,18 +579,26 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 )
 
             if "cholesky_cov" in controllers[0].stochastic_variables.keys():
-                l_cov_matrix = (
-                    StochasticBioModel.reshape_to_cholesky_matrix(controllers[0].stochastic_variables["cholesky_cov"].cx_start, controllers[0].model.matrix_shape_cov_cholesky)
+                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controllers[0].stochastic_variables["cholesky_cov"].cx_start,
+                    controllers[0].model.matrix_shape_cov_cholesky,
                 )
-                l_cov_matrix_next = (
-                    StochasticBioModel.reshape_to_cholesky_matrix(controllers[1].stochastic_variables["cholesky_cov"].cx_start, controllers[1].model.matrix_shape_cov_cholesky)
+                l_cov_matrix_next = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controllers[1].stochastic_variables["cholesky_cov"].cx_start,
+                    controllers[1].model.matrix_shape_cov_cholesky,
                 )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
                 cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
             else:
-                cov_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["cov"].cx_start, controllers[0].model.matrix_shape_cov)
-                cov_matrix_next = StochasticBioModel.reshape_to_matrix( controllers[1].stochastic_variables["cov"].cx_start, controllers[1].model.matrix_shape_cov)
-            m_matrix = StochasticBioModel.reshape_to_matrix(controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m)
+                cov_matrix = StochasticBioModel.reshape_to_matrix(
+                    controllers[0].stochastic_variables["cov"].cx_start, controllers[0].model.matrix_shape_cov
+                )
+                cov_matrix_next = StochasticBioModel.reshape_to_matrix(
+                    controllers[1].stochastic_variables["cov"].cx_start, controllers[1].model.matrix_shape_cov
+                )
+            m_matrix = StochasticBioModel.reshape_to_matrix(
+                controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m
+            )
 
             x_q_root = controllers[0].cx.sym("x_q_root", nb_root, 1)
             x_q_joints = controllers[0].cx.sym("x_q_joints", nu, 1)
@@ -583,10 +616,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 horzcat(x_qdot_joints, z_qdot_joints),
             )
 
-            dynamics_xf, dynamics_xall, dynamics_defects = controllers[0].integrate_extra_dynamics(0)(states_full,
-                                controllers[0].controls.cx_start,
-                                controllers[0].parameters.cx_start,
-                                controllers[0].stochastic_variables.cx_start,)
+            dynamics_xf, dynamics_xall, dynamics_defects = controllers[0].integrate_extra_dynamics(0)(
+                states_full,
+                controllers[0].controls.cx_start,
+                controllers[0].parameters.cx_start,
+                controllers[0].stochastic_variables.cx_start,
+            )
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
             defects = dynamics_defects

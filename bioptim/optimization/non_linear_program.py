@@ -126,7 +126,9 @@ class NonLinearProgram:
         self.control_type = ControlType.NONE
         self.cx = None
         self.dt = None
-        self.dynamics = None  # TODO Change this to a list to include extra_dynamics in a single vector (that matches dynamics_func)
+        self.dynamics = (
+            None  # TODO Change this to a list to include extra_dynamics in a single vector (that matches dynamics_func)
+        )
         self.extra_dynamics = []
         self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func: list = []

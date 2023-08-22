@@ -109,7 +109,8 @@ def prepare_socp(
         n_references=4,  # This number must be in agreement with what is declared in sensory_reference
         n_noised_states=4,
         n_noised_controls=2,
-        friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]))
+        friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
+    )
 
     n_tau = bio_model.nb_tau
     n_q = bio_model.nb_q

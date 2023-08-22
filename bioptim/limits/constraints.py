@@ -604,13 +604,23 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             if "cholesky_cov" in controller.stochastic_variables.keys():
-                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(controller.stochastic_variables["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky)
+                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controller.stochastic_variables["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
+                )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
             else:
-                cov_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov)
-            a_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["a"].cx_start, controller.model.matrix_shape_a)
-            c_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["c"].cx_start, controller.model.matrix_shape_c)
-            m_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m)
+                cov_matrix = StochasticBioModel.reshape_to_matrix(
+                    controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+                )
+            a_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["a"].cx_start, controller.model.matrix_shape_a
+            )
+            c_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["c"].cx_start, controller.model.matrix_shape_c
+            )
+            m_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
+            )
 
             sigma_w = vertcat(
                 controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude
@@ -649,7 +659,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = controller.model.nb_q - controller.model.nb_root
 
-            a_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["a"].cx_start, controller.model.matrix_shape_a)
+            a_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["a"].cx_start, controller.model.matrix_shape_a
+            )
 
             q_root = MX.sym("q_root", nb_root, 1)
             q_joints = MX.sym("q_joints", nu, 1)
@@ -659,10 +671,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controller.parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controller.stochastic_variables.shape, 1)
 
-            dx = controller.extra_dynamics(0)(vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
-                    tau_joints,
-                    parameters_sym,
-                    stochastic_sym,)
+            dx = controller.extra_dynamics(0)(
+                vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
+                tau_joints,
+                parameters_sym,
+                stochastic_sym,
+            )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
                 range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu)
@@ -749,10 +763,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(x_qdot_joints, z_qdot_joints),
             )
 
-            dynamics_xf, dynamics_xall, dynamics_defects = controller.integrate_extra_dynamics(0)(states_full,
-                                controller.controls.cx_start,
-                                controller.parameters.cx_start,
-                                controller.stochastic_variables.cx_start,)
+            dynamics_xf, dynamics_xall, dynamics_defects = controller.integrate_extra_dynamics(0)(
+                states_full,
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+            )
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
             final_polynomial_evaluation = dynamics_xf[non_root_index_continuity]
@@ -844,7 +860,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.model.sensory_noise_magnitude,
             )
 
-            m_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m)
+            m_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
+            )
 
             constraint = df_dz_evaluated.T - dg_dz_evaluated.T @ m_matrix.T
 

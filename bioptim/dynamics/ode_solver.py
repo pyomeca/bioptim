@@ -112,7 +112,6 @@ class RK(OdeSolverBase):
         self.defects_type = DefectType.NOT_APPLICABLE
 
     def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
-
         nlp.states.node_index = node_index
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
@@ -142,8 +141,9 @@ class RK(OdeSolverBase):
             "s_unscaled": nlp.stochastic_variables.cx_start,
             "s_scaled": nlp.stochastic_variables.scaled.cx_start,
             "ode": nlp.dynamics_func[dynamics_index],
-            "implicit_ode": nlp.implicit_dynamics_func[dynamics_index] if len(
-                nlp.implicit_dynamics_func) > 0 else nlp.implicit_dynamics_func,
+            "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
+            if len(nlp.implicit_dynamics_func) > 0
+            else nlp.implicit_dynamics_func,
         }
 
         if ode["ode"].size2_out("xdot") != 1:
@@ -265,7 +265,9 @@ class OdeSolver:
                 "s_unscled": horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end),
                 "s_scaled": horzcat(nlp.stochastic_variables.scaled.cx_start, nlp.stochastic_variables.scaled.cx_end),
                 "ode": nlp.dynamics_func[dynamics_index],
-                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index] if len(nlp.implicit_dynamics_func) > 0 else nlp.implicit_dynamics_func,
+                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
+                if len(nlp.implicit_dynamics_func) > 0
+                else nlp.implicit_dynamics_func,
             }
             ode_opt = {
                 "t0": 0,
@@ -323,7 +325,6 @@ class OdeSolver:
             self.steps = self.polynomial_degree
 
         def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
-
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -346,7 +347,9 @@ class OdeSolver:
                 "s_unscaled": nlp.stochastic_variables.cx_start,
                 "s_scaled": nlp.stochastic_variables.scaled.cx_start,
                 "ode": nlp.dynamics_func[dynamics_index],
-                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index] if len(nlp.implicit_dynamics_func) > 0 else nlp.implicit_dynamics_func,
+                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
+                if len(nlp.implicit_dynamics_func) > 0
+                else nlp.implicit_dynamics_func,
             }
             ode_opt = {
                 "t0": 0,
@@ -404,7 +407,6 @@ class OdeSolver:
             self.steps = 1
 
         def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
-
             if ocp.cx is SX:
                 raise RuntimeError("use_sx=True and OdeSolver.IRK are not yet compatible")
 

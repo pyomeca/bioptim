@@ -47,6 +47,7 @@ from bioptim import (
 from bioptim.examples.stochastic_optimal_control.leuven_arm_model import LeuvenArmModel
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 
+
 def sensory_reference(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
@@ -72,7 +73,6 @@ def stochastic_forward_dynamics(
     force_field_magnitude,
     with_noise,
 ) -> DynamicsEvaluation:
-
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     mus_activations = DynamicsFunctions.get(nlp.states["muscles"], states)
@@ -93,9 +93,7 @@ def stochastic_forward_dynamics(
 
         hand_pos_velo = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
 
-        mus_excitations_fb += nlp.model.get_excitation_with_feedback(
-            k_matrix, hand_pos_velo, ref, sensory_noise
-        )
+        mus_excitations_fb += nlp.model.get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, sensory_noise)
         noise_torque = motor_noise
 
     muscles_tau = nlp.model.get_muscle_torque(q, qdot, mus_activations)
@@ -169,7 +167,9 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     dt = controllers[0].tf / controllers[0].ns
     out = 0
     for i, ctrl in enumerate(controllers):
-        cov_matrix = StochasticBioModel.reshape_to_matrix(ctrl.integrated_values["cov"].cx_start, ctrl.model.matrix_shape_cov)
+        cov_matrix = StochasticBioModel.reshape_to_matrix(
+            ctrl.integrated_values["cov"].cx_start, ctrl.model.matrix_shape_cov
+        )
         p_partial = cov_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(p_partial) * dt
     return out
@@ -379,9 +379,11 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = LeuvenArmModel(sensory_noise_magnitude=sensory_noise_magnitude,
+    bio_model = LeuvenArmModel(
+        sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
-        sensory_reference=sensory_reference)
+        sensory_reference=sensory_reference,
+    )
     bio_model.force_field_magnitude = force_field_magnitude
 
     shoulder_pos_initial = 0.349065850398866

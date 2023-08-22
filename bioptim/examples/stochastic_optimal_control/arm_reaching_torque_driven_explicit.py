@@ -39,6 +39,7 @@ from bioptim import (
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 from bioptim.examples.stochastic_optimal_control.common import dynamics_torque_driven_with_feedbacks
 
+
 def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
@@ -70,7 +71,9 @@ def stochastic_forward_dynamics(
     qddot = DynamicsFunctions.get(nlp.states["qddot"], states)
     qdddot = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
 
-    dqdot_constraint = dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, with_noise=with_noise)
+    dqdot_constraint = dynamics_torque_driven_with_feedbacks(
+        states, controls, parameters, stochastic_variables, nlp, with_noise=with_noise
+    )
     defects = cas.vertcat(dqdot_constraint - qddot)
 
     return DynamicsEvaluation(dxdt=cas.vertcat(qdot, dqdot_constraint, qdddot), defects=defects)
@@ -105,7 +108,12 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
         ocp,
         nlp,
         dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, with_noise=True,
+            states,
+            controls,
+            parameters,
+            stochastic_variables,
+            nlp,
+            with_noise=True,
         ),
         allow_free_variables=True,
     )
@@ -118,10 +126,13 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     dt = controllers[0].tf / controllers[0].ns
     out: Any = 0
     for i, ctrl in enumerate(controllers):
-        cov_matrix = StochasticBioModel.reshape_to_matrix(ctrl.integrated_values["cov"].cx_start, ctrl.model.matrix_shape_cov)
+        cov_matrix = StochasticBioModel.reshape_to_matrix(
+            ctrl.integrated_values["cov"].cx_start, ctrl.model.matrix_shape_cov
+        )
         p_partial = cov_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(p_partial) * dt
     return out
+
 
 def sensory_reference(
     states: cas.MX | cas.SX,
@@ -139,6 +150,7 @@ def sensory_reference(
     hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
     hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
     return hand_pos_velo
+
 
 def get_cov_mat(nlp, node_index):
     """

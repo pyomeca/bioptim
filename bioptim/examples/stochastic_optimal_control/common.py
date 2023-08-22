@@ -7,7 +7,6 @@ from bioptim import StochasticBioModel, DynamicsFunctions
 
 
 def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, with_noise=True):
-
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
@@ -35,6 +34,7 @@ def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochast
     non_linear_effects = nlp.model.non_linear_effects(q, qdot)
 
     return cas.inv(mass_matrix) @ (torques_computed - non_linear_effects - nlp.model.friction_coefficients @ qdot)
+
 
 def get_force_field(q, force_field_magnitude):
     """
@@ -73,5 +73,3 @@ def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
         The sensory noise
     """
     return k @ ((hand_pos_velo - ref) + sensory_noise)
-
-
