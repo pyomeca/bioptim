@@ -41,13 +41,18 @@ class StochasticBiorbdModel(BiorbdModel):
         self.sensory_noise_sym = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0])
         self.motor_noise_mapping = motor_noise_mapping
 
-        n_noise = motor_noise_magnitude.shape[0] + sensory_noise_magnitude.shape[0]
+        self.n_references = n_references
+        self.n_noised_states = n_noised_states
+        self.n_noise = motor_noise_magnitude.shape[0] + sensory_noise_magnitude.shape[0]
+        self.n_noised_controls = n_noised_controls
         if motor_noise_mapping is not None and "tau" in motor_noise_mapping:
-            n_noised_controls = len(motor_noise_mapping["tau"].to_second.map_idx)
+            if self.n_noised_controls != len(motor_noise_mapping["tau"].to_second.map_idx):
+                raise RuntimeError("The number of noised controls must be equal to the number of tau mapping.")
+        self.n_collocation_points = n_collocation_points
 
-        self.matrix_shape_k = (n_noised_controls, n_references)
-        self.matrix_shape_c = (n_noised_states, n_noise)
-        self.matrix_shape_a = (n_noised_states, n_noised_states)
-        self.matrix_shape_cov = (n_noised_states, n_noised_states)
-        self.matrix_shape_cov_cholesky = (n_noised_states, n_noised_states)
-        self.matrix_shape_m = (n_noised_states, n_noised_states * n_collocation_points)
+        self.matrix_shape_k = (self.n_noised_controls, self.n_references)
+        self.matrix_shape_c = (self.n_noised_states, self.n_noise)
+        self.matrix_shape_a = (self.n_noised_states, self.n_noised_states)
+        self.matrix_shape_cov = (self.n_noised_states, self.n_noised_states)
+        self.matrix_shape_cov_cholesky = (self.n_noised_states, self.n_noised_states)
+        self.matrix_shape_m = (self.n_noised_states, self.n_noised_states * self.n_collocation_points)

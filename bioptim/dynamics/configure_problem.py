@@ -370,6 +370,16 @@ class ConfigureProblem:
             with_friction=with_friction,
         )
 
+        ConfigureProblem.configure_dynamics_function(
+            ocp,
+            nlp,
+            DynamicsFunctions.stochastic_torque_driven,
+            with_contact=with_contact,
+            with_friction=with_friction,
+            allow_free_variables=True,
+        )
+
+
     @staticmethod
     def torque_derivative_driven(
         ocp,

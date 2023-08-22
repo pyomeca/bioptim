@@ -462,14 +462,34 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controllers[0].parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controllers[0].stochastic_variables.shape, 1)
 
-            dx = controllers[0].secondary_dynamics(
-                vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
+            dynamics_with_noise = Function(
+                "dynamics_with_noise",
+                [q_root,
+                 q_joints,
+                 qdot_root,
+                 qdot_joints,
+                 tau_joints,
+                 parameters_sym,
+                 stochastic_sym,
+                 controllers[0].model.motor_noise_sym,
+                 controllers[0].model.sensory_noise_sym
+                 ],
+                [controllers[0].extra_dynamics(0)(vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
+                    tau_joints,
+                    parameters_sym,
+                    stochastic_sym,)]
+            )
+            dx = dynamics_with_noise(
+                q_root,
+                q_joints,
+                qdot_root,
+                qdot_joints,
                 tau_joints,
                 parameters_sym,
                 stochastic_sym,
                 controllers[0].model.motor_noise_sym,
-                controllers[0].model.sensory_noise_sym,
-            )
+                controllers[0].model.sensory_noise_sym)
+
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
                 range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu)
@@ -586,11 +606,20 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 horzcat(x_qdot_root, z_qdot_root),
                 horzcat(x_qdot_joints, z_qdot_joints),
             )
-            dynamics = controllers[0].integrate_secondary_dynamics(
-                x0=states_full,
-                p=controllers[0].controls.cx_start,
-                params=controllers[0].parameters.cx_start,
-                s=controllers[0].stochastic_variables.cx_start,
+
+            dynamics = Function(
+                "dynamics_with_noise",
+                [
+                    states_full,
+                    controllers[0].controls.cx_start,
+                    controllers[0].parameters.cx_start,
+                    controllers[0].stochastic_variables.cx_start,
+                    controllers[0].model.motor_noise_sym,
+                    controllers[0].model.sensory_noise_sym,
+                ]
+                [controllers[0].integrate_extra_dynamics(0)],
+                ["x0", "p", "params", "s", "motor_noise", "sensory_noise"],
+                ["xf", "defects"],
             )
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)

@@ -604,7 +604,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             if "cholesky_cov" in controller.stochastic_variables.keys():
-                l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(Node.START)
+                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(controller.stochastic_variables["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky)
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
             else:
                 cov_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov)
@@ -659,12 +659,33 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controller.parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controller.stochastic_variables.shape, 1)
 
-            dx = controller.secondary_dynamics(
-                vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
-                tau_joints,  # Controls
-                parameters_sym,  # Parameters
-                stochastic_sym,  # Stochastic variables
+            dynamics_with_noise = Function(
+                "dynamics_with_noise",
+                [q_root,
+                 q_joints,
+                 qdot_root,
+                 qdot_joints,
+                 tau_joints,
+                 parameters_sym,
+                 stochastic_sym,
+                 controller.model.motor_noise_sym,
+                 controller.model.sensory_noise_sym
+                 ],
+                [controller.extra_dynamics(0)(vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
+                    tau_joints,
+                    parameters_sym,
+                    stochastic_sym,)]
             )
+            dx = dynamics_with_noise(
+                q_root,
+                q_joints,
+                qdot_root,
+                qdot_joints,
+                tau_joints,
+                parameters_sym,
+                stochastic_sym,
+                controller.model.motor_noise_sym,
+                controller.model.sensory_noise_sym)
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
                 range(nb_root + nu + nb_root, nb_root + nu + nb_root + nu)
