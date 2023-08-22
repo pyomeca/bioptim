@@ -35,9 +35,10 @@ from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPoi
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 def superellipse(a=1, b=1, n=2, x_0=0, y_0=0, resolution=100):
-    x = np.linspace(-2*a + x_0, 2*a + x_0, resolution)
-    y = np.linspace(-2*b + y_0, 2*b + y_0, resolution)
+    x = np.linspace(-2 * a + x_0, 2 * a + x_0, resolution)
+    y = np.linspace(-2 * b + y_0, 2 * b + y_0, resolution)
 
     X, Y = np.meshgrid(x, y)
     Z = ((X - x_0) / a) ** n + ((Y - y_0) / b) ** n - 1
@@ -56,6 +57,7 @@ def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinear
             states, controls, parameters, stochastic_variables, nlp, with_noise=False
         ),
     )
+
 
 def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
@@ -86,8 +88,21 @@ def path_constraint(controller: PenaltyController, super_elipse_index: int):
     p_x = controller.states["q"].cx_start[0]
     p_y = controller.states["q"].cx_start[1]
 
-    out = ((p_x - controller.model.super_ellipse_center_x[super_elipse_index]) / controller.model.super_ellipse_a[super_elipse_index]) ** controller.model.super_ellipse_n[super_elipse_index] + ((p_y - controller.model.super_ellipse_center_y[super_elipse_index]) / controller.model.super_ellipse_b[super_elipse_index]) ** controller.model.super_ellipse_n[super_elipse_index] - 1
+    out = (
+        (
+            (p_x - controller.model.super_ellipse_center_x[super_elipse_index])
+            / controller.model.super_ellipse_a[super_elipse_index]
+        )
+        ** controller.model.super_ellipse_n[super_elipse_index]
+        + (
+            (p_y - controller.model.super_ellipse_center_y[super_elipse_index])
+            / controller.model.super_ellipse_b[super_elipse_index]
+        )
+        ** controller.model.super_ellipse_n[super_elipse_index]
+        - 1
+    )
     return out
+
 
 def initialize_circle(polynomial_degree, n_shooting):
     """
@@ -118,8 +133,13 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="u", weight=1e-2/(2*n_shooting), node=Node.ALL_SHOOTING,
-                            quadratic=True)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+        key="u",
+        weight=1e-2 / (2 * n_shooting),
+        node=Node.ALL_SHOOTING,
+        quadratic=True,
+    )
 
     # Constraints
     constraints = ConstraintList()
@@ -128,7 +148,8 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(configure_optimal_control_problem,
+    dynamics.add(
+        configure_optimal_control_problem,
         dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
             states,
             controls,
@@ -145,7 +166,9 @@ def prepare_ocp(
     max_q = np.ones((nb_q, 3)) * cas.inf
     min_q[0, 0] = 0  # phi(x) = p_x?
     min_q[0, 2] = 0
-    x_bounds.add("q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
+    x_bounds.add(
+        "q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
+    )
     x_bounds.add(
         "qdot",
         min_bound=[-cas.inf] * nb_qdot,
@@ -154,9 +177,7 @@ def prepare_ocp(
     )
 
     u_bounds = BoundsList()
-    u_bounds.add(
-        "u", min_bound=[-cas.inf] * nb_u, max_bound=[cas.inf] * nb_u, interpolation=InterpolationType.CONSTANT
-    )
+    u_bounds.add("u", min_bound=[-cas.inf] * nb_u, max_bound=[cas.inf] * nb_u, interpolation=InterpolationType.CONSTANT)
 
     # Initial guesses
     x_init = InitialGuessList()
@@ -187,39 +208,28 @@ def prepare_ocp(
         assume_phase_dynamics=False,
     )
 
+
 def prepare_socp(
     final_time: float,
     n_shooting: int,
-    motor_noise_magnitude: cas.DM,
-    polynomial_degree=polynomial_degree,
-    q_init=q_stochastic,
-    q_dot_init=qdot_stochastic,
-    u_init=u_stochastic,
-    m_init=m_stochastic,
-    cov_init=cov_stochastic,
+    motor_noise_magnitude: np.ndarray,
+    polynomial_degree: int,
+    q_init: np.ndarray,
+    q_dot_init: np.ndarray,
+    u_init: np.ndarray,
+    m_init: np.ndarray,
+    cov_init: np.ndarray,
 ) -> StochasticOptimalControlProgram:
     """
-    The initialization of an ocp
-    Parameters
-    ----------
-    final_time: float
-        The time in second required to perform the task
-    n_shooting: int
-        The number of shooting points to define int the direct multiple shooting program
-    motor_noise_magnitude: cas.DM
-        The magnitude of the motor noise
-
-    Returns
-    -------
-    The OptimalControlProgram ready to be solved
+    Step # 2: Solving the stochastic version of the problem to get the stochastic trajectory.
     """
+
     polynomial_degree = 5
     problem_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
 
     bio_model = MassPointModel(
         sensory_noise_magnitude=0,
         motor_noise_magnitude=motor_noise_magnitude,
-        sensory_reference=None,
     )
     nb_q = bio_model.nb_q
     nb_qdot = bio_model.nb_qdot
@@ -228,13 +238,15 @@ def prepare_socp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=1e-2/(2*n_shooting), node=Node.ALL_SHOOTING,
-                            quadratic=True)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=1e-2 / (2 * n_shooting), node=Node.ALL_SHOOTING, quadratic=True
+    )
 
     # Constraints
     constraints = ConstraintList()
     constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0, max_bound=cas.inf)
     constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0, max_bound=cas.inf)
+    # TODO: add cyclic constraint on cov
 
     # Dynamics
     dynamics = DynamicsList()
@@ -256,7 +268,9 @@ def prepare_socp(
     max_q = np.ones((nb_q, 3)) * cas.inf
     min_q[0, 0] = 0  # phi(x) = p_x?
     min_q[0, 2] = 0
-    x_bounds.add("q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT)
+    x_bounds.add(
+        "q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
+    )
     x_bounds.add(
         "qdot",
         min_bound=[-cas.inf] * nb_qdot,
@@ -265,9 +279,7 @@ def prepare_socp(
     )
 
     u_bounds = BoundsList()
-    u_bounds.add(
-        "u", min_bound=[-cas.inf] * nb_u, max_bound=[cas.inf] * nb_u, interpolation=InterpolationType.CONSTANT
-    )
+    u_bounds.add("u", min_bound=[-cas.inf] * nb_u, max_bound=[cas.inf] * nb_u, interpolation=InterpolationType.CONSTANT)
 
     # Initial guesses
     x_init = InitialGuessList()
@@ -352,7 +364,7 @@ def main():
     n_shooting = 39
     polynomial_degree = 5
     final_time = 4
-    motor_noise_magnitude = 
+    motor_noise_magnitude = np.array([1, 1])
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False)
@@ -373,6 +385,7 @@ def main():
         final_time=final_time,
         n_shooting=n_shooting,
         polynomial_degree=polynomial_degree,
+        motor_noise_magnitude=motor_noise_magnitude,
         q_init=q_deterministic,
         q_dot_init=qdot_deterministic,
         u_init=u_deterministic,
@@ -414,7 +427,7 @@ def main():
 
         X, Y, Z = superellipse(a, b, n, x_0, y_0)
 
-        plt.contourf(X, Y, Z, levels=[-1000, 0], colors=['#DA1984'], alpha=0.5)
+        plt.contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
         # plt.contour(X, Y, Z, levels=[0], colors='black')
 
     plt.plot(q_init[0], q_init[1], "-k", label="Initial guess")
@@ -422,10 +435,11 @@ def main():
     plt.plot(q_stochastic[0], q_stochastic[1], "-r", label="Stochastic")
     plt.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
 
-    plt.xlabel('X')
-    plt.ylabel('Y')
-    plt.axis('equal')
+    plt.xlabel("X")
+    plt.ylabel("Y")
+    plt.axis("equal")
     plt.show()
+
 
 if __name__ == "__main__":
     main()
