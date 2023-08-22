@@ -6,8 +6,6 @@ import numpy as np
 from casadi import DM, vertcat
 from bioptim import Solver
 
-from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
-
 
 def test_arm_reaching_torque_driven_collocations():
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_collocations as ocp_module

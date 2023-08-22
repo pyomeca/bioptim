@@ -5,6 +5,8 @@ from casadi import MX, SX, vertcat
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList
 from ..misc.enums import ControlType
+from ..dynamics.ode_solver import OdeSolver
+
 
 
 class PenaltyController:
@@ -98,7 +100,7 @@ class PenaltyController:
         return self._nlp.control_type
 
     @property
-    def ode_solver(self) -> ControlType:
+    def ode_solver(self) -> OdeSolver:
         return self._nlp.ode_solver
 
     @property
