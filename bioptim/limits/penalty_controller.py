@@ -8,7 +8,6 @@ from ..misc.enums import ControlType
 from ..dynamics.ode_solver import OdeSolver
 
 
-
 class PenaltyController:
     """
     A placeholder for the required elements to compute a penalty (all time)
