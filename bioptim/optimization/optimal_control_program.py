@@ -1434,7 +1434,7 @@ class OptimalControlProgram:
             if penalty.transition or penalty.multinode_penalty:
                 out.append(
                     penalty.weighted_function_non_threaded[t](
-                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), 0, 0, penalty.weight, _target, 1
+                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), penalty.weight, _target, 1
                     )
                 )  # dt=1 because multinode penalties behave like Mayer functions
 
@@ -1463,7 +1463,7 @@ class OptimalControlProgram:
 
                 out.append(
                     penalty.weighted_function_non_threaded[t](
-                        state_value, control_value, p, stochastic_value, 0, 0, penalty.weight, _target, dt
+                        state_value, control_value, p, stochastic_value, penalty.weight, _target, dt
                     )
                 )
             elif (
@@ -1472,12 +1472,12 @@ class OptimalControlProgram:
             ):
                 out = [
                     penalty.weighted_function_non_threaded[t](
-                        x[:, [i, i + 1]], u[:, i], p, s, 0, 0, penalty.weight, _target, dt
+                        x[:, [i, i + 1]], u[:, i], p, s, penalty.weight, _target, dt
                     )
                     for i in range(x.shape[1] - 1)
                 ]
             else:
-                out.append(penalty.weighted_function_non_threaded[t](x, u, p, s, 0, 0, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded[t](x, u, p, s, penalty.weight, _target, dt))
             return sum1(horzcat(*out))
 
         def add_penalty(_penalties):

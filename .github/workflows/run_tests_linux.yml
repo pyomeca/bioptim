@@ -11,7 +11,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5, 6]
     name: Tests on ${{ matrix.os }}-shard ${{ matrix.shard }}
     runs-on: ${{ matrix.os }}
     defaults:
@@ -114,7 +114,7 @@ jobs:
 
       - name: Rename coverage files
         run: |
-          for shard in {1,2,3,4}; do
+          for shard in {1,2,3,4,5,6}; do
             mv coverage${shard}/coverage.xml coverage${shard}.xml
             mv coverage${shard}/.coverage* .coverage${shard}
           done

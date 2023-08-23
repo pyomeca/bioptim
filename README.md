@@ -534,10 +534,20 @@ An example of how to use multi-start is given in examples/getting_started/multi-
 ## Solving stochastic optimal control problems (SOCP)
 It is possible to solve SOCP (also called optimal feedback control problem) using the class 
 `StochasticOptimalControlProgram`. You just have to add the type of SOCP that you want to solve using 
-`SocpType.SOCP_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude)` or 
-`SocpType.SOCP_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude)`. Our implementation of SOCP is based on 
-Van Wouwe 2022 (https://doi.org/10.1371/journal.pcbi.1009338). See the examples in the folder 
-examples/stochastic_optimal_control.
+`SocpType.TRAPEZOIDAL_EXPLICIT(motor_noise_magnitude, sensory_noise_magnitude)`,
+`SocpType.TRAPEZOIDAL_IMPLICIT(motor_noise_magnitude, sensory_noise_magnitude)`, or
+`SocpType.COLLOCATION(motor_noise_magnitude, sensory_noise_magnitude)`. 
+Our implementation of SOCP is based on Van Wouwe 2022 (https://doi.org/10.1371/journal.pcbi.1009338). 
+In the examples folder examples/stochastic_optimal_control, you will find arm_reaching_muscle_driven.py which is our 
+implementation of the arm reaching task (6 muscles) described in the above-mentioned article.
+Our implementation of the integration of the covariance matrix with a collocation scheme is based on Gillis 2013 
+(https://ieeexplore.ieee.org/abstract/document/6761121).
+You will also find our implementation of the example of Gillis 2013 in the same folder 
+(obstacle_avoidance_collocations.py).
+
+We recommend the user to use the SocpType.COLLOCATION implementation if a great level of dynamics consistency is 
+needed, or SocpType.TRAPEZOIDAL_IMPLICIT with a Cholesky decomposition of the covariance matrix for a faster 
+resolution.
 
 ## The complete example files
 If you did not completely follow (or were too lazy to!) you will find  the complete files described in the Getting started section here.

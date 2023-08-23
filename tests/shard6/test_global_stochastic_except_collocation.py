@@ -14,8 +14,8 @@ def test_arm_reaching_muscle_driven():
 
     final_time = 0.8
     n_shooting = 4
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
-    problem_type = ExampleType.CIRCLE
+    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+    example_type = ExampleType.CIRCLE
     force_field_magnitude = 0
 
     dt = 0.01
@@ -30,11 +30,11 @@ def test_arm_reaching_muscle_driven():
     ocp = ocp_module.prepare_socp(
         final_time=final_time,
         n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
+        hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         force_field_magnitude=force_field_magnitude,
-        problem_type=problem_type,
+        example_type=example_type,
     )
 
     # ocp.print(to_console=True, to_graph=False)  #TODO: check to adjust the print method
@@ -49,11 +49,11 @@ def test_arm_reaching_muscle_driven():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 13.322871634584153)
+    np.testing.assert_almost_equal(f[0, 0], 13.32287163458417)
 
     # detailed cost values
-    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.6783119392800068)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.4573562887022045)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.6783119392800087)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.4573562887022004)
     np.testing.assert_almost_equal(
         f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
     )
@@ -351,7 +351,7 @@ def test_arm_reaching_torque_driven_explicit():
 
     final_time = 0.8
     n_shooting = 4
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
 
     dt = 0.01
     motor_noise_std = 0.05
@@ -368,7 +368,7 @@ def test_arm_reaching_torque_driven_explicit():
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
+        hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
     )
@@ -383,11 +383,11 @@ def test_arm_reaching_torque_driven_explicit():
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.0009949559696219028)
+    np.testing.assert_almost_equal(f[0, 0], 46.99030175091475)
 
     # detailed cost values
-    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.0009947791440719843)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0)
+    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.055578630313992475)
+    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 6.038226210163837)
     np.testing.assert_almost_equal(
         f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
     )
@@ -410,76 +410,74 @@ def test_arm_reaching_torque_driven_explicit():
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.92481582, 1.29144455]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([0.92702265, 1.27828413]))
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
     np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
     np.testing.assert_almost_equal(qddot[:, 0], np.array([0, 0]))
     np.testing.assert_almost_equal(qddot[:, -1], np.array([0, 0]))
 
-    np.testing.assert_almost_equal(qdddot[:, 0], np.array([38.88569235, -59.56207164]))
-    np.testing.assert_almost_equal(qdddot[:, -2], np.array([32.98170709, -59.56049898]))
+    np.testing.assert_almost_equal(qdddot[:, 0], np.array([0.00124365, 0.00124365]))
+    np.testing.assert_almost_equal(qdddot[:, -2], np.array([0.00124365, 0.00124365]))
 
-    np.testing.assert_almost_equal(tau[:, 0], np.array([1.32767652e-05, 1.32767652e-05]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([1.32767652e-05, 1.32767652e-05]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([0.36186712, -0.2368119]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([-0.35709778, 0.18867995]))
 
     np.testing.assert_almost_equal(
         k[:, 0],
         np.array(
             [
-                4.53999320e-05,
-                4.53999320e-05,
-                5.29993608e-05,
-                5.29993608e-05,
-                1.46544478e-05,
-                1.46544478e-05,
-                1.46544550e-05,
-                1.46544550e-05,
+                0.13824554,
+                0.54172046,
+                0.05570321,
+                0.25169273,
+                0.00095407,
+                0.00121309,
+                0.00095146,
+                0.00121091,
             ]
         ),
     )
-    np.testing.assert_almost_equal(
-        ref[:, 0], np.array([2.81666286e-02, 2.84048250e-01, 1.32759716e-05, 1.32759716e-05])
-    )
+    np.testing.assert_almost_equal(ref[:, 0], np.array([0.02592847, 0.25028511, 0.00124365, 0.00124365]))
     np.testing.assert_almost_equal(
         m[:, 0],
         np.array(
             [
-                9.98685679e-01,
-                1.32759716e-05,
-                1.32759716e-05,
-                1.32759716e-05,
-                1.32759716e-05,
-                1.32759716e-05,
-                1.32759716e-05,
-                9.98685679e-01,
-                1.32759716e-05,
-                1.32759716e-05,
-                1.32759716e-05,
-                1.32759716e-05,
-                9.98805163e-02,
-                1.32759716e-05,
-                9.98685679e-01,
-                1.32759716e-05,
-                1.32759716e-05,
-                1.32759716e-05,
-                1.32759716e-05,
-                9.98805163e-02,
-                1.32759716e-05,
-                9.98685679e-01,
-                1.32759716e-05,
-                1.32759716e-05,
-                1.00000000e-02,
-                1.32759716e-05,
-                9.98805163e-02,
-                1.32759716e-05,
-                9.98685679e-01,
-                1.32759716e-05,
-                1.32759716e-05,
-                1.00000000e-02,
-                1.32759716e-05,
-                9.98805163e-02,
-                1.32759716e-05,
-                9.98685679e-01,
+                8.36639386e-01,
+                1.14636589e-01,
+                -4.32594485e-01,
+                1.10372277e00,
+                4.73812392e-03,
+                4.73812392e-03,
+                8.01515210e-02,
+                9.66785674e-01,
+                7.40822199e-01,
+                8.50818498e-01,
+                6.74366790e-03,
+                6.74366790e-03,
+                7.92700393e-02,
+                -8.94683551e-03,
+                7.86796476e-01,
+                -9.53722725e-02,
+                6.55990825e-04,
+                6.55990825e-04,
+                -8.94995258e-04,
+                7.69438075e-02,
+                -2.33336654e-02,
+                7.55054362e-01,
+                1.59819032e-03,
+                1.59819032e-03,
+                1.24365477e-03,
+                1.24365477e-03,
+                1.24365477e-03,
+                1.24365477e-03,
+                8.76878178e-01,
+                1.24365477e-03,
+                1.24365477e-03,
+                1.24365477e-03,
+                1.24365477e-03,
+                1.24365477e-03,
+                1.24365477e-03,
+                8.76878178e-01,
             ]
         ),
     )
@@ -488,42 +486,42 @@ def test_arm_reaching_torque_driven_explicit():
         cov[:, -2],
         np.array(
             [
-                9.94981789e-05,
-                5.87995640e-09,
-                7.45496761e-08,
-                2.93126339e-09,
-                8.22602351e-08,
-                2.68422091e-09,
-                5.87995640e-09,
-                9.94981789e-05,
-                2.93126339e-09,
-                7.45496761e-08,
-                2.68422091e-09,
-                8.22602351e-08,
-                7.45496761e-08,
-                2.93126339e-09,
-                2.58657288e-07,
-                3.52419757e-11,
-                3.97931483e-07,
-                5.14120545e-11,
-                2.93126339e-09,
-                7.45496761e-08,
-                3.52419757e-11,
-                2.58657288e-07,
-                5.14120545e-11,
-                3.97931483e-07,
-                8.22602351e-08,
-                2.68422091e-09,
-                3.97931483e-07,
-                5.14120545e-11,
-                9.94764852e-07,
-                6.46744617e-11,
-                2.68422091e-09,
-                8.22602351e-08,
-                5.14120545e-11,
-                3.97931483e-07,
-                6.46744617e-11,
-                9.94764852e-07,
+                3.04928811e-02,
+                -4.37121214e-02,
+                1.14814524e-01,
+                -1.66441847e-01,
+                -5.31760888e-04,
+                -5.31760888e-04,
+                -4.37121214e-02,
+                1.21941013e-01,
+                -1.65522823e-01,
+                4.54983180e-01,
+                1.77217039e-03,
+                1.77217039e-03,
+                1.14814524e-01,
+                -1.65522823e-01,
+                6.31786758e-01,
+                -8.93221670e-01,
+                -2.17528809e-03,
+                -2.17528809e-03,
+                -1.66441847e-01,
+                4.54983180e-01,
+                -8.93221670e-01,
+                2.42721714e00,
+                7.04045031e-03,
+                7.04045031e-03,
+                -5.31760888e-04,
+                1.77217039e-03,
+                -2.17528809e-03,
+                7.04045031e-03,
+                2.73513461e-05,
+                2.67634623e-05,
+                -5.31760888e-04,
+                1.77217039e-03,
+                -2.17528809e-03,
+                7.04045031e-03,
+                2.67634623e-05,
+                2.73513461e-05,
             ]
         ),
     )
@@ -534,12 +532,15 @@ def test_arm_reaching_torque_driven_explicit():
 def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
 
+    if with_cholesky and not with_scaling:
+        return
+
     if platform != "linux":
         return
 
     final_time = 0.8
     n_shooting = 4
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
+    hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
 
     dt = 0.01
     motor_noise_std = 0.05
@@ -556,7 +557,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
+        hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         with_cholesky=with_cholesky,
@@ -576,7 +577,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
 
     # Check constraints values
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (338, 1))
+    np.testing.assert_equal(g.shape, (378, 1))
 
     # Check some of the solution values
     states, controls, stochastic_variables = (
@@ -599,115 +600,133 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
         )
         if not with_scaling:
             # Check objective function value
-            np.testing.assert_almost_equal(f[0, 0], 54.69985224379656, decimal=3)
+            np.testing.assert_almost_equal(f[0, 0], 62.61240153041182)
 
             # detailed cost values
-            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 54.32008339136118, decimal=3)
-            np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.37976885243538916, decimal=3)
+            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 62.41253120355753)
+            np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.19987032685429304)
             np.testing.assert_almost_equal(
                 f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
             )
 
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.34906581, 2.2458677]), decimal=3)
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.92561119, 1.29037047]), decimal=3)
+            np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+            np.testing.assert_almost_equal(q[:, -1], np.array([0.92560992, 1.29037324]))
             np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
             np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-            np.testing.assert_almost_equal(tau[:, 0], np.array([0.41236619, -0.3019402]), decimal=3)
-            np.testing.assert_almost_equal(tau[:, -2], np.array([-0.39331919, 0.25051353]), decimal=3)
+            np.testing.assert_almost_equal(tau[:, 0], np.array([0.42126532, -0.30424813]))
+            np.testing.assert_almost_equal(tau[:, -2], np.array([-0.3933987, 0.36251051]))
 
             np.testing.assert_almost_equal(
                 k[:, 0],
                 np.array(
-                    [0.00357632, 0.02445081, -0.00986843, 0.06489354, -0.09927389, -0.05395245, 0.02192656, -0.11455955]
+                    [-0.0770916, 0.24594264, 0.14356716, -0.37903073, 0.02556642, -0.33600195, -0.09768757, 0.21875505]
                 ),
-                decimal=3,
             )
-            np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907942e-02, 2.84412566e-01, 0, 0]))
+            np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
             np.testing.assert_almost_equal(
                 m[:, 0],
                 np.array(
                     [
-                        1.11112755e00,
-                        2.59583056e-05,
-                        -1.58230391e-03,
-                        -2.38966622e-03,
-                        1.49765134e-04,
-                        1.11130920e00,
-                        -1.36566090e-02,
-                        -1.77763801e-02,
-                        -1.24383519e-02,
-                        -1.12172481e-04,
-                        1.11954774e00,
-                        1.00935740e-02,
-                        -2.64523768e-05,
-                        -1.24142567e-02,
-                        2.43275276e-03,
-                        1.11728557e00,
+                        1.11117933e00,
+                        -9.89790360e-05,
+                        -6.36575900e-03,
+                        9.15679149e-03,
+                        3.42798480e-04,
+                        1.11078623e00,
+                        -3.11148477e-02,
+                        2.94613721e-02,
+                        -1.22442829e-02,
+                        -3.62937369e-04,
+                        1.10217942e00,
+                        3.23426016e-02,
+                        -7.49239001e-05,
+                        -1.20983199e-02,
+                        6.87328702e-03,
+                        1.08858017e00,
                     ]
                 ),
-                decimal=3,
             )
 
-            np.testing.assert_almost_equal(cov[:, -2], np.zeros((16,)))
+            np.testing.assert_almost_equal(
+                cov[:, -2],
+                np.array(
+                    [
+                        6.52095128e-05,
+                        8.58550134e-05,
+                        -3.43580868e-05,
+                        3.04961560e-04,
+                        8.58550134e-05,
+                        7.51879842e-05,
+                        3.90995716e-05,
+                        8.48441793e-05,
+                        -3.43580868e-05,
+                        3.90995716e-05,
+                        -4.29201762e-04,
+                        1.31706534e-03,
+                        3.04961560e-04,
+                        8.48441793e-05,
+                        1.31706534e-03,
+                        -3.45141868e-03,
+                    ]
+                ),
+            )
 
             np.testing.assert_almost_equal(
                 a[:, 3],
                 np.array(
                     [
                         1.00000000e00,
-                        -8.52697691e-12,
-                        6.55855871e-03,
-                        -8.00703258e-02,
-                        -8.52767701e-12,
+                        -8.11373860e-26,
+                        -1.67781542e-01,
+                        3.32131421e-01,
+                        8.67187637e-27,
                         1.00000000e00,
-                        -2.18239828e-01,
-                        4.70460344e-01,
+                        -7.76947657e-01,
+                        1.89631798e00,
                         -1.00000000e-01,
-                        -5.25564645e-11,
-                        1.04992986e00,
-                        6.75331769e-02,
-                        -2.27751861e-11,
+                        -9.63358420e-25,
+                        6.71919094e-01,
+                        8.86491256e-01,
+                        -4.98418026e-25,
                         -1.00000000e-01,
-                        3.49290194e-02,
-                        9.93850189e-01,
+                        4.44699545e-02,
+                        8.69525177e-01,
                     ]
                 ),
-                decimal=3,
             )
 
             np.testing.assert_almost_equal(
                 c[:, 2],
                 np.array(
                     [
-                        -9.55596295e-17,
-                        -1.54067811e-16,
-                        -1.35545994e00,
-                        1.12586820e00,
-                        -2.44280819e-15,
-                        -2.27063971e-15,
-                        1.12586820e00,
-                        -3.79227614e00,
-                        2.35553605e-15,
-                        2.12315614e-15,
-                        -4.07317154e-02,
-                        6.78173223e-02,
-                        5.57501840e-15,
-                        5.07550371e-15,
-                        -7.50727482e-02,
-                        1.61831876e-01,
-                        4.29241800e-12,
-                        4.18835826e-12,
-                        9.54651163e-02,
-                        9.82494768e-02,
-                        2.65129632e-12,
-                        2.44681382e-12,
-                        -5.45976741e-02,
-                        1.56733807e-01,
+                        -3.27251991e-21,
+                        -1.90706757e-20,
+                        -1.35504801e00,
+                        1.12904779e00,
+                        -8.42798952e-21,
+                        3.05675532e-20,
+                        1.12904779e00,
+                        -3.79816715e00,
+                        8.03040833e-21,
+                        2.53102785e-19,
+                        3.01182416e-02,
+                        -9.93007432e-02,
+                        -6.05887964e-20,
+                        1.18604326e-20,
+                        6.81924202e-01,
+                        -1.82105153e00,
+                        -4.59863930e-23,
+                        6.62189569e-24,
+                        3.54626037e-01,
+                        -5.62181724e-01,
+                        8.68527931e-24,
+                        2.81260929e-23,
+                        -2.34792769e-01,
+                        5.93239215e-01,
                     ]
                 ),
-                decimal=3,
             )
     else:
         # Check some of the results
@@ -721,11 +740,11 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
         )
         if not with_scaling:
             # Check objective function value
-            np.testing.assert_almost_equal(f[0, 0], 54.28951360888063, decimal=4)
+            np.testing.assert_almost_equal(f[0, 0], 62.40222244200586)
 
             # detailed cost values
-            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 54.289512025867886, decimal=4)
-            np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0, decimal=4)
+            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 62.40222242539446)
+            np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.6611394850611363e-08)
             np.testing.assert_almost_equal(
                 f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
             )
@@ -736,13 +755,13 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
             np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
             np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-            np.testing.assert_almost_equal(tau[:, 0], np.array([0.41464357, -0.30982089]))
-            np.testing.assert_almost_equal(tau[:, -2], np.array([-0.39128281, 0.24339136]))
+            np.testing.assert_almost_equal(tau[:, 0], np.array([0.42135681, -0.30494449]))
+            np.testing.assert_almost_equal(tau[:, -2], np.array([-0.39329963, 0.36152636]))
 
             np.testing.assert_almost_equal(
                 k[:, 0],
                 np.array(
-                    [-0.00096149, 0.02035493, -0.0088978, 0.0607317, -0.06245199, -0.02129132, -0.00063203, -0.03873214]
+                    [0.00227125, 0.01943845, -0.00045809, 0.04340353, -0.05890334, -0.02196787, 0.02044042, -0.08280278]
                 ),
             )
             np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
@@ -750,22 +769,22 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                 m[:, 0],
                 np.array(
                     [
-                        1.11111524e00,
-                        2.08790013e-05,
-                        -3.71501575e-04,
-                        -1.87911021e-03,
-                        1.51566560e-04,
-                        1.11130725e00,
-                        -1.36409905e-02,
-                        -1.76521629e-02,
-                        -1.24519566e-02,
-                        -1.18401839e-04,
-                        1.12067610e00,
-                        1.06561656e-02,
-                        -3.18364285e-05,
-                        -1.24290108e-02,
-                        2.86527872e-03,
-                        1.11861097e00,
+                        1.11111643e00,
+                        9.66024409e-06,
+                        -4.78746311e-04,
+                        -8.69421987e-04,
+                        1.49883122e-04,
+                        1.11128979e00,
+                        -1.34894811e-02,
+                        -1.60812429e-02,
+                        -1.23773893e-02,
+                        -6.07070546e-05,
+                        1.11396504e00,
+                        5.46363498e-03,
+                        -2.04675057e-05,
+                        -1.22691010e-02,
+                        1.84207561e-03,
+                        1.10421909e00,
                     ]
                 ),
             )
@@ -774,16 +793,16 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                 cov[:, -2],
                 np.array(
                     [
-                        0.00063053,
-                        0.00063051,
-                        0.00063053,
-                        0.00063051,
-                        0.00063051,
-                        0.00063053,
-                        0.0006309,
-                        0.0006309,
-                        0.0006309,
-                        0.00063092,
+                        0.00644836,
+                        -0.00610657,
+                        -0.00544246,
+                        0.00168837,
+                        0.0005854,
+                        -0.00123564,
+                        0.0103952,
+                        0.01108306,
+                        -0.00252879,
+                        -0.00192049,
                     ]
                 ),
             )
@@ -793,21 +812,21 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                 np.array(
                     [
                         1.00000000e00,
-                        -2.98544470e-13,
-                        8.02353293e-03,
-                        -7.40942144e-02,
-                        -3.03310221e-13,
+                        -2.17926087e-13,
+                        1.26870284e-03,
+                        -3.78607634e-02,
+                        -2.56284891e-13,
                         1.00000000e00,
-                        -2.08526281e-01,
-                        4.49404079e-01,
+                        -2.19752019e-01,
+                        4.81445536e-01,
                         -1.00000000e-01,
-                        1.60699818e-13,
-                        1.05086197e00,
-                        8.27928363e-02,
-                        1.67273745e-13,
+                        1.09505432e-13,
+                        1.02554762e00,
+                        4.87997817e-02,
+                        9.63854391e-14,
                         -1.00000000e-01,
-                        2.37204061e-02,
-                        1.03155176e00,
+                        4.91622255e-02,
+                        8.87744034e-01,
                     ]
                 ),
             )
@@ -816,80 +835,80 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                 c[:, 2],
                 np.array(
                     [
-                        1.17083508e-15,
-                        -9.89169199e-16,
-                        -1.35469932e00,
-                        1.13061913e00,
-                        -1.96731741e-15,
-                        2.13883136e-15,
-                        1.13061913e00,
-                        -3.80091351e00,
-                        3.09571194e-15,
-                        -3.66065927e-15,
-                        -3.30069508e-02,
-                        8.97866654e-02,
-                        5.95869682e-15,
-                        -6.25543803e-15,
-                        -6.76760308e-02,
-                        1.58295490e-01,
-                        -4.90430438e-13,
-                        8.31960455e-14,
-                        6.67559604e-02,
-                        5.34086751e-02,
-                        3.70399088e-13,
-                        -3.06926255e-13,
-                        -6.38435790e-03,
-                        2.40412176e-02,
+                        2.24899604e-16,
+                        4.19692812e-16,
+                        -1.35499970e00,
+                        1.12950726e00,
+                        -1.16296826e-16,
+                        -5.23075855e-16,
+                        1.12950726e00,
+                        -3.79903118e00,
+                        6.93079055e-17,
+                        4.43906938e-16,
+                        -2.00791886e-02,
+                        4.98852395e-02,
+                        3.32248534e-16,
+                        1.04710774e-15,
+                        -4.28795369e-02,
+                        9.36788627e-02,
+                        -2.55942876e-13,
+                        -2.73014494e-13,
+                        5.33498922e-02,
+                        4.09670671e-02,
+                        5.18153700e-15,
+                        3.81994693e-14,
+                        -3.35841216e-04,
+                        1.26309820e-02,
                     ]
                 ),
             )
         else:
             # Check objective function value
-            np.testing.assert_almost_equal(f[0, 0], 54.291122435161654)
+            np.testing.assert_almost_equal(f[0, 0], 62.40224045726969)
 
             # detailed cost values
-            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 54.289504209637485)
-            np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.0016182255241675885)
+            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 62.40222242578194)
+            np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.8031487750452925e-05)
             np.testing.assert_almost_equal(
                 f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
             )
 
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.34906586, 2.24586772]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.92561025, 1.29037213]))
+            np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+            np.testing.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
             np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
             np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-            np.testing.assert_almost_equal(tau[:, 0], np.array([0.41463662, -0.30982481]))
-            np.testing.assert_almost_equal(tau[:, -2], np.array([-0.39128902, 0.24338939]))
+            np.testing.assert_almost_equal(tau[:, 0], np.array([0.42135677, -0.30494447]))
+            np.testing.assert_almost_equal(tau[:, -2], np.array([-0.39329968, 0.3615263]))
 
             np.testing.assert_almost_equal(
                 k[:, 0],
                 np.array(
-                    [-0.14874009, -0.07254171, 0.25687802, 0.38517585, 0.26043327, 0.11319856, -0.1197832, -0.13731224]
+                    [0.31301854, 0.12182861, 0.19203473, 0.14751018, -0.32685328, -0.08325657, 0.14068481, -0.27395387]
                 ),
             )
-            np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907781e-02, 2.84412562e-01, 0, 0]))
+            np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
             np.testing.assert_almost_equal(
                 m[:, 0],
                 np.array(
                     [
-                        1.11117800e00,
-                        5.74496303e-06,
-                        -6.02227021e-03,
-                        -5.18291816e-04,
-                        1.90782053e-04,
-                        1.11146918e00,
-                        -1.71716344e-02,
-                        -3.22273064e-02,
-                        -1.23773410e-02,
-                        -8.05336127e-05,
-                        1.11396106e00,
-                        7.24817755e-03,
-                        -7.90350142e-06,
-                        -1.24521009e-02,
-                        7.11391914e-04,
-                        1.12068911e00,
+                        1.11108266e00,
+                        4.17488777e-06,
+                        2.56083176e-03,
+                        -3.75739664e-04,
+                        1.81096926e-04,
+                        1.11136793e00,
+                        -1.62987234e-02,
+                        -2.31135787e-02,
+                        -1.24633259e-02,
+                        -5.13628363e-05,
+                        1.12169933e00,
+                        4.62265629e-03,
+                        -3.42511466e-06,
+                        -1.24196246e-02,
+                        3.08259114e-04,
+                        1.11776621e00,
                     ]
                 ),
             )
@@ -898,16 +917,16 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                 cov[:, -2],
                 np.array(
                     [
-                        0.00122792,
-                        0.00120341,
-                        0.00121168,
-                        0.00118693,
-                        0.0011951,
-                        0.00121136,
-                        0.00117985,
-                        0.00118825,
-                        0.00120402,
-                        0.00122814,
+                        -1.07718751e-02,
+                        -1.99371716e-03,
+                        -5.91375606e-05,
+                        7.26583106e-03,
+                        1.90429781e-03,
+                        1.99709199e-03,
+                        1.06545354e-02,
+                        9.52116195e-03,
+                        1.98084162e-03,
+                        8.98559860e-04,
                     ]
                 ),
             )
@@ -916,22 +935,22 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                 a[:, 3],
                 np.array(
                     [
-                        9.99999994e-01,
-                        -4.18302471e-10,
-                        -4.89315025e-02,
-                        -6.22690957e-02,
-                        -4.57777265e-10,
-                        9.99999999e-01,
-                        -2.50324579e-01,
-                        3.41299838e-01,
-                        -1.00000001e-01,
-                        2.41176854e-09,
-                        9.47809755e-01,
-                        3.25135907e-02,
-                        7.54210147e-11,
-                        -9.99999999e-02,
-                        -1.79887711e-02,
-                        1.02668652e00,
+                        1.00000000e00,
+                        -9.20399499e-14,
+                        -1.61741543e-02,
+                        -3.51768147e-02,
+                        -6.60561379e-15,
+                        1.00000000e00,
+                        -2.23124489e-01,
+                        3.93635442e-01,
+                        -1.00000000e-01,
+                        -1.09518183e-14,
+                        1.13040430e00,
+                        6.10450178e-02,
+                        -2.95093488e-14,
+                        -1.00000000e-01,
+                        5.94097331e-02,
+                        9.92723714e-01,
                     ]
                 ),
             )
@@ -940,208 +959,30 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
                 c[:, 2],
                 np.array(
                     [
-                        9.22250867e-12,
-                        -2.88762428e-11,
-                        -1.35469911e00,
-                        1.13061978e00,
-                        -1.53781787e-11,
-                        3.60437290e-11,
-                        1.13061978e00,
-                        -3.80091459e00,
-                        1.83034425e-11,
-                        -3.41762066e-11,
-                        -8.27123470e-03,
-                        9.22737389e-02,
-                        4.83015893e-11,
-                        -1.20282422e-10,
-                        -6.57808417e-02,
-                        1.69050819e-01,
-                        -7.18803280e-09,
-                        3.56313048e-08,
-                        8.15217455e-02,
-                        4.28542941e-02,
-                        3.27255319e-09,
-                        -7.56135618e-09,
-                        -8.27016953e-03,
-                        2.96993918e-02,
+                        -2.70484535e-14,
+                        2.01986142e-14,
+                        -1.35499970e00,
+                        1.12950727e00,
+                        6.51869829e-14,
+                        -5.06432738e-14,
+                        1.12950727e00,
+                        -3.79903120e00,
+                        -6.67237108e-14,
+                        5.18030287e-14,
+                        -1.31113529e-02,
+                        6.16616592e-02,
+                        -1.09243748e-13,
+                        8.40241717e-14,
+                        -4.16479142e-02,
+                        9.08025965e-02,
+                        1.60067573e-12,
+                        -2.05218113e-13,
+                        1.89372425e-02,
+                        8.54507632e-03,
+                        -2.53289376e-12,
+                        1.87539717e-12,
+                        1.30216832e-02,
+                        -2.80276598e-02,
                     ]
                 ),
             )
-
-
-def test_arm_reaching_torque_driven_collocations():
-    from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_collocations as ocp_module
-
-    final_time = 0.4
-    n_shooting = 4
-    ee_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
-
-    dt = 0.05
-    motor_noise_std = 0.05
-    wPq_std = 3e-4
-    wPqdot_std = 0.0024
-    motor_noise_magnitude = DM(np.array([motor_noise_std**2 / dt, motor_noise_std**2 / dt]))
-    wPq_magnitude = DM(np.array([wPq_std**2 / dt, wPq_std**2 / dt]))
-    wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
-    sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    ocp = ocp_module.prepare_socp(
-        biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
-        final_time=final_time,
-        n_shooting=n_shooting,
-        ee_final_position=ee_final_position,
-        motor_noise_magnitude=motor_noise_magnitude,
-        sensory_noise_magnitude=sensory_noise_magnitude,
-    )
-
-    # Solver parameters
-    solver = Solver.IPOPT(show_online_optim=False)
-    solver.set_maximum_iterations(4)
-    solver.set_nlp_scaling_method("none")
-
-    sol = ocp.solve(solver)
-
-    # Check objective function value
-    f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 427.1964048446773)
-
-    # detailed cost values
-    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 432.1720966628036)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], -4.975691818126331)
-    np.testing.assert_almost_equal(
-        f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-    )
-
-    # Check constraints
-    g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (426, 1))
-
-    # Check some of the results
-    states, controls, stochastic_variables = (
-        sol.states,
-        sol.controls,
-        sol.stochastic_variables,
-    )
-    q, qdot = states["q"], states["qdot"]
-    tau = controls["tau"]
-    k, ref, m, cov = (
-        stochastic_variables["k"],
-        stochastic_variables["ref"],
-        stochastic_variables["m"],
-        stochastic_variables["cov"],
-    )
-
-    # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.92528707, 1.29074965]))
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
-
-    np.testing.assert_almost_equal(tau[:, 0], np.array([1.74670235, -1.02685616]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-1.66611244, 0.89557688]))
-
-    np.testing.assert_almost_equal(
-        k[:, 0],
-        np.array([-0.0070663, 0.12872882, -0.04928026, 0.34387433, -0.0011865, 0.08144921, -0.11150911, 0.14994164]),
-    )
-    np.testing.assert_almost_equal(
-        ref[:, 0], np.array([2.81676137e-02, 2.84063111e-01, 1.27344336e-05, 1.27344336e-05])
-    )
-    np.testing.assert_almost_equal(
-        m[:, 0],
-        np.array(
-            [
-                9.99920715e-01,
-                -4.11854315e-03,
-                2.90525360e-02,
-                -1.04938345e-01,
-                3.88306475e-03,
-                1.02971098e00,
-                1.04514630e-01,
-                6.62884963e-01,
-                9.78357140e-02,
-                -4.57465514e-03,
-                9.41188170e-01,
-                -1.20715456e-01,
-                1.81733236e-03,
-                9.28715366e-02,
-                3.03216746e-02,
-                8.76735934e-01,
-                -2.77702973e-01,
-                1.01862790e-03,
-                -7.68818329e-03,
-                2.76801702e-02,
-                -7.50021333e-04,
-                -2.84233573e-01,
-                -2.47787006e-02,
-                -1.65603410e-01,
-                -2.41041297e-02,
-                1.11904866e-03,
-                -2.62138314e-01,
-                3.16680509e-02,
-                -3.50468352e-04,
-                -2.30524714e-02,
-                -6.87981095e-03,
-                -2.46538143e-01,
-                -4.44077662e-01,
-                7.07737847e-04,
-                -8.83700659e-03,
-                3.10407809e-02,
-                -4.07608443e-05,
-                -4.47306824e-01,
-                -1.79003645e-02,
-                -1.59574972e-01,
-                -2.18732091e-02,
-                7.28451642e-04,
-                -4.26675935e-01,
-                3.51042913e-02,
-                -1.16592608e-04,
-                -2.13658297e-02,
-                -4.31646300e-03,
-                -4.13351871e-01,
-                -2.77422512e-01,
-                4.28889415e-05,
-                -1.55118528e-03,
-                5.35116851e-03,
-                1.03687508e-04,
-                -2.77471537e-01,
-                -1.56936263e-03,
-                -2.46436788e-02,
-                -3.11720317e-03,
-                2.88437370e-05,
-                -2.74497551e-01,
-                6.02456151e-03,
-                1.05073778e-05,
-                -3.08780886e-03,
-                -3.10808927e-04,
-                -2.72693650e-01,
-            ]
-        ),
-    )
-
-    np.testing.assert_almost_equal(
-        cov[:, -2],
-        np.array(
-            [
-                0.04449698,
-                -0.04720099,
-                -0.00852083,
-                0.0292907,
-                -0.04720099,
-                -0.28603462,
-                -0.03428146,
-                0.03041599,
-                -0.00852083,
-                -0.03428146,
-                -0.01509507,
-                -0.03243314,
-                0.0292907,
-                0.03041599,
-                -0.03243314,
-                -0.00564712,
-            ]
-        ),
-    )

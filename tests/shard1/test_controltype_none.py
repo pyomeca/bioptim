@@ -115,19 +115,19 @@ class NonControlledMethod:
                 horzcat(dynamics_eval.dxdt) if i == 0 else horzcat(dynamics_eval_horzcat, dynamics_eval.dxdt)
             )
 
-        nlp.dynamics_func = Function(
-            "ForwardDyn",
-            [
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.mx,
-                nlp.stochastic_variables.scaled.mx,
-                MX(),
-                MX(),
-            ],
-            [dynamics_eval_horzcat],
-            ["x", "u", "p", "s", "motor_noise", "sensory_noise"],
-            ["xdot"],
+        nlp.dynamics_func = (
+            Function(
+                "ForwardDyn",
+                [
+                    nlp.states.scaled.mx_reduced,
+                    nlp.controls.scaled.mx_reduced,
+                    nlp.parameters.mx,
+                    nlp.stochastic_variables.scaled.mx,
+                ],
+                [dynamics_eval_horzcat],
+                ["x", "u", "p", "s"],
+                ["xdot"],
+            ),
         )
 
     def declare_variables(self, ocp: OptimalControlProgram, nlp: NonLinearProgram):

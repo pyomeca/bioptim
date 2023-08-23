@@ -4,7 +4,8 @@ from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList
-from ..misc.enums import ControlType, Node
+from ..misc.enums import ControlType
+from ..dynamics.ode_solver import OdeSolver
 
 
 class PenaltyController:
@@ -98,7 +99,7 @@ class PenaltyController:
         return self._nlp.control_type
 
     @property
-    def ode_solver(self) -> ControlType:
+    def ode_solver(self) -> OdeSolver:
         return self._nlp.ode_solver
 
     @property
@@ -191,24 +192,20 @@ class PenaltyController:
         return out
 
     @property
-    def motor_noise(self):
-        return self._nlp.motor_noise
-
-    @property
-    def sensory_noise(self):
-        return self._nlp.sensory_noise
-
-    @property
     def integrate(self):
         return self._nlp.dynamics[self.node_index]
 
-    @property
-    def integrate_noised_dynamics(self):
-        return self._nlp.noised_dynamics[self.node_index]
+    def integrate_extra_dynamics(self, dynamics_index):
+        return self._nlp.extra_dynamics[dynamics_index][self.node_index]
 
     @property
     def dynamics(self):
-        return self._nlp.dynamics_func
+        return self._nlp.dynamics_func[0]
+
+    def extra_dynamics(self, dynamics_index):
+        # +1 - index so "integrate_extra_dynamics" and "extra_dynamics" share the same index.
+        # This is a hack which should be dealt properly at some point
+        return self._nlp.dynamics_func[dynamics_index + 1]
 
     @property
     def states_scaled(self) -> OptimizationVariableList:

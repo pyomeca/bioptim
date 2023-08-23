@@ -2,28 +2,27 @@ from typing import Callable, Any
 
 from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics
-from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
+from ..dynamics.ode_solver import OdeSolver
 from ..dynamics.configure_problem import ConfigureProblem
-from ..interfaces.biomodel import BioModel
+from ..interfaces.stochastic_bio_model import StochasticBioModel
 from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
     Constraint,
     ParameterConstraintList,
-    ParameterConstraint,
 )
 from ..limits.phase_transition import PhaseTransitionList
 from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraintFcn
 from ..limits.multinode_objective import MultinodeObjectiveList
-from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList, ParameterObjective
-from ..limits.path_conditions import BoundsList, Bounds
-from ..limits.path_conditions import InitialGuess, InitialGuessList
+from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList
+from ..limits.path_conditions import BoundsList
+from ..limits.path_conditions import InitialGuessList
 from ..misc.enums import Node, ControlType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
-from ..optimization.parameters import ParameterList, Parameter
+from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
 from ..optimization.optimal_control_program import OptimalControlProgram
-from ..optimization.variable_scaling import VariableScalingList, VariableScaling
+from ..optimization.variable_scaling import VariableScalingList
 
 
 class StochasticOptimalControlProgram(OptimalControlProgram):
@@ -34,7 +33,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
     def __init__(
         self,
-        bio_model: list | tuple | BioModel,
+        bio_model: list | tuple | StochasticBioModel,
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
@@ -52,7 +51,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         parameter_objectives: ParameterObjectiveList = None,
         parameter_constraints: ParameterConstraintList = None,
         external_forces: list[list[Any], ...] | tuple[list[Any], ...] = None,
-        ode_solver: list | OdeSolverBase | OdeSolver = None,
         control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
         time_phase_mapping: BiMapping = None,
@@ -65,15 +63,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
         s_scaling: VariableScalingList = None,
-        state_continuity_weight: float = None,  # TODO: docstring
+        state_continuity_weight: float = None,
         n_threads: int = 1,
         use_sx: bool = False,
         skip_continuity: bool = False,
         assume_phase_dynamics: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
-        problem_type: SocpType.SOCP_EXPLICIT
-        | SocpType.SOCP_IMPLICIT
-        | SocpType.SOCP_COLLOCATION = SocpType.SOCP_EXPLICIT,
+        problem_type=SocpType.TRAPEZOIDAL_IMPLICIT,
         **kwargs,
     ):
         """ """
@@ -84,6 +80,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     "Multi-threading is not possible yet while solving a stochastic ocp."
                     "n_thread is set to 1 by default."
                 )
+
+        if "ode_solver" in kwargs:
+            raise ValueError(
+                "The ode_solver cannot be defined for a stochastic ocp. The value is chosen based on the type of problem solved:"
+                "\n- TRAPEZOIDAL_EXPLICIT: OdeSolver.TRAPEZOIDAL(), "
+                "\n- TRAPEZOIDAL_IMPLICIT: OdeSolver.TRAPEZOIDAL(), "
+                "\n- COLLOCATION: OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)"
+            )
 
         self.n_threads = 1
 
@@ -99,6 +103,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         self.check_bioptim_version()
 
         bio_model = self.initialize_model(bio_model)
+
+        if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT) or isinstance(
+            problem_type, SocpType.TRAPEZOIDAL_EXPLICIT
+        ):
+            ode_solver = OdeSolver.TRAPEZOIDAL()
+        elif isinstance(problem_type, SocpType.COLLOCATION):
+            ode_solver = OdeSolver.COLLOCATION(
+                method=problem_type.method, polynomial_degree=problem_type.polynomial_degree
+            )
 
         self.set_original_values(
             bio_model,
@@ -189,7 +202,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             integrated_value_functions,
         )
         self.problem_type = problem_type
-        self.initialize_stochastic_variables()
+        NLP.add(self, "is_stochastic", True, True)
         self.prepare_node_mapping(node_mappings)
         self.prepare_dynamics()
         self.prepare_bounds_and_init(
@@ -208,22 +221,12 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             phase_transitions,
         )
 
-    def initialize_stochastic_variables(self):
-        n_motor_noise = self.problem_type.motor_noise_magnitude.shape[0]
-        n_sensory_noise = self.problem_type.sensory_noise_magnitude.shape[0]
-        motor_noise = self.cx.sym("motor_noise", n_motor_noise, 1)
-        sensory_noise = self.cx.sym("sensory_noise", n_sensory_noise, 1)
-        NLP.add(self, "is_stochastic", True, True)
-        NLP.add(self, "motor_noise", motor_noise, True)
-        NLP.add(self, "sensory_noise", sensory_noise, True)
-
     def prepare_dynamics(self):
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
-            self.nlp[i].ode_solver.prepare_noised_dynamic_integrator(self, self.nlp[i])
 
     def _declare_multi_node_penalties(
         self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList, constraints: ConstraintList
@@ -232,28 +235,28 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
         # Add the internal multi-node constraints for the stochastic ocp
-        if isinstance(self.problem_type, SocpType.SOCP_EXPLICIT):
+        if isinstance(self.problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
             self._prepare_stochastic_dynamics_explicit(
-                motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
-                sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
+                constraints=constraints,
             )
-        elif isinstance(self.problem_type, SocpType.SOCP_IMPLICIT):
+        elif isinstance(self.problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
             self._prepare_stochastic_dynamics_implicit(
-                motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
-                sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
                 constraints=constraints,
             )
-        elif isinstance(self.problem_type, SocpType.SOCP_COLLOCATION):
+        elif isinstance(self.problem_type, SocpType.COLLOCATION):
             self._prepare_stochastic_dynamics_collocation(
-                motor_noise_magnitude=self.problem_type.motor_noise_magnitude,
-                sensory_noise_magnitude=self.problem_type.sensory_noise_magnitude,
                 constraints=constraints,
             )
+        else:
+            raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 
-    def _prepare_stochastic_dynamics_explicit(self, motor_noise_magnitude, sensory_noise_magnitude):
+    def _prepare_stochastic_dynamics_explicit(self, constraints):
         """
         Adds the internal constraint needed for the explicit formulation of the stochastic ocp.
         """
+
+        constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+
         penalty_m_dg_dz_list = MultinodeConstraintList()
         for i_phase, nlp in enumerate(self.nlp):
             for i_node in range(nlp.ns):
@@ -261,30 +264,26 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    dynamics=nlp.dynamics_type.dynamic_function,
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
             if i_phase > 0:
                 penalty_m_dg_dz_list.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
-                    dynamics=nlp.dynamics_type.dynamic_function,
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
-    def _prepare_stochastic_dynamics_implicit(self, motor_noise_magnitude, sensory_noise_magnitude, constraints):
+    def _prepare_stochastic_dynamics_implicit(self, constraints):
         """
         Adds the internal constraint needed for the implicit formulation of the stochastic ocp.
         """
-        # constraint A, C, P, M
+
+        constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+
         multi_node_penalties = MultinodeConstraintList()
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
-            for i_node in range(nlp.ns - 1):  # TODO: Charbie -> check if this is correct
+            for i_node in range(nlp.ns):
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
@@ -303,56 +302,45 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
-                motor_noise_magnitude=motor_noise_magnitude,
-                sensory_noise_magnitude=sensory_noise_magnitude,
             )
 
         # Constraints for A
         for i_phase, nlp in enumerate(self.nlp):
             constraints.add(
-                ConstraintFcn.STOCHASTIC_DG_DX_IMPLICIT,
+                ConstraintFcn.STOCHASTIC_DF_DX_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
-                dynamics=nlp.dynamics_type.dynamic_function,
-                motor_noise_magnitude=motor_noise_magnitude,
-                sensory_noise_magnitude=sensory_noise_magnitude,
             )
 
         # Constraints for C
         for i_phase, nlp in enumerate(self.nlp):
-            for i_node in range(nlp.ns - 1):  # TODO: Charbie -> check if this is correct
+            for i_node in range(nlp.ns):
                 multi_node_penalties.add(
-                    MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
+                    MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    dynamics=nlp.dynamics_type.dynamic_function,
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
-                    MultinodeConstraintFcn.STOCHASTIC_DG_DW_IMPLICIT,
+                    MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase + 1),
                     nodes=(-1, 0),
-                    dynamics=nlp.dynamics_type.dynamic_function,
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
                 )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)
 
-    def _prepare_stochastic_dynamics_collocation(self, motor_noise_magnitude, sensory_noise_magnitude, constraints):
+    def _prepare_stochastic_dynamics_collocation(self, constraints):
         """
         Adds the internal constraint needed for the implicit formulation of the stochastic ocp using collocation
         integration. This is the real implementation suggested in Gillis 2013.
         """
 
+        constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
             constraints.add(
                 ConstraintFcn.STOCHASTIC_HELPER_MATRIX_COLLOCATION,
-                motor_noise_magnitude=motor_noise_magnitude,
-                sensory_noise_magnitude=sensory_noise_magnitude,
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
             )
@@ -363,16 +351,12 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             for i_node in range(nlp.ns):
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
-                    motor_noise_magnitude=motor_noise_magnitude,
-                    sensory_noise_magnitude=sensory_noise_magnitude,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
                 )

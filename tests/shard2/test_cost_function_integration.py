@@ -192,8 +192,6 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
                         controls_faking_constant[:, i],  # Controls
                         [],  # Parameters
                         [],  # Stochastic variables
-                        [],  # Motor noise
-                        [],  # Sensory noise
                         ocp.nlp[0].J[0].weight,  # Weight
                         [],  # Target
                         ocp.nlp[0].J[0].dt,  # dt

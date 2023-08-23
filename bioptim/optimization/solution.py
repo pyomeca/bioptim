@@ -1270,7 +1270,7 @@ class Solution:
                 )
             if self.parameters.keys():
                 params = np.vstack([self.parameters[key] for key in self.parameters])
-            val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params, s0, 0, 0)
+            val = self.ocp.phase_transitions[phase - 1].function[-1](vertcat(x0, x0), u0, params, s0)
             if val.shape[0] != x0.shape[0]:
                 raise RuntimeError(
                     f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -1371,7 +1371,7 @@ class Solution:
                 )
             else:
                 integrated_sol = solve_ivp_interface(
-                    dynamics_func=nlp.dynamics_func,
+                    dynamics_func=nlp.dynamics_func[0],
                     keep_intermediate_points=keep_intermediate_points,
                     t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
                     x0=x0,
@@ -1473,7 +1473,7 @@ class Solution:
                 )
             else:
                 integrated_sol = solve_ivp_interface(
-                    dynamics_func=nlp.dynamics_func,
+                    dynamics_func=nlp.dynamics_func[0],
                     keep_intermediate_points=keep_intermediate_points,
                     t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
                     x0=x0,
@@ -2038,7 +2038,7 @@ class Solution:
                 x_reshaped = x.T.reshape((-1, 1)) if len(x.shape) > 1 and x.shape[1] != 1 else x
                 u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
                 s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
-                val.append(penalty.function[idx](x_reshaped, u_reshaped, p, s_reshaped, 0, 0))
+                val.append(penalty.function[idx](x_reshaped, u_reshaped, p, s_reshaped))
 
                 if (
                     penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
@@ -2096,7 +2096,7 @@ class Solution:
             u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
             s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
             val_weighted.append(
-                penalty.weighted_function[idx](x_reshaped, u_reshaped, p, s_reshaped, 0, 0, penalty.weight, target, dt)
+                penalty.weighted_function[idx](x_reshaped, u_reshaped, p, s_reshaped, penalty.weight, target, dt)
             )
 
         val = np.nansum(val)

@@ -3,12 +3,13 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian, DM
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian, DM, trace
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, Axis, ControlType, QuadratureRule
 from ..misc.mapping import BiMapping
+from ..interfaces.stochastic_bio_model import StochasticBioModel
 
 
 class PenaltyFunctionAbstract:
@@ -167,6 +168,60 @@ class PenaltyFunctionAbstract:
                 )
 
             return controller.stochastic_variables[key].cx_start
+
+        @staticmethod
+        def stochastic_minimize_expected_feedback_efforts(penalty: PenaltyOption, controller: PenaltyController):
+            """
+            This function computes the expected effort due to the motor command and feedback gains for a given sensory noise
+            magnitude.
+            It is computed as Jacobian(effort, states) @ cov @ Jacobian(effort, states).T +
+                                Jacobian(efforts, motor_noise) @ sigma_w @ Jacobian(efforts, motor_noise).T
+
+            Parameters
+            ----------
+            controller : PenaltyController
+                Controller to be used to compute the expected effort.
+            """
+
+            sensory_noise_matrix = controller.model.sensory_noise_magnitude * MX_eye(
+                controller.model.sensory_noise_magnitude.shape[0]
+            )
+
+            # create the casadi function to be evaluated
+            # Get the symbolic variables
+            ref = controller.stochastic_variables["ref"].cx_start
+            if "cholesky_cov" in controller.stochastic_variables.keys():
+                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controller.stochastic_variables["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
+                )
+                cov_matrix = l_cov_matrix @ l_cov_matrix.T
+            elif "cov" in controller.stochastic_variables.keys():
+                cov_matrix = StochasticBioModel.reshape_to_matrix(
+                    controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+                )
+            else:
+                raise RuntimeError(
+                    "The covariance matrix must be provided in the stochastic variables to compute the expected efforts."
+                )
+
+            k_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["k"].cx_start, controller.model.matrix_shape_k
+            )
+
+            # Compute the expected effort
+            trace_k_sensor_k = trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
+            ee = controller.model.sensory_reference(
+                states=controller.states.cx_start,
+                controls=controller.controls.cx_start,
+                parameters=controller.parameters.cx_start,
+                stochastic_variables=controller.stochastic_variables.cx_start,
+                nlp=controller.get_nlp,
+            )
+            e_fb = k_matrix @ ((ee - ref) + controller.model.sensory_noise_magnitude)
+            jac_e_fb_x = jacobian(e_fb, controller.states.cx_start)
+            trace_jac_p_jack = trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
+            expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
+            return expectedEffort_fb_mx
 
         @staticmethod
         def minimize_fatigue(penalty: PenaltyOption, controller: PenaltyController, key: str):
@@ -1105,6 +1160,7 @@ class PenaltyFunctionAbstract:
                 "custom_function",
                 "weight",
                 "expand",
+                "is_stochastic",
             ]
             for keyword in inspect.signature(penalty.custom_function).parameters:
                 if keyword in invalid_keywords:
@@ -1318,24 +1374,11 @@ class PenaltyFunctionAbstract:
             raise ValueError("atrribute should be either mx or cx_start")
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
-            if controller.motor_noise is not None:
-                motor_noise = controller.motor_noise
-                sensory_noise = controller.sensory_noise
-            else:
-                if attribute == "mx":
-                    motor_noise = MX()
-                    sensory_noise = MX()
-                elif attribute == "cx_start":
-                    motor_noise = controller.cx()
-                    sensory_noise = controller.cx()
-
             return controller.dynamics(
                 getattr(controller.states, attribute),
                 getattr(controller.controls, attribute),
                 getattr(controller.parameters, attribute),
                 getattr(controller.stochastic_variables, attribute),
-                motor_noise,
-                sensory_noise,
             )[controller.states["qdot"].index, :]
 
         source = controller.states if "qddot" in controller.states else controller.controls

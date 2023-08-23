@@ -12,7 +12,9 @@ class Objective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(self, objective: Any, custom_type: Any = None, phase: int = -1, **params: Any):
+    def __init__(
+        self, objective: Any, custom_type: Any = None, phase: int = -1, is_stochastic: bool = False, **params: Any
+    ):
         """
         Parameters
         ----------
@@ -71,7 +73,9 @@ class Objective(PenaltyOption):
         elif isinstance(objective, ObjectiveFcn.Parameter):
             pass
 
-        super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
+        super(Objective, self).__init__(
+            penalty=objective, phase=phase, custom_function=custom_function, is_stochastic=is_stochastic, **params
+        )
 
     def _add_penalty_to_pool(self, controller: PenaltyController):
         if isinstance(controller, (list, tuple)):
@@ -331,6 +335,9 @@ class ObjectiveFcn:
         PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
         PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
         STOCHASTIC_MINIMIZE_VARIABLE = (PenaltyFunctionAbstract.Functions.stochastic_minimize_variables,)
+        STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS = (
+            PenaltyFunctionAbstract.Functions.stochastic_minimize_expected_feedback_efforts,
+        )
         SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
         TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
         TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)

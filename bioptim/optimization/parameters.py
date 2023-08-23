@@ -156,8 +156,6 @@ class Parameter(PenaltyOption):
         control_cx = ocp.cx(0, 0)
         param_cx = ocp.parameters.cx
         stochastic_cx = ocp.cx(0, 0)
-        motor_noise_cx = ocp.cx(0, 0)
-        sensory_noise_cx = ocp.cx(0, 0)
 
         penalty.function.append(
             NonLinearProgram.to_casadi_func(
@@ -167,15 +165,11 @@ class Parameter(PenaltyOption):
                 control_cx,
                 param_cx,
                 stochastic_cx,
-                motor_noise_cx,
-                sensory_noise_cx,
                 expand=expand,
             )
         )
 
-        modified_fcn = penalty.function[0](
-            state_cx, control_cx, param_cx, stochastic_cx, motor_noise_cx, sensory_noise_cx
-        )
+        modified_fcn = penalty.function[0](state_cx, control_cx, param_cx, stochastic_cx)
 
         dt_cx = ocp.cx.sym("dt", 1, 1)
         weight_cx = ocp.cx.sym("weight", 1, 1)
@@ -192,8 +186,6 @@ class Parameter(PenaltyOption):
                     control_cx,
                     param_cx,
                     stochastic_cx,
-                    motor_noise_cx,
-                    sensory_noise_cx,
                     weight_cx,
                     target_cx,
                     dt_cx,

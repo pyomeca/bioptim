@@ -59,12 +59,6 @@ def check_conditioning(ocp):
         for nlp in ocp.nlp:
             list_constraints = []
 
-            motor_noise = nlp.cx()
-            sensor_noise = nlp.cx()
-            if nlp.motor_noise is not None:
-                motor_noise = nlp.motor_noise
-                sensor_noise = nlp.sensor_noise
-
             for constraints in nlp.g:
                 node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
                 nlp.states.node_index = node_index
@@ -79,8 +73,6 @@ def check_conditioning(ocp):
                         nlp.controls.cx_start,
                         nlp.parameters.cx,
                         nlp.stochastic_variables.cx_start,
-                        motor_noise,
-                        sensor_noise,
                     ).shape[0],
                 ):
                     # depends if there are parameters
@@ -96,8 +88,6 @@ def check_conditioning(ocp):
                                 nlp.controls.cx_start,
                                 nlp.parameters.cx,
                                 nlp.stochastic_variables.cx_start,
-                                motor_noise,
-                                sensor_noise,
                             )[axis],
                             vertcat_obj,
                         )
@@ -151,10 +141,7 @@ def check_conditioning(ocp):
             s_init = s_init.reshape((s_init.size, 1))
 
             vector_init = np.vstack((x_init, u_init, param_init, s_init))
-            if nlp.motor_noise is not None:
-                vector_init = np.vstack(
-                    (vector_init, np.zeros((nlp.motor_noise.shape[0], 1)), np.zeros((nlp.sensor_noise.shape[0], 1)))
-                )
+
             jacobian_matrix = np.array(jac_func(vector_init))
 
             jacobian_list.append(jacobian_matrix)
@@ -184,8 +171,6 @@ def check_conditioning(ocp):
                         nlp.controls.cx_start,
                         nlp.parameters.cx,
                         nlp.stochastic_variables.cx_start,
-                        motor_noise,
-                        sensor_noise,
                     ).shape[0],
                 ):
                     # find all equality constraints
@@ -196,8 +181,6 @@ def check_conditioning(ocp):
                         else:
                             vertcat_obj = vertcat(vertcat_obj, *[nlp.parameters.cx])
                         vertcat_obj = vertcat(vertcat_obj, *nlp.S_scaled)
-                        if nlp.motor_noise is not None:
-                            vertcat_obj = vertcat_obj(vertcat_obj, *nlp.motor_noise, *nlp.sensor_noise)
 
                         hessian_cas = hessian(
                             constraints.function[node_index](
@@ -205,8 +188,6 @@ def check_conditioning(ocp):
                                 nlp.controls.cx_start,
                                 nlp.parameters.cx,
                                 nlp.stochastic_variables.cx_start,
-                                motor_noise,
-                                sensor_noise,
                             )[axis],
                             vertcat_obj,
                         )[0]
@@ -220,14 +201,7 @@ def check_conditioning(ocp):
                         )
 
                         vector_init = np.vstack((x_init, u_init, param_init, s_init))
-                        if nlp.motor_noise is not None:
-                            vector_init = np.vstack(
-                                (
-                                    vector_init,
-                                    np.zeros((nlp.motor_noise.shape[0], 1)),
-                                    np.zeros((nlp.sensory_noise.shape[0], 1)),
-                                )
-                            )
+
                         hessian_matrix = np.array(hes_func(vector_init))
 
                         # append hessian list
@@ -340,12 +314,6 @@ def check_conditioning(ocp):
 
         hessian_obj_list = []
         for phase, nlp in enumerate(ocp.nlp):
-            motor_noise = nlp.cx()
-            sensory_noise = nlp.cx()
-            if nlp.motor_noise is not None:
-                motor_noise = nlp.motor_noise
-                sensory_noise = nlp.sensor_noise
-
             for obj in nlp.J:
                 objective = 0
 
@@ -417,8 +385,6 @@ def check_conditioning(ocp):
                         control_cx,
                         nlp.parameters.cx,
                         stochastic_cx,
-                        motor_noise,
-                        sensory_noise,
                         obj.weight,
                         [],
                         obj.dt,
@@ -429,8 +395,6 @@ def check_conditioning(ocp):
                         control_cx,
                         nlp.parameters.cx,
                         stochastic_cx,
-                        motor_noise,
-                        sensory_noise,
                         obj.weight,
                         obj.target,
                         obj.dt,
@@ -447,9 +411,6 @@ def check_conditioning(ocp):
                 vertcat_obj = vertcat(vertcat_obj, *[nlp.parameters.cx])
             if vertcat(*nlp.S_scaled).shape[0] > 0:
                 vertcat_obj = vertcat(vertcat_obj, *nlp.S_scaled)
-            if nlp.motor_noise is not None:
-                vertcat_obj = vertcat(vertcat_obj, *nlp.motor_noise)
-                vertcat_obj = vertcat(vertcat_obj, *nlp.sensory_noise)
 
             hessian_cas = hessian(objective, vertcat_obj)[0]
 
@@ -492,10 +453,6 @@ def check_conditioning(ocp):
             param_init = param_init.reshape((param_init.size, 1))
             s_init = s_init.reshape((s_init.size, 1))
             vector_init = np.vstack((x_init, u_init, param_init, s_init))
-            if nlp.motor_noise is not None:
-                vector_init = np.vstack(
-                    (vector_init, np.zeros((nlp.motor_noise.shape[0], 1)), np.zeros((nlp.sensory_noise.shape[0], 1)))
-                )
 
             hessian_obj_matrix = np.array(hes_func(vector_init))
             hessian_obj_list.append(hessian_obj_matrix)

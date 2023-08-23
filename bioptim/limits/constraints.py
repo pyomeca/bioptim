@@ -1,13 +1,14 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, DM, horzcat
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
+from ..interfaces.stochastic_bio_model import StochasticBioModel
 
 
 class Constraint(PenaltyOption):
@@ -29,6 +30,7 @@ class Constraint(PenaltyOption):
         max_bound: np.ndarray | float = None,
         quadratic: bool = False,
         phase: int = -1,
+        is_stochastic: bool = False,
         **params: Any,
     ):
         """
@@ -44,6 +46,9 @@ class Constraint(PenaltyOption):
             The index of the phase to apply the constraint
         quadratic: bool
             If the penalty is quadratic
+        is_stochastic: bool
+            If the constraint is stochastic (if we should instead look at the rate of variation of the inequality
+            constraint)
         params:
             Generic parameters for options
         """
@@ -53,7 +58,12 @@ class Constraint(PenaltyOption):
             constraint = ConstraintFcn.CUSTOM
 
         super(Constraint, self).__init__(
-            penalty=constraint, phase=phase, quadratic=quadratic, custom_function=custom_function, **params
+            penalty=constraint,
+            phase=phase,
+            quadratic=quadratic,
+            custom_function=custom_function,
+            is_stochastic=is_stochastic,
+            **params,
         )
 
         if isinstance(constraint, ImplicitConstraintFcn):
@@ -582,42 +592,40 @@ class ConstraintFunction(PenaltyFunctionAbstract):
         def stochastic_covariance_matrix_continuity_implicit(
             penalty: PenaltyOption,
             controller: PenaltyController,
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
         ):
             """
             This functions constrain the covariance matrix to its actual value as in Gillis 2013.
             It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
-
             if "cholesky_cov" in controller.stochastic_variables.keys():
-                l_cov_matrix = controller.stochastic_variables["cholesky_cov"].reshape_to_cholesky_matrix(
-                    controller.stochastic_variables, 2 * nu, Node.START, "cholesky_cov"
+                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controller.stochastic_variables["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
                 )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
             else:
-                cov_matrix = controller.stochastic_variables["cov"].reshape_to_matrix(
-                    controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "cov"
+                cov_matrix = StochasticBioModel.reshape_to_matrix(
+                    controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
                 )
-            a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
-                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "a"
+            a_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["a"].cx_start, controller.model.matrix_shape_a
             )
-            c_matrix = controller.stochastic_variables["c"].reshape_to_matrix(
-                controller.stochastic_variables, 2 * nu, 3 * nu, Node.START, "c"
+            c_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["c"].cx_start, controller.model.matrix_shape_c
             )
-            m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
-                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "m"
+            m_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
             )
 
-            sigma_w = vertcat(sensory_noise_magnitude, motor_noise_magnitude) * MX_eye(
-                vertcat(sensory_noise_magnitude, motor_noise_magnitude).shape[0]
+            sigma_w = vertcat(
+                controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude
+            ) * MX_eye(
+                vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude).shape[0]
             )
             dt = controller.tf / controller.ns
             dg_dw = -dt * c_matrix
@@ -630,24 +638,17 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            if "cholesky_cov" in controller.stochastic_variables.keys():
-                out_vector = controller.stochastic_variables["cholesky_cov"].reshape_to_vector(cov_implicit_deffect)
-            else:
-                out_vector = controller.stochastic_variables["cov"].reshape_to_vector(cov_implicit_deffect)
+            out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
             return out_vector
 
         @staticmethod
-        def stochastic_dg_dx_implicit(
+        def stochastic_df_dx_implicit(
             penalty: Constraint,
             controller: PenaltyController,
-            dynamics: Callable,
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
         ):
             """
             This function constrains the stochastic matrix A to its actual value which is
-            A = dG/dx
-            TODO: Charbie -> This is only true for trapezoidal integration
+            A = df/dx
             """
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
@@ -656,10 +657,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             nb_root = controller.model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+            nu = controller.model.nb_q - controller.model.nb_root
 
-            a_matrix = controller.stochastic_variables["a"].reshape_to_matrix(
-                controller.stochastic_variables, 2 * nu, 2 * nu, Node.START, "a"
+            a_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["a"].cx_start, controller.model.matrix_shape_a
             )
 
             q_root = MX.sym("q_root", nb_root, 1)
@@ -670,15 +671,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             parameters_sym = MX.sym("parameters_sym", controller.parameters.shape, 1)
             stochastic_sym = MX.sym("stochastic_sym", controller.stochastic_variables.shape, 1)
 
-            dx = dynamics(
+            dx = controller.extra_dynamics(0)(
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
-                tau_joints,  # Controls
-                parameters_sym,  # Parameters
-                stochastic_sym,  # Stochastic variables
-                controller.get_nlp,
-                controller.motor_noise,
-                controller.sensory_noise,
-                with_gains=True,
+                tau_joints,
+                parameters_sym,
+                stochastic_sym,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -694,10 +691,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     tau_joints,
                     parameters_sym,
                     stochastic_sym,
-                    controller.motor_noise,
-                    controller.sensory_noise,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
                 ],
-                [jacobian(dx.dxdt[non_root_index], vertcat(q_joints, qdot_joints))],
+                [jacobian(dx[non_root_index], vertcat(q_joints, qdot_joints))],
             )
 
             DF_DX = DF_DX_fun(
@@ -708,21 +705,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controller.model.motor_noise_magnitude,
+                controller.model.sensory_noise_magnitude,
             )
 
             out = a_matrix - (MX_eye(DF_DX.shape[0]) - DF_DX * dt / 2)
 
-            out_vector = controller.stochastic_variables["a"].reshape_to_vector(out)
+            out_vector = StochasticBioModel.reshape_to_vector(out)
             return out_vector
 
         @staticmethod
         def stochastic_helper_matrix_collocation(
             penalty: Constraint,
             controller: PenaltyController,
-            motor_noise_magnitude: DM,
-            sensory_noise_magnitude: DM,
         ):
             """
             This function constrains the stochastic matrix M to its actual value which is
@@ -737,7 +732,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             nb_root = controller.model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = len(controller.get_nlp.variable_mappings["tau"].to_first.map_idx)
+            nu = controller.model.nb_q - controller.model.nb_root
             non_root_index_continuity = []
             non_root_index_defects = []
             for i in range(2):
@@ -767,18 +762,17 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 horzcat(x_qdot_root, z_qdot_root),
                 horzcat(x_qdot_joints, z_qdot_joints),
             )
-            dynamics = controller.integrate_noised_dynamics(
-                x0=states_full,
-                p=controller.controls.cx_start,
-                params=controller.parameters.cx_start,
-                s=controller.stochastic_variables.cx_start,
-                motor_noise=controller.motor_noise,
-                sensory_noise=controller.sensory_noise,
+
+            dynamics_xf, dynamics_xall, dynamics_defects = controller.integrate_extra_dynamics(0)(
+                states_full,
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
             )
 
             initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-            final_polynomial_evaluation = dynamics["xf"][non_root_index_continuity]
-            defects = dynamics["defects"]
+            final_polynomial_evaluation = dynamics_xf[non_root_index_continuity]
+            defects = dynamics_defects
             defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
 
             df_dz = horzcat(
@@ -810,8 +804,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
-                    controller.motor_noise,
-                    controller.sensory_noise,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
                 ],
                 [df_dz],
             )
@@ -829,8 +823,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
-                    controller.motor_noise,
-                    controller.sensory_noise,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
                 ],
                 [dg_dz],
             )
@@ -847,8 +841,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controller.model.motor_noise_magnitude,
+                controller.model.sensory_noise_magnitude,
             )
             dg_dz_evaluated = dg_dz_fun(
                 non_sym_states[:nb_root, 0],
@@ -862,18 +856,36 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
-                motor_noise_magnitude,
-                sensory_noise_magnitude,
+                controller.model.motor_noise_magnitude,
+                controller.model.sensory_noise_magnitude,
             )
 
-            m_matrix = controller.stochastic_variables["m"].reshape_to_matrix(
-                controller.stochastic_variables, 2 * nu, 2 * nu * (polynomial_degree + 1), Node.START, "m"
+            m_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
             )
 
             constraint = df_dz_evaluated.T - dg_dz_evaluated.T @ m_matrix.T
 
-            out_vector = controller.stochastic_variables["m"].reshape_to_vector(constraint)
+            out_vector = StochasticBioModel.reshape_to_vector(constraint)
             return out_vector
+
+        @staticmethod
+        def stochastic_mean_sensory_input_equals_reference(
+            penalty: Constraint,
+            controller: PenaltyController,
+        ):
+            """
+            Get the error between the hand position and the reference.
+            """
+            ref = controller.stochastic_variables["ref"].cx_start
+            sensory_input = controller.model.sensory_reference(
+                states=controller.states.cx_start,
+                controls=controller.controls.cx_start,
+                parameters=controller.parameters.cx_start,
+                stochastic_variables=controller.stochastic_variables.cx_start,
+                nlp=controller.get_nlp,
+            )
+            return sensory_input - ref
 
     @staticmethod
     def get_dt(_):
@@ -902,8 +914,11 @@ class ConstraintFcn(FcnEnum):
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
-    STOCHASTIC_DG_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_dg_dx_implicit,)
+    STOCHASTIC_DF_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_df_dx_implicit,)
     STOCHASTIC_HELPER_MATRIX_COLLOCATION = (ConstraintFunction.Functions.stochastic_helper_matrix_collocation,)
+    STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (
+        ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,
+    )
     SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
     SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)

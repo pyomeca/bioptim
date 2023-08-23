@@ -124,12 +124,9 @@ class OptimizationVectorHelper:
         -------
         The vector of all variables
         """
-
         x_scaled = []
         u_scaled = []
         s_scaled = []
-        motor_noise = []
-        sensory_noise = []
         for nlp in ocp.nlp:
             if nlp.ode_solver.is_direct_collocation:
                 x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
@@ -137,14 +134,7 @@ class OptimizationVectorHelper:
                 x_scaled += nlp.X_scaled
             u_scaled += nlp.U_scaled
             s_scaled += nlp.S_scaled
-            if nlp.motor_noise is not None:
-                motor_noise += [nlp.motor_noise]
-                sensory_noise += [nlp.sensory_noise]
-
         vector = vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled)
-
-        if len(motor_noise) > 0:
-            vector = vertcat(vector, *motor_noise, *sensory_noise)
         return vector
 
     @staticmethod
@@ -280,16 +270,6 @@ class OptimizationVectorHelper:
                 v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
                 v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
-        for i_phase in range(ocp.n_phases):
-            nlp = ocp.nlp[i_phase]
-            if nlp.motor_noise is not None:
-                n_motor_noise = nlp.motor_noise.shape[0]
-                n_sensory_noise = nlp.sensory_noise.shape[0]
-                v_bounds_min = np.concatenate((v_bounds_min, np.zeros((n_motor_noise, 1))))
-                v_bounds_min = np.concatenate((v_bounds_min, np.zeros((n_sensory_noise, 1))))
-                v_bounds_max = np.concatenate((v_bounds_max, np.ones((n_motor_noise, 1))))
-                v_bounds_max = np.concatenate((v_bounds_max, np.ones((n_sensory_noise, 1))))
-
         return v_bounds_min, v_bounds_max
 
     @staticmethod
@@ -404,14 +384,6 @@ class OptimizationVectorHelper:
                     collapsed_values[nlp.stochastic_variables[key].index, 0] = value
 
                 v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
-
-        for i_phase in range(len(ocp.nlp)):
-            nlp = ocp.nlp[i_phase]
-            if nlp.motor_noise is not None:
-                n_motor_noise = nlp.motor_noise.shape[0]
-                n_sensory_noise = nlp.sensory_noise.shape[0]
-                v_init = np.concatenate((v_init, np.zeros((n_motor_noise, 1))))
-                v_init = np.concatenate((v_init, np.zeros((n_sensory_noise, 1))))
 
         return v_init
 
