@@ -28,6 +28,10 @@ from bioptim import (
     PhaseTransitionFcn,
     ConfigureProblem,
     OdeSolver,
+    ConstraintFcn,
+    MultinodeConstraintList,
+    MultinodeConstraintFcn,
+    StochasticBioModel,
 )
 
 from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPointModel
@@ -65,7 +69,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
     # Stochastic variables
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4)
+    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_collocation_points=nlp.model.polynomial_degree+1)
     ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
     ConfigureProblem.configure_dynamics_function(
         ocp,
@@ -84,11 +88,11 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     )
 
 
-def path_constraint(controller: PenaltyController, super_elipse_index: int):
+def path_constraint(controller: PenaltyController, super_elipse_index: int, is_robustified: bool = False):
     p_x = controller.states["q"].cx_start[0]
     p_y = controller.states["q"].cx_start[1]
 
-    out = (
+    h = (
         (
             (p_x - controller.model.super_ellipse_center_x[super_elipse_index])
             / controller.model.super_ellipse_a[super_elipse_index]
@@ -101,6 +105,16 @@ def path_constraint(controller: PenaltyController, super_elipse_index: int):
         ** controller.model.super_ellipse_n[super_elipse_index]
         - 1
     )
+
+    out = h
+
+    if is_robustified:
+        gamma = 1
+        dh_dx = cas.jacobian(h, controller.states.cx_start)
+        cov = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].start, controller.model.matrix_shape_cov)
+        safe_guard = gamma * cas.sqrt(dh_dx @ cov @ dh_dx.T)
+        out += safe_guard
+
     return out
 
 
@@ -214,22 +228,22 @@ def prepare_socp(
     n_shooting: int,
     motor_noise_magnitude: np.ndarray,
     polynomial_degree: int,
-    q_init: np.ndarray,
-    q_dot_init: np.ndarray,
+    q_init: np.ndarray | None,
+    qdot_init: np.ndarray,
     u_init: np.ndarray,
-    m_init: np.ndarray,
-    cov_init: np.ndarray,
+    m_init: np.ndarray | None = None,
+    cov_init: np.ndarray | None = None,
+    is_robustified: bool = False,
 ) -> StochasticOptimalControlProgram:
     """
     Step # 2: Solving the stochastic version of the problem to get the stochastic trajectory.
     """
 
-    polynomial_degree = 5
     problem_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
 
     bio_model = MassPointModel(
-        sensory_noise_magnitude=0,
         motor_noise_magnitude=motor_noise_magnitude,
+        polynomial_degree=polynomial_degree,
     )
     nb_q = bio_model.nb_q
     nb_qdot = bio_model.nb_qdot
@@ -239,14 +253,19 @@ def prepare_socp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=1e-2 / (2 * n_shooting), node=Node.ALL_SHOOTING, quadratic=True
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="u", weight=1e-2 / (2 * n_shooting), node=Node.ALL_SHOOTING, quadratic=True
     )
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0, max_bound=cas.inf)
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0, max_bound=cas.inf)
-    # TODO: add cyclic constraint on cov
+    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0, max_bound=cas.inf, is_robustified=is_robustified)
+    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0, max_bound=cas.inf, is_robustified=is_robustified)
+
+    multinode_constraints = MultinodeConstraintList()
+    multinode_constraints.add(MultinodeConstraintFcn.STOCHASTIC_EQUALITY,
+                              key="cov",
+                              nodes=[n_shooting, 0],
+                              nodes_phase=[0, 0])
 
     # Dynamics
     dynamics = DynamicsList()
@@ -283,22 +302,23 @@ def prepare_socp(
 
     # Initial guesses
     x_init = InitialGuessList()
-    q_init = initialize_circle(polynomial_degree, n_shooting)
     x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.ALL_POINTS)
-    x_init.add("qdot", initial_guess=np.zeros((nb_qdot, 1)), interpolation=InterpolationType.CONSTANT)
+    x_init.add("qdot", initial_guess=qdot_init, interpolation=InterpolationType.ALL_POINTS)
 
-    u_init = InitialGuessList()
-    u_init.add("tau", initial_guess=np.zeros((nb_u, 1)), interpolation=InterpolationType.CONSTANT)
+    control_init = InitialGuessList()
+    control_init.add("u", initial_guess=u_init, interpolation=InterpolationType.EACH_FRAME)
 
     s_init = InitialGuessList()
     s_bounds = BoundsList()
-    n_m = 4 * 4 * (5 + 1)
+    n_m = 4 * 4 * (polynomial_degree + 1)
     n_cov = 4 * 4
 
+    if m_init is None:
+        m_init = np.zeros((n_m, n_shooting+1))
     s_init.add(
         "m",
-        initial_guess=[0] * n_m,
-        interpolation=InterpolationType.CONSTANT,
+        initial_guess=m_init,
+        interpolation=InterpolationType.EACH_FRAME,
     )
     s_bounds.add(
         "m",
@@ -307,16 +327,18 @@ def prepare_socp(
         interpolation=InterpolationType.CONSTANT,
     )
 
-    cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
-    idx = 0
-    cov_init_vector = np.zeros((n_states * n_states, 1))
-    for i in range(n_states):
-        for j in range(n_states):
-            cov_init_vector[idx] = cov_init[i, j]
+    if cov_init is None:
+        cov_init = np.zeros((n_cov, n_shooting+1))
+    # cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
+    # idx = 0
+    # cov_init_vector = np.zeros((n_states * n_states, 1))
+    # for i in range(n_states):
+    #     for j in range(n_states):
+    #         cov_init_vector[idx] = cov_init[i, j]
     s_init.add(
         "cov",
-        initial_guess=cov_init_vector,
-        interpolation=InterpolationType.CONSTANT,
+        initial_guess=cov_init,
+        interpolation=InterpolationType.EACH_FRAME,
     )
     s_bounds.add(
         "cov",
@@ -334,13 +356,14 @@ def prepare_socp(
         n_shooting,
         final_time,
         x_init=x_init,
-        u_init=u_init,
+        u_init=control_init,
         s_init=s_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         s_bounds=s_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
+        multinode_constraints=multinode_constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         assume_phase_dynamics=False,
@@ -379,7 +402,7 @@ def main():
     sol_ocp = ocp.solve(solver)
     q_deterministic = sol_ocp.states["q"]
     qdot_deterministic = sol_ocp.states["qdot"]
-    u_deterministic = sol_ocp.controls["tau"]
+    u_deterministic = sol_ocp.controls["u"]
 
     socp = prepare_socp(
         final_time=final_time,
@@ -387,15 +410,14 @@ def main():
         polynomial_degree=polynomial_degree,
         motor_noise_magnitude=motor_noise_magnitude,
         q_init=q_deterministic,
-        q_dot_init=qdot_deterministic,
+        qdot_init=qdot_deterministic,
         u_init=u_deterministic,
-        m_init=None,
-        cov_init=None,
+        is_robustified=False,
     )
     sol_socp = socp.solve(solver)
     q_stochastic = sol_socp.states["q"]
     qdot_stochastic = sol_socp.states["qdot"]
-    u_stochastic = sol_socp.controls["tau"]
+    u_stochastic = sol_socp.controls["u"]
     m_stochastic = sol_socp.stochastic_variables["m"]
     cov_stochastic = sol_socp.stochastic_variables["cov"]
 
@@ -403,16 +425,18 @@ def main():
         final_time=final_time,
         n_shooting=n_shooting,
         polynomial_degree=polynomial_degree,
+        motor_noise_magnitude=motor_noise_magnitude,
         q_init=q_stochastic,
-        q_dot_init=qdot_stochastic,
+        qdot_init=qdot_stochastic,
         u_init=u_stochastic,
         m_init=m_stochastic,
         cov_init=cov_stochastic,
+        is_robustified=True,
     )
     sol_rsocp = rsocp.solve(solver)
     q_robustified = sol_rsocp.states["q"]
     qdot_robustified = sol_rsocp.states["qdot"]
-    u_robustified = sol_rsocp.controls["tau"]
+    u_robustified = sol_rsocp.controls["u"]
     m_robustified = sol_rsocp.stochastic_variables["m"]
     cov_robustified = sol_rsocp.stochastic_variables["cov"]
 

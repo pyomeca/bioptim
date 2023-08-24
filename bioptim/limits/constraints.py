@@ -911,6 +911,7 @@ class ConstraintFcn(FcnEnum):
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
     PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
+    TRACK_STOCHASTIC = (PenaltyFunctionAbstract.Functions.stochastic_minimize_variables,)
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
     )

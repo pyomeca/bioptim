@@ -201,6 +201,48 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             return out
 
+
+        @staticmethod
+        def stochastic_equality(
+            penalty,
+            controllers: list[PenaltyController, ...],
+            key: str = "all",
+        ):
+            """
+            The most common continuity function, that is state before equals state after
+
+            Parameters
+            ----------
+            penalty : MultinodePenalty
+                A reference to the penalty
+            controllers: list
+                The penalty node elements
+
+            Returns
+            -------
+            The difference between the stochastic variables after and before
+            """
+
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+
+            ctrl_0 = controllers[0]
+            stochastic_0 = ctrl_0.stochastic_variables[key].cx
+            out = ctrl_0.cx.zeros(stochastic_0.shape)
+            for i in range(1, len(controllers)):
+                ctrl_i = controllers[i]
+                stochastic_i = ctrl_i.stochastic_variables[key].cx
+
+                if stochastic_0.shape != stochastic_i.shape:
+                    raise RuntimeError(
+                        f"Continuity can't be established since the number of s to be matched is {stochastic_0.shape} in "
+                        f"the pre-transition phase and {stochastic_i.shape} post-transition phase. Please use a custom "
+                        f"transition"
+                    )
+
+                out += stochastic_0 - stochastic_i
+
+            return out
+
         @staticmethod
         def com_equality(penalty, controllers: list[PenaltyController, ...]):
             """

@@ -335,7 +335,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         integration. This is the real implementation suggested in Gillis 2013.
         """
 
-        constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+        if "ref" in self.nlp[0].stochastic_variables:
+            constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+            # @pariterre This seems dangerous ?
 
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
