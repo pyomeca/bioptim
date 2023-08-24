@@ -162,6 +162,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
                 full_phase_transitions[idx_phase] = pt
         return full_phase_transitions
 
+
 class PhaseTransitionFunctions(PenaltyFunctionAbstract):
     """
     Internal implementation of the phase transitions
@@ -312,9 +313,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the covariance after and before
             """
 
-            return MultinodePenaltyFunctions.Functions.stochastic_equality(
-                transition, controllers, "cov"
-            )
+            return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
 
 
 class PhaseTransitionFcn(FcnEnum):
