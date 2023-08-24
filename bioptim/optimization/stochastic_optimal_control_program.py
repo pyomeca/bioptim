@@ -102,7 +102,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         self.check_bioptim_version()
 
-        bio_model = self.initialize_model(bio_model)
+        bio_model = self._initialize_model(bio_model)
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT) or isinstance(
             problem_type, SocpType.TRAPEZOIDAL_EXPLICIT
@@ -113,7 +113,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 method=problem_type.method, polynomial_degree=problem_type.polynomial_degree
             )
 
-        self.set_original_values(
+        self._set_original_values(
             bio_model,
             dynamics,
             n_shooting,
@@ -165,7 +165,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             u_init,
             parameter_init,
             s_init,
-        ) = self.check_arguments_and_build_nlp(
+        ) = self._check_arguments_and_build_nlp(
             dynamics,
             n_threads,
             n_shooting,
@@ -203,15 +203,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         )
         self.problem_type = problem_type
         NLP.add(self, "is_stochastic", True, True)
-        self.prepare_node_mapping(node_mappings)
-        self.prepare_dynamics()
-        self.prepare_bounds_and_init(
+        self._prepare_node_mapping(node_mappings)
+        self._prepare_dynamics()
+        self._prepare_bounds_and_init(
             x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
         )
 
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints)
 
-        self.finalize_penalties(
+        self._finalize_penalties(
             skip_continuity,
             state_continuity_weight,
             constraints,
@@ -221,7 +221,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             phase_transitions,
         )
 
-    def prepare_dynamics(self):
+    def _prepare_dynamics(self):
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)

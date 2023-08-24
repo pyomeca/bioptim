@@ -255,9 +255,9 @@ class OptimalControlProgram:
 
         self.check_bioptim_version()
 
-        bio_model = self.initialize_model(bio_model)
+        bio_model = self._initialize_model(bio_model)
 
-        self.set_original_values(
+        self._set_original_values(
             bio_model,
             dynamics,
             n_shooting,
@@ -309,7 +309,7 @@ class OptimalControlProgram:
             u_init,
             parameter_init,
             s_init,
-        ) = self.check_arguments_and_build_nlp(
+        ) = self._check_arguments_and_build_nlp(
             dynamics,
             n_threads,
             n_shooting,
@@ -345,15 +345,15 @@ class OptimalControlProgram:
             variable_mappings,
             integrated_value_functions,
         )
-        self.prepare_node_mapping(node_mappings)
-        self.prepare_dynamics()
-        self.prepare_bounds_and_init(
+        self._prepare_node_mapping(node_mappings)
+        self._prepare_dynamics()
+        self._prepare_bounds_and_init(
             x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
         )
 
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
 
-        self.finalize_penalties(
+        self._finalize_penalties(
             skip_continuity,
             state_continuity_weight,
             constraints,
@@ -367,14 +367,14 @@ class OptimalControlProgram:
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         return
 
-    def initialize_model(self, bio_model):
+    def _initialize_model(self, bio_model):
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
         bio_model = self._check_quaternions_hasattr(bio_model)
         self.n_phases = len(bio_model)
         return bio_model
 
-    def set_original_values(
+    def _set_original_values(
         self,
         bio_model,
         dynamics,
@@ -458,7 +458,7 @@ class OptimalControlProgram:
         }
         return
 
-    def check_arguments_and_build_nlp(
+    def _check_arguments_and_build_nlp(
         self,
         dynamics,
         n_threads,
@@ -681,9 +681,6 @@ class OptimalControlProgram:
         NLP.add(self, "phase_mapping", phase_mapping, True)
         NLP.add(self, "dof_names", dof_names, True)
 
-        # Prepare the parameters to optimize
-        self.phase_transitions = []  # @pariterre: is this necessary?
-
         # Prepare the parameter mappings
         if time_phase_mapping is None:
             time_phase_mapping = BiMapping(
@@ -736,7 +733,7 @@ class OptimalControlProgram:
             s_init,
         )
 
-    def prepare_node_mapping(self, node_mappings):
+    def _prepare_node_mapping(self, node_mappings):
         # Prepare the node mappings
         if node_mappings is None:
             node_mappings = NodeMappingList()
@@ -750,7 +747,7 @@ class OptimalControlProgram:
             use_states_from_phase_idx, use_controls_from_phase_idx
         )
 
-    def prepare_dynamics(self):
+    def _prepare_dynamics(self):
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
@@ -762,7 +759,7 @@ class OptimalControlProgram:
                     "please notify the developers by opening open an issue on GitHub pinging Ipuch and EveCharbie"
                 )
 
-    def prepare_bounds_and_init(
+    def _prepare_bounds_and_init(
         self, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
     ):
         self.parameter_bounds = BoundsList()
@@ -777,7 +774,7 @@ class OptimalControlProgram:
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
-    def finalize_penalties(
+    def _finalize_penalties(
         self,
         skip_continuity,
         state_continuity_weight,
