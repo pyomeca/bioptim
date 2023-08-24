@@ -11,7 +11,7 @@ from ..limits.constraints import (
     Constraint,
     ParameterConstraintList,
 )
-from ..limits.phase_transition import PhaseTransitionList
+from ..limits.phase_transition import PhaseTransitionList, PhaseTransition, PhaseTransitionFcn
 from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraintFcn
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList
@@ -345,36 +345,19 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 phase=i_phase,
             )
 
-        multi_node_penalties = MultinodeConstraintList()
-        # Constraints for P
+        # Constraints for P inner-phase
+        covariance_phase_transition = PhaseTransitionList()
         for i_phase, nlp in enumerate(self.nlp):
             constraints.add(
                 ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
             )
+            if i_phase > 0 and i_phase < len(self.nlp) - 1:
+                covariance_phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
 
-            # if i_phase > 0 and i_phase < len(self.nlp) - 1:
-            #     # Multinode penalty
-            #     multi_node_penalties.add(MultinodeConstraintFcn.STOCHASTIC_EQUALITY,
-            #                                 key="cov",
-            #                                 nodes_phase=(i_phase - 1, i_phase),
-            #                                 nodes=(-1, 0),
-            #                                 )
-            #     # Phase transition
-            #     full_phase_transitions = [
-            #         PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, weight=continuity_weight)
-            #         for i in range(ocp.n_phases - 1)
-            #     ]
-            #     MultinodePenaltyFunctions.Functions.states_equality(
-            #         transition, controllers, "all", states_mapping=states_mapping
-            #     )
-            #
-            #     # What it was
-            #     multi_node_penalties.add(
-            #         MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
-            #         nodes_phase=(i_phase - 1, i_phase),
-            #         nodes=(-1, 0),
-            #     )
-
-        multi_node_penalties.add_or_replace_to_penalty_pool(self)
+        # Constraints for P inter-phase
+        for pt in covariance_phase_transition:
+            pt.name = f"COVARIANCE_PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
