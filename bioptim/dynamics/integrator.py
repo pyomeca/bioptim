@@ -690,8 +690,12 @@ class TRAPEZOIDAL(Integrator):
         states_next = states[:, 1]
         controls_prev = controls[:, 0]
         controls_next = controls[:, 1]
-        stochastic_variables_prev = stochastic_variables[:, 0]
-        stochastic_variables_next = stochastic_variables[:, 1]
+        if stochastic_variables.shape != (0, 0):
+            stochastic_variables_prev = stochastic_variables[:, 0]
+            stochastic_variables_next = stochastic_variables[:, 1]
+        else:
+            stochastic_variables_prev = stochastic_variables
+            stochastic_variables_next = stochastic_variables
 
         x_prev[:, 0] = states[:, 0]
 
