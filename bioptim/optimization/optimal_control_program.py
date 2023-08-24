@@ -682,7 +682,7 @@ class OptimalControlProgram:
         NLP.add(self, "dof_names", dof_names, True)
 
         # Prepare the parameters to optimize
-        self.phase_transitions = []
+        self.phase_transitions = []  # @pariterre: is this necessary?
 
         # Prepare the parameter mappings
         if time_phase_mapping is None:
