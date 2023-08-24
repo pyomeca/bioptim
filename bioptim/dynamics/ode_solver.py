@@ -37,7 +37,7 @@ class OdeSolverBase:
         self.is_direct_collocation = False
         self.is_direct_shooting = False
 
-    def integrator(self, ocp, nlp, node_index: int, t: float | MX | SX) -> list:
+    def integrator(self, ocp, nlp, node_index: int) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -71,16 +71,12 @@ class OdeSolverBase:
         """
         nlp.dynamics = []
 
-        nlp.dynamics += nlp.ode_solver.integrator(
-            ocp, nlp, node_index=0, t=ocp.node_time(phase_idx=nlp.phase_idx, node_idx=0)
-        )
+        nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0)
         if ocp.assume_phase_dynamics:
             nlp.dynamics = nlp.dynamics * nlp.ns
         else:
             for node_index in range(1, nlp.ns):
-                nlp.dynamics += nlp.ode_solver.integrator(
-                    ocp, nlp, node_index, t=ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
-                )
+                nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index)
 
 
 class RK(OdeSolverBase):
@@ -106,7 +102,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp, node_index: int, t: float | MX | SX) -> list:
+    def integrator(self, ocp, nlp, node_index: int) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -130,11 +126,11 @@ class RK(OdeSolverBase):
         t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
         tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
         dt = (tf - t0) / self.steps
-        t_span = [t0 + dt * i for i in range(0, self.steps)]
+        time_integration_grid = [t0 + dt * i for i in range(0, self.steps)]
         ode_opt = {
             "t0": t0,
             "tf": tf,
-            "t_span": t_span,
+            "time_integration_grid": time_integration_grid,
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
@@ -258,7 +254,7 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, node_index: int, t) -> list:
+        def integrator(self, ocp, nlp, node_index: int) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -299,11 +295,11 @@ class OdeSolver:
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
             dt = (tf - t0) / self.steps
-            t_span = [t0 + dt * i for i in range(0, self.steps)]
+            time_integration_grid = [t0 + dt * i for i in range(0, self.steps)]
             ode_opt = {
                 "t0": t0,
                 "tf": tf,
-                "t_span": t_span,
+                "time_integration_grid": time_integration_grid,
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
@@ -356,7 +352,7 @@ class OdeSolver:
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
-        def integrator(self, ocp, nlp, node_index: int, t: float | MX | SX) -> list:
+        def integrator(self, ocp, nlp, node_index: int) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -400,11 +396,11 @@ class OdeSolver:
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
             dt = collocation_points(self.polynomial_degree, self.method)
-            t_span = [t0 + dt[i] for i in range(0, self.steps)]
+            time_integration_grid = [t0 + dt[i] for i in range(0, self.steps)]
             ode_opt = {
                 "t0": t0,
                 "tf": tf,
-                "t_span": t_span,
+                "time_integration_grid": time_integration_grid,
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
@@ -457,7 +453,7 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.steps = 1
 
-        def integrator(self, ocp, nlp, node_index: int, t: float | MX | SX) -> list:
+        def integrator(self, ocp, nlp, node_index: int) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -478,7 +474,7 @@ class OdeSolver:
             if ocp.cx is SX:
                 raise RuntimeError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
-            return super(OdeSolver.IRK, self).integrator(ocp, nlp, node_index, t)
+            return super(OdeSolver.IRK, self).integrator(ocp, nlp, node_index)
 
     class CVODES(OdeSolverBase):
         """
@@ -493,7 +489,7 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, node_index: int, t: float | MX | SX) -> list:
+        def integrator(self, ocp, nlp, node_index: int) -> list:
             """
             The interface of the OdeSolver to the corresponding integrator
 
@@ -543,9 +539,9 @@ class OdeSolver:
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
             dt = (tf - t0) / self.steps
-            t_span = [t0 + dt * i for i in range(0, self.steps)]
+            time_integration_grid = [t0 + dt * i for i in range(0, self.steps)]
 
-            ode_opt = {"t0": t0, "tf": tf, "t_span": t_span}
+            ode_opt = {"t0": t0, "tf": tf, "time_integration_grid": time_integration_grid}
 
             integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)
 

@@ -206,7 +206,7 @@ def prepare_ocp(
     "integrator",
     [
         OdeSolver.RK4(),
-        # OdeSolver.IRK(),  # stuck into infinite loop
+        OdeSolver.IRK(),
         OdeSolver.COLLOCATION(),
         OdeSolver.TRAPEZOIDAL(),
     ],
@@ -223,7 +223,10 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    if integrator.__str__() == "TRAPEZOIDAL" and control_type.name == "CONSTANT":
+    if integrator.__str__() == "IRK legendre 4":
+        raise RuntimeError("OdeSolver.IRK() is stuck into infinite loop")
+
+    elif integrator.__str__() == "TRAPEZOIDAL" and control_type.name == "CONSTANT":
         with pytest.raises(
             RuntimeError,
             match="TRAPEZOIDAL cannot be used with piece-wise constant controls, please use ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead.",

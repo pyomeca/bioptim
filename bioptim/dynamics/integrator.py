@@ -13,7 +13,7 @@ class Integrator:
     ----------
     model: BioModel
         The biorbd model to integrate
-    t_span = tuple[float, ...]
+    time_integration_grid = tuple[float, ...]
         The time integration grid
     idx: int
         The index of the degrees of freedom to integrate
@@ -68,7 +68,7 @@ class Integrator:
         """
 
         self.model = ode_opt["model"]
-        self.t_span = ode_opt["t_span"]
+        self.time_integration_grid = ode_opt["time_integration_grid"]
         self.tf = ode_opt["tf"]
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
@@ -173,7 +173,15 @@ class Integrator:
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            self.dxdt(
+                self.h,
+                self.time_integration_grid[0],
+                self.x_sym,
+                self.u_sym,
+                self.param_sym,
+                self.param_scaling,
+                self.s_sym,
+            ),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
@@ -282,7 +290,7 @@ class RK(Integrator):
         s = stochastic_variables
 
         for i in range(1, self.n_step + 1):
-            t = self.t_span[i - 1]
+            t = self.time_integration_grid[i - 1]
             x[:, i] = self.next_x(h, t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -682,7 +690,15 @@ class TRAPEZOIDAL(Integrator):
         self.function = Function(
             "integrator",
             [self.x_sym, self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            self.dxdt(
+                self.h,
+                self.time_integration_grid[0],
+                self.x_sym,
+                self.u_sym,
+                self.param_sym,
+                self.param_scaling,
+                self.s_sym,
+            ),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )
@@ -860,7 +876,15 @@ class COLLOCATION(Integrator):
         self.function = Function(
             "integrator",
             [horzcat(*self.x_sym), self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            self.dxdt(
+                self.h,
+                self.time_integration_grid[0],
+                self.x_sym,
+                self.u_sym,
+                self.param_sym,
+                self.param_scaling,
+                self.s_sym,
+            ),
             ["x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
         )
@@ -954,7 +978,15 @@ class IRK(COLLOCATION):
         self.function = Function(
             "integrator",
             [self.x_sym[0], self.u_sym, self.param_sym, self.s_sym],
-            self.dxdt(self.h, self.t_span[0], self.x_sym, self.u_sym, self.param_sym, self.param_scaling, self.s_sym),
+            self.dxdt(
+                self.h,
+                self.time_integration_grid[0],
+                self.x_sym,
+                self.u_sym,
+                self.param_sym,
+                self.param_scaling,
+                self.s_sym,
+            ),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
         )

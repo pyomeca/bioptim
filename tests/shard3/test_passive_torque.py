@@ -76,7 +76,9 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -159,7 +161,9 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, a
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -253,7 +257,9 @@ def test_torque_activation_driven_with_passive_torque(
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -371,7 +377,9 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)

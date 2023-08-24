@@ -498,13 +498,8 @@ class Solution:
                     )
 
             self.vector = np.ndarray((0, 1))
-            sol_time, sol_states, sol_controls, sol_params, sol_stochastic_variables = (
-                _sol[0],
-                _sol[1],
-                _sol[2],
-                _sol[3],
-                _sol[4],
-            )
+            sol_time, sol_states, sol_controls, sol_params, sol_stochastic_variables = _sol
+
             # For time
             for p, ss in enumerate(sol_time):
                 for key in ss.keys():
@@ -1656,7 +1651,7 @@ class Solution:
         -------
             A list of bioviz structures (one for each phase). So one can call exec() by hand
         """
-
+        # TODO: Pariterre -> PROBLEM EXPLANATION assume phase dynamic false
         data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
         if n_frames == 0:
             try:

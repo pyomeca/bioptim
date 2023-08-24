@@ -509,9 +509,6 @@ def prepare_socp(
         expand=False,
     )
 
-    t_init = InitialGuessList()
-    t_bounds = BoundsList()
-
     n_muscles = 6
     n_q = bio_model.nb_q
     n_qdot = bio_model.nb_qdot
@@ -617,11 +614,9 @@ def prepare_socp(
         dynamics,
         n_shooting,
         final_time,
-        t_init=t_init,
         x_init=x_init,
         u_init=u_init,
         s_init=s_init,
-        t_bounds=t_bounds,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         s_bounds=s_bounds,

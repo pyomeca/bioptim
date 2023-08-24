@@ -90,7 +90,9 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -233,7 +235,9 @@ def test_torque_driven_implicit(with_contact, cx, assume_phase_dynamics):
 
     # Test the results
     np.random.seed(42)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -302,7 +306,9 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
 
     # Test the results
     np.random.seed(42)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -378,7 +384,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, assume_
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -512,7 +520,9 @@ def test_torque_derivative_driven_implicit(with_contact, cx, assume_phase_dynami
 
     # Test the results
     np.random.seed(42)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -616,7 +626,9 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
 
     # Test the results
     np.random.seed(42)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -797,7 +809,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, assume_
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -905,7 +919,9 @@ def test_torque_activation_driven_with_residual_torque(
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -1035,7 +1051,9 @@ def test_muscle_driven(
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -1540,7 +1558,9 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, assume_phase_dynami
         ConfigureProblem.initialize(ocp, nlp)
 
         # Test the results
-        time = np.random.rand(1, nlp.ns)
+        time = np.random.rand(
+            1, nlp.ns
+        )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
         states = np.random.rand(nlp.states.shape, nlp.ns)
         controls = np.random.rand(nlp.controls.shape, nlp.ns)
         params = np.random.rand(nlp.parameters.shape, nlp.ns)
@@ -1613,7 +1633,9 @@ def test_custom_dynamics(with_contact, assume_phase_dynamics):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(
+        1, nlp.ns
+    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)

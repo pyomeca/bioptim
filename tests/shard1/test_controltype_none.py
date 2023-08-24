@@ -229,8 +229,6 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     Prepare and solve and animate a reaching task ocp
     """
 
-    # TODO It seems assume_phase_dynamics=True is broken
-
     # number of stimulation corresponding to phases
     n = 10
     # minimum time between two phase

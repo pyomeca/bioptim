@@ -1,18 +1,15 @@
 from typing import Callable, Any
 
-from casadi import DM, MX, SX, vertcat, Function
-import numpy as np
+from casadi import DM, vertcat, Function
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
-from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
+from .fatigue.fatigue_dynamics import FatigueList
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
-from ..limits.path_conditions import Bounds
+
 from ..misc.enums import (
     PlotType,
-    ControlType,
-    VariableType,
     Node,
     ConstraintType,
     RigidBodyDynamics,

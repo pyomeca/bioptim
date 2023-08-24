@@ -955,11 +955,11 @@ class DynamicsFunctions:
 
     @staticmethod
     def holonomic_torque_driven(
-        time: MX | SX,
-        states: MX | SX,
-        controls: MX | SX,
-        parameters: MX | SX,
-        stochastic_variables: MX | SX,
+        time: MX.sym,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        stochastic_variables: MX.sym,
         nlp: NonLinearProgram,
     ) -> DynamicsEvaluation:
         """
@@ -967,15 +967,15 @@ class DynamicsFunctions:
 
         Parameters
         ----------
-        time: MX | SX
+        time: MX.sym
             The time of the system
-        states: MX | SX
+        states: MX.sym
             The state of the system
-        controls: MX | SX
+        controls: MX.sym
             The controls of the system
-        parameters: MX | SX
+        parameters: MX.sym
             The parameters acting on the system
-        stochastic_variables: MX | SX
+        stochastic_variables: MX.sym
             The stochastic variables of the system
         nlp: NonLinearProgram
             A reference to the phase
