@@ -1027,9 +1027,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.model.sensory_noise_magnitude,
             )
 
-            sigma_w_num = vertcat(
-                controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude
-            )
+            sigma_w_num = vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude)
             sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
 
             cov_next_computed = (
@@ -1096,7 +1094,9 @@ class ConstraintFcn(FcnEnum):
     )
     STOCHASTIC_DF_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_df_dx_implicit,)
     STOCHASTIC_HELPER_MATRIX_COLLOCATION = (ConstraintFunction.Functions.stochastic_helper_matrix_collocation,)
-    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION = (ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_collocation,)
+    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION = (
+        ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_collocation,
+    )
     STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (
         ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,
     )
