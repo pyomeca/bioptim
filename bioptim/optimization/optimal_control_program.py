@@ -8,10 +8,9 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import DM, MX, SX, Function, sum1, horzcat, vertcat
+from casadi import MX, SX, Function, sum1, horzcat, vertcat
 from matplotlib import pyplot as plt
 
-from .optimization_variable import OptimizationVariableContainer
 from .optimization_vector import OptimizationVectorHelper
 from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProblem
@@ -96,8 +95,6 @@ class OptimalControlProgram:
         The list of transition constraint between phases
     ocp_solver: SolverInterface
         A reference to the ocp solver
-    time: list[float] | list[MX] | list[SX]
-        Each time of the ocp
     version: dict
         The version of all the underlying software. This is important when loading a previous ocp
 

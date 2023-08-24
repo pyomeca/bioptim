@@ -230,7 +230,6 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     """
 
     # TODO It seems assume_phase_dynamics=True is broken
-    #  I THINK IT'S NORMAL AS THIS FUN CHANGES AT EACH NODE
 
     # number of stimulation corresponding to phases
     n = 10

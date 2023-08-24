@@ -50,12 +50,16 @@ class DynamicsFunctions:
 
         Parameters
         ----------
+        time: MX.sym
+            The time of the system
         states: MX.sym
             The state of the system
         controls: MX.sym
             The controls of the system
         parameters: MX.sym
             The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic_variables of the system
         nlp: NonLinearProgram
             The definition of the system
 
@@ -88,12 +92,16 @@ class DynamicsFunctions:
 
         Parameters
         ----------
+        time: MX.sym
+            The time of the system
         states: MX.sym
             The state of the system
         controls: MX.sym
             The controls of the system
         parameters: MX.sym
             The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic_variables of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -247,12 +255,16 @@ class DynamicsFunctions:
 
         Parameters
         ----------
+        time: MX.sym
+            The time of the system
         states: MX.sym
             The state of the system
         controls: MX.sym
             The controls of the system
         parameters: MX.sym
             The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic_variables of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -307,12 +319,16 @@ class DynamicsFunctions:
 
         Parameters
         ----------
+        time: MX.sym
+            The time of the system
         states: MX.sym
             The state of the system
         controls: MX.sym
             The controls of the system
         parameters: MX.sym
             The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic_variables of the system
         nlp: NonLinearProgram
             The definition of the system
         rigidbody_dynamics: RigidBodyDynamics
@@ -377,6 +393,8 @@ class DynamicsFunctions:
 
         Parameters
         ----------
+        time: MX.sym
+            The time of the system
         states: MX.sym
             The state of the system
         controls: MX.sym
@@ -426,12 +444,16 @@ class DynamicsFunctions:
 
         Parameters
         ----------
+        time: MX.sym
+            The time of the system
         states: MX.sym
             The state of the system
         controls: MX.sym
             The controls of the system
         parameters: MX.sym
             The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic_variables of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -477,12 +499,16 @@ class DynamicsFunctions:
 
         Parameters
         ----------
+        time: MX.sym
+            The time of the system
         states: MX.sym
             The state of the system
         controls: MX.sym
             The controls of the system
         parameters: MX.sym
             The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic_variables of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -613,12 +639,16 @@ class DynamicsFunctions:
 
         Parameters
         ----------
+        time: MX.sym
+            The time of the system
         states: MX.sym
             The state of the system
         controls: MX.sym
             The controls of the system
         parameters: MX.sym
             The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic_variables of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -660,12 +690,16 @@ class DynamicsFunctions:
 
         Parameters
         ----------
+        time: MX.sym
+            The time of the system
         states: MX.sym
             The state of the system
         controls: MX.sym
             The controls of the system
         parameters: MX.sym
             The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic_variables of the system
         nlp: NonLinearProgram
             The definition of the system
         rigidbody_dynamics: RigidBodyDynamics
@@ -929,10 +963,12 @@ class DynamicsFunctions:
         nlp: NonLinearProgram,
     ) -> DynamicsEvaluation:
         """
-        The custom dynamics function that provides the derivative of the states: dxdt = f(x, u, p)
+        The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, s)
 
         Parameters
         ----------
+        time: MX | SX
+            The time of the system
         states: MX | SX
             The state of the system
         controls: MX | SX

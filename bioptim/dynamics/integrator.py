@@ -13,8 +13,8 @@ class Integrator:
     ----------
     model: BioModel
         The biorbd model to integrate
-    t_span = tuple[float, float]
-        The initial and final time
+    t_span = tuple[float, ...]
+        The time integration grid
     idx: int
         The index of the degrees of freedom to integrate
     cx: MX | SX
@@ -50,7 +50,7 @@ class Integrator:
         Get the multithreaded CasADi graph of the integration
     get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, time: MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     _finish_init(self)
         Prepare the CasADi function from dxdt
@@ -131,7 +131,7 @@ class Integrator:
     def dxdt(
         self,
         h: float,
-        time: MX | SX,
+        time: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -145,7 +145,7 @@ class Integrator:
         ----------
         h: float
             The time step
-        time: MX | SX
+        time: float | MX | SX
             The time of the system
         states: MX | SX
             The states of the system
@@ -194,9 +194,9 @@ class RK(Integrator):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
+    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
-    dxdt(self, h: float, time: MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -215,7 +215,7 @@ class RK(Integrator):
         self.h_norm = 1 / self.n_step
         self.h = self.step_time * self.h_norm
 
-    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
+    def next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
         """
         Compute the next integrated state (abstract)
 
@@ -223,7 +223,7 @@ class RK(Integrator):
         ----------
         h: float
             The time step
-        t: float
+        t: float | MX | SX
             The initial time of the integration
         x_prev: MX | SX
             The current state of the system
@@ -244,7 +244,7 @@ class RK(Integrator):
     def dxdt(
         self,
         h: float,
-        time: MX | SX,
+        time: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -258,7 +258,7 @@ class RK(Integrator):
         ----------
         h: float
             The time step
-        time: MX | SX
+        time: float | MX | SX
             The time of the system
         states: MX | SX
             The states of the system
@@ -296,7 +296,7 @@ class RK1(RK):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
+    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -313,7 +313,7 @@ class RK1(RK):
         super(RK1, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
+    def next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
         """
         Compute the next integrated state
 
@@ -321,7 +321,7 @@ class RK1(RK):
         ----------
         h: float
             The time step
-        t: float
+        t: float | MX | SX
             The initial time of the integration
         x_prev: MX | SX
             The current state of the system
@@ -346,7 +346,7 @@ class RK2(RK):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
+    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -363,7 +363,7 @@ class RK2(RK):
         super(RK2, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
+    def next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         """
         Compute the next integrated state
 
@@ -371,7 +371,7 @@ class RK2(RK):
         ----------
         h: float
             The time step
-        t: float
+        t: float | MX | SX
             The initial time of the integration
         x_prev: MX | SX
             The current state of the system
@@ -396,7 +396,7 @@ class RK4(RK):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
+    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -413,7 +413,7 @@ class RK4(RK):
         super(RK4, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
+    def next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         """
         Compute the next integrated state
 
@@ -421,7 +421,7 @@ class RK4(RK):
         ----------
         h: float
             The time step
-        t: float
+        t: float | MX | SX
             The initial time of the integration
         x_prev: MX | SX
             The current state of the system
@@ -451,7 +451,7 @@ class RK8(RK4):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
+    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state (abstract)
     """
 
@@ -468,7 +468,7 @@ class RK8(RK4):
         super(RK8, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t: float, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
+    def next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         """
         Compute the next integrated state
 
@@ -476,7 +476,7 @@ class RK8(RK4):
         ----------
         h: float
             The time step
-        t: float
+        t: float | MX | SX
             The initial time of the integration
         x_prev: MX | SX
             The current state of the system
@@ -542,7 +542,7 @@ class TRAPEZOIDAL(Integrator):
 
     Methods
     -------
-    next_x(self, h: float, t: float, x_prev: MX | SX, x_next: MX | SX, u: MX | SX, u_next: MX | SX, p: MX | SX, s: MX | SX)
+    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, x_next: MX | SX, u: MX | SX, u_next: MX | SX, p: MX | SX, s: MX | SX)
         Compute the next integrated state
     dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
@@ -564,7 +564,7 @@ class TRAPEZOIDAL(Integrator):
     def next_x(
         self,
         h: float,
-        t: float,
+        t: float | MX | SX,
         x_prev: MX | SX,
         x_next: MX | SX,
         u_prev: MX | SX,
@@ -580,7 +580,7 @@ class TRAPEZOIDAL(Integrator):
         ----------
         h: float
             The time step
-        t: float
+        t: float | MX | SX
             The initial time of the integration
         x_prev: MX | SX
             The current state of the system
@@ -610,7 +610,7 @@ class TRAPEZOIDAL(Integrator):
     def dxdt(
         self,
         h: float,
-        t: float,
+        t: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -624,7 +624,7 @@ class TRAPEZOIDAL(Integrator):
         ----------
         h: float
             The time step
-        t: MX | SX
+        t: float | MX | SX
             The time of the system
         states: MX | SX
             The states of the system
@@ -634,7 +634,7 @@ class TRAPEZOIDAL(Integrator):
             The parameters of the system
         param_scaling
             The parameters scaling factor
-        stochastic_variables_prev: MX | SX
+        stochastic_variables: MX | SX
             The stochastic variables of the system
 
         Returns
@@ -699,9 +699,9 @@ class COLLOCATION(Integrator):
 
     Methods
     -------
-    get_u(self, u: np.ndarray, t: float) -> np.ndarray
+    get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, time: MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -761,7 +761,7 @@ class COLLOCATION(Integrator):
 
         self._finish_init()
 
-    def get_u(self, u: np.ndarray, t: float) -> np.ndarray:
+    def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
         """
         Get the control at a given time
 
@@ -769,7 +769,7 @@ class COLLOCATION(Integrator):
         ----------
         u: np.ndarray
             The control matrix
-        t: float
+        t: float | MX | SX
             The time a which control should be computed
 
         Returns
@@ -785,7 +785,7 @@ class COLLOCATION(Integrator):
     def dxdt(
         self,
         h: float,
-        time: MX | SX,
+        time: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -799,7 +799,7 @@ class COLLOCATION(Integrator):
         ----------
         h: float
             The time step
-        time: MX | SX
+        time: float | MX | SX
             The time of the system
         states: MX | SX
             The states of the system
@@ -874,7 +874,7 @@ class IRK(COLLOCATION):
     -------
     get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, t: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -893,7 +893,7 @@ class IRK(COLLOCATION):
     def dxdt(
         self,
         h: float,
-        time: MX | SX,
+        time: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -907,7 +907,7 @@ class IRK(COLLOCATION):
         ----------
         h: float
             The time step
-        time: MX | SX
+        time: float | MX | SX
             The time of the system
         states: MX | SX
             The states of the system

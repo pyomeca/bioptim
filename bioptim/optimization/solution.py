@@ -1292,12 +1292,6 @@ class Solution:
             param_scaling = nlp.parameters.scaling
             x0 = self._get_first_frame_states(out, shooting_type, phase=p)
 
-            # todo : the time is wrong, it must be evaluated in function of parameters
-            # if self.ocp.nlp[p].time:
-            #     t = np.concatenate([self._time[p][key] for key in self.ocp.nlp[p].time])
-            # else:
-            # t = np.array([self.ocp.nlp[p].node_time(phase_idx=nlp.phase_idx, node_idx)])
-
             u = (
                 np.array([])
                 if nlp.control_type == ControlType.NONE
@@ -1771,8 +1765,6 @@ class Solution:
                         node_idx = penalty.multinode_idx[i]
                         phase_idx = penalty.nodes_phase[i]
 
-                        # for key in nlp.time:
-                        #     t = np.concatenate((t, self._time[phase_idx][key][:, node_idx]))
                         for key in nlp.states:
                             x = np.concatenate((x, self._states["scaled"][phase_idx][key][:, node_idx]))
                         for key in nlp.controls:

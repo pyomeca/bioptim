@@ -95,7 +95,7 @@ def stochastic_forward_dynamics(
 
     Parameters
     ----------
-    states: MX.sym
+    time: MX.sym
         The time
     states: MX.sym
         The states

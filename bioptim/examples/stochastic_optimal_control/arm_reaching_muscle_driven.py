@@ -353,7 +353,7 @@ def zero_acceleration(
     No acceleration of the joints at the beginning and end of the movement.
     """
     dx = stochastic_forward_dynamics(
-        controller.time.cx_start,
+        controller.time,
         controller.states.cx_start,
         controller.controls.cx_start,
         controller.parameters.cx_start,
@@ -736,7 +736,7 @@ def main():
         hand_pos_fcn = cas.Function("hand_pos", [q_sym], [model.end_effector_position(q_sym)])
         hand_vel_fcn = cas.Function("hand_vel", [q_sym, qdot_sym], [model.end_effector_velocity(q_sym, qdot_sym)])
 
-        time = socp.nlp[0].time.cx_start
+        time = socp.nlp[0].time
         states = socp.nlp[0].states.cx_start
         controls = socp.nlp[0].controls.cx_start
         parameters = socp.nlp[0].parameters.cx_start

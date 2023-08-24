@@ -201,9 +201,8 @@ class NonLinearProgram:
         self.g = []
         self.g_internal = []
         self.casadi_func = {}
-        # self.time.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
-        self.time = self.cx.sym("time_sx", 1, 1)
-        self.time_mx = MX.sym("time_mx", 1, 1)
+        self.time = self.cx.sym("time", 1, 1)
+        self.time_mx = MX.sym("time", 1, 1)
         self.states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)

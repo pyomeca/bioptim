@@ -11,19 +11,19 @@ import pytest
 from casadi import MX, SX, vertcat, sin
 from bioptim import (
     BiorbdModel,
-    OptimalControlProgram,
-    ObjectiveList,
-    ObjectiveFcn,
-    DynamicsList,
     BoundsList,
+    ConfigureProblem,
+    ControlType,
+    DynamicsEvaluation,
+    DynamicsFunctions,
+    DynamicsList,
+    InitialGuessList,
+    ObjectiveFcn,
+    ObjectiveList,
     OdeSolver,
     OdeSolverBase,
+    OptimalControlProgram,
     NonLinearProgram,
-    ConfigureProblem,
-    DynamicsFunctions,
-    DynamicsEvaluation,
-    InitialGuessList,
-    ControlType,
 )
 
 
