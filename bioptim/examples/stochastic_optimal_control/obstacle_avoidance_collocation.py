@@ -111,7 +111,7 @@ def path_constraint(controller: PenaltyController, super_elipse_index: int, is_r
     if is_robustified:
         gamma = 1
         dh_dx = cas.jacobian(h, controller.states.cx_start)
-        cov = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].start, controller.model.matrix_shape_cov)
+        cov = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov)
         safe_guard = gamma * cas.sqrt(dh_dx @ cov @ dh_dx.T)
         out += safe_guard
 
