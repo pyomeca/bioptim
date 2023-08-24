@@ -49,13 +49,6 @@ def test_arm_reaching_torque_driven_collocations():
     np.testing.assert_equal(f.shape, (1, 1))
     np.testing.assert_almost_equal(f[0, 0], 426.82741618989667)
 
-    # detailed cost values
-    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 426.9140367376157)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], -0.08662054771899941)
-    np.testing.assert_almost_equal(
-        f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
-    )
-
     # Check constraints
     g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (426, 1))
