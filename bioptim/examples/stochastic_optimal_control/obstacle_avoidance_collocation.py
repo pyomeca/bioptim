@@ -7,6 +7,7 @@ The controls are coordinates of a quide-point (the mass is attached to this guid
 import matplotlib.pyplot as plt
 import casadi as cas
 import numpy as np
+import pickle
 
 from bioptim import (
     StochasticOptimalControlProgram,
@@ -403,6 +404,13 @@ def main():
     q_deterministic = sol_ocp.states["q"]
     qdot_deterministic = sol_ocp.states["qdot"]
     u_deterministic = sol_ocp.controls["u"]
+    data_deterministic = {"q_deterministic": q_deterministic,
+                          "qdot_deterministic": qdot_deterministic,
+                          "u_deterministic": u_deterministic}
+    #save the results
+    with open('deterministic.pkl', 'wb') as f:
+        pickle.dump(data_deterministic, f)
+
 
     socp = prepare_socp(
         final_time=final_time,
@@ -420,6 +428,13 @@ def main():
     u_stochastic = sol_socp.controls["u"]
     m_stochastic = sol_socp.stochastic_variables["m"]
     cov_stochastic = sol_socp.stochastic_variables["cov"]
+    data_stochastic = {"q_stochastic": q_stochastic,
+                      "qdot_stochastic": qdot_stochastic,
+                      "u_stochastic": u_stochastic,
+                      "m_stochastic": m_stochastic,
+                      "cov_stochastic": cov_stochastic}
+    with open('stochastic.pkl', 'wb') as f:
+        pickle.dump(data_stochastic, f)
 
     rsocp = prepare_socp(
         final_time=final_time,
@@ -439,6 +454,15 @@ def main():
     u_robustified = sol_rsocp.controls["u"]
     m_robustified = sol_rsocp.stochastic_variables["m"]
     cov_robustified = sol_rsocp.stochastic_variables["cov"]
+    robustified_data = {"q_robustified": q_robustified,
+                        "qdot_robustified": qdot_robustified,
+                        "u_robustified": u_robustified,
+                        "m_robustified": m_robustified,
+                        "cov_robustified": cov_robustified}
+
+    with open('robustified.pkl', 'wb') as f:
+        pickle.dump(robustified_data, f)
+
 
     q_init = initialize_circle(5, n_shooting)
     plt.figure()
@@ -456,12 +480,13 @@ def main():
 
     plt.plot(q_init[0], q_init[1], "-k", label="Initial guess")
     plt.plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
-    plt.plot(q_stochastic[0], q_stochastic[1], "-r", label="Stochastic")
+    plt.plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
     plt.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
 
     plt.xlabel("X")
     plt.ylabel("Y")
     plt.axis("equal")
+    plt.legend()
     plt.show()
 
 
