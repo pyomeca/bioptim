@@ -772,6 +772,7 @@ class COLLOCATION(Integrator):
 
         self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
+        self.allow_free_variables = ode_opt["allow_free_variables"]
 
         # Coefficients of the collocation equation
         self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
@@ -932,6 +933,7 @@ class COLLOCATION(Integrator):
             ),
             ["x0", "p", "params", "s"],
             ["xf", "xall", "defects"],
+            {"allow_free": self.allow_free_variables},
         )
 
 

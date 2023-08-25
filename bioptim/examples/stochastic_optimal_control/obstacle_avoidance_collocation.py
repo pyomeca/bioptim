@@ -487,6 +487,7 @@ def main():
     plt.ylabel("Y")
     plt.axis("equal")
     plt.legend()
+    plt.savefig("output.png")
     plt.show()
 
 

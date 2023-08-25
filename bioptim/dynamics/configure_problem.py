@@ -720,6 +720,8 @@ class ConfigureProblem:
             user prerogative to wrap the Function around another function to lift the free variable
         """
 
+        nlp.dynamics_type.allow_free_variables = allow_free_variables
+
         nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 

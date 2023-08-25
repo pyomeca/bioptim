@@ -74,12 +74,12 @@ class OdeSolverBase:
 
         for i in range(len(nlp.dynamics_func)):
             dynamics = []
-            dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=0, node_index=0)
+            dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=0)
             if ocp.assume_phase_dynamics:
                 dynamics = dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
-                    dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=0, node_index=node_index)
+                    dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=node_index)
 
             if i == 0:
                 nlp.dynamics = dynamics
@@ -365,6 +365,7 @@ class OdeSolver:
                 "irk_polynomial_interpolation_degree": self.polynomial_degree,
                 "method": self.method,
                 "defects_type": self.defects_type,
+                "allow_free_variables": nlp.dynamics_type.allow_free_variables,
             }
 
             if ode["ode"].size2_out("xdot") != 1:
