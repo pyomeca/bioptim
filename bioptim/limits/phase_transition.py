@@ -293,6 +293,28 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             func = pre.to_casadi_func(name, val, pre.states.mx, post.states.mx)(cx_end, cx_start)
             return func
 
+        @staticmethod
+        def covariance_continuous(
+            transition,
+            controllers: list[PenaltyController, PenaltyController],
+        ):
+            """
+            The most common continuity function, that is the covariance before equals covariance after for stochastic ocp
+
+            Parameters
+            ----------
+            transition : PhaseTransition
+                A reference to the phase transition
+            controllers: list[PenaltyController, PenaltyController]
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the covariance after and before
+            """
+
+            return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
+
 
 class PhaseTransitionFcn(FcnEnum):
     """
@@ -303,6 +325,7 @@ class PhaseTransitionFcn(FcnEnum):
     DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
+    COVARIANCE_CONTINUOUS = (PhaseTransitionFunctions.Functions.covariance_continuous,)
     CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
 
     @staticmethod
