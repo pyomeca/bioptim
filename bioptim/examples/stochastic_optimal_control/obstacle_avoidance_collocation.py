@@ -36,9 +36,7 @@ from bioptim import (
 )
 
 from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPointModel
-
-import numpy as np
-import matplotlib.pyplot as plt
+from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init
 
 
 def superellipse(a=1, b=1, n=2, x_0=0, y_0=0, resolution=100):
@@ -263,10 +261,10 @@ def prepare_socp(
     constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0, max_bound=cas.inf, is_robustified=is_robustified)
 
     multinode_constraints = MultinodeConstraintList()
-    multinode_constraints.add(MultinodeConstraintFcn.STOCHASTIC_EQUALITY,
-                              key="cov",
-                              nodes=[n_shooting, 0],
-                              nodes_phase=[0, 0])
+    # multinode_constraints.add(MultinodeConstraintFcn.STOCHASTIC_EQUALITY,
+    #                           key="cov",
+    #                           nodes=[n_shooting, 0],
+    #                           nodes_phase=[0, 0])
 
     # Dynamics
     dynamics = DynamicsList()
@@ -313,9 +311,11 @@ def prepare_socp(
     s_bounds = BoundsList()
     n_m = 4 * 4 * (polynomial_degree + 1)
     n_cov = 4 * 4
+    n_stochastic = n_m + n_cov
 
     if m_init is None:
-        m_init = np.zeros((n_m, n_shooting+1))
+        # m_init = np.ones((n_m, n_shooting+1)) * 0.01
+        m_init = get_m_init(bio_model, n_stochastic, n_shooting, final_time, polynomial_degree, q_init, qdot_init, u_init, bio_model.motor_noise_magnitude)
     s_init.add(
         "m",
         initial_guess=m_init,
@@ -329,13 +329,24 @@ def prepare_socp(
     )
 
     if cov_init is None:
-        cov_init = np.zeros((n_cov, n_shooting+1))
-    # cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
-    # idx = 0
-    # cov_init_vector = np.zeros((n_states * n_states, 1))
-    # for i in range(n_states):
-    #     for j in range(n_states):
-    #         cov_init_vector[idx] = cov_init[i, j]
+        cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.01
+        shape_0, shape_1 = cov_init_matrix.shape[0], cov_init_matrix.shape[1]
+        cov_0 = np.zeros((shape_0 * shape_1, n_shooting+1))
+        for s0 in range(shape_0):
+            for s1 in range(shape_1):
+                cov_0[shape_0 * s1 + s0, :] = cov_init_matrix[s0, s1]
+        cov_init = get_cov_init(bio_model,
+                                n_shooting,
+                                n_stochastic,
+                                polynomial_degree,
+                                final_time,
+                                q_init,
+                                qdot_init,
+                                u_init,
+                                m_init,
+                                cov_0,
+                                motor_noise_magnitude)
+
     s_init.add(
         "cov",
         initial_guess=cov_init,
@@ -391,9 +402,10 @@ def main():
     motor_noise_magnitude = np.array([1, 1])
 
     # Solver parameters
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
     solver.set_maximum_iterations(1000)
+    # solver._nlp_scaling_method = "None"
 
     ocp = prepare_ocp(
         final_time=final_time,
@@ -410,7 +422,7 @@ def main():
     #save the results
     with open('deterministic.pkl', 'wb') as f:
         pickle.dump(data_deterministic, f)
-
+    sol_ocp.graphs()
 
     socp = prepare_socp(
         final_time=final_time,
@@ -435,6 +447,7 @@ def main():
                       "cov_stochastic": cov_stochastic}
     with open('stochastic.pkl', 'wb') as f:
         pickle.dump(data_stochastic, f)
+    sol_socp.graphs()
 
     rsocp = prepare_socp(
         final_time=final_time,
@@ -462,7 +475,7 @@ def main():
 
     with open('robustified.pkl', 'wb') as f:
         pickle.dump(robustified_data, f)
-
+    sol_rsocp.graphs()
 
     q_init = initialize_circle(5, n_shooting)
     plt.figure()
