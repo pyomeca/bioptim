@@ -336,7 +336,6 @@ def check_conditioning(ocp):
                     controls_post = nlp_post.controls.cx_start
                     stochastic_pre = phase.stochastic_cx_end
                     stochastic_post = nlp_post.stochastic_cx_start
-                    time_cx = vertcat(time_pre, time_post)
                     state_cx = vertcat(states_pre, states_post)
                     control_cx = vertcat(controls_pre, controls_post)
                     stochastic_cx = vertcat(stochastic_pre, stochastic_post)

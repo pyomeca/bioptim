@@ -365,7 +365,6 @@ class Solution:
                         controls_cx = vertcat(controls_cx, nlp.controls.cx_start)
                         stochastic_variables_cx = vertcat(stochastic_variables_cx, nlp.stochastic_variables.cx_start)
                         integrated_values_cx = vertcat(integrated_values_cx, nlp.integrated_values[key].cx_start)
-
                         states_num_tempo = np.array([])
                         for key_tempo in states[i_phase].keys():
                             states_num_tempo = np.concatenate((states_num_tempo, states[i_phase][key_tempo][:, i_node]))
@@ -485,7 +484,7 @@ class Solution:
             if sum([isinstance(s, InitialGuessList) for s in _sol]) != 5:
                 raise ValueError(
                     "solution must be a solution dict, "
-                    "an InitialGuess[List] of len 4 or 5 (states, controls, parameters, time, stochastic_variables), "
+                    "an InitialGuess[List] of len 4 or 5 (time, states, controls, parameters, stochastic_variables), "
                     "or a None"
                 )
             if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
@@ -1795,7 +1794,7 @@ class Solution:
                         if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                             col_u_idx.append((idx + 1))
 
-                    t = nlp.time
+                    t = self.time[phase_idx][idx] if isinstance(self.time, list) else self.time[idx]
 
                     x = np.ndarray((nlp.states.shape, len(col_x_idx)))
                     for key in nlp.states:

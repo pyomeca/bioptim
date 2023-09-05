@@ -566,7 +566,7 @@ class OdeSolver:
             ]
 
         @staticmethod
-        def _adapt_integrator_output(integrator_func: Callable, t: MX | SX, x0: MX | SX, p: MX | SX):
+        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, p: MX | SX):
             """
             Interface to make xf and xall as outputs
 
@@ -574,21 +574,17 @@ class OdeSolver:
             ----------
             integrator_func: Callable
                 Handler on a CasADi function
-            t0: MX | SX
-                Symbolic variable of time
             x0: MX | SX
                 Symbolic variable of states
             p: MX | SX
                 Symbolic variable of controls
-            s: MX | SX
-                Symbolic variable of stochastic variables
 
             Returns
             -------
             xf and xall
             """
 
-            xf = integrator_func(t=t, x0=x0, p=p)["xf"]
+            xf = integrator_func(x0=x0, p=p)["xf"]
             return xf, horzcat(x0, xf)
 
         def __str__(self):
