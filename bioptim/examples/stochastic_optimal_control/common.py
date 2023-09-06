@@ -397,3 +397,60 @@ def test_matrix_semi_definite_positiveness(var):
             break
 
     return is_ok
+
+
+def test_robustified_constraint_value(model, q, qdot, cov_num):
+    """
+    This function tests if the robustified constraint contains NaNs.
+    """
+    is_ok = True
+    p_x = cas.MX.sym("p_x", 1, 1)
+    p_y = cas.MX.sym("p_x", 1, 1)
+    v_x = cas.MX.sym("v_x", 1, 1)
+    v_y = cas.MX.sym("v_x", 1, 1)
+    cov = cas.MX.sym("cov", 4, 4)
+
+    non_robust_constraint = cas.MX()
+    robust_component = cas.MX()
+    dh_dx_all = cas.MX()
+    cov_all = cas.MX()
+    sqrt_all = cas.MX()
+    for i in range(2):
+        h = (((p_x - model.super_ellipse_center_x[i])/ model.super_ellipse_a[i]) ** model.super_ellipse_n[i]
+                + ((p_y - model.super_ellipse_center_y[i])/ model.super_ellipse_b[i]) ** model.super_ellipse_n[i]
+                - 1
+        )
+
+        non_robust_constraint = cas.vertcat(non_robust_constraint, h)
+
+        gamma = 1
+        dh_dx = cas.jacobian(h, cas.vertcat(p_x, p_y, v_x, v_y))
+        safe_guard = gamma * cas.sqrt(dh_dx @ cov @ dh_dx.T)
+        robust_component = cas.vertcat(robust_component, safe_guard)
+
+        dh_dx_all = cas.vertcat(dh_dx_all, dh_dx)
+        cov_all = cas.vertcat(cov_all, cov)
+        sqrt_all = cas.vertcat(sqrt_all, dh_dx @ cov @ dh_dx.T)
+
+    func = cas.Function("out", [p_x, p_y, v_x, v_y, cov], [non_robust_constraint, robust_component, dh_dx_all, cov_all, sqrt_all])
+
+    out_num = []
+    for j in range(cov_num.shape[1]):
+        p_x_value = q[0, j*model.polynomial_degree]
+        p_y_value = q[1, j*model.polynomial_degree]
+        v_x_value = qdot[0, j*model.polynomial_degree]
+        v_y_value = qdot[1, j*model.polynomial_degree]
+        cov_value = np.zeros((4, 4))
+        for s0 in range(4):
+            for s1 in range(4):
+                cov_value[s1, s0] = cov_num[s0 * 4 + s1, j]
+        out_this_time = func(p_x_value, p_y_value, v_x_value, v_y_value, cov_value)
+        out_num += [out_this_time]
+
+        if np.sum(np.isnan(out_this_time[1])) != 0:
+            print(out_this_time[1])
+            is_ok = False
+            break
+
+    return is_ok
+    

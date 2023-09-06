@@ -36,7 +36,7 @@ from bioptim import (
 )
 
 from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPointModel
-from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init, test_matrix_semi_definite_positiveness
+from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init, test_matrix_semi_definite_positiveness, test_robustified_constraint_value
 
 
 def superellipse(a=1, b=1, n=2, x_0=0, y_0=0, resolution=100):
@@ -175,8 +175,9 @@ def prepare_ocp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0, max_bound=cas.inf)
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0, max_bound=cas.inf)
+    epsilon = 0.05
+    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0+epsilon, max_bound=cas.inf)
+    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0+epsilon, max_bound=cas.inf)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -276,8 +277,9 @@ def prepare_socp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0, max_bound=cas.inf, is_robustified=is_robustified)
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0, max_bound=cas.inf, is_robustified=is_robustified)
+    epsilon = 0.05 if not is_robustified else 0
+    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified)
+    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified)
     constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
     constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf)
 
@@ -306,7 +308,7 @@ def prepare_socp(
     min_q = np.ones((nb_q, 3)) * -cas.inf
     max_q = np.ones((nb_q, 3)) * cas.inf
     min_q[0, 0] = 0  # phi(x) = p_x?
-    min_q[0, 2] = 0
+    max_q[0, 0] = 0
     x_bounds.add(
         "q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
     )
@@ -366,10 +368,6 @@ def prepare_socp(
                                 m_init,
                                 cov_0,
                                 motor_noise_magnitude)
-        for i in range(n_shooting+1):
-            if not test_matrix_semi_definite_positiveness(cov_init[:, i]):
-                raise RuntimeError(f"Initial guess for cov is not semi-definite positive, something went wrong at the {i}th node.")
-
     s_init.add(
         "cov",
         initial_guess=cov_init,
@@ -381,6 +379,15 @@ def prepare_socp(
         max_bound=[cas.inf] * n_cov,
         interpolation=InterpolationType.CONSTANT,
     )
+
+    for i in range(n_shooting + 1):
+        if not test_matrix_semi_definite_positiveness(cov_init[:, i]):
+            raise RuntimeError(
+                f"Initial guess for cov is not semi-definite positive, something went wrong at the {i}th node.")
+
+        if not test_robustified_constraint_value(bio_model, q_init, qdot_init, cov_init):
+            raise RuntimeError(
+                f"Initial guess for cov is incompatible with the robustified constraint, something went wrong at the {i}th node.")
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
@@ -416,6 +423,9 @@ def main():
     step #2: solve the stochastic version without the robustified constraint
     step #3: solve the stochastic version with the robustified constraint
     """
+    run_step_1 = True
+    run_step_2 = True
+    run_step_3 = True
 
     # --- Prepare the ocp --- #
     bio_model = MassPointModel()
@@ -431,89 +441,115 @@ def main():
     solver.set_maximum_iterations(1000)
     # solver._nlp_scaling_method = "None"
 
-    ocp = prepare_ocp(
-        final_time=final_time,
-        n_shooting=n_shooting,
-        polynomial_degree=polynomial_degree,
-    )
-    sol_ocp = ocp.solve(solver)
-    q_deterministic = sol_ocp.states["q"]
-    qdot_deterministic = sol_ocp.states["qdot"]
-    u_deterministic = sol_ocp.controls["u"]
-    data_deterministic = {"q_deterministic": q_deterministic,
-                          "qdot_deterministic": qdot_deterministic,
-                          "u_deterministic": u_deterministic}
-    #save the results
-    with open('deterministic.pkl', 'wb') as f:
-        pickle.dump(data_deterministic, f)
-    sol_ocp.graphs()
+    if run_step_1:
+        ocp = prepare_ocp(
+            final_time=final_time,
+            n_shooting=n_shooting,
+            polynomial_degree=polynomial_degree,
+        )
+        sol_ocp = ocp.solve(solver)
+        q_deterministic = sol_ocp.states["q"]
+        qdot_deterministic = sol_ocp.states["qdot"]
+        u_deterministic = sol_ocp.controls["u"]
+        data_deterministic = {"q_deterministic": q_deterministic,
+                              "qdot_deterministic": qdot_deterministic,
+                              "u_deterministic": u_deterministic}
+        #save the results
+        with open('deterministic.pkl', 'wb') as f:
+            pickle.dump(data_deterministic, f)
+        sol_ocp.graphs()
+    else:
+        with open('deterministic.pkl', 'rb') as f:
+            data_deterministic = pickle.load(f)
+            q_deterministic = data_deterministic["q_deterministic"]
+            qdot_deterministic = data_deterministic["qdot_deterministic"]
+            u_deterministic = data_deterministic["u_deterministic"]
 
-    socp = prepare_socp(
-        final_time=final_time,
-        n_shooting=n_shooting,
-        polynomial_degree=polynomial_degree,
-        motor_noise_magnitude=motor_noise_magnitude,
-        q_init=q_deterministic,
-        qdot_init=qdot_deterministic,
-        u_init=u_deterministic,
-        is_robustified=False,
-    )
-    sol_socp = socp.solve(solver)
-    q_stochastic = sol_socp.states["q"]
-    qdot_stochastic = sol_socp.states["qdot"]
-    u_stochastic = sol_socp.controls["u"]
-    m_stochastic = sol_socp.stochastic_variables["m"]
-    cov_stochastic = sol_socp.stochastic_variables["cov"]
-    data_stochastic = {"q_stochastic": q_stochastic,
-                      "qdot_stochastic": qdot_stochastic,
-                      "u_stochastic": u_stochastic,
-                      "m_stochastic": m_stochastic,
-                      "cov_stochastic": cov_stochastic}
-    with open('stochastic.pkl', 'wb') as f:
-        pickle.dump(data_stochastic, f)
-    sol_socp.graphs()
 
-    rsocp = prepare_socp(
-        final_time=final_time,
-        n_shooting=n_shooting,
-        polynomial_degree=polynomial_degree,
-        motor_noise_magnitude=motor_noise_magnitude,
-        q_init=q_stochastic + 1e-10,
-        qdot_init=qdot_stochastic + 1e-10,
-        u_init=u_stochastic + 1e-10,
-        m_init=m_stochastic + 1e-15,
-        cov_init=cov_stochastic + 1e-10,
-        is_robustified=True,
-    )
+    if run_step_2:
+        socp = prepare_socp(
+            final_time=final_time,
+            n_shooting=n_shooting,
+            polynomial_degree=polynomial_degree,
+            motor_noise_magnitude=motor_noise_magnitude,
+            q_init=q_deterministic,
+            qdot_init=qdot_deterministic,
+            u_init=u_deterministic,
+            is_robustified=False,
+        )
+        sol_socp = socp.solve(solver)
+        q_stochastic = sol_socp.states["q"]
+        qdot_stochastic = sol_socp.states["qdot"]
+        u_stochastic = sol_socp.controls["u"]
+        m_stochastic = sol_socp.stochastic_variables["m"]
+        cov_stochastic = sol_socp.stochastic_variables["cov"]
+        data_stochastic = {"q_stochastic": q_stochastic,
+                          "qdot_stochastic": qdot_stochastic,
+                          "u_stochastic": u_stochastic,
+                          "m_stochastic": m_stochastic,
+                          "cov_stochastic": cov_stochastic}
+        with open('stochastic.pkl', 'wb') as f:
+            pickle.dump(data_stochastic, f)
+        sol_socp.graphs()
+    else:
+        with open('stochastic.pkl', 'rb') as f:
+            data_stochastic = pickle.load(f)
+            q_stochastic = data_stochastic["q_stochastic"]
+            qdot_stochastic = data_stochastic["qdot_stochastic"]
+            u_stochastic = data_stochastic["u_stochastic"]
+            m_stochastic = data_stochastic["m_stochastic"]
+            cov_stochastic = data_stochastic["cov_stochastic"]
 
-    # rsocp = prepare_socp(
-    #     final_time=final_time,
-    #     n_shooting=n_shooting,
-    #     polynomial_degree=polynomial_degree,
-    #     motor_noise_magnitude=motor_noise_magnitude,
-    #     q_init=q_stochastic,
-    #     qdot_init=qdot_stochastic,
-    #     u_init=u_stochastic,
-    #     m_init=m_stochastic,
-    #     cov_init=cov_stochastic,
-    #     is_robustified=True,
-    # )
+    if run_step_3:
+        # rsocp = prepare_socp(
+        #     final_time=final_time,
+        #     n_shooting=n_shooting,
+        #     polynomial_degree=polynomial_degree,
+        #     motor_noise_magnitude=motor_noise_magnitude,
+        #     q_init=q_stochastic + 1e-10,
+        #     qdot_init=qdot_stochastic + 1e-10,
+        #     u_init=u_stochastic + 1e-10,
+        #     m_init=m_stochastic + 1e-15,
+        #     cov_init=cov_stochastic + 1e-10,
+        #     is_robustified=True,
+        # )
 
-    sol_rsocp = rsocp.solve(solver)
-    q_robustified = sol_rsocp.states["q"]
-    qdot_robustified = sol_rsocp.states["qdot"]
-    u_robustified = sol_rsocp.controls["u"]
-    m_robustified = sol_rsocp.stochastic_variables["m"]
-    cov_robustified = sol_rsocp.stochastic_variables["cov"]
-    robustified_data = {"q_robustified": q_robustified,
-                        "qdot_robustified": qdot_robustified,
-                        "u_robustified": u_robustified,
-                        "m_robustified": m_robustified,
-                        "cov_robustified": cov_robustified}
+        rsocp = prepare_socp(
+            final_time=final_time,
+            n_shooting=n_shooting,
+            polynomial_degree=polynomial_degree,
+            motor_noise_magnitude=motor_noise_magnitude,
+            q_init=q_stochastic,
+            qdot_init=qdot_stochastic,
+            u_init=u_stochastic,
+            m_init=m_stochastic,
+            cov_init=cov_stochastic,
+            is_robustified=True,
+        )
 
-    with open('robustified.pkl', 'wb') as f:
-        pickle.dump(robustified_data, f)
-    sol_rsocp.graphs()
+        sol_rsocp = rsocp.solve(solver)
+        q_robustified = sol_rsocp.states["q"]
+        qdot_robustified = sol_rsocp.states["qdot"]
+        u_robustified = sol_rsocp.controls["u"]
+        m_robustified = sol_rsocp.stochastic_variables["m"]
+        cov_robustified = sol_rsocp.stochastic_variables["cov"]
+        robustified_data = {"q_robustified": q_robustified,
+                            "qdot_robustified": qdot_robustified,
+                            "u_robustified": u_robustified,
+                            "m_robustified": m_robustified,
+                            "cov_robustified": cov_robustified}
+
+        with open('robustified.pkl', 'wb') as f:
+            pickle.dump(robustified_data, f)
+        sol_rsocp.graphs()
+    else:
+        with open('robustified.pkl', 'rb') as f:
+            robustified_data = pickle.load(f)
+            q_robustified = robustified_data["q_robustified"]
+            qdot_robustified = robustified_data["qdot_robustified"]
+            u_robustified = robustified_data["u_robustified"]
+            m_robustified = robustified_data["m_robustified"]
+            cov_robustified = robustified_data["cov_robustified"]
 
     q_init = initialize_circle(5, n_shooting)
     fig, ax = plt.subplots(1, 1)
@@ -543,7 +579,7 @@ def main():
 
     ax.xlabel("X")
     ax.ylabel("Y")
-    ax.axis("equal")
+    # ax.axis("equal")
     ax.legend()
     plt.savefig("output.png")
     plt.show()
