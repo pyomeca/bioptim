@@ -352,10 +352,10 @@ def prepare_socp(
     if cov_init is None:
         cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.01
         shape_0, shape_1 = cov_init_matrix.shape[0], cov_init_matrix.shape[1]
-        cov_0 = np.zeros((shape_0 * shape_1, n_shooting+1))
+        cov_0 = np.zeros((shape_0 * shape_1, 1))
         for s0 in range(shape_0):
             for s1 in range(shape_1):
-                cov_0[shape_0 * s1 + s0, :] = cov_init_matrix[s0, s1]
+                cov_0[shape_0 * s1 + s0] = cov_init_matrix[s0, s1]
         cov_init = get_cov_init(bio_model,
                                 n_shooting,
                                 n_stochastic,

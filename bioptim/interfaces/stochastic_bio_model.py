@@ -36,7 +36,7 @@ class StochasticBioModel(BioModel):
         Restore the matrix form of the variables
         """
         shape_0, shape_1 = shape
-        matrix = MX(shape_0, shape_1)
+        matrix = type(var)(shape_0, shape_1)
         for s0 in range(shape_1):
             for s1 in range(shape_0):
                 matrix[s1, s0] = var[s0 * shape_0 + s1]
@@ -49,7 +49,7 @@ class StochasticBioModel(BioModel):
         """
 
         shape_0, shape_1 = shape
-        matrix = MX(shape_0, shape_1)
+        matrix = type(var)(shape_0, shape_1)
         for s0 in range(shape_1):
             for s1 in range(shape_0):
                 matrix[s1, s0] = var[s0 * shape_0 + s1]
@@ -62,7 +62,7 @@ class StochasticBioModel(BioModel):
         """
 
         shape_0, _ = shape
-        matrix = MX.zeros(shape_0, shape_0)
+        matrix = type(var).zeros(shape_0, shape_0)
         i = 0
         for s0 in range(shape_0):
             for s1 in range(s0 + 1):
@@ -76,7 +76,7 @@ class StochasticBioModel(BioModel):
         Restore the lower diagonal matrix form of the variables vector
         """
         shape_0, _ = shape
-        matrix = MX.zeros(shape_0, shape_0)
+        matrix = type(var).zeros(shape_0, shape_0)
         i = 0
         for s0 in range(shape_0):
             for s1 in range(s0 + 1):
@@ -90,7 +90,7 @@ class StochasticBioModel(BioModel):
         Restore the vector form of the matrix
         """
         shape_0, shape_1 = matrix.shape[0], matrix.shape[1]
-        vector = MX.zeros(shape_0 * shape_1)
+        vector = type(matrix).zeros(shape_0 * shape_1)
         for s0 in range(shape_0):
             for s1 in range(shape_1):
                 vector[shape_0 * s1 + s0] = matrix[s0, s1]

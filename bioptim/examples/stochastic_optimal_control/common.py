@@ -77,16 +77,16 @@ def integrator(model, polynomial_degree, n_shooting, duration, states, controls,
     method = "legendre"
 
     # Coefficients of the collocation equation
-    _c = cas.MX.zeros((polynomial_degree + 1, polynomial_degree + 1))
+    _c = type(model.motor_noise_sym).zeros((polynomial_degree + 1, polynomial_degree + 1))
 
     # Coefficients of the continuity equation
-    _d = cas.MX.zeros(polynomial_degree + 1)
+    _d = type(model.motor_noise_sym).zeros(polynomial_degree + 1)
 
     # Choose collocation points
     step_time = [0] + cas.collocation_points(polynomial_degree, method)
 
     # Dimensionless time inside one control interval
-    time_control_interval = cas.MX.sym("time_control_interval")
+    time_control_interval = type(model.motor_noise_sym).sym("time_control_interval")
 
     # For all collocation points
     for j in range(polynomial_degree + 1):
@@ -157,12 +157,12 @@ def get_m_init(model,
     n_q = model.nb_q
     n_joints = model.nb_u
 
-    x_q_joints = cas.MX.sym("x_q_joints", n_joints, 1)
-    x_qdot_joints = cas.MX.sym("x_qdot_joints", n_joints, 1)
-    z_q_joints = cas.MX.sym("z_q_joints", n_joints, polynomial_degree)
-    z_qdot_joints = cas.MX.sym("z_qdot_joints", n_joints, polynomial_degree)
-    controls_sym = cas.MX.sym("controls", n_q, 1)
-    stochastic_variables_sym = cas.MX.sym("stochastic_variables", n_stochastic, 1)
+    x_q_joints = type(model.motor_noise_sym).sym("x_q_joints", n_joints, 1)
+    x_qdot_joints = type(model.motor_noise_sym).sym("x_qdot_joints", n_joints, 1)
+    z_q_joints = type(model.motor_noise_sym).sym("z_q_joints", n_joints, polynomial_degree)
+    z_qdot_joints = type(model.motor_noise_sym).sym("z_qdot_joints", n_joints, polynomial_degree)
+    controls_sym = type(model.motor_noise_sym).sym("controls", n_q, 1)
+    stochastic_variables_sym = type(model.motor_noise_sym).sym("stochastic_variables", n_stochastic, 1)
 
     states_full = cas.vertcat(
         cas.horzcat(x_q_joints, z_q_joints),
@@ -262,12 +262,12 @@ def get_cov_init(model,
     n_q = model.nb_q
     n_joints = model.nb_u
 
-    x_q_joints = cas.MX.sym("x_q_joints", n_joints, 1)
-    x_qdot_joints = cas.MX.sym("x_qdot_joints", n_joints, 1)
-    z_q_joints = cas.MX.sym("z_q_joints", n_joints, polynomial_degree)
-    z_qdot_joints = cas.MX.sym("z_qdot_joints", n_joints, polynomial_degree)
-    controls_sym = cas.MX.sym("controls", n_q, 1)
-    stochastic_variables_sym = cas.MX.sym("stochastic_variables", n_stochastic, 1)
+    x_q_joints = type(model.motor_noise_sym).sym("x_q_joints", n_joints, 1)
+    x_qdot_joints = type(model.motor_noise_sym).sym("x_qdot_joints", n_joints, 1)
+    z_q_joints = type(model.motor_noise_sym).sym("z_q_joints", n_joints, polynomial_degree)
+    z_qdot_joints = type(model.motor_noise_sym).sym("z_qdot_joints", n_joints, polynomial_degree)
+    controls_sym = type(model.motor_noise_sym).sym("controls", n_q, 1)
+    stochastic_variables_sym = type(model.motor_noise_sym).sym("stochastic_variables", n_stochastic, 1)
 
     states_full = cas.vertcat(
         cas.horzcat(x_q_joints, z_q_joints),
@@ -316,10 +316,7 @@ def get_cov_init(model,
     sigma_w_dm = motor_noise_magnitude * cas.DM_eye(motor_noise_magnitude.shape[0])
     cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
 
-    shape_0, shape_1 = model.matrix_shape_cov
-    for s0 in range(shape_0):
-        for s1 in range(shape_1):
-            cov_last[shape_0 * s1 + s0, 0] = cov_init[s0, s1]
+    cov_last[:, 0] = cov_init[:, 0]
     for i in range(n_shooting):
         index_this_time = [i * polynomial_degree + j for j in range(polynomial_degree+1)]
         dg_dx_evaluated = dg_dx_fun(
