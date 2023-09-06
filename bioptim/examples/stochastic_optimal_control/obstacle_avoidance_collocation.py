@@ -198,7 +198,7 @@ def prepare_ocp(
     min_q = np.ones((nb_q, 3)) * -cas.inf
     max_q = np.ones((nb_q, 3)) * cas.inf
     min_q[0, 0] = 0  # phi(x) = p_x?
-    min_q[0, 2] = 0
+    max_q[0, 0] = 0
     x_bounds.add(
         "q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
     )
