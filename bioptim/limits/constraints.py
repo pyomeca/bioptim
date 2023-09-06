@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat, eig_symbolic
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -887,6 +887,45 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             return sensory_input - ref
 
+        @staticmethod
+        def symmetric_matrix(
+                penalty: Constraint,
+                controller: PenaltyController,
+                key: str,
+        ):
+            """
+            This function constrains a matrix to be symmetric
+            """
+            variable = controller.stochastic_variables[key].cx_start
+            if np.sqrt(variable.shape[0]) % 1 != 0:
+                raise RuntimeError(f"The matrix {key} is not square")
+            else:
+                matrix_shape = int(np.sqrt(variable.shape[0]))
+            matrix = StochasticBioModel.reshape_to_matrix(variable, (matrix_shape, matrix_shape))
+            symmetry_constraint = matrix - matrix.T
+            return StochasticBioModel.reshape_to_vector(symmetry_constraint)
+
+        @staticmethod
+        def semidefinite_positive_matrix(
+                penalty: Constraint,
+                controller: PenaltyController,
+                key: str,
+        ):
+            """
+            This function constrains a matrix to be semidefinite positive using Sylvester's criterion.
+            This means that the determinant of all leading principal minors must po positive for a symmetric matrix.
+            """
+            variable = controller.stochastic_variables[key].cx_start
+            if np.sqrt(variable.shape[0]) % 1 != 0:
+                raise RuntimeError(f"The matrix {key} is not square")
+            else:
+                matrix_shape = int(np.sqrt(variable.shape[0]))
+            matrix = StochasticBioModel.reshape_to_matrix(variable, (matrix_shape, matrix_shape))
+            determinants = MX()
+            for i in range(matrix_shape):
+                det = vertcat(determinants, det(matrix[:i, :i]))
+            return det
+
     @staticmethod
     def get_dt(_):
         return 1
@@ -920,6 +959,8 @@ class ConstraintFcn(FcnEnum):
     STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (
         ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,
     )
+    SYMMETRIC_MATRIX = (ConstraintFunction.Functions.symmetric_matrix,)
+    SEMIDEFINITE_POSITIVE_MATRIX = (ConstraintFunction.Functions.semidefinite_positive_matrix,)
     SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
     SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)

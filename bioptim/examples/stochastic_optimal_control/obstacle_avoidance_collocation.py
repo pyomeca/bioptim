@@ -47,6 +47,25 @@ def superellipse(a=1, b=1, n=2, x_0=0, y_0=0, resolution=100):
     Z = ((X - x_0) / a) ** n + ((Y - y_0) / b) ** n - 1
     return X, Y, Z
 
+def draw_cov_ellipse(cov, pos, ax):
+    """
+    Draw an ellipse representing the covariance at a given point.
+    """
+    def eigsorted(cov):
+        vals, vecs = np.linalg.eigh(cov)
+        order = vals.argsort()[::-1]
+        return vals[order], vecs[:, order]
+
+    vals, vecs = eigsorted(cov)
+    theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
+
+    # Width and height are "full" widths, not radius
+    width, height = 2 * np.sqrt(vals)
+    ellip = plt.matplotlib.patches.Ellipse(xy=pos, width=width, height=height, angle=theta, color="b", alpha=0.1)
+
+    ax.add_patch(ellip)
+    return ellip
+
 
 def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
@@ -259,6 +278,8 @@ def prepare_socp(
     constraints = ConstraintList()
     constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0, max_bound=cas.inf, is_robustified=is_robustified)
     constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0, max_bound=cas.inf, is_robustified=is_robustified)
+    constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
+    constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf)
 
     multinode_constraints = MultinodeConstraintList()
     # multinode_constraints.add(MultinodeConstraintFcn.STOCHASTIC_EQUALITY,
@@ -397,11 +418,12 @@ def main():
     # --- Prepare the ocp --- #
     bio_model = MassPointModel()
     n_shooting = 39
-    polynomial_degree = 5
+    polynomial_degree = 3
     final_time = 4
     motor_noise_magnitude = np.array([1, 1])
 
     # Solver parameters
+    # TODO: include SLICOT solver (for solving ill-conditioned, ill-scaled, large-scale problems by preserving the stucture of the problem)
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
     solver.set_maximum_iterations(1000)
@@ -454,13 +476,27 @@ def main():
         n_shooting=n_shooting,
         polynomial_degree=polynomial_degree,
         motor_noise_magnitude=motor_noise_magnitude,
-        q_init=q_stochastic,
-        qdot_init=qdot_stochastic,
-        u_init=u_stochastic,
-        m_init=m_stochastic,
-        cov_init=cov_stochastic,
+        q_init=q_stochastic + 1e-10,
+        qdot_init=qdot_stochastic + 1e-10,
+        u_init=u_stochastic + 1e-10,
+        m_init=m_stochastic + 1e-15,
+        cov_init=cov_stochastic + 1e-10,
         is_robustified=True,
     )
+
+    # rsocp = prepare_socp(
+    #     final_time=final_time,
+    #     n_shooting=n_shooting,
+    #     polynomial_degree=polynomial_degree,
+    #     motor_noise_magnitude=motor_noise_magnitude,
+    #     q_init=q_stochastic,
+    #     qdot_init=qdot_stochastic,
+    #     u_init=u_stochastic,
+    #     m_init=m_stochastic,
+    #     cov_init=cov_stochastic,
+    #     is_robustified=True,
+    # )
+
     sol_rsocp = rsocp.solve(solver)
     q_robustified = sol_rsocp.states["q"]
     qdot_robustified = sol_rsocp.states["qdot"]
@@ -478,7 +514,7 @@ def main():
     sol_rsocp.graphs()
 
     q_init = initialize_circle(5, n_shooting)
-    plt.figure()
+    fig, ax = plt.subplots(1, 1)
     for i in range(2):
         a = bio_model.super_ellipse_a[i]
         b = bio_model.super_ellipse_b[i]
@@ -488,18 +524,25 @@ def main():
 
         X, Y, Z = superellipse(a, b, n, x_0, y_0)
 
-        plt.contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
-        # plt.contour(X, Y, Z, levels=[0], colors='black')
+        ax.contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
+        # ax.contour(X, Y, Z, levels=[0], colors='black')
 
-    plt.plot(q_init[0], q_init[1], "-k", label="Initial guess")
-    plt.plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
-    plt.plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
-    plt.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
+    ax.plot(q_init[0], q_init[1], "-k", label="Initial guess")
+    ax.plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
+    ax.plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
+    ax.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
+    for j in range(len(q_robustified[0])):
+        ax.plot(q_robustified[0, j], q_robustified[1, j], "ob", markersize=0.5)
+        cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
+        for s_0 in range(bio_model.matrix_shape_cov[0]):
+            for s_1 in range(bio_model.matrix_shape_cov[1]):
+                cov_reshaped_to_matrix[s_0, s_1] = cov_robustified[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
+        draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_robustified[:, j], ax)
 
-    plt.xlabel("X")
-    plt.ylabel("Y")
-    plt.axis("equal")
-    plt.legend()
+    ax.xlabel("X")
+    ax.ylabel("Y")
+    ax.axis("equal")
+    ax.legend()
     plt.savefig("output.png")
     plt.show()
 
