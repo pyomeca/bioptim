@@ -36,7 +36,7 @@ from bioptim import (
 )
 
 from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPointModel
-from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init
+from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init, test_matrix_semi_definite_positiveness
 
 
 def superellipse(a=1, b=1, n=2, x_0=0, y_0=0, resolution=100):
@@ -335,8 +335,7 @@ def prepare_socp(
     n_stochastic = n_m + n_cov
 
     if m_init is None:
-        # m_init = np.ones((n_m, n_shooting+1)) * 0.01
-        m_init = get_m_init(bio_model, n_stochastic, n_shooting, final_time, polynomial_degree, q_init, qdot_init, u_init, bio_model.motor_noise_magnitude)
+        m_init = get_m_init(bio_model, n_stochastic, n_shooting, final_time, polynomial_degree, q_init, qdot_init, u_init)
     s_init.add(
         "m",
         initial_guess=m_init,
@@ -367,6 +366,9 @@ def prepare_socp(
                                 m_init,
                                 cov_0,
                                 motor_noise_magnitude)
+        for i in range(n_shooting+1):
+            if not test_matrix_semi_definite_positiveness(cov_init[:, i]):
+                raise RuntimeError(f"Initial guess for cov is not semi-definite positive, something went wrong at the {i}th node.")
 
     s_init.add(
         "cov",
@@ -418,7 +420,7 @@ def main():
     # --- Prepare the ocp --- #
     bio_model = MassPointModel()
     n_shooting = 39
-    polynomial_degree = 3
+    polynomial_degree = 5
     final_time = 4
     motor_noise_magnitude = np.array([1, 1])
 

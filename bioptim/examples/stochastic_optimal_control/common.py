@@ -148,8 +148,7 @@ def get_m_init(model,
                polynomial_degree,
                q_last,
                qdot_last,
-               tau_last,
-               motor_noise_magnitude):
+               tau_last):
     """
     M = -dF_dz @ inv(dG_dz)
     """
@@ -357,3 +356,44 @@ def get_cov_init(model,
             for s1 in range(2*n_joints):
                 cov_last[2*n_joints * s1 + s0, i+1] = cov_this_time[s0, s1]
     return cov_last
+
+
+def test_matrix_semi_definite_positiveness(var):
+    """
+    This function tests if a matrix var is positive semi-definite.
+
+    Parameters
+    ----------
+    var: np.ndarray | DM
+        The matrix to test (in the form of a vector containing the elements of the matrix)
+    """
+    is_ok = True
+    shape_0 = int(np.sqrt(var.shape[0]))
+    matrix = np.zeros((shape_0, shape_0))
+    for s0 in range(shape_0):
+        for s1 in range(shape_0):
+            matrix[s1, s0] = var[s0 * shape_0 + s1]
+
+    # Symmetry
+    symmetry_elements = matrix - matrix.T
+
+    if np.sum(np.abs(symmetry_elements) > 1e-4) != 0:
+        is_ok = False
+
+    # Positive semi-definiteness
+    func_list = []
+    for i in range(shape_0):
+        A = cas.SX.sym("A", i + 1, i + 1)
+        [Q, R] = cas.qr(A)
+        func_list += [cas.Function("det", [A], [cas.trace(R)])]
+
+    determinants = []
+    for i in range(shape_0):
+        determinants += [func_list[i](matrix[:i + 1, :i + 1])]
+
+    for i in range(shape_0):
+        if determinants[i] < 0:
+            is_ok = False
+            break
+
+    return is_ok
