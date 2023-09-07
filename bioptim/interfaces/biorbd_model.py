@@ -631,10 +631,12 @@ class MultiBiorbdModel:
         Get the number of extra models.
 
     """
-    def __init__(self,
-                 bio_model: tuple[str | biorbd.Model | BiorbdModel, ...],
-                 extra_bio_models: tuple[str | biorbd.Model | BiorbdModel, ...] = (),
-                 ):
+
+    def __init__(
+        self,
+        bio_model: tuple[str | biorbd.Model | BiorbdModel, ...],
+        extra_bio_models: tuple[str | biorbd.Model | BiorbdModel, ...] = (),
+    ):
         self.models = []
         if not isinstance(bio_model, tuple):
             raise ValueError("The models must be a 'str', 'biorbd.Model', 'bioptim.BiorbdModel'" " or a tuple of those")

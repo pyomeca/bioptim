@@ -39,10 +39,7 @@ def test_biorbd_model():
     biorbd_model_path = "/models/triple_pendulum.bioMod"
     biorbd_model_path_modified_inertia = "/models/triple_pendulum_modified_inertia.bioMod"
     models = MultiBiorbdModel(
-        bio_model=(
-            bioptim_folder + biorbd_model_path,
-            bioptim_folder + biorbd_model_path_modified_inertia
-        ),
+        bio_model=(bioptim_folder + biorbd_model_path, bioptim_folder + biorbd_model_path_modified_inertia),
         extra_bio_models=(
             bioptim_folder + biorbd_model_path_modified_inertia,
             bioptim_folder + biorbd_model_path_modified_inertia,
