@@ -612,9 +612,29 @@ class BiorbdModel:
 class MultiBiorbdModel:
     """
     This class allows to define multiple biorbd models for the same phase.
-    """
 
-    def __init__(self, bio_model: tuple[str | biorbd.Model | BiorbdModel, ...]):
+
+    Attributes
+    ----------
+    models : list[BiorbdModel]
+        The list of biorbd models to be handled in the optimal control program.
+    extra_models : list[BiorbdModel]
+        A list of extra biorbd models stored in the class for further use.
+
+    Methods
+    -------
+    variable_index()
+        Get the index of the variables in the global vector for a given model index.
+    nb_models()
+        Get the number of models.
+    nb_extra_models()
+        Get the number of extra models.
+
+    """
+    def __init__(self,
+                 bio_model: tuple[str | biorbd.Model | BiorbdModel, ...],
+                 extra_bio_models: tuple[str | biorbd.Model | BiorbdModel, ...] = (),
+                 ):
         self.models = []
         if not isinstance(bio_model, tuple):
             raise ValueError("The models must be a 'str', 'biorbd.Model', 'bioptim.BiorbdModel'" " or a tuple of those")
@@ -629,6 +649,20 @@ class MultiBiorbdModel:
             else:
                 raise ValueError("The models should be of type 'str', 'biorbd.Model' or 'bioptim.BiorbdModel'")
 
+        if not isinstance(extra_bio_models, tuple):
+            raise ValueError("The models must be a 'str', 'biorbd.Model', 'bioptim.BiorbdModel'" " or a tuple of those")
+
+        self.extra_models = []
+        for model in extra_bio_models:
+            if isinstance(model, str):
+                self.extra_models.append(BiorbdModel(model))
+            elif isinstance(model, biorbd.Model):
+                self.extra_models.append(BiorbdModel(model))
+            elif isinstance(model, BiorbdModel):
+                self.extra_models.append(model)
+            else:
+                raise ValueError("The models should be of type 'str', 'biorbd.Model' or 'bioptim.BiorbdModel'")
+
     def __getitem__(self, index):
         return self.models[index]
 
@@ -636,14 +670,14 @@ class MultiBiorbdModel:
         raise NotImplementedError("Deep copy is not implemented yet for MultiBiorbdModel class")
 
     @property
-    def path(self) -> list[str]:
-        return [model.path for model in self.models]
+    def path(self) -> (list[str], list[str]):
+        return [model.path for model in self.models], [model.path for model in self.extra_models]
 
     def copy(self):
-        return MultiBiorbdModel(tuple(self.path))
+        return MultiBiorbdModel(tuple(self.path[0]), tuple(self.path[1]))
 
     def serialize(self) -> tuple[Callable, dict]:
-        return MultiBiorbdModel, dict(bio_model=tuple(self.path))
+        return MultiBiorbdModel, dict(bio_model=tuple(self.path[0]), extra_bio_models=tuple(self.path[1]))
 
     def variable_index(self, variable: str, model_index: int) -> range:
         """
@@ -698,6 +732,30 @@ class MultiBiorbdModel:
             for model in self.models[:model_index]:
                 current_idx += model.nb_rigid_contacts
             return range(current_idx, current_idx + self.models[model_index].nb_rigid_contacts)
+
+    @property
+    def nb_models(self) -> int:
+        """
+        Get the number of models
+
+        Returns
+        -------
+        int
+            The number of models
+        """
+        return len(self.models)
+
+    @property
+    def nb_extra_models(self) -> int:
+        """
+        Get the number of extra models
+
+        Returns
+        -------
+        int
+            The number of extra models
+        """
+        return len(self.extra_models)
 
     @property
     def gravity(self) -> MX:

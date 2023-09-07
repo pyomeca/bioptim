@@ -38,7 +38,17 @@ def test_biorbd_model():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     biorbd_model_path = "/models/triple_pendulum.bioMod"
     biorbd_model_path_modified_inertia = "/models/triple_pendulum_modified_inertia.bioMod"
-    models = MultiBiorbdModel((bioptim_folder + biorbd_model_path, bioptim_folder + biorbd_model_path_modified_inertia))
+    models = MultiBiorbdModel(
+        bio_model=(
+            bioptim_folder + biorbd_model_path,
+            bioptim_folder + biorbd_model_path_modified_inertia
+        ),
+        extra_bio_models=(
+            bioptim_folder + biorbd_model_path_modified_inertia,
+            bioptim_folder + biorbd_model_path_modified_inertia,
+            bioptim_folder + biorbd_model_path_modified_inertia,
+        ),
+    )
 
     nb_q = models.nb_q
     nb_qdot = models.nb_qdot
@@ -415,3 +425,6 @@ def test_biorbd_model():
             raise NotImplementedError("Wrong value")
 
         np.testing.assert_almost_equal(bounds_from_ranges[key].min, DM(np.array(expected)), decimal=5)
+
+    assert models.nb_models == 2
+    assert models.nb_extra_models == 3
