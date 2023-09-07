@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat, qr, trace, det
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat, ldl
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -1090,8 +1090,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 key: str,
         ):
             """
-            This function constrains a matrix to be semi-definite positive using Sylvester's criterion.
-            This means that the determinant of all leading principal minors must po positive for a symmetric matrix.
+            This function constrains a matrix to be semi-definite positive.
             """
             variable = controller.stochastic_variables[key].cx_start
             if np.sqrt(variable.shape[0]) % 1 != 0:
@@ -1099,20 +1098,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             else:
                 matrix_shape = int(np.sqrt(variable.shape[0]))
 
-            # func_list = []
-            # for i in range(matrix_shape):
-            #     A = SX.sym("A", i+1, i+1)
-            #     [Q, R] = qr(A)
-            #     func_list += [Function("det", [A], [trace(R)])]
+            A = SX.sym("A", matrix_shape, matrix_shape)
+            D = ldl(A)[0]  # Only guaranteed to work by casadi for positive definite matrix.
+            func = Function("diagonal_terms", [A], [D])
 
-            # I am waiting for an answer back form casadi on an issue
             matrix = StochasticBioModel.reshape_to_matrix(variable, (matrix_shape, matrix_shape))
-            determinants = MX()
-            for i in range(matrix_shape):
-                # determinants = vertcat(determinants, func_list[i](matrix[:i+1, :i+1]))
-                determinants = det(matrix[:i+1, :i+1])
+            diagonal_terms = func(matrix)
                 
-            return determinants
+            return diagonal_terms
 
     @staticmethod
     def get_dt(_):

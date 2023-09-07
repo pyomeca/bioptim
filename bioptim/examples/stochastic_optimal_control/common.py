@@ -380,26 +380,16 @@ def test_matrix_semi_definite_positiveness(var):
     if np.sum(np.abs(symmetry_elements) > 1e-4) != 0:
         is_ok = False
 
-    # # Positive semi-definiteness
-    # func_list = []
-    # for i in range(shape_0):
-    #     A = cas.SX.sym("A", i + 1, i + 1)
-    #     [Q, R] = cas.qr(A)
-    #     func_list += [cas.Function("det", [A], [cas.exp(cas.trace(cas.log(R)))])]
-    #     func_list += [cas.Function("det", [A], [cas.det(A)])]
+    A = cas.SX.sym("A", shape_0, shape_0)
+    D = cas.ldl(A)[0]  # Only guaranteed to work by casadi for positive definite matrix.
+    func = cas.Function("diagonal_terms", [A], [D])
 
-    determinants = []
-    for i in range(shape_0):
-        # determinants += [func_list[i](matrix[:i + 1, :i + 1])]
-        determinants += [cas.det(matrix[:i+1, :i+1])]
+    matrix = StochasticBioModel.reshape_to_matrix(matrix, (shape_0, shape_0))
+    diagonal_terms = func(matrix)
 
-    for i in range(shape_0):
-        if determinants[i] < 0:
-            is_ok = False
-            break
-
-    # cas.chol(matrix)
-
+    if np.sum(diagonal_terms < 0) != 0:
+        is_ok = False
+        
     return is_ok
 
 

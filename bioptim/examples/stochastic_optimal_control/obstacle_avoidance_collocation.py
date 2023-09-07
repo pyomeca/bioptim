@@ -280,10 +280,10 @@ def prepare_socp(
     epsilon = 0 if not is_robustified else 0
     constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified, quadratic=False)
     constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified, quadratic=False)
-    # constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
-    # constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
+    constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
+    constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
 
-    multinode_constraints = MultinodeConstraintList()
+    # multinode_constraints = MultinodeConstraintList()
     # multinode_constraints.add(MultinodeConstraintFcn.STOCHASTIC_EQUALITY,
     #                           key="cov",
     #                           nodes=[n_shooting, 0],
@@ -373,22 +373,22 @@ def prepare_socp(
         initial_guess=cov_init,
         interpolation=InterpolationType.EACH_FRAME,
     )
-    # s_bounds.add(
-    #     "cov",
-    #     min_bound=[-cas.inf] * n_cov,
-    #     max_bound=[cas.inf] * n_cov,
-    #     interpolation=InterpolationType.CONSTANT,
-    # )
-    cov_min = np.ones((n_cov, 3)) * -cas.inf
-    cov_max = np.ones((n_cov, 3)) * cas.inf
-    cov_min[:, 0] = cov_init[:, 0]
-    cov_max[:, 0] = cov_init[:, 0]
     s_bounds.add(
         "cov",
-        min_bound=cov_min,
-        max_bound=cov_max,
-        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+        min_bound=[-cas.inf] * n_cov,
+        max_bound=[cas.inf] * n_cov,
+        interpolation=InterpolationType.CONSTANT,
     )
+    # cov_min = np.ones((n_cov, 3)) * -cas.inf
+    # cov_max = np.ones((n_cov, 3)) * cas.inf
+    # cov_min[:, 0] = cov_init[:, 0]
+    # cov_max[:, 0] = cov_init[:, 0]
+    # s_bounds.add(
+    #     "cov",
+    #     min_bound=cov_min,
+    #     max_bound=cov_max,
+    #     interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    # )
 
     for i in range(n_shooting + 1):
         if not test_matrix_semi_definite_positiveness(cov_init[:, i]):
@@ -404,6 +404,7 @@ def prepare_socp(
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
+    # phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS)
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -418,10 +419,10 @@ def prepare_socp(
         s_bounds=s_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        multinode_constraints=multinode_constraints,
+        # multinode_constraints=multinode_constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
-        n_threads=1,
-        assume_phase_dynamics=False,
+        n_threads=4,
+        assume_phase_dynamics=True,
         problem_type=problem_type,
         phase_transitions=phase_transitions,
     )
