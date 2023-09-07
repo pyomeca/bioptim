@@ -11,7 +11,7 @@ from ..limits.constraints import (
     Constraint,
     ParameterConstraintList,
 )
-from ..limits.phase_transition import PhaseTransitionList
+from ..limits.phase_transition import PhaseTransitionList, PhaseTransition, PhaseTransitionFcn
 from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraintFcn
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList
@@ -74,12 +74,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
     ):
         """ """
 
-        if "n_thread" in kwargs:
-            if kwargs["n_thread"] != 1:
-                raise ValueError(
-                    "Multi-threading is not possible yet while solving a stochastic ocp."
-                    "n_thread is set to 1 by default."
-                )
+        if not isinstance(problem_type, SocpType.COLLOCATION):
+            if "n_thread" in kwargs:
+                if kwargs["n_thread"] != 1:
+                    raise ValueError(
+                        "Multi-threading is not possible yet while solving a trapezoidal stochastic ocp."
+                        "n_thread is set to 1 by default."
+                    )
+        self.n_threads = n_threads
 
         if "ode_solver" in kwargs:
             raise ValueError(
@@ -89,20 +91,18 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 "\n- COLLOCATION: OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)"
             )
 
-        self.n_threads = 1
-
-        if "assume_phase_dynamics" in kwargs:
-            if kwargs["assume_phase_dynamics"]:
-                raise ValueError(
-                    "The dynamics cannot be assumed to be the same between phases with a stochastic ocp."
-                    "assume_phase_dynamics is set to False by default."
-                )
-
-        self.assume_phase_dynamics = False
+        if not isinstance(problem_type, SocpType.COLLOCATION):
+            if "assume_phase_dynamics" in kwargs:
+                if kwargs["assume_phase_dynamics"]:
+                    raise ValueError(
+                        "The dynamics cannot be assumed to be the same between nodes with a trapezoidal stochastic ocp."
+                        "assume_phase_dynamics is set to False by default."
+                    )
+        self.assume_phase_dynamics = assume_phase_dynamics
 
         self.check_bioptim_version()
 
-        bio_model = self.initialize_model(bio_model)
+        bio_model = self._initialize_model(bio_model)
 
         if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT) or isinstance(
             problem_type, SocpType.TRAPEZOIDAL_EXPLICIT
@@ -113,7 +113,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 method=problem_type.method, polynomial_degree=problem_type.polynomial_degree
             )
 
-        self.set_original_values(
+        self._set_original_values(
             bio_model,
             dynamics,
             n_shooting,
@@ -165,7 +165,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             u_init,
             parameter_init,
             s_init,
-        ) = self.check_arguments_and_build_nlp(
+        ) = self._check_arguments_and_build_nlp(
             dynamics,
             n_threads,
             n_shooting,
@@ -203,15 +203,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         )
         self.problem_type = problem_type
         NLP.add(self, "is_stochastic", True, True)
-        self.prepare_node_mapping(node_mappings)
-        self.prepare_dynamics()
-        self.prepare_bounds_and_init(
+        self._prepare_node_mapping(node_mappings)
+        self._prepare_dynamics()
+        self._prepare_bounds_and_init(
             x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
         )
 
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints)
 
-        self.finalize_penalties(
+        self._finalize_penalties(
             skip_continuity,
             state_continuity_weight,
             constraints,
@@ -221,7 +221,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             phase_transitions,
         )
 
-    def prepare_dynamics(self):
+    def _prepare_dynamics(self):
         # Prepare the dynamics
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
@@ -347,20 +347,19 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 phase=i_phase,
             )
 
-        # Constraints for P
-        multi_node_penalties = MultinodeConstraintList()
+        # Constraints for P inner-phase
+        covariance_phase_transition = PhaseTransitionList()
         for i_phase, nlp in enumerate(self.nlp):
-            for i_node in range(nlp.ns):
-                multi_node_penalties.add(
-                    MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
-                    nodes_phase=(i_phase, i_phase),
-                    nodes=(i_node, i_node + 1),
-                )
+            constraints.add(
+                ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
+                node=Node.ALL_SHOOTING,
+                phase=i_phase,
+            )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
-                multi_node_penalties.add(
-                    MultinodeConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
-                    nodes_phase=(i_phase - 1, i_phase),
-                    nodes=(-1, 0),
-                )
+                covariance_phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
 
-        multi_node_penalties.add_or_replace_to_penalty_pool(self)
+        # Constraints for P inter-phase
+        for pt in covariance_phase_transition:
+            pt.name = f"COVARIANCE_PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])

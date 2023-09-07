@@ -244,6 +244,47 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
+        def stochastic_equality(
+            penalty,
+            controllers: list[PenaltyController, ...],
+            key: str = "all",
+        ):
+            """
+            The most common continuity function, that is the covariance before equals covariance after for stochastic ocp
+
+            Parameters
+            ----------
+            penalty : MultinodePenalty
+                A reference to the penalty
+            controllers: list
+                The penalty node elements
+
+            Returns
+            -------
+            The difference between the state after and before
+            """
+
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+
+            ctrl_0 = controllers[0]
+            stochastic_0 = ctrl_0.stochastic_variables[key].cx
+            out = ctrl_0.cx.zeros(stochastic_0.shape)
+            for i in range(1, len(controllers)):
+                ctrl_i = controllers[i]
+                stochastic_i = ctrl_i.stochastic_variables[key].cx
+
+                if stochastic_0.shape != stochastic_i.shape:
+                    raise RuntimeError(
+                        f"Continuity can't be established since the number of x to be matched is {stochastic_0.shape} in "
+                        f"the pre-transition phase and {stochastic_i.shape} post-transition phase. Please use a custom "
+                        f"transition or supply states_mapping"
+                    )
+
+                out += stochastic_0 - stochastic_i
+
+            return out
+
+        @staticmethod
         def com_equality(penalty, controllers: list[PenaltyController, ...]):
             """
             The centers of mass are equals for the specified phases and the specified nodes
@@ -585,182 +626,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             out = c_matrix - (-(DF_DW + DF_DW_plus) / 2 * dt)
 
             out_vector = StochasticBioModel.reshape_to_vector(out)
-            return out_vector
-
-        @staticmethod
-        def stochastic_covariance_matrix_continuity_collocation(
-            penalty,
-            controllers: list[PenaltyController, PenaltyController],
-        ):
-            """
-            This functions allows to implicitly integrate the covariance matrix as in Gillis 2013.
-            It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
-            P_k+1 = M_k @ (dg/dx @ P_k @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
-            """
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-
-            if not controllers[0].get_nlp.is_stochastic:
-                raise RuntimeError("This function is only valid for stochastic problems")
-
-            polynomial_degree = controllers[0].get_nlp.ode_solver.polynomial_degree
-            nb_root = controllers[0].model.nb_root
-
-            nu = controllers[0].model.nb_q - nb_root
-            non_root_index_continuity = []
-            non_root_index_defects = []
-            for i in range(2):
-                for j in range(polynomial_degree + 1):
-                    non_root_index_defects += list(
-                        range(
-                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root,
-                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root + nu,
-                        )
-                    )
-                non_root_index_continuity += list(
-                    range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu)
-                )
-
-            if "cholesky_cov" in controllers[0].stochastic_variables.keys():
-                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controllers[0].stochastic_variables["cholesky_cov"].cx_start,
-                    controllers[0].model.matrix_shape_cov_cholesky,
-                )
-                l_cov_matrix_next = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controllers[1].stochastic_variables["cholesky_cov"].cx_start,
-                    controllers[1].model.matrix_shape_cov_cholesky,
-                )
-                cov_matrix = l_cov_matrix @ l_cov_matrix.T
-                cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
-            else:
-                cov_matrix = StochasticBioModel.reshape_to_matrix(
-                    controllers[0].stochastic_variables["cov"].cx_start, controllers[0].model.matrix_shape_cov
-                )
-                cov_matrix_next = StochasticBioModel.reshape_to_matrix(
-                    controllers[1].stochastic_variables["cov"].cx_start, controllers[1].model.matrix_shape_cov
-                )
-            m_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].stochastic_variables["m"].cx_start, controllers[0].model.matrix_shape_m
-            )
-
-            x_q_root = controllers[0].cx.sym("x_q_root", nb_root, 1)
-            x_q_joints = controllers[0].cx.sym("x_q_joints", nu, 1)
-            x_qdot_root = controllers[0].cx.sym("x_qdot_root", nb_root, 1)
-            x_qdot_joints = controllers[0].cx.sym("x_qdot_joints", nu, 1)
-            z_q_root = controllers[0].cx.sym("z_q_root", nb_root, polynomial_degree)
-            z_q_joints = controllers[0].cx.sym("z_q_joints", nu, polynomial_degree)
-            z_qdot_root = controllers[0].cx.sym("z_qdot_root", nb_root, polynomial_degree)
-            z_qdot_joints = controllers[0].cx.sym("z_qdot_joints", nu, polynomial_degree)
-
-            states_full = vertcat(
-                horzcat(x_q_root, z_q_root),
-                horzcat(x_q_joints, z_q_joints),
-                horzcat(x_qdot_root, z_qdot_root),
-                horzcat(x_qdot_joints, z_qdot_joints),
-            )
-
-            dynamics_xf, dynamics_xall, dynamics_defects = controllers[0].integrate_extra_dynamics(0)(
-                states_full,
-                controllers[0].controls.cx_start,
-                controllers[0].parameters.cx_start,
-                controllers[0].stochastic_variables.cx_start,
-            )
-
-            initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-            defects = dynamics_defects
-            defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
-
-            sigma_w = vertcat(controllers[0].model.sensory_noise_sym, controllers[0].model.motor_noise_sym)
-
-            dg_dx = jacobian(defects, vertcat(x_q_joints, x_qdot_joints))
-            dg_dw = jacobian(defects, sigma_w)
-
-            dg_dx_fun = Function(
-                "dg_dx",
-                [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controllers[0].controls.cx_start,
-                    controllers[0].parameters.cx_start,
-                    controllers[0].stochastic_variables.cx_start,
-                    controllers[0].model.motor_noise_sym,
-                    controllers[0].model.sensory_noise_sym,
-                ],
-                [dg_dx],
-            )
-            non_sym_states = horzcat(*([controllers[0].states.cx_start] + controllers[0].states.cx_intermediates_list))
-            dg_dx_evaluated = dg_dx_fun(
-                non_sym_states[:nb_root, 0],
-                non_sym_states[nb_root : nb_root + nu, 0],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
-                non_sym_states[2 * nb_root + nu :, 0],
-                non_sym_states[:nb_root, 1:],
-                non_sym_states[nb_root : nb_root + nu, 1:],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 1:],
-                non_sym_states[2 * nb_root + nu :, 1:],
-                controllers[0].controls.cx_start,
-                controllers[0].parameters.cx_start,
-                controllers[0].stochastic_variables.cx_start,
-                controllers[0].model.motor_noise_magnitude,
-                controllers[0].model.sensory_noise_magnitude,
-            )
-
-            dg_dw_fun = Function(
-                "dg_dw",
-                [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controllers[0].controls.cx_start,
-                    controllers[0].parameters.cx_start,
-                    controllers[0].stochastic_variables.cx_start,
-                    controllers[0].model.motor_noise_sym,
-                    controllers[0].model.sensory_noise_sym,
-                ],
-                [dg_dw],
-            )
-            dg_dw_evaluated = dg_dw_fun(
-                non_sym_states[:nb_root, 0],
-                non_sym_states[nb_root : nb_root + nu, 0],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
-                non_sym_states[2 * nb_root + nu :, 0],
-                non_sym_states[:nb_root, 1:],
-                non_sym_states[nb_root : nb_root + nu, 1:],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 1:],
-                non_sym_states[2 * nb_root + nu :, 1:],
-                controllers[0].controls.cx_start,
-                controllers[0].parameters.cx_start,
-                controllers[0].stochastic_variables.cx_start,
-                controllers[0].model.motor_noise_magnitude,
-                controllers[0].model.sensory_noise_magnitude,
-            )
-
-            sigma_w_num = vertcat(
-                controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude
-            )
-            sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
-
-            cov_next_computed = (
-                m_matrix
-                @ (
-                    dg_dx_evaluated @ cov_matrix @ dg_dx_evaluated.T
-                    + dg_dw_evaluated @ sigma_matrix @ dg_dw_evaluated.T
-                )
-                @ m_matrix.T
-            )
-            cov_implicit_deffect = cov_next_computed - cov_matrix_next
-
-            out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
             return out_vector
 
         @staticmethod

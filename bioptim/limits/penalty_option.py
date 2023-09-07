@@ -660,7 +660,6 @@ class PenaltyOption(OptionGeneric):
                         or ocp.assume_phase_dynamics
                     ):
                         control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
-                    # Watch out, there is nothing constraining stochastic_variables_scaled.cx_end to an actual value.
                     stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
 
         # Alias some variables
@@ -707,19 +706,22 @@ class PenaltyOption(OptionGeneric):
                 or ocp.assume_phase_dynamics
             ):
                 control_cx_scaled = vertcat(controller.controls_scaled.cx_end, controller.controls_scaled.cx_start)
+            stochastic_cx_scaled = vertcat(
+                controller.stochastic_variables_scaled.cx_end, controller.stochastic_variables_scaled.cx_start
+            )
             self.function[node] = biorbd.to_casadi_func(
                 f"{name}",
                 self.function[node](
                     controller.states_scaled.cx_end,
                     controller.controls_scaled.cx_end,
                     param_cx,
-                    controller.stochastic_variables_scaled.cx_start,
+                    controller.stochastic_variables_scaled.cx_end,
                 )
                 - self.function[node](
                     controller.states_scaled.cx_start,
                     controller.controls_scaled.cx_start,
                     param_cx,
-                    controller.stochastic_variables_scaled.cx_start,  # Warning: stochastic_variables.cx_end are not implemented
+                    controller.stochastic_variables_scaled.cx_start,
                 ),
                 state_cx_scaled,
                 control_cx_scaled,
@@ -762,6 +764,16 @@ class PenaltyOption(OptionGeneric):
                 if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE)
                 else vertcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end)
             )
+            stochastic_cx_scaled = (
+                vertcat(controller.stochastic_variables_scaled.cx_start, controller.stochastic_variables_scaled.cx_end)
+                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                else controller.stochastic_variables_scaled.cx_start
+            )
+            stochastic_cx = (
+                vertcat(controller.stochastic_variables.cx_start, controller.controls.cx_end)
+                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                else controller.stochastic_variables.cx_start
+            )
 
             if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 control_cx_end_scaled = get_u(controller.controls_scaled.cx_start, dt_cx)
@@ -778,7 +790,7 @@ class PenaltyOption(OptionGeneric):
                     x0=state_cx,
                     p=control_cx_end,
                     params=controller.parameters.cx,
-                    s=controller.stochastic_variables.cx_start,
+                    s=stochastic_cx,
                 )["xf"]
             )
             if controller.ode_solver.is_direct_collocation:
@@ -791,8 +803,6 @@ class PenaltyOption(OptionGeneric):
                 )
             else:
                 state_cx_start_scaled = controller.states_scaled.cx_start
-
-            stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
 
             modified_function = controller.to_casadi_func(
                 f"{name}",
@@ -812,7 +822,7 @@ class PenaltyOption(OptionGeneric):
                             state_cx_end_scaled,
                             control_cx_end_scaled,
                             param_cx,
-                            stochastic_cx_scaled,
+                            controller.stochastic_variables_scaled.cx_end,
                         )
                         - target_cx[:, 1]
                     )

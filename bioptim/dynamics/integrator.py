@@ -694,7 +694,7 @@ class TRAPEZOIDAL(Integrator):
             stochastic_variables_prev = stochastic_variables[:, 0]
             stochastic_variables_next = stochastic_variables[:, 1]
         else:
-            stochastic_variables_prev = stochastic_variables  # TOD0: Charbie-> to be changed for cx_end
+            stochastic_variables_prev = stochastic_variables
             stochastic_variables_next = stochastic_variables
 
         x_prev[:, 0] = states[:, 0]

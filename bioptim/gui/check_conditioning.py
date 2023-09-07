@@ -331,8 +331,8 @@ def check_conditioning(ocp):
                     states_post = nlp_post.states.cx_start
                     controls_pre = phase.controls.cx_end
                     controls_post = nlp_post.controls.cx_start
-                    stochastic_pre = phase.stochastic_cx_end
-                    stochastic_post = nlp_post.stochastic_cx_start
+                    stochastic_pre = phase.stochastic.cx_end
+                    stochastic_post = nlp_post.stochastic.cx_start
                     state_cx = vertcat(states_pre, states_post)
                     control_cx = vertcat(controls_pre, controls_post)
                     stochastic_cx = vertcat(stochastic_pre, stochastic_post)
@@ -349,7 +349,7 @@ def check_conditioning(ocp):
                             raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
                         state_cx = horzcat(state_cx, nlp.states.cx_end)
                         control_cx = horzcat(control_cx, nlp.controls.cx_end)
-                        stochastic_cx = horzcat(stochastic_cx, nlp.stochastic_cx_end)
+                        stochastic_cx = horzcat(stochastic_cx, nlp.stochastic.cx_end)
 
                 if obj.derivative:
                     state_cx = horzcat(nlp.states.cx_end, nlp.states.cx_start)
@@ -374,9 +374,9 @@ def check_conditioning(ocp):
                         else horzcat(nlp.controls.cx_start, nlp.controls.cx_end)
                     )
                     stochastic_cx = (
-                        horzcat(nlp.stochastic_variables.cx_start)
-                        if nlp.control_type == ControlType.CONSTANT
-                        else horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end)
+                        horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end)
+                        if obj.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                        else nlp.stochastic_variables.cx_start
                     )
 
                 if obj.target is None:
