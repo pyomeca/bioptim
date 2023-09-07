@@ -284,8 +284,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         return False
 
     def advance_window_initial_guess_states(self, sol, **advance_options):
-        # for key in self.nlp[0].x_init.keys():
-        for key in sol.states.keys():  # quick fix
+        for key in self.nlp[0].x_init.keys():
             if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
                 # Override the previous x_init
                 self.nlp[0].x_init.add(
