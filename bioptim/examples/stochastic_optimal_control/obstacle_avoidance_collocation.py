@@ -36,7 +36,7 @@ from bioptim import (
 )
 
 from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPointModel
-from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init, test_matrix_semi_definite_positiveness, test_robustified_constraint_value
+from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init, test_matrix_semi_definite_positiveness, test_robustified_constraint_value, test_eigen_values
 
 
 def superellipse(a=1, b=1, n=2, x_0=0, y_0=0, resolution=100):
@@ -175,9 +175,9 @@ def prepare_ocp(
 
     # Constraints
     constraints = ConstraintList()
-    epsilon = 0.05
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0+epsilon, max_bound=cas.inf)
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0+epsilon, max_bound=cas.inf)
+    epsilon = 0
+    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0+epsilon, max_bound=cas.inf, quadratic=False)
+    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0+epsilon, max_bound=cas.inf, quadratic=False)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -277,11 +277,11 @@ def prepare_socp(
 
     # Constraints
     constraints = ConstraintList()
-    epsilon = 0.05 if not is_robustified else 0
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified)
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified)
-    constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
-    constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf)
+    epsilon = 0 if not is_robustified else 0
+    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified, quadratic=False)
+    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified, quadratic=False)
+    # constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
+    # constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
 
     multinode_constraints = MultinodeConstraintList()
     # multinode_constraints.add(MultinodeConstraintFcn.STOCHASTIC_EQUALITY,
@@ -307,8 +307,8 @@ def prepare_socp(
     x_bounds = BoundsList()
     min_q = np.ones((nb_q, 3)) * -cas.inf
     max_q = np.ones((nb_q, 3)) * cas.inf
-    min_q[0, 0] = 0  # phi(x) = p_x?
-    max_q[0, 0] = 0
+    # min_q[0, 0] = 0  # phi(x) = p_x?
+    # max_q[0, 0] = 0
     x_bounds.add(
         "q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
     )
@@ -373,17 +373,30 @@ def prepare_socp(
         initial_guess=cov_init,
         interpolation=InterpolationType.EACH_FRAME,
     )
+    # s_bounds.add(
+    #     "cov",
+    #     min_bound=[-cas.inf] * n_cov,
+    #     max_bound=[cas.inf] * n_cov,
+    #     interpolation=InterpolationType.CONSTANT,
+    # )
+    cov_min = np.ones((n_cov, 3)) * -cas.inf
+    cov_max = np.ones((n_cov, 3)) * cas.inf
+    cov_min[:, 0] = cov_init[:, 0]
+    cov_max[:, 0] = cov_init[:, 0]
     s_bounds.add(
         "cov",
-        min_bound=[-cas.inf] * n_cov,
-        max_bound=[cas.inf] * n_cov,
-        interpolation=InterpolationType.CONSTANT,
+        min_bound=cov_min,
+        max_bound=cov_max,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
     )
 
     for i in range(n_shooting + 1):
         if not test_matrix_semi_definite_positiveness(cov_init[:, i]):
             raise RuntimeError(
                 f"Initial guess for cov is not semi-definite positive, something went wrong at the {i}th node.")
+
+        if not test_eigen_values(cov_init[:, i]):
+            print(f"Something went wrong at the {i}th node. (Eigen values)")
 
         if not test_robustified_constraint_value(bio_model, q_init, qdot_init, cov_init):
             raise RuntimeError(
@@ -423,9 +436,9 @@ def main():
     step #2: solve the stochastic version without the robustified constraint
     step #3: solve the stochastic version with the robustified constraint
     """
-    run_step_1 = True
+    run_step_1 = False
     run_step_2 = True
-    run_step_3 = True
+    run_step_3 = False # True
 
     # --- Prepare the ocp --- #
     bio_model = MassPointModel()
@@ -500,6 +513,16 @@ def main():
             m_stochastic = data_stochastic["m_stochastic"]
             cov_stochastic = data_stochastic["cov_stochastic"]
 
+    for i in range(n_shooting + 1):
+        if not test_matrix_semi_definite_positiveness(cov_stochastic[:, i]):
+            print(f"Something went wrong at the {i}th node. (Semi-definiteness)")
+
+        if not test_eigen_values(cov_stochastic[:, i]):
+            print(f"Something went wrong at the {i}th node. (Eigen values)")
+
+        # if not test_robustified_constraint_value(bio_model, q_stochastic, qdot_stochastic, cov_stochastic):
+        #     print(f"Something went wrong at the {i}th node. (Constraint evaluation)")
+
     if run_step_3:
         # rsocp = prepare_socp(
         #     final_time=final_time,
@@ -569,18 +592,25 @@ def main():
     ax.plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
     ax.plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
     ax.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
-    for j in range(len(q_robustified[0])):
-        ax.plot(q_robustified[0, j], q_robustified[1, j], "ob", markersize=0.5)
+    for j in range(cov_stochastic.shape[1]):
+        ax.plot(q_stochastic[0, j*(polynomial_degree+1)], q_stochastic[1, j*(polynomial_degree+1)], "or", markersize=2)
         cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
         for s_0 in range(bio_model.matrix_shape_cov[0]):
             for s_1 in range(bio_model.matrix_shape_cov[1]):
-                cov_reshaped_to_matrix[s_0, s_1] = cov_robustified[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
-        draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_robustified[:, j], ax)
+                cov_reshaped_to_matrix[s_0, s_1] = cov_stochastic[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
+        draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_stochastic[:, j*(polynomial_degree + 1)], ax)
+    # for j in range(cov_robustified.shape[1]):
+    #     ax.plot(q_robustified[0, j*(polynomial_degree+1)], q_robustified[1, j*(polynomial_degree+1)], "ok", markersize=2)
+    #     cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
+    #     for s_0 in range(bio_model.matrix_shape_cov[0]):
+    #         for s_1 in range(bio_model.matrix_shape_cov[1]):
+    #             cov_reshaped_to_matrix[s_0, s_1] = cov_robustified[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
+    #     draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_robustified[:, j*(polynomial_degree + 1)], ax)
 
-    ax.xlabel("X")
-    ax.ylabel("Y")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
     # ax.axis("equal")
-    ax.legend()
+    # plt.legend()
     plt.savefig("output.png")
     plt.show()
 

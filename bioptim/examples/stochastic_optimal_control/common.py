@@ -380,21 +380,25 @@ def test_matrix_semi_definite_positiveness(var):
     if np.sum(np.abs(symmetry_elements) > 1e-4) != 0:
         is_ok = False
 
-    # Positive semi-definiteness
-    func_list = []
-    for i in range(shape_0):
-        A = cas.SX.sym("A", i + 1, i + 1)
-        [Q, R] = cas.qr(A)
-        func_list += [cas.Function("det", [A], [cas.trace(R)])]
+    # # Positive semi-definiteness
+    # func_list = []
+    # for i in range(shape_0):
+    #     A = cas.SX.sym("A", i + 1, i + 1)
+    #     [Q, R] = cas.qr(A)
+    #     func_list += [cas.Function("det", [A], [cas.exp(cas.trace(cas.log(R)))])]
+    #     func_list += [cas.Function("det", [A], [cas.det(A)])]
 
     determinants = []
     for i in range(shape_0):
-        determinants += [func_list[i](matrix[:i + 1, :i + 1])]
+        # determinants += [func_list[i](matrix[:i + 1, :i + 1])]
+        determinants += [cas.det(matrix[:i+1, :i+1])]
 
     for i in range(shape_0):
         if determinants[i] < 0:
             is_ok = False
             break
+
+    # cas.chol(matrix)
 
     return is_ok
 
@@ -436,10 +440,10 @@ def test_robustified_constraint_value(model, q, qdot, cov_num):
 
     out_num = []
     for j in range(cov_num.shape[1]):
-        p_x_value = q[0, j*model.polynomial_degree]
-        p_y_value = q[1, j*model.polynomial_degree]
-        v_x_value = qdot[0, j*model.polynomial_degree]
-        v_y_value = qdot[1, j*model.polynomial_degree]
+        p_x_value = q[0, j*(model.polynomial_degree + 1)]
+        p_y_value = q[1, j*(model.polynomial_degree + 1)]
+        v_x_value = qdot[0, j*(model.polynomial_degree + 1)]
+        v_y_value = qdot[1, j*(model.polynomial_degree + 1)]
         cov_value = np.zeros((4, 4))
         for s0 in range(4):
             for s1 in range(4):
@@ -448,9 +452,25 @@ def test_robustified_constraint_value(model, q, qdot, cov_num):
         out_num += [out_this_time]
 
         if np.sum(np.isnan(out_this_time[1])) != 0:
-            print(out_this_time[1])
+            print("h : ", out_this_time[0])
+            print("sqrt(dh_dx @ cov @ dh_dx) : ", out_this_time[1])
+            print("dh_dx : ", out_this_time[2])
+            print("cov : ", out_this_time[3])
+            print("dh_dx @ cov @ dh_dx : ", out_this_time[4])
             is_ok = False
             break
 
     return is_ok
-    
+
+def test_eigen_values(var):
+    is_ok = True
+    shape_0 = int(np.sqrt(var.shape[0]))
+    matrix = np.zeros((shape_0, shape_0))
+    for s0 in range(shape_0):
+        for s1 in range(shape_0):
+            matrix[s1, s0] = var[s0 * shape_0 + s1]
+
+    vals, vecs = np.linalg.eigh(matrix)
+    if np.sum(vals < 0) != 0:
+        is_ok = False
+    return is_ok
