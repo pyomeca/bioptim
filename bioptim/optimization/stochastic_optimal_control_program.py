@@ -74,7 +74,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
     ):
         """ """
 
-        if not isinstance(problem_type, SocpType.COLLOCATION):
+        if not (isinstance(problem_type, SocpType.COLLOCATION) or isinstance(problem_type, SocpType.DMS)):
             if "n_thread" in kwargs:
                 if kwargs["n_thread"] != 1:
                     raise ValueError(
@@ -86,12 +86,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         if "ode_solver" in kwargs:
             raise ValueError(
                 "The ode_solver cannot be defined for a stochastic ocp. The value is chosen based on the type of problem solved:"
-                "\n- TRAPEZOIDAL_EXPLICIT: OdeSolver.TRAPEZOIDAL(), "
-                "\n- TRAPEZOIDAL_IMPLICIT: OdeSolver.TRAPEZOIDAL(), "
+                "\n- TRAPEZOIDAL_EXPLICIT: OdeSolver.TRAPEZOIDAL() "
+                "\n- TRAPEZOIDAL_IMPLICIT: OdeSolver.TRAPEZOIDAL() "
                 "\n- COLLOCATION: OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)"
+                "\n- DMS: OdeSolver.RK4()"
             )
 
-        if not isinstance(problem_type, SocpType.COLLOCATION):
+        if not (isinstance(problem_type, SocpType.COLLOCATION) or isinstance(problem_type, SocpType.DMS)):
             if "assume_phase_dynamics" in kwargs:
                 if kwargs["assume_phase_dynamics"]:
                     raise ValueError(
@@ -112,6 +113,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             ode_solver = OdeSolver.COLLOCATION(
                 method=problem_type.method, polynomial_degree=problem_type.polynomial_degree
             )
+        elif isinstance(problem_type, SocpType.DMS):
+            ode_solver = OdeSolver.RK4()
+        else:
+            raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 
         self._set_original_values(
             bio_model,
@@ -352,6 +357,33 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         for i_phase, nlp in enumerate(self.nlp):
             constraints.add(
                 ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
+                node=Node.ALL_SHOOTING,
+                phase=i_phase,
+            )
+            if i_phase > 0 and i_phase < len(self.nlp) - 1:
+                covariance_phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
+
+        # Constraints for P inter-phase
+        for pt in covariance_phase_transition:
+            pt.name = f"COVARIANCE_PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
+            pt.list_index = -1
+            pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
+
+
+    def _prepare_stochastic_dynamics_dms(self, constraints):
+        """
+        Adds the internal constraint needed for the explicit formulation of the stochastic ocp using direct
+        multiple-shooting as implemented in RockIt (example matrix_lyapunov.py).
+        """
+
+        if "ref" in self.nlp[0].stochastic_variables:
+            constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+
+        # Constraints for P inner-phase
+        covariance_phase_transition = PhaseTransitionList()
+        for i_phase, nlp in enumerate(self.nlp):
+            constraints.add(
+                ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_DMS,
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
             )

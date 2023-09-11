@@ -151,6 +151,7 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     polynomial_degree: int,
+    socp_type: SocpType = SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
 ) -> OptimalControlProgram:
     """
     Step # 1: Solving the deterministic version of the problem to get the nominal trajectory.
@@ -224,6 +225,13 @@ def prepare_ocp(
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
 
+    if isinstance(socp_type, SocpType.COLLOCATION):
+        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method),
+    elif isinstance(socp_type, SocpType.DMS):
+        ode_solver = OdeSolver.RK4()
+    else:
+        raise RuntimeError("Invalid socp_type")
+
     return OptimalControlProgram(
         bio_model,
         dynamics,
@@ -236,7 +244,7 @@ def prepare_ocp(
         objective_functions=objective_functions,
         constraints=constraints,
         phase_transitions=phase_transitions,
-        ode_solver=OdeSolver.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre"),
+        ode_solver=ode_solver,
         n_threads=1,
         assume_phase_dynamics=False,
     )
@@ -253,12 +261,14 @@ def prepare_socp(
     m_init: np.ndarray | None = None,
     cov_init: np.ndarray | None = None,
     is_robustified: bool = False,
+    socp_type: SocpType = SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
 ) -> StochasticOptimalControlProgram:
     """
-    Step # 2: Solving the stochastic version of the problem to get the stochastic trajectory.
+    Step # 2: Solving the stochastic version of the problem to get the stochastic trajectory (is_robustified = False).
+    Step # 3: Solving the stochastic version of the problem to get the stochastic trajectory (is_robustified = True).
     """
 
-    problem_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
+    problem_type = socp_type
 
     bio_model = MassPointModel(
         motor_noise_magnitude=motor_noise_magnitude,
@@ -324,31 +334,37 @@ def prepare_socp(
 
     # Initial guesses
     x_init = InitialGuessList()
-    x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.ALL_POINTS)
-    x_init.add("qdot", initial_guess=qdot_init, interpolation=InterpolationType.ALL_POINTS)
+    if isinstance(socp_type, SocpType.COLLOCATION):
+        x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.ALL_POINTS)
+        x_init.add("qdot", initial_guess=qdot_init, interpolation=InterpolationType.ALL_POINTS)
+    else:
+        x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.EACH_FRAME)
+        x_init.add("qdot", initial_guess=qdot_init, interpolation=InterpolationType.EACH_FRAME)
 
     control_init = InitialGuessList()
     control_init.add("u", initial_guess=u_init, interpolation=InterpolationType.EACH_FRAME)
 
     s_init = InitialGuessList()
     s_bounds = BoundsList()
-    n_m = 4 * 4 * (polynomial_degree + 1)
     n_cov = 4 * 4
-    n_stochastic = n_m + n_cov
+    n_stochastic = n_cov
 
-    if m_init is None:
-        m_init = get_m_init(bio_model, n_stochastic, n_shooting, final_time, polynomial_degree, q_init, qdot_init, u_init)
-    s_init.add(
-        "m",
-        initial_guess=m_init,
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-    s_bounds.add(
-        "m",
-        min_bound=[-cas.inf] * n_m,
-        max_bound=[cas.inf] * n_m,
-        interpolation=InterpolationType.CONSTANT,
-    )
+    if isinstance(socp_type, SocpType.COLLOCATION):
+        n_m = 4 * 4 * (polynomial_degree + 1)
+        n_stochastic += n_m
+        if m_init is None:
+            m_init = get_m_init(bio_model, n_stochastic, n_shooting, final_time, polynomial_degree, q_init, qdot_init, u_init)
+        s_init.add(
+            "m",
+            initial_guess=m_init,
+            interpolation=InterpolationType.EACH_FRAME,
+        )
+        s_bounds.add(
+            "m",
+            min_bound=[-cas.inf] * n_m,
+            max_bound=[cas.inf] * n_m,
+            interpolation=InterpolationType.CONSTANT,
+        )
 
     if cov_init is None:
         cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.01
@@ -357,17 +373,29 @@ def prepare_socp(
         for s0 in range(shape_0):
             for s1 in range(shape_1):
                 cov_0[shape_0 * s1 + s0] = cov_init_matrix[s0, s1]
-        cov_init = get_cov_init(bio_model,
-                                n_shooting,
-                                n_stochastic,
-                                polynomial_degree,
-                                final_time,
-                                q_init,
-                                qdot_init,
-                                u_init,
-                                m_init,
-                                cov_0,
-                                motor_noise_magnitude)
+        if isinstance(socp_type, SocpType.COLLOCATION):
+            cov_init = get_cov_init_collocations(bio_model,
+                                    n_shooting,
+                                    n_stochastic,
+                                    polynomial_degree,
+                                    final_time,
+                                    q_init,
+                                    qdot_init,
+                                    u_init,
+                                    m_init,
+                                    cov_0,
+                                    motor_noise_magnitude)
+        else:
+            cov_init = get_cov_init_dms(bio_model,
+                                    n_shooting,
+                                    n_stochastic,
+                                    final_time,
+                                    q_init,
+                                    qdot_init,
+                                    u_init,
+                                    m_init,
+                                    cov_0,
+                                    motor_noise_magnitude)
     s_init.add(
         "cov",
         initial_guess=cov_init,
@@ -437,11 +465,13 @@ def main():
     step #2: solve the stochastic version without the robustified constraint
     step #3: solve the stochastic version with the robustified constraint
     """
-    run_step_1 = False
+    run_step_1 = True
     run_step_2 = True
-    run_step_3 = False # True
+    run_step_3 = False  # True
 
     # --- Prepare the ocp --- #
+    # socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
+    socp_type = SocpType.DMS()
     bio_model = MassPointModel()
     n_shooting = 39
     polynomial_degree = 5
@@ -460,6 +490,7 @@ def main():
             final_time=final_time,
             n_shooting=n_shooting,
             polynomial_degree=polynomial_degree,
+            socp_type=socp_type,
         )
         sol_ocp = ocp.solve(solver)
         q_deterministic = sol_ocp.states["q"]
@@ -490,6 +521,7 @@ def main():
             qdot_init=qdot_deterministic,
             u_init=u_deterministic,
             is_robustified=False,
+            socp_type=socp_type,
         )
         sol_socp = socp.solve(solver)
         q_stochastic = sol_socp.states["q"]
@@ -536,6 +568,7 @@ def main():
         #     m_init=m_stochastic + 1e-15,
         #     cov_init=cov_stochastic + 1e-10,
         #     is_robustified=True,
+        #     socp_type=socp_type,
         # )
 
         rsocp = prepare_socp(
@@ -549,6 +582,7 @@ def main():
             m_init=m_stochastic,
             cov_init=cov_stochastic,
             is_robustified=True,
+            socp_type=socp_type,
         )
 
         sol_rsocp = rsocp.solve(solver)

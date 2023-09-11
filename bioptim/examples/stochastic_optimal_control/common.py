@@ -71,7 +71,7 @@ def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
     """
     return k @ ((hand_pos_velo - ref) + sensory_noise)
 
-def integrator(model, polynomial_degree, n_shooting, duration, states, controls, stochastic_variables):
+def integrator_collocations(model, polynomial_degree, n_shooting, duration, states, controls, stochastic_variables):
 
     h = duration / n_shooting
     method = "legendre"
@@ -141,6 +141,29 @@ def integrator(model, polynomial_degree, n_shooting, duration, states, controls,
 
     return states_end, defects
 
+
+def integrator_rk4(fun, n_shooting, duration, states, controls, stochastic_variables):
+
+    step_time = duration / n_shooting
+    n_step = 5
+    h_norm = 1 / n_step
+    h = step_time * h_norm
+
+    x = np.zeros((states.shape[0], n_step + 1))
+    x[:, 0] = states
+    u = controls
+    s = stochastic_variables
+
+    for i in range(1, n_step + 1):
+        k1 = fun(x[:, i-1], u, [], s)
+        k2 = fun(x[:, i-1] + h / 2 * k1, u, [], s)
+        k3 = fun(x[:, i-1] + h / 2 * k2, u, [], s)
+        k4 = fun(x[:, i-1] + h * k3, u, [], s)
+        x[:, i] = x[:, i-1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+
+    return x[:, -1]
+
+
 def get_m_init(model,
                n_stochastic,
                n_shooting,
@@ -168,7 +191,7 @@ def get_m_init(model,
         cas.horzcat(x_qdot_joints, z_qdot_joints),
     )
 
-    states_end, defects = integrator(model, polynomial_degree, n_shooting, duration, states_full, controls_sym, stochastic_variables_sym)
+    states_end, defects = integrator_collocations(model, polynomial_degree, n_shooting, duration, states_full, controls_sym, stochastic_variables_sym)
     initial_polynomial_evaluation = cas.vertcat(x_q_joints, x_qdot_joints)
     defects = cas.vertcat(initial_polynomial_evaluation, defects)
 
@@ -243,7 +266,7 @@ def get_m_init(model,
 
     return m_last
 
-def get_cov_init(model,
+def get_cov_init_collocations(model,
                  n_shooting,
                  n_stochastic,
                  polynomial_degree,
@@ -273,7 +296,7 @@ def get_cov_init(model,
         cas.horzcat(x_qdot_joints, z_qdot_joints),
     )
 
-    states_end, defects = integrator(model, polynomial_degree, n_shooting, duration, states_full, controls_sym,
+    states_end, defects = integrator_collocations(model, polynomial_degree, n_shooting, duration, states_full, controls_sym,
                                      stochastic_variables_sym)
     initial_polynomial_evaluation = cas.vertcat(x_q_joints, x_qdot_joints)
     defects = cas.vertcat(initial_polynomial_evaluation, defects)
@@ -358,6 +381,63 @@ def get_cov_init(model,
     return cov_last
 
 
+def get_cov_init_dms(model,
+                 n_shooting,
+                 n_stochastic,
+                 polynomial_degree,
+                 duration,
+                 q_last,
+                 qdot_last,
+                 tau_last,
+                 cov_init,
+                 motor_noise_magnitude):
+    """
+    RK4 integration of d/dt(P_k) = A @ P_k + P_k @ A.T #TODO: verify that we do not need + B @ sigma_w @ B.T
+    """
+
+    n_q = model.nb_q
+    n_joints = model.nb_u
+
+    x_q_joints = type(model.motor_noise_sym).sym("x_q_joints", n_joints, 1)
+    x_qdot_joints = type(model.motor_noise_sym).sym("x_qdot_joints", n_joints, 1)
+    controls_sym = type(model.motor_noise_sym).sym("controls", n_q, 1)
+    stochastic_variables_sym = type(model.motor_noise_sym).sym("stochastic_variables", n_stochastic, 1)
+
+    states_full = cas.vertcat(x_q_joints, x_qdot_joints)
+
+    dx_dt = dynamics_numerical(
+        states_full,
+        controls_sym,
+        stochastic_variables_sym,
+    )
+
+    A = cas.jacobian(dx_dt, states_full)
+
+    cov_matrix = StochasticBioModel.reshape_to_matrix(
+        stochastic_variables_sym.cx_start, model.matrix_shape_cov
+    )
+
+    cov_derivative = A @ cov_matrix + cov_matrix @ A.T
+    cov_derivative_func = cas.Function("cov_derivative_func", [x_q_joints, x_qdot_joints], [cov_derivative])
+
+    cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
+    cov_last[:, 0] = cov_init[:, 0]
+    for i in range(n_shooting):
+        cov_next_computed = integrator_rk4(states_full[:, i], controls_sym[:, i], stochastic_variables_sym[:, i],
+                                           cov_derivative_func, n_shooting, duration)
+
+        cov_matrix = np.zeros((2*n_joints, 2*n_joints))
+        for s0 in range(2*n_joints):
+            for s1 in range(2*n_joints):
+                cov_matrix[s1, s0] = cov_last[s0 * 2*n_joints + s1, i]
+
+        cov_this_time = (
+                m_matrix @ (dg_dx_evaluated @ cov_matrix @ dg_dx_evaluated.T + dg_dw_evaluated @ sigma_w_dm @ dg_dw_evaluated.T) @ m_matrix.T)
+        for s0 in range(2*n_joints):
+            for s1 in range(2*n_joints):
+                cov_last[2*n_joints * s1 + s0, i+1] = cov_this_time[s0, s1]
+    return cov_last
+
 def test_matrix_semi_definite_positiveness(var):
     """
     This function tests if a matrix var is positive semi-definite.
@@ -384,7 +464,11 @@ def test_matrix_semi_definite_positiveness(var):
     D = cas.ldl(A)[0]  # Only guaranteed to work by casadi for positive definite matrix.
     func = cas.Function("diagonal_terms", [A], [D])
 
-    matrix = StochasticBioModel.reshape_to_matrix(matrix, (shape_0, shape_0))
+    matrix = np.zeros((shape_0, shape_0))
+    for s0 in range(shape_0):
+        for s1 in range(shape_0):
+            matrix[s1, s0] = var[s0 * shape_0 + s1]
+
     diagonal_terms = func(matrix)
 
     if np.sum(diagonal_terms < 0) != 0:

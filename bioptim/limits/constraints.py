@@ -5,7 +5,7 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_ey
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
-from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType, DefectType, ControlType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 from ..interfaces.stochastic_bio_model import StochasticBioModel
@@ -1048,6 +1048,107 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return out_vector
 
         @staticmethod
+        def stochastic_covariance_matrix_continuity_dms(
+            penalty,
+            controller: PenaltyController,
+        ):
+            """
+            This functions allows to explicitly integrate the covariance matrix using
+            d/dt(P_k) = A @ P_k  + P_k @ A.T
+            """
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
+
+            def set_cov_integrator(cov_derivative_func):
+                ode_opt = {
+                    "t0": 0,
+                    "tf": controller.dt,
+                    "model": controller.model,
+                    "param": controller.parameters,
+                    "cx": controller.cx,
+                    "idx": 0,
+                    "control_type": controller.control_type,
+                    "number_of_finite_elements": 5,  # to be generalizes
+                    "defects_type": DefectType.NOT_APPLICABLE,
+                }
+
+                ode = {
+                    "x_unscaled": controller.states.cx_start,
+                    "x_scaled": None,
+                    "p_unscaled": controller.controls.cx_start
+                    if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
+                    else horzcat(controller.controls.cx_start, controller.controls.cx_end),
+                    "p_scaled": None,
+                    "s_unscaled": controller.stochastic_variables.cx_start,
+                    "s_scaled": None,
+                    "ode": cov_derivative_func,
+                    "implicit_ode": [],
+                }
+
+                return [controller.ode_solver.rk_integrator(ode, ode_opt)]
+
+            if not controller.get_nlp.is_stochastic:
+                raise RuntimeError("This function is only valid for stochastic problems")
+
+            nb_root = controller.model.nb_root
+
+            nu = controller.model.nb_q - nb_root
+            non_root_index_continuity = []
+            for i in range(2):
+                non_root_index_continuity += list(
+                    range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu)
+                )
+
+            if "cholesky_cov" in controller.stochastic_variables.keys():
+                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controller.stochastic_variables["cholesky_cov"].cx_start,
+                    controller.model.matrix_shape_cov_cholesky,
+                )
+                l_cov_matrix_next = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controller.stochastic_variables["cholesky_cov"].cx_end,
+                    controller.model.matrix_shape_cov_cholesky,
+                )
+                cov_matrix = l_cov_matrix @ l_cov_matrix.T
+                cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
+            else:
+                cov_matrix = StochasticBioModel.reshape_to_matrix(
+                    controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+                )
+                cov_matrix_next = StochasticBioModel.reshape_to_matrix(
+                    controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
+                )
+
+            x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
+            x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
+            x_qdot_root = controller.cx.sym("x_qdot_root", nb_root, 1)
+            x_qdot_joints = controller.cx.sym("x_qdot_joints", nu, 1)
+
+            states_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
+
+            dx_dt = controller.dynamics(
+                states_full,
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+            )
+
+            A = jacobian(dx_dt[non_root_index_continuity], vertcat(x_q_joints, x_qdot_joints))
+
+            cov_derivative = A @ cov_matrix + cov_matrix @ A.T
+            cov_derivative_func = Function("cov_derivative_func", [x_q_joints, x_qdot_joints], [cov_derivative])
+            cov_integrator = set_cov_integrator(cov_derivative_func)
+
+            cov_next_computed = cov_integrator[0](states_xall[:nb_root, 0], states_xall[nb_root:, 0])
+
+            cov_integration_defect = cov_matrix_next - cov_next_computed
+
+            out_vector = StochasticBioModel.reshape_to_vector(cov_integration_defect)
+
+            penalty.explicit_derivative = True
+            penalty.multi_thread = True
+
+            return out_vector
+
+        @staticmethod
         def stochastic_mean_sensory_input_equals_reference(
             penalty: Constraint,
             controller: PenaltyController,
@@ -1139,6 +1240,9 @@ class ConstraintFcn(FcnEnum):
     STOCHASTIC_HELPER_MATRIX_COLLOCATION = (ConstraintFunction.Functions.stochastic_helper_matrix_collocation,)
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_collocation,
+    )
+    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_DMS = (
+        ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_dms,
     )
     STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (
         ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,
