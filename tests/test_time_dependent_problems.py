@@ -205,14 +205,14 @@ def prepare_ocp(
 @pytest.mark.parametrize(
     "integrator",
     [
-        OdeSolver.RK4(),
-        OdeSolver.IRK(),
-        OdeSolver.COLLOCATION(),
-        OdeSolver.TRAPEZOIDAL(),
+        OdeSolver.IRK,
+        OdeSolver.RK4,
+        OdeSolver.COLLOCATION,
+        OdeSolver.TRAPEZOIDAL,
     ],
 )
 @pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS])
-@pytest.mark.parametrize("minimize_time", [False, True])
+@pytest.mark.parametrize("minimize_time", [True, False])
 @pytest.mark.parametrize("use_sx", [False, True])
 def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time, use_sx):
     """
@@ -223,10 +223,24 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    if integrator.__str__() == "IRK legendre 4":
-        raise RuntimeError("OdeSolver.IRK() is stuck into infinite loop")
+    if integrator == OdeSolver.IRK and minimize_time:
+        raise RuntimeError("Fix this")
 
-    elif integrator.__str__() == "TRAPEZOIDAL" and control_type.name == "CONSTANT":
+    if integrator == OdeSolver.IRK and use_sx:
+        with pytest.raises(
+            NotImplementedError,
+            match="use_sx=True and OdeSolver.IRK are not yet compatible",
+        ):
+            ocp = prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                n_phase=n_phase,
+                ode_solver=integrator(),
+                control_type=control_type,
+                minimize_time=minimize_time,
+                use_sx=use_sx,
+            )
+
+    elif integrator == OdeSolver.TRAPEZOIDAL and control_type == ControlType.CONSTANT:
         with pytest.raises(
             RuntimeError,
             match="TRAPEZOIDAL cannot be used with piece-wise constant controls, please use ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead.",
@@ -234,20 +248,20 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             ocp = prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
                 n_phase=n_phase,
-                ode_solver=integrator,
+                ode_solver=integrator(),
                 control_type=control_type,
                 minimize_time=minimize_time,
                 use_sx=use_sx,
             )
 
-    elif integrator.__str__() == "COLLOCATION legendre 4" and control_type.name == "LINEAR_CONTINUOUS":
+    elif integrator in (OdeSolver.COLLOCATION, OdeSolver.IRK) and control_type == ControlType.LINEAR_CONTINUOUS:
         with pytest.raises(
             NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
         ):
             ocp = prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
                 n_phase=n_phase,
-                ode_solver=integrator,
+                ode_solver=integrator(),
                 control_type=control_type,
                 minimize_time=minimize_time,
                 use_sx=use_sx,
@@ -258,7 +272,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
         ocp = prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
             n_phase=n_phase,
-            ode_solver=integrator,
+            ode_solver=integrator(),
             control_type=control_type,
             minimize_time=minimize_time,
             use_sx=use_sx,
@@ -267,4 +281,4 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
         # sol.graphs(show_bounds=True)
 
 
-#         TODO : Once all bioptim tests are passed, add "np.assert" values
+#         TODO Pariterre: Once all bioptim tests are passed, add "np.assert" values

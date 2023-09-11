@@ -1201,6 +1201,9 @@ class MultiBiorbdModel:
     def lagrangian(self):
         raise NotImplementedError("lagrangian is not implemented yet for MultiBiorbdModel")
 
+    def partitioned_forward_dynamics(self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None):
+        raise NotImplementedError("partitioned_forward_dynamics is not implemented yet for MultiBiorbdModel")
+
     @staticmethod
     def animate(solution: Any, show_now: bool = True, tracked_markers: list = [], **kwargs: Any) -> None | list:
         raise NotImplementedError("animate is not implemented yet for MultiBiorbdModel")

@@ -472,7 +472,7 @@ class OdeSolver:
             """
 
             if ocp.cx is SX:
-                raise RuntimeError("use_sx=True and OdeSolver.IRK are not yet compatible")
+                raise NotImplementedError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
             return super(OdeSolver.IRK, self).integrator(ocp, nlp, node_index)
 

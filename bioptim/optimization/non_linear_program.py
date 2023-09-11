@@ -1,12 +1,12 @@
 from typing import Callable, Any
 
 import casadi
-from casadi import SX, MX, Function, horzcat, jacobian, MX_eye
+from casadi import SX, MX, Function, horzcat
 
 from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
-from ..misc.enums import ControlType, Node
+from ..misc.enums import ControlType
 from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
@@ -75,8 +75,6 @@ class NonLinearProgram:
         The time stamp of the beginning of the phase
     tf: float
         The time stamp of the end of the phase
-    t_initial_guess: float
-        The initial guess of the time
     variable_mappings: BiMappingList
         The list of mapping for all the variables
     u_bounds = Bounds()
@@ -87,10 +85,6 @@ class NonLinearProgram:
         The casadi variables for the integration at each node of the phase
     controls: OptimizationVariableContainer
         A list of all the control variables
-    t_bounds = Bounds()
-        The bounds for the time
-    t_init = InitialGuess()
-        The initial guess for the time
     x_bounds = Bounds()
         The bounds for the states
     x_init = InitialGuess()
@@ -153,7 +147,6 @@ class NonLinearProgram:
         self.T = None
         self.t0 = None
         self.tf = None
-        self.t_initial_guess = None
         self.variable_mappings = {}
         self.u_bounds = BoundsList()
         self.u_init = InitialGuessList()
@@ -163,8 +156,6 @@ class NonLinearProgram:
         self.use_states_from_phase_idx = NodeMapping()
         self.use_controls_from_phase_idx = NodeMapping()
         self.use_states_dot_from_phase_idx = NodeMapping()
-        self.t_bounds = BoundsList()
-        self.t_init = InitialGuessList()
         self.x_bounds = BoundsList()
         self.x_init = InitialGuessList()
         self.X_scaled = None
@@ -184,7 +175,7 @@ class NonLinearProgram:
         self.stochastic_variables = OptimizationVariableContainer(assume_phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(assume_phase_dynamics)
 
-    def initialize(self, cx: Callable = None):
+    def initialize(self, cx: MX | SX | Callable = None):
         """
         Reset a nlp to a sane initial state
 

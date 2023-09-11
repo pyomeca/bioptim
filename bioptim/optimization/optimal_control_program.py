@@ -147,11 +147,9 @@ class OptimalControlProgram:
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
-        t_bounds: BoundsList = None,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
         s_bounds: BoundsList = None,
-        t_init: InitialGuessList | None = None,
         x_init: InitialGuessList | None = None,
         u_init: InitialGuessList | None = None,
         s_init: InitialGuessList | None = None,
@@ -194,16 +192,12 @@ class OptimalControlProgram:
             The number of shooting point of the phases
         phase_time: int | float | list | tuple
             The phase time of the phases
-        t_init: InitialGuess | InitialGuessList
-            The initial guesses for the time
         x_init: InitialGuess | InitialGuessList
             The initial guesses for the states
         u_init: InitialGuess | InitialGuessList
             The initial guesses for the controls
         s_init: InitialGuess | InitialGuessList
             The initial guesses for the stochastic variables
-        t_bounds: Bounds | BoundsList
-            The bounds for the time
         x_bounds: Bounds | BoundsList
             The bounds for the states
         u_bounds: Bounds | BoundsList
@@ -259,20 +253,18 @@ class OptimalControlProgram:
             If the dynamics of for each shooting node in phases are assumed to be the same
         """
 
-        self.check_bioptim_version()
+        self._check_bioptim_version()
 
-        bio_model = self.initialize_model(bio_model)
+        bio_model = self._initialize_model(bio_model)
 
-        self.set_original_values(
+        self._set_original_values(
             bio_model,
             dynamics,
             n_shooting,
             phase_time,
-            t_init,
             x_init,
             u_init,
             s_init,
-            t_bounds,
             x_bounds,
             u_bounds,
             s_bounds,
@@ -308,16 +300,14 @@ class OptimalControlProgram:
             parameter_objectives,
             multinode_constraints,
             multinode_objectives,
-        ) = self.check_arguments_and_build_nlp(
+        ) = self._check_arguments_and_build_nlp(
             dynamics,
             n_threads,
             n_shooting,
             phase_time,
-            t_bounds,
             x_bounds,
             u_bounds,
             s_bounds,
-            t_init,
             x_init,
             u_init,
             s_init,
@@ -351,7 +341,7 @@ class OptimalControlProgram:
 
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
 
-        self.finalize_penalties(
+        self._finalize_penalties(
             skip_continuity,
             state_continuity_weight,
             constraints,
@@ -360,28 +350,26 @@ class OptimalControlProgram:
             parameter_objectives,
         )
 
-    def check_bioptim_version(self):
+    def _check_bioptim_version(self):
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         return
 
-    def initialize_model(self, bio_model):
+    def _initialize_model(self, bio_model):
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
         bio_model = self._check_quaternions_hasattr(bio_model)
         self.n_phases = len(bio_model)
         return bio_model
 
-    def set_original_values(
+    def _set_original_values(
         self,
         bio_model,
         dynamics,
         n_shooting,
         phase_time,
-        t_init,
         x_init,
         u_init,
         s_init,
-        t_bounds,
         x_bounds,
         u_bounds,
         s_bounds,
@@ -422,11 +410,9 @@ class OptimalControlProgram:
             "dynamics": dynamics,
             "n_shooting": n_shooting,
             "phase_time": phase_time,
-            "t_init": t_init,
             "x_init": x_init,
             "u_init": u_init,
             "s_init": s_init,
-            "t_bounds": t_bounds,
             "x_bounds": x_bounds,
             "u_bounds": u_bounds,
             "s_bounds": s_bounds,
@@ -459,17 +445,15 @@ class OptimalControlProgram:
         }
         return
 
-    def check_arguments_and_build_nlp(
+    def _check_arguments_and_build_nlp(
         self,
         dynamics,
         n_threads,
         n_shooting,
         phase_time,
-        t_bounds,
         x_bounds,
         u_bounds,
         s_bounds,
-        t_init,
         x_init,
         u_init,
         s_init,
@@ -518,11 +502,6 @@ class OptimalControlProgram:
             else:
                 raise RuntimeError("phase_time should be a number or a list of number")
 
-        if t_bounds is None:
-            t_bounds = BoundsList()
-        elif not isinstance(t_bounds, BoundsList):
-            raise RuntimeError("t_bounds should be built from a BoundsList")
-
         if x_bounds is None:
             x_bounds = BoundsList()
         elif not isinstance(x_bounds, BoundsList):
@@ -537,11 +516,6 @@ class OptimalControlProgram:
             s_bounds = BoundsList()
         elif not isinstance(s_bounds, BoundsList):
             raise RuntimeError("s_bounds should be built from a BoundsList")
-
-        if t_init is None:
-            t_init = InitialGuessList()
-        if not isinstance(t_init, InitialGuessList):
-            raise RuntimeError("t_init should be built from a InitialGuessList")
 
         if x_init is None:
             x_init = InitialGuessList()
@@ -558,12 +532,10 @@ class OptimalControlProgram:
         if not isinstance(s_init, InitialGuessList):
             raise RuntimeError("s_init should be built from a InitialGuessList")
 
-        t_bounds = self._prepare_option_dict_for_phase("t_bounds", t_bounds, BoundsList)
         x_bounds = self._prepare_option_dict_for_phase("x_bounds", x_bounds, BoundsList)
         u_bounds = self._prepare_option_dict_for_phase("u_bounds", u_bounds, BoundsList)
         s_bounds = self._prepare_option_dict_for_phase("s_bounds", s_bounds, BoundsList)
 
-        t_init = self._prepare_option_dict_for_phase("t_init", t_init, InitialGuessList)
         x_init = self._prepare_option_dict_for_phase("x_init", x_init, InitialGuessList)
         u_init = self._prepare_option_dict_for_phase("u_init", u_init, InitialGuessList)
         s_init = self._prepare_option_dict_for_phase("s_init", s_init, InitialGuessList)
@@ -762,8 +734,8 @@ class OptimalControlProgram:
         self.parameter_bounds = BoundsList()
         self.parameter_init = InitialGuessList()
 
-        self.update_bounds(t_bounds, x_bounds, u_bounds, parameter_bounds, s_bounds)
-        self.update_initial_guess(t_init, x_init, u_init, parameter_init, s_init)
+        self.update_bounds(x_bounds, u_bounds, parameter_bounds, s_bounds)
+        self.update_initial_guess(x_init, u_init, parameter_init, s_init)
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
@@ -781,7 +753,7 @@ class OptimalControlProgram:
             multinode_objectives,
         )
 
-    def finalize_penalties(
+    def _finalize_penalties(
         self,
         skip_continuity,
         state_continuity_weight,
@@ -1129,7 +1101,6 @@ class OptimalControlProgram:
 
     def update_bounds(
         self,
-        t_bounds: BoundsList = None,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
         parameter_bounds: BoundsList = None,
@@ -1140,8 +1111,6 @@ class OptimalControlProgram:
 
         Parameters
         ----------
-        t_bounds: BoundsList
-            The time bounds to add
         x_bounds: BoundsList
             The state bounds to add
         u_bounds: BoundsList
@@ -1152,13 +1121,6 @@ class OptimalControlProgram:
             The stochastic variable bounds to add
         """
         for i in range(self.n_phases):
-            if t_bounds is not None:
-                if not isinstance(t_bounds, BoundsList):
-                    raise RuntimeError("t_bounds should be built from a BoundsList")
-                origin_phase = 0 if len(t_bounds) == 1 else i
-                for key in t_bounds[origin_phase].keys():
-                    self.nlp[i].t_bounds.add(key, t_bounds[origin_phase][key], phase=0)
-
             if x_bounds is not None:
                 if not isinstance(x_bounds, BoundsList):
                     raise RuntimeError("x_bounds should be built from a BoundsList")
@@ -1196,7 +1158,6 @@ class OptimalControlProgram:
 
     def update_initial_guess(
         self,
-        t_init: InitialGuessList = None,
         x_init: InitialGuessList = None,
         u_init: InitialGuessList = None,
         parameter_init: InitialGuessList = None,
@@ -1207,8 +1168,6 @@ class OptimalControlProgram:
 
         Parameters
         ----------
-        t_init: BoundsList
-            The time initial guess to add
         x_init: BoundsList
             The state initial guess to add
         u_init: BoundsList
@@ -1220,13 +1179,6 @@ class OptimalControlProgram:
         """
 
         for i in range(self.n_phases):
-            if t_init:
-                if not isinstance(t_init, InitialGuessList):
-                    raise RuntimeError("t_init should be built from a InitialGuessList")
-                origin_phase = 0 if len(t_init) == 1 else i
-                for key in t_init[origin_phase].keys():
-                    self.nlp[i].t_init.add(key, t_init[origin_phase][key], phase=0)
-
             if x_init:
                 if not isinstance(x_init, InitialGuessList):
                     raise RuntimeError("x_init should be built from a InitialGuessList")
@@ -1881,7 +1833,6 @@ class OptimalControlProgram:
                             _phase_time[i] = _phase_time[ocp.time_phase_mapping.to_second.map_idx[i]]
             return _has_penalty
 
-        NLP.add(self, "t_initial_guess", phase_time, False)
         self.original_phase_time = phase_time
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]

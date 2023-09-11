@@ -36,11 +36,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         dynamics: Dynamics | DynamicsList,
         n_shooting: int | list | tuple,
         phase_time: int | float | list | tuple,
-        t_bounds: BoundsList = None,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
         s_bounds: BoundsList = None,
-        t_init: InitialGuessList | None = None,
         x_init: InitialGuessList | None = None,
         u_init: InitialGuessList | None = None,
         s_init: InitialGuessList | None = None,
@@ -94,20 +92,18 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         self.assume_phase_dynamics = False
 
-        self.check_bioptim_version()
+        self._check_bioptim_version()
 
-        bio_model = self.initialize_model(bio_model)
+        bio_model = self._initialize_model(bio_model)
 
-        self.set_original_values(
+        self._set_original_values(
             bio_model,
             dynamics,
             n_shooting,
             phase_time,
-            t_init,
             x_init,
             u_init,
             s_init,
-            t_bounds,
             x_bounds,
             u_bounds,
             s_bounds,
@@ -143,16 +139,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_objectives,
             multinode_constraints,
             multinode_objectives,
-        ) = self.check_arguments_and_build_nlp(
+        ) = self._check_arguments_and_build_nlp(
             dynamics,
             n_threads,
             n_shooting,
             phase_time,
-            t_bounds,
             x_bounds,
             u_bounds,
             s_bounds,
-            t_init,
             x_init,
             u_init,
             s_init,
@@ -187,7 +181,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         self.problem_type = problem_type
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints)
 
-        self.finalize_penalties(
+        self._finalize_penalties(
             skip_continuity,
             state_continuity_weight,
             constraints,
