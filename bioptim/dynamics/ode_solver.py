@@ -127,6 +127,7 @@ class RK(OdeSolverBase):
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
             "defects_type": DefectType.NOT_APPLICABLE,
+            "allow_free_variables": nlp.dynamics_type.allow_free_variables,
         }
 
         ode = {

@@ -4,7 +4,7 @@ This file contains the functions that are common for multiple stochastic example
 
 import casadi as cas
 import numpy as np
-from bioptim import StochasticBioModel, DynamicsFunctions
+from bioptim import StochasticBioModel, DynamicsFunctions, SocpType
 
 
 def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, with_noise):
@@ -142,26 +142,35 @@ def integrator_collocations(model, polynomial_degree, n_shooting, duration, stat
     return states_end, defects
 
 
-def integrator_rk4(fun, n_shooting, duration, states, controls, stochastic_variables):
-
+def integrator_rk4(q, qdot, u, stochastic_variables, fun_cov, fun_states, n_shooting, duration):
     step_time = duration / n_shooting
     n_step = 5
     h_norm = 1 / n_step
     h = step_time * h_norm
 
-    x = np.zeros((states.shape[0], n_step + 1))
-    x[:, 0] = states
-    u = controls
-    s = stochastic_variables
+    nb_q = q.shape[0]
+    x = np.zeros((2 * nb_q, n_step + 1))
+    for j in range(nb_q):
+        x[j, 0] = q[j]
+    for j in range(nb_q):
+        x[j + nb_q, 0] = qdot[j]
+
+    s = np.zeros((stochastic_variables.shape[0], n_step + 1))
+    s[:, 0] = stochastic_variables
 
     for i in range(1, n_step + 1):
-        k1 = fun(x[:, i-1], u, [], s)
-        k2 = fun(x[:, i-1] + h / 2 * k1, u, [], s)
-        k3 = fun(x[:, i-1] + h / 2 * k2, u, [], s)
-        k4 = fun(x[:, i-1] + h * k3, u, [], s)
-        x[:, i] = x[:, i-1] + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
+        k1_states = fun_states(x[:nb_q, i-1], x[nb_q:, i-1], u)
+        k1_cov = fun_cov(x[:nb_q, i-1], x[nb_q:, i-1], s[:, i-1])
+        k2_states = fun_states(x[:nb_q, i-1] + h / 2 * k1_states[:nb_q], x[nb_q:, i-1] + h / 2 * k1_states[nb_q:], u)
+        k2_cov = fun_cov(x[:nb_q, i-1] + h / 2 * k1_states[:nb_q], x[nb_q:, i-1] + h / 2 * k1_states[nb_q:], s[:, i-1] + h / 2 * k1_cov)
+        k3_states = fun_states(x[:nb_q, i-1] + h / 2 * k2_states[:nb_q], x[nb_q:, i-1] + h / 2 * k2_states[nb_q:], u)
+        k3_cov = fun_cov(x[:nb_q, i-1] + h / 2 * k2_states[:nb_q], x[nb_q:, i-1] + h / 2 * k2_states[nb_q:], s[:, i-1] + h / 2 * k2_cov)
+        k4_states = fun_states(x[:nb_q, i-1] + h * k3_states[:nb_q], x[nb_q:, i-1] + h * k3_states[nb_q:], u)
+        k4_cov = fun_cov(x[:nb_q, i-1] + h * k3_states[:nb_q], x[nb_q:, i-1] + h * k3_states[nb_q:], s[:, i-1] + h * k3_cov)
+        x[:, i] = np.reshape(x[:, i-1] + h / 6 * (k1_states + 2 * k2_states + 2 * k3_states + k4_states), (-1, ))
+        s[:, i] = np.reshape(s[:, i-1] + h / 6 * (k1_cov + 2 * k2_cov + 2 * k3_cov + k4_cov), (-1, ))
 
-    return x[:, -1]
+    return s[:, -1]
 
 
 def get_m_init(model,
@@ -384,11 +393,10 @@ def get_cov_init_collocations(model,
 def get_cov_init_dms(model,
                  n_shooting,
                  n_stochastic,
-                 polynomial_degree,
                  duration,
                  q_last,
                  qdot_last,
-                 tau_last,
+                 u_last,
                  cov_init,
                  motor_noise_magnitude):
     """
@@ -405,7 +413,7 @@ def get_cov_init_dms(model,
 
     states_full = cas.vertcat(x_q_joints, x_qdot_joints)
 
-    dx_dt = dynamics_numerical(
+    dx_dt = model.dynamics_numerical(
         states_full,
         controls_sym,
         stochastic_variables_sym,
@@ -413,29 +421,21 @@ def get_cov_init_dms(model,
 
     A = cas.jacobian(dx_dt, states_full)
 
-    cov_matrix = StochasticBioModel.reshape_to_matrix(
-        stochastic_variables_sym.cx_start, model.matrix_shape_cov
+    cov_matrix = StochasticBioModel.reshape_sym_to_matrix(
+        stochastic_variables_sym, model.matrix_shape_cov
     )
 
     cov_derivative = A @ cov_matrix + cov_matrix @ A.T
-    cov_derivative_func = cas.Function("cov_derivative_func", [x_q_joints, x_qdot_joints], [cov_derivative])
+    cov_derivative_vect = StochasticBioModel.reshape_to_vector(cov_derivative)
+    cov_derivative_func = cas.Function("cov_derivative_func", [x_q_joints, x_qdot_joints, stochastic_variables_sym], [cov_derivative_vect])
+    states_derivative_func = cas.Function("states_derivative_func", [x_q_joints, x_qdot_joints, controls_sym], [dx_dt])
 
     cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
     cov_last[:, 0] = cov_init[:, 0]
     for i in range(n_shooting):
-        cov_next_computed = integrator_rk4(states_full[:, i], controls_sym[:, i], stochastic_variables_sym[:, i],
-                                           cov_derivative_func, n_shooting, duration)
-
-        cov_matrix = np.zeros((2*n_joints, 2*n_joints))
-        for s0 in range(2*n_joints):
-            for s1 in range(2*n_joints):
-                cov_matrix[s1, s0] = cov_last[s0 * 2*n_joints + s1, i]
-
-        cov_this_time = (
-                m_matrix @ (dg_dx_evaluated @ cov_matrix @ dg_dx_evaluated.T + dg_dw_evaluated @ sigma_w_dm @ dg_dw_evaluated.T) @ m_matrix.T)
-        for s0 in range(2*n_joints):
-            for s1 in range(2*n_joints):
-                cov_last[2*n_joints * s1 + s0, i+1] = cov_this_time[s0, s1]
+        cov_next_computed = integrator_rk4(q_last[:, i], qdot_last[:, i], u_last[:, i], cov_last[:, i],
+                                           cov_derivative_func, states_derivative_func, n_shooting, duration)
+        cov_last[:, i+1] = cov_next_computed
     return cov_last
 
 def test_matrix_semi_definite_positiveness(var):
@@ -512,12 +512,13 @@ def test_robustified_constraint_value(model, q, qdot, cov_num):
 
     func = cas.Function("out", [p_x, p_y, v_x, v_y, cov], [non_robust_constraint, robust_component, dh_dx_all, cov_all, sqrt_all])
 
+    polynomial_degree = model.polynomial_degree if isinstance(model.socp_type, SocpType.COLLOCATION) else 0
     out_num = []
     for j in range(cov_num.shape[1]):
-        p_x_value = q[0, j*(model.polynomial_degree + 1)]
-        p_y_value = q[1, j*(model.polynomial_degree + 1)]
-        v_x_value = qdot[0, j*(model.polynomial_degree + 1)]
-        v_y_value = qdot[1, j*(model.polynomial_degree + 1)]
+        p_x_value = q[0, j*(polynomial_degree + 1)]
+        p_y_value = q[1, j*(polynomial_degree + 1)]
+        v_x_value = qdot[0, j*(polynomial_degree + 1)]
+        v_y_value = qdot[1, j*(polynomial_degree + 1)]
         cov_value = np.zeros((4, 4))
         for s0 in range(4):
             for s1 in range(4):

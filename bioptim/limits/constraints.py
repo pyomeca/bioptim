@@ -1058,33 +1058,43 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
-            def set_cov_integrator(cov_derivative_func):
-                ode_opt = {
-                    "t0": 0,
-                    "tf": controller.dt,
-                    "model": controller.model,
-                    "param": controller.parameters,
-                    "cx": controller.cx,
-                    "idx": 0,
-                    "control_type": controller.control_type,
-                    "number_of_finite_elements": 5,  # to be generalizes
-                    "defects_type": DefectType.NOT_APPLICABLE,
-                }
+            def cov_integrate(q, qdot, u, cov, fun_cov, fun_states):
 
-                ode = {
-                    "x_unscaled": controller.states.cx_start,
-                    "x_scaled": None,
-                    "p_unscaled": controller.controls.cx_start
-                    if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
-                    else horzcat(controller.controls.cx_start, controller.controls.cx_end),
-                    "p_scaled": None,
-                    "s_unscaled": controller.stochastic_variables.cx_start,
-                    "s_scaled": None,
-                    "ode": cov_derivative_func,
-                    "implicit_ode": [],
-                }
+                duration = controller.parameters["time"].cx if "time" in controller.parameters.keys() else controller.tf
+                step_time = duration / controller.ns
+                n_step = 5 # to be changed
+                h_norm = 1 / n_step
+                h = step_time * h_norm
 
-                return [controller.ode_solver.rk_integrator(ode, ode_opt)]
+                nb_q = q.shape[0]
+                x = MX.zeros(2 * nb_q, n_step + 1)
+                for j in range(nb_q):
+                    x[j, 0] = q[j]
+                for j in range(nb_q):
+                    x[j + nb_q, 0] = qdot[j]
+
+                s = MX.zeros(cov.shape[0], n_step + 1)
+                s[:, 0] = cov
+
+                for i in range(1, n_step + 1):
+                    k1_states = fun_states(x[:nb_q, i - 1], x[nb_q:, i - 1], u, duration, cov)
+                    k1_cov = fun_cov(x[:nb_q, i - 1], x[nb_q:, i - 1], u, duration, s[:, i - 1])
+                    k2_states = fun_states(x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
+                                           x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:], u, duration, cov)
+                    k2_cov = fun_cov(x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
+                                     x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:], u, duration, s[:, i - 1] + h / 2 * k1_cov)
+                    k3_states = fun_states(x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
+                                           x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:], u, duration, cov)
+                    k3_cov = fun_cov(x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
+                                     x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:], u, duration, s[:, i - 1] + h / 2 * k2_cov)
+                    k4_states = fun_states(x[:nb_q, i - 1] + h * k3_states[:nb_q],
+                                           x[nb_q:, i - 1] + h * k3_states[nb_q:], u, duration, cov)
+                    k4_cov = fun_cov(x[:nb_q, i - 1] + h * k3_states[:nb_q], x[nb_q:, i - 1] + h * k3_states[nb_q:],
+                                     u, duration, s[:, i - 1] + h * k3_cov)
+                    x[:, i] = x[:, i - 1] + h / 6 * (k1_states + 2 * k2_states + 2 * k3_states + k4_states)
+                    s[:, i] = s[:, i - 1] + h / 6 * (k1_cov + 2 * k2_cov + 2 * k3_cov + k4_cov)
+
+                return s[:, -1]
 
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
@@ -1098,24 +1108,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu)
                 )
 
-            if "cholesky_cov" in controller.stochastic_variables.keys():
-                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controller.stochastic_variables["cholesky_cov"].cx_start,
-                    controller.model.matrix_shape_cov_cholesky,
-                )
-                l_cov_matrix_next = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controller.stochastic_variables["cholesky_cov"].cx_end,
-                    controller.model.matrix_shape_cov_cholesky,
-                )
-                cov_matrix = l_cov_matrix @ l_cov_matrix.T
-                cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
-            else:
-                cov_matrix = StochasticBioModel.reshape_to_matrix(
-                    controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
-                )
-                cov_matrix_next = StochasticBioModel.reshape_to_matrix(
-                    controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
-                )
+            cov_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+            )
 
             x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
             x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
@@ -1134,19 +1129,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             A = jacobian(dx_dt[non_root_index_continuity], vertcat(x_q_joints, x_qdot_joints))
 
             cov_derivative = A @ cov_matrix + cov_matrix @ A.T
-            cov_derivative_func = Function("cov_derivative_func", [x_q_joints, x_qdot_joints], [cov_derivative])
-            cov_integrator = set_cov_integrator(cov_derivative_func)
+            cov_derivative_vector = StochasticBioModel.reshape_to_vector(cov_derivative)
+            states_derivative_func = Function("states_derivative_func", [x_q_joints, x_qdot_joints, controller.controls.cx_start, controller.parameters.cx_start, controller.stochastic_variables.cx_start], [dx_dt])
+            cov_derivative_func = Function("cov_derivative_func", [x_q_joints, x_qdot_joints, controller.controls.cx_start,
+                                            controller.parameters.cx_start, controller.stochastic_variables["cov"].cx_start], [cov_derivative_vector])
 
-            cov_next_computed = cov_integrator[0](states_xall[:nb_root, 0], states_xall[nb_root:, 0])
+            cov_next_computed = cov_integrate(x_q_joints, x_qdot_joints, controller.controls.cx_start, controller.stochastic_variables["cov"].cx_start, cov_derivative_func, states_derivative_func)
 
-            cov_integration_defect = cov_matrix_next - cov_next_computed
-
-            out_vector = StochasticBioModel.reshape_to_vector(cov_integration_defect)
+            cov_integration_defect = controller.stochastic_variables["cov"].cx_end - cov_next_computed
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
-            return out_vector
+            return cov_integration_defect
 
         @staticmethod
         def stochastic_mean_sensory_input_equals_reference(

@@ -252,6 +252,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             self._prepare_stochastic_dynamics_collocation(
                 constraints=constraints,
             )
+        elif isinstance(self.problem_type, SocpType.DMS):
+            self._prepare_stochastic_dynamics_dms(
+                constraints=constraints,
+            )
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 

@@ -183,6 +183,7 @@ class Integrator:
             ),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
+            {"allow_free": self.allow_free_variables},
         )
 
 
@@ -216,8 +217,8 @@ class RK(Integrator):
         ode_opt: dict
             The ode options
         """
-
         super(RK, self).__init__(ode, ode_opt)
+        self.allow_free_variables = ode_opt["allow_free_variables"]
         self.n_step = ode_opt["number_of_finite_elements"]
         self.h_norm = 1 / self.n_step
         self.h = self.step_time * self.h_norm
@@ -1045,6 +1046,7 @@ class IRK(COLLOCATION):
             ),
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
+            {"allow_free": self.allow_free_variables},
         )
 
 
