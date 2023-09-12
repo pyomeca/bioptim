@@ -131,7 +131,8 @@ def integrator_collocations(model, polynomial_degree, n_shooting, duration, stat
             with_noise=True,
         )
 
-        defects.append(h * f_j - xp_j)
+        # defects.append(h * f_j - xp_j)
+        defects.append(f_j - xp_j / h)
 
         # Add contribution to the end state
         states_end += _d[j] * states[:, j]
@@ -180,7 +181,7 @@ def get_m_init(model,
                polynomial_degree,
                q_last,
                qdot_last,
-               tau_last):
+               u_last):
     """
     M = -dF_dz @ inv(dG_dz)
     """
@@ -241,7 +242,7 @@ def get_m_init(model,
         for j in range(polynomial_degree):
             input_num_list += [q_last[:, index_this_time[j+1]],
                                qdot_last[:, index_this_time[j+1]]]
-        input_num_list += [tau_last[:, i],
+        input_num_list += [u_last[:, i],
                             np.vstack((np.zeros((2 * n_joints * 2 * n_joints * (polynomial_degree+1), 1)),  # M
                                         np.zeros((2 * n_joints * 2 * n_joints, 1)))),  # cov
                             ]
@@ -267,7 +268,7 @@ def get_cov_init_collocations(model,
                  duration,
                  q_last,
                  qdot_last,
-                 tau_last,
+                 u_last,
                  m_last,
                  cov_init,
                  motor_noise_magnitude):
@@ -319,9 +320,24 @@ def get_cov_init_collocations(model,
         [dg_dw],
     )
 
-    sigma_w_dm = motor_noise_magnitude * cas.DM_eye(motor_noise_magnitude.shape[0])
+    # augmented_sigma_w_mx = cas.MX.zeros(2 * n_joints, 2 * n_joints)
+    # for i in range(motor_noise_magnitude.shape[0]):
+    #     augmented_sigma_w_mx[i, i] = model.motor_noise_sym[i]
+    sigma_w_dm = cas.DM_eye(motor_noise_magnitude.shape[0]) * motor_noise_magnitude
     cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
 
+    # dx_dt = model.dynamics_numerical(
+    #     cas.vertcat(x_q_joints, x_qdot_joints),
+    #     controls_sym,
+    #     stochastic_variables_sym,
+    #     with_noise=True
+    # )
+    # cov_init_sym = augmented_sigma_w_mx + cas.jacobian(dx_dt, cas.vertcat(x_q_joints, x_qdot_joints)) + cas.jacobian(dx_dt, model.motor_noise_sym)
+    # # cov_init_sym = cas.jacobian(defects[-4:], cas.vertcat(x_q_joints, x_qdot_joints)) + cas.jacobian(defects[-4:], model.motor_noise_sym)
+    # cov_init_fcn = cas.Function("cov_init_fcn", [x_q_joints, x_qdot_joints, controls_sym, stochastic_variables_sym, model.motor_noise_sym], [cov_init_sym])
+    #
+    # cov_init_matrix = cov_init_fcn(q_last[:, 0], qdot_last[:, 0], u_last[:, 0], np.zeros((n_stochastic, 1)), motor_noise_magnitude)
+    # cov_last[:, 0] = np.reshape(StochasticBioModel.reshape_to_vector(cov_init_matrix), (-1, ))
     cov_last[:, 0] = cov_init[:, 0]
     for i in range(n_shooting):
         index_this_time = [i * polynomial_degree + j for j in range(polynomial_degree+1)]
@@ -330,7 +346,7 @@ def get_cov_init_collocations(model,
         for j in range(polynomial_degree):
             input_num_list += [q_last[:, index_this_time[j+1]],
                                qdot_last[:, index_this_time[j+1]]]
-        input_num_list += [tau_last[:, i],
+        input_num_list += [u_last[:, i],
                             np.vstack((m_last[:, i].reshape((-1, 1)),
                                         np.zeros((2 * n_joints * 2 * n_joints, 1)))),  # cov
                             motor_noise_magnitude,

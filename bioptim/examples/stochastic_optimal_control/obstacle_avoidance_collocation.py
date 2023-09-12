@@ -401,7 +401,12 @@ def prepare_socp(
         )
 
     if cov_init is None:
-        cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.1
+        # cov_init_matrix = np.array([[0.00836979, 0.00663611, 0.00855289, 0.00802526],
+        #                            [0.0034189 , 0.00416691, 0.00783711, 0.00772589],
+        #                            [0.00061915, 0.0047863 , 0.00059285, 0.00299982],
+        #                            [0.00406524, 0.00536997, 0.00726748, 0.00862853]])
+        # cov_init_matrix += cas.DM_eye(nb_q + nb_qdot) * 0.01
+        cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.01
         shape_0, shape_1 = cov_init_matrix.shape[0], cov_init_matrix.shape[1]
         cov_0 = np.zeros((shape_0 * shape_1, 1))
         for s0 in range(shape_0):
@@ -679,6 +684,13 @@ def main():
             for s_1 in range(bio_model.matrix_shape_cov[1]):
                 cov_reshaped_to_matrix[s_0, s_1] = cov_stochastic[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
         draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_stochastic[:, j*(polynomial_degree + 1)], ax)
+        tempo_cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
+        tempo_cov_reshaped_to_matrix[:, :] = cov_reshaped_to_matrix[:, :]
+        tempo_cov_reshaped_to_matrix[0, 0] = 0
+        tempo_cov_reshaped_to_matrix[1, 1] = 0
+        tempo_cov_reshaped_to_matrix[2, 2] = 0
+        tempo_cov_reshaped_to_matrix[3, 3] = 0
+        print(np.max(np.abs(tempo_cov_reshaped_to_matrix)))
     # for j in range(cov_robustified.shape[1]):
     #     ax.plot(q_robustified[0, j*(polynomial_degree+1)], q_robustified[1, j*(polynomial_degree+1)], "ok", markersize=2)
     #     cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
