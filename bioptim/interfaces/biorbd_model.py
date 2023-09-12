@@ -560,6 +560,9 @@ class BiorbdModel:
         qdot_biorbd = GeneralizedVelocity(qdot)
         return self.model.Lagrangian(q_biorbd, qdot_biorbd).to_mx()
 
+    def partitioned_forward_dynamics(self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None):
+        raise NotImplementedError("partitioned_forward_dynamics is not implemented for BiorbdModel")
+
     @staticmethod
     def animate(
         solution: Any, show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
@@ -1205,5 +1208,5 @@ class MultiBiorbdModel:
         raise NotImplementedError("partitioned_forward_dynamics is not implemented yet for MultiBiorbdModel")
 
     @staticmethod
-    def animate(solution: Any, show_now: bool = True, tracked_markers: list = [], **kwargs: Any) -> None | list:
+    def animate(solution: Any, show_now: bool = True, tracked_markers: list = None, **kwargs: Any) -> None | list:
         raise NotImplementedError("animate is not implemented yet for MultiBiorbdModel")
