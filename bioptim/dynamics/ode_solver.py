@@ -528,7 +528,7 @@ class OdeSolver:
                 "x": nlp.states.scaled.cx_start,
                 "p": nlp.controls.scaled.cx_start,
                 "ode": nlp.dynamics_func(
-                    nlp.time,
+                    nlp.time_cx,
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
@@ -549,7 +549,7 @@ class OdeSolver:
                 Function(
                     "integrator",
                     [
-                        nlp.time,
+                        nlp.time_cx,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.cx,

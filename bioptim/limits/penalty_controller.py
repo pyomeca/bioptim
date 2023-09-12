@@ -4,7 +4,7 @@ from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList
-from ..misc.enums import ControlType, Node
+from ..misc.enums import ControlType
 
 
 class PenaltyController:
@@ -127,7 +127,7 @@ class PenaltyController:
         -------
         The time at node node_index
         """
-        out = self._nlp.time
+        out = self._nlp.time_cx
         return out
 
     @property

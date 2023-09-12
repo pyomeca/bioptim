@@ -167,7 +167,7 @@ class NonLinearProgram:
         self.S_scaled = None
         self.s_scaling = None
         self.assume_phase_dynamics = assume_phase_dynamics
-        self.time = None
+        self.time_cx = None
         self.time_mx = None
         self.states = OptimizationVariableContainer(assume_phase_dynamics)
         self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
@@ -192,7 +192,7 @@ class NonLinearProgram:
         self.g = []
         self.g_internal = []
         self.casadi_func = {}
-        self.time = self.cx.sym(f"time_cx_{self.phase_idx}", 1, 1)
+        self.time_cx = self.cx.sym(f"time_cx_{self.phase_idx}", 1, 1)
         self.time_mx = MX.sym(f"time_mx_{self.phase_idx}", 1, 1)
         self.states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)

@@ -158,7 +158,7 @@ class AcadosInterface(SolverInterface):
             raise NotImplementedError("More than 1 phase is not implemented yet with ACADOS backend")
 
         # Declare model variables
-        t = ocp.nlp[0].time
+        t = ocp.nlp[0].time_cx
         x = ocp.nlp[0].states.cx_start
         u = ocp.nlp[0].controls.cx_start
         p = ocp.nlp[0].parameters.cx
@@ -280,7 +280,7 @@ class AcadosInterface(SolverInterface):
         self.all_g_bounds = Bounds(None, interpolation=InterpolationType.CONSTANT)
         self.end_g_bounds = Bounds(None, interpolation=InterpolationType.CONSTANT)
         for i, nlp in enumerate(ocp.nlp):
-            t = nlp.time
+            t = nlp.time_cx
             x = nlp.states.cx_start
             u = nlp.controls.cx_start
             p = nlp.parameters.cx
@@ -599,7 +599,7 @@ class AcadosInterface(SolverInterface):
                         add_nonlinear_ls_lagrange(
                             self,
                             J,
-                            nlp.time,
+                            nlp.time_cx,
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
@@ -610,7 +610,7 @@ class AcadosInterface(SolverInterface):
                         add_nonlinear_ls_mayer(
                             self,
                             J,
-                            nlp.time,
+                            nlp.time_cx,
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
@@ -621,7 +621,7 @@ class AcadosInterface(SolverInterface):
                         add_nonlinear_ls_mayer(
                             self,
                             J,
-                            nlp.time,
+                            nlp.time_cx,
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
@@ -639,7 +639,7 @@ class AcadosInterface(SolverInterface):
                     add_nonlinear_ls_mayer(
                         self,
                         J,
-                        nlp.time,
+                        nlp.time_cx,
                         nlp.states.cx_start,
                         nlp.controls.cx_start,
                         nlp.parameters.cx,

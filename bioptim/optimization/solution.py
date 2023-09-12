@@ -220,7 +220,7 @@ class Solution:
             self.use_states_from_phase_idx = nlp.use_states_from_phase_idx
             self.use_controls_from_phase_idx = nlp.use_controls_from_phase_idx
             self.model = nlp.model
-            self.time = nlp.time
+            self.time_cx = nlp.time_cx
             self.states = nlp.states
             self.states_dot = nlp.states_dot
             self.controls = nlp.controls
@@ -395,7 +395,7 @@ class Solution:
                             parameters_tempo = np.concatenate((parameters_tempo, parameters[i_phase][key_tempo]))
                     casadi_func = Function(
                         "integrate_values",
-                        [nlp.time, states_cx, controls_cx, nlp.parameters.cx_start, stochastic_variables_cx],
+                        [nlp.time_cx, states_cx, controls_cx, nlp.parameters.cx_start, stochastic_variables_cx],
                         [integrated_values_cx],
                     )
                     integrated_values_this_time = casadi_func(
@@ -502,8 +502,8 @@ class Solution:
             # For time
             for p, ss in enumerate(sol_time):
                 for key in ss.keys():
-                    self.ocp.nlp[p].time[key].node_index = 0
-                    ss[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].time[key]), self.ns[p], "time")
+                    self.ocp.nlp[p].time_cx[key].node_index = 0
+                    ss[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].time_cx[key]), self.ns[p], "time")
 
             # For states
             for p, ss in enumerate(sol_states):

@@ -169,7 +169,7 @@ def check_conditioning(ocp):
                 for axis in range(
                     0,
                     constraints.function[node_index](
-                        nlp.time,
+                        nlp.time_cx,
                         nlp.states.cx_start,
                         nlp.controls.cx_start,
                         nlp.parameters.cx,
