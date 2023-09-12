@@ -190,83 +190,68 @@ def get_m_init(model,
 
     x_q_joints = type(model.motor_noise_sym).sym("x_q_joints", n_joints, 1)
     x_qdot_joints = type(model.motor_noise_sym).sym("x_qdot_joints", n_joints, 1)
-    z_q_joints = type(model.motor_noise_sym).sym("z_q_joints", n_joints, polynomial_degree)
-    z_qdot_joints = type(model.motor_noise_sym).sym("z_qdot_joints", n_joints, polynomial_degree)
+    z_q_joints = []
+    z_qdot_joints = []
+    for i in range(polynomial_degree):
+        z_q_joints += [type(model.motor_noise_sym).sym("z_q_joints", n_joints, 1)]
+        z_qdot_joints += [type(model.motor_noise_sym).sym("z_qdot_joints", n_joints, 1)]
     controls_sym = type(model.motor_noise_sym).sym("controls", n_q, 1)
     stochastic_variables_sym = type(model.motor_noise_sym).sym("stochastic_variables", n_stochastic, 1)
 
-    states_full = cas.vertcat(
-        cas.horzcat(x_q_joints, z_q_joints),
-        cas.horzcat(x_qdot_joints, z_qdot_joints),
-    )
+    states_full = cas.vertcat(x_q_joints, x_qdot_joints)
+    for i in range(polynomial_degree):
+        states_full = cas.horzcat(states_full, cas.vertcat(z_q_joints[i], z_qdot_joints[i]))
 
     states_end, defects = integrator_collocations(model, polynomial_degree, n_shooting, duration, states_full, controls_sym, stochastic_variables_sym)
     initial_polynomial_evaluation = cas.vertcat(x_q_joints, x_qdot_joints)
     defects = cas.vertcat(initial_polynomial_evaluation, defects)
 
-    df_dz = cas.horzcat(
-        cas.jacobian(states_end, x_q_joints),
-        cas.jacobian(states_end, z_q_joints),
-        cas.jacobian(states_end, x_qdot_joints),
-        cas.jacobian(states_end, z_qdot_joints),
-    )
+    df_dz = cas.jacobian(states_end, x_q_joints)
+    df_dz = cas.horzcat(df_dz, cas.jacobian(states_end, x_qdot_joints))
+    for i in range(polynomial_degree):
+        df_dz = cas.horzcat(df_dz, cas.jacobian(states_end, z_q_joints[i]))
+        df_dz = cas.horzcat(df_dz, cas.jacobian(states_end, z_qdot_joints[i]))
 
-    dg_dz = cas.horzcat(
-        cas.jacobian(defects, x_q_joints),
-        cas.jacobian(defects, z_q_joints),
-        cas.jacobian(defects, x_qdot_joints),
-        cas.jacobian(defects, z_qdot_joints),
-    )
+    dg_dz = cas.jacobian(defects, x_q_joints)
+    dg_dz = cas.horzcat(dg_dz, cas.jacobian(defects, x_qdot_joints))
+    for i in range(polynomial_degree):
+        dg_dz = cas.horzcat(dg_dz, cas.jacobian(defects, z_q_joints[i]))
+        dg_dz = cas.horzcat(dg_dz, cas.jacobian(defects, z_qdot_joints[i]))
 
+    input_var_list = [x_q_joints, x_qdot_joints]
+    for i in range(polynomial_degree):
+        input_var_list += [z_q_joints[i], z_qdot_joints[i]]
+    input_var_list += [controls_sym, stochastic_variables_sym]
     df_dz_fun = cas.Function(
         "df_dz",
-        [
-            x_q_joints,
-            x_qdot_joints,
-            z_q_joints,
-            z_qdot_joints,
-            controls_sym,
-            stochastic_variables_sym,
-        ],
+        input_var_list,
         [df_dz],
     )
     dg_dz_fun = cas.Function(
         "dg_dz",
-        [
-            x_q_joints,
-            x_qdot_joints,
-            z_q_joints,
-            z_qdot_joints,
-            controls_sym,
-            stochastic_variables_sym,
-        ],
+        input_var_list,
         [dg_dz],
     )
-
 
     m_last = np.zeros((2 * n_joints * 2 * n_joints * (polynomial_degree+1), n_shooting + 1))
     for i in range(n_shooting+1):
         index_this_time = [i * polynomial_degree + j for j in range(polynomial_degree+1)]
-        df_dz_evaluated = df_dz_fun(
-            q_last[:, index_this_time[0]],
-            qdot_last[:, index_this_time[0]],
-            q_last[:, index_this_time[1:]],
-            qdot_last[:, index_this_time[1:]],
-            tau_last[:, i],
-            np.vstack((np.zeros((2 * n_joints * 2 * n_joints * (polynomial_degree+1), 1)),  # M
-                       np.zeros((2 * n_joints * 2 * n_joints, 1)))),  # cov
-        )
-        dg_dz_evaluated = dg_dz_fun(
-            q_last[:, index_this_time[0]],
-            qdot_last[:, index_this_time[0]],
-            q_last[:, index_this_time[1:]],
-            qdot_last[:, index_this_time[1:]],
-            tau_last[:, i],
-            np.vstack((np.zeros((2 * n_joints * 2 * n_joints * (polynomial_degree+1), 1)),
-                       np.zeros((2 * n_joints * 2 * n_joints, 1)))),
-        )
+        input_num_list = [q_last[:, index_this_time[0]],
+                            qdot_last[:, index_this_time[0]]]
+        for j in range(polynomial_degree):
+            input_num_list += [q_last[:, index_this_time[j+1]],
+                               qdot_last[:, index_this_time[j+1]]]
+        input_num_list += [tau_last[:, i],
+                            np.vstack((np.zeros((2 * n_joints * 2 * n_joints * (polynomial_degree+1), 1)),  # M
+                                        np.zeros((2 * n_joints * 2 * n_joints, 1)))),  # cov
+                            ]
+        df_dz_evaluated = df_dz_fun(*input_num_list)
+        dg_dz_evaluated = dg_dz_fun(*input_num_list)
 
-        m_this_time = -df_dz_evaluated @ np.linalg.inv(dg_dz_evaluated)
+        m_this_time = -df_dz_evaluated @ np.linalg.inv(dg_dz_evaluated)  # Does not varry
+        # m_this_time = df_dz_evaluated @ np.linalg.inv(dg_dz_evaluated)  # Does not varry
+        # m_this_time = np.linalg.inv(dg_dz_evaluated) @ df_dz_evaluated  # Does not varry
+        # m_this_time = -np.linalg.inv(dg_dz_evaluated) @ df_dz_evaluated  # Does not varry
 
         shape_0, shape_1 = m_this_time.shape[0], m_this_time.shape[1]
         for s0 in range(shape_0):
@@ -295,15 +280,17 @@ def get_cov_init_collocations(model,
 
     x_q_joints = type(model.motor_noise_sym).sym("x_q_joints", n_joints, 1)
     x_qdot_joints = type(model.motor_noise_sym).sym("x_qdot_joints", n_joints, 1)
-    z_q_joints = type(model.motor_noise_sym).sym("z_q_joints", n_joints, polynomial_degree)
-    z_qdot_joints = type(model.motor_noise_sym).sym("z_qdot_joints", n_joints, polynomial_degree)
+    z_q_joints = []
+    z_qdot_joints = []
+    for i in range(polynomial_degree):
+        z_q_joints += [type(model.motor_noise_sym).sym("z_q_joints", n_joints, 1)]
+        z_qdot_joints += [type(model.motor_noise_sym).sym("z_qdot_joints", n_joints, 1)]
     controls_sym = type(model.motor_noise_sym).sym("controls", n_q, 1)
     stochastic_variables_sym = type(model.motor_noise_sym).sym("stochastic_variables", n_stochastic, 1)
 
-    states_full = cas.vertcat(
-        cas.horzcat(x_q_joints, z_q_joints),
-        cas.horzcat(x_qdot_joints, z_qdot_joints),
-    )
+    states_full = cas.vertcat(x_q_joints, x_qdot_joints)
+    for i in range(polynomial_degree):
+        states_full = cas.horzcat(states_full, cas.vertcat(z_q_joints[i], z_qdot_joints[i]))
 
     states_end, defects = integrator_collocations(model, polynomial_degree, n_shooting, duration, states_full, controls_sym,
                                      stochastic_variables_sym)
@@ -317,30 +304,18 @@ def get_cov_init_collocations(model,
 
     dg_dw = cas.jacobian(defects, model.motor_noise_sym)
 
+    input_var_list = [x_q_joints, x_qdot_joints]
+    for i in range(polynomial_degree):
+        input_var_list += [z_q_joints[i], z_qdot_joints[i]]
+    input_var_list += [controls_sym, stochastic_variables_sym, model.motor_noise_sym]
     dg_dx_fun = cas.Function(
         "dg_dx",
-        [
-            x_q_joints,
-            x_qdot_joints,
-            z_q_joints,
-            z_qdot_joints,
-            controls_sym,
-            stochastic_variables_sym,
-            model.motor_noise_sym,
-        ],
+        input_var_list,
         [dg_dx],
     )
     dg_dw_fun = cas.Function(
         "dg_dw",
-        [
-            x_q_joints,
-            x_qdot_joints,
-            z_q_joints,
-            z_qdot_joints,
-            controls_sym,
-            stochastic_variables_sym,
-            model.motor_noise_sym,
-        ],
+        input_var_list,
         [dg_dw],
     )
 
@@ -350,26 +325,18 @@ def get_cov_init_collocations(model,
     cov_last[:, 0] = cov_init[:, 0]
     for i in range(n_shooting):
         index_this_time = [i * polynomial_degree + j for j in range(polynomial_degree+1)]
-        dg_dx_evaluated = dg_dx_fun(
-            q_last[:, index_this_time[0]],
-            qdot_last[:, index_this_time[0]],
-            q_last[:, index_this_time[1:]],
-            qdot_last[:, index_this_time[1:]],
-            tau_last[:, i],
-            np.vstack((m_last[:, i].reshape((-1, 1)),
-                       np.zeros((2 * n_joints * 2 * n_joints, 1)))),  # cov
-            motor_noise_magnitude,
-        )
-        dg_dw_evaluated = dg_dw_fun(
-            q_last[:, index_this_time[0]],
-            qdot_last[:, index_this_time[0]],
-            q_last[:, index_this_time[1:]],
-            qdot_last[:, index_this_time[1:]],
-            tau_last[:, i],
-            np.vstack((m_last[:, i].reshape((-1, 1)),
-                       np.zeros((2 * n_joints * 2 * n_joints, 1)))),
-            motor_noise_magnitude,
-        )
+        input_num_list = [q_last[:, index_this_time[0]],
+                            qdot_last[:, index_this_time[0]]]
+        for j in range(polynomial_degree):
+            input_num_list += [q_last[:, index_this_time[j+1]],
+                               qdot_last[:, index_this_time[j+1]]]
+        input_num_list += [tau_last[:, i],
+                            np.vstack((m_last[:, i].reshape((-1, 1)),
+                                        np.zeros((2 * n_joints * 2 * n_joints, 1)))),  # cov
+                            motor_noise_magnitude,
+                            ]
+        dg_dx_evaluated = dg_dx_fun(*input_num_list)
+        dg_dw_evaluated = dg_dw_fun(*input_num_list)
 
         m_matrix = np.zeros(model.matrix_shape_m)
         shape_0, shape_1 = model.matrix_shape_m

@@ -180,7 +180,7 @@ def prepare_ocp(
     Step # 1: Solving the deterministic version of the problem to get the nominal trajectory.
     """
 
-    bio_model = MassPointModel(socp_type)
+    bio_model = MassPointModel(socp_type=socp_type)
 
     nb_q = bio_model.nb_q
     nb_qdot = bio_model.nb_qdot
@@ -228,8 +228,10 @@ def prepare_ocp(
     )
     x_bounds.add(
         "qdot",
-        min_bound=[-10] * nb_qdot,
-        max_bound=[10] * nb_qdot,
+        # min_bound=[-10] * nb_qdot,
+        # max_bound=[10] * nb_qdot,
+        min_bound=[-cas.inf] * nb_qdot,
+        max_bound=[cas.inf] * nb_qdot,
         interpolation=InterpolationType.CONSTANT,
     )
 
@@ -255,7 +257,7 @@ def prepare_ocp(
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
 
     if isinstance(socp_type, SocpType.COLLOCATION):
-        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method),
+        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
     elif isinstance(socp_type, SocpType.DMS):
         ode_solver = OdeSolver.RK4()
     else:
@@ -354,8 +356,10 @@ def prepare_socp(
     )
     x_bounds.add(
         "qdot",
-        min_bound=[-10] * nb_qdot,
-        max_bound=[10] * nb_qdot,
+        # min_bound=[-10] * nb_qdot,
+        # max_bound=[10] * nb_qdot,
+        min_bound=[-cas.inf] * nb_qdot,
+        max_bound=[cas.inf] * nb_qdot,
         interpolation=InterpolationType.CONSTANT,
     )
 
@@ -397,7 +401,7 @@ def prepare_socp(
         )
 
     if cov_init is None:
-        cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.01
+        cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.1
         shape_0, shape_1 = cov_init_matrix.shape[0], cov_init_matrix.shape[1]
         cov_0 = np.zeros((shape_0 * shape_1, 1))
         for s0 in range(shape_0):
@@ -499,8 +503,8 @@ def main():
     run_step_3 = False  # True
 
     # --- Prepare the ocp --- #
-    # socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
-    socp_type = SocpType.DMS()
+    socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
+    # socp_type = SocpType.DMS()
     bio_model = MassPointModel(socp_type=socp_type)
     n_shooting = 39
     polynomial_degree = 5
@@ -511,7 +515,7 @@ def main():
     # TODO: include SLICOT solver (for solving ill-conditioned, ill-scaled, large-scale problems by preserving the stucture of the problem)
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
-    solver.set_maximum_iterations(1000)
+    solver.set_maximum_iterations(0) # 1000
     # solver._nlp_scaling_method = "None"
 
     if run_step_1:
@@ -624,13 +628,13 @@ def main():
         q_robustified = sol_rsocp.states["q"]
         qdot_robustified = sol_rsocp.states["qdot"]
         u_robustified = sol_rsocp.controls["u"]
-        time_robustified = sol_rsocp.parameters["time"][0][0]
+        # time_robustified = sol_rsocp.parameters["time"][0][0]
         m_robustified = sol_rsocp.stochastic_variables["m"]
         cov_robustified = sol_rsocp.stochastic_variables["cov"]
         robustified_data = {"q_robustified": q_robustified,
                             "qdot_robustified": qdot_robustified,
                             "u_robustified": u_robustified,
-                            "time_robustified": time_robustified,
+                            # "time_robustified": time_robustified,
                             "m_robustified": m_robustified,
                             "cov_robustified": cov_robustified}
 
@@ -643,7 +647,7 @@ def main():
             q_robustified = robustified_data["q_robustified"]
             qdot_robustified = robustified_data["qdot_robustified"]
             u_robustified = robustified_data["u_robustified"]
-            time_robusified = robustified_data["time_robustified"]
+            # time_robusified = robustified_data["time_robustified"]
             m_robustified = robustified_data["m_robustified"]
             cov_robustified = robustified_data["cov_robustified"]
 
