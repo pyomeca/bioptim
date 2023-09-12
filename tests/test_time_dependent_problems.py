@@ -131,14 +131,14 @@ def prepare_ocp(
         else [BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path)]
     )
     final_time = [1] * n_phase
-    n_shooting = [30] * n_phase
+    n_shooting = [50 if isinstance(ode_solver, OdeSolver.IRK) else 30] * n_phase
 
     # Add objective functions
     objective_functions = ObjectiveList()
     for i in range(len(bio_model)):
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", phase=i)
         if minimize_time:
-            objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=100, phase=i)
+            objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1000, phase=i)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -148,29 +148,23 @@ def prepare_ocp(
 
     # Define states path constraint
     x_bounds = BoundsList()
-    x_bounds_q = bio_model[0].bounds_from_ranges("q")
-    x_bounds_qdot = bio_model[0].bounds_from_ranges("qdot")
-
     if n_phase == 1:
-        x_bounds_qdot[:, [0, -1]] = 0  # Start and end without any velocity
-        x_bounds_q[:, [0, -1]] = 0  # Start and end at 0...
-        x_bounds_q[1, -1] = 3.14  # ...but end with pendulum 180 degrees rotated
-        x_bounds.add("q", bounds=x_bounds_q, phase=0)
-        x_bounds.add("qdot", bounds=x_bounds_qdot, phase=0)
+        x_bounds["q"] = bio_model[0].bounds_from_ranges("q")
+        x_bounds["q"][:, [0, -1]] = 0
+        x_bounds["q"][-1, -1] = 3.14
+        x_bounds["qdot"] = bio_model[0].bounds_from_ranges("qdot")
+        x_bounds["qdot"][:, [0, -1]] = 0
     else:
-        x_bounds_q_start = x_bounds_q
-        x_bounds_q_end = bio_model[1].bounds_from_ranges("q")
-        x_bounds_qdot_start = x_bounds_qdot
-        x_bounds_qdot_end = bio_model[1].bounds_from_ranges("qdot")
-        x_bounds_q_start[:, [0]] = 0  # Start and end at 0...
-        x_bounds_q_end[1, -1] = 3.14  # ...but end with pendulum 180 degrees rotated
-        x_bounds_q_end[0, -1] = 0
-        x_bounds_qdot_start[:, [0]] = 0
-        x_bounds_qdot_end[:, [-1]] = 0
-        x_bounds.add("q", bounds=x_bounds_q_start, phase=0)
-        x_bounds.add("qdot", bounds=x_bounds_qdot_start, phase=0)
-        x_bounds.add("q", bounds=x_bounds_q_end, phase=1)
-        x_bounds.add("qdot", bounds=x_bounds_qdot_end, phase=1)
+        x_bounds.add("q", bounds=bio_model[0].bounds_from_ranges("q"), phase=0)
+        x_bounds.add("q", bounds=bio_model[1].bounds_from_ranges("q"), phase=1)
+        x_bounds[0]["q"][:, [0, -1]] = 0
+        x_bounds[0]["q"][-1, -1] = 3.14
+        x_bounds[1]["q"][:, -1] = 0
+
+        x_bounds.add("qdot", bounds=bio_model[0].bounds_from_ranges("qdot"), phase=0)
+        x_bounds.add("qdot", bounds=bio_model[1].bounds_from_ranges("qdot"), phase=1)
+        x_bounds[0]["qdot"][:, [0, -1]] = 0
+        x_bounds[1]["qdot"][:, -1] = 0
 
     # Define control path constraint
     n_tau = bio_model[0].nb_tau
@@ -222,9 +216,6 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
     from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    if integrator == OdeSolver.IRK and minimize_time:
-        raise RuntimeError("Fix this")
 
     if integrator == OdeSolver.IRK and use_sx:
         with pytest.raises(
@@ -278,7 +269,6 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             use_sx=use_sx,
         )
         sol = ocp.solve()
-        # sol.graphs(show_bounds=True)
 
 
 #         TODO Pariterre: Once all bioptim tests are passed, add "np.assert" values
