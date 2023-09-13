@@ -3,8 +3,9 @@ from typing import Any, Callable
 from casadi import MX, SX, vertcat
 
 from ..optimization.non_linear_program import NonLinearProgram
-from ..optimization.optimization_variable import OptimizationVariableList
+from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..misc.enums import ControlType
+from ..misc.mapping import BiMapping
 
 
 class PenaltyController:
@@ -118,8 +119,7 @@ class PenaltyController:
         return self._nlp.model
 
     @property
-    def time(self) -> MX | SX:
-        # def time(self) -> OptimizationVariableList:
+    def time(self) -> OptimizationVariable:
         """
         Return the time associated with the current node index
 
@@ -127,8 +127,10 @@ class PenaltyController:
         -------
         The time at node node_index
         """
-        out = self._nlp.time_cx
-        return out
+
+        tp = OptimizationVariableList(self._nlp.cx, self._nlp.assume_phase_dynamics)
+        tp.append("time", mx=self._nlp.time_mx, cx=[self._nlp.time_cx, self._nlp.time_cx, self._nlp.time_cx], bimapping=BiMapping(to_second=[0], to_first=[0]))
+        return tp["time"]
 
     @property
     def states(self) -> OptimizationVariableList:

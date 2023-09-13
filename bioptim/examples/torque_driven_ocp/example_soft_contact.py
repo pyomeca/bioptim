@@ -70,7 +70,6 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     ocp = prepare_single_shooting(model, ns, tf, ode_solver)
 
     # Find equilibrium
-    t = InitialGuessList()
     x = InitialGuessList()
     x["q"] = [0, 0.10, 0]
     x["qdot"] = [1e-10, 1e-10, 1e-10]
@@ -79,12 +78,11 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     p = InitialGuessList()
     s = InitialGuessList()
 
-    sol_from_initial_guess = Solution(ocp, [t, x, u, p, s])
+    sol_from_initial_guess = Solution(ocp, [x, u, p, s])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
 
     # Rolling Sphere at equilibrium
-    t = InitialGuessList()
     x0 = s.states["q"][:, -1]
     x = InitialGuessList()
     x["q"] = x0
@@ -94,7 +92,7 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     p = InitialGuessList()
     s = InitialGuessList()
 
-    sol_from_initial_guess = Solution(ocp, [t, x, u, p, s])
+    sol_from_initial_guess = Solution(ocp, [x, u, p, s])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
 

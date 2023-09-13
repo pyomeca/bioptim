@@ -353,7 +353,7 @@ def zero_acceleration(
     No acceleration of the joints at the beginning and end of the movement.
     """
     dx = stochastic_forward_dynamics(
-        controller.time,
+        controller.time.cx,
         controller.states.cx_start,
         controller.controls.cx_start,
         controller.parameters.cx_start,

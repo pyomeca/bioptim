@@ -631,7 +631,7 @@ def test_penalty_proportional_control(penalty_origin, value, assume_phase_dynami
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_torque(penalty_origin, value, assume_phase_dynamics):
     ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
-    t = [0, 1]
+    t = [0]
     x = [0]
     u = [DM.ones((4, 1)) * value]
     p = []
@@ -648,7 +648,7 @@ def test_penalty_minimize_torque(penalty_origin, value, assume_phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_track_torque(penalty_origin, value, assume_phase_dynamics):
     ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
-    t = [0, 1]
+    t = [0]
     x = [0]
     u = [DM.ones((4, 1)) * value]
     p = []
@@ -670,7 +670,7 @@ def test_penalty_track_torque(penalty_origin, value, assume_phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_muscles_control(penalty_origin, value, assume_phase_dynamics):
     ocp = prepare_test_ocp(with_muscles=True, assume_phase_dynamics=assume_phase_dynamics)
-    t = [0, 1]
+    t = [0]
     x = [0]
     u = [DM.ones((8, 1)) * value]
     p = []

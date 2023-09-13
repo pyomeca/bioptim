@@ -724,7 +724,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             contact_force = controller.get_nlp.contact_forces_func(
-                controller.time,
+                controller.time.cx,
                 controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx,
@@ -764,7 +764,7 @@ class PenaltyFunctionAbstract:
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
             soft_contact_force = controller.get_nlp.soft_contact_forces_func(
-                controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
+                controller.time.cx, controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
             )
             return soft_contact_force[force_idx]
 
@@ -1297,7 +1297,7 @@ class PenaltyFunctionAbstract:
         raise RuntimeError("penalty_nature cannot be called from an abstract class")
 
     @staticmethod
-    def _get_qddot(controller, attribute: str):
+    def _get_qddot(controller: PenaltyController, attribute: str):
         """
         Returns the generalized acceleration by either fetching it directly
         from the controller's states or controls or from the controller's dynamics.
@@ -1314,7 +1314,7 @@ class PenaltyFunctionAbstract:
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             return controller.dynamics(
-                controller.time,  # ERROR can't send a mx when attribute is mx and controller.time is sx type
+                getattr(controller.time, attribute),
                 getattr(controller.states, attribute),
                 getattr(controller.controls, attribute),
                 getattr(controller.parameters, attribute),
@@ -1325,13 +1325,13 @@ class PenaltyFunctionAbstract:
         return getattr(source["qddot"], attribute)
 
     @staticmethod
-    def _get_markers_acceleration(controller, markers, CoM=False):
+    def _get_markers_acceleration(controller: PenaltyController, markers, CoM=False):
         """
         Retrieve the acceleration of either the markers or the center of mass (CoM) from the controller.
 
         Parameters
         ----------
-        controller : object
+        controller
             An object containing 'states' and 'controls' data.
 
         markers : MX
@@ -1351,6 +1351,7 @@ class PenaltyFunctionAbstract:
         return controller.mx_to_cx(
             "com_ddot" if CoM else "markers_acceleration",
             markers,
+            controller.time,
             controller.states["q"],
             controller.states["qdot"],
             last_param,
