@@ -751,7 +751,7 @@ class ConfigureProblem:
                         nlp.stochastic_variables.scaled.mx,
                     ],
                     [dynamics_dxdt],
-                    ["x", "u", "p", "s"],
+                    ["t", "x", "u", "p", "s"],
                     ["xdot"],
                     {"allow_free": allow_free_variables},
                 ),
@@ -776,6 +776,7 @@ class ConfigureProblem:
                     Function(
                         "DynamicsDefects",
                         [
+                            nlp.time_mx,
                             nlp.states.scaled.mx_reduced,
                             nlp.controls.scaled.mx_reduced,
                             nlp.parameters.mx,
@@ -783,7 +784,7 @@ class ConfigureProblem:
                             nlp.states_dot.scaled.mx_reduced,
                         ],
                         [dynamics_eval.defects],
-                        ["x", "u", "p", "s", "xdot"],
+                        ["t", "x", "u", "p", "s", "xdot"],
                         ["defects"],
                         {"allow_free": allow_free_variables},
                     )

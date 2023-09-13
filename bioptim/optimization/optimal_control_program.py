@@ -1447,15 +1447,15 @@ class OptimalControlProgram:
                     stochastic_value = stochastic_value.reshape((-1, 1))
                 else:
                     state_value = np.zeros(
-                        (x.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(0) / x.shape[0]))
+                        (x.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(1) / x.shape[0]))
                     )
                     if u.size != 0:
                         control_value = np.zeros(
-                            (u.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(1) / u.shape[0]))
+                            (u.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(2) / u.shape[0]))
                         )
                     if s.size != 0:
                         stochastic_value = np.zeros(
-                            (s.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(2) / s.shape[0]))
+                            (s.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(3) / s.shape[0]))
                         )
 
                 out.append(

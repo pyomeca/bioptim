@@ -245,7 +245,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     nlp.stochastic_variables.scaled.mx,
                 ],
                 [dynamics_dxdt],
-                ["x", "u", "p", "s"],
+                ["t", "x", "u", "p", "s"],
                 ["xdot"],
             ),
         )

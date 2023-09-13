@@ -8,7 +8,6 @@ from ..misc.enums import Shooting, ControlType
 def solve_ivp_interface(
     dynamics_func: Callable,
     t_eval: np.ndarray | List[float],
-    t: np.ndarray,
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,

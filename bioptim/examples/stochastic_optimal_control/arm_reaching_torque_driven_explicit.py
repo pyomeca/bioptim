@@ -41,7 +41,6 @@ from bioptim.examples.stochastic_optimal_control.common import dynamics_torque_d
 
 
 def stochastic_forward_dynamics(
-    time: cas.MX | cas.SX,
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
@@ -54,8 +53,6 @@ def stochastic_forward_dynamics(
 
     Parameters
     ----------
-    time: MX.sym
-        The time
     states: MX.sym
         The states
     controls: MX.sym
@@ -104,13 +101,13 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
         ocp,
         nlp,
         dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, stochastic_variables, nlp, with_noise=False
+            states, controls, parameters, stochastic_variables, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
+        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
             states,
             controls,
             parameters,
@@ -185,7 +182,6 @@ def get_cov_mat(nlp, node_index):
     cov_matrix = StochasticBioModel.reshape_sym_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(
-        nlp.time_cx,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,
@@ -203,7 +199,6 @@ def get_cov_mat(nlp, node_index):
     func = cas.Function(
         "p_next",
         [
-            nlp.time_cx,
             nlp.states.cx_start,
             nlp.controls.cx_start,
             nlp.parameters,
@@ -221,7 +216,6 @@ def get_cov_mat(nlp, node_index):
     nlp.integrated_values.node_index = node_index - 1
 
     func_eval = func(
-        nlp.time_cx,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,

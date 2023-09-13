@@ -19,13 +19,11 @@ from ..misc.enums import (
     Node,
     QuadratureRule,
 )
-from ..misc.utils import check_version
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 from ..optimization.optimization_vector import OptimizationVectorHelper
 from ..dynamics.ode_solver import OdeSolver
 from ..interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
-from ..interfaces.biorbd_model import BiorbdModel
 
 
 class Solution:
@@ -2014,6 +2012,7 @@ class Solution:
                                 col_u_idx += [idx + 1]
                             col_s_idx += [idx + 1]
 
+                    t = self.time[phase_idx][idx] if isinstance(self.time, list) else self.time[idx]
                     x = np.array(()).reshape(0, 0)
                     u = np.array(()).reshape(0, 0)
                     s = np.array(()).reshape(0, 0)
@@ -2046,7 +2045,7 @@ class Solution:
                 x_reshaped = x.T.reshape((-1, 1)) if len(x.shape) > 1 and x.shape[1] != 1 else x
                 u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
                 s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
-                val.append(penalty.function[idx](x_reshaped, u_reshaped, p, s_reshaped))
+                val.append(penalty.function[idx](t, x_reshaped, u_reshaped, p, s_reshaped))
 
                 if (
                     penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
@@ -2104,7 +2103,7 @@ class Solution:
             u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
             s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
             val_weighted.append(
-                penalty.weighted_function[idx](x_reshaped, u_reshaped, p, s_reshaped, penalty.weight, target, dt)
+                penalty.weighted_function[idx](t, x_reshaped, u_reshaped, p, s_reshaped, penalty.weight, target, dt)
             )
 
         val = np.nansum(val)

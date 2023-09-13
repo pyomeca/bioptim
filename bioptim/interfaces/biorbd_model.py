@@ -112,7 +112,7 @@ class BiorbdModel:
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
-        self.friction_coefficients = friction_coefficients
+        self._friction_coefficients = friction_coefficients
 
     @property
     def path(self) -> str:
@@ -127,6 +127,10 @@ class BiorbdModel:
     def set_gravity(self, new_gravity) -> None:
         self.model.setGravity(new_gravity)
         return
+
+    @property
+    def friction_coefficients(self) -> MX | np.ndarray:
+        return self._friction_coefficients
 
     @property
     def gravity(self) -> MX:
