@@ -67,6 +67,22 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
                 expand_dynamics=False,
             )
         return
+    elif isinstance(ode_solver_obj, OdeSolver.CVODES):
+        with pytest.raises(
+            RuntimeError,
+            match=f"CVODES cannot be used with dynamics that depends on time",
+        ):
+            ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                final_time=2,
+                n_shooting=10,
+                n_threads=n_threads,
+                use_sx=use_sx,
+                ode_solver=ode_solver_obj,
+                assume_phase_dynamics=assume_phase_dynamics,
+                expand_dynamics=False,
+            )
+        return
 
     if isinstance(ode_solver_obj, (OdeSolver.TRAPEZOIDAL)):
         control_type = ControlType.CONSTANT_WITH_LAST_NODE
