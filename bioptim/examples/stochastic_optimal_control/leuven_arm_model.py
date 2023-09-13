@@ -3,8 +3,10 @@ This file contains the model used in the article.
 """
 
 from typing import Callable
-import casadi as cas
+from casadi import MX, DM, sqrt, sin, cos, repmat, exp, log, horzcat, vertcat
 import numpy as np
+
+from bioptim import NonLinearProgram, DynamicsFunctions
 
 
 class LeuvenArmModel:
@@ -12,7 +14,29 @@ class LeuvenArmModel:
     This allows to generate the same model as in the paper.
     """
 
-    def __init__(self):
+    def __init__(
+        self,
+        sensory_noise_magnitude: np.ndarray | DM,
+        motor_noise_magnitude: np.ndarray | DM,
+        sensory_reference: callable,
+    ):
+        self.motor_noise_magnitude = motor_noise_magnitude
+        self.sensory_noise_magnitude = sensory_noise_magnitude
+        self.sensory_reference = sensory_reference
+        self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
+        self.sensory_noise_sym = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0])
+
+        n_noised_controls = 6
+        n_references = 4
+        n_noised_states = 10
+        n_noise = motor_noise_magnitude.shape[0] + sensory_noise_magnitude.shape[0]
+        self.matrix_shape_k = (n_noised_controls, n_references)
+        self.matrix_shape_c = (n_noised_states, n_noise)
+        self.matrix_shape_a = (n_noised_states, n_noised_states)
+        self.matrix_shape_cov = (n_noised_states, n_noised_states)
+        self.matrix_shape_cov_cholesky = (n_noised_states, n_noised_states)
+        self.matrix_shape_m = (n_noised_states, n_noised_states)
+
         self.dM_coefficients = np.array(
             [
                 [0, 0, 0.0100, 0.0300, -0.0110, 1.9000],
@@ -71,7 +95,7 @@ class LeuvenArmModel:
         self.b42 = self.Faparam[7]
         self.b13 = 0.1
         self.b23 = 1
-        self.b33 = 0.5 * cas.sqrt(0.5)
+        self.b33 = 0.5 * sqrt(0.5)
         self.b43 = 0
 
         self.e0 = 0.6
@@ -90,7 +114,7 @@ class LeuvenArmModel:
         self.I1 = 0.025
         self.I2 = 0.045
 
-        self.friction = np.array([[0.05, 0.025], [0.025, 0.05]])
+        self.friction_coefficients = np.array([[0.05, 0.025], [0.025, 0.05]])
 
     def serialize(self) -> tuple[Callable, dict]:
         return LeuvenArmModel, dict(
@@ -102,7 +126,7 @@ class LeuvenArmModel:
             Fvparam=self.Fvparam,
             Fpparam=self.Fpparam,
             muscleDampingCoefficient=self.muscleDampingCoefficient,
-            friction=self.friction,
+            friction_coefficients=self.friction_coefficients,
         )
 
     @property
@@ -145,9 +169,9 @@ class LeuvenArmModel:
         # Normalized muscle fiber length (without tendon)
         l_full = (
             self.a_shoulder * theta_shoulder
-            + self.b_shoulder * cas.sin(self.c_shoulder * theta_shoulder) / self.c_shoulder
+            + self.b_shoulder * sin(self.c_shoulder * theta_shoulder) / self.c_shoulder
             + self.a_elbow * theta_elbow
-            + self.b_elbow * cas.sin(self.c_elbow * theta_elbow) / self.c_elbow
+            + self.b_elbow * sin(self.c_elbow * theta_elbow) / self.c_elbow
         )
         lMtilde = l_full * self.l_multiplier + self.l_base
 
@@ -155,9 +179,9 @@ class LeuvenArmModel:
         nCoeff = self.a_shoulder.shape[0]
         v_full = (
             self.a_shoulder * dtheta_shoulder
-            + self.b_shoulder * cas.cos(self.c_shoulder * theta_shoulder) * cas.repmat(dtheta_shoulder, nCoeff, 1)
+            + self.b_shoulder * cos(self.c_shoulder * theta_shoulder) * repmat(dtheta_shoulder, nCoeff, 1)
             + self.a_elbow * dtheta_elbow
-            + self.b_elbow * cas.cos(self.c_elbow * theta_elbow) * cas.repmat(dtheta_elbow, nCoeff, 1)
+            + self.b_elbow * cos(self.c_elbow * theta_elbow) * repmat(dtheta_elbow, nCoeff, 1)
         )
         vMtilde = self.l_multiplier * v_full
 
@@ -165,23 +189,23 @@ class LeuvenArmModel:
 
         num3 = lMtilde - self.b23
         den3 = self.b33 + self.b43 * lMtilde
-        FMtilde3 = self.b13 * cas.exp(-0.5 * num3**2 / den3**2)
+        FMtilde3 = self.b13 * exp(-0.5 * num3**2 / den3**2)
 
         num1 = lMtilde - self.b21
         den1 = self.b31 + self.b41 * lMtilde
-        FMtilde1 = self.b11 * cas.exp(-0.5 * num1**2 / den1**2)
+        FMtilde1 = self.b11 * exp(-0.5 * num1**2 / den1**2)
 
         num2 = lMtilde - self.b22
         den2 = self.b32 + self.b42 * lMtilde
-        FMtilde2 = self.b12 * cas.exp(-0.5 * num2**2 / den2**2)
+        FMtilde2 = self.b12 * exp(-0.5 * num2**2 / den2**2)
 
         FMltilde = FMtilde1 + FMtilde2 + FMtilde3
 
         FMvtilde = (
             self.e1
-            * cas.log(
+            * log(
                 (self.e2 @ vMtilde_normalizedToMaxVelocity + self.e3)
-                + cas.sqrt((self.e2 @ vMtilde_normalizedToMaxVelocity + self.e3) ** 2 + 1)
+                + sqrt((self.e2 @ vMtilde_normalizedToMaxVelocity + self.e3) ** 2 + 1)
             )
             + self.e4
         )
@@ -189,7 +213,7 @@ class LeuvenArmModel:
         # Active muscle force
         Fce = FMltilde * FMvtilde
 
-        t5 = cas.exp(self.kpe * (lMtilde - 0.10e1) / self.e0)
+        t5 = exp(self.kpe * (lMtilde - 0.10e1) / self.e0)
         Fpe = ((t5 - 0.10e1) - self.Fpparam[0]) / self.Fpparam[1]
 
         # Muscle force + damping
@@ -202,9 +226,9 @@ class LeuvenArmModel:
     def torque_force_relationship(self, Fm, q):
         theta_shoulder = q[0]
         theta_elbow = q[1]
-        dM_matrix = cas.horzcat(
-            self.a_shoulder + self.b_shoulder * cas.cos(self.c_shoulder @ theta_shoulder),
-            self.a_elbow + self.b_elbow * cas.cos(self.c_elbow @ theta_elbow),
+        dM_matrix = horzcat(
+            self.a_shoulder + self.b_shoulder * cos(self.c_shoulder @ theta_shoulder),
+            self.a_elbow + self.b_elbow * cos(self.c_elbow @ theta_elbow),
         ).T
         tau = dM_matrix @ Fm
         return tau
@@ -215,11 +239,11 @@ class LeuvenArmModel:
         muscles_tau = self.torque_force_relationship(Fm, q)
         return muscles_tau
 
-    def get_force_field(self, q, force_field_magnitude):
-        F_forceField = force_field_magnitude * (self.l1 * cas.cos(q[0]) + self.l2 * cas.cos(q[0] + q[1]))
-        hand_pos = cas.MX(2, 1)
-        hand_pos[0] = self.l2 * cas.sin(q[0] + q[1]) + self.l1 * cas.sin(q[0])
-        hand_pos[1] = self.l2 * cas.sin(q[0] + q[1])
+    def force_field(self, q, force_field_magnitude):
+        F_forceField = force_field_magnitude * (self.l1 * cos(q[0]) + self.l2 * cos(q[0] + q[1]))
+        hand_pos = MX(2, 1)
+        hand_pos[0] = self.l2 * sin(q[0] + q[1]) + self.l1 * sin(q[0])
+        hand_pos[1] = self.l2 * sin(q[0] + q[1])
         tau_force_field = -F_forceField @ hand_pos
         return tau_force_field
 
@@ -229,9 +253,9 @@ class LeuvenArmModel:
     def end_effector_position(self, q):
         theta_shoulder = q[0]
         theta_elbow = q[1]
-        ee_pos = cas.vertcat(
-            cas.cos(theta_shoulder) * self.l1 + cas.cos(theta_shoulder + theta_elbow) * self.l2,
-            cas.sin(theta_shoulder) * self.l1 + cas.sin(theta_shoulder + theta_elbow) * self.l2,
+        ee_pos = vertcat(
+            cos(theta_shoulder) * self.l1 + cos(theta_shoulder + theta_elbow) * self.l2,
+            sin(theta_shoulder) * self.l1 + sin(theta_shoulder + theta_elbow) * self.l2,
         )
         return ee_pos
 
@@ -242,14 +266,14 @@ class LeuvenArmModel:
         dtheta_shoulder = qdot[0]
         dtheta_elbow = qdot[1]
         da = dtheta_shoulder + dtheta_elbow
-        ee_vel = cas.vertcat(
-            dtheta_shoulder * cas.sin(theta_shoulder) * self.l1 + da * cas.sin(a) * self.l2,
-            -dtheta_shoulder * cas.cos(theta_shoulder) * self.l1 - da * cas.cos(a) * self.l2,
+        ee_vel = vertcat(
+            dtheta_shoulder * sin(theta_shoulder) * self.l1 + da * sin(a) * self.l2,
+            -dtheta_shoulder * cos(theta_shoulder) * self.l1 - da * cos(a) * self.l2,
         )
         return ee_vel
 
-    def end_effector_pos_velo(self, q, qdot) -> cas.MX:
+    def end_effector_pos_velo(self, q, qdot) -> MX:
         hand_pos = self.end_effector_position(q)
         hand_vel = self.end_effector_velocity(q, qdot)
-        ee = cas.vertcat(hand_pos, hand_vel)
+        ee = vertcat(hand_pos, hand_vel)
         return ee

@@ -234,18 +234,20 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
 
         # Note: useless but needed to run bioptim as it need to test the size of xdot
-        nlp.dynamics_func = Function(
-            "ForwardDyn",
-            [
-                nlp.time_mx,
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.mx,
-                nlp.stochastic_variables.scaled.mx,
-            ],
-            [dynamics_dxdt],
-            ["t", "x", "u", "p", "s"],
-            ["xdot"],
+        nlp.dynamics_func = (
+            Function(
+                "ForwardDyn",
+                [
+                    nlp.time_mx,
+                    nlp.states.scaled.mx_reduced,
+                    nlp.controls.scaled.mx_reduced,
+                    nlp.parameters.mx,
+                    nlp.stochastic_variables.scaled.mx,
+                ],
+                [dynamics_dxdt],
+                ["x", "u", "p", "s"],
+                ["xdot"],
+            ),
         )
 
         dt = MX.sym("time_step")
@@ -278,60 +280,66 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         else:
             lambdas = None
 
-        nlp.implicit_dynamics_func = Function(
-            "ThreeNodesIntegration",
-            three_nodes_input,
-            [
-                self.bio_model.discrete_euler_lagrange_equations(
-                    dt,
-                    q_prev,
-                    q_cur,
-                    q_next,
-                    control_prev,
-                    control_cur,
-                    control_next,
-                    lambdas,
-                )
-            ],
+        nlp.implicit_dynamics_func = (
+            Function(
+                "ThreeNodesIntegration",
+                three_nodes_input,
+                [
+                    self.bio_model.discrete_euler_lagrange_equations(
+                        dt,
+                        q_prev,
+                        q_cur,
+                        q_next,
+                        control_prev,
+                        control_cur,
+                        control_next,
+                        lambdas,
+                    )
+                ],
+            ),
         )
 
-        nlp.implicit_dynamics_func_first_node = Function(
-            "TwoFirstNodesIntegration",
-            two_first_nodes_input,
-            [
-                self.bio_model.compute_initial_states(
-                    dt,
-                    q0,
-                    qdot0,
-                    q1,
-                    control0,
-                    control1,
-                    lambdas,
-                )
-            ],
+        nlp.implicit_dynamics_func_first_node = (
+            Function(
+                "TwoFirstNodesIntegration",
+                two_first_nodes_input,
+                [
+                    self.bio_model.compute_initial_states(
+                        dt,
+                        q0,
+                        qdot0,
+                        q1,
+                        control0,
+                        control1,
+                        lambdas,
+                    )
+                ],
+            ),
         )
 
-        nlp.implicit_dynamics_func_last_node = Function(
-            "TwoLastNodesIntegration",
-            two_last_nodes_input,
-            [
-                self.bio_model.compute_final_states(
-                    dt,
-                    q_penultimate,
-                    q_ultimate,
-                    qdot_ultimate,
-                    controlN_minus_1,
-                    controlN,
-                    lambdas,
-                )
-            ],
+        nlp.implicit_dynamics_func_last_node = (
+            Function(
+                "TwoLastNodesIntegration",
+                two_last_nodes_input,
+                [
+                    self.bio_model.compute_final_states(
+                        dt,
+                        q_penultimate,
+                        q_ultimate,
+                        qdot_ultimate,
+                        controlN_minus_1,
+                        controlN,
+                        lambdas,
+                    )
+                ],
+            ),
         )
 
         if expand:
-            nlp.dynamics_func = nlp.dynamics_func.expand()
-            nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
-            nlp.implicit_dynamics_func_first_node = nlp.implicit_dynamics_func_first_node.expand()
-            nlp.implicit_dynamics_func_last_node = nlp.implicit_dynamics_func_last_node.expand()
+            nlp.dynamics_func = (nlp.dynamics_func[0].expand(),)
+            nlp.implicit_dynamics_func = (nlp.implicit_dynamics_func[0].expand(),)
+            nlp.implicit_dynamics_func_first_node = (nlp.implicit_dynamics_func_first_node[0].expand(),)
+            nlp.implicit_dynamics_func_last_node = (nlp.implicit_dynamics_func_last_node[0].expand(),)
 
     def configure_torque_driven(self, ocp: OptimalControlProgram, nlp: NonLinearProgram):
         """
@@ -345,8 +353,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             A reference to the ocp.
         nlp: NonLinearProgram
             A reference to the phase.
-        expand: bool
-            If the dynamics should be expanded with casadi.
         """
 
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -383,7 +389,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func(
+            return controllers[0].get_nlp.implicit_dynamics_func[0](
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
@@ -394,7 +400,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[1].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func(
+            return controllers[0].get_nlp.implicit_dynamics_func[0](
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
@@ -422,7 +428,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func_first_node(
+            return controllers[0].get_nlp.implicit_dynamics_func_first_node[0](
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
                 controllers[0].parameters.cx[:n_qdot],
@@ -432,7 +438,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[0].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func_first_node(
+            return controllers[0].get_nlp.implicit_dynamics_func_first_node[0](
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
                 controllers[0].parameters.cx[:n_qdot],
@@ -460,7 +466,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func_last_node(
+            return controllers[0].get_nlp.implicit_dynamics_func_last_node[0](
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
@@ -470,7 +476,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[1].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func_last_node(
+            return controllers[0].get_nlp.implicit_dynamics_func_last_node[0](
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,

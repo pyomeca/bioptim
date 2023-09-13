@@ -1,13 +1,12 @@
 from typing import Callable, Any
 
-from casadi import DM, vertcat, Function
+from casadi import vertcat, Function, DM
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
 from .fatigue.fatigue_dynamics import FatigueList
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
-
 from ..misc.enums import (
     PlotType,
     Node,
@@ -19,6 +18,8 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
+from ..interfaces.stochastic_bio_model import StochasticBioModel
+from ..optimization.problem_type import SocpType
 
 
 class ConfigureProblem:
@@ -152,6 +153,7 @@ class ConfigureProblem:
         with_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
+        with_friction: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
@@ -171,6 +173,8 @@ class ConfigureProblem:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        with_friction: bool
+            If the dynamic with joint friction should be used (friction = coefficients * qdot)
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
@@ -230,6 +234,7 @@ class ConfigureProblem:
                 with_contact=with_contact,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                with_friction=with_friction,
             )
             if with_contact:
                 # qddot is continuous with RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
@@ -261,6 +266,7 @@ class ConfigureProblem:
                 phase=nlp.phase_idx,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                with_friction=with_friction,
             )
 
         # Declared soft contacts controls
@@ -280,6 +286,7 @@ class ConfigureProblem:
                 rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                with_friction=with_friction,
             )
 
         # Configure the contact forces
@@ -295,6 +302,84 @@ class ConfigureProblem:
                 penalty_type=ConstraintType.IMPLICIT,
                 phase=nlp.phase_idx,
             )
+
+    @staticmethod
+    def stochastic_torque_driven(
+        ocp,
+        nlp,
+        problem_type,
+        with_contact: bool = False,
+        with_friction: bool = True,
+        with_cholesky: bool = False,
+        initial_matrix: DM = None,
+    ):
+        """
+        Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        with_contact: bool
+            If the dynamic with contact should be used
+        with_friction: bool
+            If the dynamic with joint friction should be used (friction = coefficient * qdot)
+        """
+
+        if "tau" in nlp.model.motor_noise_mapping:
+            n_noised_tau = len(nlp.model.motor_noise_mapping["tau"].to_first.map_idx)
+        else:
+            n_noised_tau = nlp.model.nb_tau
+        n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
+        n_noised_states = 2 * n_noised_tau
+
+        # Stochastic variables
+        ConfigureProblem.configure_stochastic_k(
+            ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
+        )
+        ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
+        n_collocation_points = 1
+        if isinstance(problem_type, SocpType.COLLOCATION):
+            n_collocation_points += problem_type.polynomial_degree
+        ConfigureProblem.configure_stochastic_m(
+            ocp, nlp, n_noised_states=n_noised_states, n_collocation_points=n_collocation_points
+        )
+
+        if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
+            if initial_matrix is None:
+                raise RuntimeError(
+                    "The initial value for the covariance matrix must be provided for TRAPEZOIDAL_EXPLICIT"
+                )
+            ConfigureProblem.configure_stochastic_cov_explicit(
+                ocp, nlp, n_noised_states=n_noised_states, initial_matrix=initial_matrix
+            )
+        else:
+            if with_cholesky:
+                ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=n_noised_states)
+            else:
+                ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=n_noised_states)
+
+        if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
+            ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=n_noised_states)
+            ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=n_noised_states, n_noise=n_noise)
+
+        ConfigureProblem.torque_driven(
+            ocp=ocp,
+            nlp=nlp,
+            with_contact=with_contact,
+            with_friction=with_friction,
+        )
+
+        ConfigureProblem.configure_dynamics_function(
+            ocp,
+            nlp,
+            DynamicsFunctions.stochastic_torque_driven,
+            with_contact=with_contact,
+            with_friction=with_friction,
+            allow_free_variables=True,
+        )
 
     @staticmethod
     def torque_derivative_driven(
@@ -480,12 +565,24 @@ class ConfigureProblem:
 
         name_qddot_roots = [str(i) for i in range(nb_root)]
         ConfigureProblem.configure_new_variable(
-            "qddot_roots", name_qddot_roots, ocp, nlp, as_states=False, as_controls=False, as_states_dot=True
+            "qddot_roots",
+            name_qddot_roots,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=True,
         )
 
         name_qddot_joints = [str(i + nb_root) for i in range(nlp.model.nb_qddot - nb_root)]
         ConfigureProblem.configure_new_variable(
-            "qddot_joints", name_qddot_joints, ocp, nlp, as_states=False, as_controls=True, as_states_dot=True
+            "qddot_joints",
+            name_qddot_joints,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=True,
+            as_states_dot=True,
         )
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.joints_acceleration_driven)
@@ -606,7 +703,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
+    def configure_dynamics_function(ocp, nlp, dyn_func, allow_free_variables: bool = False, **extra_params):
         """
         Configure the dynamics of the system
 
@@ -616,71 +713,54 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, stochastic]
+        dyn_func: Callable[time, states, controls, param, stochastic] | tuple[Callable[time, states, controls, param, stochastic], ...]
             The function to get the derivative of the states
+        allow_free_variables: bool
+            If it is expected the dynamics depends on more than the variable provided by bioptim. It is therefore to the
+            user prerogative to wrap the Function around another function to lift the free variable
         """
 
         nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
-        dynamics_eval = dyn_func(
-            nlp.time_mx,
-            nlp.states.scaled.mx_reduced,
-            nlp.controls.scaled.mx_reduced,
-            nlp.parameters.mx,
-            nlp.stochastic_variables.scaled.mx,
-            nlp,
-            **extra_params,
-        )
+        if not isinstance(dyn_func, (tuple, list)):
+            dyn_func = (dyn_func,)
 
-        dynamics_dxdt = dynamics_eval.dxdt
-        if isinstance(dynamics_dxdt, (list, tuple)):
-            dynamics_dxdt = vertcat(*dynamics_dxdt)
-
-        nlp.dynamics_func = Function(
-            "ForwardDyn",
-            [
+        for func in dyn_func:
+            dynamics_eval = func(
                 nlp.time_mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
                 nlp.stochastic_variables.scaled.mx,
-            ],
-            [dynamics_dxdt],
-            ["t", "x", "u", "p", "s"],
-            ["xdot"],
-        )
-        if nlp.dynamics_type.expand:
-            try:
-                nlp.dynamics_func = nlp.dynamics_func.expand()
-            except Exception as me:
-                RuntimeError(
-                    f"An error occurred while executing the 'expand()' function for the dynamic function. "
-                    f"Please review the following casadi error message for more details.\n"
-                    "Several factors could be causing this issue. One of the most likely is the inability to "
-                    "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
-                    "Original casadi error message:\n"
-                    f"{me}"
-                )
-
-        if dynamics_eval.defects is not None:
-            nlp.implicit_dynamics_func = Function(
-                "DynamicsDefects",
-                [
-                    nlp.time_mx,
-                    nlp.states.scaled.mx_reduced,
-                    nlp.controls.scaled.mx_reduced,
-                    nlp.parameters.mx,
-                    nlp.stochastic_variables.scaled.mx,
-                    nlp.states_dot.scaled.mx_reduced,
-                ],
-                [dynamics_eval.defects],
-                ["t", "x", "u", "p", "s", "xdot"],
-                ["defects"],
+                nlp,
+                **extra_params,
             )
+            dynamics_dxdt = dynamics_eval.dxdt
+            if isinstance(dynamics_dxdt, (list, tuple)):
+                dynamics_dxdt = vertcat(*dynamics_dxdt)
+
+            nlp.dynamics_func.append(
+                Function(
+                    "ForwardDyn",
+                    [
+                        nlp.time_mx,
+                        nlp.states.scaled.mx_reduced,
+                        nlp.controls.scaled.mx_reduced,
+                        nlp.parameters.mx,
+                        nlp.stochastic_variables.scaled.mx,
+                    ],
+                    [dynamics_dxdt],
+                    ["x", "u", "p", "s"],
+                    ["xdot"],
+                    {"allow_free": allow_free_variables},
+                ),
+            )
+
+            # TODO: allow expand for each dynamics independently
             if nlp.dynamics_type.expand:
                 try:
-                    nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
+                    nlp.dynamics_func[-1] = nlp.dynamics_func[-1].expand()
                 except Exception as me:
                     RuntimeError(
                         f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -690,6 +770,36 @@ class ConfigureProblem:
                         "Original casadi error message:\n"
                         f"{me}"
                     )
+
+            if dynamics_eval.defects is not None:
+                nlp.implicit_dynamics_func.append(
+                    Function(
+                        "DynamicsDefects",
+                        [
+                            nlp.states.scaled.mx_reduced,
+                            nlp.controls.scaled.mx_reduced,
+                            nlp.parameters.mx,
+                            nlp.stochastic_variables.scaled.mx,
+                            nlp.states_dot.scaled.mx_reduced,
+                        ],
+                        [dynamics_eval.defects],
+                        ["x", "u", "p", "s", "xdot"],
+                        ["defects"],
+                        {"allow_free": allow_free_variables},
+                    )
+                )
+                if nlp.dynamics_type.expand:
+                    try:
+                        nlp.implicit_dynamics_func[-1] = nlp.implicit_dynamics_func[-1].expand()
+                    except Exception as me:
+                        RuntimeError(
+                            f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                            f"Please review the following casadi error message for more details.\n"
+                            "Several factors could be causing this issue. One of the most likely is the inability to "
+                            "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                            "Original casadi error message:\n"
+                            f"{me}"
+                        )
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -914,7 +1024,7 @@ class ConfigureProblem:
             n_cx = 3
 
         dummy_mapping = Mapping(list(range(len(name_elements))))
-        initial_vector = nlp.integrated_values.reshape_to_vector(initial_matrix)
+        initial_vector = StochasticBioModel.reshape_to_vector(initial_matrix)
         cx_scaled_next_formatted = [initial_vector for _ in range(n_cx)]
         nlp.integrated_values.append(
             name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0
@@ -923,7 +1033,12 @@ class ConfigureProblem:
             cx_scaled_next = nlp.integrated_value_functions[name](nlp, node_index)
             cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
             nlp.integrated_values.append(
-                name, cx_scaled_next_formatted, cx_scaled_next_formatted, cx_scaled_next, dummy_mapping, node_index
+                name,
+                cx_scaled_next_formatted,
+                cx_scaled_next_formatted,
+                cx_scaled_next,
+                dummy_mapping,
+                node_index,
             )
 
     @staticmethod
@@ -1018,7 +1133,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_new_variable(name, name_qdddot, ocp, nlp, as_states, as_controls, axes_idx=axes_idx)
 
     @staticmethod
-    def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_feedbacks: int):
+    def configure_stochastic_k(ocp, nlp, n_noised_controls: int, n_references: int):
         """
         Configure the optimal feedback gain matrix K.
         Parameters
@@ -1033,12 +1148,12 @@ class ConfigureProblem:
 
         name_k = []
         control_names = [f"control_{i}" for i in range(n_noised_controls)]
-        feedback_names = [f"feedback_{i}" for i in range(n_feedbacks)]
+        ref_names = [f"feedback_{i}" for i in range(n_references)]
         for name_1 in control_names:
-            for name_2 in feedback_names:
+            for name_2 in ref_names:
                 name_k += [name_1 + "_&_" + name_2]
         nlp.variable_mappings[name] = BiMapping(
-            list(range(len(control_names) * len(feedback_names))), list(range(len(control_names) * len(feedback_names)))
+            list(range(len(control_names) * len(ref_names))), list(range(len(control_names) * len(ref_names)))
         )
         ConfigureProblem.configure_new_variable(
             name,
@@ -1053,7 +1168,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_c(ocp, nlp, n_feedbacks: int, n_noise: int):
+    def configure_stochastic_c(ocp, nlp, n_noised_states: int, n_noise: int):
         """
         Configure the stochastic variable matrix C representing the injection of motor noise (df/dw).
         Parameters
@@ -1067,10 +1182,12 @@ class ConfigureProblem:
             raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
 
         name_c = []
-        for name_1 in [f"X_{i}" for i in range(n_feedbacks)]:
+        for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noise)]:
                 name_c += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_feedbacks * n_noise)), list(range(n_feedbacks * n_noise)))
+        nlp.variable_mappings[name] = BiMapping(
+            list(range(n_noised_states * n_noise)), list(range(n_noised_states * n_noise))
+        )
 
         ConfigureProblem.configure_new_variable(
             name,
@@ -1236,7 +1353,7 @@ class ConfigureProblem:
         )
 
     @staticmethod
-    def configure_stochastic_m(ocp, nlp, n_noised_states: int):
+    def configure_stochastic_m(ocp, nlp, n_noised_states: int, n_collocation_points: int = 1):
         """
         Configure the helper matrix M (from Gillis 2013 : https://doi.org/10.1109/CDC.2013.6761121).
 
@@ -1252,9 +1369,12 @@ class ConfigureProblem:
 
         name_m = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
-            for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
+            for name_2 in [f"X_{i}" for i in range(n_noised_states * n_collocation_points)]:
                 name_m += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
+        nlp.variable_mappings[name] = BiMapping(
+            list(range(n_noised_states * n_noised_states * n_collocation_points)),
+            list(range(n_noised_states * n_noised_states * n_collocation_points)),
+        )
         ConfigureProblem.configure_new_variable(
             name,
             name_m,
@@ -1375,7 +1495,6 @@ class ConfigureProblem:
                     if nlp.model.soft_contact_name(ii) not in name_soft_contact_forces
                 ]
             )
-
         ConfigureProblem.configure_new_variable("fext", name_soft_contact_forces, ocp, nlp, as_states, as_controls)
 
     @staticmethod
@@ -1453,6 +1572,7 @@ class DynamicsFcn(FcnEnum):
     """
 
     TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
+    STOCHASTIC_TORQUE_DRIVEN = (ConfigureProblem.stochastic_torque_driven,)
     TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
     TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
     JOINTS_ACCELERATION_DRIVEN = (ConfigureProblem.joints_acceleration_driven,)

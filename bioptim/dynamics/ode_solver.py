@@ -37,7 +37,7 @@ class OdeSolverBase:
         self.is_direct_collocation = False
         self.is_direct_shooting = False
 
-    def integrator(self, ocp, nlp, node_index: int) -> list:
+    def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -47,6 +47,8 @@ class OdeSolverBase:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the nlp
+        dynamics_index: int
+            The current dynamics to resolve (referring to nlp.dynamics_func[index])
         node_index
             The index of the node currently evaluated
 
@@ -69,14 +71,20 @@ class OdeSolverBase:
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
         """
-        nlp.dynamics = []
+        for i in range(len(nlp.dynamics_func)):
+            dynamics = []
+            dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=0, node_index=0)
+            if ocp.assume_phase_dynamics:
+                dynamics = dynamics * nlp.ns
+            else:
+                for node_index in range(1, nlp.ns):
+                    dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=0, node_index=node_index)
 
-        nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index=0)
-        if ocp.assume_phase_dynamics:
-            nlp.dynamics = nlp.dynamics * nlp.ns
-        else:
-            for node_index in range(1, nlp.ns):
-                nlp.dynamics += nlp.ode_solver.integrator(ocp, nlp, node_index)
+            if i == 0:
+                nlp.dynamics = dynamics
+            else:
+                # TODO include this in nlp.dynamics so the index of nlp.dynamics_func and nlp.dynamics match
+                nlp.extra_dynamics.append(dynamics)
 
 
 class RK(OdeSolverBase):
@@ -102,23 +110,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp, node_index: int) -> list:
-        """
-        The interface of the OdeSolver to the corresponding integrator
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-        nlp: NonLinearProgram
-            A reference to the nlp
-        node_index
-            The index of the node currently integrated
-
-        Returns
-        -------
-        A list of integrators
-        """
+    def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
         nlp.states.node_index = node_index
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
@@ -151,8 +143,11 @@ class RK(OdeSolverBase):
             else horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
             "s_unscaled": nlp.stochastic_variables.cx_start,
             "s_scaled": nlp.stochastic_variables.scaled.cx_start,
-            "ode": nlp.dynamics_func,
-            "implicit_ode": nlp.implicit_dynamics_func,
+            "ode": nlp.dynamics_func[dynamics_index],
+            # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
+            "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
+            if len(nlp.implicit_dynamics_func) > 0
+            else nlp.implicit_dynamics_func,
         }
 
         if ode["ode"].size2_out("xdot") != 1:
@@ -244,7 +239,7 @@ class OdeSolver:
 
         Methods
         -------
-        integrator(self, ocp, nlp) -> list
+        integrator(self, ocp, nlp, node_index) -> list
             The interface of the OdeSolver to the corresponding integrator
         """
 
@@ -254,23 +249,11 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, node_index: int) -> list:
-            """
-            The interface of the OdeSolver to the corresponding integrator
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the nlp
-            node_index
-                The index of the node currently integrated
-
-            Returns
-            -------
-            A list of integrators
-            """
+        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
+            nlp.states.node_index = node_index
+            nlp.states_dot.node_index = node_index
+            nlp.controls.node_index = node_index
+            nlp.stochastic_variables.node_index = node_index
 
             if nlp.control_type == ControlType.CONSTANT:
                 raise RuntimeError(
@@ -287,10 +270,13 @@ class OdeSolver:
                 "x_scaled": horzcat(nlp.states.scaled.cx_start, nlp.states.scaled.cx_end),
                 "p_unscaled": horzcat(nlp.controls.cx_start, nlp.controls.cx_end),
                 "p_scaled": horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
-                "s_unscled": horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end),
+                "s_unscaled": horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end),
                 "s_scaled": horzcat(nlp.stochastic_variables.scaled.cx_start, nlp.stochastic_variables.scaled.cx_end),
-                "ode": nlp.dynamics_func,
-                "implicit_ode": nlp.implicit_dynamics_func,
+                "ode": nlp.dynamics_func[dynamics_index],
+                # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
+                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
+                if len(nlp.implicit_dynamics_func) > 0
+                else nlp.implicit_dynamics_func,
             }
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
@@ -352,23 +338,7 @@ class OdeSolver:
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
-        def integrator(self, ocp, nlp, node_index: int) -> list:
-            """
-            The interface of the OdeSolver to the corresponding integrator
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the nlp
-            node_index
-                The index of the node currently integrated
-
-            Returns
-            -------
-            A list of integrators
-            """
+        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -390,8 +360,11 @@ class OdeSolver:
                 "p_scaled": nlp.controls.scaled.cx_start,
                 "s_unscaled": nlp.stochastic_variables.cx_start,
                 "s_scaled": nlp.stochastic_variables.scaled.cx_start,
-                "ode": nlp.dynamics_func,
-                "implicit_ode": nlp.implicit_dynamics_func,
+                "ode": nlp.dynamics_func[dynamics_index],
+                # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
+                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
+                if len(nlp.implicit_dynamics_func) > 0
+                else nlp.implicit_dynamics_func,
             }
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
@@ -453,28 +426,11 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.steps = 1
 
-        def integrator(self, ocp, nlp, node_index: int) -> list:
-            """
-            The interface of the OdeSolver to the corresponding integrator
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the nlp
-            node_index
-                The index of the node currently integrated
-
-            Returns
-            -------
-            A list of integrators
-            """
-
+        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
             if ocp.cx is SX:
                 raise NotImplementedError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
-            return super(OdeSolver.IRK, self).integrator(ocp, nlp, node_index)
+            return super(OdeSolver.IRK, self).integrator(ocp, nlp, dynamics_index, node_index)
 
     class CVODES(OdeSolverBase):
         """
@@ -489,23 +445,7 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, node_index: int) -> list:
-            """
-            The interface of the OdeSolver to the corresponding integrator
-
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp
-            nlp: NonLinearProgram
-                A reference to the nlp
-            node_index
-                The index of the node currently integrated
-
-            Returns
-            -------
-            A list of integrators
-            """
+        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -527,7 +467,7 @@ class OdeSolver:
             ode = {
                 "x": nlp.states.scaled.cx_start,
                 "p": nlp.controls.scaled.cx_start,
-                "ode": nlp.dynamics_func(
+                "ode": nlp.dynamics_func[dynamics_index](
                     nlp.time_cx,
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,

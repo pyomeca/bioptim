@@ -7,6 +7,7 @@ from ..misc.enums import (
     ControlType,
 )
 from ..misc.enums import QuadratureRule
+from ..dynamics.ode_solver import OdeSolver
 
 
 def check_conditioning(ocp):
@@ -57,6 +58,7 @@ def check_conditioning(ocp):
         # JACOBIAN
         for nlp in ocp.nlp:
             list_constraints = []
+
             for constraints in nlp.g:
                 node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
                 nlp.states.node_index = node_index
@@ -64,7 +66,6 @@ def check_conditioning(ocp):
                 nlp.controls.node_index = node_index
                 nlp.stochastic_variables.node_index = node_index
                 time = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
-
                 for axis in range(
                     0,
                     constraints.function[node_index](
@@ -93,6 +94,7 @@ def check_conditioning(ocp):
                             vertcat_obj,
                         )
                     )
+
 
             jacobian_cas = vcat(list_constraints).T
 
@@ -143,8 +145,8 @@ def check_conditioning(ocp):
             param_init = param_init.reshape((param_init.size, 1))
             s_init = s_init.reshape((s_init.size, 1))
 
-            jacobian_matrix = np.array(jac_func(np.vstack((time_init, x_init, u_init, param_init, s_init))))
-
+            vector_init = np.vstack((time_init, x_init, u_init, param_init, s_init))
+            jacobian_matrix = np.array(jac_func(vector_init))
             jacobian_list.append(jacobian_matrix)
 
             # calculate jacobian rank
@@ -178,11 +180,12 @@ def check_conditioning(ocp):
                 ):
                     # find all equality constraints
                     if constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]:
-                        # parameters
+                        vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled)  # time, states, controls
                         if nlp.parameters.shape == 0:
-                            vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S_scaled)
+                            vertcat_obj = vertcat(vertcat_obj, nlp.parameters.cx)
                         else:
-                            vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S_scaled])
+                            vertcat_obj = vertcat(vertcat_obj, *[nlp.parameters.cx])
+                        vertcat_obj = vertcat(vertcat_obj, *nlp.S_scaled)
 
                         hessian_cas = hessian(
                             constraints.function[node_index](
@@ -203,9 +206,8 @@ def check_conditioning(ocp):
                             [hessian_cas],
                         )
 
-                        hessian_matrix = np.array(hes_func(np.vstack((time_init, x_init, u_init, param_init, s_init))))
-
-                        # append hessian list
+                        vector_init = np.vstack((time_init, x_init, u_init, param_init, s_init))
+                        hessian_matrix = np.array(hes_func(vector_init))
                         list_hessian.append(hessian_matrix)
 
             tick_labels_list.append(tick_labels)
@@ -334,8 +336,8 @@ def check_conditioning(ocp):
                     states_post = nlp_post.states.cx_start
                     controls_pre = phase.controls.cx_end
                     controls_post = nlp_post.controls.cx_start
-                    stochastic_pre = phase.stochastic_cx_end
-                    stochastic_post = nlp_post.stochastic_cx_start
+                    stochastic_pre = phase.stochastic.cx_end
+                    stochastic_post = nlp_post.stochastic.cx_start
                     state_cx = vertcat(states_pre, states_post)
                     control_cx = vertcat(controls_pre, controls_post)
                     stochastic_cx = vertcat(stochastic_pre, stochastic_post)
@@ -352,7 +354,7 @@ def check_conditioning(ocp):
                             raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
                         state_cx = horzcat(state_cx, nlp.states.cx_end)
                         control_cx = horzcat(control_cx, nlp.controls.cx_end)
-                        stochastic_cx = horzcat(stochastic_cx, nlp.stochastic_cx_end)
+                        stochastic_cx = horzcat(stochastic_cx, nlp.stochastic.cx_end)
 
                 if obj.derivative:
                     state_cx = horzcat(nlp.states.cx_end, nlp.states.cx_start)
@@ -377,9 +379,9 @@ def check_conditioning(ocp):
                         else horzcat(nlp.controls.cx_start, nlp.controls.cx_end)
                     )
                     stochastic_cx = (
-                        horzcat(nlp.stochastic_variables.cx_start)
-                        if nlp.control_type == ControlType.CONSTANT
-                        else horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end)
+                        horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end)
+                        if obj.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                        else nlp.stochastic_variables.cx_start
                     )
 
                 if obj.target is None:
@@ -409,11 +411,13 @@ def check_conditioning(ocp):
                     objective += p[i] ** 2
 
             # create function to build the hessian
-            # parameters
+            vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled)  # time, states, controls
             if nlp.parameters.shape == 0:
-                vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S_scaled)
+                vertcat_obj = vertcat(vertcat_obj, nlp.parameters.cx)
             else:
-                vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx], *nlp.S_scaled)
+                vertcat_obj = vertcat(vertcat_obj, *[nlp.parameters.cx])
+            if vertcat(*nlp.S_scaled).shape[0] > 0:
+                vertcat_obj = vertcat(vertcat_obj, *nlp.S_scaled)
 
             hessian_cas = hessian(objective, vertcat_obj)[0]
 
@@ -457,8 +461,9 @@ def check_conditioning(ocp):
             u_init = u_init.reshape((u_init.size, 1))
             param_init = param_init.reshape((param_init.size, 1))
             s_init = s_init.reshape((s_init.size, 1))
+            vector_init = np.vstack((time_init, x_init, u_init, param_init, s_init))
 
-            hessian_obj_matrix = np.array(hes_func(np.vstack((time_init, x_init, u_init, param_init, s_init))))
+            hessian_obj_matrix = np.array(hes_func(vector_init))
             hessian_obj_list.append(hessian_obj_matrix)
 
         # Convexity checking (positive semi-definite hessian)
@@ -554,6 +559,9 @@ def check_conditioning(ocp):
             fontweight="bold",
         )
         plt.suptitle("Check conditioning for objectives", color="b", fontsize=15, fontweight="bold")
+
+    if sum(isinstance(ocp.nlp[i].ode_solver, OdeSolver.COLLOCATION) for i in range(ocp.n_phases)) > 0:
+        raise NotImplementedError("Conditioning check is not implemented for collocations")
 
     check_constraints_plot()
     check_objective_plot()

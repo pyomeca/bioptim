@@ -107,11 +107,12 @@ class BiorbdModel:
     This class allows to define a biorbd model.
     """
 
-    def __init__(self, bio_model: str | biorbd.Model):
+    def __init__(self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
+        self.friction_coefficients = friction_coefficients
 
     @property
     def path(self) -> str:

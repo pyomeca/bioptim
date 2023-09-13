@@ -86,7 +86,7 @@ class NonControlledMethod:
         t_phase = nlp.parameters.mx[-1]
 
         return DynamicsEvaluation(
-            dxdt=nlp.model.system_dynamics(a=states[0], b=states[1], c=states[2], t=time, t_phase=t_phase),
+            dxdt=self.system_dynamics(a=states[0], b=states[1], c=states[2], t=time, t_phase=t_phase),
             defects=None,
         )
 

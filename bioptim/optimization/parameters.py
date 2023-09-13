@@ -160,7 +160,14 @@ class Parameter(PenaltyOption):
 
         penalty.function.append(
             NonLinearProgram.to_casadi_func(
-                f"{self.name}", penalty_function, time_cx, state_cx, control_cx, param_cx, stochastic_cx, expand=expand
+                f"{self.name}",
+                penalty_function,
+                time_cx,
+                state_cx,
+                control_cx,
+                param_cx,
+                stochastic_cx,
+                expand=expand,
             )
         )
 
@@ -176,7 +183,16 @@ class Parameter(PenaltyOption):
         penalty.weighted_function.append(
             Function(  # Do not use nlp.add_casadi_func because all of them must be registered
                 f"{self.name}",
-                [time_cx, state_cx, control_cx, param_cx, stochastic_cx, weight_cx, target_cx, dt_cx],
+                [
+                    time_cx,
+                    state_cx,
+                    control_cx,
+                    param_cx,
+                    stochastic_cx,
+                    weight_cx,
+                    target_cx,
+                    dt_cx,
+                ],
                 [weight_cx * modified_fcn * dt_cx],
             )
         )

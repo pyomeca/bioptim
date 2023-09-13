@@ -13,6 +13,7 @@ from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..interfaces.biomodel import BioModel
 from ..interfaces.holonomic_biomodel import HolonomicBioModel
 from ..interfaces.variational_biomodel import VariationalBioModel
+from ..interfaces.stochastic_bio_model import StochasticBioModel
 
 
 class NonLinearProgram:
@@ -53,7 +54,7 @@ class NonLinearProgram:
         All the objectives at each of the node of the phase
     J_internal: list[list[Objective]]
         All the objectives internally defined by the phase at each of the node of the phase
-    model: BiorbdModel | BioModel
+    model: BiorbdModel | BioModel | StochasticBioModel | HolonomicBioModel | VariationalBioModel
         The biorbd model associated with the phase
     n_threads: int
         The number of thread to use
@@ -123,10 +124,13 @@ class NonLinearProgram:
         self.control_type = ControlType.NONE
         self.cx = None
         self.dt = None
-        self.dynamics = []
+        self.dynamics = (
+            None  # TODO Change this to a list to include extra_dynamics in a single vector (that matches dynamics_func)
+        )
+        self.extra_dynamics = []
         self.dynamics_evaluation = DynamicsEvaluation()
-        self.dynamics_func = None
-        self.implicit_dynamics_func = None
+        self.dynamics_func: list = []
+        self.implicit_dynamics_func: list = []
         self.dynamics_type = None
         self.external_forces: list[Any] = []
         self.g = []
@@ -134,7 +138,7 @@ class NonLinearProgram:
         self.g_implicit = []
         self.J = []
         self.J_internal = []
-        self.model: BioModel | HolonomicBioModel | VariationalBioModel | None = None
+        self.model: BioModel | StochasticBioModel | HolonomicBioModel | VariationalBioModel | None = None
         self.n_threads = None
         self.ns = None
         self.ode_solver = OdeSolver.RK4()

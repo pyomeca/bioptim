@@ -9,7 +9,7 @@ from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, Multinode
 
 
 class MultinodeConstraint(MultinodePenalty):
-    def __init__(self, *args, min_bound: float = 0, max_bound: float = 0, **kwargs):
+    def __init__(self, *args, min_bound: float = 0, max_bound: float = 0, is_stochastic: bool = False, **kwargs):
         if "weight" in kwargs and kwargs["weight"] is not None:
             raise ValueError(
                 "MultinodeConstraints can't declare weight, use MultinodeObjective instead. If you were defining a "
@@ -21,6 +21,7 @@ class MultinodeConstraint(MultinodePenalty):
         self.weight = 0
         self.min_bound = min_bound
         self.max_bound = max_bound
+        self.is_stochastic = is_stochastic
         self.bounds = Bounds(None, interpolation=InterpolationType.CONSTANT)
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
@@ -105,7 +106,7 @@ class MultinodeConstraintFcn(FcnEnum):
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         MultinodeConstraintFunctions.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
-    STOCHASTIC_DG_DW_IMPLICIT = (MultinodeConstraintFunctions.Functions.stochastic_dg_dw_implicit,)
+    STOCHASTIC_DF_DW_IMPLICIT = (MultinodeConstraintFunctions.Functions.stochastic_df_dw_implicit,)
 
     @staticmethod
     def get_type():

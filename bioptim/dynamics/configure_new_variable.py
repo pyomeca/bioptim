@@ -1,5 +1,3 @@
-from typing import Callable, Any
-
 from casadi import MX, SX, vertcat
 import numpy as np
 
@@ -401,7 +399,12 @@ class NewVariableConfiguration:
                     else self.define_cx_unscaled(cx_scaled, self.nlp.x_scaling[self.name].scaling)
                 )
                 self.nlp.states.append(
-                    self.name, cx[0], cx_scaled[0], self.mx_states, self.nlp.variable_mappings[self.name], node_index
+                    self.name,
+                    cx[0],
+                    cx_scaled[0],
+                    self.mx_states,
+                    self.nlp.variable_mappings[self.name],
+                    node_index,
                 )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_states"] = CustomPlot(
@@ -439,7 +442,12 @@ class NewVariableConfiguration:
                     else self.define_cx_unscaled(cx_scaled, self.nlp.u_scaling[self.name].scaling)
                 )
                 self.nlp.controls.append(
-                    self.name, cx[0], cx_scaled[0], self.mx_controls, self.nlp.variable_mappings[self.name], node_index
+                    self.name,
+                    cx[0],
+                    cx_scaled[0],
+                    self.mx_controls,
+                    self.nlp.variable_mappings[self.name],
+                    node_index,
                 )
 
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
@@ -484,13 +492,7 @@ class NewVariableConfiguration:
 
         if self.as_stochastic:
             for node_index in range((0 if self.ocp.assume_phase_dynamics else self.nlp.ns) + 1):
-                n_cx = (
-                    self.nlp.ode_solver.polynomial_degree + 1
-                    if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION)
-                    else 3
-                )
-                if n_cx < 3:
-                    n_cx = 3
+                n_cx = 3
                 cx_scaled = self.define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.s_scaling[self.name].scaling)
 

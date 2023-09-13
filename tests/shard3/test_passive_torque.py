@@ -81,7 +81,7 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
     time = np.random.rand(1, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_passive_torque:
             np.testing.assert_almost_equal(
@@ -164,7 +164,7 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, a
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
     time = np.random.rand(1, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
     if with_passive_torque:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -258,7 +258,7 @@ def test_torque_activation_driven_with_passive_torque(
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
     time = np.random.rand(1, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
     if with_residual_torque:
         if with_passive_torque:
             np.testing.assert_almost_equal(
@@ -376,7 +376,7 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
     time = np.random.rand(1, nlp.ns)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_passive_torque:

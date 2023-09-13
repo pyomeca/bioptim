@@ -144,8 +144,10 @@ def test_penalty_minimize_joint_power(penalty_origin, value, assume_phase_dynami
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [1]
+    p = []
+    s = []
     penalty = Objective(penalty_origin.MINIMIZE_POWER, key_control="tau")
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
     np.testing.assert_almost_equal(res, np.array([[value]] * 4))
 
 
@@ -157,9 +159,11 @@ def test_penalty_minimize_muscle_power(penalty_origin, value, assume_phase_dynam
     t = [0]
     x = [1]
     u = [DM.ones((8, 1)) * value]
+    p = []
+    s = []
 
     penalty = Objective(penalty_origin.MINIMIZE_POWER, key_control="muscles")
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
     if value == 0.1:
         np.testing.assert_almost_equal(
             res, np.array([[0.00475812, -0.00505504, -0.000717714, 0.00215864, 0.00215864, -0.00159915]]).T
@@ -222,12 +226,14 @@ def test_penalty_track_joint_power(penalty_origin, value, assume_phase_dynamics)
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [1]
+    p = []
+    s = []
     penalty_type = penalty_origin.TRACK_POWER
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
         penalty = Objective(penalty_type, key_control="tau")
     else:
         penalty = Constraint(penalty_type, key_control="tau")
-    res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
     np.testing.assert_almost_equal(res, [[value]] * 4)
 
 
@@ -352,6 +358,8 @@ def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, 
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
+    p = []
+    s = []
     penalty_type = penalty_origin.MINIMIZE_MARKERS_ACCELERATION
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
@@ -360,7 +368,7 @@ def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, 
         penalty = Constraint(penalty_type)
 
     if not implicit:
-        res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+        res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
         expected = np.array(
             [
@@ -380,7 +388,7 @@ def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, 
 
         np.testing.assert_almost_equal(res, expected, decimal=5)
     else:
-        res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+        res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
         expected = np.array(
             [
@@ -1247,7 +1255,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, assume_phase_dynamics):
     nlp.S = np.linspace(0, 0, ns + 1)
     nlp.S_scaled = nlp.S
     tp = OptimizationVariableList(MX, assume_phase_dynamics=assume_phase_dynamics)
-    tp.append("param", [MX(), MX(), MX()], MX(), BiMapping([], []))
+    tp.append(name="param", cx=[MX(), MX(), MX()], mx=MX(), bimapping=BiMapping([], []))
     nlp.parameters = tp["param"]
 
     pn = []

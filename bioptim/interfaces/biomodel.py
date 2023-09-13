@@ -20,6 +20,11 @@ class BioModel(Protocol):
         """transform the class into a save and load format"""
 
     @property
+    def friction_coefficients(self) -> MX:
+        """Get the coeffient of friction to apply to specified elements in the dymamics"""
+        return MX()
+
+    @property
     def gravity(self) -> MX:
         """Get the current gravity applied to the model"""
         return MX()

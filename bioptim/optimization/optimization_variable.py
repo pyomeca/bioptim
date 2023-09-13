@@ -4,7 +4,6 @@ import numpy as np
 from casadi import MX, SX, vertcat
 
 from ..misc.mapping import BiMapping
-from ..misc.enums import Node
 
 
 class OptimizationVariable:
@@ -135,63 +134,6 @@ class OptimizationVariable:
                 "Typically 'all' cannot be used"
             )
         return self.parent_list.cx_end[self.index, :]
-
-    @staticmethod
-    def reshape_to_vector(matrix):
-        """
-        Restore the vector form of the matrix
-        """
-        shape_0 = matrix.shape[0]
-        shape_1 = matrix.shape[1]
-        vector = MX.zeros(shape_0 * shape_1)
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                vector[shape_0 * s0 + s1] = matrix[s0, s1]
-        return vector
-
-    @staticmethod
-    def reshape_to_matrix(variable, shape_0, shape_1, node: Node, key: str):
-        """
-        Restore the matrix form of the variables
-        """
-        matrix = MX(shape_0, shape_1)
-        i = 0
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                if node == Node.START:
-                    matrix[s0, s1] = variable[key].cx_start[i]
-                elif node == Node.MID:
-                    matrix[s0, s1] = variable[key].cx_mid[i]
-                elif node == Node.END:
-                    matrix[s0, s1] = variable[key].cx_end[i]
-                else:
-                    raise RuntimeError(
-                        "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-                    )
-                i += 1
-        return matrix
-
-    @staticmethod
-    def reshape_to_cholesky_matrix(variable, shape_0, node: Node, key: str):
-        """
-        Restore the lower diagonal matrix form of the variables vector
-        """
-        matrix = MX.zeros(shape_0, shape_0)
-        i = 0
-        for s0 in range(shape_0):
-            for s1 in range(s0 + 1):
-                if node == Node.START:
-                    matrix[s0, s1] = variable[key].cx_start[i]
-                elif node == Node.MID:
-                    matrix[s0, s1] = variable[key].cx_mid[i]
-                elif node == Node.END:
-                    matrix[s0, s1] = variable[key].cx_end[i]
-                else:
-                    raise RuntimeError(
-                        "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-                    )
-                i += 1
-        return matrix
 
 
 class OptimizationVariableList:
@@ -347,8 +289,6 @@ class OptimizationVariableList:
             The list of SX or MX variable associated with this variable
         mx: MX
             The MX variable associated with this variable
-        bimapping: BiMapping
-            The Mapping of the MX against CX
         """
 
         if len(cx) < 3:
@@ -366,7 +306,7 @@ class OptimizationVariableList:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
 
         self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
-        self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, self))
+        self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, parent_list=self))
 
     def append_from_scaled(
         self,
@@ -699,36 +639,3 @@ class OptimizationVariableContainer:
         if self._iter_idx > len(self):
             raise StopIteration
         return self.unscaled[self._iter_idx - 1].name
-
-    def reshape_to_vector(self, matrix):
-        """
-        Restore the vector form of the matrix
-        """
-        shape_0 = matrix.shape[0]
-        shape_1 = matrix.shape[1]
-        vector = MX.zeros(shape_0 * shape_1)
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                vector[shape_0 * s0 + s1] = matrix[s0, s1]
-        return vector
-
-    def reshape_to_matrix(self, variable, shape_0, shape_1, node: Node, key: str):
-        """
-        Restore the matrix form of the variables
-        """
-        matrix = MX(shape_0, shape_1)
-        i = 0
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                if node == Node.START:
-                    matrix[s0, s1] = variable[key].cx_start[i]
-                elif node == Node.MID:
-                    matrix[s0, s1] = variable[key].cx_mid[i]
-                elif node == Node.END:
-                    matrix[s0, s1] = variable[key].cx_end[i]
-                else:
-                    raise RuntimeError(
-                        "Node must be a Node.START for cx_start, Node.MID for cx_mid, or Node.END for cx_end"
-                    )
-                i += 1
-        return matrix

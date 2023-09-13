@@ -124,7 +124,6 @@ class OptimizationVectorHelper:
         -------
         The vector of all variables
         """
-
         x_scaled = []
         u_scaled = []
         s_scaled = []
@@ -135,8 +134,8 @@ class OptimizationVectorHelper:
                 x_scaled += nlp.X_scaled
             u_scaled += nlp.U_scaled
             s_scaled += nlp.S_scaled
-
-        return vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled)
+        vector = vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled)
+        return vector
 
     @staticmethod
     def bounds_vectors(ocp) -> tuple[np.ndarray, np.ndarray]:
@@ -162,11 +161,16 @@ class OptimizationVectorHelper:
             OptimizationVectorHelper._set_node_index(nlp, 0)
             for key in nlp.states:
                 if key in nlp.x_bounds.keys():
-                    nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
+                    if nlp.x_bounds[key].type == InterpolationType.ALL_POINTS:
+                        nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns * repeat)
+                    else:
+                        nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
 
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
                 for p in range(repeat if k != nlp.ns else 1):
+                    # This allows CONSTANT_WITH_FIRST_AND_LAST to work in collocations, but is flawed for the other ones
+                    # point refers to the column to use in the bounds matrix
                     point = k if k != 0 else 0 if p == 0 else 1
 
                     collapsed_values_min = np.ndarray((nlp.states.shape, 1))
@@ -174,10 +178,12 @@ class OptimizationVectorHelper:
                     for key in nlp.states:
                         if key in nlp.x_bounds.keys():
                             value_min = (
-                                nlp.x_bounds[key].min.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                                nlp.x_bounds[key].min.evaluate_at(shooting_point=point, repeat=repeat)
+                                / nlp.x_scaling[key].scaling
                             )[:, np.newaxis]
                             value_max = (
-                                nlp.x_bounds[key].max.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                                nlp.x_bounds[key].max.evaluate_at(shooting_point=point, repeat=repeat)
+                                / nlp.x_scaling[key].scaling
                             )[:, np.newaxis]
                         else:
                             value_min = -np.inf
@@ -304,7 +310,7 @@ class OptimizationVectorHelper:
                             if nlp.x_init[key].type == InterpolationType.ALL_POINTS:
                                 point_to_eval = k * repeat + p
                             value = (
-                                nlp.x_init[key].init.evaluate_at(shooting_point=point_to_eval)
+                                nlp.x_init[key].init.evaluate_at(shooting_point=point_to_eval, repeat=repeat)
                                 / nlp.x_scaling[key].scaling
                             )[:, np.newaxis]
                         else:

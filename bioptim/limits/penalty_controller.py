@@ -2,10 +2,11 @@ from typing import Any, Callable
 
 from casadi import MX, SX, vertcat
 
-from ..optimization.non_linear_program import NonLinearProgram
-from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
+from ..dynamics.ode_solver import OdeSolver
 from ..misc.enums import ControlType
 from ..misc.mapping import BiMapping
+from ..optimization.non_linear_program import NonLinearProgram
+from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 
 
 class PenaltyController:
@@ -97,6 +98,10 @@ class PenaltyController:
     @property
     def control_type(self) -> ControlType:
         return self._nlp.control_type
+
+    @property
+    def ode_solver(self) -> OdeSolver:
+        return self._nlp.ode_solver
 
     @property
     def phase_idx(self) -> int:
@@ -205,9 +210,17 @@ class PenaltyController:
     def integrate(self):
         return self._nlp.dynamics[self.node_index]
 
+    def integrate_extra_dynamics(self, dynamics_index):
+        return self._nlp.extra_dynamics[dynamics_index][self.node_index]
+
     @property
     def dynamics(self):
-        return self._nlp.dynamics_func
+        return self._nlp.dynamics_func[0]
+
+    def extra_dynamics(self, dynamics_index):
+        # +1 - index so "integrate_extra_dynamics" and "extra_dynamics" share the same index.
+        # This is a hack which should be dealt properly at some point
+        return self._nlp.dynamics_func[dynamics_index + 1]
 
     @property
     def states_scaled(self) -> OptimizationVariableList:
