@@ -352,7 +352,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )
 
             dx = dynamics(
-                controllers[0].time,
+                controllers[0].time.cx,
                 controllers[0].states.cx_start,
                 controllers[0].controls.cx_start,
                 controllers[0].parameters.cx_start,
@@ -366,7 +366,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             DdZ_DX_fun = Function(
                 "DdZ_DX_fun",
                 [
-                    controllers[0].time,
+                    controllers[0].time.cx,
                     controllers[0].states.cx_start,
                     controllers[0].controls.cx_start,
                     controllers[0].parameters.cx_start,
@@ -378,7 +378,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )
 
             DdZ_DX = DdZ_DX_fun(
-                controllers[1].time,
+                controllers[1].time.cx,
                 controllers[1].states.cx_start,
                 controllers[1].controls.cx_start,
                 controllers[1].parameters.cx_start,
