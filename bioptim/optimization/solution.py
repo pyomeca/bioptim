@@ -66,8 +66,6 @@ class Solution:
         The number of iterations that were required to solve the program
     status: int
         Optimization success status (Ipopt: 0=Succeeded, 1=Failed)
-    _time: list
-        The data structure that holds the time
     _states: list
         The data structure that holds the states
     _controls: list
@@ -320,7 +318,6 @@ class Solution:
         self._time_vector = None
 
         # Extract the data now for further use
-        self._time = {}
         self._states = {}
         self._controls = {}
         self.parameters = {}
@@ -328,7 +325,7 @@ class Solution:
         self._integrated_values = {}
         self.phase_time = []
 
-        def get_integrated_values(time, states, controls, parameters, stochastic_variables):
+        def get_integrated_values(states, controls, parameters, stochastic_variables):
             integrated_values_num = [{} for _ in self.ocp.nlp]
             for i_phase, nlp in enumerate(self.ocp.nlp):
                 nlp.states.node_index = 0
@@ -455,7 +452,6 @@ class Solution:
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
             self._integrated_values = get_integrated_values(
-                self._time,
                 self._states["unscaled"],
                 self._controls["unscaled"],
                 self.parameters,
@@ -481,10 +477,10 @@ class Solution:
                     for _ in range(len(self.ns)):
                         tp.add(deepcopy(_sol[i].init), interpolation=_sol[i].init.type)
                     _sol[i] = tp
-            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 5:
+            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 4:
                 raise ValueError(
                     "solution must be a solution dict, "
-                    "an InitialGuess[List] of len 4 or 5 (time, states, controls, parameters, stochastic_variables), "
+                    "an InitialGuess[List] of len 4 (states, controls, parameters, stochastic_variables), "
                     "or a None"
                 )
             if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
@@ -497,13 +493,7 @@ class Solution:
                     )
 
             self.vector = np.ndarray((0, 1))
-            sol_time, sol_states, sol_controls, sol_params, sol_stochastic_variables = _sol
-
-            # For time
-            for p, ss in enumerate(sol_time):
-                for key in ss.keys():
-                    self.ocp.nlp[p].time_cx[key].node_index = 0
-                    ss[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].time_cx[key]), self.ns[p], "time")
+            sol_states, sol_controls, sol_params, sol_stochastic_variables = _sol
 
             # For states
             for p, ss in enumerate(sol_states):
@@ -571,7 +561,6 @@ class Solution:
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._time_vector = self._generate_time()
             self._integrated_values = get_integrated_values(
-                self._time,
                 self._states["unscaled"],
                 self._controls["unscaled"],
                 self.parameters,
@@ -605,7 +594,6 @@ class Solution:
             self._complete_control()
             self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
             self._integrated_values = get_integrated_values(
-                self._time,
                 self._states["unscaled"],
                 self._controls["unscaled"],
                 self.parameters,
@@ -614,7 +602,7 @@ class Solution:
 
         if isinstance(sol, dict):
             init_from_dict(sol)
-        elif isinstance(sol, (list, tuple)) and len(sol) == 5:
+        elif isinstance(sol, (list, tuple)) and len(sol) == 4:
             init_from_initial_guess(sol)
         elif isinstance(sol, (np.ndarray, DM)):
             init_from_vector(sol)
@@ -706,14 +694,12 @@ class Solution:
         if skip_data:
             new._states["unscaled"], new._controls["unscaled"], new._stochastic_variables["unscaled"] = [], [], []
             (
-                new._time,
                 new._states["scaled"],
                 new._controls["scaled"],
                 new.parameters,
                 new._stochastic_variables["unscaled"],
-            ) = ([], [], [], {}, [])
+            ) = ([], [], {}, [])
         else:
-            new._time = deepcopy(self._time)
             new._states["scaled"] = deepcopy(self._states["scaled"])
             new._controls["scaled"] = deepcopy(self._controls["scaled"])
             new.parameters = deepcopy(self.parameters)
