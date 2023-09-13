@@ -184,7 +184,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     cov_matrix = nlp.integrated_values.reshape_to_matrix(cov_sym_dict, nx, nx, Node.START, "cov")
 
     dx = stochastic_forward_dynamics(
-        nlp.time,
+        nlp.time_cx,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,
@@ -205,7 +205,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
     func_eval = cas.Function(
         "p_next",
         [
-            nlp.time,
+            nlp.time_cx,
             nlp.states.cx_start,
             nlp.controls.cx_start,
             nlp.parameters,
@@ -216,7 +216,7 @@ def get_cov_mat(nlp, node_index, force_field_magnitude, motor_noise_magnitude, s
         ],
         [p_next],
     )(
-        nlp.time,
+        nlp.time_cx,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,

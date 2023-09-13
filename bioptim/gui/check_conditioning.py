@@ -384,7 +384,7 @@ def check_conditioning(ocp):
 
                 if obj.target is None:
                     p = obj.weighted_function[node_index](
-                        nlp.time,
+                        nlp.time_cx,
                         state_cx,
                         control_cx,
                         nlp.parameters.cx,
@@ -395,7 +395,7 @@ def check_conditioning(ocp):
                     )
                 else:
                     p = obj.weighted_function[node_index](
-                        nlp.time,
+                        nlp.time_cx,
                         state_cx,
                         control_cx,
                         nlp.parameters.cx,
