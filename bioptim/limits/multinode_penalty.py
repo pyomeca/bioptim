@@ -530,7 +530,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             stochastic_sym = MX.sym("stochastic_sym", controllers[0].stochastic_variables.shape, 1)
 
             dx = controllers[0].extra_dynamics(0)(
-                controllers[0].time,
+                controllers[0].time.mx,
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,
                 parameters_sym,
@@ -544,7 +544,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             DF_DW_fun = Function(
                 "DF_DW_fun",
                 [
-                    controllers[0].time,
+                    controllers[0].time.mx,
                     q_root,
                     q_joints,
                     qdot_root,
@@ -564,7 +564,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             )
 
             DF_DW = DF_DW_fun(
-                controllers[0].time,
+                controllers[0].time.cx,
                 controllers[0].states["q"].cx_start[:nb_root],
                 controllers[0].states["q"].cx_start[nb_root:],
                 controllers[0].states["qdot"].cx_start[:nb_root],
@@ -576,7 +576,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].model.sensory_noise_magnitude,
             )
             DF_DW_plus = DF_DW_fun(
-                controllers[1].time,
+                controllers[1].time.cx,
                 controllers[1].states["q"].cx_start[:nb_root],
                 controllers[1].states["q"].cx_start[nb_root:],
                 controllers[1].states["qdot"].cx_start[:nb_root],

@@ -188,6 +188,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def stochastic_torque_driven(
+        time: MX.sym,
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
@@ -201,6 +202,8 @@ class DynamicsFunctions:
 
         Parameters
         ----------
+        time: MX.sym
+            The time
         states: MX.sym
             The state of the system
         controls: MX.sym

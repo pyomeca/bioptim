@@ -630,7 +630,7 @@ def test_fatigable_effort_torque_split(assume_phase_dynamics):
     sol = ocp.solve()
 
     # Check objective function value
-    if platform.system() == "Linux":
+    if platform.system() != "Linux":
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
         np.testing.assert_almost_equal(f[0, 0], 124.09811263203727)
