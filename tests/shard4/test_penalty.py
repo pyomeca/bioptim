@@ -76,7 +76,7 @@ def get_penalty_value(ocp, penalty, t, x, u, p, s):
     if isinstance(val, float):
         return val
 
-    time = ocp.nlp[0].time_cx if ocp.nlp[0].time_cx.shape != (0, 0) else ocp.cx(0, 0)
+    time = ocp.nlp[0].time_cx if ocp.nlp[0].time_cx.shape == (0, 0) else ocp.cx(0, 0)
     states = ocp.nlp[0].states.cx_start if ocp.nlp[0].states.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     controls = ocp.nlp[0].controls.cx_start if ocp.nlp[0].controls.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
@@ -176,7 +176,7 @@ def test_penalty_minimize_muscle_power(penalty_origin, value, assume_phase_dynam
 def test_penalty_minimize_qddot(penalty_origin, value, assume_phase_dynamics):
     print(f"origin:{penalty_origin}, assume:{assume_phase_dynamics}")
     ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
-    t = [0, 1]
+    t = [1]
     x = [DM.ones((8, 1)) * value, DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
     p = []

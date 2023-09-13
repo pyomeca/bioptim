@@ -321,7 +321,10 @@ class OcpToConsole(GraphAbstract):
             print("")
             print(f"**********")
             print(f"MODEL: {self.ocp.original_values['bio_model'][phase_idx]}")
-            print(f"PHASE DURATION: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s")
+            if isinstance(self.ocp.nlp[phase_idx].tf, (int, float)):
+                print(f"PHASE DURATION: {round(self.ocp.nlp[phase_idx].tf, 2)} s")
+            else:
+                print(f"PHASE DURATION IS OPTIMIZED")
             print(f"SHOOTING NODES : {self.ocp.nlp[phase_idx].ns}")
             print(f"DYNAMICS: {self.ocp.nlp[phase_idx].dynamics_type.type.name}")
             print(f"ODE: {self.ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}")
@@ -572,7 +575,10 @@ class OcpToGraph(GraphAbstract):
         """
 
         node_str = f"<b>BioModel</b>: {type(self.ocp.nlp[phase_idx].model)}<br/>"
-        node_str += f"<b>Phase duration</b>: {round(self.ocp.nlp[phase_idx].t_initial_guess, 2)} s<br/>"
+        if isinstance(self.ocp.nlp[phase_idx].tf, (int, float)):
+            node_str += f"<b>Phase duration</b>: {round(self.ocp.nlp[phase_idx].tf, 2)} s<br/>"
+        else:
+            node_str += f"<b>Phase duration</b>: optimized<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
         node_str += f"<b>Dynamics</b>: {self.ocp.nlp[phase_idx].dynamics_type.type.name}<br/>"
         node_str += f"<b>ODE</b>: {self.ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}<br/>"

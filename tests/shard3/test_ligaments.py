@@ -71,13 +71,11 @@ def test_torque_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(
-        1, nlp.ns
-    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    time = np.random.rand(1, nlp.ns)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
     if with_ligament:
         np.testing.assert_almost_equal(
@@ -135,13 +133,11 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, assume_phase_
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(
-        1, nlp.ns
-    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    time = np.random.rand(1, nlp.ns)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
     if with_ligament:
         np.testing.assert_almost_equal(
@@ -195,13 +191,11 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, assume_phase_
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(
-        1, nlp.ns
-    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    time = np.random.rand(1, nlp.ns)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
     if with_ligament:
         np.testing.assert_almost_equal(
@@ -263,13 +257,11 @@ def test_muscle_driven_with_ligament(with_ligament, cx, assume_phase_dynamics):
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
-    time = np.random.rand(
-        1, nlp.ns
-    )  # time isn't 0 or [] in dyn_fun to test if time has an impact when it is not supposed to
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    time = np.random.rand(1, nlp.ns)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, stochastic_variables))
 
     if with_ligament:
