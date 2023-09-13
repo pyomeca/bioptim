@@ -134,7 +134,12 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.assume_phase_dynamics)
-        tp.append("time", mx=self._nlp.time_mx, cx=[self._nlp.time_cx, self._nlp.time_cx, self._nlp.time_cx], bimapping=BiMapping(to_second=[0], to_first=[0]))
+        tp.append(
+            "time",
+            mx=self._nlp.time_mx,
+            cx=[self._nlp.time_cx, self._nlp.time_cx, self._nlp.time_cx],
+            bimapping=BiMapping(to_second=[0], to_first=[0]),
+        )
         return tp["time"]
 
     @property

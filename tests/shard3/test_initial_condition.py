@@ -264,7 +264,9 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
     S = InitialGuessList()
 
     sol = Solution(ocp, [X, U, P, S])
-    sol_integrated = sol.integrate(shooting_type=Shooting.SINGLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP)
+    sol_integrated = sol.integrate(
+        shooting_type=Shooting.SINGLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP
+    )
 
     # Check some of the results
     states = sol_integrated.states

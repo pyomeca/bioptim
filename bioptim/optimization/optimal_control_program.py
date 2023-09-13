@@ -1459,7 +1459,8 @@ class OptimalControlProgram:
                         )
 
                 out.append(
-                    penalty.weighted_function_non_threaded[t](t, state_value, control_value, p, stochastic_value, penalty.weight, _target, dt
+                    penalty.weighted_function_non_threaded[t](
+                        t, state_value, control_value, p, stochastic_value, penalty.weight, _target, dt
                     )
                 )
             elif (

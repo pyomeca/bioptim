@@ -95,7 +95,6 @@ def check_conditioning(ocp):
                         )
                     )
 
-
             jacobian_cas = vcat(list_constraints).T
 
             # depends if there are parameters

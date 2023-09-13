@@ -254,10 +254,10 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     # Check constraints
     g = np.array(sol.constraints)
     for i in range(n):
-        np.testing.assert_almost_equal(g[i * 19 + 0:i * 19 + 15], np.zeros((15, 1)))
+        np.testing.assert_almost_equal(g[i * 19 + 0 : i * 19 + 15], np.zeros((15, 1)))
     np.testing.assert_almost_equal(
         g[18:-1:19, 0],
-        [0.09652524, 0.05752794, 0.0166813, 0.01370305, 0.01262233, 0.01206028, 0.01171445, 0.01147956, 0.01130926]
+        [0.09652524, 0.05752794, 0.0166813, 0.01370305, 0.01262233, 0.01206028, 0.01171445, 0.01147956, 0.01130926],
     )
     np.testing.assert_equal(g.shape, (187, 1))
 
@@ -276,7 +276,7 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     # intermediate phase
     np.testing.assert_almost_equal(
         sol.states[5]["a"][0],
-        np.array([19.82368302, 20.06913812, 20.31469147, 20.5603441 , 20.80609698, 21.05195111]),
+        np.array([19.82368302, 20.06913812, 20.31469147, 20.5603441, 20.80609698, 21.05195111]),
         decimal=2,
     )
     np.testing.assert_almost_equal(
@@ -303,6 +303,6 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     )
     np.testing.assert_almost_equal(
         sol.states[9]["c"][0],
-        np.array([4.18639942, 4.3405686 , 4.49893797, 4.66158258, 4.82857814, 5.00000103]),
+        np.array([4.18639942, 4.3405686, 4.49893797, 4.66158258, 4.82857814, 5.00000103]),
         decimal=2,
     )
