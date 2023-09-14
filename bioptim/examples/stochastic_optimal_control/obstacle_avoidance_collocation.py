@@ -165,8 +165,8 @@ def initialize_circle(n_points):
     """
     q_init = np.zeros((2, n_points))
     for i in range(n_points):
-        q_init[0, i] = 3 * np.cos(i * 2 * np.pi / (n_points - 1))
-        q_init[1, i] = 3 * np.sin(i * 2 * np.pi / (n_points - 1))
+        q_init[0, i] = 3 * np.sin(i * 2 * np.pi / (n_points - 1))
+        q_init[1, i] = 3 * np.cos(i * 2 * np.pi / (n_points - 1))
     return q_init
 
 
@@ -228,10 +228,8 @@ def prepare_ocp(
     )
     x_bounds.add(
         "qdot",
-        # min_bound=[-10] * nb_qdot,
-        # max_bound=[10] * nb_qdot,
-        min_bound=[-cas.inf] * nb_qdot,
-        max_bound=[cas.inf] * nb_qdot,
+        min_bound=[-30] * nb_qdot,
+        max_bound=[30] * nb_qdot,
         interpolation=InterpolationType.CONSTANT,
     )
 
@@ -325,12 +323,6 @@ def prepare_socp(
     constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
     constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
 
-    # multinode_constraints = MultinodeConstraintList()
-    # multinode_constraints.add(MultinodeConstraintFcn.STOCHASTIC_EQUALITY,
-    #                           key="cov",
-    #                           nodes=[n_shooting, 0],
-    #                           nodes_phase=[0, 0])
-
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
@@ -349,17 +341,15 @@ def prepare_socp(
     x_bounds = BoundsList()
     min_q = np.ones((nb_q, 3)) * -cas.inf
     max_q = np.ones((nb_q, 3)) * cas.inf
-    # min_q[0, 0] = 0  # phi(x) = p_x?
-    # max_q[0, 0] = 0
+    min_q[0, 0] = 0  # phi(x) = p_x?
+    max_q[0, 0] = 0
     x_bounds.add(
         "q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
     )
     x_bounds.add(
         "qdot",
-        # min_bound=[-10] * nb_qdot,
-        # max_bound=[10] * nb_qdot,
-        min_bound=[-cas.inf] * nb_qdot,
-        max_bound=[cas.inf] * nb_qdot,
+        min_bound=[-30] * nb_qdot,
+        max_bound=[30] * nb_qdot,
         interpolation=InterpolationType.CONSTANT,
     )
 
@@ -470,7 +460,7 @@ def prepare_socp(
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
-    # phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS)
+    # phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=0)
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -485,7 +475,6 @@ def prepare_socp(
         s_bounds=s_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        # multinode_constraints=multinode_constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=4,
         assume_phase_dynamics=True,
@@ -508,8 +497,8 @@ def main():
     run_step_3 = False  # True
 
     # --- Prepare the ocp --- #
-    socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
-    # socp_type = SocpType.DMS()
+    # socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
+    socp_type = SocpType.DMS()
     bio_model = MassPointModel(socp_type=socp_type)
     n_shooting = 39
     polynomial_degree = 5
@@ -520,7 +509,7 @@ def main():
     # TODO: include SLICOT solver (for solving ill-conditioned, ill-scaled, large-scale problems by preserving the stucture of the problem)
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
-    solver.set_maximum_iterations(0) # 1000
+    solver.set_maximum_iterations(1000) # 1000
     # solver._nlp_scaling_method = "None"
 
     if run_step_1:
@@ -542,7 +531,7 @@ def main():
         #save the results
         with open('deterministic.pkl', 'wb') as f:
             pickle.dump(data_deterministic, f)
-        sol_ocp.graphs()
+        # sol_ocp.graphs()
     else:
         with open('deterministic.pkl', 'rb') as f:
             data_deterministic = pickle.load(f)
@@ -569,7 +558,10 @@ def main():
         qdot_stochastic = sol_socp.states["qdot"]
         u_stochastic = sol_socp.controls["u"]
         time_stochastic = sol_socp.parameters["time"][0][0]
-        m_stochastic = sol_socp.stochastic_variables["m"]
+        if isinstance(socp_type, SocpType.COLLOCATION):
+            m_stochastic = sol_socp.stochastic_variables["m"]
+        else:
+            m_stochastic = None
         cov_stochastic = sol_socp.stochastic_variables["cov"]
         data_stochastic = {"q_stochastic": q_stochastic,
                           "qdot_stochastic": qdot_stochastic,
@@ -579,7 +571,7 @@ def main():
                           "time_stochastic": time_stochastic}
         with open('stochastic.pkl', 'wb') as f:
             pickle.dump(data_stochastic, f)
-        sol_socp.graphs()
+        # sol_socp.graphs()
     else:
         with open('stochastic.pkl', 'rb') as f:
             data_stochastic = pickle.load(f)
@@ -634,7 +626,10 @@ def main():
         qdot_robustified = sol_rsocp.states["qdot"]
         u_robustified = sol_rsocp.controls["u"]
         # time_robustified = sol_rsocp.parameters["time"][0][0]
-        m_robustified = sol_rsocp.stochastic_variables["m"]
+        if isinstance(socp_type, SocpType.COLLOCATION):
+            m_robustified = sol_rsocp.stochastic_variables["m"]
+        else:
+            m_robustified = None
         cov_robustified = sol_rsocp.stochastic_variables["cov"]
         robustified_data = {"q_robustified": q_robustified,
                             "qdot_robustified": qdot_robustified,
@@ -645,7 +640,7 @@ def main():
 
         with open('robustified.pkl', 'wb') as f:
             pickle.dump(robustified_data, f)
-        sol_rsocp.graphs()
+        # sol_rsocp.graphs()
     else:
         with open('robustified.pkl', 'rb') as f:
             robustified_data = pickle.load(f)
@@ -677,13 +672,17 @@ def main():
     ax.plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
     ax.plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
     ax.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
+    if isinstance(socp_type, SocpType.COLLOCATION):
+        nb_points = polynomial_degree + 1
+    else:
+        nb_points = 1
     for j in range(cov_stochastic.shape[1]):
-        ax.plot(q_stochastic[0, j*(polynomial_degree+1)], q_stochastic[1, j*(polynomial_degree+1)], "or", markersize=2)
+        ax.plot(q_stochastic[0, j*nb_points], q_stochastic[1, j*nb_points], "or", markersize=2)
         cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
         for s_0 in range(bio_model.matrix_shape_cov[0]):
             for s_1 in range(bio_model.matrix_shape_cov[1]):
                 cov_reshaped_to_matrix[s_0, s_1] = cov_stochastic[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
-        draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_stochastic[:, j*(polynomial_degree + 1)], ax)
+        draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_stochastic[:, j*nb_points], ax)
         tempo_cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
         tempo_cov_reshaped_to_matrix[:, :] = cov_reshaped_to_matrix[:, :]
         tempo_cov_reshaped_to_matrix[0, 0] = 0

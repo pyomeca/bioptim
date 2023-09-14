@@ -1058,7 +1058,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
-            def cov_integrate(q, qdot, u, cov, fun_cov, fun_states):
+            def cov_integrate(model, q, qdot, u, cov, fun_cov, fun_states):
 
                 duration = controller.parameters["time"].cx if "time" in controller.parameters.keys() else controller.tf
                 step_time = duration / controller.ns
@@ -1078,19 +1078,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                 for i in range(1, n_step + 1):
                     k1_states = fun_states(x[:nb_q, i - 1], x[nb_q:, i - 1], u, duration, cov)
-                    k1_cov = fun_cov(x[:nb_q, i - 1], x[nb_q:, i - 1], u, duration, s[:, i - 1])
+                    k1_cov = fun_cov(x[:nb_q, i - 1], x[nb_q:, i - 1], u, duration, s[:, i - 1], model.motor_noise_magnitude)
                     k2_states = fun_states(x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
                                            x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:], u, duration, cov)
                     k2_cov = fun_cov(x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
-                                     x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:], u, duration, s[:, i - 1] + h / 2 * k1_cov)
+                                     x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:], u, duration, s[:, i - 1] + h / 2 * k1_cov, model.motor_noise_magnitude)
                     k3_states = fun_states(x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
                                            x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:], u, duration, cov)
                     k3_cov = fun_cov(x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
-                                     x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:], u, duration, s[:, i - 1] + h / 2 * k2_cov)
+                                     x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:], u, duration, s[:, i - 1] + h / 2 * k2_cov, model.motor_noise_magnitude)
                     k4_states = fun_states(x[:nb_q, i - 1] + h * k3_states[:nb_q],
                                            x[nb_q:, i - 1] + h * k3_states[nb_q:], u, duration, cov)
                     k4_cov = fun_cov(x[:nb_q, i - 1] + h * k3_states[:nb_q], x[nb_q:, i - 1] + h * k3_states[nb_q:],
-                                     u, duration, s[:, i - 1] + h * k3_cov)
+                                     u, duration, s[:, i - 1] + h * k3_cov, model.motor_noise_magnitude)
                     x[:, i] = x[:, i - 1] + h / 6 * (k1_states + 2 * k2_states + 2 * k3_states + k4_states)
                     s[:, i] = s[:, i - 1] + h / 6 * (k1_cov + 2 * k2_cov + 2 * k3_cov + k4_cov)
 
@@ -1119,22 +1119,33 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             states_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
 
-            dx_dt = controller.dynamics(
+            dx_dt_without = controller.dynamics(
+                states_full,
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+            )
+            dx_dt_with = controller.extra_dynamics(0)(
                 states_full,
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
             )
 
-            A = jacobian(dx_dt[non_root_index_continuity], vertcat(x_q_joints, x_qdot_joints))
+            A = jacobian(dx_dt_with[non_root_index_continuity], vertcat(x_q_joints, x_qdot_joints))
+            B = jacobian(dx_dt_with[non_root_index_continuity], controller.model.motor_noise_sym)
 
-            cov_derivative = A @ cov_matrix + cov_matrix @ A.T
+            sigma_w = MX.zeros(controller.model.motor_noise_sym.shape[0], controller.model.motor_noise_sym.shape[0])
+            for i in range(sigma_w.shape[0]):
+                sigma_w[i, i] = controller.model.motor_noise_sym[i]
+
+            cov_derivative = A @ cov_matrix + cov_matrix @ A.T + B @ sigma_w @ B.T
             cov_derivative_vector = StochasticBioModel.reshape_to_vector(cov_derivative)
-            states_derivative_func = Function("states_derivative_func", [x_q_joints, x_qdot_joints, controller.controls.cx_start, controller.parameters.cx_start, controller.stochastic_variables.cx_start], [dx_dt])
+            states_derivative_func = Function("states_derivative_func", [x_q_joints, x_qdot_joints, controller.controls.cx_start, controller.parameters.cx_start, controller.stochastic_variables.cx_start], [dx_dt_without])
             cov_derivative_func = Function("cov_derivative_func", [x_q_joints, x_qdot_joints, controller.controls.cx_start,
-                                            controller.parameters.cx_start, controller.stochastic_variables["cov"].cx_start], [cov_derivative_vector])
+                                            controller.parameters.cx_start, controller.stochastic_variables["cov"].cx_start, controller.model.motor_noise_sym], [cov_derivative_vector])
 
-            cov_next_computed = cov_integrate(x_q_joints, x_qdot_joints, controller.controls.cx_start, controller.stochastic_variables["cov"].cx_start, cov_derivative_func, states_derivative_func)
+            cov_next_computed = cov_integrate(controller.model, controller.states['q'].cx_start, controller.states['qdot'].cx_start, controller.controls.cx_start, controller.stochastic_variables["cov"].cx_start, cov_derivative_func, states_derivative_func)
 
             cov_integration_defect = controller.stochastic_variables["cov"].cx_end - cov_next_computed
 

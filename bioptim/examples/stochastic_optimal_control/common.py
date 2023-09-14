@@ -143,7 +143,7 @@ def integrator_collocations(model, polynomial_degree, n_shooting, duration, stat
     return states_end, defects
 
 
-def integrator_rk4(q, qdot, u, stochastic_variables, fun_cov, fun_states, n_shooting, duration):
+def integrator_rk4(model, q, qdot, u, stochastic_variables, fun_cov, fun_states, n_shooting, duration):
     step_time = duration / n_shooting
     n_step = 5
     h_norm = 1 / n_step
@@ -161,13 +161,13 @@ def integrator_rk4(q, qdot, u, stochastic_variables, fun_cov, fun_states, n_shoo
 
     for i in range(1, n_step + 1):
         k1_states = fun_states(x[:nb_q, i-1], x[nb_q:, i-1], u)
-        k1_cov = fun_cov(x[:nb_q, i-1], x[nb_q:, i-1], s[:, i-1])
+        k1_cov = fun_cov(x[:nb_q, i-1], x[nb_q:, i-1], s[:, i-1], model.motor_noise_magnitude)
         k2_states = fun_states(x[:nb_q, i-1] + h / 2 * k1_states[:nb_q], x[nb_q:, i-1] + h / 2 * k1_states[nb_q:], u)
-        k2_cov = fun_cov(x[:nb_q, i-1] + h / 2 * k1_states[:nb_q], x[nb_q:, i-1] + h / 2 * k1_states[nb_q:], s[:, i-1] + h / 2 * k1_cov)
+        k2_cov = fun_cov(x[:nb_q, i-1] + h / 2 * k1_states[:nb_q], x[nb_q:, i-1] + h / 2 * k1_states[nb_q:], s[:, i-1] + h / 2 * k1_cov, model.motor_noise_magnitude)
         k3_states = fun_states(x[:nb_q, i-1] + h / 2 * k2_states[:nb_q], x[nb_q:, i-1] + h / 2 * k2_states[nb_q:], u)
-        k3_cov = fun_cov(x[:nb_q, i-1] + h / 2 * k2_states[:nb_q], x[nb_q:, i-1] + h / 2 * k2_states[nb_q:], s[:, i-1] + h / 2 * k2_cov)
+        k3_cov = fun_cov(x[:nb_q, i-1] + h / 2 * k2_states[:nb_q], x[nb_q:, i-1] + h / 2 * k2_states[nb_q:], s[:, i-1] + h / 2 * k2_cov, model.motor_noise_magnitude)
         k4_states = fun_states(x[:nb_q, i-1] + h * k3_states[:nb_q], x[nb_q:, i-1] + h * k3_states[nb_q:], u)
-        k4_cov = fun_cov(x[:nb_q, i-1] + h * k3_states[:nb_q], x[nb_q:, i-1] + h * k3_states[nb_q:], s[:, i-1] + h * k3_cov)
+        k4_cov = fun_cov(x[:nb_q, i-1] + h * k3_states[:nb_q], x[nb_q:, i-1] + h * k3_states[nb_q:], s[:, i-1] + h * k3_cov, model.motor_noise_magnitude)
         x[:, i] = np.reshape(x[:, i-1] + h / 6 * (k1_states + 2 * k2_states + 2 * k3_states + k4_states), (-1, ))
         s[:, i] = np.reshape(s[:, i-1] + h / 6 * (k1_cov + 2 * k2_cov + 2 * k3_cov + k4_cov), (-1, ))
 
@@ -396,27 +396,42 @@ def get_cov_init_dms(model,
 
     states_full = cas.vertcat(x_q_joints, x_qdot_joints)
 
-    dx_dt = model.dynamics_numerical(
+    dx_dt_without = model.dynamics_numerical(
         states_full,
         controls_sym,
         stochastic_variables_sym,
+        with_noise=False
     )
 
-    A = cas.jacobian(dx_dt, states_full)
+    dx_dt_with = model.dynamics_numerical(
+        states_full,
+        controls_sym,
+        stochastic_variables_sym,
+        with_noise=True
+    )
+
+    A = cas.jacobian(dx_dt_with, states_full)
+    B = cas.jacobian(dx_dt_with, model.motor_noise_sym)
+
+    sigma_w = cas.MX.zeros(model.motor_noise_sym.shape[0], model.motor_noise_sym.shape[0])
+    for i in range(model.motor_noise_sym.shape[0]):
+        sigma_w[i, i] = model.motor_noise_sym[i]
 
     cov_matrix = StochasticBioModel.reshape_sym_to_matrix(
         stochastic_variables_sym, model.matrix_shape_cov
     )
 
-    cov_derivative = A @ cov_matrix + cov_matrix @ A.T
+    sink = A @ cov_matrix + cov_matrix @ A.T
+    source = B @ sigma_w @ B.T
+    cov_derivative = sink + source
     cov_derivative_vect = StochasticBioModel.reshape_to_vector(cov_derivative)
-    cov_derivative_func = cas.Function("cov_derivative_func", [x_q_joints, x_qdot_joints, stochastic_variables_sym], [cov_derivative_vect])
-    states_derivative_func = cas.Function("states_derivative_func", [x_q_joints, x_qdot_joints, controls_sym], [dx_dt])
+    cov_derivative_func = cas.Function("cov_derivative_func", [x_q_joints, x_qdot_joints, stochastic_variables_sym, model.motor_noise_sym], [cov_derivative_vect])
+    states_derivative_func = cas.Function("states_derivative_func", [x_q_joints, x_qdot_joints, controls_sym], [dx_dt_without])
 
     cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
     cov_last[:, 0] = cov_init[:, 0]
     for i in range(n_shooting):
-        cov_next_computed = integrator_rk4(q_last[:, i], qdot_last[:, i], u_last[:, i], cov_last[:, i],
+        cov_next_computed = integrator_rk4(model, q_last[:, i], qdot_last[:, i], u_last[:, i], cov_last[:, i],
                                            cov_derivative_func, states_derivative_func, n_shooting, duration)
         cov_last[:, i+1] = cov_next_computed
     return cov_last
