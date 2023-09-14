@@ -70,7 +70,7 @@ class NonControlledMethod:
         The value of the derivative of each state dx/dt at the current time t
         """
         a_dot = 100 + b
-        b_dot = a / (((t - t_phase) + 1)*100)
+        b_dot = a / (((t - t_phase) + 1) * 100)
         c_dot = a * b + c
         return vertcat(a_dot, b_dot, c_dot)
 
@@ -273,7 +273,9 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
         sol.states[0]["b"][0], np.array([0.0, 0.00020278, 0.00080017, 0.00177652, 0.00311706, 0.00480788]), decimal=8
     )
     np.testing.assert_almost_equal(
-        sol.states[0]["c"][0], np.array([0.00000000e+00, 1.97655504e-06, 3.14066448e-05, 1.57927665e-04, 4.95862761e-04, 1.20288584e-03]), decimal=8
+        sol.states[0]["c"][0],
+        np.array([0.00000000e00, 1.97655504e-06, 3.14066448e-05, 1.57927665e-04, 4.95862761e-04, 1.20288584e-03]),
+        decimal=8,
     )
 
     # intermediate phase
@@ -301,7 +303,7 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     )
     np.testing.assert_almost_equal(
         sol.states[9]["b"][0],
-        np.array([0.2034239 , 0.20864607, 0.21391167, 0.21922012, 0.22457085, 0.22996331]),
+        np.array([0.2034239, 0.20864607, 0.21391167, 0.21922012, 0.22457085, 0.22996331]),
         decimal=8,
     )
     np.testing.assert_almost_equal(
