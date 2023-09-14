@@ -253,7 +253,7 @@ class OptimalControlProgram:
             If the dynamics of for each shooting node in phases are assumed to be the same
         """
 
-        self.check_bioptim_version()
+        self._check_bioptim_version()
 
         bio_model = self._initialize_model(bio_model)
 
@@ -363,7 +363,7 @@ class OptimalControlProgram:
             phase_transitions,
         )
 
-    def check_bioptim_version(self):
+    def _check_bioptim_version(self):
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         return
 
@@ -1431,7 +1431,7 @@ class OptimalControlProgram:
             if penalty.transition or penalty.multinode_penalty:
                 out.append(
                     penalty.weighted_function_non_threaded[t](
-                        x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), penalty.weight, _target, 1
+                        t, x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), penalty.weight, _target, 1
                     )
                 )  # dt=1 because multinode penalties behave like Mayer functions
 
@@ -1447,20 +1447,20 @@ class OptimalControlProgram:
                     stochastic_value = stochastic_value.reshape((-1, 1))
                 else:
                     state_value = np.zeros(
-                        (x.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(0) / x.shape[0]))
+                        (x.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(1) / x.shape[0]))
                     )
                     if u.size != 0:
                         control_value = np.zeros(
-                            (u.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(1) / u.shape[0]))
+                            (u.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(2) / u.shape[0]))
                         )
                     if s.size != 0:
                         stochastic_value = np.zeros(
-                            (s.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(2) / s.shape[0]))
+                            (s.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(3) / s.shape[0]))
                         )
 
                 out.append(
                     penalty.weighted_function_non_threaded[t](
-                        state_value, control_value, p, stochastic_value, penalty.weight, _target, dt
+                        t, state_value, control_value, p, stochastic_value, penalty.weight, _target, dt
                     )
                 )
             elif (
@@ -1469,12 +1469,12 @@ class OptimalControlProgram:
             ):
                 out = [
                     penalty.weighted_function_non_threaded[t](
-                        x[:, [i, i + 1]], u[:, i], p, s, penalty.weight, _target, dt
+                        t, x[:, [i, i + 1]], u[:, i], p, s, penalty.weight, _target, dt
                     )
                     for i in range(x.shape[1] - 1)
                 ]
             else:
-                out.append(penalty.weighted_function_non_threaded[t](x, u, p, s, penalty.weight, _target, dt))
+                out.append(penalty.weighted_function_non_threaded[t](t, x, u, p, s, penalty.weight, _target, dt))
             return sum1(horzcat(*out))
 
         def add_penalty(_penalties):
@@ -1871,7 +1871,6 @@ class OptimalControlProgram:
                             _phase_time[i] = _phase_time[ocp.time_phase_mapping.to_second.map_idx[i]]
             return _has_penalty
 
-        NLP.add(self, "t_initial_guess", phase_time, False)
         self.original_phase_time = phase_time
         if isinstance(phase_time, (int, float)):
             phase_time = [phase_time]

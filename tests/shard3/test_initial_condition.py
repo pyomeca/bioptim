@@ -163,7 +163,7 @@ def test_initial_guess_update(assume_phase_dynamics):
     new_time_init = InitialGuessList()
     new_time_init["time"] = [4]
 
-    ocp.update_initial_guess(new_x_init, new_u_init, new_time_init)
+    ocp.update_initial_guess(x_init=new_x_init, u_init=new_u_init, parameter_init=new_time_init)
 
     np.testing.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.ones((2, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.ones((2, 1)))
@@ -209,7 +209,6 @@ def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
         assume_phase_dynamics=assume_phase_dynamics,
         expand_dynamics=True,
     )
-
     X = InitialGuessList()
     X["q"] = [-1, -2]
     X["qdot"] = [1, 0.5]
@@ -256,7 +255,6 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
         assume_phase_dynamics=assume_phase_dynamics,
         expand_dynamics=True,
     )
-
     X = InitialGuessList()
     X["q"] = [-1, -2]
     X["qdot"] = [0.1, 0.2]
@@ -266,11 +264,13 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
     S = InitialGuessList()
 
     sol = Solution(ocp, [X, U, P, S])
-    controls = sol.controls
-    sol = sol.integrate(shooting_type=Shooting.SINGLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP)
+    sol_integrated = sol.integrate(
+        shooting_type=Shooting.SINGLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP
+    )
 
     # Check some of the results
-    states = sol.states
+    states = sol_integrated.states
+    controls = sol.controls
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position

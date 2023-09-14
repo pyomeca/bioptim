@@ -23,7 +23,7 @@ class CustomPlot:
 
     Attributes
     ----------
-    function: Callable[states, controls, parameters, stochastic_variables]
+    function: Callable[time, states, controls, parameters, stochastic_variables]
         The function to call to update the graph
     type: PlotType
         Type of plot to use
@@ -67,7 +67,7 @@ class CustomPlot:
         """
         Parameters
         ----------
-        update_function: Callable[states, controls, parameters, stochastic_variables]
+        update_function: Callable[time, states, controls, parameters, stochastic_variables]
             The function to call to update the graph
         plot_type: PlotType
             Type of plot to use
@@ -355,10 +355,11 @@ class PlotOcp:
                             casadi_function = nlp.plot[key].parameters["penalty"].weighted_function_non_threaded[0]
                             if nlp.plot[key].parameters["penalty"].multinode_penalty:
                                 if casadi_function is not None:
-                                    size_x = len(casadi_function.nominal_in(0))
-                                    size_u = len(casadi_function.nominal_in(1))
-                                    size_p = len(casadi_function.nominal_in(2))
-                                    size_s = len(casadi_function.nominal_in(3))
+                                    # size_t = len(casadi_function.nominal_in(0))
+                                    size_x = len(casadi_function.nominal_in(1))
+                                    size_u = len(casadi_function.nominal_in(2))
+                                    size_p = len(casadi_function.nominal_in(3))
+                                    size_s = len(casadi_function.nominal_in(4))
                             else:
                                 size_x = nlp.states.shape
                                 size_u = nlp.controls.shape
@@ -814,6 +815,22 @@ class PlotOcp:
                         if self.plot_func[key][i].parameters["penalty"].multinode_penalty:
                             y = np.array([np.nan])
                             penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
+
+                            t_phase = np.ndarray((0, len(penalty.nodes_phase)))
+                            if sol.ocp.n_phases == 1 and isinstance(data_time, dict):
+                                data_time = [data_time]
+                            for time_key in data_time[i].keys():
+                                t_phase_tp = np.ndarray((data_time[i][time_key].shape[0], 0))
+                                for tp in range(len(penalty.nodes_phase)):
+                                    phase_tp = penalty.nodes_phase[tp]
+                                    node_idx_tp = penalty.all_nodes_index[tp]
+                                    t_phase_tp = np.hstack(
+                                        (
+                                            t_phase_tp,
+                                            data_time[phase_tp][time_key][:, node_idx_tp][:, np.newaxis],
+                                        )
+                                    )
+                                t_phase = np.vstack((t_phase, t_phase_tp))
 
                             x_phase = np.ndarray((0, len(penalty.nodes_phase)))
                             if sol.ocp.n_phases == 1 and isinstance(data_states, dict):

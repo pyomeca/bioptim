@@ -3,7 +3,7 @@ Test for file IO.
 """
 
 from typing import Callable
-from casadi import vertcat, MX, Function, sum1, horzcat
+from casadi import vertcat, SX, MX
 import numpy as np
 import pytest
 from bioptim import (
@@ -13,7 +13,6 @@ from bioptim import (
     ConstraintList,
     ControlType,
     DynamicsEvaluation,
-    DynamicsFunctions,
     DynamicsList,
     ObjectiveFcn,
     ObjectiveList,
@@ -44,7 +43,7 @@ class NonControlledMethod:
         return NonControlledMethod, dict()
 
     @property
-    def name_dof(self):
+    def name_dof(self) -> list[str]:
         return ["a", "b", "c"]
 
     @property
@@ -57,12 +56,12 @@ class NonControlledMethod:
 
     def system_dynamics(
         self,
-        a: MX,
-        b: MX,
-        c: MX,
-        t: MX,
-        t_phase: MX,
-    ) -> MX:
+        a: MX | SX,
+        b: MX | SX,
+        c: MX | SX,
+        t: MX | SX,
+        t_phase: MX | SX,
+    ) -> MX | SX:
         """
         The system dynamics is the function that describes the model.
 
@@ -77,57 +76,18 @@ class NonControlledMethod:
 
     def custom_dynamics(
         self,
-        states: MX,
-        controls: MX,
-        parameters: MX,
+        time: MX | SX,
+        states: MX | SX,
+        controls: MX | SX,
+        parameters: MX | SX,
+        stochastic_variables: MX | SX,
         nlp: NonLinearProgram,
-        t=None,
     ) -> DynamicsEvaluation:
         t_phase = nlp.parameters.mx[-1]
+
         return DynamicsEvaluation(
-            dxdt=nlp.model.system_dynamics(a=states[0], b=states[1], c=states[2], t=t, t_phase=t_phase),
+            dxdt=self.system_dynamics(a=states[0], b=states[1], c=states[2], t=time, t_phase=t_phase),
             defects=None,
-        )
-
-    def custom_configure_dynamics_function(self, ocp, nlp, **extra_params):
-        """
-        Configure the dynamics of the system
-        """
-
-        nlp.parameters = ocp.parameters
-        DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
-
-        # Gets the t0 time for the current phase
-        t0_phase_in_ocp = sum1(nlp.parameters.mx[0 : nlp.phase_idx])
-        # Gets every time node for the current phase
-
-        dynamics_eval_horzcat = np.array(())
-        for i in range(nlp.ns):
-            t_node_in_phase = nlp.parameters.mx[nlp.phase_idx] / (nlp.ns + 1) * i
-            t_node_in_ocp = t0_phase_in_ocp + t_node_in_phase
-            extra_params["t"] = t_node_in_ocp
-
-            dynamics_eval = self.custom_dynamics(
-                nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced, nlp.parameters.mx, nlp, **extra_params
-            )
-
-            dynamics_eval_horzcat = (
-                horzcat(dynamics_eval.dxdt) if i == 0 else horzcat(dynamics_eval_horzcat, dynamics_eval.dxdt)
-            )
-
-        nlp.dynamics_func = (
-            Function(
-                "ForwardDyn",
-                [
-                    nlp.states.scaled.mx_reduced,
-                    nlp.controls.scaled.mx_reduced,
-                    nlp.parameters.mx,
-                    nlp.stochastic_variables.scaled.mx,
-                ],
-                [dynamics_eval_horzcat],
-                ["x", "u", "p", "s"],
-                ["xdot"],
-            ),
         )
 
     def declare_variables(self, ocp: OptimalControlProgram, nlp: NonLinearProgram):
@@ -167,8 +127,7 @@ class NonControlledMethod:
             as_states_dot=False,
         )
 
-        t = MX.sym("t")  # t needs a symbolic value to start computing in custom_configure_dynamics_function
-        self.custom_configure_dynamics_function(ocp, nlp, t=t)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics)
 
 
 def prepare_ocp(
@@ -204,7 +163,18 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
     custom_model = NonControlledMethod()
-    models = [custom_model for i in range(n_phase)]  # Gives custom_model as model for n phases
+    models = (
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+        NonControlledMethod(),
+    )
     n_shooting = [5 for i in range(n_phase)]  # Gives m node shooting for my n phases problem
     final_time = [0.01 for i in range(n_phase)]  # Set the final time for all my n phases
 
@@ -259,8 +229,6 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     Prepare and solve and animate a reaching task ocp
     """
 
-    # TODO It seems assume_phase_dynamics=True is broken
-
     # number of stimulation corresponding to phases
     n = 10
     # minimum time between two phase
@@ -285,201 +253,13 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (187, 1))
+    for i in range(n):
+        np.testing.assert_almost_equal(g[i * 19 + 0 : i * 19 + 15], np.zeros((15, 1)))
     np.testing.assert_almost_equal(
-        g,
-        np.array(
-            [
-                [8.88178420e-16],
-                [-3.46944695e-18],
-                [-3.79470760e-19],
-                [0.00000000e00],
-                [-2.77555756e-17],
-                [-5.63785130e-18],
-                [0.00000000e00],
-                [0.00000000e00],
-                [-2.08166817e-17],
-                [0.00000000e00],
-                [-1.11022302e-16],
-                [-6.24500451e-17],
-                [1.77635684e-15],
-                [-1.11022302e-16],
-                [-1.52655666e-16],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [9.65386567e-02],
-                [-1.06581410e-14],
-                [-8.99280650e-14],
-                [-1.65839564e-13],
-                [-2.84217094e-14],
-                [-2.36255460e-13],
-                [-5.93303184e-13],
-                [-5.32907052e-14],
-                [-3.75810494e-13],
-                [-1.21935795e-12],
-                [-7.99360578e-14],
-                [-5.08593168e-13],
-                [-2.07489581e-12],
-                [-1.11910481e-13],
-                [-6.35047570e-13],
-                [-3.19000382e-12],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [5.69680479e-02],
-                [-1.06581410e-14],
-                [-4.55191440e-14],
-                [-4.68514116e-13],
-                [-1.06581410e-14],
-                [-4.61852778e-14],
-                [-4.94271291e-13],
-                [-1.06581410e-14],
-                [-4.66293670e-14],
-                [-5.21027665e-13],
-                [-1.06581410e-14],
-                [-4.68514116e-14],
-                [-5.48672219e-13],
-                [-1.42108547e-14],
-                [-4.72955008e-14],
-                [-5.77093928e-13],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [1.66599664e-02],
-                [-7.10542736e-15],
-                [-1.64313008e-14],
-                [-3.67039732e-13],
-                [-3.55271368e-15],
-                [-1.62092562e-14],
-                [-3.78141962e-13],
-                [-7.10542736e-15],
-                [-1.62092562e-14],
-                [-3.90132371e-13],
-                [-7.10542736e-15],
-                [-1.62092562e-14],
-                [-4.02122780e-13],
-                [-3.55271368e-15],
-                [-1.64313008e-14],
-                [-4.13891144e-13],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [1.36970015e-02],
-                [-7.10542736e-15],
-                [-7.54951657e-15],
-                [-3.42170736e-13],
-                [0.00000000e00],
-                [-7.54951657e-15],
-                [-3.49942297e-13],
-                [-7.10542736e-15],
-                [-7.32747196e-15],
-                [-3.58157948e-13],
-                [-3.55271368e-15],
-                [-7.32747196e-15],
-                [-3.66595643e-13],
-                [-3.55271368e-15],
-                [-7.77156117e-15],
-                [-3.74589249e-13],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [1.26197006e-02],
-                [-3.55271368e-15],
-                [-3.55271368e-15],
-                [-3.37729844e-13],
-                [-3.55271368e-15],
-                [-3.55271368e-15],
-                [-3.44169138e-13],
-                [-3.55271368e-15],
-                [-3.55271368e-15],
-                [-3.50830476e-13],
-                [0.00000000e00],
-                [-3.55271368e-15],
-                [-3.57935903e-13],
-                [-3.55271368e-15],
-                [-3.55271368e-15],
-                [-3.64153152e-13],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [1.20589659e-02],
-                [-3.55271368e-15],
-                [-1.33226763e-15],
-                [-3.41504602e-13],
-                [-3.55271368e-15],
-                [-8.88178420e-16],
-                [-3.46389584e-13],
-                [-3.55271368e-15],
-                [-1.33226763e-15],
-                [-3.52162743e-13],
-                [-3.55271368e-15],
-                [-1.33226763e-15],
-                [-3.58379992e-13],
-                [-3.55271368e-15],
-                [-8.88178420e-16],
-                [-3.64153152e-13],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [1.17137752e-02],
-                [-3.55271368e-15],
-                [0.00000000e00],
-                [-3.48165941e-13],
-                [-3.55271368e-15],
-                [4.44089210e-16],
-                [-3.53495011e-13],
-                [-3.55271368e-15],
-                [4.44089210e-16],
-                [-3.58379992e-13],
-                [-3.55271368e-15],
-                [0.00000000e00],
-                [-3.63709063e-13],
-                [-3.55271368e-15],
-                [0.00000000e00],
-                [-3.69038133e-13],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [1.14792488e-02],
-                [0.00000000e00],
-                [1.33226763e-15],
-                [-3.57047725e-13],
-                [-3.55271368e-15],
-                [1.33226763e-15],
-                [-3.61932706e-13],
-                [0.00000000e00],
-                [8.88178420e-16],
-                [-3.66817687e-13],
-                [0.00000000e00],
-                [8.88178420e-16],
-                [-3.71258579e-13],
-                [0.00000000e00],
-                [1.33226763e-15],
-                [-3.76587650e-13],
-                [0.00000000e00],
-                [0.00000000e00],
-                [0.00000000e00],
-                [1.13091730e-02],
-                [-3.55271368e-15],
-                [2.22044605e-15],
-                [-3.70370401e-13],
-                [-3.55271368e-15],
-                [1.33226763e-15],
-                [-3.74811293e-13],
-                [0.00000000e00],
-                [2.22044605e-15],
-                [-3.78364007e-13],
-                [0.00000000e00],
-                [1.77635684e-15],
-                [-3.82804899e-13],
-                [0.00000000e00],
-                [1.33226763e-15],
-                [-3.88133969e-13],
-                [1.11844907e-02],
-            ]
-        ),
+        g[18:-1:19, 0],
+        [0.09652524, 0.05752794, 0.0166813, 0.01370305, 0.01262233, 0.01206028, 0.01171445, 0.01147956, 0.01130926],
     )
+    np.testing.assert_equal(g.shape, (187, 1))
 
     # Check some results
     # first phase
@@ -496,33 +276,33 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     # intermediate phase
     np.testing.assert_almost_equal(
         sol.states[5]["a"][0],
-        np.array([19.76647875, 20.01192073, 20.25746084, 20.50310011, 20.74883957, 20.99468026]),
+        np.array([19.82368302, 20.06913812, 20.31469147, 20.5603441, 20.80609698, 21.05195111]),
         decimal=2,
     )
     np.testing.assert_almost_equal(
         sol.states[5]["b"][0],
-        np.array([1.74723366, 1.78770329, 1.8286031, 1.86993181, 1.91168818, 1.95387098]),
+        np.array([1.74152087, 1.78205032, 1.82299542, 1.86435469, 1.90612665, 1.94830984]),
         decimal=2,
     )
     np.testing.assert_almost_equal(
         sol.states[5]["c"][0],
-        np.array([1.80854721, 1.89779906, 1.9902922, 2.08610429, 2.18531387, 2.28800045]),
+        np.array([1.80803497, 1.89726612, 1.98974375, 2.08554493, 2.1847476, 2.28743059]),
         decimal=2,
     )
 
     # last phase
     np.testing.assert_almost_equal(
         sol.states[9]["a"][0],
-        np.array([24.52324217, 24.75280044, 24.98245916, 25.21221914, 25.44208114, 25.67204593]),
+        np.array([24.58043802, 24.80998012, 25.03962276, 25.26936668, 25.49921265, 25.72916138]),
         decimal=2,
     )
     np.testing.assert_almost_equal(
         sol.states[9]["b"][0],
-        np.array([2.60114035, 2.64587979, 2.69096794, 2.73640393, 2.78218689, 2.82831598]),
+        np.array([2.59589214, 2.64067279, 2.68578796, 2.73123661, 2.77701775, 2.82313034]),
         decimal=2,
     )
     np.testing.assert_almost_equal(
         sol.states[9]["c"][0],
-        np.array([4.18665929, 4.34078482, 4.49910564, 4.66169752, 4.82863693, 5.00000103]),
+        np.array([4.18639942, 4.3405686, 4.49893797, 4.66158258, 4.82857814, 5.00000103]),
         decimal=2,
     )

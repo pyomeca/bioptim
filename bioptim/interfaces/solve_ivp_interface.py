@@ -25,6 +25,8 @@ def solve_ivp_interface(
         function that computes the dynamics of the system
     t_eval : np.ndarray | List[float]
         array of times t the controls u are evaluated at
+    t : np.ndarray
+        array of time
     x0 : np.ndarray
         array of initial conditions
     u : np.ndarray
@@ -176,7 +178,7 @@ def run_solve_ivp(
 
     t_span = [t_eval[0], t_eval[-1]]
     integrated_sol = solve_ivp(
-        lambda t, x: np.array(dynamics_func(x, control_function(t), params, s))[:, 0],
+        lambda t, x: np.array(dynamics_func(t, x, control_function(t), params, s))[:, 0],
         t_span=t_span,
         y0=x0,
         t_eval=np.array(t_eval, dtype=np.float64),  # prevent error with dtype=object
@@ -315,6 +317,7 @@ def piecewise_constant_u(t: float, t_eval: np.ndarray | List[float], u: np.ndarr
 def solve_ivp_bioptim_interface(
     dynamics_func: list[Callable],
     keep_intermediate_points: bool,
+    t: np.ndarray,
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
@@ -332,6 +335,8 @@ def solve_ivp_bioptim_interface(
         function that computes the dynamics of the system
     keep_intermediate_points : bool
         whether to keep the intermediate points or not
+    t : np.ndarray
+        array of time
     x0 : np.ndarray
         array of initial conditions
     u : np.ndarray

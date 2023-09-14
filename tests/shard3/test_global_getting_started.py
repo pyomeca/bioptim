@@ -67,6 +67,22 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
                 expand_dynamics=False,
             )
         return
+    elif isinstance(ode_solver_obj, OdeSolver.CVODES):
+        with pytest.raises(
+            RuntimeError,
+            match=f"CVODES cannot be used with dynamics that depends on time",
+        ):
+            ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                final_time=2,
+                n_shooting=10,
+                n_threads=n_threads,
+                use_sx=use_sx,
+                ode_solver=ode_solver_obj,
+                assume_phase_dynamics=assume_phase_dynamics,
+                expand_dynamics=False,
+            )
+        return
 
     if isinstance(ode_solver_obj, (OdeSolver.TRAPEZOIDAL)):
         control_type = ControlType.CONSTANT_WITH_LAST_NODE
@@ -1275,6 +1291,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
     weight = 10
     target = []
     fun = ocp.nlp[0].J_internal[0].weighted_function
+    t_out = []
     x_out = np.ndarray((0, 1))
     u_out = np.ndarray((0, 1))
     p_out = []
@@ -1289,7 +1306,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
             )
 
     # Note that dt=1, because the multi-node objectives are treated as mayer terms
-    out = fun[0](x_out, u_out, p_out, s_out, weight, target, 1)
+    out = fun[0](t_out, x_out, u_out, p_out, s_out, weight, target, 1)
     out_expected = sum2(sum1(sol.controls["tau"][:, :-1] ** 2)) * dt * weight
     np.testing.assert_almost_equal(out, out_expected)
 

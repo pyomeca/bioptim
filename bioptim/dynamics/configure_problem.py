@@ -713,7 +713,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[states, controls, param] | tuple[Callable[states, controls, param], ...]
+        dyn_func: Callable[time, states, controls, param, stochastic] | tuple[Callable[time, states, controls, param, stochastic], ...]
             The function to get the derivative of the states
         allow_free_variables: bool
             If it is expected the dynamics depends on more than the variable provided by bioptim. It is therefore to the
@@ -728,6 +728,7 @@ class ConfigureProblem:
 
         for func in dyn_func:
             dynamics_eval = func(
+                nlp.time_mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
@@ -743,13 +744,14 @@ class ConfigureProblem:
                 Function(
                     "ForwardDyn",
                     [
+                        nlp.time_mx,
                         nlp.states.scaled.mx_reduced,
                         nlp.controls.scaled.mx_reduced,
                         nlp.parameters.mx,
                         nlp.stochastic_variables.scaled.mx,
                     ],
                     [dynamics_dxdt],
-                    ["x", "u", "p", "s"],
+                    ["t", "x", "u", "p", "s"],
                     ["xdot"],
                     {"allow_free": allow_free_variables},
                 ),
@@ -774,6 +776,7 @@ class ConfigureProblem:
                     Function(
                         "DynamicsDefects",
                         [
+                            nlp.time_mx,
                             nlp.states.scaled.mx_reduced,
                             nlp.controls.scaled.mx_reduced,
                             nlp.parameters.mx,
@@ -781,7 +784,7 @@ class ConfigureProblem:
                             nlp.states_dot.scaled.mx_reduced,
                         ],
                         [dynamics_eval.defects],
-                        ["x", "u", "p", "s", "xdot"],
+                        ["t", "x", "u", "p", "s", "xdot"],
                         ["defects"],
                         {"allow_free": allow_free_variables},
                     )
@@ -810,13 +813,14 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[states, controls, param]
+        dyn_func: Callable[time, states, controls, param, stochastic]
             The function to get the values of contact forces from the dynamics
         """
 
         nlp.contact_forces_func = Function(
             "contact_forces_func",
             [
+                nlp.time_mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
@@ -824,6 +828,7 @@ class ConfigureProblem:
             ],
             [
                 dyn_func(
+                    nlp.time_mx,
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
@@ -832,7 +837,7 @@ class ConfigureProblem:
                     **extra_params,
                 )
             ],
-            ["x", "u", "p", "s"],
+            ["t", "x", "u", "p", "s"],
             ["contact_forces"],
         ).expand()
 
@@ -854,7 +859,7 @@ class ConfigureProblem:
             )
 
         nlp.plot["contact_forces"] = CustomPlot(
-            lambda t, x, u, p, s: nlp.contact_forces_func(x, u, p, s),
+            lambda t, x, u, p, s: nlp.contact_forces_func(t, x, u, p, s),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
             legend=all_contact_names,
@@ -880,9 +885,9 @@ class ConfigureProblem:
         )
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
-            [nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+            [nlp.time_mx, nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
             [global_soft_contact_force_func],
-            ["x", "u", "p"],
+            ["t", "x", "u", "p"],
             ["soft_contact_forces"],
         ).expand()
 
@@ -917,7 +922,7 @@ class ConfigureProblem:
                     to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
-                lambda t, x, u, p, s: nlp.soft_contact_forces_func(x, u, p, s)[(i_sc * 6) : ((i_sc + 1) * 6), :],
+                lambda t, x, u, p, s: nlp.soft_contact_forces_func(t, x, u, p, s)[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
                 legend=all_soft_contact_names,

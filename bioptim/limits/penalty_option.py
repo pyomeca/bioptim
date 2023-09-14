@@ -666,6 +666,8 @@ class PenaltyOption(OptionGeneric):
         node = controller.node_index
         param_cx = controller.parameters.cx
 
+        time_cx = controller.time.cx
+
         # Sanity check on outputs
         if len(self.function) <= node:
             for _ in range(len(self.function), node + 1):
@@ -682,6 +684,7 @@ class PenaltyOption(OptionGeneric):
         self.function[node] = controller.to_casadi_func(
             name,
             sub_fcn,
+            time_cx,
             state_cx_scaled,
             control_cx_scaled,
             param_cx,
@@ -711,18 +714,22 @@ class PenaltyOption(OptionGeneric):
             )
             self.function[node] = biorbd.to_casadi_func(
                 f"{name}",
+                # TODO: Charbie -> this is False, add stochastic_variables for start, mid AND end
                 self.function[node](
+                    time_cx,
                     controller.states_scaled.cx_end,
                     controller.controls_scaled.cx_end,
                     param_cx,
                     controller.stochastic_variables_scaled.cx_end,
                 )
                 - self.function[node](
+                    time_cx,
                     controller.states_scaled.cx_start,
                     controller.controls_scaled.cx_start,
                     param_cx,
                     controller.stochastic_variables_scaled.cx_start,
                 ),
+                time_cx,
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
@@ -809,6 +816,7 @@ class PenaltyOption(OptionGeneric):
                 (
                     (
                         self.function[node](
+                            time_cx,
                             state_cx_start_scaled,
                             controller.controls_scaled.cx_start,
                             param_cx,
@@ -819,6 +827,7 @@ class PenaltyOption(OptionGeneric):
                     ** exponent
                     + (
                         self.function[node](
+                            time_cx,
                             state_cx_end_scaled,
                             control_cx_end_scaled,
                             param_cx,
@@ -829,6 +838,7 @@ class PenaltyOption(OptionGeneric):
                     ** exponent
                 )
                 / 2,
+                time_cx,
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
@@ -836,7 +846,9 @@ class PenaltyOption(OptionGeneric):
                 target_cx,
                 dt_cx,
             )
+
             modified_fcn = modified_function(
+                time_cx,
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
@@ -847,6 +859,7 @@ class PenaltyOption(OptionGeneric):
         else:
             modified_fcn = (
                 self.function[node](
+                    time_cx,
                     state_cx_scaled,
                     control_cx_scaled,
                     param_cx,
@@ -862,6 +875,7 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function[node] = Function(
             name,
             [
+                time_cx,
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
@@ -872,6 +886,7 @@ class PenaltyOption(OptionGeneric):
             ],
             [modified_fcn],
         )
+
         self.weighted_function_non_threaded[node] = self.weighted_function[node]
 
         if ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:

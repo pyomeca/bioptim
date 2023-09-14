@@ -24,13 +24,15 @@ from bioptim import (
 
 
 def custom_dynamic(
-    states: MX, controls: MX, parameters: MX, stochastic_variables: MX, nlp: NonLinearProgram
+    time: MX, states: MX, controls: MX, parameters: MX, stochastic_variables: MX, nlp: NonLinearProgram
 ) -> DynamicsEvaluation:
     """
     The dynamics of the system using an external force (see custom_dynamics for more explanation)
 
     Parameters
     ----------
+    time: MX
+        The current time of the system
     states: MX
         The current states of the system
     controls: MX

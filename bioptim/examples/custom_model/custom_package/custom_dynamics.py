@@ -14,6 +14,7 @@ from bioptim import (
 
 
 def custom_dynamics(
+    time: MX,
     states: MX,
     controls: MX,
     parameters: MX,

@@ -96,12 +96,13 @@ def test_plot_type():
 
 
 def test_control_type():
+    assert ControlType.NONE.value == 0
     assert ControlType.CONSTANT.value == 1
     assert ControlType.LINEAR_CONTINUOUS.value == 2
-    assert ControlType.NONE.value == 0
+    assert ControlType.CONSTANT_WITH_LAST_NODE.value == 3
 
     # verify the number of elements
-    assert len(ControlType) == 3
+    assert len(ControlType) == 4
 
 
 def test_variable_type():

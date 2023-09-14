@@ -726,8 +726,8 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         model_class = original_values["bio_model"][0][0]
         model_initializer = original_values["bio_model"][0][1]
 
-        p_init = InitialGuessList()
         s_init = InitialGuessList()
+        p_init = InitialGuessList()
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
             dynamics=original_values["dynamics"][0],

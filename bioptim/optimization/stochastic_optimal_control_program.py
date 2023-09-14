@@ -100,7 +100,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     )
         self.assume_phase_dynamics = assume_phase_dynamics
 
-        self.check_bioptim_version()
+        self._check_bioptim_version()
 
         bio_model = self._initialize_model(bio_model)
 
@@ -112,6 +112,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             ode_solver = OdeSolver.COLLOCATION(
                 method=problem_type.method, polynomial_degree=problem_type.polynomial_degree
             )
+        else:
+            raise ValueError("Wrong choice of ode_solver")
 
         self._set_original_values(
             bio_model,
