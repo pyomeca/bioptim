@@ -320,8 +320,8 @@ def prepare_socp(
     epsilon = 0 if not is_robustified else 0
     constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified, quadratic=False)
     constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified, quadratic=False)
-    constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
-    constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
+    # constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
+    # constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -341,7 +341,7 @@ def prepare_socp(
     x_bounds = BoundsList()
     min_q = np.ones((nb_q, 3)) * -cas.inf
     max_q = np.ones((nb_q, 3)) * cas.inf
-    min_q[0, 0] = 0  # phi(x) = p_x?
+    min_q[0, 0] = 0
     max_q[0, 0] = 0
     x_bounds.add(
         "q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
@@ -391,11 +391,6 @@ def prepare_socp(
         )
 
     if cov_init is None:
-        # cov_init_matrix = np.array([[0.00836979, 0.00663611, 0.00855289, 0.00802526],
-        #                            [0.0034189 , 0.00416691, 0.00783711, 0.00772589],
-        #                            [0.00061915, 0.0047863 , 0.00059285, 0.00299982],
-        #                            [0.00406524, 0.00536997, 0.00726748, 0.00862853]])
-        # cov_init_matrix += cas.DM_eye(nb_q + nb_qdot) * 0.01
         cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.01
         shape_0, shape_1 = cov_init_matrix.shape[0], cov_init_matrix.shape[1]
         cov_0 = np.zeros((shape_0 * shape_1, 1))
@@ -429,22 +424,22 @@ def prepare_socp(
         initial_guess=cov_init,
         interpolation=InterpolationType.EACH_FRAME,
     )
-    s_bounds.add(
-        "cov",
-        min_bound=[-cas.inf] * n_cov,
-        max_bound=[cas.inf] * n_cov,
-        interpolation=InterpolationType.CONSTANT,
-    )
-    # cov_min = np.ones((n_cov, 3)) * -cas.inf
-    # cov_max = np.ones((n_cov, 3)) * cas.inf
-    # cov_min[:, 0] = cov_init[:, 0]
-    # cov_max[:, 0] = cov_init[:, 0]
     # s_bounds.add(
     #     "cov",
-    #     min_bound=cov_min,
-    #     max_bound=cov_max,
-    #     interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    #     min_bound=[-cas.inf] * n_cov,
+    #     max_bound=[cas.inf] * n_cov,
+    #     interpolation=InterpolationType.CONSTANT,
     # )
+    cov_min = np.ones((n_cov, 3)) * -cas.inf
+    cov_max = np.ones((n_cov, 3)) * cas.inf
+    cov_min[:, 0] = cov_init[:, 0]
+    cov_max[:, 0] = cov_init[:, 0]
+    s_bounds.add(
+        "cov",
+        min_bound=cov_min,
+        max_bound=cov_max,
+        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+    )
 
     for i in range(n_shooting + 1):
         if not test_matrix_semi_definite_positiveness(cov_init[:, i]):
@@ -671,7 +666,7 @@ def main():
     ax.plot(q_init[0], q_init[1], "-k", label="Initial guess")
     ax.plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
     ax.plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
-    ax.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
+    # ax.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
     if isinstance(socp_type, SocpType.COLLOCATION):
         nb_points = polynomial_degree + 1
     else:
