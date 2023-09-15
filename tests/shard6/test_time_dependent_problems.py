@@ -139,6 +139,7 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     for i in range(len(bio_model)):
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", phase=i)
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=0.01, phase=i)
         if minimize_time:
             objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1000, phase=i)
 
@@ -276,135 +277,108 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             if minimize_time:
                 if control_type is ControlType.CONSTANT:
                     if n_phase == 1:
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.42994886542407745)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.0730095610094896)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][30], 11.322644274010235)
-                        np.testing.assert_almost_equal(sol.time[-1], 0.5265564592305236)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.8061379831798005)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -0.03247033387511758)
+                        np.testing.assert_almost_equal(sol.time[-1], 0.7525479246782548)
                     else:
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.4453822590767244)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.08127975416241208)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][30], 10.783410413546257)
-                        np.testing.assert_almost_equal(sol.time[0][-1], 0.5328521750270141)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 19.71398866443379)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -8.494581035760161)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][30], -1.117190309770819)
-                        np.testing.assert_almost_equal(sol.time[1][-1], 0.7684344048027503)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.8064202084554257)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -0.03158472640622656)
+                        np.testing.assert_almost_equal(sol.time[0][-1], 0.7505899476414)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -1.6823897986794019)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -1.6725884947936083)
+                        np.testing.assert_almost_equal(sol.time[1][-1], 1.2182068093439873)
             else:
                 if control_type is ControlType.CONSTANT:
                     if n_phase == 1:
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 1.0627380359954306)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -0.2085296357750012)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][30], -0.3255947333266582)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.7426487623278059)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -0.11218601435037819)
                         np.testing.assert_almost_equal(sol.time[-1], 1.0)
                     else:
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 1.06273809537391)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -0.20852991499656517)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][30], -0.3255925208864834)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.7426487623279004)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -0.11218601435004287)
                         np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.6751956398396105)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], 0.2693023405309375)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][30], -0.557922378301458)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 1.7170907081856484)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -1.3961928072352583)
                         np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
 
         elif integrator is OdeSolver.RK4:
             if minimize_time:
                 if control_type is ControlType.CONSTANT:
                     if n_phase == 1:
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 10.535298506860732)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -2.5276115661911267)
-                        np.testing.assert_almost_equal(sol.time[-1], 0.4853354514411001)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 9.0456172436041)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -4.017990807857719)
+                        np.testing.assert_almost_equal(sol.time[-1], 0.8590128886362812)
                     else:
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.7300793797747384)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 12.328835008857212)
-                        np.testing.assert_almost_equal(sol.time[0][-1], 0.5988532853060373)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 1.6473004406083955)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], 5.787359865809643)
-                        np.testing.assert_almost_equal(sol.time[1][-1], 0.8310646891355389)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.6035534523730542)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 11.024665900300825)
+                        np.testing.assert_almost_equal(sol.time[0][-1], 0.7387280726931472)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -2.004325773700408)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -1.6519393514650482)
+                        np.testing.assert_almost_equal(sol.time[1][-1], 1.3272163599484914)
                 elif control_type is ControlType.LINEAR_CONTINUOUS:
                     if n_phase == 1:
-                        if use_sx:  # Awkward behavior of SX not giving the same result as MX
-                            np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.5288791823419771)
-                            np.testing.assert_almost_equal(sol.controls["tau"][0][20], 18.347404279470123)
-                            np.testing.assert_almost_equal(sol.time[-1], 0.5122303221905166)
-                        else:
-                            np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.5288791756539257)
-                            np.testing.assert_almost_equal(sol.controls["tau"][0][20], 18.34740379501906)
-                            np.testing.assert_almost_equal(sol.time[-1], 0.5122303215108029)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], -0.3392063188703631)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 2.9862617380186545)
+                        np.testing.assert_almost_equal(sol.time[-1], 0.6615905912195619)
                     else:
-                        if use_sx:  # Awkward behavior of SX not giving the same result as MX
-                            np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.5158427378040261)
-                            np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 16.891397209314942)
-                            np.testing.assert_almost_equal(sol.time[0][-1], 0.5218641453532176)
-                            np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 5.07655599497984)
-                            np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], 3.8243809447103487)
-                            np.testing.assert_almost_equal(sol.time[1][-1], 0.7603930004675463)
-                        else:
-                            np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.5499325747810617)
-                            np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 15.600053989731066)
-                            np.testing.assert_almost_equal(sol.time[0][-1], 0.5326454304377053)
-                            np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -13.873289688946695)
-                            np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -14.970529786924043)
-                            np.testing.assert_almost_equal(sol.time[1][-1], 0.8420270644169306)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.4071960379641867)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 3.816939990893976)
+                        np.testing.assert_almost_equal(sol.time[0][-1], 0.7323392725426761)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 7.0156443600333205)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.048756917809465394)
+                        np.testing.assert_almost_equal(sol.time[1][-1], 1.4205875278838858)
             else:
                 if control_type is ControlType.CONSTANT:
                     if n_phase == 1:
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.5139094577012504)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.30702401389985223)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.4054079577887415)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 2.2210055455266042)
                         np.testing.assert_almost_equal(sol.time[-1], 1.0)
                     else:
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.36302489459617565)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.5619574586283279)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.4787784694832532)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -1.118653718167358)
                         np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.39333341058217297)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.18690010862175288)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -1.5658712082429582)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], 0.11748321399843228)
                         np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
                 elif control_type is ControlType.LINEAR_CONTINUOUS:
                     if n_phase == 1:
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.6323325534859385)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.20780290226142156)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.1584600044201273)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 2.3058806527015654)
                         np.testing.assert_almost_equal(sol.time[-1], 1.0)
                     else:
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.6931500418424145)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.10071649020791093)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.15846000442016803)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 2.305880652701225)
                         np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.39912562629699866)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.2628253034251759)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -1.7691580840192065)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], 0.005506940029476814)
                         np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
 
         elif integrator is OdeSolver.COLLOCATION:
             if minimize_time:
                 if control_type is ControlType.CONSTANT:
                     if n_phase == 1:
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.277936975867381)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 5.129630718448575)
-                        np.testing.assert_almost_equal(sol.time[-1], 0.5046784032465458)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.5969550797208588)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 8.403138437314404)
+                        np.testing.assert_almost_equal(sol.time[-1], 0.7162941229409554)
                     else:
-                        if use_sx:  # Awkward behavior of SX not giving the same result as MX
-                            np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.38243230552609514)
-                            np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -1.5926093734442652)
-                            np.testing.assert_almost_equal(sol.time[0][-1], 0.5830594892396639)
-                            np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -5.307691181037627)
-                            np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.0010755539775450678)
-                            np.testing.assert_almost_equal(sol.time[1][-1], 1.0283004173524801)
-                        else:
-                            np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.31718053752742986)
-                            np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.6974492990131168)
-                            np.testing.assert_almost_equal(sol.time[0][-1], 0.5999658199171516)
-                            np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -8.056163776372038)
-                            np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.0024829060821942037)
-                            np.testing.assert_almost_equal(sol.time[1][-1], 1.046108398309169)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.49318250188879587)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 8.964059202431075)
+                        np.testing.assert_almost_equal(sol.time[0][-1], 0.759023435059598)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -1.874918945886359)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -2.7233090441206573)
+                        np.testing.assert_almost_equal(sol.time[1][-1], 1.430716792777341)
             else:
                 if control_type is ControlType.CONSTANT:
                     if n_phase == 1:
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.3125420865819661)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.339682333868206)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.20540828181779627)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.5314201112799963)
                         np.testing.assert_almost_equal(sol.time[-1], 1.0)
                     else:
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.4338677935898688)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.11953219689658545)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.20540828116882126)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.5314201138799158)
                         np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.32205855052780985)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.2268512813479941)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -1.3688983057043562)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], 0.11688816680719695)
                         np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
 
         elif integrator is OdeSolver.TRAPEZOIDAL:
@@ -412,30 +386,30 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                 if control_type is ControlType.LINEAR_CONTINUOUS:
                     if n_phase == 1:
                         if use_sx:  # Awkward behavior of SX not giving the same result as MX
-                            np.testing.assert_almost_equal(sol.controls["tau"][0][10], -1.4620815821959086)
-                            np.testing.assert_almost_equal(sol.controls["tau"][0][20], -6.207177719873385)
-                            np.testing.assert_almost_equal(sol.time[-1], 0.6188543569139974)
+                            np.testing.assert_almost_equal(sol.controls["tau"][0][10], 1.4387867097106664e-05)
+                            np.testing.assert_almost_equal(sol.controls["tau"][0][20], 4.152749205255539e-05)
+                            np.testing.assert_almost_equal(sol.time[-1], 1.2808173674288864e-10)
                         else:
-                            np.testing.assert_almost_equal(sol.controls["tau"][0][10], 19.79146328766602)
-                            np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.2268976397399745)
-                            np.testing.assert_almost_equal(sol.time[-1], 0.5656036202933684)
+                            np.testing.assert_almost_equal(sol.controls["tau"][0][10], 26.71726475821808)
+                            np.testing.assert_almost_equal(sol.controls["tau"][0][20], 6.889550807490503)
+                            np.testing.assert_almost_equal(sol.time[-1], 1.2808198950794705e-10)
                     else:
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.6680888144935364)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 1.2309073456939035)
-                        np.testing.assert_almost_equal(sol.time[0][-1], 0.7768173672113625)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 4.3591737603853336)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.18140833455869917)
-                        np.testing.assert_almost_equal(sol.time[1][-1], 2.2257495170567285)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.8593782322287159)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -3.679698945048069)
+                        np.testing.assert_almost_equal(sol.time[0][-1], 0.8703699395814744)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 1.641852245067451)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -1.693859152701225)
+                        np.testing.assert_almost_equal(sol.time[1][-1], 2.5755591693627116)
             else:
                 if control_type is ControlType.LINEAR_CONTINUOUS:
                     if n_phase == 1:
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.8003065798999568)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -1.5700439680018332)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.7953894180833663)
+                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -2.127110340642236)
                         np.testing.assert_almost_equal(sol.time[-1], 1.0)
                     else:
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.8003065798989261)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -1.5700439680074494)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.7953894180833854)
+                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -2.127110340642238)
                         np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -0.007831939511758989)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.11333547011240175)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -1.3807528747673066)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -2.764254286944976)
                         np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
