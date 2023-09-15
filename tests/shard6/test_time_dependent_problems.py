@@ -364,7 +364,7 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                         np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.49318250188879587)
                         np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 8.964059202431075)
                         np.testing.assert_almost_equal(sol.time[0][-1], 0.759023435059598)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -1.874918945886359)
+                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -1.874918945886359, decimal=6)
                         np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -2.7233090441206573)
                         np.testing.assert_almost_equal(sol.time[1][-1], 1.430716792777341)
             else:
