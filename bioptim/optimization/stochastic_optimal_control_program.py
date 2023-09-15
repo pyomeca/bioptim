@@ -115,6 +115,12 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             )
         elif isinstance(problem_type, SocpType.DMS):
             ode_solver = OdeSolver.RK4()
+        elif isinstance(problem_type, SocpType.IRK):
+            ode_solver = OdeSolver.IRK(
+                method=problem_type.method, polynomial_degree=problem_type.polynomial_degree
+            )
+
+
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 

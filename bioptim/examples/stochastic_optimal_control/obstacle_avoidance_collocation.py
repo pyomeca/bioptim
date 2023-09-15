@@ -41,6 +41,7 @@ from bioptim.examples.stochastic_optimal_control.common import (
     get_cov_init_collocations,
     get_cov_init_dms,
     get_cov_init_slicot,
+    get_cov_init_irk,
     test_matrix_semi_definite_positiveness,
     test_robustified_constraint_value,
     test_eigen_values,
@@ -418,16 +419,18 @@ def prepare_socp(
                                     cov_0,
                                     motor_noise_magnitude)
         else:
-            # cov_init = get_cov_init_dms(bio_model,
-            #                         n_shooting,
-            #                         n_stochastic,
-            #                         final_time,
-            #                         q_init,
-            #                         qdot_init,
-            #                         u_init,
-            #                         cov_0,
-            #                         motor_noise_magnitude)
-            cov_init = get_cov_init_slicot(bio_model,
+            cov_init = get_cov_init_irk(bio_model,
+                                                 n_shooting,
+                                                 n_stochastic,
+                                                 polynomial_degree,
+                                                 final_time,
+                                                 q_init,
+                                                 qdot_init,
+                                                 u_init,
+                                                 cov_0,
+                                                 motor_noise_magnitude)
+
+            cov_init2 = get_cov_init_dms(bio_model,
                                     n_shooting,
                                     n_stochastic,
                                     final_time,
@@ -436,6 +439,16 @@ def prepare_socp(
                                     u_init,
                                     cov_0,
                                     motor_noise_magnitude)
+            #
+            # cov_init = get_cov_init_slicot(bio_model,
+            #                         n_shooting,
+            #                         n_stochastic,
+            #                         final_time,
+            #                         q_init,
+            #                         qdot_init,
+            #                         u_init,
+            #                         cov_0,
+            #                         motor_noise_magnitude)
     s_init.add(
         "cov",
         initial_guess=cov_init,
@@ -521,7 +534,7 @@ def main():
     # TODO: include SLICOT solver (for solving ill-conditioned, ill-scaled, large-scale problems by preserving the stucture of the problem)
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
-    solver.set_maximum_iterations(0) # 1000
+    solver.set_maximum_iterations(1000) # 1000
     # solver._nlp_scaling_method = "None"
 
     if run_step_1:

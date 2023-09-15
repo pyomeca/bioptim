@@ -169,7 +169,7 @@ def integrator_collocations(
     # Concatenate constraints
     defects = cas.vertcat(*defects)
 
-    return states_end, defects
+    return states_end, defects, _d
 
 
 def integrator_rk4(
@@ -397,7 +397,7 @@ def get_cov_init_collocations(
             states_full, cas.vertcat(z_q_joints[i], z_qdot_joints[i])
         )
 
-    states_end, defects = integrator_collocations(
+    states_end, defects, _ = integrator_collocations(
         model,
         polynomial_degree,
         n_shooting,
@@ -498,6 +498,116 @@ def get_cov_init_collocations(
         for s0 in range(2 * n_joints):
             for s1 in range(2 * n_joints):
                 cov_last[2 * n_joints * s1 + s0, i + 1] = cov_this_time[s0, s1]
+    return cov_last
+
+
+def get_cov_init_irk(
+    model,
+    n_shooting,
+    n_stochastic,
+    polynomial_degree,
+    duration,
+    q_last,
+    qdot_last,
+    u_last,
+    cov_init,
+    motor_noise_magnitude,
+):
+
+    n_q = model.nb_q
+    n_joints = model.nb_u
+    nx = n_joints * 2
+
+    x_q_joints = type(model.motor_noise_sym).sym("x_q_joints", n_joints, 1)
+    x_qdot_joints = type(model.motor_noise_sym).sym("x_qdot_joints", n_joints, 1)
+    z_q_joints = []
+    z_qdot_joints = []
+    for i in range(polynomial_degree):
+        z_q_joints += [type(model.motor_noise_sym).sym("z_q_joints", n_joints, 1)]
+        z_qdot_joints += [type(model.motor_noise_sym).sym("z_qdot_joints", n_joints, 1)]
+    controls_sym = type(model.motor_noise_sym).sym("controls", n_q, 1)
+    stochastic_variables_sym = type(model.motor_noise_sym).sym(
+        "stochastic_variables", n_stochastic, 1
+    )
+
+    x = cas.vertcat(x_q_joints, x_qdot_joints)
+    z = []
+    for i in range(polynomial_degree):
+        z = cas.horzcat(
+            z, cas.vertcat(z_q_joints[i], z_qdot_joints[i])
+        )
+
+    p = cas.vertcat( controls_sym, model.motor_noise_sym)
+
+    states_end, defects, D = integrator_collocations(
+        model,
+        polynomial_degree,
+        n_shooting,
+        duration,
+        cas.horzcat(x,z),
+        controls_sym,
+        stochastic_variables_sym,
+    )
+
+    # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
+    vfcn = cas.Function(
+        "vfcn",
+        [z.reshape((-1,1)), x, p],
+        [defects],
+    ).expand()
+
+    # Create a implicit function instance to solve the system of equations
+    ifcn = cas.rootfinder("ifcn", "newton", vfcn)
+    x_irk_points = ifcn(cas.MX(), x, p)
+    w = [x if r == 0 else x_irk_points[(r - 1) * nx: r * nx] for r in range(polynomial_degree + 1)]
+
+    # Get an expression for the state at the end of the finite element
+    xf = type(model.motor_noise_sym).zeros(nx, polynomial_degree + 1)  # 0 #
+    for r in range(polynomial_degree + 1):
+        xf[:, r] = xf[:, r - 1] + D[r] * w[r]
+
+
+    # Fixed-step integrator
+    irk_integrator = cas.Function('irk_integrator', {'x0': x, 'p': p, 'xf': xf[:,-1]},
+                              cas.integrator_in(), cas.integrator_out())
+
+    jac = irk_integrator.factory('jac_IRK', irk_integrator.name_in(), ['jac:xf:x0', 'jac:xf:p'])
+
+    cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
+    cov_last[:, 0] = cov_init[:, 0]
+
+    sigma_w_dm = cas.DM_eye(motor_noise_magnitude.shape[0]) * motor_noise_magnitude
+
+
+    for i in range(n_shooting):
+        u = np.concatenate((u_last[:, i], np.zeros(motor_noise_magnitude.shape[0])))
+        x0 = np.concatenate(
+            (q_last[:, i],
+             qdot_last[:, i]))
+
+        J = jac(x0=x0, p=u)
+        phi_x = J['jac_xf_x0']
+        phi_w = J['jac_xf_p'][:, n_joints:]
+
+
+        cov_matrix = np.zeros((nx, nx))
+        for s0 in range(nx):
+            for s1 in range(nx):
+                cov_matrix[s1, s0] = cov_last[s0 * nx + s1, i]
+
+        sink = phi_x @ cov_matrix @ phi_x.T
+        source = phi_w @ sigma_w_dm @ phi_w.T
+
+
+        cov_this_time = sink + source
+        if not (np.all(np.linalg.eigvals(cov_this_time.full()) >= 0)):
+            print("not semi-positive definite")
+
+        for s0 in range(nx):
+            for s1 in range(nx):
+                cov_last[nx * s1 + s0, i+1] = cov_this_time[s0, s1]
+
+
     return cov_last
 
 
