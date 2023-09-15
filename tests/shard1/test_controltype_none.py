@@ -199,6 +199,9 @@ def prepare_ocp(
     objective_functions.add(
         ObjectiveFcn.Mayer.MINIMIZE_STATE, target=5, key="c", node=Node.END, quadratic=True, weight=1, phase=9
     )
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, target=100, key="a", node=Node.END, quadratic=True, weight=0.001, phase=9
+    )
 
     # Sets the bound for all the phases
     x_bounds = BoundsList()
@@ -249,10 +252,10 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 3.7538907296826786e-14, decimal=15)
+    np.testing.assert_almost_equal(f[0, 0], 0.2919065990591678)
 
     # Check finishing time
-    np.testing.assert_almost_equal(sol.time[-1][-1], 0.8194142280853297, decimal=8)
+    np.testing.assert_almost_equal(sol.time[-1][-1], 0.8299336018055604)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -260,54 +263,54 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
         np.testing.assert_almost_equal(g[i * 19 + 0 : i * 19 + 15], np.zeros((15, 1)))
     np.testing.assert_almost_equal(
         g[18:-1:19, 0],
-        [0.09839884, 0.09722443, 0.09613614, 0.09451057, 0.09237128, 0.08906275, 0.08277503, 0.06801889, 0.04278909],
+        [0.09848005, 0.0974753, 0.09652673, 0.09540809, 0.0939693, 0.09197322, 0.08894771, 0.08377719, 0.07337567],
     )
     np.testing.assert_equal(g.shape, (187, 1))
 
     # Check some results
     # first phase
     np.testing.assert_almost_equal(
-        sol.states[0]["a"][0], np.array([0.0, 1.96797811, 3.93596411, 5.90396563, 7.87198997, 9.84004415]), decimal=8
+        sol.states[0]["a"][0], np.array([0.0, 1.96960231, 3.93921216, 5.90883684, 7.87848335, 9.84815843]), decimal=8
     )
     np.testing.assert_almost_equal(
-        sol.states[0]["b"][0], np.array([0.0, 0.00020278, 0.00080017, 0.00177652, 0.00311706, 0.00480788]), decimal=8
+        sol.states[0]["b"][0], np.array([0.0, 0.00019337, 0.00076352, 0.00169617, 0.00297785, 0.0045958]), decimal=8
     )
     np.testing.assert_almost_equal(
         sol.states[0]["c"][0],
-        np.array([0.00000000e00, 1.97655504e-06, 3.14066448e-05, 1.57927665e-04, 4.95862761e-04, 1.20288584e-03]),
+        np.array([0.00000000e00, 1.88768128e-06, 3.00098595e-05, 1.50979104e-04, 4.74274962e-04, 1.15105831e-03]),
         decimal=8,
     )
 
     # intermediate phase
     np.testing.assert_almost_equal(
         sol.states[5]["a"][0],
-        np.array([47.87972855, 49.66266983, 51.44572066, 53.22888357, 55.01216107, 56.79555557]),
+        np.array([48.20121535, 50.04237763, 51.88365353, 53.72504579, 55.56655709, 57.40819004]),
         decimal=8,
     )
     np.testing.assert_almost_equal(
         sol.states[5]["b"][0],
-        np.array([0.09163684, 0.09771425, 0.10393632, 0.11029953, 0.11680052, 0.12343603]),
+        np.array([0.08926236, 0.0953631, 0.10161488, 0.10801404, 0.11455708, 0.1212406]),
         decimal=8,
     )
     np.testing.assert_almost_equal(
         sol.states[5]["c"][0],
-        np.array([0.61222331, 0.70620465, 0.81049579, 0.92581076, 1.05288683, 1.1924847]),
+        np.array([0.60374532, 0.69912979, 0.80528341, 0.92297482, 1.05299864, 1.19617563]),
         decimal=8,
     )
 
     # last phase
     np.testing.assert_almost_equal(
         sol.states[9]["a"][0],
-        np.array([76.18527156, 77.35021111, 78.51521162, 79.6802736, 80.84539753, 82.01058392]),
+        np.array([82.06013653, 82.2605896, 82.4610445, 82.6615012, 82.86195973, 83.06242009]),
         decimal=8,
     )
     np.testing.assert_almost_equal(
         sol.states[9]["b"][0],
-        np.array([0.2034239, 0.20864607, 0.21391167, 0.21922012, 0.22457085, 0.22996331]),
+        np.array([0.22271563, 0.22362304, 0.22453167, 0.2254415, 0.22635253, 0.22726477]),
         decimal=8,
     )
     np.testing.assert_almost_equal(
         sol.states[9]["c"][0],
-        np.array([3.75034091, 3.97914086, 4.21820146, 4.46782563, 4.72832104, 5.00000019]),
+        np.array([4.83559727, 4.88198772, 4.92871034, 4.97576671, 5.02315844, 5.07088713]),
         decimal=8,
     )
