@@ -1,4 +1,4 @@
-from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX, symvar
+from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX, symvar, integrator_in, integrator_out
 import numpy as np
 
 from ..misc.enums import ControlType, DefectType
@@ -1051,18 +1051,12 @@ class IRK(COLLOCATION):
             if any(var.name() == self.model.motor_noise_sym.name() for var in sym_variables):
                 p = vertcat(p, self.model.motor_noise_sym)
 
+        p = vertcat(p, self.param_sym, self.s_sym)
+
         self.function = Function(
             "integrator",
-            [
-                self.x_sym[0],
-                p,
-                self.param_sym,
-                self.s_sym,
-            ],
-            [xf, xall],
-            ["x0", "p", "params", "s"],
-            ["xf", "xall"],
-            {"allow_free": self.allow_free_variables},
+            {'x0': self.x_sym[0], 'p': p, 'xf': xf},
+            integrator_in(), integrator_out(),
         )
 
 
