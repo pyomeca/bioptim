@@ -95,7 +95,7 @@ class MultiBiorbdModel:
         Parameters
         ----------
         variable: str
-            The variable to get the index from such as 'q', 'qdot', 'qddot', 'tau', 'contact'
+            The variable to get the index from such as 'q', 'qdot', 'qddot', 'tau', 'contact', 'markers'
         model_index: int
             The index of the model to get the index from
 
@@ -104,43 +104,90 @@ class MultiBiorbdModel:
         range
             The index of the variable in the global vector
         """
+        current_idx = 0
+
         if variable == "q":
-            current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nb_q
             return range(current_idx, current_idx + self.models[model_index].nb_q)
+
         elif variable == "qdot":
-            current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nb_qdot
             return range(current_idx, current_idx + self.models[model_index].nb_qdot)
+
         elif variable == "qddot":
-            current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nb_qddot
             return range(current_idx, current_idx + self.models[model_index].nb_qddot)
+
         elif variable == "qddot_joints":
-            current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nb_qddot - model.nb_root
             return range(
                 current_idx, current_idx + self.models[model_index].nb_qddot - self.models[model_index].nb_root
             )
+
         elif variable == "qddot_root":
-            current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nb_root
             return range(current_idx, current_idx + self.models[model_index].nb_root)
+
         elif variable == "tau":
-            current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nb_tau
             return range(current_idx, current_idx + self.models[model_index].nb_tau)
+
         elif variable == "contact":
-            current_idx = 0
             for model in self.models[:model_index]:
                 current_idx += model.nb_rigid_contacts
             return range(current_idx, current_idx + self.models[model_index].nb_rigid_contacts)
+
+        elif variable == "markers":
+            for model in self.models[:model_index]:
+                current_idx += model.nb_markers
+            return range(current_idx, current_idx + self.models[model_index].nb_markers)
+
+    def global_variable_id(self, variable: str, model_index: int, model_variable_id: int) -> int:
+        """
+        Get the id of the variable in the global vector for a given model index
+
+        Parameters
+        ----------
+        variable: str
+            The variable to get the index from such as 'q', 'qdot', 'qddot', 'tau', 'contact', 'markers'
+        model_index: int
+            The index of the model to get the index from
+        model_variable_id: int
+            The id of the variable in the model vector
+
+        Returns
+        -------
+        int
+            The id of the variable in the global vector
+        """
+        self.variable_index(variable, model_index)[model_variable_id]
+
+    def local_variable_id(self, variable: str, global_index: int) -> tuple(int, int):
+        """
+        Get the id of the variable in the local vector and the model index for a given index of the global vector
+
+        Parameters
+        ----------
+        variable: str
+            The variable to get the index from such as 'q', 'qdot', 'qddot', 'tau', 'contact', 'markers'
+        global_index: int
+            The index of the variable in the global vector
+
+        Returns
+        -------
+        tuple(int, int)
+            The id of the variable in the local vector and the model index
+        """
+
+        for model_id, model in enumerate(self.models):
+            if global_index in self.variable_index(variable, model_id):
+                return global_index - self.variable_index(variable, model_id)[0], model_id
 
     @property
     def nb_models(self) -> int:
@@ -510,10 +557,18 @@ class MultiBiorbdModel:
         return sum(model.nb_markers for model in self.models)
 
     def marker_index(self, name):
-        raise NotImplementedError("marker_index is not implemented yet for MultiBiorbdModel")
+        for i, model in enumerate(self.models):
+            if name in model.marker_names:
+                marker_id = biorbd.marker_index(model, name)
+                return self.variable_index("marker", i) + marker_id
+
+        raise ValueError(f"{marker_name} is not in the MultiBiorbdModel")
 
     def marker(self, q, index, reference_segment_index=None) -> MX:
-        raise NotImplementedError("marker is not implemented yet for MultiBiorbdModel")
+        local_marker_id, model_id = self.local_variable_id("marker", index)
+        q_model = q[self.variable_index("q", model_id)]
+
+        return self.models[model_id].marker(q_model, local_marker_id, reference_segment_index)
 
     @property
     def nb_rigid_contacts(self) -> int:
