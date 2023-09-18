@@ -64,7 +64,11 @@ class RockitModel:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         u = DynamicsFunctions.get(nlp.controls["u"], controls)
 
-        qddot = -0.1*(1-q**2)*qdot - q + u
+        motor_noise = 0
+        if with_noise:
+            motor_noise = self.motor_noise_sym
+
+        qddot = -0.1*(1-q**2)*qdot - q + u + motor_noise
 
         return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
@@ -76,7 +80,11 @@ class RockitModel:
         qdot = states[self.nb_q:]
         u = controls
 
-        qddot = -0.1*(1-q**2)*qdot - q + u
+        motor_noise = 0
+        if with_noise:
+            motor_noise = self.motor_noise_sym
+
+        qddot = -0.1*(1-q**2)*qdot - q + u + motor_noise
 
         return vertcat(qdot, qddot)
 

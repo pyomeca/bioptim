@@ -23,7 +23,7 @@ from bioptim import (
     StochasticBioModel,
 )
 from bioptim.examples.stochastic_optimal_control.rockit_model import RockitModel
-from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init
+from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init_irk
 
 def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
@@ -260,18 +260,18 @@ def prepare_socp(
     P0 = np.diag([0.01 ** 2, 0.1 ** 2])
 
     if cov_init is None:
-        cov_init_matrix = P0
-        cov_init = get_cov_init(bio_model,
-                                n_shooting,
-                                n_stochastic,
-                                polynomial_degree,
-                                final_time,
-                                q_init,
-                                qdot_init,
-                                u_init,
-                                m_init,
-                                cov_init_matrix,
-                                motor_noise_magnitude)
+        cov_0 = P0
+        cov_init = get_cov_init_irk(bio_model,
+                                    n_shooting,
+                                    n_stochastic,
+                                    polynomial_degree,
+                                    final_time,
+                                    q_init,
+                                    qdot_init,
+                                    u_init,
+                                    cov_0,
+                                    motor_noise_magnitude)
+
 
     s_init.add(
         "cov",
@@ -320,7 +320,8 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    bio_model = RockitModel()
+    socp_type = SocpType.IRK()
+    bio_model = RockitModel(socp_type=socp_type)
     n_shooting = 40
     final_time = 1
     polynomial_degree = 5
