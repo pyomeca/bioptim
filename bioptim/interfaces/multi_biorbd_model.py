@@ -149,8 +149,9 @@ class MultiBiorbdModel:
             return range(current_idx, current_idx + self.models[model_index].nb_markers)
 
         else:
-            raise ValueError("The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'"
-                             f" and {variable} was sent.")
+            raise ValueError(
+                "The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'" f" and {variable} was sent."
+            )
 
     def global_variable_id(self, variable: str, model_index: int, model_variable_id: int) -> int:
         """
