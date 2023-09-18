@@ -148,6 +148,10 @@ class MultiBiorbdModel:
                 current_idx += model.nb_markers
             return range(current_idx, current_idx + self.models[model_index].nb_markers)
 
+        else:
+            raise ValueError("The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'"
+                             f" and {variable} was sent.")
+
     def global_variable_id(self, variable: str, model_index: int, model_variable_id: int) -> int:
         """
         Get the id of the variable in the global vector for a given model index
@@ -168,7 +172,7 @@ class MultiBiorbdModel:
         """
         self.variable_index(variable, model_index)[model_variable_id]
 
-    def local_variable_id(self, variable: str, global_index: int) -> tuple(int, int):
+    def local_variable_id(self, variable: str, global_index: int) -> tuple[int, int]:
         """
         Get the id of the variable in the local vector and the model index for a given index of the global vector
 
@@ -559,13 +563,13 @@ class MultiBiorbdModel:
     def marker_index(self, name):
         for i, model in enumerate(self.models):
             if name in model.marker_names:
-                marker_id = biorbd.marker_index(model, name)
-                return self.variable_index("marker", i) + marker_id
+                marker_id = biorbd.marker_index(model.model, name)
+                return self.variable_index("markers", model_index=i)[marker_id]
 
         raise ValueError(f"{marker_name} is not in the MultiBiorbdModel")
 
     def marker(self, q, index, reference_segment_index=None) -> MX:
-        local_marker_id, model_id = self.local_variable_id("marker", index)
+        local_marker_id, model_id = self.local_variable_id("markers", index)
         q_model = q[self.variable_index("q", model_id)]
 
         return self.models[model_id].marker(q_model, local_marker_id, reference_segment_index)
