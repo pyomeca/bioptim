@@ -523,7 +523,8 @@ def main():
 
     # --- Prepare the ocp --- #
     # socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
-    socp_type = SocpType.DMS()
+    # socp_type = SocpType.DMS()
+    socp_type = SocpType.IRK()
     bio_model = MassPointModel(socp_type=socp_type)
     n_shooting = 39
     polynomial_degree = 5

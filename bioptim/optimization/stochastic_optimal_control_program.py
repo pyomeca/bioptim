@@ -262,6 +262,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             self._prepare_stochastic_dynamics_dms(
                 constraints=constraints,
             )
+        elif isinstance(self.problem_type, SocpType.IRK):
+            self._prepare_stochastic_dynamics_irk(
+                constraints=constraints,
+            )
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 
@@ -394,6 +398,32 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         for i_phase, nlp in enumerate(self.nlp):
             constraints.add(
                 ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_DMS,
+                node=Node.ALL_SHOOTING,
+                phase=i_phase,
+            )
+            # if i_phase > 0 and i_phase < len(self.nlp) - 1:
+            #     covariance_phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
+
+        # # Constraints for P inter-phase
+        # for pt in covariance_phase_transition:
+        #     pt.name = f"COVARIANCE_PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
+        #     pt.list_index = -1
+        #     pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
+
+    def _prepare_stochastic_dynamics_irk(self, constraints):
+        """
+        Adds the internal constraint needed for the explicit formulation of the stochastic ocp using IRK
+        direct multiple-shooting as implemented in RockIt (example matrix_lyapunov.py).
+        """
+
+        if "ref" in self.nlp[0].stochastic_variables:
+            constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+
+        # Constraints for P inner-phase
+        # covariance_phase_transition = PhaseTransitionList()
+        for i_phase, nlp in enumerate(self.nlp):
+            constraints.add(
+                ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IRK,
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
             )

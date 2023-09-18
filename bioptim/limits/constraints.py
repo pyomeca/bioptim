@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat, ldl
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat, ldl, rootfinder, integrator_in, integrator_out
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -1038,9 +1038,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
                 @ m_matrix.T
             )
-            cov_implicit_deffect = cov_matrix_next - cov_next_computed
+            cov_implicit_defect = cov_matrix_next - cov_next_computed
 
-            out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
+            out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_defect)
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True
@@ -1155,6 +1155,129 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return cov_integration_defect
 
         @staticmethod
+        def stochastic_covariance_matrix_continuity_irk(
+            penalty,
+            controller: PenaltyController,
+        ):
+            if not controller.get_nlp.is_stochastic:
+                raise RuntimeError("This function is only valid for stochastic problems")
+
+            polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
+            nb_root = controller.model.nb_root
+
+            nu = controller.model.nb_q - nb_root
+            non_root_index_continuity = []
+            non_root_index_defects = []
+            for i in range(2):
+                for j in range(polynomial_degree + 1):
+                    non_root_index_defects += list(
+                        range(
+                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root,
+                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root + nu,
+                        )
+                    )
+                non_root_index_continuity += list(
+                    range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu)
+                )
+
+            if "cholesky_cov" in controller.stochastic_variables.keys():
+                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controller.stochastic_variables["cholesky_cov"].cx_start,
+                    controller.model.matrix_shape_cov_cholesky,
+                )
+                l_cov_matrix_next = StochasticBioModel.reshape_to_cholesky_matrix(
+                    controller.stochastic_variables["cholesky_cov"].cx_end,
+                    controller.model.matrix_shape_cov_cholesky,
+                )
+                cov_matrix = l_cov_matrix @ l_cov_matrix.T
+                cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
+            else:
+                cov_matrix = StochasticBioModel.reshape_to_matrix(
+                    controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+                )
+                cov_matrix_next = StochasticBioModel.reshape_to_matrix(
+                    controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
+                )
+
+            x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
+            x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
+            x_qdot_root = controller.cx.sym("x_qdot_root", nb_root, 1)
+            x_qdot_joints = controller.cx.sym("x_qdot_joints", nu, 1)
+
+            states_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
+
+            #TODO: correct the code from here - copy/paste from common
+
+            dynamics_xf, dynamics_xall, dynamics_defects = controller.integrate_extra_dynamics(0)(
+                states_full,
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+            )
+
+            # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
+            vfcn = Function(
+                "vfcn",
+                [z.reshape((-1, 1)), x, p],
+                [dynamics_defects],
+            ).expand()
+
+            # Create a implicit function instance to solve the system of equations
+            ifcn = rootfinder("ifcn", "newton", vfcn)
+            x_irk_points = ifcn(MX(), x, p)
+            w = [x if r == 0 else x_irk_points[(r - 1) * nx: r * nx] for r in range(polynomial_degree + 1)]
+
+            # Get an expression for the state at the end of the finite element
+            xf = type(model.motor_noise_sym).zeros(nx, polynomial_degree + 1)  # 0 #
+            for r in range(polynomial_degree + 1):
+                xf[:, r] = xf[:, r - 1] + D[r] * w[r]
+
+            # Fixed-step integrator
+            irk_integrator = Function('irk_integrator', {'x0': x, 'p': p, 'xf': xf[:, -1]},
+                                          integrator_in(), integrator_out())
+
+#            irk_integrator = controller.integrate_extra_dynamics(0).function
+            jac = irk_integrator.factory('jac_IRK', irk_integrator.name_in(), ['jac:xf:x0', 'jac:xf:p'])
+
+
+
+            cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
+            cov_last[:, 0] = cov_init[:, 0]
+
+            sigma_w_num = vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude)
+            sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
+
+
+            for i in range(n_shooting):
+                u = np.concatenate((u_last[:, i], np.zeros(motor_noise_magnitude.shape[0])))
+                x0 = np.concatenate(
+                    (q_last[:, i],
+                     qdot_last[:, i]))
+
+                J = jac(x0=x0, p=u)
+                phi_x = J['jac_xf_x0']
+                phi_w = J['jac_xf_p'][:, n_joints:]
+
+                cov_matrix = np.zeros((nx, nx))
+                for s0 in range(nx):
+                    for s1 in range(nx):
+                        cov_matrix[s1, s0] = cov_last[s0 * nx + s1, i]
+
+                sink = phi_x @ cov_matrix @ phi_x.T
+                source = phi_w @ sigma_w_dm @ phi_w.T
+
+                cov_this_time = sink + source
+
+
+
+
+
+
+
+
+
+
+        @staticmethod
         def stochastic_mean_sensory_input_equals_reference(
             penalty: Constraint,
             controller: PenaltyController,
@@ -1250,6 +1373,10 @@ class ConstraintFcn(FcnEnum):
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_DMS = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_dms,
     )
+    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IRK = (
+        ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_irk,
+    )
+
     STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (
         ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,
     )

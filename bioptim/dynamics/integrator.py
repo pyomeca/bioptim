@@ -1,4 +1,4 @@
-from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX
+from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX, symvar
 import numpy as np
 
 from ..misc.enums import ControlType, DefectType
@@ -1004,16 +1004,24 @@ class IRK(COLLOCATION):
             stochastic_variables=stochastic_variables,
         )
 
+        u = controls
+        sym_variables = symvar(defect)
+        if hasattr(self.model, 'motor_noise_sym'):
+            if any(var.name() == self.model.motor_noise_sym.name() for var in sym_variables):
+                u = vertcat(u, self.model.motor_noise_sym)
+
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         vfcn = Function(
             "vfcn",
-            [vertcat(*states[1:]), states[0], controls, params, stochastic_variables],
+            [vertcat(*states[1:]), states[0], u, params, stochastic_variables],
             [defect],
         ).expand()
 
+
+
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
-        x_irk_points = ifcn(self.cx(), states[0], controls, params, stochastic_variables)
+        x_irk_points = ifcn(self.cx(), states[0], u, params, stochastic_variables)
         x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
@@ -1027,23 +1035,31 @@ class IRK(COLLOCATION):
         """
         Prepare the CasADi function from dxdt
         """
+        xf, xall = self.dxdt(
+        h=self.h,
+        states=self.x_sym,
+        controls=self.u_sym,
+        params=self.param_sym,
+        param_scaling=self.param_scaling,
+        stochastic_variables=self.s_sym,
+        )
+
+        p = self.u_sym
+
+        sym_variables = symvar(xf)
+        if hasattr(self.model, 'motor_noise_sym'):
+            if any(var.name() == self.model.motor_noise_sym.name() for var in sym_variables):
+                p = vertcat(p, self.model.motor_noise_sym)
 
         self.function = Function(
             "integrator",
             [
                 self.x_sym[0],
-                self.u_sym,
+                p,
                 self.param_sym,
                 self.s_sym,
             ],
-            self.dxdt(
-                h=self.h,
-                states=self.x_sym,
-                controls=self.u_sym,
-                params=self.param_sym,
-                param_scaling=self.param_scaling,
-                stochastic_variables=self.s_sym,
-            ),
+            [xf, xall],
             ["x0", "p", "params", "s"],
             ["xf", "xall"],
             {"allow_free": self.allow_free_variables},

@@ -275,7 +275,7 @@ def get_m_init(
             states_full, cas.vertcat(z_q_joints[i], z_qdot_joints[i])
         )
 
-    states_end, defects = integrator_collocations(
+    states_end, defects, _ = integrator_collocations(
         model,
         polynomial_degree,
         n_shooting,
@@ -741,7 +741,7 @@ def get_cov_init_slicot(
     )
 
     sink = A @ cov_matrix + cov_matrix @ A.T
-    V = B @ sigma_w @ B.T
+    source = B @ sigma_w @ B.T
 
     # SLICOT
     cas.dplesol(A, V, "slicot", dict())

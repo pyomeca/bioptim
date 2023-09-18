@@ -85,11 +85,14 @@ class MassPointModel:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         u = DynamicsFunctions.get(nlp.controls["u"], controls)
-
+        nu = u.shape[0]
+        p = vertcat(u, type(self.motor_noise_sym).zeros(nu))
         motor_noise = 0
         if with_noise:
-            motor_noise = self.motor_noise_sym
-        qddot = -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
+            p[nu:] = self.motor_noise_sym
+            # motor_noise = self.motor_noise_sym
+        # qddot = -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
+        qddot = -self.kapa * (q - p[:nu]) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + p[nu:]
 
         return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
