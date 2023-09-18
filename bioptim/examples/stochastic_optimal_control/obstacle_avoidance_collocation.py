@@ -163,7 +163,7 @@ def path_constraint(controller: PenaltyController, super_elipse_index: int, is_r
         dh_dx = cas.jacobian(h, controller.states.cx_start)
         cov = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov)
         safe_guard = gamma * cas.sqrt(dh_dx @ cov @ dh_dx.T)
-        out += safe_guard
+        out -= safe_guard
 
     return out
 
@@ -518,13 +518,14 @@ def main():
     step #3: solve the stochastic version with the robustified constraint
     """
     run_step_1 = False
-    run_step_2 = True
-    run_step_3 = False  # True
+    run_step_2 = False
+    run_step_3 = True  # True
 
     # --- Prepare the ocp --- #
     # socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
-    # socp_type = SocpType.DMS()
-    socp_type = SocpType.IRK()
+    socp_type = SocpType.DMS()
+    # socp_type = SocpType.IRK()
+
     bio_model = MassPointModel(socp_type=socp_type)
     n_shooting = 39
     polynomial_degree = 5
@@ -697,11 +698,12 @@ def main():
     ax.plot(q_init[0], q_init[1], "-k", label="Initial guess")
     ax.plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
     ax.plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
-    # ax.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
+    ax.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
     if isinstance(socp_type, SocpType.COLLOCATION):
         nb_points = polynomial_degree + 1
     else:
         nb_points = 1
+
     for j in range(cov_stochastic.shape[1]):
         ax.plot(q_stochastic[0, j*nb_points], q_stochastic[1, j*nb_points], "or", markersize=2)
         cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
@@ -716,13 +718,14 @@ def main():
         tempo_cov_reshaped_to_matrix[2, 2] = 0
         tempo_cov_reshaped_to_matrix[3, 3] = 0
         print(np.max(np.abs(tempo_cov_reshaped_to_matrix)))
-    # for j in range(cov_robustified.shape[1]):
-    #     ax.plot(q_robustified[0, j*(polynomial_degree+1)], q_robustified[1, j*(polynomial_degree+1)], "ok", markersize=2)
-    #     cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
-    #     for s_0 in range(bio_model.matrix_shape_cov[0]):
-    #         for s_1 in range(bio_model.matrix_shape_cov[1]):
-    #             cov_reshaped_to_matrix[s_0, s_1] = cov_robustified[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
-    #     draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_robustified[:, j*(polynomial_degree + 1)], ax)
+
+    for j in range(cov_robustified.shape[1]):
+        ax.plot(q_robustified[0, j*nb_points], q_robustified[1, j*nb_points], "ok", markersize=2)
+        cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
+        for s_0 in range(bio_model.matrix_shape_cov[0]):
+            for s_1 in range(bio_model.matrix_shape_cov[1]):
+                cov_reshaped_to_matrix[s_0, s_1] = cov_robustified[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
+        draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_robustified[:, j*nb_points], ax)
 
     ax.set_xlabel("X")
     ax.set_ylabel("Y")
