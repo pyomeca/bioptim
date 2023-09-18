@@ -23,7 +23,7 @@ from bioptim import (
     StochasticBioModel,
 )
 from bioptim.examples.stochastic_optimal_control.rockit_model import RockitModel
-from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init_irk
+from bioptim.examples.stochastic_optimal_control.common import get_m_init, get_cov_init_irk, get_cov_init_dms
 
 def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
@@ -175,14 +175,19 @@ def prepare_socp(
     m_init: np.ndarray | None = None,
     cov_init: np.ndarray | None = None,
     is_robustified: bool = False,
+    socp_type: SocpType = SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
 ) -> StochasticOptimalControlProgram:
 
     """
     Step # 2-3: Solving the stochastic version of the problem to get the stochastic trajectory.
     """
-    problem_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
+    problem_type = socp_type
 
-    bio_model = RockitModel(motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree)
+    bio_model = RockitModel(
+        socp_type=problem_type,
+        motor_noise_magnitude=motor_noise_magnitude,
+        polynomial_degree=polynomial_degree,
+    )
 
     nb_q = bio_model.nb_q
     nb_qdot = bio_model.nb_qdot
@@ -257,10 +262,17 @@ def prepare_socp(
         interpolation=InterpolationType.CONSTANT,
     )
 
-    P0 = np.diag([0.01 ** 2, 0.1 ** 2])
+    cov_init_matrix = np.diag([0.01 ** 2, 0.1 ** 2])
+    shape_0, shape_1 = cov_init_matrix.shape[0], cov_init_matrix.shape[1]
+    cov_0 = np.zeros((shape_0 * shape_1, 1))
+    for s0 in range(shape_0):
+        for s1 in range(shape_1):
+            cov_0[shape_0 * s1 + s0] = cov_init_matrix[s0, s1]
+
+
+
 
     if cov_init is None:
-        cov_0 = P0
         cov_init = get_cov_init_irk(bio_model,
                                     n_shooting,
                                     n_stochastic,
@@ -271,6 +283,16 @@ def prepare_socp(
                                     u_init,
                                     cov_0,
                                     motor_noise_magnitude)
+
+        cov_init2 = get_cov_init_dms(bio_model,
+                                     n_shooting,
+                                     n_stochastic,
+                                     final_time,
+                                     q_init,
+                                     qdot_init,
+                                     u_init,
+                                     cov_0,
+                                     motor_noise_magnitude)
 
 
     s_init.add(
@@ -285,7 +307,7 @@ def prepare_socp(
         max_bound=[cas.inf] * n_cov,
         interpolation=InterpolationType.CONSTANT,
     )
-    s_bounds["cov"][:, 0] = P0.flatten()
+    s_bounds["cov"][:, 0] = cov_0.T
 
 
     # ocp.subject_to(ocp.at_t0(P) == P0)
@@ -320,7 +342,10 @@ def main():
     """
 
     # --- Prepare the ocp --- #
+    # socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
+    # socp_type = SocpType.DMS()
     socp_type = SocpType.IRK()
+
     bio_model = RockitModel(socp_type=socp_type)
     n_shooting = 40
     final_time = 1
@@ -332,7 +357,7 @@ def main():
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
-    solver.set_maximum_iterations(100)
+    solver.set_maximum_iterations(1000)
 
     ocp = prepare_ocp(
         final_time=final_time,
@@ -353,6 +378,33 @@ def main():
     plt.step(ts, np.squeeze(u_deterministic/40), label="u_deterministic/40")
 
 
+    cov_init_matrix = np.diag([0.01 ** 2, 0.1 ** 2])
+    cov_init = get_cov_init_irk(bio_model,
+                              n_shooting,
+                              4,
+                              polynomial_degree,
+                              final_time,
+                              q_deterministic,
+                              qdot_deterministic,
+                              u_deterministic,
+                              cov_init_matrix,
+                              motor_noise_magnitude)
+
+
+
+    o = np.array([[1, 0]])
+    sigma = np.zeros((1, n_shooting+1))
+    for i in range(n_shooting+1):
+        Pi = np.reshape(cov_init[:, i], (2, 2))
+        sigma[:, i] = np.sqrt(o @ Pi @ o.T)
+    plt.plot([ts, ts], np.squeeze([q_deterministic[:, ::polynomial_degree+1] - sigma, q_deterministic[:, ::polynomial_degree+1] + sigma]), 'k')
+
+
+
+
+
+
+
     socp = prepare_socp(
         final_time=final_time,
         n_shooting=n_shooting,
@@ -362,6 +414,7 @@ def main():
         qdot_init=qdot_deterministic,
         u_init=u_deterministic,
         is_robustified=False,
+        socp_type=socp_type,
     )
 
 

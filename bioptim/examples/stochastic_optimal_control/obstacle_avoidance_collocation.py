@@ -67,6 +67,7 @@ def draw_cov_ellipse(cov, pos, ax):
 
     vals, vecs = eigsorted(cov)
     theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
+    print(theta)
 
     # Width and height are "full" widths, not radius
     width, height = 2 * np.sqrt(vals)
@@ -501,7 +502,7 @@ def prepare_socp(
         objective_functions=objective_functions,
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
-        n_threads=4,
+        n_threads=6,
         assume_phase_dynamics=True,
         problem_type=problem_type,
         phase_transitions=phase_transitions,
@@ -518,13 +519,13 @@ def main():
     step #3: solve the stochastic version with the robustified constraint
     """
     run_step_1 = False
-    run_step_2 = False
+    run_step_2 = True
     run_step_3 = True  # True
 
     # --- Prepare the ocp --- #
     # socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
-    socp_type = SocpType.DMS()
-    # socp_type = SocpType.IRK()
+    # socp_type = SocpType.DMS()
+    socp_type = SocpType.IRK()
 
     bio_model = MassPointModel(socp_type=socp_type)
     n_shooting = 39
@@ -620,20 +621,6 @@ def main():
         #     print(f"Something went wrong at the {i}th node. (Constraint evaluation)")
 
     if run_step_3:
-        # rsocp = prepare_socp(
-        #     final_time=final_time,
-        #     n_shooting=n_shooting,
-        #     polynomial_degree=polynomial_degree,
-        #     motor_noise_magnitude=motor_noise_magnitude,
-        #     q_init=q_stochastic + 1e-10,
-        #     qdot_init=qdot_stochastic + 1e-10,
-        #     u_init=u_stochastic + 1e-10,
-        #     m_init=m_stochastic + 1e-15,
-        #     cov_init=cov_stochastic + 1e-10,
-        #     is_robustified=True,
-        #     socp_type=socp_type,
-        # )
-
         rsocp = prepare_socp(
             final_time=time_stochastic,
             n_shooting=n_shooting,

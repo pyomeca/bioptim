@@ -1200,21 +1200,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
 
 
-
             irk_integrator = controller.integrate_extra_dynamics(0).function
             jac = irk_integrator.factory('jac_IRK', irk_integrator.name_in(), ['jac:xf:x0', 'jac:xf:p'])
-
-            cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
-            )
-
 
             sigma_w_num = vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude)
             sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
 
             p = vertcat(
                 controller.controls.cx_start,
-                controller.model.motor_noise_magnitude*0,
+                controller.model.motor_noise_magnitude, #*0,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
             )
@@ -1229,26 +1223,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             sink = phi_x @ cov_matrix @ phi_x.T
             source = phi_w @ sigma_matrix @ phi_w.T
-
             cov_next_computed = sink + source
 
-            cov_next_computed = StochasticBioModel.reshape_to_vector(
-                cov_next_computed)
-
-            cov_integration_defect = controller.stochastic_variables["cov"].cx_end - cov_next_computed
+            cov_integration_defect = StochasticBioModel.reshape_to_vector(
+                cov_matrix_next - cov_next_computed
+            )
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
             return cov_integration_defect
-
-
-
-
-
-
-
-
 
 
         @staticmethod

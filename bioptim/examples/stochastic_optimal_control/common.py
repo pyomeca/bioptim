@@ -191,14 +191,14 @@ def integrator_rk4(
     s[:, 0] = stochastic_variables
 
     for i in range(1, n_step + 1):
-        k1_states = fun_states(x[:nb_q, i - 1], x[nb_q:, i - 1], u)
+        k1_states = fun_states(x[:nb_q, i - 1], x[nb_q:, i - 1], u, model.motor_noise_magnitude)
         k1_cov = fun_cov(
             x[:nb_q, i - 1], x[nb_q:, i - 1], s[:, i - 1], model.motor_noise_magnitude
         )
         k2_states = fun_states(
             x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
             x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:],
-            u,
+            u, model.motor_noise_magnitude
         )
         k2_cov = fun_cov(
             x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
@@ -209,7 +209,7 @@ def integrator_rk4(
         k3_states = fun_states(
             x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
             x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:],
-            u,
+            u, model.motor_noise_magnitude
         )
         k3_cov = fun_cov(
             x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
@@ -220,7 +220,7 @@ def integrator_rk4(
         k4_states = fun_states(
             x[:nb_q, i - 1] + h * k3_states[:nb_q],
             x[nb_q:, i - 1] + h * k3_states[nb_q:],
-            u,
+            u, model.motor_noise_magnitude
         )
         k4_cov = fun_cov(
             x[:nb_q, i - 1] + h * k3_states[:nb_q],
@@ -233,9 +233,11 @@ def integrator_rk4(
             + h / 6 * (k1_states + 2 * k2_states + 2 * k3_states + k4_states),
             (-1,),
         )
+
         s[:, i] = np.reshape(
             s[:, i - 1] + h / 6 * (k1_cov + 2 * k2_cov + 2 * k3_cov + k4_cov), (-1,)
         )
+        #todo: voir pour l'ordre
 
     return s[:, -1]
 
@@ -552,7 +554,7 @@ def get_cov_init_irk(
     # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
     vfcn = cas.Function(
         "vfcn",
-        [z.reshape((-1,1)), x, p],
+        [z.reshape((-1, 1)), x, p],
         [defects],
     ).expand()
 
@@ -568,7 +570,7 @@ def get_cov_init_irk(
 
 
     # Fixed-step integrator
-    irk_integrator = cas.Function('irk_integrator', {'x0': x, 'p': p, 'xf': xf[:,-1]},
+    irk_integrator = cas.Function('irk_integrator', {'x0': x, 'p': p, 'xf': xf[:, -1]},
                               cas.integrator_in(), cas.integrator_out())
 
     jac = irk_integrator.factory('jac_IRK', irk_integrator.name_in(), ['jac:xf:x0', 'jac:xf:p'])
@@ -580,12 +582,13 @@ def get_cov_init_irk(
 
 
     for i in range(n_shooting):
-        u = np.concatenate((u_last[:, i], np.zeros(motor_noise_magnitude.shape[0])))
+        # u = np.concatenate((u_last[:, i], np.zeros(motor_noise_magnitude.shape[0])))
+        p = np.concatenate((u_last[:, i], motor_noise_magnitude))
         x0 = np.concatenate(
             (q_last[:, i],
              qdot_last[:, i]))
 
-        J = jac(x0=x0, p=u)
+        J = jac(x0=x0, p=p)
         phi_x = J['jac_xf_x0']
         phi_w = J['jac_xf_p'][:, n_joints:]
 
@@ -599,7 +602,7 @@ def get_cov_init_irk(
         source = phi_w @ sigma_w_dm @ phi_w.T
 
 
-        cov_this_time = sink + source
+        cov_this_time = source #sink +
         if not (np.all(np.linalg.eigvals(cov_this_time.full()) >= 0)):
             print("not semi-positive definite")
 
@@ -655,13 +658,15 @@ def get_cov_init_dms(
     for i in range(model.motor_noise_sym.shape[0]):
         sigma_w[i, i] = model.motor_noise_sym[i]
 
+    sigma_w_dm = cas.DM_eye(motor_noise_magnitude.shape[0]) * motor_noise_magnitude # ADD: mick
+
     cov_matrix = StochasticBioModel.reshape_sym_to_matrix(
         stochastic_variables_sym, model.matrix_shape_cov
     )
 
     sink = A @ cov_matrix + cov_matrix @ A.T
-    source = B @ sigma_w @ B.T
-    cov_derivative = sink + source
+    source = B @ sigma_w_dm @ B.T
+    cov_derivative = source #+sink #+
     cov_derivative_vect = StochasticBioModel.reshape_to_vector(cov_derivative)
     cov_derivative_func = cas.Function(
         "cov_derivative_func",
@@ -670,8 +675,8 @@ def get_cov_init_dms(
     )
     states_derivative_func = cas.Function(
         "states_derivative_func",
-        [x_q_joints, x_qdot_joints, controls_sym],
-        [dx_dt_without],
+        [x_q_joints, x_qdot_joints, controls_sym, model.motor_noise_sym],
+        [dx_dt_with], #todo: MB: change dx_dt_without to with (add model.motor_noise_sym)
     )
 
     cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))

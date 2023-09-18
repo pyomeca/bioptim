@@ -6,7 +6,7 @@ from typing import Callable
 from casadi import vertcat, MX, DM, sqrt
 import numpy as np
 
-from bioptim import DynamicsEvaluation, DynamicsFunctions
+from bioptim import DynamicsEvaluation, DynamicsFunctions, SocpType
 
 
 class RockitModel:
@@ -18,7 +18,10 @@ class RockitModel:
         self,
         motor_noise_magnitude: np.ndarray | DM = None,
         polynomial_degree: int = 1,
+        socp_type: SocpType = None,
     ):
+        self.socp_type = socp_type
+
         if motor_noise_magnitude is not None:
             self.motor_noise_magnitude = motor_noise_magnitude
             self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
