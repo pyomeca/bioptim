@@ -695,8 +695,10 @@ class MultiBiorbdModel:
 
             if isinstance(nlp.model, MultiBiorbdModel):
                 if nlp.model.nb_models > 1:
-                    raise NotImplementedError(f"Animation is only implemented for MultiBiorbdModel with 1 model."
-                                              f" There are {nlp.model.nb_models} models in the phase {idx_phase}.")
+                    raise NotImplementedError(
+                        f"Animation is only implemented for MultiBiorbdModel with 1 model."
+                        f" There are {nlp.model.nb_models} models in the phase {idx_phase}."
+                    )
                 else:
                     model = nlp.model.models[0]
 

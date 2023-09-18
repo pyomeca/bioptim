@@ -614,5 +614,3 @@ class BiorbdModel:
             return None
         else:
             return all_bioviz
-
-
