@@ -5,6 +5,7 @@ This file contains the functions that are common for multiple stochastic example
 import casadi as cas
 import numpy as np
 from bioptim import StochasticBioModel, DynamicsFunctions, SocpType
+from scipy.integrate import solve_ivp
 
 
 def dynamics_torque_driven_with_feedbacks(
@@ -592,23 +593,18 @@ def get_cov_init_irk(
         phi_x = J['jac_xf_x0']
         phi_w = J['jac_xf_p'][:, n_joints:]
 
-
-        cov_matrix = np.zeros((nx, nx))
-        for s0 in range(nx):
-            for s1 in range(nx):
-                cov_matrix[s1, s0] = cov_last[s0 * nx + s1, i]
+        cov_matrix = StochasticBioModel.reshape_to_matrix(
+            cov_last[:, i],
+            model.matrix_shape_cov)
 
         sink = phi_x @ cov_matrix @ phi_x.T
         source = phi_w @ sigma_w_dm @ phi_w.T
 
-
         cov_this_time = source #sink +
         if not (np.all(np.linalg.eigvals(cov_this_time.full()) >= 0)):
-            print("not semi-positive definite")
+            print("IRK cov not semi-positive definite")
 
-        for s0 in range(nx):
-            for s1 in range(nx):
-                cov_last[nx * s1 + s0, i+1] = cov_this_time[s0, s1]
+        cov_last[:, i+1] = StochasticBioModel.reshape_to_vector(cov_this_time.full())
 
 
     return cov_last
@@ -676,7 +672,7 @@ def get_cov_init_dms(
     states_derivative_func = cas.Function(
         "states_derivative_func",
         [x_q_joints, x_qdot_joints, controls_sym, model.motor_noise_sym],
-        [dx_dt_with], #todo: MB: change dx_dt_without to with (add model.motor_noise_sym)
+        [dx_dt_without], #todo: MB: change dx_dt_without to with (add model.motor_noise_sym)
     )
 
     cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
@@ -694,6 +690,15 @@ def get_cov_init_dms(
             duration,
         )
         cov_last[:, i + 1] = cov_next_computed
+
+        cov = StochasticBioModel.reshape_to_matrix(
+            cov_last[:, i+1],
+            model.matrix_shape_cov)
+
+        if not (np.all(np.linalg.eigvals(cov) >= 0)):
+            print("DMS cov not semi-positive definite")
+
+
     return cov_last
 
 
