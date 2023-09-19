@@ -268,6 +268,8 @@ def prepare_ocp(
         ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
     elif isinstance(socp_type, SocpType.DMS):
         ode_solver = OdeSolver.RK4()
+    elif isinstance(socp_type, SocpType.IRK):
+        ode_solver = OdeSolver.IRK()
     else:
         raise RuntimeError("Invalid socp_type")
 
@@ -450,6 +452,12 @@ def prepare_socp(
             #                         u_init,
             #                         cov_0,
             #                         motor_noise_magnitude)
+
+    # plt.plot(cov_init[::5,:].T)
+    # plt.plot(cov_init2[::5,:].T, '--')
+    plt.plot(cov_init.T)
+    plt.plot(cov_init2.T, '--')
+
     s_init.add(
         "cov",
         initial_guess=cov_init,
@@ -518,7 +526,7 @@ def main():
     step #2: solve the stochastic version without the robustified constraint
     step #3: solve the stochastic version with the robustified constraint
     """
-    run_step_1 = False
+    run_step_1 = True
     run_step_2 = True
     run_step_3 = True  # True
 
@@ -527,11 +535,11 @@ def main():
     # socp_type = SocpType.DMS()
     socp_type = SocpType.IRK()
 
-    bio_model = MassPointModel(socp_type=socp_type)
     n_shooting = 39
     polynomial_degree = 5
     final_time = 4
     motor_noise_magnitude = np.array([1, 1])
+    bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
     # Solver parameters
     # TODO: include SLICOT solver (for solving ill-conditioned, ill-scaled, large-scale problems by preserving the stucture of the problem)

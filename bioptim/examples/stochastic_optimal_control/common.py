@@ -533,21 +533,21 @@ def get_cov_init_irk(
         "stochastic_variables", n_stochastic, 1
     )
 
-    x = cas.vertcat(x_q_joints, x_qdot_joints)
+    x_sym = cas.vertcat(x_q_joints, x_qdot_joints)
     z = []
     for i in range(polynomial_degree):
         z = cas.horzcat(
             z, cas.vertcat(z_q_joints[i], z_qdot_joints[i])
         )
 
-    p = cas.vertcat( controls_sym, model.motor_noise_sym)
-
+    #p_sym = cas.vertcat( controls_sym, model.motor_noise_sym)
+    p_sym = model.motor_noise_sym
     states_end, defects, D = integrator_collocations(
         model,
         polynomial_degree,
         n_shooting,
         duration,
-        cas.horzcat(x,z),
+        cas.horzcat(x_sym, z),
         controls_sym,
         stochastic_variables_sym,
     )
@@ -555,57 +555,114 @@ def get_cov_init_irk(
     # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
     vfcn = cas.Function(
         "vfcn",
-        [z.reshape((-1, 1)), x, p],
+        [z.reshape((-1, 1)), x_sym, controls_sym, p_sym],
         [defects],
     ).expand()
 
     # Create a implicit function instance to solve the system of equations
     ifcn = cas.rootfinder("ifcn", "newton", vfcn)
-    x_irk_points = ifcn(cas.MX(), x, p)
-    w = [x if r == 0 else x_irk_points[(r - 1) * nx: r * nx] for r in range(polynomial_degree + 1)]
+    x_irk_points = ifcn(cas.MX(), x_sym, controls_sym, p_sym)
+    w = [x_sym if r == 0 else x_irk_points[(r - 1) * nx: r * nx] for r in range(polynomial_degree + 1)]
 
     # Get an expression for the state at the end of the finite element
     xf = type(model.motor_noise_sym).zeros(nx, polynomial_degree + 1)  # 0 #
     for r in range(polynomial_degree + 1):
         xf[:, r] = xf[:, r - 1] + D[r] * w[r]
 
-
     # Fixed-step integrator
-    irk_integrator = cas.Function('irk_integrator', {'x0': x, 'p': p, 'xf': xf[:, -1]},
+    dx_dt = model.dynamics_numerical(
+        states=x_sym,
+        controls=controls_sym,
+        stochastic_variables=stochastic_variables_sym,
+        with_noise=True,)
+
+
+
+
+    # rk_ODE = cas.integrator(
+    #     "rk_ODE",
+    #     "rk",
+    #     {"x": x_sym, "p": p_sym, "ode": dx_dt},
+    #     {"tf": duration/n_shooting, "number_of_finite_elements": 20},
+    # )
+
+
+
+    irk_integrator = cas.Function('irk_integrator', {'x0': x_sym, 'u': controls_sym,
+                                                     'p': p_sym, 'xf': xf[:, -1]},
                               cas.integrator_in(), cas.integrator_out())
 
-    jac = irk_integrator.factory('jac_IRK', irk_integrator.name_in(), ['jac:xf:x0', 'jac:xf:p'])
+    # irk_integrator = cas.Function('irk_integrator', {'x0': x_sym, 'p': p_sym, 'xf': xf[:, -1]},
+    #                           ['x0', 'p'], ['xf'])
+
+    jac = irk_integrator.factory('jac_IRK',
+                                 irk_integrator.name_in(),
+                                 ['xf', 'jac:xf:x0', 'jac:xf:p'])
+
+    # ode = {"x": x_sym, "u": controls_sym, "p": p_sym, "ode": dx_dt}
+    # F = cas.integrator('F', 'cvodes', ode, 0, duration / n_shooting)
+    # jac = F.factory('jac_IRK', F.name_in(), ['jac:xf:x0', 'jac:xf:p'])
+
+
+    # integrator_opts = {
+    #     "type": "implicit",
+    #     "collocation_scheme": "legendre",
+    #     "num_stages": polynomial_degree,
+    #     "num_steps": 1,
+    #     "newton_iter": 20,
+    #     "tol": 1e-10,}
+    #
+    # coll_ODE = cas.integrator(
+    #     "coll_ODE",
+    #     "collocation",
+    #     {"x": x_sym, "u": controls_sym, "p": p_sym, "ode": dx_dt},
+    #     0, duration / n_shooting,
+    #     {
+    #
+    #         "collocation_scheme": integrator_opts["collocation_scheme"],
+    #         "number_of_finite_elements": integrator_opts["num_steps"],
+    #         "interpolation_order": integrator_opts["num_stages"],
+    #         "rootfinder_options": {"abstol": integrator_opts["tol"]},
+    #     }
+    # )
+    #
+    # jac = coll_ODE.factory('jac', coll_ODE.name_in(), ['jac:xf:x0', 'jac:xf:p'])
 
     cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
     cov_last[:, 0] = cov_init[:, 0]
 
     sigma_w_dm = cas.DM_eye(motor_noise_magnitude.shape[0]) * motor_noise_magnitude
 
-
     for i in range(n_shooting):
         # u = np.concatenate((u_last[:, i], np.zeros(motor_noise_magnitude.shape[0])))
-        p = np.concatenate((u_last[:, i], motor_noise_magnitude))
+        u = u_last[:, i]
+        p = motor_noise_magnitude
         x0 = np.concatenate(
             (q_last[:, i],
              qdot_last[:, i]))
 
-        J = jac(x0=x0, p=p)
+        J = jac(x0=x0, u=u, p=p)
         phi_x = J['jac_xf_x0']
-        phi_w = J['jac_xf_p'][:, n_joints:]
+        phi_w = J['jac_xf_p']
 
         cov_matrix = StochasticBioModel.reshape_to_matrix(
             cov_last[:, i],
             model.matrix_shape_cov)
 
+
         sink = phi_x @ cov_matrix @ phi_x.T
         source = phi_w @ sigma_w_dm @ phi_w.T
 
-        cov_this_time = source #sink +
+
+        if i==0:
+            print(sink)
+            print(source)
+
+        cov_this_time = sink + source # source + sink
         if not (np.all(np.linalg.eigvals(cov_this_time.full()) >= 0)):
             print("IRK cov not semi-positive definite")
 
         cov_last[:, i+1] = StochasticBioModel.reshape_to_vector(cov_this_time.full())
-
 
     return cov_last
 
@@ -661,8 +718,8 @@ def get_cov_init_dms(
     )
 
     sink = A @ cov_matrix + cov_matrix @ A.T
-    source = B @ sigma_w_dm @ B.T
-    cov_derivative = source #+sink #+
+    source = B @ sigma_w @ B.T
+    cov_derivative = sink+source #+ sink
     cov_derivative_vect = StochasticBioModel.reshape_to_vector(cov_derivative)
     cov_derivative_func = cas.Function(
         "cov_derivative_func",
@@ -675,9 +732,37 @@ def get_cov_init_dms(
         [dx_dt_without], #todo: MB: change dx_dt_without to with (add model.motor_noise_sym)
     )
 
+    all_derivative_func = cas.Function(
+        "all_derivative_func",
+        [x_q_joints, x_qdot_joints, controls_sym, stochastic_variables_sym, model.motor_noise_sym],
+        [cas.vertcat( dx_dt_with, cov_derivative_vect)],
+    )
+
+
     cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
-    cov_last[:, 0] = cov_init[:, 0]
+    cov_last[:, 0] = cov_init.squeeze()
     for i in range(n_shooting):
+
+        x0 = np.concatenate(
+            (q_last[:, i ],
+             qdot_last[:, i],
+             cov_last[:, i]))
+
+        def dyn(t, x):
+            return all_derivative_func(x[:n_q],
+                                       x[n_q:2*n_q],
+                                       u_last[:, i],
+                                       x[2*n_q:],
+                                       model.motor_noise_magnitude).full().squeeze()
+
+        sol = solve_ivp(fun=dyn, t_span=(0, duration/n_shooting), y0=x0,
+                        method='RK45', atol=1e-15)
+
+        y = sol.y[:, -1]
+        cov_last[:, i+1] = y[n_q*2:]
+
+
+
         cov_next_computed = integrator_rk4(
             model,
             q_last[:, i],
@@ -689,14 +774,18 @@ def get_cov_init_dms(
             n_shooting,
             duration,
         )
-        cov_last[:, i + 1] = cov_next_computed
+        # cov_last[:, i + 1] = cov_next_computed
+        # print(y[n_q*2:] - cov_next_computed)
 
         cov = StochasticBioModel.reshape_to_matrix(
             cov_last[:, i+1],
             model.matrix_shape_cov)
 
+        if i==0:
+            print(cov)
+
         if not (np.all(np.linalg.eigvals(cov) >= 0)):
-            print("DMS cov not semi-positive definite")
+            print(f"DMS{i} cov not semi-positive definite")
 
 
     return cov_last

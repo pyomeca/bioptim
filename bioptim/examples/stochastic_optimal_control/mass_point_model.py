@@ -22,7 +22,9 @@ class MassPointModel:
     ):
         self.socp_type = socp_type
 
+        self.motor_noise_sym = MX()
         if motor_noise_magnitude is not None:
+            print("Add motor noise")
             self.motor_noise_magnitude = motor_noise_magnitude
             self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
 
@@ -86,13 +88,13 @@ class MassPointModel:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         u = DynamicsFunctions.get(nlp.controls["u"], controls)
         nu = u.shape[0]
-        p = vertcat(u, type(self.motor_noise_sym).zeros(nu))
+        u = vertcat(u, type(self.motor_noise_sym).zeros(nu))
         motor_noise = 0
         if with_noise:
-            p[nu:] = self.motor_noise_sym
+            u[nu:] = self.motor_noise_sym
             # motor_noise = self.motor_noise_sym
         # qddot = -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
-        qddot = -self.kapa * (q - p[:nu]) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + p[nu:]
+        qddot = -self.kapa * (q - u[:nu]) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + u[nu:]
 
         return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 

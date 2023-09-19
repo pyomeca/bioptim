@@ -1044,18 +1044,18 @@ class IRK(COLLOCATION):
         stochastic_variables=self.s_sym,
         )
 
-        p = self.u_sym
+        u = self.u_sym
 
         sym_variables = symvar(xf)
         if hasattr(self.model, 'motor_noise_sym'):
             if any(var.name() == self.model.motor_noise_sym.name() for var in sym_variables):
-                p = vertcat(p, self.model.motor_noise_sym)
+                u = vertcat(u, self.model.motor_noise_sym)
 
-        p = vertcat(p, self.param_sym, self.s_sym)
+        p = vertcat(self.param_sym, self.s_sym)
 
         self.function = Function(
             "integrator",
-            {'x0': self.x_sym[0], 'p': p, 'xf': xf},
+            {'x0': self.x_sym[0], 'u': u, 'p': p, 'xf': xf},
             integrator_in(), integrator_out(),
         )
 

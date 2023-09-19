@@ -1118,10 +1118,10 @@ class PenaltyFunctionAbstract:
             else:
                 continuity -= controller.integrate(
                     x0=controller.states.cx_start,
+                    u=u,
                     p=vertcat(
-                        u,
                         controller.parameters.cx,
-                        controller.stochastic_variables.cx_start)
+                        controller.stochastic_variables.cx_start),
                 )["xf"]
 
             penalty.explicit_derivative = True
