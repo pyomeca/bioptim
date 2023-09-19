@@ -375,7 +375,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 phase=i_phase,
             )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
-                covariance_phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
+                covariance_phase_transition.add(PhaseTransitionFcn.COVARIANCE_CYCLIC, phase_pre_idx=i_phase)
 
         # Constraints for P inter-phase
         for pt in covariance_phase_transition:

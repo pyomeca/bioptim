@@ -57,7 +57,7 @@ class PhaseTransition(MultinodePenalty):
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
             PhaseTransitionFcn,
-            nodes_phase=(-1, 0) if transition == transition.CYCLIC else (phase_pre_idx, phase_pre_idx + 1),
+            nodes_phase=(-1, 0) if transition in [transition.CYCLIC, transition.COVARIANCE_CYCLIC] else (phase_pre_idx, phase_pre_idx + 1),
             nodes=(Node.END, Node.START),
             multinode_penalty=transition,
             custom_function=custom_function,
@@ -294,7 +294,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return func
 
         @staticmethod
-        def covariance_continuous(
+        def covariance_cyclic(
             transition,
             controllers: list[PenaltyController, PenaltyController],
         ):
@@ -325,7 +325,7 @@ class PhaseTransitionFcn(FcnEnum):
     DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
-    COVARIANCE_CONTINUOUS = (PhaseTransitionFunctions.Functions.covariance_continuous,)
+    COVARIANCE_CYCLIC = (PhaseTransitionFunctions.Functions.covariance_cyclic,)
     CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
 
     @staticmethod

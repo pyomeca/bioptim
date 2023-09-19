@@ -1206,8 +1206,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             sigma_w_num = vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude)
             sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
 
+
+            u = controller.controls.cx_start
             p = vertcat(
-                controller.controls.cx_start,
                 controller.model.motor_noise_magnitude, #*0,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
@@ -1217,9 +1218,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.states['qdot'].cx_start,
             )
 
-            J = jac(x0=x0, p=p)
+            J = jac(x0=x0, u=u, p=p)
             phi_x = J['jac_xf_x0']
-            phi_w = J['jac_xf_p'][:, nu: 2*nu]
+            phi_w = J['jac_xf_p'][:, :nu]
 
             sink = phi_x @ cov_matrix @ phi_x.T
             source = phi_w @ sigma_matrix @ phi_w.T

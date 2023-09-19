@@ -6,6 +6,9 @@ import casadi as cas
 import numpy as np
 from bioptim import StochasticBioModel, DynamicsFunctions, SocpType
 from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+import matplotlib.transforms as transforms
 
 
 def dynamics_torque_driven_with_feedbacks(
@@ -599,40 +602,30 @@ def get_cov_init_irk(
                                  irk_integrator.name_in(),
                                  ['xf', 'jac:xf:x0', 'jac:xf:p'])
 
-    # ode = {"x": x_sym, "u": controls_sym, "p": p_sym, "ode": dx_dt}
+    ode = {"x": x_sym, "u": controls_sym, "p": p_sym, "ode": dx_dt}
     # F = cas.integrator('F', 'cvodes', ode, 0, duration / n_shooting)
-    # jac = F.factory('jac_IRK', F.name_in(), ['jac:xf:x0', 'jac:xf:p'])
+    # jac = F.factory('jac_IRK', F.name_in(), ['xf, jac:xf:x0', 'jac:xf:p'])
 
-
-    # integrator_opts = {
-    #     "type": "implicit",
-    #     "collocation_scheme": "legendre",
-    #     "num_stages": polynomial_degree,
-    #     "num_steps": 1,
-    #     "newton_iter": 20,
-    #     "tol": 1e-10,}
-    #
-    # coll_ODE = cas.integrator(
-    #     "coll_ODE",
-    #     "collocation",
-    #     {"x": x_sym, "u": controls_sym, "p": p_sym, "ode": dx_dt},
-    #     0, duration / n_shooting,
-    #     {
-    #
-    #         "collocation_scheme": integrator_opts["collocation_scheme"],
-    #         "number_of_finite_elements": integrator_opts["num_steps"],
-    #         "interpolation_order": integrator_opts["num_stages"],
-    #         "rootfinder_options": {"abstol": integrator_opts["tol"]},
-    #     }
-    # )
-    #
-    # jac = coll_ODE.factory('jac', coll_ODE.name_in(), ['jac:xf:x0', 'jac:xf:p'])
+    F = cas.integrator(
+        "F",
+        "collocation",
+        ode,
+        0, duration / n_shooting,
+        {
+            "collocation_scheme": "legendre",
+            "number_of_finite_elements": 1,
+            "interpolation_order": polynomial_degree,
+            "rootfinder_options": {"abstol": 1e-10, "max_iter": 20},
+        }
+    )
+    jac = F.factory('jac_IRK', F.name_in(), ['xf', 'jac:xf:x0', 'jac:xf:p'])
 
     cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
     cov_last[:, 0] = cov_init[:, 0]
 
     sigma_w_dm = cas.DM_eye(motor_noise_magnitude.shape[0]) * motor_noise_magnitude
 
+    fig, ax = plt.subplots(1, 1)
     for i in range(n_shooting):
         # u = np.concatenate((u_last[:, i], np.zeros(motor_noise_magnitude.shape[0])))
         u = u_last[:, i]
@@ -641,9 +634,24 @@ def get_cov_init_irk(
             (q_last[:, i],
              qdot_last[:, i]))
 
+
+        # iter=100
+        # X_next = np.zeros((nx, iter))
+        # P = np.random.randn(2, iter)*100
+        # for j in range(iter):
+        #     J = jac(x0=x0, u=u, p=P[:, j])
+        #     X_next[:, j] = J['xf'].full().squeeze()
+        #
+        # plt.plot(X_next[0,:], X_next[1,:],'.')
+        # cov = np.cov(X_next)
+        # confidence_ellipse(X_next[0,:], X_next[1,:], ax)
+        # draw_cov_ellipse(cov[:n_q, :n_q], np.mean(X_next[:n_q, :], axis=1), ax)
+        # cov_last[:, i+1] = StochasticBioModel.reshape_to_vector(cov)
+
         J = jac(x0=x0, u=u, p=p)
         phi_x = J['jac_xf_x0']
         phi_w = J['jac_xf_p']
+        x_next = J['xf']
 
         cov_matrix = StochasticBioModel.reshape_to_matrix(
             cov_last[:, i],
@@ -657,6 +665,10 @@ def get_cov_init_irk(
         if i==0:
             print(sink)
             print(source)
+            print(x_next)
+            print(np.concatenate(
+            (q_last[:, i+1],
+             qdot_last[:, i+1])))
 
         cov_this_time = sink + source # source + sink
         if not (np.all(np.linalg.eigvals(cov_this_time.full()) >= 0)):
@@ -998,3 +1010,51 @@ def test_eigen_values(var):
     if np.sum(vals < 0) != 0:
         is_ok = False
     return is_ok
+
+def confidence_ellipse(x, y, ax, n_std=1.0):
+
+    if x.size != y.size:
+        raise ValueError("x and y must be the same size")
+
+    cov = np.cov(x, y)
+    pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
+    # Using a special case to obtain the eigenvalues of this
+    # two-dimensional dataset.
+    ell_radius_x = np.sqrt(1 + pearson)
+    ell_radius_y = np.sqrt(1 - pearson)
+    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
+                      color='r', alpha=0.1)
+
+    scale_x = np.sqrt(cov[0, 0]) * n_std
+    mean_x = np.mean(x)
+
+    # calculating the standard deviation of y ...
+    scale_y = np.sqrt(cov[1, 1]) * n_std
+    mean_y = np.mean(y)
+
+    transf = transforms.Affine2D() \
+        .rotate_deg(45) \
+        .scale(scale_x, scale_y) \
+        .translate(mean_x, mean_y)
+
+    ellipse.set_transform(transf + ax.transData)
+    return ax.add_patch(ellipse)
+
+def draw_cov_ellipse(cov, pos, ax):
+    """
+    Draw an ellipse representing the covariance at a given point.
+    """
+    def eigsorted(cov):
+        vals, vecs = np.linalg.eigh(cov)
+        order = vals.argsort()[::-1]
+        return vals[order], vecs[:, order]
+
+    vals, vecs = eigsorted(cov)
+    theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
+
+    # Width and height are "full" widths, not radius
+    width, height = 2 * np.sqrt(vals)
+    ellip = plt.matplotlib.patches.Ellipse(xy=pos, width=width, height=height, angle=theta, color="b", alpha=0.1)
+
+    ax.add_patch(ellip)
+    return ellip

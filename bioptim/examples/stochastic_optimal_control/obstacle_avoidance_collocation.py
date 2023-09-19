@@ -67,7 +67,6 @@ def draw_cov_ellipse(cov, pos, ax):
 
     vals, vecs = eigsorted(cov)
     theta = np.degrees(np.arctan2(*vecs[:, 0][::-1]))
-    print(theta)
 
     # Width and height are "full" widths, not radius
     width, height = 2 * np.sqrt(vals)
@@ -75,6 +74,7 @@ def draw_cov_ellipse(cov, pos, ax):
 
     ax.add_patch(ellip)
     return ellip
+
 
 
 def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
@@ -200,7 +200,7 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+        ObjectiveFcn.Mayer.MINIMIZE_CONTROL,
         key="u",
         weight=1e-2 / (2 * n_shooting),
         node=Node.ALL_SHOOTING,
@@ -324,8 +324,10 @@ def prepare_socp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="u", weight=1e-2 / (2 * n_shooting), node=Node.ALL_SHOOTING, quadratic=True
+        ObjectiveFcn.Mayer.MINIMIZE_CONTROL, key="u", weight=1e-2 / (2 * n_shooting), node=Node.ALL_SHOOTING, quadratic=True
     )
+
+    # objective_functions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
 
     # Constraints
     constraints = ConstraintList()
@@ -403,7 +405,7 @@ def prepare_socp(
         )
 
     if cov_init is None:
-        cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.01
+        cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.05
         shape_0, shape_1 = cov_init_matrix.shape[0], cov_init_matrix.shape[1]
         cov_0 = np.zeros((shape_0 * shape_1, 1))
         for s0 in range(shape_0):
@@ -455,8 +457,8 @@ def prepare_socp(
 
     # plt.plot(cov_init[::5,:].T)
     # plt.plot(cov_init2[::5,:].T, '--')
-    plt.plot(cov_init.T)
-    plt.plot(cov_init2.T, '--')
+    # plt.plot(cov_init.T)
+    # plt.plot(cov_init2.T, '--')
 
     s_init.add(
         "cov",
@@ -494,7 +496,7 @@ def prepare_socp(
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
-    # phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=0)
+    phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC) #, phase_pre_idx=0)
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -535,7 +537,7 @@ def main():
     # socp_type = SocpType.DMS()
     socp_type = SocpType.IRK()
 
-    n_shooting = 39
+    n_shooting = 40
     polynomial_degree = 5
     final_time = 4
     motor_noise_magnitude = np.array([1, 1])
@@ -545,6 +547,7 @@ def main():
     # TODO: include SLICOT solver (for solving ill-conditioned, ill-scaled, large-scale problems by preserving the stucture of the problem)
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
+    # solver.set_hessian_approximation("limited-memory")
     solver.set_maximum_iterations(1000) # 1000
     # solver._nlp_scaling_method = "None"
 
@@ -705,7 +708,7 @@ def main():
         for s_0 in range(bio_model.matrix_shape_cov[0]):
             for s_1 in range(bio_model.matrix_shape_cov[1]):
                 cov_reshaped_to_matrix[s_0, s_1] = cov_stochastic[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
-        draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_stochastic[:, j*nb_points], ax)
+        # draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_stochastic[:, j*nb_points], ax)
         tempo_cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
         tempo_cov_reshaped_to_matrix[:, :] = cov_reshaped_to_matrix[:, :]
         tempo_cov_reshaped_to_matrix[0, 0] = 0

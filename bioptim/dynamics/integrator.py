@@ -1045,13 +1045,13 @@ class IRK(COLLOCATION):
         )
 
         u = self.u_sym
-
+        p = vertcat(self.param_sym, self.s_sym)
         sym_variables = symvar(xf)
+
+
         if hasattr(self.model, 'motor_noise_sym'):
             if any(var.name() == self.model.motor_noise_sym.name() for var in sym_variables):
-                u = vertcat(u, self.model.motor_noise_sym)
-
-        p = vertcat(self.param_sym, self.s_sym)
+                p = vertcat(self.model.motor_noise_sym, p)
 
         self.function = Function(
             "integrator",
