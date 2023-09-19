@@ -466,6 +466,10 @@ def test_biorbd_model():
         assert local_id == 2
         assert model_id == 0
 
+        local_id, model_id = models.local_variable_id("segment", 2)
+        assert local_id == 2
+        assert model_id == 0
+
         variable_name = "wrong"
         with pytest.raises(
             ValueError,
