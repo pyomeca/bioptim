@@ -1366,7 +1366,9 @@ class OptimalControlProgram:
             if u.size != 0:
                 u = _scale_values(u, self.nlp[penalty_phase].controls, penalty, self.nlp[penalty_phase].u_scaling)
             if s.size != 0:
-                s = _scale_values(s, self.nlp[penalty_phase].stochastic_variables, penalty, self.nlp[penalty_phase].s_scaling)
+                s = _scale_values(
+                    s, self.nlp[penalty_phase].stochastic_variables, penalty, self.nlp[penalty_phase].s_scaling
+                )
 
             out = []
             if penalty.transition or penalty.multinode_penalty:
@@ -1935,7 +1937,11 @@ def _get_time_step(dt, p, x, penalty, penalty_phase) -> np.ndarray:
 
 def _get_target_values(t, penalty) -> np.ndarray:
     """Retrieve target values based on time and penalty."""
-    return np.hstack([p[..., penalty.node_idx.index(t)] for p in penalty.target]) if penalty.target and isinstance(t, int) else []
+    return (
+        np.hstack([p[..., penalty.node_idx.index(t)] for p in penalty.target])
+        if penalty.target and isinstance(t, int)
+        else []
+    )
 
 
 def _scale_values(values, scaling_entities, penalty, scaling_data):
