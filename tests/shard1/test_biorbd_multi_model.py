@@ -64,11 +64,23 @@ def test_biorbd_model():
     assert models.nb_models == 2
     assert models.nb_extra_models == 3
 
-    assert models.name_dof == ('Seg1_RotX', 'Seg2_RotX', 'Seg3_RotX', 'Seg1_RotX', 'Seg2_RotX', 'Seg3_RotX')
+    assert models.name_dof == ("Seg1_RotX", "Seg2_RotX", "Seg3_RotX", "Seg1_RotX", "Seg2_RotX", "Seg3_RotX")
     assert models.contact_names == ()
     assert models.soft_contact_names == ()
-    assert models.marker_names == ('marker_1', 'marker_2', 'marker_3', 'marker_4', 'marker_5', 'marker_6',
-                                   'marker_1', 'marker_2', 'marker_3', 'marker_4', 'marker_5', 'marker_6')
+    assert models.marker_names == (
+        "marker_1",
+        "marker_2",
+        "marker_3",
+        "marker_4",
+        "marker_5",
+        "marker_6",
+        "marker_1",
+        "marker_2",
+        "marker_3",
+        "marker_4",
+        "marker_5",
+        "marker_6",
+    )
     assert models.muscle_names == ()
 
     variable_mappings = BiMappingList()
@@ -95,21 +107,21 @@ def test_biorbd_model():
     with pytest.raises(
         NotImplementedError, match="homogeneous_matrices_in_global is not implemented for MultiBiorbdModel"
     ):
-        models.homogeneous_matrices_in_global(np.array([1,2,3]), 0, 0)
+        models.homogeneous_matrices_in_global(np.array([1, 2, 3]), 0, 0)
 
     with pytest.raises(
         NotImplementedError, match="homogeneous_matrices_in_child is not implemented for MultiBiorbdModel"
     ):
-        models.homogeneous_matrices_in_child(np.array([1,2,3]), 0, 0)
+        models.homogeneous_matrices_in_child(np.array([1, 2, 3]), 0, 0)
 
     TestUtils.assert_equal(models.mass, np.array([3, 3]))
     TestUtils.assert_equal(
         models.center_of_mass(np.array([1, 2, 3, 4, 5, 6])),
-        np.array([-5.000000e-04,  8.433844e-01, -1.764446e-01, -5.000000e-04, -3.232674e-01,  1.485815e+00]),
+        np.array([-5.000000e-04, 8.433844e-01, -1.764446e-01, -5.000000e-04, -3.232674e-01, 1.485815e00]),
     )
     TestUtils.assert_equal(
         models.center_of_mass_velocity(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6])),
-        np.array([  0.      ,   0.425434,   0.638069,   0.      , -12.293126,  0.369492]),
+        np.array([0.0, 0.425434, 0.638069, 0.0, -12.293126, 0.369492]),
     )
     TestUtils.assert_equal(
         models.center_of_mass_acceleration(
@@ -117,22 +129,24 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]),
         ),
-        np.array([   0.      ,    0.481652,    6.105858,    0.      ,  -33.566971, -126.795179]),
+        np.array([0.0, 0.481652, 6.105858, 0.0, -33.566971, -126.795179]),
     )
 
     mass_matrices = models.mass_matrix(np.array([1, 2.1, 3, 4.1, 5, 6.1]))
     assert len(mass_matrices) == 2
     TestUtils.assert_equal(
         mass_matrices[0],
-        np.array([[ 2.711080e+00,  3.783457e-01,  4.243336e-01],
-       [ 3.783457e-01,  9.999424e-01, -2.881681e-05],
-       [ 4.243336e-01, -2.881681e-05,  9.543311e-01]]),
+        np.array(
+            [
+                [2.711080e00, 3.783457e-01, 4.243336e-01],
+                [3.783457e-01, 9.999424e-01, -2.881681e-05],
+                [4.243336e-01, -2.881681e-05, 9.543311e-01],
+            ]
+        ),
     )
     TestUtils.assert_equal(
         mass_matrices[1],
-        np.array([[9.313616, 5.580191, 2.063886],
-       [5.580191, 4.791997, 1.895999],
-       [2.063886, 1.895999, 0.945231]]),
+        np.array([[9.313616, 5.580191, 2.063886], [5.580191, 4.791997, 1.895999], [2.063886, 1.895999, 0.945231]]),
     )
 
     nonlinear_effects = models.non_linear_effects(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6]))
@@ -148,34 +162,35 @@ def test_biorbd_model():
 
     TestUtils.assert_equal(
         models.angular_momentum(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6])),
-        np.array([ 3.001448e+00,  0.000000e+00, -2.168404e-19,  2.514126e+01, 3.252607e-19,  0.000000e+00]),
+        np.array([3.001448e00, 0.000000e00, -2.168404e-19, 2.514126e01, 3.252607e-19, 0.000000e00]),
         decimal=5,
     )
 
     TestUtils.assert_equal(
-        models.reshape_qdot(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6]),1),
-        np.array([1. , 2.1, 3. , 4.1, 5. , 6. ]),
+        models.reshape_qdot(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6]), 1),
+        np.array([1.0, 2.1, 3.0, 4.1, 5.0, 6.0]),
     )
 
     TestUtils.assert_equal(
-        models.segment_angular_velocity(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6]),1),
-        np.array([3.1, 0. , 0. , 9.1, 0. , 0. ]),
+        models.segment_angular_velocity(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6]), 1),
+        np.array([3.1, 0.0, 0.0, 9.1, 0.0, 0.0]),
     )
 
     assert models.soft_contact(0, 0) == []  # TODO: Fix soft contact (biorbd call error)
 
     with pytest.raises(RuntimeError, match="Close the actuator model before calling torqueMax"):
         models.torque(
-            np.array([3.1, 0. , 0. , 9.1, 0. , 0. ]),
-            np.array([3.1, 0. , 0. , 9.1, 0. , 0. ]),
-            np.array([3.1, 0. , 0. , 9.1, 0. , 0. ]),
-        ) # TODO: Fix torque (Close the actuator model before calling torqueMax)
+            np.array([3.1, 0.0, 0.0, 9.1, 0.0, 0.0]),
+            np.array([3.1, 0.0, 0.0, 9.1, 0.0, 0.0]),
+            np.array([3.1, 0.0, 0.0, 9.1, 0.0, 0.0]),
+        )  # TODO: Fix torque (Close the actuator model before calling torqueMax)
 
     TestUtils.assert_equal(
         models.forward_dynamics_free_floating_base(
             np.array([1, 2.1, 3, 4.1, 5, 6.1]),
             np.array([1, 2.1, 3, 4.1, 5, 6]),
-            np.array([3.1, 0. , 0. , 9.1, 0. , 0. ])),
+            np.array([3.1, 0.0, 0.0, 9.1, 0.0, 0.0]),
+        ),
         np.array([-14.750679, -36.596107]),
     )
 
@@ -185,7 +200,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([3.1, 1, 2, 9.1, 1, 2]),
         ),
-        np.array([ -16.092093,    9.049853,   10.570878, -121.783105,  154.820759, -20.664452]),
+        np.array([-16.092093, 9.049853, 10.570878, -121.783105, 154.820759, -20.664452]),
     )
 
     TestUtils.assert_equal(
@@ -194,7 +209,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([3.1, 1, 2, 9.1, 1, 2]),
         ),
-        np.array([ -16.092093,    9.049853,   10.570878, -121.783105,  154.820759, -20.664452]),
+        np.array([-16.092093, 9.049853, 10.570878, -121.783105, 154.820759, -20.664452]),
     )
 
     with pytest.raises(NotImplementedError, match="External forces are not implemented yet for MultiBiorbdModel."):
@@ -211,7 +226,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([3.1, 1, 2, 9.1, 1, 2]),
         ),
-        np.array([4.844876e+01, 2.121037e-01, 1.964626e+00, 4.165226e+02, 3.721585e+01, 1.906986e+00]),
+        np.array([4.844876e01, 2.121037e-01, 1.964626e00, 4.165226e02, 3.721585e01, 1.906986e00]),
         decimal=5,
     )
 
@@ -222,7 +237,7 @@ def test_biorbd_model():
             np.array([3.1, 1, 2, 9.1, 1, 2]),
             None,
         ),
-        np.array([0., 0.]),
+        np.array([0.0, 0.0]),
     )
 
     with pytest.raises(NotImplementedError, match="External forces are not implemented yet for MultiBiorbdModel."):
@@ -238,7 +253,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6.1]),
             np.array([1, 2.1, 3, 4.1, 5, 6]),
         ),
-        np.array([1. , 2.1, 3. , 4.1, 5. , 6. ]),
+        np.array([1.0, 2.1, 3.0, 4.1, 5.0, 6.0]),
     )
 
     TestUtils.assert_equal(
@@ -254,7 +269,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6.1]),
             np.array([1, 2.1, 3, 4.1, 5, 6]),
         ),
-        np.array([0., 0., 0., 0., 0., 0.]),
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     )
 
     TestUtils.assert_equal(
@@ -269,7 +284,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6.1]),
             index=1,
         ),
-        np.array([ 0.      ,  0.841471, -0.540302]),
+        np.array([0.0, 0.841471, -0.540302]),
     )
 
     assert models.marker_index("marker_3") == 2
@@ -286,7 +301,7 @@ def test_biorbd_model():
     )
     TestUtils.assert_equal(
         markers_velocities[1],
-        np.array([0.      , 0.540302, 0.841471]),
+        np.array([0.0, 0.540302, 0.841471]),
     )
 
     with pytest.raises(RuntimeError, match="All dof must have their actuators set"):
@@ -318,7 +333,7 @@ def test_biorbd_model():
         models.normalize_state_quaternions(
             np.array([1, 2.1, 3, 4.1, 5, 6.1, 1, 2.1, 3, 4.1, 5, 6.6]),
         ),
-        np.array([1. , 2.1, 3. , 4.1, 5. , 6.1, 1. , 2.1, 3. , 4.1, 5. , 6.6]),
+        np.array([1.0, 2.1, 3.0, 4.1, 5.0, 6.1, 1.0, 2.1, 3.0, 4.1, 5.0, 6.6]),
     )
 
     TestUtils.assert_equal(
@@ -328,7 +343,7 @@ def test_biorbd_model():
             np.array([3.1, 1, 2, 9.1, 1, 2]),
             None,
         ),
-        np.array([0., 0.]),
+        np.array([0.0, 0.0]),
     )
 
     with pytest.raises(
@@ -346,7 +361,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6.1]),
             np.array([1, 2.1, 3, 4.1, 5, 6]),
         ),
-        np.array([0., 0., 0., 0., 0., 0.]),
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     )
 
     q_mapping = models._q_mapping(variable_mappings)
@@ -397,8 +412,11 @@ def test_biorbd_model():
         assert models.variable_index("markers", 0) == range(0, 6)
 
         variable_name = "wrong"
-        with pytest.raises(ValueError,
-                           match=f"The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'" f" and {variable_name} was sent."):
+        with pytest.raises(
+            ValueError,
+            match=f"The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'"
+            f" and {variable_name} was sent.",
+        ):
             models.variable_index(variable_name, 0)
 
         assert models.global_variable_id("q", 0, 1) == 1
@@ -408,7 +426,7 @@ def test_biorbd_model():
         assert models.global_variable_id("qddot_joints", 0, 1) == 1
         assert models.global_variable_id("qddot_root", 1, 0) == 1
 
-        with pytest.raises(IndexError,match='range object index out of range'):
+        with pytest.raises(IndexError, match="range object index out of range"):
             models.global_variable_id("contact", 0, 1)
 
         assert models.global_variable_id("markers", 0, 1) == 1
@@ -442,6 +460,9 @@ def test_biorbd_model():
         assert model_id == 0
 
         variable_name = "wrong"
-        with pytest.raises(ValueError,
-                            match=f"The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'" f" and {variable_name} was sent."):
-                models.local_variable_id(variable_name, 0)
+        with pytest.raises(
+            ValueError,
+            match=f"The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'"
+            f" and {variable_name} was sent.",
+        ):
+            models.local_variable_id(variable_name, 0)
