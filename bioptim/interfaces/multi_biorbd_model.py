@@ -148,6 +148,11 @@ class MultiBiorbdModel:
                 current_idx += model.nb_markers
             return range(current_idx, current_idx + self.models[model_index].nb_markers)
 
+        elif variable == "segment":
+            for model in self.models[:model_index]:
+                current_idx += model.nb_segments
+            return range(current_idx, current_idx + self.models[model_index].nb_segments)
+
         else:
             raise ValueError(
                 "The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'" f" and {variable} was sent."
@@ -265,11 +270,14 @@ class MultiBiorbdModel:
             out += model.segments
         return out
 
-    def homogeneous_matrices_in_global(self, q, reference_index, inverse=False):
-        raise NotImplementedError("homogeneous_matrices_in_global is not implemented for MultiBiorbdModel")
+    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> biorbd.RotoTrans:
+        local_segment_id, model_id = self.local_variable_id("segment", segment_id)
+        q_model = q[self.variable_index("q", model_id)]
+        return self.models[model_id].homogeneous_matrices_in_global(q_model, local_segment_id, inverse)
 
-    def homogeneous_matrices_in_child(self, *args) -> tuple:
-        raise NotImplementedError("homogeneous_matrices_in_child is not implemented for MultiBiorbdModel")
+    def homogeneous_matrices_in_child(self, segment_id) -> MX:
+        local_id, model_id = self.local_variable_id("segment", segment_id)
+        return self.models[model_id].homogeneous_matrices_in_child(local_id)
 
     @property
     def mass(self) -> MX:

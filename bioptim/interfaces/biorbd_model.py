@@ -171,15 +171,16 @@ class BiorbdModel:
     def segments(self) -> tuple[biorbd.Segment]:
         return self.model.segments()
 
-    def homogeneous_matrices_in_global(self, q, reference_index, inverse=False):
-        val = self.model.globalJCS(GeneralizedCoordinates(q), reference_index)
+    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> biorbd.RotoTrans:
+        # Todo: one of the last ouput of BiorbdModel which is not a MX but a biorbd object
+        val = self.model.globalJCS(GeneralizedCoordinates(q), segment_id)
         if inverse:
             return val.transpose()
         else:
             return val
 
-    def homogeneous_matrices_in_child(self, *args):
-        return self.model.localJCS(*args)
+    def homogeneous_matrices_in_child(self, segment_id) -> MX:
+        return self.model.localJCS(segment_id).to_mx()
 
     @property
     def mass(self) -> MX:

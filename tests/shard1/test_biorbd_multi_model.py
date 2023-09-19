@@ -104,15 +104,22 @@ def test_biorbd_model():
     assert isinstance(models.segments, tuple)
     assert isinstance(models.segments[0], biorbd.biorbd.Segment)
 
-    with pytest.raises(
-        NotImplementedError, match="homogeneous_matrices_in_global is not implemented for MultiBiorbdModel"
-    ):
-        models.homogeneous_matrices_in_global(np.array([1, 2, 3]), 0, 0)
-
-    with pytest.raises(
-        NotImplementedError, match="homogeneous_matrices_in_child is not implemented for MultiBiorbdModel"
-    ):
-        models.homogeneous_matrices_in_child(np.array([1, 2, 3]), 0, 0)
+    TestUtils.assert_equal(
+        # one of the last ouput of BiorbdModel which is not a MX but a biorbd object
+        models.homogeneous_matrices_in_global(np.array([1, 2, 3]), 0, 0).to_mx(),
+        np.array(
+            [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.540302, -0.841471, 0.0],
+                [0.0, 0.841471, 0.540302, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        ),
+    )
+    TestUtils.assert_equal(
+        models.homogeneous_matrices_in_child(4),
+        np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, -1.0], [0.0, 0.0, 0.0, 1.0]]),
+    )
 
     TestUtils.assert_equal(models.mass, np.array([3, 3]))
     TestUtils.assert_equal(
