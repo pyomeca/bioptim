@@ -1353,79 +1353,20 @@ class OptimalControlProgram:
             -------
             Values computed for the given time, state, control, parameters, penalty and time step
             """
-            if len(x.shape) < 2:
-                x = x.reshape((-1, 1))
+            x, u, s = map(_reshape_to_column, [x, u, s])
 
-            if len(u.shape) < 2:
-                u = u.reshape((-1, 1))
+            penalty_phase = penalty.nodes_phase[0] if penalty.multinode_penalty else penalty.phase
+            # TODO: Fix the scaling of multi_node_penalty (This is a hack, it should be computed at each phase)
 
-            if len(s.shape) < 2:
-                s = s.reshape((-1, 1))
+            dt = _get_time_step(dt, p, x, penalty, penalty_phase)
 
-            if penalty.multinode_penalty:
-                # TODO: Fix the scaling of multi_node_penalty (This is a hack, it should be computed at each phase)
-                penalty_phase = penalty.nodes_phase[0]
-            else:
-                penalty_phase = penalty.phase
+            _target = _get_target_values(t, penalty)
 
-            # if time is parameter of the ocp, we need to evaluate with current parameters
-            if isinstance(dt, Function):
-                dt = dt(p)
-            # The division is to account for the steps in the integration. The else is for Mayer term
-            dt = dt / (x.shape[1] - 1) if x.shape[1] > 1 else dt
-            if not isinstance(penalty.dt, (float, int)):
-                if dt.shape[0] > 1:
-                    dt = dt[penalty_phase]
-
-            _target = (
-                np.hstack([p[..., penalty.node_idx.index(t)] for p in penalty.target])
-                if penalty.target is not None and isinstance(t, int)
-                else []
-            )
-
-            x_scaling = np.concatenate(
-                [
-                    np.repeat(self.nlp[penalty_phase].x_scaling[key].scaling[:, np.newaxis], x.shape[1], axis=1)
-                    for key in self.nlp[penalty_phase].states
-                ]
-            )
-            if penalty.multinode_penalty:
-                len_x = sum(self.nlp[penalty_phase].states[key].shape for key in self.nlp[penalty_phase].states)
-                complete_scaling = np.array(x_scaling)
-                number_of_repeat = x.shape[0] // len_x
-                x_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
-            x /= x_scaling
-
+            x = _scale_values(x, self.nlp[penalty_phase].states, penalty, self.nlp[penalty_phase].x_scaling)
             if u.size != 0:
-                u_scaling = np.concatenate(
-                    [
-                        np.repeat(self.nlp[penalty_phase].u_scaling[key].scaling[:, np.newaxis], u.shape[1], axis=1)
-                        for key in self.nlp[penalty_phase].controls
-                    ]
-                )
-                if penalty.multinode_penalty:
-                    len_u = sum(self.nlp[penalty_phase].controls[key].shape for key in self.nlp[penalty_phase].controls)
-                    complete_scaling = np.array(u_scaling)
-                    number_of_repeat = u.shape[0] // len_u
-                    u_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
-                u /= u_scaling
-
+                u = _scale_values(u, self.nlp[penalty_phase].controls, penalty, self.nlp[penalty_phase].u_scaling)
             if s.size != 0:
-                s_scaling = np.concatenate(
-                    [
-                        np.repeat(self.nlp[penalty_phase].s_scaling[key].scaling[:, np.newaxis], s.shape[1], axis=1)
-                        for key in self.nlp[penalty_phase].stochastic_variables
-                    ]
-                )
-                if penalty.multinode_penalty:
-                    len_s = sum(
-                        self.nlp[penalty_phase].stochastic_variables[key].shape
-                        for key in self.nlp[penalty_phase].stochastic_variables
-                    )
-                    complete_scaling = np.array(s_scaling)
-                    number_of_repeat = s.shape[0] // len_s
-                    s_scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
-                s /= s_scaling
+                s = _scale_values(s, self.nlp[penalty_phase].stochastic_variables, penalty, self.nlp[penalty_phase].s_scaling)
 
             out = []
             if penalty.transition or penalty.multinode_penalty:
@@ -1973,3 +1914,41 @@ class OptimalControlProgram:
             return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
         previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
         return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
+
+
+# helpers
+def _reshape_to_column(array) -> np.ndarray:
+    """Reshape the input array to column if it's not already."""
+    return array.reshape((-1, 1)) if len(array.shape) < 2 else array
+
+
+def _get_time_step(dt, p, x, penalty, penalty_phase) -> np.ndarray:
+    """Compute the time step based on its type and state shape."""
+    # if time is parameter of the ocp, we need to evaluate with current parameters
+    if isinstance(dt, Function):
+        dt = dt(p)
+    # The division is to account for the steps in the integration. The else is for Mayer term
+    if not isinstance(penalty.dt, (float, int)) and dt.shape[0] > 1:
+        dt = dt[penalty_phase]
+    return dt / (x.shape[1] - 1) if x.shape[1] > 1 else dt
+
+
+def _get_target_values(t, penalty) -> np.ndarray:
+    """Retrieve target values based on time and penalty."""
+    return np.hstack([p[..., penalty.node_idx.index(t)] for p in penalty.target]) if penalty.target and isinstance(t, int) else []
+
+
+def _scale_values(values, scaling_entities, penalty, scaling_data):
+    """Scale the provided values based on the scaling entities and type."""
+
+    scaling = np.concatenate(
+        [np.repeat(scaling_data[key].scaling[:, np.newaxis], values.shape[1], axis=1) for key in scaling_entities]
+    )
+
+    if penalty.multinode_penalty:
+        len_values = sum(scaling_entities[key].shape for key in scaling_entities)
+        complete_scaling = np.array(scaling)
+        number_of_repeat = values.shape[0] // len_values
+        scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
+
+    return values / scaling
