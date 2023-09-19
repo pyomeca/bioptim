@@ -532,13 +532,16 @@ def main():
     run_step_2 = True
     run_step_3 = True  # True
 
+
+
     # --- Prepare the ocp --- #
+    polynomial_degree = 7
     # socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
     # socp_type = SocpType.DMS()
-    socp_type = SocpType.IRK()
+    socp_type = SocpType.IRK(polynomial_degree=polynomial_degree, method="legendre")
 
     n_shooting = 40
-    polynomial_degree = 5
+
     final_time = 4
     motor_noise_magnitude = np.array([1, 1])
     bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
@@ -547,7 +550,6 @@ def main():
     # TODO: include SLICOT solver (for solving ill-conditioned, ill-scaled, large-scale problems by preserving the stucture of the problem)
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
-    # solver.set_hessian_approximation("limited-memory")
     solver.set_maximum_iterations(1000) # 1000
     # solver._nlp_scaling_method = "None"
 
@@ -578,6 +580,34 @@ def main():
             qdot_deterministic = data_deterministic["qdot_deterministic"]
             u_deterministic = data_deterministic["u_deterministic"]
             time_deterministic = data_deterministic["time_deterministic"]
+
+
+    if isinstance(socp_type, SocpType.COLLOCATION):
+        q_init = initialize_circle(6*n_shooting+1)
+    else:
+        q_init = initialize_circle(n_shooting + 1)
+    fig, ax = plt.subplots(1, 2)
+    for i in range(2):
+        a = bio_model.super_ellipse_a[i]
+        b = bio_model.super_ellipse_b[i]
+        n = bio_model.super_ellipse_n[i]
+        x_0 = bio_model.super_ellipse_center_x[i]
+        y_0 = bio_model.super_ellipse_center_y[i]
+
+        X, Y, Z = superellipse(a, b, n, x_0, y_0)
+
+        ax[0].contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
+        # ax.contour(X, Y, Z, levels=[0], colors='black')
+
+    ax[0].plot(q_init[0], q_init[1], "-k", label="Initial guess")
+    ax[0].plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
+
+    ax[1].plot(q_deterministic[0], q_deterministic[1], 'b')
+    ax[1].plot(u_deterministic[0], u_deterministic[1], 'r')
+    for i in range(n_shooting):
+        ax[1].plot( (u_deterministic[0, i], q_deterministic[0, i]),
+                    (u_deterministic[1, i], q_deterministic[1, i]),'k')
+
 
 
     if run_step_2:
@@ -631,6 +661,32 @@ def main():
         # if not test_robustified_constraint_value(bio_model, q_stochastic, qdot_stochastic, cov_stochastic):
         #     print(f"Something went wrong at the {i}th node. (Constraint evaluation)")
 
+    ax[0].plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
+
+    if isinstance(socp_type, SocpType.COLLOCATION):
+        nb_points = polynomial_degree + 1
+    else:
+        nb_points = 1
+
+    for j in range(cov_stochastic.shape[1]):
+        ax[0].plot(q_stochastic[0, j*nb_points], q_stochastic[1, j*nb_points], "or", markersize=2)
+        cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
+        for s_0 in range(bio_model.matrix_shape_cov[0]):
+            for s_1 in range(bio_model.matrix_shape_cov[1]):
+                cov_reshaped_to_matrix[s_0, s_1] = cov_stochastic[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
+        # draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_stochastic[:, j*nb_points], ax)
+        tempo_cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
+        tempo_cov_reshaped_to_matrix[:, :] = cov_reshaped_to_matrix[:, :]
+        tempo_cov_reshaped_to_matrix[0, 0] = 0
+        tempo_cov_reshaped_to_matrix[1, 1] = 0
+        tempo_cov_reshaped_to_matrix[2, 2] = 0
+        tempo_cov_reshaped_to_matrix[3, 3] = 0
+        print(np.max(np.abs(tempo_cov_reshaped_to_matrix)))
+
+
+
+
+
     if run_step_3:
         rsocp = prepare_socp(
             final_time=time_stochastic,
@@ -676,46 +732,7 @@ def main():
             m_robustified = robustified_data["m_robustified"]
             cov_robustified = robustified_data["cov_robustified"]
 
-    if isinstance(socp_type, SocpType.COLLOCATION):
-        q_init = initialize_circle(6*n_shooting+1)
-    else:
-        q_init = initialize_circle(n_shooting + 1)
-    fig, ax = plt.subplots(1, 1)
-    for i in range(2):
-        a = bio_model.super_ellipse_a[i]
-        b = bio_model.super_ellipse_b[i]
-        n = bio_model.super_ellipse_n[i]
-        x_0 = bio_model.super_ellipse_center_x[i]
-        y_0 = bio_model.super_ellipse_center_y[i]
-
-        X, Y, Z = superellipse(a, b, n, x_0, y_0)
-
-        ax.contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
-        # ax.contour(X, Y, Z, levels=[0], colors='black')
-
-    ax.plot(q_init[0], q_init[1], "-k", label="Initial guess")
-    ax.plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
-    ax.plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
     ax.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
-    if isinstance(socp_type, SocpType.COLLOCATION):
-        nb_points = polynomial_degree + 1
-    else:
-        nb_points = 1
-
-    for j in range(cov_stochastic.shape[1]):
-        ax.plot(q_stochastic[0, j*nb_points], q_stochastic[1, j*nb_points], "or", markersize=2)
-        cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
-        for s_0 in range(bio_model.matrix_shape_cov[0]):
-            for s_1 in range(bio_model.matrix_shape_cov[1]):
-                cov_reshaped_to_matrix[s_0, s_1] = cov_stochastic[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
-        # draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_stochastic[:, j*nb_points], ax)
-        tempo_cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
-        tempo_cov_reshaped_to_matrix[:, :] = cov_reshaped_to_matrix[:, :]
-        tempo_cov_reshaped_to_matrix[0, 0] = 0
-        tempo_cov_reshaped_to_matrix[1, 1] = 0
-        tempo_cov_reshaped_to_matrix[2, 2] = 0
-        tempo_cov_reshaped_to_matrix[3, 3] = 0
-        print(np.max(np.abs(tempo_cov_reshaped_to_matrix)))
 
     for j in range(cov_robustified.shape[1]):
         ax.plot(q_robustified[0, j*nb_points], q_robustified[1, j*nb_points], "ok", markersize=2)
