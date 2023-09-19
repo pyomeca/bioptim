@@ -171,7 +171,7 @@ class MultiBiorbdModel:
         int
             The id of the variable in the global vector
         """
-        self.variable_index(variable, model_index)[model_variable_id]
+        return self.variable_index(variable, model_index)[model_variable_id]
 
     def local_variable_id(self, variable: str, global_index: int) -> tuple[int, int]:
         """
@@ -567,7 +567,7 @@ class MultiBiorbdModel:
                 marker_id = biorbd.marker_index(model.model, name)
                 return self.variable_index("markers", model_index=i)[marker_id]
 
-        raise ValueError(f"{marker_name} is not in the MultiBiorbdModel")
+        raise ValueError(f"{name} is not in the MultiBiorbdModel")
 
     def marker(self, q, index, reference_segment_index=None) -> MX:
         local_marker_id, model_id = self.local_variable_id("markers", index)
