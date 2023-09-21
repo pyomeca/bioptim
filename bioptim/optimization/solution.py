@@ -1831,12 +1831,15 @@ class Solution:
 
         # assuming that all the models or the same type.
         self._check_models_comes_from_same_super_class()
-        self.ocp.nlp[0].model.animate(
+
+        all_bioviz = self.ocp.nlp[0].model.animate(
             solution=data_to_animate,
             show_now=show_now,
             tracked_markers=tracked_markers,
             **kwargs,
         )
+
+        return all_bioviz
 
     def _check_models_comes_from_same_super_class(self):
         """Check that all the models comes from the same super class"""

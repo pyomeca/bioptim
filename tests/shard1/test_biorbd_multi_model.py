@@ -8,6 +8,7 @@ from bioptim import (
     BiMappingList,
     BoundsList,
 )
+from ..utils import TestUtils
 
 
 def test_biorbd_model_import():
@@ -47,25 +48,40 @@ def test_biorbd_model():
         ),
     )
 
-    nb_q = models.nb_q
-    nb_qdot = models.nb_qdot
-    nb_qddot = models.nb_qddot
-    nb_root = models.nb_root
-    nb_tau = models.nb_tau
-    nb_quaternions = models.nb_quaternions
-    nb_segments = models.nb_segments
-    nb_muscles = models.nb_muscles
-    nb_soft_contacts = models.nb_soft_contacts
-    nb_markers = models.nb_markers
-    nb_rigid_contacts = models.nb_rigid_contacts
-    nb_contacts = models.nb_contacts
-    nb_dof = models.nb_dof
+    assert models.nb_q == 6
+    assert models.nb_qdot == 6
+    assert models.nb_qddot == 6
+    assert models.nb_root == 2
+    assert models.nb_tau == 6
+    assert models.nb_quaternions == 0
+    assert models.nb_segments == 6
+    assert models.nb_muscles == 0
+    assert models.nb_soft_contacts == 0
+    assert models.nb_markers == 12
+    assert models.nb_rigid_contacts == 0
+    assert models.nb_contacts == 0
+    assert models.nb_dof == 6
+    assert models.nb_models == 2
+    assert models.nb_extra_models == 3
 
-    name_dof = models.name_dof
-    contact_names = models.contact_names
-    soft_contact_names = models.soft_contact_names
-    marker_names = models.marker_names
-    muscle_names = models.muscle_names
+    assert models.name_dof == ("Seg1_RotX", "Seg2_RotX", "Seg3_RotX", "Seg1_RotX", "Seg2_RotX", "Seg3_RotX")
+    assert models.contact_names == ()
+    assert models.soft_contact_names == ()
+    assert models.marker_names == (
+        "marker_1",
+        "marker_2",
+        "marker_3",
+        "marker_4",
+        "marker_5",
+        "marker_6",
+        "marker_1",
+        "marker_2",
+        "marker_3",
+        "marker_4",
+        "marker_5",
+        "marker_6",
+    )
+    assert models.muscle_names == ()
 
     variable_mappings = BiMappingList()
     variable_mappings.add("q", to_second=[0, 1, 2, 3, 4, 5], to_first=[0, 1, 2, 3, 4, 5])
@@ -73,331 +89,301 @@ def test_biorbd_model():
     variable_mappings.add("qddot", to_second=[0, 1, 2, 3, 4, 5], to_first=[0, 1, 2, 3, 4, 5])
     variable_mappings.add("tau", to_second=[None, 0, 1, None, 0, 2], to_first=[1, 2, 5])
 
-    np.random.seed(42)
-    q = MX(np.random.random((nb_q,)))
-    qdot = MX(np.random.random((nb_qdot,)))
-    qddot = MX(np.random.random((nb_qddot,)))
-    tau = MX(np.random.random((nb_tau,)))
-    qddot_joints = MX(np.random.random((nb_tau - nb_root,)))
-    f_ext = MX(6)
-    f_contact = MX(6)
-    muscle_excitations = MX(np.random.random((nb_muscles,)))
-
     # model_deep_copied = models.deep_copy() # TODO: Fix deep copy
     models.copy()
     models.serialize()
+
     models.set_gravity(np.array([0, 0, -3]))
-    model_gravity_modified = Function("Gravity", [], [models.gravity])()["o0"]
+    TestUtils.assert_equal(models.gravity, np.array([0, 0, -3, 0, 0, -3]))
+    models.set_gravity(np.array([0, 0, -9.81]))
 
     with pytest.raises(NotImplementedError, match="segment_index is not implemented for MultiBiorbdModel"):
         segment_index = models.segment_index("Seg1")
 
-    segments = models.segments
+    assert len(models.segments) == 6
+    assert isinstance(models.segments, tuple)
+    assert isinstance(models.segments[0], biorbd.biorbd.Segment)
 
-    with pytest.raises(
-        NotImplementedError, match="homogeneous_matrices_in_global is not implemented for MultiBiorbdModel"
-    ):
-        Function("RT_parent", [], [models.homogeneous_matrices_in_global(q[:3], 0, 0).to_mx()])()["o0"]
+    TestUtils.assert_equal(
+        # one of the last ouput of BiorbdModel which is not a MX but a biorbd object
+        models.homogeneous_matrices_in_global(np.array([1, 2, 3]), 0, 0).to_mx(),
+        np.array(
+            [
+                [1.0, 0.0, 0.0, 0.0],
+                [0.0, 0.540302, -0.841471, 0.0],
+                [0.0, 0.841471, 0.540302, 0.0],
+                [0.0, 0.0, 0.0, 1.0],
+            ]
+        ),
+    )
+    TestUtils.assert_equal(
+        models.homogeneous_matrices_in_child(4),
+        np.array([[1.0, 0.0, 0.0, 0.0], [0.0, 1.0, 0.0, 0.0], [0.0, 0.0, 1.0, -1.0], [0.0, 0.0, 0.0, 1.0]]),
+    )
 
-    with pytest.raises(
-        NotImplementedError, match="homogeneous_matrices_in_child is not implemented for MultiBiorbdModel"
-    ):
-        Function("RT_child", [], [models.homogeneous_matrices_in_child(0)[0].to_mx()])()["o0"]
-    mass = Function("Mass", [], [models.mass])()["o0"]
-    center_of_mass = Function("CoM", [], [models.center_of_mass(q)])()["o0"]
-    center_of_mass_velocity = Function("CoMdot", [], [models.center_of_mass_velocity(q, qdot)])()["o0"]
-    center_of_mass_acceleration = Function("CoMddot", [], [models.center_of_mass_acceleration(q, qdot, qdot)])()["o0"]
-    mass_matrix = Function("MassMatrix", [], models.mass_matrix(q))()
-    non_linear_effects = Function("NonLinearEffect", [], models.non_linear_effects(q, qdot))()
-    angular_momentum = Function("AngMom", [], [models.angular_momentum(q, qdot)])()["o0"]
-    reshape_qdot = Function("GetQdot", [], [models.reshape_qdot(q, qdot, 1)])()["o0"]
-    segment_angular_velocity = Function("SegmentAngMom", [], [models.segment_angular_velocity(q, qdot, 0)])()["o0"]
-    soft_contact = Function("SoftContact", [], [models.soft_contact(0, 0)])()[
-        "o0"
-    ]  # TODO: Fix soft contact (biorbd call error)
+    TestUtils.assert_equal(models.mass, np.array([3, 3]))
+    TestUtils.assert_equal(
+        models.center_of_mass(np.array([1, 2, 3, 4, 5, 6])),
+        np.array([-5.000000e-04, 8.433844e-01, -1.764446e-01, -5.000000e-04, -3.232674e-01, 1.485815e00]),
+    )
+    TestUtils.assert_equal(
+        models.center_of_mass_velocity(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6])),
+        np.array([0.0, 0.425434, 0.638069, 0.0, -12.293126, 0.369492]),
+    )
+    TestUtils.assert_equal(
+        models.center_of_mass_acceleration(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+            np.array([0.1, 0.2, 0.3, 0.4, 0.5, 0.6]),
+        ),
+        np.array([0.0, 0.481652, 6.105858, 0.0, -33.566971, -126.795179]),
+    )
+
+    mass_matrices = models.mass_matrix(np.array([1, 2.1, 3, 4.1, 5, 6.1]))
+    assert len(mass_matrices) == 2
+    TestUtils.assert_equal(
+        mass_matrices[0],
+        np.array(
+            [
+                [2.711080e00, 3.783457e-01, 4.243336e-01],
+                [3.783457e-01, 9.999424e-01, -2.881681e-05],
+                [4.243336e-01, -2.881681e-05, 9.543311e-01],
+            ]
+        ),
+    )
+    TestUtils.assert_equal(
+        mass_matrices[1],
+        np.array([[9.313616, 5.580191, 2.063886], [5.580191, 4.791997, 1.895999], [2.063886, 1.895999, 0.945231]]),
+    )
+
+    nonlinear_effects = models.non_linear_effects(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6]))
+    assert len(nonlinear_effects) == 2
+    TestUtils.assert_equal(
+        nonlinear_effects[0],
+        np.array([38.817401, -1.960653, -1.259441]),
+    )
+    TestUtils.assert_equal(
+        nonlinear_effects[1],
+        np.array([322.060726, -22.147881, -20.660836]),
+    )
+
+    TestUtils.assert_equal(
+        models.angular_momentum(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6])),
+        np.array([3.001448e00, 0.000000e00, -2.168404e-19, 2.514126e01, 3.252607e-19, 0.000000e00]),
+        decimal=5,
+    )
+
+    TestUtils.assert_equal(
+        models.reshape_qdot(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6]), 1),
+        np.array([1.0, 2.1, 3.0, 4.1, 5.0, 6.0]),
+    )
+
+    TestUtils.assert_equal(
+        models.segment_angular_velocity(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6]), 1),
+        np.array([3.1, 0.0, 0.0, 9.1, 0.0, 0.0]),
+    )
+
+    assert models.soft_contact(0, 0) == []  # TODO: Fix soft contact (biorbd call error)
 
     with pytest.raises(RuntimeError, match="Close the actuator model before calling torqueMax"):
-        Function("TorqueFromActivation", [], [models.torque(tau, q, qdot)])()[
-            "o0"
-        ]  # TODO: Fix torque (Close the actuator model before calling torqueMax)
+        models.torque(
+            np.array([3.1, 0.0, 0.0, 9.1, 0.0, 0.0]),
+            np.array([3.1, 0.0, 0.0, 9.1, 0.0, 0.0]),
+            np.array([3.1, 0.0, 0.0, 9.1, 0.0, 0.0]),
+        )  # TODO: Fix torque (Close the actuator model before calling torqueMax)
 
-    forward_dynamics_free_floating_base = Function(
-        "RootForwardDynamics", [], [models.forward_dynamics_free_floating_base(q, qdot, qddot_joints)]
-    )()["o0"]
-    forward_dynamics = Function("ForwardDynamics", [], [models.forward_dynamics(q, qdot, tau)])()["o0"]
+    TestUtils.assert_equal(
+        models.forward_dynamics_free_floating_base(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+            np.array([3.1, 0.0, 0.0, 9.1, 0.0, 0.0]),
+        ),
+        np.array([-14.750679, -36.596107]),
+    )
 
-    constrained_forward_dynamics = Function(
-        "ConstrainedForwardDynamics", [], [models.constrained_forward_dynamics(q, qdot, tau, None)]
-    )()["o0"]
+    TestUtils.assert_equal(
+        models.forward_dynamics(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+        ),
+        np.array([-16.092093, 9.049853, 10.570878, -121.783105, 154.820759, -20.664452]),
+    )
+
+    TestUtils.assert_equal(
+        models.constrained_forward_dynamics(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+        ),
+        np.array([-16.092093, 9.049853, 10.570878, -121.783105, 154.820759, -20.664452]),
+    )
+
     with pytest.raises(NotImplementedError, match="External forces are not implemented yet for MultiBiorbdModel."):
-        Function("ConstrainedForwardDynamics", [], [models.constrained_forward_dynamics(q, qdot, tau, f_ext)])()["o0"]
+        models.constrained_forward_dynamics(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+        )
 
-    inverse_dynamics = Function("InverseDynamics", [], [models.inverse_dynamics(q, qdot, tau)])()["o0"]
+    TestUtils.assert_equal(
+        models.inverse_dynamics(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+        ),
+        np.array([4.844876e01, 2.121037e-01, 1.964626e00, 4.165226e02, 3.721585e01, 1.906986e00]),
+        decimal=5,
+    )
 
-    contact_forces_from_constrained_dynamics = Function(
-        "ContactForcesFromDynamics", [], [models.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, None)]
-    )()["o0"]
+    TestUtils.assert_equal(
+        models.contact_forces_from_constrained_forward_dynamics(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+            None,
+        ),
+        np.array([0.0, 0.0]),
+    )
+
     with pytest.raises(NotImplementedError, match="External forces are not implemented yet for MultiBiorbdModel."):
-        Function(
-            "ContactForcesFromDynamics",
-            [],
-            [models.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, f_ext)],
-        )()["o0"]
+        models.contact_forces_from_constrained_forward_dynamics(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+        )
 
-    qdot_from_impact = Function("QdotFromImpact", [], [models.qdot_from_impact(q, qdot)])()["o0"]
-    muscle_activation_dot = Function("MusActivationdot", [], [models.muscle_activation_dot(muscle_excitations)])()["o0"]
-    muscle_joint_torque = Function("MusTau", [], [models.muscle_joint_torque(muscle_excitations, q, qdot)])()["o0"]
-    markers = Function("Markers", [], [models.markers(q)[0]])()["o0"]
+    TestUtils.assert_equal(
+        models.qdot_from_impact(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+        ),
+        np.array([1.0, 2.1, 3.0, 4.1, 5.0, 6.0]),
+    )
 
-    with pytest.raises(NotImplementedError, match="marker is not implemented yet for MultiBiorbdModel"):
-        Function("Marker", [], [models.marker(q[:3], index=0)])()["o0"]
+    TestUtils.assert_equal(
+        models.muscle_activation_dot(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+        ),
+        np.array([], dtype=np.float64),
+    )
 
-    with pytest.raises(NotImplementedError, match="marker_index is not implemented yet for MultiBiorbdModel"):
-        models.marker_index("marker_3")
+    TestUtils.assert_equal(
+        models.muscle_joint_torque(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+        ),
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+    )
 
-    list_markers_velocities = models.marker_velocities(q, qdot)
-    assert isinstance(list_markers_velocities, list)
-    marker_velocities = Function(
-        "Markerdot", [], [list_markers_velocities[i] for i in range(len(list_markers_velocities))]
-    )()["o0"]
+    TestUtils.assert_equal(
+        models.markers(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+        )[0],
+        np.array([0.0, 0.0, 0.0]),
+    )
+
+    TestUtils.assert_equal(
+        models.marker(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            index=1,
+        ),
+        np.array([0.0, 0.841471, -0.540302]),
+    )
+
+    assert models.marker_index("marker_3") == 2
+
+    markers_velocities = models.marker_velocities(
+        np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+        np.array([1, 2.1, 3, 4.1, 5, 6]),
+    )
+    assert isinstance(markers_velocities, list)
+
+    TestUtils.assert_equal(
+        markers_velocities[0],
+        np.array([0.0, 0.0, 0.0]),
+    )
+    TestUtils.assert_equal(
+        markers_velocities[1],
+        np.array([0.0, 0.540302, 0.841471]),
+    )
 
     with pytest.raises(RuntimeError, match="All dof must have their actuators set"):
-        Function("TauMax", [], [models.tau_max(q, qdot)])()[
-            "o0"
-        ]  # TODO: add an actuator model (AnaisFarr will do it when her PR will be merged)
+        models.tau_max(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+        )  # TODO: add an actuator model (AnaisFarr will do it when her PR will be merged)
 
     # TODO: add a model with a contact to test this function
     # rigid_contact_acceleration = models.rigid_contact_acceleration(q, qdot, qddot, 0, 0)
 
-    soft_contact_forces = Function("SoftContactForces", [], [models.soft_contact_forces(q, qdot)])()["o0"]
-
-    reshape_fext_to_fcontact = Function("Fext_to_Fcontact", [], [models.models[0].reshape_fext_to_fcontact(f_ext)])()[
-        "o0"
-    ]
+    TestUtils.assert_equal(
+        models.soft_contact_forces(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+        ),
+        np.array([], dtype=np.float64),
+    )
 
     with pytest.raises(
         NotImplementedError, match="reshape_fext_to_fcontact is not implemented yet for MultiBiorbdModel"
     ):
-        Function("Fext_to_Fcontact", [], [models.reshape_fext_to_fcontact(f_ext)])()["o0"]
+        models.reshape_fext_to_fcontact(np.array([1, 2.1, 3, 4.1, 5, 6.1]))
 
-    normalize_state_quaternions = Function(
-        "normalize_state_quaternions", [], [models.normalize_state_quaternions(vertcat(q, qdot))]
-    )()["o0"]
+    # this test doesn't properly test the function, but it's the best we can do for now
+    # we should add a quaternion to the model to test it
+    # anyway it's tested elsewhere.
+    TestUtils.assert_equal(
+        models.normalize_state_quaternions(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1, 1, 2.1, 3, 4.1, 5, 6.6]),
+        ),
+        np.array([1.0, 2.1, 3.0, 4.1, 5.0, 6.1, 1.0, 2.1, 3.0, 4.1, 5.0, 6.6]),
+    )
 
-    get_quaternion_idx = models.models[0].get_quaternion_idx()
-    get_quaternion_idx = models.models[1].get_quaternion_idx()
+    TestUtils.assert_equal(
+        models.contact_forces(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+            None,
+        ),
+        np.array([0.0, 0.0]),
+    )
 
-    contact_forces = Function("Fcontact", [], [models.contact_forces(q, qdot, tau, None)])()["o0"]
     with pytest.raises(
         NotImplementedError, match="contact_forces is not implemented yet with external_forces for MultiBiorbdModel"
     ):
-        contact_forces = Function("Fcontact", [], [models.contact_forces(q, qdot, tau, f_ext)])()["o0"]
+        models.contact_forces(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+            np.array([3.1, 1, 2, 9.1, 1, 2]),
+        )
 
-    passive_joint_torque = Function("PassiveTau", [], [models.passive_joint_torque(q, qdot)])()["o0"]
+    TestUtils.assert_equal(
+        models.passive_joint_torque(
+            np.array([1, 2.1, 3, 4.1, 5, 6.1]),
+            np.array([1, 2.1, 3, 4.1, 5, 6]),
+        ),
+        np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
+    )
+
     q_mapping = models._q_mapping(variable_mappings)
     qdot_mapping = models._q_mapping(variable_mappings)
     qddot_mapping = models._q_mapping(variable_mappings)
     tau_mapping = models._q_mapping(variable_mappings)
-    bounds_from_ranges = BoundsList()
-    bounds_from_ranges["q"] = models.bounds_from_ranges("q", variable_mappings)
-    bounds_from_ranges["qdot"] = models.bounds_from_ranges("qdot", variable_mappings)
-
-    np.testing.assert_equal(nb_q, 6)
-    np.testing.assert_equal(nb_qdot, 6)
-    np.testing.assert_equal(nb_qddot, 6)
-    np.testing.assert_equal(nb_root, 2)
-    np.testing.assert_equal(nb_tau, 6)
-    np.testing.assert_equal(nb_quaternions, 0)
-    np.testing.assert_equal(nb_segments, 6)
-    np.testing.assert_equal(nb_muscles, 0)
-    np.testing.assert_equal(nb_soft_contacts, 0)
-    np.testing.assert_equal(nb_markers, 12)
-    np.testing.assert_equal(nb_rigid_contacts, 0)
-    np.testing.assert_equal(nb_contacts, 0)
-    np.testing.assert_equal(nb_dof, 6)
-
-    np.testing.assert_equal(name_dof, ("Seg1_RotX", "Seg2_RotX", "Seg3_RotX", "Seg1_RotX", "Seg2_RotX", "Seg3_RotX"))
-    np.testing.assert_equal(contact_names, ())
-    np.testing.assert_equal(soft_contact_names, ())
-    np.testing.assert_equal(
-        marker_names,
-        (
-            "marker_1",
-            "marker_2",
-            "marker_3",
-            "marker_4",
-            "marker_5",
-            "marker_6",
-            "marker_1",
-            "marker_2",
-            "marker_3",
-            "marker_4",
-            "marker_5",
-            "marker_6",
-        ),
-    )
-    np.testing.assert_equal(muscle_names, ())
-
-    for i in range(model_gravity_modified.shape[0]):
-        np.testing.assert_almost_equal(model_gravity_modified[i], DM(np.array([0, 0, -3, 0, 0, -3])[i]))
-
-    for i in range(mass.shape[0]):
-        np.testing.assert_almost_equal(mass[i], DM(np.array([3, 3][i])))
-
-    for i in range(center_of_mass.shape[0]):
-        np.testing.assert_almost_equal(
-            center_of_mass[i], DM(np.array([-0.0005, 1.28949, -0.875209, -0.0005, 1.30214, -1.43631])[i]), decimal=5
-        )
-
-    for i in range(center_of_mass_velocity.shape[0]):
-        np.testing.assert_almost_equal(
-            center_of_mass_velocity[i], DM(np.array([0, -0.0792032, 1.02386, 0, 1.20171, 1.19432])[i]), decimal=5
-        )
-
-    for i in range(center_of_mass_acceleration.shape[0]):
-        np.testing.assert_almost_equal(
-            center_of_mass_acceleration[i], DM(np.array([0, -1.2543, 0.750037, 0, -0.097267, 2.34977])[i]), decimal=5
-        )
-
-    for i in range(3):
-        for j in range(3):
-            np.testing.assert_almost_equal(
-                mass_matrix["o0"][i, j],
-                DM(
-                    np.array([[8.99991, 5.14091, 1.44319], [5.14091, 4.23625, 1.61812], [1.44319, 1.61812, 0.954331]])[
-                        i, j
-                    ]
-                ),
-                decimal=5,
-            )
-            np.testing.assert_almost_equal(
-                mass_matrix["o1"][i, j],
-                DM(
-                    np.array([[13.3131, 7.56109, 2.76416], [7.56109, 4.75431, 1.87716], [2.76416, 1.87716, 0.945231]])[
-                        i, j
-                    ]
-                ),
-                decimal=5,
-            )
-
-    for j in range(3):
-        np.testing.assert_almost_equal(
-            non_linear_effects["o0"][j], DM(np.array([7.01844, 7.1652, 3.02573])[j]), decimal=5
-        )
-        np.testing.assert_almost_equal(
-            non_linear_effects["o1"][j], DM(np.array([10.3449, 6.41134, 2.68226])[j]), decimal=5
-        )
-
-    for i in range(angular_momentum.shape[0]):
-        np.testing.assert_almost_equal(
-            angular_momentum[i],
-            DM(np.array([2.09041, -2.1684e-19, -1.0842e-19, 2.41968, 2.1684e-19, -2.1684e-19])[i]),
-            decimal=5,
-        )
-
-    for i in range(reshape_qdot.shape[0]):
-        np.testing.assert_almost_equal(
-            reshape_qdot[i],
-            DM(np.array([0.0580836, 0.866176, 0.601115, 0.708073, 0.0205845, 0.96991])[i]),
-            decimal=5,
-        )
-
-    for i in range(segment_angular_velocity.shape[0]):
-        np.testing.assert_almost_equal(
-            segment_angular_velocity[i], DM(np.array([0.0580836, 0, 0, 0.708073, 0, 0])[i]), decimal=5
-        )
-
-    np.testing.assert_equal(soft_contact.shape, (0, 0))
-
-    for i in range(forward_dynamics_free_floating_base.shape[0]):
-        np.testing.assert_almost_equal(
-            forward_dynamics_free_floating_base[i], DM(np.array([-1.16626, -0.997219])[i]), decimal=5
-        )
-
-    for i in range(forward_dynamics.shape[0]):
-        np.testing.assert_almost_equal(
-            forward_dynamics[i],
-            DM(np.array([1.06535, -3.78598, 2.27888, -0.348228, -0.778017, 0.113326])[i]),
-            decimal=5,
-        )
-
-    for i in range(constrained_forward_dynamics.shape[0]):
-        np.testing.assert_almost_equal(
-            constrained_forward_dynamics[i],
-            DM(np.array([1.06535, -3.78598, 2.27888, -0.348228, -0.778017, 0.113326])[i]),
-            decimal=5,
-        )
-
-    for i in range(inverse_dynamics.shape[0]):
-        np.testing.assert_almost_equal(
-            inverse_dynamics[i], DM(np.array([13.2861, 11.6096, 4.70426, 15.4236, 9.54273, 3.96254])[i]), decimal=4
-        )
-
-    for i in range(contact_forces_from_constrained_dynamics.shape[0]):
-        np.testing.assert_almost_equal(
-            contact_forces_from_constrained_dynamics[i],
-            DM(np.array([0, 0])[i]),
-            decimal=5,
-        )
-
-    for i in range(qdot_from_impact.shape[0]):
-        np.testing.assert_almost_equal(
-            qdot_from_impact[i],
-            DM(np.array([0.0580836, 0.866176, 0.601115, 0.708073, 0.0205845, 0.96991])[i]),
-            decimal=5,
-        )
-
-    np.testing.assert_equal(muscle_activation_dot.shape, (0, 1))
-
-    for i in range(muscle_joint_torque.shape[0]):
-        np.testing.assert_almost_equal(muscle_joint_torque[i], DM(np.zeros((6,))[i]), decimal=5)
-
-    for i in range(markers.shape[0]):
-        np.testing.assert_almost_equal(markers[i], DM(np.zeros((3,))[i]), decimal=5)
-
-    for i in range(marker_velocities.shape[0]):
-        np.testing.assert_almost_equal(marker_velocities[i], DM(np.zeros((6,))[i]), decimal=5)
-
-    np.testing.assert_equal(soft_contact_forces.shape, (0, 1))
-
-    np.testing.assert_equal(reshape_fext_to_fcontact.shape, (0, 0))
-
-    for i in range(normalize_state_quaternions.shape[0]):
-        np.testing.assert_almost_equal(
-            normalize_state_quaternions[i],
-            DM(
-                np.array(
-                    [
-                        0.37454,
-                        0.950714,
-                        0.731994,
-                        0.598658,
-                        0.156019,
-                        0.155995,
-                        0.0580836,
-                        0.866176,
-                        0.601115,
-                        0.708073,
-                        0.0205845,
-                        0.96991,
-                    ]
-                )[i]
-            ),
-            decimal=5,
-        )
-
-    np.testing.assert_equal(get_quaternion_idx, [])
-
-    for i in range(contact_forces.shape[0]):
-        np.testing.assert_almost_equal(contact_forces[i], DM(np.array([0, 0])[i]), decimal=5)
-
-    for i in range(passive_joint_torque.shape[0]):
-        np.testing.assert_almost_equal(passive_joint_torque[i], DM(np.zeros((6,))[i]), decimal=5)
 
     np.testing.assert_equal(q_mapping["q"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
     np.testing.assert_equal(qdot_mapping["qdot"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
     np.testing.assert_equal(qddot_mapping["qddot"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
     np.testing.assert_equal(tau_mapping["tau"].to_first.map_idx, [1, 2, 5])
+
+    bounds_from_ranges = BoundsList()
+    bounds_from_ranges["q"] = models.bounds_from_ranges("q", variable_mappings)
+    bounds_from_ranges["qdot"] = models.bounds_from_ranges("qdot", variable_mappings)
 
     for key in bounds_from_ranges.keys():
         if key == "q":
@@ -423,5 +409,71 @@ def test_biorbd_model():
 
         np.testing.assert_almost_equal(bounds_from_ranges[key].min, DM(np.array(expected)), decimal=5)
 
-    assert models.nb_models == 2
-    assert models.nb_extra_models == 3
+        assert models.variable_index("q", 0) == range(0, 3)
+        assert models.variable_index("qdot", 1) == range(3, 6)
+        assert models.variable_index("tau", 0) == range(0, 3)
+        assert models.variable_index("qddot", 1) == range(3, 6)
+        assert models.variable_index("qddot_joints", 0) == range(0, 2)
+        assert models.variable_index("qddot_root", 1) == range(1, 2)
+        assert models.variable_index("contact", 0) == range(0, 0)
+        assert models.variable_index("markers", 0) == range(0, 6)
+
+        variable_name = "wrong"
+        with pytest.raises(
+            ValueError,
+            match=f"The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'"
+            f" and {variable_name} was sent.",
+        ):
+            models.variable_index(variable_name, 0)
+
+        assert models.global_variable_id("q", 0, 1) == 1
+        assert models.global_variable_id("qdot", 1, 0) == 3
+        assert models.global_variable_id("tau", 0, 1) == 1
+        assert models.global_variable_id("qddot", 1, 0) == 3
+        assert models.global_variable_id("qddot_joints", 0, 1) == 1
+        assert models.global_variable_id("qddot_root", 1, 0) == 1
+
+        with pytest.raises(IndexError, match="range object index out of range"):
+            models.global_variable_id("contact", 0, 1)
+
+        assert models.global_variable_id("markers", 0, 1) == 1
+
+        local_id, model_id = models.local_variable_id("q", 2)
+        assert local_id == 2
+        assert model_id == 0
+
+        local_id, model_id = models.local_variable_id("qdot", 5)
+        assert local_id == 2
+        assert model_id == 1
+
+        local_id, model_id = models.local_variable_id("tau", 2)
+        assert local_id == 2
+        assert model_id == 0
+
+        local_id, model_id = models.local_variable_id("qddot", 5)
+        assert local_id == 2
+        assert model_id == 1
+
+        local_id, model_id = models.local_variable_id("qddot_joints", 2)
+        assert local_id == 0
+        assert model_id == 1
+
+        local_id, model_id = models.local_variable_id("qddot_root", 1)
+        assert local_id == 0
+        assert model_id == 1
+
+        local_id, model_id = models.local_variable_id("markers", 2)
+        assert local_id == 2
+        assert model_id == 0
+
+        local_id, model_id = models.local_variable_id("segment", 2)
+        assert local_id == 2
+        assert model_id == 0
+
+        variable_name = "wrong"
+        with pytest.raises(
+            ValueError,
+            match=f"The variable must be 'q', 'qdot', 'qddot', 'tau', 'contact' or 'markers'"
+            f" and {variable_name} was sent.",
+        ):
+            models.local_variable_id(variable_name, 0)
