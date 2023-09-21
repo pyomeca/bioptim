@@ -116,10 +116,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         elif isinstance(problem_type, SocpType.DMS):
             ode_solver = OdeSolver.RK4()
         elif isinstance(problem_type, SocpType.IRK):
-            ode_solver = OdeSolver.IRK(
-                method=problem_type.method, polynomial_degree=problem_type.polynomial_degree
-            )
-
+            ode_solver = OdeSolver.IRK(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)
 
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
@@ -382,7 +379,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             pt.name = f"COVARIANCE_PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
-
 
     def _prepare_stochastic_dynamics_dms(self, constraints):
         """

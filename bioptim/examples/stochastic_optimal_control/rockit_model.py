@@ -26,14 +26,16 @@ class RockitModel:
             self.motor_noise_magnitude = motor_noise_magnitude
             self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
 
-        self.sensory_noise_magnitude = []  # This is necessary to have the right shapes in bioptim's internal constraints
+        self.sensory_noise_magnitude = (
+            []
+        )  # This is necessary to have the right shapes in bioptim's internal constraints
         self.sensory_noise_sym = MX()
         self.sensory_reference = None
 
         n_noised_states = 2
         self.polynomial_degree = polynomial_degree
         self.matrix_shape_cov = (n_noised_states, n_noised_states)
-        self.matrix_shape_m = (n_noised_states, n_noised_states*(polynomial_degree+1))
+        self.matrix_shape_m = (n_noised_states, n_noised_states * (polynomial_degree + 1))
 
     @property
     def nb_q(self):
@@ -71,7 +73,7 @@ class RockitModel:
         if with_noise:
             motor_noise = self.motor_noise_sym
 
-        qddot = -0.1*(1-q**2)*qdot - q + u + motor_noise
+        qddot = -0.1 * (1 - q**2) * qdot - q + u + motor_noise
 
         return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
@@ -79,15 +81,15 @@ class RockitModel:
         """
         The dynamics from equation (line 42).
         """
-        q = states[:self.nb_q]
-        qdot = states[self.nb_q:]
+        q = states[: self.nb_q]
+        qdot = states[self.nb_q :]
         u = controls
 
         motor_noise = 0
         if with_noise:
             motor_noise = self.motor_noise_sym
 
-        qddot = -0.1*(1-q**2)*qdot - q + u + motor_noise
+        qddot = -0.1 * (1 - q**2) * qdot - q + u + motor_noise
 
         return vertcat(qdot, qddot)
 

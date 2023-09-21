@@ -5,6 +5,7 @@ The controls are coordinates of a quide-point (the mass is attached to this guid
 """
 
 import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
 import casadi as cas
 import numpy as np
 import pickle
@@ -31,6 +32,9 @@ from bioptim import (
     OdeSolver,
     ConstraintFcn,
     MultinodeConstraintList,
+    MultinodeObjective,
+    MultinodeObjectiveFcn,
+    MultinodeObjectiveList,
     MultinodeConstraintFcn,
     StochasticBioModel,
 )
@@ -56,10 +60,12 @@ def superellipse(a=1, b=1, n=2, x_0=0, y_0=0, resolution=100):
     Z = ((X - x_0) / a) ** n + ((Y - y_0) / b) ** n - 1
     return X, Y, Z
 
-def draw_cov_ellipse(cov, pos, ax):
+
+def draw_cov_ellipse(cov, pos, ax, color="b"):
     """
     Draw an ellipse representing the covariance at a given point.
     """
+
     def eigsorted(cov):
         vals, vecs = np.linalg.eigh(cov)
         order = vals.argsort()[::-1]
@@ -70,11 +76,10 @@ def draw_cov_ellipse(cov, pos, ax):
 
     # Width and height are "full" widths, not radius
     width, height = 2 * np.sqrt(vals)
-    ellip = plt.matplotlib.patches.Ellipse(xy=pos, width=width, height=height, angle=theta, color="b", alpha=0.1)
+    ellip = plt.matplotlib.patches.Ellipse(xy=pos, width=width, height=height, angle=theta, color=color, alpha=0.1)
 
     ax.add_patch(ellip)
     return ellip
-
 
 
 def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
@@ -97,7 +102,9 @@ def configure_stochastic_optimal_control_problem_collocations(ocp: OptimalContro
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
     # Stochastic variables
-    ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=4, n_collocation_points=nlp.model.polynomial_degree+1)
+    ConfigureProblem.configure_stochastic_m(
+        ocp, nlp, n_noised_states=4, n_collocation_points=nlp.model.polynomial_degree + 1
+    )
     ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
     ConfigureProblem.configure_dynamics_function(
         ocp,
@@ -139,6 +146,7 @@ def configure_stochastic_optimal_control_problem_dms(ocp: OptimalControlProgram,
         allow_free_variables=True,
     )
 
+
 def path_constraint(controller: PenaltyController, super_elipse_index: int, is_robustified: bool = False):
     p_x = controller.states["q"].cx_start[0]
     p_y = controller.states["q"].cx_start[1]
@@ -162,7 +170,9 @@ def path_constraint(controller: PenaltyController, super_elipse_index: int, is_r
     if is_robustified:
         gamma = 1
         dh_dx = cas.jacobian(h, controller.states.cx_start)
-        cov = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov)
+        cov = StochasticBioModel.reshape_to_matrix(
+            controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+        )
         safe_guard = gamma * cas.sqrt(dh_dx @ cov @ dh_dx.T)
         out -= safe_guard
 
@@ -210,8 +220,12 @@ def prepare_ocp(
     # Constraints
     constraints = ConstraintList()
     epsilon = 0
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0+epsilon, max_bound=cas.inf, quadratic=False)
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0+epsilon, max_bound=cas.inf, quadratic=False)
+    constraints.add(
+        path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0 + epsilon, max_bound=cas.inf, quadratic=False
+    )
+    constraints.add(
+        path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0 + epsilon, max_bound=cas.inf, quadratic=False
+    )
 
     # Dynamics
     dynamics = DynamicsList()
@@ -324,23 +338,48 @@ def prepare_socp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_CONTROL, key="u", weight=1e-2 / (2 * n_shooting), node=Node.ALL_SHOOTING, quadratic=True
+        ObjectiveFcn.Mayer.MINIMIZE_CONTROL,
+        key="u",
+        weight=1e-2 / (2 * n_shooting),
+        node=Node.ALL_SHOOTING,
+        quadratic=True,
     )
 
-    # objective_functions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
+    multinode_functions = MultinodeObjectiveList()
+    multinode_functions.add(
+        MultinodeObjectiveFcn.STOCHASTIC_EQUALITY, weight=10, key="cov", nodes=(0, n_shooting), nodes_phase=(0, 0)
+    )
 
     # Constraints
     constraints = ConstraintList()
     epsilon = 0 if not is_robustified else 0
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=0, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified, quadratic=False)
-    constraints.add(path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0+epsilon, max_bound=cas.inf, is_robustified=is_robustified, quadratic=False)
+    constraints.add(
+        path_constraint,
+        node=Node.ALL,
+        super_elipse_index=0,
+        min_bound=0 + epsilon,
+        max_bound=cas.inf,
+        is_robustified=is_robustified,
+        quadratic=False,
+    )
+    constraints.add(
+        path_constraint,
+        node=Node.ALL,
+        super_elipse_index=1,
+        min_bound=0 + epsilon,
+        max_bound=cas.inf,
+        is_robustified=is_robustified,
+        quadratic=False,
+    )
     # constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
     # constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
 
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        configure_stochastic_optimal_control_problem_collocations if isinstance(socp_type, SocpType.COLLOCATION) else configure_stochastic_optimal_control_problem_dms,
+        configure_stochastic_optimal_control_problem_collocations
+        if isinstance(socp_type, SocpType.COLLOCATION)
+        else configure_stochastic_optimal_control_problem_dms,
         dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
             states,
             controls,
@@ -391,7 +430,9 @@ def prepare_socp(
         n_m = 4 * 4 * (polynomial_degree + 1)
         n_stochastic += n_m
         if m_init is None:
-            m_init = get_m_init(bio_model, n_stochastic, n_shooting, final_time, polynomial_degree, q_init, qdot_init, u_init)
+            m_init = get_m_init(
+                bio_model, n_stochastic, n_shooting, final_time, polynomial_degree, q_init, qdot_init, u_init
+            )
         s_init.add(
             "m",
             initial_guess=m_init,
@@ -405,45 +446,43 @@ def prepare_socp(
         )
 
     if cov_init is None:
-        cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.05
+        cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.1
         shape_0, shape_1 = cov_init_matrix.shape[0], cov_init_matrix.shape[1]
         cov_0 = np.zeros((shape_0 * shape_1, 1))
         for s0 in range(shape_0):
             for s1 in range(shape_1):
                 cov_0[shape_0 * s1 + s0] = cov_init_matrix[s0, s1]
         if isinstance(socp_type, SocpType.COLLOCATION):
-            cov_init = get_cov_init_collocations(bio_model,
-                                    n_shooting,
-                                    n_stochastic,
-                                    polynomial_degree,
-                                    final_time,
-                                    q_init,
-                                    qdot_init,
-                                    u_init,
-                                    m_init,
-                                    cov_0,
-                                    motor_noise_magnitude)
+            cov_init = get_cov_init_collocations(
+                bio_model,
+                n_shooting,
+                n_stochastic,
+                polynomial_degree,
+                final_time,
+                q_init,
+                qdot_init,
+                u_init,
+                m_init,
+                cov_0,
+                motor_noise_magnitude,
+            )
         else:
-            cov_init = get_cov_init_irk(bio_model,
-                                                 n_shooting,
-                                                 n_stochastic,
-                                                 polynomial_degree,
-                                                 final_time,
-                                                 q_init,
-                                                 qdot_init,
-                                                 u_init,
-                                                 cov_0,
-                                                 motor_noise_magnitude)
+            cov_init = get_cov_init_irk(
+                bio_model,
+                n_shooting,
+                n_stochastic,
+                polynomial_degree,
+                final_time,
+                q_init,
+                qdot_init,
+                u_init,
+                cov_0,
+                motor_noise_magnitude,
+            )
 
-            cov_init2 = get_cov_init_dms(bio_model,
-                                    n_shooting,
-                                    n_stochastic,
-                                    final_time,
-                                    q_init,
-                                    qdot_init,
-                                    u_init,
-                                    cov_0,
-                                    motor_noise_magnitude)
+            cov_init2 = get_cov_init_dms(
+                bio_model, n_shooting, n_stochastic, final_time, q_init, qdot_init, u_init, cov_0, motor_noise_magnitude
+            )
             #
             # cov_init = get_cov_init_slicot(bio_model,
             #                         n_shooting,
@@ -473,8 +512,8 @@ def prepare_socp(
     # )
     cov_min = np.ones((n_cov, 3)) * -cas.inf
     cov_max = np.ones((n_cov, 3)) * cas.inf
-    cov_min[:, 0] = cov_init[:, 0]
-    cov_max[:, 0] = cov_init[:, 0]
+    # cov_min[:, 0] = cov_init[:, 0]
+    # cov_max[:, 0] = cov_init[:, 0]
     s_bounds.add(
         "cov",
         min_bound=cov_min,
@@ -484,19 +523,19 @@ def prepare_socp(
 
     for i in range(n_shooting + 1):
         if not test_matrix_semi_definite_positiveness(cov_init[:, i]):
-            print(
-                f"Initial guess for cov is not semi-definite positive, something went wrong at the {i}th node.")
+            print(f"Initial guess for cov is not semi-definite positive, something went wrong at the {i}th node.")
 
         if not test_eigen_values(cov_init[:, i]):
             print(f"Something went wrong at the {i}th node. (Eigen values)")
 
         if not test_robustified_constraint_value(bio_model, q_init, qdot_init, cov_init):
             print(
-                f"Initial guess for cov is incompatible with the robustified constraint, something went wrong at the {i}th node.")
+                f"Initial guess for cov is incompatible with the robustified constraint, something went wrong at the {i}th node."
+            )
 
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
-    phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC) #, phase_pre_idx=0)
+    phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)  # , phase_pre_idx=0)
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -510,6 +549,7 @@ def prepare_socp(
         u_bounds=u_bounds,
         s_bounds=s_bounds,
         objective_functions=objective_functions,
+        multinode_objectives=multinode_functions,
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=6,
@@ -532,10 +572,8 @@ def main():
     run_step_2 = True
     run_step_3 = True  # True
 
-
-
     # --- Prepare the ocp --- #
-    polynomial_degree = 7
+    polynomial_degree = 9
     # socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
     # socp_type = SocpType.DMS()
     socp_type = SocpType.IRK(polynomial_degree=polynomial_degree, method="legendre")
@@ -550,7 +588,7 @@ def main():
     # TODO: include SLICOT solver (for solving ill-conditioned, ill-scaled, large-scale problems by preserving the stucture of the problem)
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
-    solver.set_maximum_iterations(1000) # 1000
+    solver.set_maximum_iterations(1000)  # 1000
     # solver._nlp_scaling_method = "None"
 
     if run_step_1:
@@ -565,25 +603,26 @@ def main():
         qdot_deterministic = sol_ocp.states["qdot"]
         u_deterministic = sol_ocp.controls["u"]
         time_deterministic = sol_ocp.parameters["time"][0][0]
-        data_deterministic = {"q_deterministic": q_deterministic,
-                              "qdot_deterministic": qdot_deterministic,
-                              "u_deterministic": u_deterministic,
-                              "time_deterministic": time_deterministic}
-        #save the results
-        with open('deterministic.pkl', 'wb') as f:
+        data_deterministic = {
+            "q_deterministic": q_deterministic,
+            "qdot_deterministic": qdot_deterministic,
+            "u_deterministic": u_deterministic,
+            "time_deterministic": time_deterministic,
+        }
+        # save the results
+        with open("deterministic.pkl", "wb") as f:
             pickle.dump(data_deterministic, f)
         # sol_ocp.graphs()
     else:
-        with open('deterministic.pkl', 'rb') as f:
+        with open("deterministic.pkl", "rb") as f:
             data_deterministic = pickle.load(f)
             q_deterministic = data_deterministic["q_deterministic"]
             qdot_deterministic = data_deterministic["qdot_deterministic"]
             u_deterministic = data_deterministic["u_deterministic"]
             time_deterministic = data_deterministic["time_deterministic"]
 
-
     if isinstance(socp_type, SocpType.COLLOCATION):
-        q_init = initialize_circle(6*n_shooting+1)
+        q_init = initialize_circle(6 * n_shooting + 1)
     else:
         q_init = initialize_circle(n_shooting + 1)
     fig, ax = plt.subplots(1, 2)
@@ -602,13 +641,10 @@ def main():
     ax[0].plot(q_init[0], q_init[1], "-k", label="Initial guess")
     ax[0].plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
 
-    ax[1].plot(q_deterministic[0], q_deterministic[1], 'b')
-    ax[1].plot(u_deterministic[0], u_deterministic[1], 'r')
+    ax[1].plot(q_deterministic[0], q_deterministic[1], "b")
+    ax[1].plot(u_deterministic[0], u_deterministic[1], "r")
     for i in range(n_shooting):
-        ax[1].plot( (u_deterministic[0, i], q_deterministic[0, i]),
-                    (u_deterministic[1, i], q_deterministic[1, i]),'k')
-
-
+        ax[1].plot((u_deterministic[0, i], q_deterministic[0, i]), (u_deterministic[1, i], q_deterministic[1, i]), "k")
 
     if run_step_2:
         socp = prepare_socp(
@@ -632,17 +668,19 @@ def main():
         else:
             m_stochastic = None
         cov_stochastic = sol_socp.stochastic_variables["cov"]
-        data_stochastic = {"q_stochastic": q_stochastic,
-                          "qdot_stochastic": qdot_stochastic,
-                          "u_stochastic": u_stochastic,
-                          "m_stochastic": m_stochastic,
-                          "cov_stochastic": cov_stochastic,
-                          "time_stochastic": time_stochastic}
-        with open('stochastic.pkl', 'wb') as f:
+        data_stochastic = {
+            "q_stochastic": q_stochastic,
+            "qdot_stochastic": qdot_stochastic,
+            "u_stochastic": u_stochastic,
+            "m_stochastic": m_stochastic,
+            "cov_stochastic": cov_stochastic,
+            "time_stochastic": time_stochastic,
+        }
+        with open("stochastic.pkl", "wb") as f:
             pickle.dump(data_stochastic, f)
         # sol_socp.graphs()
     else:
-        with open('stochastic.pkl', 'rb') as f:
+        with open("stochastic.pkl", "rb") as f:
             data_stochastic = pickle.load(f)
             q_stochastic = data_stochastic["q_stochastic"]
             qdot_stochastic = data_stochastic["qdot_stochastic"]
@@ -669,12 +707,12 @@ def main():
         nb_points = 1
 
     for j in range(cov_stochastic.shape[1]):
-        ax[0].plot(q_stochastic[0, j*nb_points], q_stochastic[1, j*nb_points], "or", markersize=2)
+        ax[0].plot(q_stochastic[0, j * nb_points], q_stochastic[1, j * nb_points], "or", markersize=2)
         cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
         for s_0 in range(bio_model.matrix_shape_cov[0]):
             for s_1 in range(bio_model.matrix_shape_cov[1]):
                 cov_reshaped_to_matrix[s_0, s_1] = cov_stochastic[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
-        # draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_stochastic[:, j*nb_points], ax)
+        draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_stochastic[:, j * nb_points], ax[0], color="r")
         tempo_cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
         tempo_cov_reshaped_to_matrix[:, :] = cov_reshaped_to_matrix[:, :]
         tempo_cov_reshaped_to_matrix[0, 0] = 0
@@ -682,10 +720,6 @@ def main():
         tempo_cov_reshaped_to_matrix[2, 2] = 0
         tempo_cov_reshaped_to_matrix[3, 3] = 0
         print(np.max(np.abs(tempo_cov_reshaped_to_matrix)))
-
-
-
-
 
     if run_step_3:
         rsocp = prepare_socp(
@@ -696,8 +730,8 @@ def main():
             q_init=q_stochastic,
             qdot_init=qdot_stochastic,
             u_init=u_stochastic,
-            m_init=m_stochastic,
-            cov_init=cov_stochastic,
+            # m_init=m_stochastic,
+            # cov_init=cov_stochastic,
             is_robustified=True,
             socp_type=socp_type,
         )
@@ -712,18 +746,20 @@ def main():
         else:
             m_robustified = None
         cov_robustified = sol_rsocp.stochastic_variables["cov"]
-        robustified_data = {"q_robustified": q_robustified,
-                            "qdot_robustified": qdot_robustified,
-                            "u_robustified": u_robustified,
-                            # "time_robustified": time_robustified,
-                            "m_robustified": m_robustified,
-                            "cov_robustified": cov_robustified}
+        robustified_data = {
+            "q_robustified": q_robustified,
+            "qdot_robustified": qdot_robustified,
+            "u_robustified": u_robustified,
+            # "time_robustified": time_robustified,
+            "m_robustified": m_robustified,
+            "cov_robustified": cov_robustified,
+        }
 
-        with open('robustified.pkl', 'wb') as f:
+        with open("robustified.pkl", "wb") as f:
             pickle.dump(robustified_data, f)
         # sol_rsocp.graphs()
     else:
-        with open('robustified.pkl', 'rb') as f:
+        with open("robustified.pkl", "rb") as f:
             robustified_data = pickle.load(f)
             q_robustified = robustified_data["q_robustified"]
             qdot_robustified = robustified_data["qdot_robustified"]
@@ -732,18 +768,18 @@ def main():
             m_robustified = robustified_data["m_robustified"]
             cov_robustified = robustified_data["cov_robustified"]
 
-    ax.plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
+    ax[0].plot(q_robustified[0], q_robustified[1], "-b", label="Stochastic robustified")
 
     for j in range(cov_robustified.shape[1]):
-        ax.plot(q_robustified[0, j*nb_points], q_robustified[1, j*nb_points], "ok", markersize=2)
+        ax[0].plot(q_robustified[0, j * nb_points], q_robustified[1, j * nb_points], "ok", markersize=2)
         cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
         for s_0 in range(bio_model.matrix_shape_cov[0]):
             for s_1 in range(bio_model.matrix_shape_cov[1]):
                 cov_reshaped_to_matrix[s_0, s_1] = cov_robustified[bio_model.matrix_shape_cov[0] * s_1 + s_0, j]
-        draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_robustified[:, j*nb_points], ax)
+        draw_cov_ellipse(cov_reshaped_to_matrix[:2, :2], q_robustified[:, j * nb_points], ax[0], color="b")
 
-    ax.set_xlabel("X")
-    ax.set_ylabel("Y")
+    ax[0].set_xlabel("X")
+    ax[0].set_ylabel("Y")
     # ax.axis("equal")
     # plt.legend()
     plt.savefig("output.png")

@@ -58,6 +58,7 @@ class SocpType:
         with_cholesky: bool
             If True, the Cholesky decomposition is used to reduce the number of optimization variables
         """
+
         def __init__(self, with_cholesky: bool = False, polynomial_degree: int = 4, method: str = "legendre"):
             self.with_cholesky = with_cholesky
             self.polynomial_degree = polynomial_degree

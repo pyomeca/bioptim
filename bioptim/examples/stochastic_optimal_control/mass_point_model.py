@@ -28,14 +28,16 @@ class MassPointModel:
             self.motor_noise_magnitude = motor_noise_magnitude
             self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
 
-        self.sensory_noise_magnitude = []  # This is necessary to have the right shapes in bioptim's internal constraints
+        self.sensory_noise_magnitude = (
+            []
+        )  # This is necessary to have the right shapes in bioptim's internal constraints
         self.sensory_noise_sym = MX()
         self.sensory_reference = None
 
         n_noised_states = 4
         self.polynomial_degree = polynomial_degree
         self.matrix_shape_cov = (n_noised_states, n_noised_states)
-        self.matrix_shape_m = (n_noised_states, n_noised_states*(polynomial_degree+1))
+        self.matrix_shape_m = (n_noised_states, n_noised_states * (polynomial_degree + 1))
 
         self.kapa = 10
         self.c = 1
@@ -101,8 +103,8 @@ class MassPointModel:
         """
         The dynamics from equation (22).
         """
-        q = states[:self.nb_q]
-        qdot = states[self.nb_q:]
+        q = states[: self.nb_q]
+        qdot = states[self.nb_q :]
         u = controls
 
         motor_noise = 0

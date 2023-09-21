@@ -57,7 +57,9 @@ class PhaseTransition(MultinodePenalty):
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
             PhaseTransitionFcn,
-            nodes_phase=(-1, 0) if transition in [transition.CYCLIC, transition.COVARIANCE_CYCLIC] else (phase_pre_idx, phase_pre_idx + 1),
+            nodes_phase=(-1, 0)
+            if transition in [transition.CYCLIC, transition.COVARIANCE_CYCLIC]
+            else (phase_pre_idx, phase_pre_idx + 1),
             nodes=(Node.END, Node.START),
             multinode_penalty=transition,
             custom_function=custom_function,

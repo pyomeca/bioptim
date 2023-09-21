@@ -1,4 +1,16 @@
-from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX, symvar, integrator_in, integrator_out
+from casadi import (
+    Function,
+    vertcat,
+    horzcat,
+    collocation_points,
+    tangent,
+    rootfinder,
+    MX,
+    SX,
+    symvar,
+    integrator_in,
+    integrator_out,
+)
 import numpy as np
 
 from ..misc.enums import ControlType, DefectType
@@ -1006,7 +1018,7 @@ class IRK(COLLOCATION):
 
         u = controls
         sym_variables = symvar(defect)
-        if hasattr(self.model, 'motor_noise_sym'):
+        if hasattr(self.model, "motor_noise_sym"):
             if any(var.name() == self.model.motor_noise_sym.name() for var in sym_variables):
                 u = vertcat(u, self.model.motor_noise_sym)
 
@@ -1016,8 +1028,6 @@ class IRK(COLLOCATION):
             [vertcat(*states[1:]), states[0], u, params, stochastic_variables],
             [defect],
         ).expand()
-
-
 
         # Create a implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn)
@@ -1036,27 +1046,27 @@ class IRK(COLLOCATION):
         Prepare the CasADi function from dxdt
         """
         xf, xall = self.dxdt(
-        h=self.h,
-        states=self.x_sym,
-        controls=self.u_sym,
-        params=self.param_sym,
-        param_scaling=self.param_scaling,
-        stochastic_variables=self.s_sym,
+            h=self.h,
+            states=self.x_sym,
+            controls=self.u_sym,
+            params=self.param_sym,
+            param_scaling=self.param_scaling,
+            stochastic_variables=self.s_sym,
         )
 
         u = self.u_sym
         p = vertcat(self.param_sym, self.s_sym)
         sym_variables = symvar(xf)
 
-
-        if hasattr(self.model, 'motor_noise_sym'):
+        if hasattr(self.model, "motor_noise_sym"):
             if any(var.name() == self.model.motor_noise_sym.name() for var in sym_variables):
                 p = vertcat(self.model.motor_noise_sym, p)
 
         self.function = Function(
             "integrator",
-            {'x0': self.x_sym[0], 'u': u, 'p': p, 'xf': xf},
-            integrator_in(), integrator_out(),
+            {"x0": self.x_sym[0], "u": u, "p": p, "xf": xf},
+            integrator_in(),
+            integrator_out(),
         )
 
 
