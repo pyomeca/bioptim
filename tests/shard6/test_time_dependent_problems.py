@@ -139,7 +139,6 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     for i in range(len(bio_model)):
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=i, quadratic=True)
-        # objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_QDDOT, weight=1, phase=i, quadratic=True)
         if minimize_time:
             target = 1 if i == 0 else 2
             objective_functions.add(
@@ -446,11 +445,6 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
             if minimize_time:
                 if control_type is ControlType.LINEAR_CONTINUOUS:
                     if n_phase == 1:
-                        # if use_sx:  # Awkward behavior of SX not giving the same result as MX
-                        #     np.testing.assert_almost_equal(sol.controls["tau"][0][10], 1.4387867097106664e-05)
-                        #     np.testing.assert_almost_equal(sol.controls["tau"][0][20], 4.152749205255539e-05)
-                        #     np.testing.assert_almost_equal(sol.time[-1], 1.2808173674288864e-10)
-                        # else:
                         np.testing.assert_almost_equal(np.array(sol.cost), np.array([[133.93264169]]))
                         np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5690273997201437)
                         np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.7792794037533405)
