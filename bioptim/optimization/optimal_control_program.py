@@ -149,10 +149,8 @@ class OptimalControlProgram:
         phase_time: int | float | list | tuple,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
-        s_bounds: BoundsList = None,
         x_init: InitialGuessList | None = None,
         u_init: InitialGuessList | None = None,
-        s_init: InitialGuessList | None = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
         parameters: ParameterList = None,
@@ -173,7 +171,6 @@ class OptimalControlProgram:
         x_scaling: VariableScalingList = None,
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
-        s_scaling: VariableScalingList = None,
         state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
@@ -196,22 +193,16 @@ class OptimalControlProgram:
             The initial guesses for the states
         u_init: InitialGuess | InitialGuessList
             The initial guesses for the controls
-        s_init: InitialGuess | InitialGuessList
-            The initial guesses for the stochastic variables
         x_bounds: Bounds | BoundsList
             The bounds for the states
         u_bounds: Bounds | BoundsList
             The bounds for the controls
-        s_bounds: Bounds | BoundsList
-            The bounds for the stochastic variables
         x_scaling: VariableScalingList
             The scaling for the states at each phase, if only one is sent, then the scaling is copied over the phases
         xdot_scaling: VariableScalingList
             The scaling for the states derivative, if only one is sent, then the scaling is copied over the phases
         u_scaling: VariableScalingList
             The scaling for the controls, if only one is sent, then the scaling is copied over the phases
-        s_scaling: VariableScalingList
-            The scaling for the stochastic variables, if only one is sent, then the scaling is copied over the phases
         objective_functions: Objective | ObjectiveList
             All the objective function of the program
         constraints: Constraint | ConstraintList
@@ -257,21 +248,24 @@ class OptimalControlProgram:
 
         bio_model = self._initialize_model(bio_model)
 
+        # s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
+        s_init = InitialGuessList()
+        s_bounds = BoundsList()
+        s_scaling = VariableScalingList()
+        # Placed here because of MHE
+        self._check_and_prepare_dynamics(dynamics)
+
         self._set_original_values(
             bio_model,
-            dynamics,
             n_shooting,
             phase_time,
             x_init,
             u_init,
-            s_init,
             x_bounds,
             u_bounds,
-            s_bounds,
             x_scaling,
             xdot_scaling,
             u_scaling,
-            s_scaling,
             external_forces,
             ode_solver,
             control_type,
@@ -382,19 +376,15 @@ class OptimalControlProgram:
     def _set_original_values(
         self,
         bio_model,
-        dynamics,
         n_shooting,
         phase_time,
         x_init,
         u_init,
-        s_init,
         x_bounds,
         u_bounds,
-        s_bounds,
         x_scaling,
         xdot_scaling,
         u_scaling,
-        s_scaling,
         external_forces,
         ode_solver,
         control_type,
@@ -430,14 +420,11 @@ class OptimalControlProgram:
             "phase_time": phase_time,
             "x_init": x_init,
             "u_init": u_init,
-            "s_init": s_init,
             "x_bounds": x_bounds,
             "u_bounds": u_bounds,
-            "s_bounds": s_bounds,
             "x_scaling": x_scaling,
             "xdot_scaling": xdot_scaling,
             "u_scaling": u_scaling,
-            "s_scaling": s_scaling,
             "objective_functions": ObjectiveList(),
             "constraints": ConstraintList(),
             "parameters": ParameterList(),
