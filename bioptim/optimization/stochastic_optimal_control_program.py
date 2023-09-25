@@ -1,4 +1,7 @@
 from typing import Callable, Any
+import sys
+
+import pickle
 
 from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics
@@ -17,11 +20,14 @@ from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList
 from ..limits.path_conditions import BoundsList
 from ..limits.path_conditions import InitialGuessList
+from ..misc.__version__ import __version__
 from ..misc.enums import Node, ControlType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
+from ..misc.utils import check_version
+from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
-from ..optimization.optimal_control_program import OptimalControlProgram
+from ..optimization.solution import Solution
 from ..optimization.variable_scaling import VariableScalingList
 
 
@@ -372,3 +378,43 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         self.original_values["s_init"] = s_init
         self.original_values["s_bounds"] = s_bounds
         self.original_values["s_scaling"] = s_scaling
+
+    @staticmethod
+    def load(file_path: str) -> list:
+        """
+        Reload a previous optimization (*.bo) saved using save
+
+        Parameters
+        ----------
+        file_path: str
+            The path to the *.bo file
+
+        Returns
+        -------
+        The ocp and sol structure. If it was saved, the iterations are also loaded
+        """
+
+        with open(file_path, "rb") as file:
+            try:
+                data = pickle.load(file)
+            except BaseException as error_message:
+                raise ValueError(
+                    f"The file '{file_path}' cannot be loaded, maybe the version of bioptim (version {__version__})\n"
+                    f"is not the same as the one that created the file (version unknown). For more information\n"
+                    "please refer to the original error message below\n\n"
+                    f"{type(error_message).__name__}: {error_message}"
+                )
+            ocp = StochasticOptimalControlProgram.from_loaded_data(data["ocp_initializer"])
+            for key in data["versions"].keys():
+                key_module = "biorbd_casadi" if key == "biorbd" else key
+                try:
+                    check_version(sys.modules[key_module], data["versions"][key], ocp.version[key], exclude_max=False)
+                except ImportError:
+                    raise ImportError(
+                        f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
+                        f"installed version ({ocp.version[key]})"
+                    )
+            sol = data["sol"]
+            sol.ocp = Solution.SimplifiedOCP(ocp)
+            out = [ocp, sol]
+        return out
