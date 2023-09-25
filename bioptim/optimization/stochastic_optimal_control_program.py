@@ -115,21 +115,20 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         else:
             raise ValueError("Wrong choice of ode_solver")
 
+        # Placed here because of MHE
+        self._check_and_prepare_dynamics(dynamics)
+
         self._set_original_values(
             bio_model,
-            dynamics,
             n_shooting,
             phase_time,
             x_init,
             u_init,
-            s_init,
             x_bounds,
             u_bounds,
-            s_bounds,
             x_scaling,
             xdot_scaling,
             u_scaling,
-            s_scaling,
             external_forces,
             ode_solver,
             control_type,
@@ -150,6 +149,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             assume_phase_dynamics,
             integrated_value_functions,
         )
+        self._set_stochastic_variables_to_original_values(s_init, s_bounds, s_scaling)
 
         self._check_and_set_threads(n_threads)
         self._check_and_set_shooting_points(n_shooting)
@@ -362,3 +362,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             pt.name = f"COVARIANCE_PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
             pt.list_index = -1
             pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
+
+    def _set_stochastic_variables_to_original_values(
+        self,
+        s_init: InitialGuessList,
+        s_bounds: BoundsList,
+        s_scaling: VariableScalingList,
+    ):
+        self.original_values["s_init"] = s_init
+        self.original_values["s_bounds"] = s_bounds
+        self.original_values["s_scaling"] = s_scaling
