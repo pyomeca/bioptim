@@ -151,6 +151,16 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             integrated_value_functions,
         )
 
+        self._check_and_set_threads(n_threads)
+        self._check_and_set_shooting_points(n_shooting)
+        self._check_and_set_phase_time(phase_time)
+
+        x_bounds, x_init, x_scaling = self._check_and_prepare_decision_variables("x", x_bounds, x_init, x_scaling)
+        u_bounds, u_init, u_scaling = self._check_and_prepare_decision_variables("u", u_bounds, u_init, u_scaling)
+        s_bounds, s_init, s_scaling = self._check_and_prepare_decision_variables("s", s_bounds, s_init, s_scaling)
+
+        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
+
         (
             constraints,
             objective_functions,
@@ -159,29 +169,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             multinode_constraints,
             multinode_objectives,
             phase_transitions,
-            x_bounds,
-            u_bounds,
             parameter_bounds,
-            s_bounds,
-            x_init,
-            u_init,
             parameter_init,
-            s_init,
         ) = self._check_arguments_and_build_nlp(
             dynamics,
-            n_threads,
-            n_shooting,
-            phase_time,
-            x_bounds,
-            u_bounds,
-            s_bounds,
-            x_init,
-            u_init,
-            s_init,
-            x_scaling,
-            xdot_scaling,
-            u_scaling,
-            s_scaling,
             objective_functions,
             constraints,
             parameters,
@@ -203,8 +194,16 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             variable_mappings,
             integrated_value_functions,
         )
+
+        # Do not copy singleton since x_scaling was already dealt with before
+        NLP.add(self, "x_scaling", x_scaling, True)
+        NLP.add(self, "xdot_scaling", xdot_scaling, True)
+        NLP.add(self, "u_scaling", u_scaling, True)
+        NLP.add(self, "s_scaling", s_scaling, True)
+
         self.problem_type = problem_type
         NLP.add(self, "is_stochastic", True, True)
+
         self._prepare_node_mapping(node_mappings)
         self._prepare_dynamics()
         self._prepare_bounds_and_init(

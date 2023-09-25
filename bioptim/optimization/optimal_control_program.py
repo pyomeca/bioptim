@@ -293,6 +293,16 @@ class OptimalControlProgram:
             integrated_value_functions,
         )
 
+        self._check_and_set_threads(n_threads)
+        self._check_and_set_shooting_points(n_shooting)
+        self._check_and_set_phase_time(phase_time)
+
+        x_bounds, x_init, x_scaling = self._check_and_prepare_decision_variables("x", x_bounds, x_init, x_scaling)
+        u_bounds, u_init, u_scaling = self._check_and_prepare_decision_variables("u", u_bounds, u_init, u_scaling)
+        s_bounds, s_init, s_scaling = self._check_and_prepare_decision_variables("s", s_bounds, s_init, s_scaling)
+
+        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
+
         (
             constraints,
             objective_functions,
@@ -301,29 +311,10 @@ class OptimalControlProgram:
             multinode_constraints,
             multinode_objectives,
             phase_transitions,
-            x_bounds,
-            u_bounds,
             parameter_bounds,
-            s_bounds,
-            x_init,
-            u_init,
             parameter_init,
-            s_init,
         ) = self._check_arguments_and_build_nlp(
             dynamics,
-            n_threads,
-            n_shooting,
-            phase_time,
-            x_bounds,
-            u_bounds,
-            s_bounds,
-            x_init,
-            u_init,
-            s_init,
-            x_scaling,
-            xdot_scaling,
-            u_scaling,
-            s_scaling,
             objective_functions,
             constraints,
             parameters,
@@ -345,6 +336,16 @@ class OptimalControlProgram:
             variable_mappings,
             integrated_value_functions,
         )
+
+        # Do not copy singleton since x_scaling was already dealt with before
+        NLP.add(self, "x_scaling", x_scaling, True)
+        NLP.add(self, "xdot_scaling", xdot_scaling, True)
+        NLP.add(self, "u_scaling", u_scaling, True)
+        NLP.add(self, "s_scaling", s_scaling, True)
+
+        # set to False because it's not relevant for traditional OCP, only relevant for StochasticOptimalControlProgram
+        NLP.add(self, "is_stochastic", False, True)
+
         self._prepare_node_mapping(node_mappings)
         self._prepare_dynamics()
         self._prepare_bounds_and_init(
@@ -368,6 +369,10 @@ class OptimalControlProgram:
         return
 
     def _initialize_model(self, bio_model):
+        """
+        Initialize the bioptim model and check if the quaternions are used, if yes then setting them.
+        Setting the number of phases.
+        """
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
         bio_model = self._check_quaternions_hasattr(bio_model)
@@ -458,22 +463,61 @@ class OptimalControlProgram:
         }
         return
 
+    def _check_and_set_threads(self, n_threads):
+        if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
+            raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
+        self.n_threads = n_threads
+
+    def _check_and_set_shooting_points(self, n_shooting):
+        if not isinstance(n_shooting, int) or n_shooting < 2:
+            if isinstance(n_shooting, (tuple, list)):
+                if sum([True for i in n_shooting if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
+                    raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
+            else:
+                raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
+        self.n_shooting = n_shooting
+
+    def _check_and_set_phase_time(self, phase_time):
+        if not isinstance(phase_time, (int, float)):
+            if isinstance(phase_time, (tuple, list)):
+                if sum([True for i in phase_time if not isinstance(i, (int, float))]) != 0:
+                    raise RuntimeError("phase_time should be a number or a list of number")
+            else:
+                raise RuntimeError("phase_time should be a number or a list of number")
+        self.phase_time = phase_time
+
+    def _check_and_prepare_decision_variables(
+            self,
+            var_name: str,
+            bounds: BoundsList,
+            init: InitialGuessList,
+            scaling: VariableScalingList,
+    ):
+        """
+        This function checks if the decision variables are of the right type for initial guess and bounds.
+        It also prepares the scaling for the decision variables.
+        And set them in a dictionary for the phase.
+        """
+
+        if bounds is None:
+            bounds = BoundsList()
+        elif not isinstance(bounds, BoundsList):
+            raise RuntimeError(f"{var_name}_bounds should be built from a BoundsList")
+
+        if init is None:
+            init = InitialGuessList()
+        elif not isinstance(init, InitialGuessList):
+            raise RuntimeError(f"{var_name}_init should be built from a InitialGuessList")
+
+        bounds = self._prepare_option_dict_for_phase(f"{var_name}_bounds", bounds, BoundsList)
+        init = self._prepare_option_dict_for_phase(f"{var_name}_init", init, InitialGuessList)
+        scaling = self._prepare_option_dict_for_phase(f"{var_name}_scaling", scaling, VariableScalingList)
+
+        return bounds, init, scaling
+
     def _check_arguments_and_build_nlp(
         self,
         dynamics,
-        n_threads,
-        n_shooting,
-        phase_time,
-        x_bounds,
-        u_bounds,
-        s_bounds,
-        x_init,
-        u_init,
-        s_init,
-        x_scaling,
-        xdot_scaling,
-        u_scaling,
-        s_scaling,
         objective_functions,
         constraints,
         parameters,
@@ -495,66 +539,6 @@ class OptimalControlProgram:
         variable_mappings,
         integrated_value_functions,
     ):
-        if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
-            raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
-
-        ns = n_shooting
-        if not isinstance(ns, int) or ns < 2:
-            if isinstance(ns, (tuple, list)):
-                if sum([True for i in ns if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
-                    raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
-            else:
-                raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
-
-        if not isinstance(phase_time, (int, float)):
-            if isinstance(phase_time, (tuple, list)):
-                if sum([True for i in phase_time if not isinstance(i, (int, float))]) != 0:
-                    raise RuntimeError("phase_time should be a number or a list of number")
-            else:
-                raise RuntimeError("phase_time should be a number or a list of number")
-
-        if x_bounds is None:
-            x_bounds = BoundsList()
-        elif not isinstance(x_bounds, BoundsList):
-            raise RuntimeError("x_bounds should be built from a BoundsList")
-
-        if u_bounds is None:
-            u_bounds = BoundsList()
-        elif not isinstance(u_bounds, BoundsList):
-            raise RuntimeError("u_bounds should be built from a BoundsList")
-
-        if s_bounds is None:
-            s_bounds = BoundsList()
-        elif not isinstance(s_bounds, BoundsList):
-            raise RuntimeError("s_bounds should be built from a BoundsList")
-
-        if x_init is None:
-            x_init = InitialGuessList()
-        if not isinstance(x_init, InitialGuessList):
-            raise RuntimeError("x_init should be built from a InitialGuessList")
-
-        if u_init is None:
-            u_init = InitialGuessList()
-        if not isinstance(u_init, InitialGuessList):
-            raise RuntimeError("u_init should be built from a InitialGuessList")
-
-        if s_init is None:
-            s_init = InitialGuessList()
-        if not isinstance(s_init, InitialGuessList):
-            raise RuntimeError("s_init should be built from a InitialGuessList")
-
-        x_bounds = self._prepare_option_dict_for_phase("x_bounds", x_bounds, BoundsList)
-        u_bounds = self._prepare_option_dict_for_phase("u_bounds", u_bounds, BoundsList)
-        s_bounds = self._prepare_option_dict_for_phase("s_bounds", s_bounds, BoundsList)
-
-        x_init = self._prepare_option_dict_for_phase("x_init", x_init, InitialGuessList)
-        u_init = self._prepare_option_dict_for_phase("u_init", u_init, InitialGuessList)
-        s_init = self._prepare_option_dict_for_phase("s_init", s_init, InitialGuessList)
-
-        x_scaling = self._prepare_option_dict_for_phase("x_scaling", x_scaling, VariableScalingList)
-        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
-        u_scaling = self._prepare_option_dict_for_phase("u_scaling", u_scaling, VariableScalingList)
-        s_scaling = self._prepare_option_dict_for_phase("s_scaling", s_scaling, VariableScalingList)
 
         if objective_functions is None:
             objective_functions = ObjectiveList()
@@ -632,7 +616,7 @@ class OptimalControlProgram:
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
 
-        if not assume_phase_dynamics and n_threads > 1:
+        if not assume_phase_dynamics and self.n_threads > 1:
             raise RuntimeError("n_threads is greater than 1 is not compatible with assume_phase_dynamics=False")
 
         # Type of CasADi graph
@@ -655,17 +639,17 @@ class OptimalControlProgram:
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
         # Define some aliases
-        NLP.add(self, "ns", n_shooting, False)
+        NLP.add(self, "ns", self.n_shooting, False)
         for nlp in self.nlp:
             if nlp.ns < 1:
                 raise RuntimeError("Number of shooting points must be at least 1")
 
-        self.n_threads = n_threads
-        NLP.add(self, "n_threads", n_threads, True)
+        NLP.add(self, "n_threads", self.n_threads, True)
         self.ocp_solver = None
         self.is_warm_starting = False
 
         # External forces
+        # Todo: it should be placed in the dynamics, it does not make sense to have it here anymore
         if external_forces is not None:
             NLP.add(self, "external_forces", external_forces, False)
 
@@ -689,7 +673,7 @@ class OptimalControlProgram:
         self.time_phase_mapping = time_phase_mapping
 
         # Add any time related parameters to the parameters list before declaring it
-        self._define_time(phase_time, objective_functions, constraints, parameters, parameter_init, parameter_bounds)
+        self._define_time(self.phase_time, objective_functions, constraints, parameters, parameter_init, parameter_bounds)
 
         # Declare and fill the parameters
         self.parameters = ParameterList()
@@ -707,14 +691,8 @@ class OptimalControlProgram:
         variable_mappings = variable_mappings.variable_mapping_fill_phases(self.n_phases)
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
-        # Do not copy singleton since x_scaling was already dealt with before
-        NLP.add(self, "x_scaling", x_scaling, True)
-        NLP.add(self, "xdot_scaling", xdot_scaling, True)
-        NLP.add(self, "u_scaling", u_scaling, True)
-        NLP.add(self, "s_scaling", s_scaling, True)
-
         NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
-        NLP.add(self, "is_stochastic", False, True)
+
         return (
             constraints,
             objective_functions,
@@ -723,14 +701,8 @@ class OptimalControlProgram:
             multinode_constraints,
             multinode_objectives,
             phase_transitions,
-            x_bounds,
-            u_bounds,
             parameter_bounds,
-            s_bounds,
-            x_init,
-            u_init,
             parameter_init,
-            s_init,
         )
 
     def _prepare_node_mapping(self, node_mappings):
