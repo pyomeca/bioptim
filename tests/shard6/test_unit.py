@@ -3,7 +3,12 @@ import numpy as np
 import pytest
 
 
-from bioptim.optimization.optimal_control_program import _reshape_to_column, _get_time_step, _get_target_values, _scale_values
+from bioptim.optimization.optimal_control_program import (
+    _reshape_to_column,
+    _get_time_step,
+    _get_target_values,
+    _scale_values,
+)
 
 
 def test_reshape_to_column_1d():
@@ -38,12 +43,15 @@ def test_reshape_to_column_empty():
     assert len(reshaped) == 0
 
 
-@pytest.mark.parametrize("input_array, expected_shape", [
-    (np.array([1, 2, 3]), (3, 1)),
-    (np.array([[1, 2], [3, 4]]), (2, 2)),
-    (np.array([[]]), (1, 0)),
-    (np.array([]), (0, 1))
-])
+@pytest.mark.parametrize(
+    "input_array, expected_shape",
+    [
+        (np.array([1, 2, 3]), (3, 1)),
+        (np.array([[1, 2], [3, 4]]), (2, 2)),
+        (np.array([[]]), (1, 0)),
+        (np.array([]), (0, 1)),
+    ],
+)
 def test_reshape_to_column_parametrized(input_array, expected_shape):
     reshaped = _reshape_to_column(input_array)
     assert reshaped.shape == expected_shape
@@ -104,9 +112,7 @@ def test_mayer_term():
 
 def test_get_target_values():
     penalty = MockPenalty(
-        dt=1.0,
-        target=[np.array([[1, 2, 3], [4, 5, 6]]), np.array([[7, 8, 9], [10, 11, 12]])],
-        node_idx=[10, 20, 30]
+        dt=1.0, target=[np.array([[1, 2, 3], [4, 5, 6]]), np.array([[7, 8, 9], [10, 11, 12]])], node_idx=[10, 20, 30]
     )
 
     result = _get_target_values(20, penalty)
@@ -115,9 +121,7 @@ def test_get_target_values():
 
 def test_non_integer_t():
     penalty = MockPenalty(
-        dt=1.0,
-        target=[np.array([[1, 2, 3], [4, 5, 6]]), np.array([[7, 8, 9], [10, 11, 12]])],
-        node_idx=[10, 20, 30]
+        dt=1.0, target=[np.array([[1, 2, 3], [4, 5, 6]]), np.array([[7, 8, 9], [10, 11, 12]])], node_idx=[10, 20, 30]
     )
 
     result = _get_target_values(20.5, penalty)
@@ -143,14 +147,8 @@ class ScalingData:
 
 def test_scale_values_no_multinode():
     values = np.array([[2, 4], [3, 6], [2, 4], [3, 8]])
-    scaling_entities = {
-        'a': ScalingEntity((2,)),
-        'b': ScalingEntity((2,))
-    }
-    scaling_data = {
-        'a': ScalingData(np.array([2, 3])),
-        'b': ScalingData(np.array([1, 2]))
-    }
+    scaling_entities = {"a": ScalingEntity((2,)), "b": ScalingEntity((2,))}
+    scaling_data = {"a": ScalingData(np.array([2, 3])), "b": ScalingData(np.array([1, 2]))}
     penalty = MockPenalty(1, multinode_penalty=False)
     result = _scale_values(values, scaling_entities, penalty, scaling_data)
     expected = np.array([[1, 2], [1, 2], [2, 4], [1.5, 4]])
@@ -159,14 +157,8 @@ def test_scale_values_no_multinode():
 
 def test_scale_values_with_multinode():
     values = np.array([[2, 4], [3, 6], [2, 4], [3, 8]])
-    scaling_entities = {
-        'a': ScalingEntity(2),
-        'b': ScalingEntity(2)
-    }
-    scaling_data = {
-        'a': ScalingData(np.array([2, 3])),
-        'b': ScalingData(np.array([1, 2]))
-    }
+    scaling_entities = {"a": ScalingEntity(2), "b": ScalingEntity(2)}
+    scaling_data = {"a": ScalingData(np.array([2, 3])), "b": ScalingData(np.array([1, 2]))}
     penalty = MockPenalty(1, multinode_penalty=True)
     result = _scale_values(values, scaling_entities, penalty, scaling_data)
     expected = np.array([[1, 2], [1, 2], [2, 4], [1.5, 4]])
