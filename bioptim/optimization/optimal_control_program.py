@@ -252,6 +252,7 @@ class OptimalControlProgram:
         s_init = InitialGuessList()
         s_bounds = BoundsList()
         s_scaling = VariableScalingList()
+
         # Placed here because of MHE
         self._check_and_prepare_dynamics(dynamics)
 
