@@ -474,11 +474,11 @@ class OptimalControlProgram:
         self.phase_time = phase_time
 
     def _check_and_prepare_decision_variables(
-            self,
-            var_name: str,
-            bounds: BoundsList,
-            init: InitialGuessList,
-            scaling: VariableScalingList,
+        self,
+        var_name: str,
+        bounds: BoundsList,
+        init: InitialGuessList,
+        scaling: VariableScalingList,
     ):
         """
         This function checks if the decision variables are of the right type for initial guess and bounds.
@@ -526,7 +526,6 @@ class OptimalControlProgram:
         variable_mappings,
         integrated_value_functions,
     ):
-
         if objective_functions is None:
             objective_functions = ObjectiveList()
         elif isinstance(objective_functions, Objective):
@@ -660,7 +659,9 @@ class OptimalControlProgram:
         self.time_phase_mapping = time_phase_mapping
 
         # Add any time related parameters to the parameters list before declaring it
-        self._define_time(self.phase_time, objective_functions, constraints, parameters, parameter_init, parameter_bounds)
+        self._define_time(
+            self.phase_time, objective_functions, constraints, parameters, parameter_init, parameter_bounds
+        )
 
         # Declare and fill the parameters
         self.parameters = ParameterList()
