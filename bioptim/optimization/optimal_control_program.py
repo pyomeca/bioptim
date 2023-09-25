@@ -373,6 +373,16 @@ class OptimalControlProgram:
         self.n_phases = len(bio_model)
         return bio_model
 
+    def _check_and_prepare_dynamics(self, dynamics):
+        if isinstance(dynamics, Dynamics):
+            dynamics_type_tp = DynamicsList()
+            dynamics_type_tp.add(dynamics)
+            self.dynamics = dynamics_type_tp
+        elif isinstance(dynamics, DynamicsList):
+            self.dynamics = dynamics
+        elif not isinstance(dynamics, DynamicsList):
+            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
+
     def _set_original_values(
         self,
         bio_model,
@@ -405,17 +415,9 @@ class OptimalControlProgram:
         assume_phase_dynamics,
         integrated_value_functions,
     ):
-        # Placed here because of MHE
-        if isinstance(dynamics, Dynamics):
-            dynamics_type_tp = DynamicsList()
-            dynamics_type_tp.add(dynamics)
-            dynamics = dynamics_type_tp
-        elif not isinstance(dynamics, DynamicsList):
-            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
-
         self.original_values = {
             "bio_model": [m.serialize() for m in bio_model],
-            "dynamics": dynamics,
+            "dynamics": self.dynamics,
             "n_shooting": n_shooting,
             "phase_time": phase_time,
             "x_init": x_init,
