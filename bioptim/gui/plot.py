@@ -385,7 +385,7 @@ class PlotOcp:
                         )
                         nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
                     else:
-                        size = len(nlp.plot[key].phase_mappings.to_second.map_idx)
+                        size = max(nlp.plot[key].phase_mappings.to_second.map_idx) + 1
                     if key not in variable_sizes[i]:
                         variable_sizes[i][key] = size
                     else:
@@ -432,7 +432,7 @@ class PlotOcp:
                     continue
 
                 mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
-                mapping_range_index = list(range(len(nlp.plot[variable].phase_mappings.to_second.map_idx)))
+                mapping_range_index = list(range(max(nlp.plot[variable].phase_mappings.to_second.map_idx) + 1))
                 for ctr in mapping_range_index:
                     ax = axes[ctr]
                     if ctr in mapping_to_first_index:
@@ -804,10 +804,13 @@ class PlotOcp:
                         y_tp[:, :] = val
                         all_y.append(y_tp)
 
-                    for idx in range(len(self.plot_func[key][i].phase_mappings.to_second.map_idx)):
+                    for idx in range(max(self.plot_func[key][i].phase_mappings.to_second.map_idx) + 1):
                         y_tp = []
-                        for y in all_y:
-                            y_tp.append(y[idx, :])
+                        if idx in self.plot_func[key][i].phase_mappings.to_second.map_idx:
+                            for y in all_y:
+                                y_tp.append(y[idx, :])
+                        else:
+                            y_tp = None
                         self.__append_to_ydata([y_tp])
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
@@ -1057,9 +1060,13 @@ class PlotOcp:
         """
         Update the plotted data from ydata
         """
+
         assert len(self.plots) == len(self.ydata)
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
+            if y is None:
+                # Jump the plots which are empty
+                y = (np.nan,) * len(plot[2])
 
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):
