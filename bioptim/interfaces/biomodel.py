@@ -21,7 +21,7 @@ class BioModel(Protocol):
 
     @property
     def friction_coefficients(self) -> MX:
-        """Get the coeffient of friction to apply to specified elements in the dymamics"""
+        """Get the coefficient of friction to apply to specified elements in the dynamics"""
         return MX()
 
     @property
@@ -80,7 +80,7 @@ class BioModel(Protocol):
         """Get all segments"""
         return ()
 
-    def homogeneous_matrices_in_global(self, q, reference_idx, inverse=False) -> tuple:
+    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> tuple:
         """
         Get the homogeneous matrices of all segments in the world frame,
         such as: P_R0 = T_R0_R1 * P_R1
@@ -89,9 +89,9 @@ class BioModel(Protocol):
         P_R1 the position of any point P in the segment R1 frame.
         """
 
-    def homogeneous_matrices_in_child(self, *args) -> tuple:
+    def homogeneous_matrices_in_child(self, segment_id) -> MX:
         """
-        Get the homogeneous matrices of all segments in their parent frame,
+        Get the homogeneous matrices of one segment in its parent frame,
         such as: P_R1 = T_R1_R2 * P_R2
         with P_R1 the position of any point P in the segment R1 frame,
         with P_R2 the position of any point P in the segment R2 frame,
