@@ -75,84 +75,163 @@ def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
     """
     return k @ ((hand_pos_velo - ref) + sensory_noise)
 
+def prepare_collocation(method="legendre", d=5):
 
-def integrator_collocations(
-    model,
-    polynomial_degree,
-    n_shooting,
-    duration,
-    states,
-    controls,
-    stochastic_variables,
-):
-    h = duration / n_shooting
-    method = "legendre"
+    # Get collocation points
+    tau_root = np.append(0, cas.collocation_points(d, method))
 
     # Coefficients of the collocation equation
-    _c = type(model.motor_noise_sym).zeros((polynomial_degree + 1, polynomial_degree + 1))
+    C = np.zeros((d + 1, d + 1))
 
     # Coefficients of the continuity equation
-    _d = type(model.motor_noise_sym).zeros(polynomial_degree + 1)
+    D = np.zeros(d + 1)
 
-    # Choose collocation points
-    step_time = [0] + cas.collocation_points(polynomial_degree, method)
+    # Coefficients of the quadrature function
+    B = np.zeros(d + 1)
 
-    # Dimensionless time inside one control interval
-    time_control_interval = type(model.motor_noise_sym).sym("time_control_interval")
-
-    # For all collocation points
-    for j in range(polynomial_degree + 1):
+    # Construct polynomial basis
+    for j in range(d + 1):
         # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-        _l = 1
-        for r in range(polynomial_degree + 1):
+        p = np.poly1d([1])
+        for r in range(d + 1):
             if r != j:
-                _l *= (time_control_interval - step_time[r]) / (step_time[j] - step_time[r])
+                p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
 
         # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-        if method == "radau":
-            _d[j] = 1 if j == polynomial_degree else 0
-        else:
-            lfcn = cas.Function("lfcn", [time_control_interval], [_l])
-            _d[j] = lfcn(1.0)
+        D[j] = p(1.0)
 
-        # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-        _l = 1
-        for r in range(polynomial_degree + 1):
-            if r != j:
-                _l *= (time_control_interval - step_time[r]) / (step_time[j] - step_time[r])
+        # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
+        pder = np.polyder(p)
+        for r in range(d + 1):
+            C[j, r] = pder(tau_root[r])
 
-        # Evaluate the time derivative of the polynomial at all collocation points to get
-        # the coefficients of the continuity equation
-        tfcn = cas.Function("tfcn", [time_control_interval], [cas.tangent(_l, time_control_interval)])
-        for r in range(polynomial_degree + 1):
-            _c[j, r] = tfcn(step_time[r])
+        # # Evaluate the integral of the polynomial to get the coefficients of the quadrature function
+        pint = np.polyint(p)
+        B[j] = pint(1.0)
 
-    # Total number of variables for one finite element
-    states_end = _d[0] * states[:, 0]
-    defects = []
-    for j in range(1, polynomial_degree + 1):
+
+
+
+
+    return B, C, D
+
+def generate_F_G(model,d, h):
+    # Declare model variables
+
+    nx = model.nb_q + model.nb_qdot
+    q = cas.SX.sym("q", model.nb_q)
+    qd = cas.SX.sym("qd", model.nb_qdot)
+    x = cas.vertcat(q, qd)
+    u = cas.SX.sym("u", model.nb_u)
+    w = cas.SX.sym("w", model.nb_u) # motor noise
+    Sigma_ww = cas.SX.eye(model.nb_u) * w
+    T = cas.SX.sym("T")# Time horizon
+    p = cas.vertcat(T, w)
+    P = cas.SX.sym("P", nx, nx)
+    M = cas.SX.sym("M", nx, nx * (d + 1))
+
+    # Continuous time dynamics
+    xdot = model.dynamics_numerical(
+            states=x,
+            controls=u,  # Piecewise constant control
+            motor_noise=w,
+    )
+
+    dyn_fun = cas.Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"])#.expand()
+
+
+    # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
+    _b, _c, _d = prepare_collocation("legendre", d)
+
+
+    # The helper state sample used by collocation
+    z = []
+    for j in range(d+1):
+        zj = cas.SX.sym("z_" + str(j), nx)
+        z.append(zj)
+
+
+    # Loop over collocation points
+    x0 = _d[0] * z[0]
+    G_argout = [x0+x]
+    xf = x0
+    for j in range(1, d + 1):
         # Expression for the state derivative at the collocation point
-        xp_j = 0
-        for r in range(polynomial_degree + 1):
-            xp_j += _c[r, j] * states[:, r]
+        xp = _c[0, j] * x
+        for r in range(1, d + 1):
+            xp = xp + _c[r, j] * z[r]
 
-        f_j = model.dynamics_numerical(
-            states=states[:, j],
-            controls=controls,  # Piecewise constant control
-            stochastic_variables=stochastic_variables,
-            with_noise=True,
-        )
-
-        # defects.append(h * f_j - xp_j)
-        defects.append(f_j - xp_j / h)
+        # Append collocation equations
+        fj = dyn_fun(z[j], u, w)
+        G_argout.append(xp - h * fj)
 
         # Add contribution to the end state
-        states_end += _d[j] * states[:, j]
+        xf = xf + _d[j] * z[j]
 
-    # Concatenate constraints
-    defects = cas.vertcat(*defects)
+    z_ = cas.vertcat(*z)
+    # The function G in 0 = G(x_k,z_k,u_k,w_k)
+    G = cas.Function("G", [z_, x, u, p], [cas.vertcat(*G_argout)], ['z', 'x', 'u', 'p'], ['g'])
 
-    return states_end, defects, _d
+    # The function F in x_{k+1} = F(z_k)
+    F = cas.Function("F", [z_], [xf], ['z'], ['xf'])
+
+    Gdx = cas.jacobian(G(z_, x, u, p), x)
+    Gdz = cas.jacobian(G(z_, x, u, p), z_)
+    Gdw = cas.jacobian(G(z_, x, u, p), u)
+    Fdz = cas.jacobian(F(z_), z_)
+
+    # M expression to initialize only
+    Mf = cas.Function("M", [x, z_, u, p], [-Fdz @ cas.inv(Gdz)])
+    # Constraint Equality defining M
+    Mc = cas.Function("M_cons", [x, z_, u, p, M], [Fdz.T - Gdz.T @ M.T])
+    # Covariance propagation rule
+    Pf = cas.Function("P_next", [x, z_, u, p, P, M], [M @ (Gdx @ P @ Gdx.T + Gdw @ Sigma_ww @ Gdw.T) @ M.T])
+
+
+    return F, G, Mc, Pf, Mf
+
+def integration_collocations(model, d, h):
+
+    _, _, D = prepare_collocation("legendre", d)
+    F, G, _, _, _ = generate_F_G(model, d, h)
+
+    ifcn = cas.rootfinder("ifcn", "newton", G)
+
+    nx = model.nb_q + model.nb_qdot
+    q = cas.MX.sym("q", model.nb_q)
+    qd = cas.MX.sym("qd", model.nb_qdot)
+    x = cas.vertcat(q, qd)
+    u = cas.MX.sym("u", model.nb_u)
+    w = cas.MX.sym("w", model.nb_u)
+    T = cas.MX.sym("T")  # Time horizon
+    p = cas.vertcat(T, w)
+    P = cas.MX.sym("P", nx, nx)
+    Sigma_ww = cas.MX.eye(model.nb_u) * w
+
+    x_irk_points = ifcn(cas.MX(), x, u, p)
+    z = [x_irk_points[r * nx: (r + 1) * nx] for r in range(d + 1)]
+
+    # Get an expression for the state at the end of the finite element
+    xf = cas.MX.zeros(nx, d + 1)  # 0 #
+    for r in range(d + 1):
+        xf[:, r] = xf[:, r - 1] + D[r] * z[r]
+
+    F = cas.Function(
+        "irk_integrator",
+        {"x0": x, "u": u, "p": p, "xf": xf[:, -1]},
+        cas.integrator_in(),
+        cas.integrator_out(),
+    )
+
+    Fdx = cas.jacobian(F(x0=x, u=u, p=p)['xf'], x)
+    Fdw = cas.jacobian(F(x0=x, u=u, p=p)['xf'], w)
+    # jac = F.factory("jac_IRK", F.name_in(), ["xf", "jac:xf:x0", "jac:xf:p"])
+
+    # Covariance propagation rule
+    Pf = cas.Function("P_irk", [x, u, p, P], [Fdx @ P @ Fdx.T + Fdw @ Sigma_ww @ Fdw.T])  # .expand()
+
+    return F, Pf
+
 
 
 def integrator_rk4(model, q, qdot, u, stochastic_variables, fun_cov, fun_states, n_shooting, duration):
@@ -235,64 +314,15 @@ def get_m_init(
     M = -dF_dz @ inv(dG_dz)
     """
 
-    n_q = model.nb_q
-    n_joints = model.nb_u
+    nx = model.nb_q + model.nb_qdot
+    m_last = np.zeros((nx * nx * (polynomial_degree + 1), n_shooting + 1))
 
-    x_q_joints = type(model.motor_noise_sym).sym("x_q_joints", n_joints, 1)
-    x_qdot_joints = type(model.motor_noise_sym).sym("x_qdot_joints", n_joints, 1)
-    z_q_joints = []
-    z_qdot_joints = []
-    for i in range(polynomial_degree):
-        z_q_joints += [type(model.motor_noise_sym).sym("z_q_joints", n_joints, 1)]
-        z_qdot_joints += [type(model.motor_noise_sym).sym("z_qdot_joints", n_joints, 1)]
-    controls_sym = type(model.motor_noise_sym).sym("controls", n_q, 1)
-    stochastic_variables_sym = type(model.motor_noise_sym).sym("stochastic_variables", n_stochastic, 1)
+    _, _, _, _, Mf = generate_F_G(model, polynomial_degree, duration / n_shooting)
 
-    states_full = cas.vertcat(x_q_joints, x_qdot_joints)
-    for i in range(polynomial_degree):
-        states_full = cas.horzcat(states_full, cas.vertcat(z_q_joints[i], z_qdot_joints[i]))
 
-    states_end, defects, _ = integrator_collocations(
-        model,
-        polynomial_degree,
-        n_shooting,
-        duration,
-        states_full,
-        controls_sym,
-        stochastic_variables_sym,
-    )
-    initial_polynomial_evaluation = cas.vertcat(x_q_joints, x_qdot_joints)
-    defects = cas.vertcat(initial_polynomial_evaluation, defects)
 
-    df_dz = cas.jacobian(states_end, x_q_joints)
-    df_dz = cas.horzcat(df_dz, cas.jacobian(states_end, x_qdot_joints))
-    for i in range(polynomial_degree):
-        df_dz = cas.horzcat(df_dz, cas.jacobian(states_end, z_q_joints[i]))
-        df_dz = cas.horzcat(df_dz, cas.jacobian(states_end, z_qdot_joints[i]))
-
-    dg_dz = cas.jacobian(defects, x_q_joints)
-    dg_dz = cas.horzcat(dg_dz, cas.jacobian(defects, x_qdot_joints))
-    for i in range(polynomial_degree):
-        dg_dz = cas.horzcat(dg_dz, cas.jacobian(defects, z_q_joints[i]))
-        dg_dz = cas.horzcat(dg_dz, cas.jacobian(defects, z_qdot_joints[i]))
-
-    input_var_list = [x_q_joints, x_qdot_joints]
-    for i in range(polynomial_degree):
-        input_var_list += [z_q_joints[i], z_qdot_joints[i]]
-    input_var_list += [controls_sym, stochastic_variables_sym]
-    df_dz_fun = cas.Function(
-        "df_dz",
-        input_var_list,
-        [df_dz],
-    )
-    dg_dz_fun = cas.Function(
-        "dg_dz",
-        input_var_list,
-        [dg_dz],
-    )
-
-    m_last = np.zeros((2 * n_joints * 2 * n_joints * (polynomial_degree + 1), n_shooting + 1))
     for i in range(n_shooting + 1):
+        idx = i*(polynomial_degree+1)
         index_this_time = [i * polynomial_degree + j for j in range(polynomial_degree + 1)]
         input_num_list = [
             q_last[:, index_this_time[0]],
@@ -315,15 +345,11 @@ def get_m_init(
         df_dz_evaluated = df_dz_fun(*input_num_list)
         dg_dz_evaluated = dg_dz_fun(*input_num_list)
 
-        m_this_time = -df_dz_evaluated @ np.linalg.inv(dg_dz_evaluated)  # Does not varry
-        # m_this_time = df_dz_evaluated @ np.linalg.inv(dg_dz_evaluated)  # Does not varry
-        # m_this_time = np.linalg.inv(dg_dz_evaluated) @ df_dz_evaluated  # Does not varry
-        # m_this_time = -np.linalg.inv(dg_dz_evaluated) @ df_dz_evaluated  # Does not varry
+        m_this_time = Mf()  # Does not varry
 
-        shape_0, shape_1 = m_this_time.shape[0], m_this_time.shape[1]
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                m_last[shape_0 * s1 + s0, i] = m_this_time[s0, s1]
+
+        m_last[:, i] = m_this_time.reshape((-1, ))
+
 
     return m_last
 
@@ -345,76 +371,12 @@ def get_cov_init_collocations(
     P_k+1 = M_k @ (dG_dx @ P_k @ dG_dx.T + dG_dw @ sigma_w @ dG_dw.T) @ M_k.T
     """
 
-    n_q = model.nb_q
-    n_joints = model.nb_u
+    nu = model.nb_u
+    F, Pf = integration_collocations(model, polynomial_degree, duration / n_shooting)
 
-    x_q_joints = type(model.motor_noise_sym).sym("x_q_joints", n_joints, 1)
-    x_qdot_joints = type(model.motor_noise_sym).sym("x_qdot_joints", n_joints, 1)
-    z_q_joints = []
-    z_qdot_joints = []
-    for i in range(polynomial_degree):
-        z_q_joints += [type(model.motor_noise_sym).sym("z_q_joints", n_joints, 1)]
-        z_qdot_joints += [type(model.motor_noise_sym).sym("z_qdot_joints", n_joints, 1)]
-    controls_sym = type(model.motor_noise_sym).sym("controls", n_q, 1)
-    stochastic_variables_sym = type(model.motor_noise_sym).sym("stochastic_variables", n_stochastic, 1)
-
-    states_full = cas.vertcat(x_q_joints, x_qdot_joints)
-    for i in range(polynomial_degree):
-        states_full = cas.horzcat(states_full, cas.vertcat(z_q_joints[i], z_qdot_joints[i]))
-
-    states_end, defects, _ = integrator_collocations(
-        model,
-        polynomial_degree,
-        n_shooting,
-        duration,
-        states_full,
-        controls_sym,
-        stochastic_variables_sym,
-    )
-    initial_polynomial_evaluation = cas.vertcat(x_q_joints, x_qdot_joints)
-    defects = cas.vertcat(initial_polynomial_evaluation, defects)
-
-    dg_dx = cas.horzcat(
-        cas.jacobian(defects, x_q_joints),
-        cas.jacobian(defects, x_qdot_joints),
-    )
-
-    dg_dw = cas.jacobian(defects, model.motor_noise_sym)
-
-    input_var_list = [x_q_joints, x_qdot_joints]
-    for i in range(polynomial_degree):
-        input_var_list += [z_q_joints[i], z_qdot_joints[i]]
-    input_var_list += [controls_sym, stochastic_variables_sym, model.motor_noise_sym]
-    dg_dx_fun = cas.Function(
-        "dg_dx",
-        input_var_list,
-        [dg_dx],
-    )
-    dg_dw_fun = cas.Function(
-        "dg_dw",
-        input_var_list,
-        [dg_dw],
-    )
-
-    # augmented_sigma_w_mx = cas.MX.zeros(2 * n_joints, 2 * n_joints)
-    # for i in range(motor_noise_magnitude.shape[0]):
-    #     augmented_sigma_w_mx[i, i] = model.motor_noise_sym[i]
-    sigma_w_dm = cas.DM_eye(motor_noise_magnitude.shape[0]) * motor_noise_magnitude
-    cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
-
-    # dx_dt = model.dynamics_numerical(
-    #     cas.vertcat(x_q_joints, x_qdot_joints),
-    #     controls_sym,
-    #     stochastic_variables_sym,
-    #     with_noise=True
-    # )
-    # cov_init_sym = augmented_sigma_w_mx + cas.jacobian(dx_dt, cas.vertcat(x_q_joints, x_qdot_joints)) + cas.jacobian(dx_dt, model.motor_noise_sym)
-    # # cov_init_sym = cas.jacobian(defects[-4:], cas.vertcat(x_q_joints, x_qdot_joints)) + cas.jacobian(defects[-4:], model.motor_noise_sym)
-    # cov_init_fcn = cas.Function("cov_init_fcn", [x_q_joints, x_qdot_joints, controls_sym, stochastic_variables_sym, model.motor_noise_sym], [cov_init_sym])
-    #
-    # cov_init_matrix = cov_init_fcn(q_last[:, 0], qdot_last[:, 0], u_last[:, 0], np.zeros((n_stochastic, 1)), motor_noise_magnitude)
-    # cov_last[:, 0] = np.reshape(StochasticBioModel.reshape_to_vector(cov_init_matrix), (-1, ))
+    cov_last = np.zeros((2 * nu * 2 * nu, n_shooting + 1))
     cov_last[:, 0] = cov_init[:, 0]
+
     for i in range(n_shooting):
         index_this_time = [i * polynomial_degree + j for j in range(polynomial_degree + 1)]
         input_num_list = [
@@ -461,6 +423,20 @@ def get_cov_init_collocations(
     return cov_last
 
 
+def get_cov_init_sampling(    model,
+    n_shooting,
+    n_stochastic,
+    polynomial_degree,
+    duration,
+    q_last,
+    qdot_last,
+    u_last,
+    cov_init,
+    motor_noise_magnitude,
+):
+
+    return 0
+
 def get_cov_init_irk(
     model,
     n_shooting,
@@ -473,146 +449,48 @@ def get_cov_init_irk(
     cov_init,
     motor_noise_magnitude,
 ):
-    n_q = model.nb_q
-    n_joints = model.nb_u
-    nx = n_joints * 2
 
-    x_q_joints = type(model.motor_noise_sym).sym("x_q_joints", n_joints, 1)
-    x_qdot_joints = type(model.motor_noise_sym).sym("x_qdot_joints", n_joints, 1)
-    z_q_joints = []
-    z_qdot_joints = []
-    for i in range(polynomial_degree):
-        z_q_joints += [type(model.motor_noise_sym).sym("z_q_joints", n_joints, 1)]
-        z_qdot_joints += [type(model.motor_noise_sym).sym("z_qdot_joints", n_joints, 1)]
-    controls_sym = type(model.motor_noise_sym).sym("controls", n_q, 1)
-    stochastic_variables_sym = type(model.motor_noise_sym).sym("stochastic_variables", n_stochastic, 1)
+    nq = model.nb_q
+    nx = model.nb_q + model.nb_qdot
+    F, Pf =  integration_collocations(model, polynomial_degree, duration/n_shooting)
+    # Function(irk_integrator:(x0[4],z0[],p[5],u[],adj_xf[],adj_zf[],adj_qf[])->(xf[4],zf[],qf[],adj_x0[],adj_z0[],adj_p[],adj_u[]) MXFunction)
+    # Function(P_irk:(i0[nx],i1[nu],i2[nw+1],i3[nx,nx])->(o0[nx,nx]) MXFunction)
 
-    x_sym = cas.vertcat(x_q_joints, x_qdot_joints)
-    z = []
-    for i in range(polynomial_degree):
-        z = cas.horzcat(z, cas.vertcat(z_q_joints[i], z_qdot_joints[i]))
+    p = np.append(model.motor_noise_magnitude, duration)
+    p0 = np.append(model.motor_noise_magnitude * 0, duration)
+    cov_last = np.zeros((nx * nx, n_shooting + 1))
+    cov_last[:, 0] = cov_init
 
-    # p_sym = cas.vertcat( controls_sym, model.motor_noise_sym)
-    p_sym = model.motor_noise_sym
-    states_end, defects, D = integrator_collocations(
-        model,
-        polynomial_degree,
-        n_shooting,
-        duration,
-        cas.horzcat(x_sym, z),
-        controls_sym,
-        stochastic_variables_sym,
-    )
+    cov_last2 = np.zeros((nx * nx, n_shooting + 1))
+    cov_last2[:, 0] = cov_init
+    iter = 500
+    X_next = np.zeros((nx, iter))
 
-    # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
-    vfcn = cas.Function(
-        "vfcn",
-        [z.reshape((-1, 1)), x_sym, controls_sym, p_sym],
-        [defects],
-    ).expand()
 
-    # Create a implicit function instance to solve the system of equations
-    ifcn = cas.rootfinder("ifcn", "newton", vfcn)
-    x_irk_points = ifcn(cas.MX(), x_sym, controls_sym, p_sym)
-    w = [x_sym if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(polynomial_degree + 1)]
-
-    # Get an expression for the state at the end of the finite element
-    xf = type(model.motor_noise_sym).zeros(nx, polynomial_degree + 1)  # 0 #
-    for r in range(polynomial_degree + 1):
-        xf[:, r] = xf[:, r - 1] + D[r] * w[r]
-
-    # Fixed-step integrator
-    dx_dt = model.dynamics_numerical(
-        states=x_sym,
-        controls=controls_sym,
-        stochastic_variables=stochastic_variables_sym,
-        with_noise=True,
-    )
-
-    # rk_ODE = cas.integrator(
-    #     "rk_ODE",
-    #     "rk",
-    #     {"x": x_sym, "p": p_sym, "ode": dx_dt},
-    #     {"tf": duration/n_shooting, "number_of_finite_elements": 20},
-    # )
-
-    irk_integrator = cas.Function(
-        "irk_integrator",
-        {"x0": x_sym, "u": controls_sym, "p": p_sym, "xf": xf[:, -1]},
-        cas.integrator_in(),
-        cas.integrator_out(),
-    )
-
-    # irk_integrator = cas.Function('irk_integrator', {'x0': x_sym, 'p': p_sym, 'xf': xf[:, -1]},
-    #                           ['x0', 'p'], ['xf'])
-
-    jac = irk_integrator.factory("jac_IRK", irk_integrator.name_in(), ["xf", "jac:xf:x0", "jac:xf:p"])
-
-    ode = {"x": x_sym, "u": controls_sym, "p": p_sym, "ode": dx_dt}
-    # F = cas.integrator('F', 'cvodes', ode, 0, duration / n_shooting)
-    # jac = F.factory('jac_IRK', F.name_in(), ['xf, jac:xf:x0', 'jac:xf:p'])
-
-    F = cas.integrator(
-        "F",
-        "collocation",
-        ode,
-        0,
-        duration / n_shooting,
-        {
-            "collocation_scheme": "legendre",
-            "number_of_finite_elements": 1,
-            "interpolation_order": polynomial_degree,
-            "rootfinder_options": {"abstol": 1e-10, "max_iter": 20},
-        },
-    )
-    jac = F.factory("jac_IRK", F.name_in(), ["xf", "jac:xf:x0", "jac:xf:p"])
-
-    cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
-    cov_last[:, 0] = cov_init[:, 0]
-
-    sigma_w_dm = cas.DM_eye(motor_noise_magnitude.shape[0]) * motor_noise_magnitude
-
-    # fig, ax = plt.subplots(1, 1)
+    fig, ax = plt.subplots(1, 1)
     for i in range(n_shooting):
-        # u = np.concatenate((u_last[:, i], np.zeros(motor_noise_magnitude.shape[0])))
         u = u_last[:, i]
-        p = motor_noise_magnitude
-        x0 = np.concatenate((q_last[:, i], qdot_last[:, i]))
+        x = np.concatenate((q_last[:, i], qdot_last[:, i]))
+        cov_matrix = reshape_to_matrix(cov_last[:, i], model.matrix_shape_cov)
+        cov_next = Pf(x, u, p0, cov_matrix)
+        draw_cov_ellipse(cov_next[:nq, :nq].full(), q_last[:, i+1], ax, "r")
 
-        # iter=100
-        # X_next = np.zeros((nx, iter))
-        # P = np.random.randn(2, iter)
-        # for j in range(iter):
-        #     J = jac(x0=x0, u=u, p=P[:, j])
-        #     X_next[:, j] = J['xf'].full().squeeze()
-        #
-        # plt.plot(X_next[0,:], X_next[1,:],'.')
-        # cov = np.cov(X_next)
+
+        noise = np.random.randn(model.nb_u, iter)
+        for j in range(iter):
+            X_next[:, j] = F(x0=x, u=u, p=np.append(noise[:, j], duration))["xf"].full().squeeze()
+        plt.plot(X_next[0, :], X_next[1, :],'.')
+        cov = np.cov(X_next)
         # confidence_ellipse(X_next[0,:], X_next[1,:], ax)
-        # draw_cov_ellipse(cov[:n_q, :n_q], np.mean(X_next[:n_q, :], axis=1), ax)
-        # cov_last[:, i+1] = StochasticBioModel.reshape_to_vector(cov)
+        draw_cov_ellipse(cov[:nq, :nq], np.mean(X_next[:nq, :], axis=1), ax, "b")
+        cov_last2[:, i+1] = StochasticBioModel.reshape_to_vector(cov)
 
-        J = jac(x0=x0, u=u, p=p)
-        phi_x = J["jac_xf_x0"]
-        phi_w = J["jac_xf_p"]
-        x_next = J["xf"]
-
-        cov_matrix = StochasticBioModel.reshape_to_matrix(cov_last[:, i], model.matrix_shape_cov)
-
-        sink = phi_x @ cov_matrix @ phi_x.T
-        source = phi_w @ sigma_w_dm @ phi_w.T
-
-        if i == 0:
-            print(sink)
-            print(source)
-            print(x_next)
-            print(np.concatenate((q_last[:, i + 1], qdot_last[:, i + 1])))
-
-        cov_this_time = sink + source  # source + sink
-        if not (np.all(np.linalg.eigvals(cov_this_time.full()) >= 0)):
+        if not (np.all(np.linalg.eigvals(cov_next.full()) >= 0)):
             print("IRK cov not semi-positive definite")
 
-        cov_last[:, i + 1] = StochasticBioModel.reshape_to_vector(cov_this_time.full())
+
+
+        cov_last[:, i + 1] = StochasticBioModel.reshape_to_vector(cov_next.full())
 
     return cov_last
 
@@ -631,61 +509,44 @@ def get_cov_init_dms(
     """
     RK4 integration of d/dt(P_k) = A @ P_k + P_k @ A.T + B @ sigma_w @ B.T
     """
+    nq = model.nb_q
+    nx = model.nb_q + model.nb_qdot
+    q = cas.SX.sym("q", model.nb_q)
+    qd = cas.SX.sym("qd", model.nb_qdot)
+    x = cas.vertcat(q, qd)
+    u = cas.SX.sym("u", model.nb_u)
+    w = cas.SX.sym("w", model.nb_u) # motor noise
+    Sigma_ww = cas.SX.eye(model.nb_u)#* w
+    P = cas.SX.sym("P", nx, nx)
 
-    n_q = model.nb_q
-    n_joints = model.nb_u
-
-    x_q_joints = type(model.motor_noise_sym).sym("x_q_joints", n_joints, 1)
-    x_qdot_joints = type(model.motor_noise_sym).sym("x_qdot_joints", n_joints, 1)
-    controls_sym = type(model.motor_noise_sym).sym("controls", n_q, 1)
-    stochastic_variables_sym = type(model.motor_noise_sym).sym("stochastic_variables", n_stochastic, 1)
-
-    states_full = cas.vertcat(x_q_joints, x_qdot_joints)
-
-    dx_dt_without = model.dynamics_numerical(states_full, controls_sym, stochastic_variables_sym, with_noise=False)
-
-    dx_dt_with = model.dynamics_numerical(states_full, controls_sym, stochastic_variables_sym, with_noise=True)
-
-    A = cas.jacobian(dx_dt_with, states_full)
-    B = cas.jacobian(dx_dt_with, model.motor_noise_sym)
-
-    sigma_w = cas.MX.zeros(model.motor_noise_sym.shape[0], model.motor_noise_sym.shape[0])
-    for i in range(model.motor_noise_sym.shape[0]):
-        sigma_w[i, i] = model.motor_noise_sym[i]
-
-    sigma_w_dm = cas.DM_eye(motor_noise_magnitude.shape[0]) * motor_noise_magnitude  # ADD: mick
-
-    cov_matrix = StochasticBioModel.reshape_sym_to_matrix(stochastic_variables_sym, model.matrix_shape_cov)
-
-    sink = A @ cov_matrix + cov_matrix @ A.T
-    source = B @ sigma_w @ B.T
-    cov_derivative = sink + source  # + sink
-    cov_derivative_vect = StochasticBioModel.reshape_to_vector(cov_derivative)
-    cov_derivative_func = cas.Function(
-        "cov_derivative_func",
-        [x_q_joints, x_qdot_joints, stochastic_variables_sym, model.motor_noise_sym],
-        [cov_derivative_vect],
-    )
-    states_derivative_func = cas.Function(
-        "states_derivative_func",
-        [x_q_joints, x_qdot_joints, controls_sym, model.motor_noise_sym],
-        [dx_dt_without],  # todo: MB: change dx_dt_without to with (add model.motor_noise_sym)
+    # Continuous time dynamics
+    xdot = model.dynamics_numerical(
+            states=x,
+            controls=u,  # Piecewise constant control
+            motor_noise=w,
     )
 
-    all_derivative_func = cas.Function(
-        "all_derivative_func",
-        [x_q_joints, x_qdot_joints, controls_sym, stochastic_variables_sym, model.motor_noise_sym],
-        [cas.vertcat(dx_dt_with, cov_derivative_vect)],
-    )
+    A = cas.jacobian(xdot, x)
+    B = cas.jacobian(xdot, w)
+    Pdot = A @ P + P @ A.T + B @ Sigma_ww @ B.T
+    Pdot_vec = StochasticBioModel.reshape_to_vector(Pdot)
+    dyn_fun = cas.Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"])#.expand()
+    Pdot_fun = cas.Function('Pdot',[x, u, w, P], [Pdot_vec], ["x", "u", "w", "P"], ["Pdot"])
+    all_dot = cas.Function("dyn_fun", [x, u, w, P], [cas.vertcat(xdot, Pdot_vec)], ["x", "u", "w", "P"], ["xPdot"])#.expand()
 
-    cov_last = np.zeros((2 * n_joints * 2 * n_joints, n_shooting + 1))
+    p0 = model.motor_noise_magnitude*0
+    cov_last = np.zeros((nx * nx, n_shooting + 1))
     cov_last[:, 0] = cov_init.squeeze()
     for i in range(n_shooting):
         x0 = np.concatenate((q_last[:, i], qdot_last[:, i], cov_last[:, i]))
 
         def dyn(t, x):
             return (
-                all_derivative_func(x[:n_q], x[n_q : 2 * n_q], u_last[:, i], x[2 * n_q :], model.motor_noise_magnitude)
+                all_dot(x[:nx],
+                        u_last[:, i],
+                        p0,
+                        reshape_to_matrix(x[nx:], model.matrix_shape_cov),
+                        )
                 .full()
                 .squeeze()
             )
@@ -693,7 +554,7 @@ def get_cov_init_dms(
         sol = solve_ivp(fun=dyn, t_span=(0, duration / n_shooting), y0=x0, method="RK45", atol=1e-15)
 
         y = sol.y[:, -1]
-        cov_last[:, i + 1] = y[n_q * 2 :]
+        cov_last[:, i + 1] = y[nq * 2 :]
 
         cov_next_computed = integrator_rk4(
             model,
@@ -701,8 +562,8 @@ def get_cov_init_dms(
             qdot_last[:, i],
             u_last[:, i],
             cov_last[:, i],
-            cov_derivative_func,
-            states_derivative_func,
+            Pdot_fun,
+            dyn_fun,
             n_shooting,
             duration,
         )
@@ -832,7 +693,6 @@ def test_matrix_semi_definite_positiveness(var):
 
     return is_ok
 
-
 def test_robustified_constraint_value(model, q, qdot, cov_num):
     """
     This function tests if the robustified constraint contains NaNs.
@@ -898,7 +758,6 @@ def test_robustified_constraint_value(model, q, qdot, cov_num):
 
     return is_ok
 
-
 def test_eigen_values(var):
     is_ok = True
     shape_0 = int(np.sqrt(var.shape[0]))
@@ -911,7 +770,6 @@ def test_eigen_values(var):
     if np.sum(vals < 0) != 0:
         is_ok = False
     return is_ok
-
 
 def confidence_ellipse(x, y, ax, n_std=1.0):
     if x.size != y.size:
@@ -937,8 +795,7 @@ def confidence_ellipse(x, y, ax, n_std=1.0):
     ellipse.set_transform(transf + ax.transData)
     return ax.add_patch(ellipse)
 
-
-def draw_cov_ellipse(cov, pos, ax):
+def draw_cov_ellipse(cov, pos, ax, color="b"):
     """
     Draw an ellipse representing the covariance at a given point.
     """
@@ -953,7 +810,21 @@ def draw_cov_ellipse(cov, pos, ax):
 
     # Width and height are "full" widths, not radius
     width, height = 2 * np.sqrt(vals)
-    ellip = plt.matplotlib.patches.Ellipse(xy=pos, width=width, height=height, angle=theta, color="b", alpha=0.1)
+    ellip = plt.matplotlib.patches.Ellipse(xy=pos, width=width, height=height, angle=theta, color=color, alpha=0.1)
 
     ax.add_patch(ellip)
     return ellip
+
+def reshape_to_matrix(var, shape):
+    """
+    Restore the matrix form of the variables
+    """
+    shape_0, shape_1 = shape
+    if isinstance(var, np.ndarray):
+        matrix = np.zeros((shape_0, shape_1))
+    else:
+        matrix = type(var).zeros(shape_0, shape_1)
+    for s0 in range(shape_1):
+        for s1 in range(shape_0):
+            matrix[s1, s0] = var[s0 * shape_0 + s1]
+    return matrix

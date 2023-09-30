@@ -239,7 +239,7 @@ def prepare_ocp(
             nlp,
             with_noise=with_noise,
         ),
-        expand=False,
+        expand=not isinstance(socp_type, SocpType.IRK),
     )
 
     x_bounds = BoundsList()
@@ -301,7 +301,7 @@ def prepare_ocp(
         phase_transitions=phase_transitions,
         ode_solver=ode_solver,
         n_threads=1,
-        assume_phase_dynamics=False,
+        assume_phase_dynamics=True,
     )
 
 
@@ -446,12 +446,9 @@ def prepare_socp(
         )
 
     if cov_init is None:
-        cov_init_matrix = cas.DM_eye(nb_q + nb_qdot) * 0.1
-        shape_0, shape_1 = cov_init_matrix.shape[0], cov_init_matrix.shape[1]
-        cov_0 = np.zeros((shape_0 * shape_1, 1))
-        for s0 in range(shape_0):
-            for s1 in range(shape_1):
-                cov_0[shape_0 * s1 + s0] = cov_init_matrix[s0, s1]
+        cov_init_matrix = np.eye(nb_q + nb_qdot) * 0.01
+        cov_0 = cov_init_matrix.reshape((-1,))
+
         if isinstance(socp_type, SocpType.COLLOCATION):
             cov_init = get_cov_init_collocations(
                 bio_model,
@@ -467,6 +464,7 @@ def prepare_socp(
                 motor_noise_magnitude,
             )
         else:
+
             cov_init = get_cov_init_irk(
                 bio_model,
                 n_shooting,
@@ -483,16 +481,16 @@ def prepare_socp(
             cov_init2 = get_cov_init_dms(
                 bio_model, n_shooting, n_stochastic, final_time, q_init, qdot_init, u_init, cov_0, motor_noise_magnitude
             )
-            #
-            # cov_init = get_cov_init_slicot(bio_model,
-            #                         n_shooting,
-            #                         n_stochastic,
-            #                         final_time,
-            #                         q_init,
-            #                         qdot_init,
-            #                         u_init,
-            #                         cov_0,
-            #                         motor_noise_magnitude)
+        #
+        # cov_init = get_cov_init_slicot(bio_model,
+        #                         n_shooting,
+        #                         n_stochastic,
+        #                         final_time,
+        #                         q_init,
+        #                         qdot_init,
+        #                         u_init,
+        #                         cov_0,
+        #                         motor_noise_magnitude)
 
     # plt.plot(cov_init[::5,:].T)
     # plt.plot(cov_init2[::5,:].T, '--')
@@ -568,13 +566,13 @@ def main():
     step #2: solve the stochastic version without the robustified constraint
     step #3: solve the stochastic version with the robustified constraint
     """
-    run_step_1 = True
+    run_step_1 = False
     run_step_2 = True
     run_step_3 = True  # True
 
     # --- Prepare the ocp --- #
-    polynomial_degree = 9
-    # socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre")
+    polynomial_degree = 5
+    # socp_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
     # socp_type = SocpType.DMS()
     socp_type = SocpType.IRK(polynomial_degree=polynomial_degree, method="legendre")
 

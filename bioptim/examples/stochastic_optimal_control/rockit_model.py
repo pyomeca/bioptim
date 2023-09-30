@@ -22,6 +22,7 @@ class RockitModel:
     ):
         self.socp_type = socp_type
 
+        self.motor_noise_sym = MX()
         if motor_noise_magnitude is not None:
             self.motor_noise_magnitude = motor_noise_magnitude
             self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
