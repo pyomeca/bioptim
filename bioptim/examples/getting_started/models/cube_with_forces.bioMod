@@ -56,5 +56,4 @@ endsegment
 segment Test
     parent Seg1
     translations y
-    externalforceindex 1
 endsegment

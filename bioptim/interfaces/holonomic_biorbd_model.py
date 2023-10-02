@@ -135,6 +135,7 @@ class HolonomicBiorbdModel(BiorbdModel):
             raise NotImplementedError("External forces are not implemented yet.")
         if f_contacts is not None:
             raise NotImplementedError("Contact forces are not implemented yet.")
+        external_forces_set = self.model.externalForceSet()
 
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
@@ -156,7 +157,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         # compute b vector
         tau_augmented = (
             tau
-            - self.model.NonLinearEffect(q_biorbd, qdot_biorbd, f_ext=external_forces, f_contacts=f_contacts).to_mx()
+            - self.model.NonLinearEffect(q_biorbd, qdot_biorbd, external_forces_set).to_mx()
         )
 
         biais = -self.holonomic_constraints_jacobian(qdot) @ qdot
@@ -191,7 +192,8 @@ class HolonomicBiorbdModel(BiorbdModel):
             raise NotImplementedError("External forces are not implemented yet.")
         if f_contacts is not None:
             raise NotImplementedError("Contact forces are not implemented yet.")
-        non_linear_effect = self.model.NonLinearEffect(q, qdot, f_ext=f_ext, f_contacts=f_contacts).to_mx()
+        external_forces_set = self.model.externalForceSet()
+        non_linear_effect = self.model.NonLinearEffect(q, qdot, external_forces_set).to_mx()
         non_linear_effect_u = non_linear_effect[self._independent_joint_index]
         non_linear_effect_v = non_linear_effect[self._dependent_joint_index]
 

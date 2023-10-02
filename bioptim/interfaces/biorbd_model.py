@@ -267,13 +267,49 @@ class BiorbdModel:
         return vertcat(qddot_root, qddot_joints)
 
     def _dispatch_forces(self, external_forces, translational_forces):
+        def extract_elements(e) -> tuple[str, Any] | tuple[Any, str, Any]:
+            value_message = ValueError(
+                "The external_forces at each frame should be of the form: [segment_name, spatial_vector],\n"
+                "where the segment_name is a str corresponding to the name of the parent and the spatial_vector\n"
+                "is a 6 element vectors (Mx, My, Mz, Fx, Fy, Fz) of the type tuple, list, np.ndarray or MX."
+            )
+            if not isinstance(e, (list, tuple)) and len(e) < 2:
+                raise value_message
+
+            name = e[0]
+            if not isinstance(name, str):
+                raise value_message
+
+            values = e[1]
+            if isinstance(values, (list, tuple)):
+                values = np.array(values)
+            if not isinstance(values, (np.ndarray, MX)):
+                raise value_message
+
+            # If it is a force, we are done
+            if len(e) < 3:
+                return name, values
+
+            # If it is a contact point, add it
+            point_of_application = e[2]
+            if isinstance(point_of_application, (list, tuple)):
+                point_of_application = np.array(point_of_application)
+            if not isinstance(point_of_application, (np.ndarray, MX)):
+                raise value_message
+            return values, name, point_of_application
+
         external_forces_set = self.model.externalForceSet()
+
         if external_forces is not None:
             for elements in external_forces:
-                external_forces_set.add(*elements)
+                name, values = extract_elements(elements)
+                external_forces_set.add(name, values)
+
         if translational_forces is not None:
-            for f in translational_forces:
-                external_forces_set.add(f)
+            for elements in translational_forces:
+                values, name, point_of_application = extract_elements(elements)
+                external_forces_set.addTranslationalForce(values, name, point_of_application)
+
         return external_forces_set
 
     def forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
@@ -477,14 +513,19 @@ class BiorbdModel:
 
         return soft_contact_forces
 
-    def reshape_fext_to_fcontact(self, fext: MX) -> biorbd.VecBiorbdVector:
+    def reshape_fext_to_fcontact(self, fext: MX) -> list:
         count = 0
-        f_contact_vec = biorbd.VecBiorbdVector()
-        for ii in range(self.nb_rigid_contacts):
-            n_f_contact = len(self.model.rigidContactAxisIdx(ii))
-            idx = [i + count for i in range(n_f_contact)]
-            f_contact_vec.append(fext[idx])
-            count = count + n_f_contact
+        f_contact_vec = []
+        for i in range(self.nb_rigid_contacts):
+            contact = self.model.rigidContact(i)
+            parent_name = self.model.segment(self.model.getBodyRbdlIdToBiorbdId(contact.parentId())).name().to_string()
+
+            tp = MX.zeros(3)
+            used_axes = [i for i, val in enumerate(contact.axes()) if val]
+            n_contacts = len(used_axes)
+            tp[used_axes] = fext[count:count+n_contacts]
+            f_contact_vec.append([parent_name, tp, contact.to_mx()])
+            count += n_contacts
         return f_contact_vec
 
     def normalize_state_quaternions(self, x: MX | SX) -> MX | SX:

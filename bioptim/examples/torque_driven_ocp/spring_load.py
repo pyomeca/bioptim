@@ -56,7 +56,7 @@ def custom_dynamic(
     force_vector = MX.zeros(6)
     force_vector[5] = 100 * q[0] ** 2
 
-    qddot = nlp.model.forward_dynamics(q, qdot, tau, force_vector)
+    qddot = nlp.model.forward_dynamics(q, qdot, tau, [["Point", force_vector]])
 
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
