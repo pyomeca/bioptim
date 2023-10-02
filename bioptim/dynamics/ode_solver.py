@@ -1,6 +1,7 @@
+import re
 from typing import Callable
 
-from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function
+from casadi import MX, SX, integrator as casadi_integrator, horzcat, vertcat, Function, collocation_points
 
 from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES, TRAPEZOIDAL
 from ..misc.enums import ControlType, DefectType
@@ -71,7 +72,6 @@ class OdeSolverBase:
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
         """
-
         for i in range(len(nlp.dynamics_func)):
             dynamics = []
             dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=0)
@@ -116,10 +116,14 @@ class RK(OdeSolverBase):
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
         nlp.stochastic_variables.node_index = node_index
-
+        t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+        tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
+        dt = (tf - t0) / self.steps
+        time_integration_grid = [t0 + dt * i for i in range(0, self.steps)]
         ode_opt = {
-            "t0": 0,
-            "tf": nlp.dt,
+            "t0": t0,
+            "tf": tf,
+            "time_integration_grid": time_integration_grid,
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
@@ -258,6 +262,10 @@ class OdeSolver:
                     "TRAPEZOIDAL cannot be used with piece-wise constant controls, please use "
                     "ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead."
                 )
+            nlp.states.node_index = node_index
+            nlp.states_dot.node_index = node_index
+            nlp.controls.node_index = node_index
+            nlp.stochastic_variables.node_index = node_index
 
             ode = {
                 "x_unscaled": horzcat(nlp.states.cx_start, nlp.states.cx_end),
@@ -272,9 +280,14 @@ class OdeSolver:
                 if len(nlp.implicit_dynamics_func) > 0
                 else nlp.implicit_dynamics_func,
             }
+            t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+            tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
+            dt = (tf - t0) / self.steps
+            time_integration_grid = [t0 + dt * i for i in range(0, self.steps)]
             ode_opt = {
-                "t0": 0,
-                "tf": nlp.dt,
+                "t0": t0,
+                "tf": tf,
+                "time_integration_grid": time_integration_grid,
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
@@ -355,9 +368,14 @@ class OdeSolver:
                 if len(nlp.implicit_dynamics_func) > 0
                 else nlp.implicit_dynamics_func,
             }
+            t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+            tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
+            dt = collocation_points(self.polynomial_degree, self.method)
+            time_integration_grid = [t0 + dt[i] for i in range(0, self.steps)]
             ode_opt = {
-                "t0": 0,
-                "tf": nlp.dt,
+                "t0": t0,
+                "tf": tf,
+                "time_integration_grid": time_integration_grid,
                 "model": nlp.model,
                 "param": nlp.parameters,
                 "cx": nlp.cx,
@@ -413,7 +431,7 @@ class OdeSolver:
 
         def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
             if ocp.cx is SX:
-                raise RuntimeError("use_sx=True and OdeSolver.IRK are not yet compatible")
+                raise NotImplementedError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
             return super(OdeSolver.IRK, self).integrator(ocp, nlp, dynamics_index, node_index)
 
@@ -453,20 +471,35 @@ class OdeSolver:
                 "x": nlp.states.scaled.cx_start,
                 "p": nlp.controls.scaled.cx_start,
                 "ode": nlp.dynamics_func[dynamics_index](
+                    nlp.time_cx,
                     nlp.states.scaled.cx_start,
                     nlp.controls.scaled.cx_start,
                     nlp.parameters.cx,
                     nlp.stochastic_variables.scaled.cx_start,
                 ),
             }
-            ode_opt = {"t0": 0, "tf": nlp.dt}
 
-            integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)
+            t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+            tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
+            dt = (tf - t0) / self.steps
+            time_integration_grid = [t0 + dt * i for i in range(0, self.steps)]
+
+            ode_opt = {"t0": t0, "tf": tf, "time_integration_grid": time_integration_grid}
+            try:
+                integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)
+            except RuntimeError as me:
+                message = str(me)
+                result = re.search(r"Initialization failed since variables \[.*(time_cx_[0-9]).*\] are free", message)
+                if len(result.groups()) > 0:
+                    raise RuntimeError("CVODES cannot be used with dynamics that depends on time")
+                else:
+                    raise RuntimeError(me)
 
             return [
                 Function(
                     "integrator",
                     [
+                        nlp.time_cx,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.cx,
@@ -477,7 +510,7 @@ class OdeSolver:
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                     ),
-                    ["x0", "p", "params", "s"],
+                    ["t", "x0", "p", "params", "s"],
                     ["xf", "xall"],
                 )
             ]

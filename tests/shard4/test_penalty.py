@@ -76,6 +76,7 @@ def get_penalty_value(ocp, penalty, t, x, u, p, s):
     if isinstance(val, float):
         return val
 
+    time = ocp.nlp[0].time_cx if ocp.nlp[0].time_cx.shape == (0, 0) else ocp.cx(0, 0)
     states = ocp.nlp[0].states.cx_start if ocp.nlp[0].states.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     controls = ocp.nlp[0].controls.cx_start if ocp.nlp[0].controls.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
@@ -84,8 +85,8 @@ def get_penalty_value(ocp, penalty, t, x, u, p, s):
         if ocp.nlp[0].stochastic_variables.cx_start.shape != (0, 0)
         else ocp.cx(0, 0)
     )
-    return ocp.nlp[0].to_casadi_func("penalty", val, states, controls, parameters, stochastic_variables)(
-        x[0], u[0], p, s
+    return ocp.nlp[0].to_casadi_func("penalty", val, time, states, controls, parameters, stochastic_variables)(
+        t, x[0], u[0], p, s
     )
 
 
@@ -179,7 +180,7 @@ def test_penalty_minimize_muscle_power(penalty_origin, value, assume_phase_dynam
 def test_penalty_minimize_qddot(penalty_origin, value, assume_phase_dynamics):
     print(f"origin:{penalty_origin}, assume:{assume_phase_dynamics}")
     ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
-    t = [0, 1]
+    t = [1]
     x = [DM.ones((8, 1)) * value, DM.ones((8, 1)) * value]
     u = [DM.ones((4, 1)) * value]
     p = []
@@ -638,7 +639,7 @@ def test_penalty_proportional_control(penalty_origin, value, assume_phase_dynami
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_torque(penalty_origin, value, assume_phase_dynamics):
     ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
-    t = [0, 1]
+    t = [0]
     x = [0]
     u = [DM.ones((4, 1)) * value]
     p = []
@@ -655,7 +656,7 @@ def test_penalty_minimize_torque(penalty_origin, value, assume_phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_track_torque(penalty_origin, value, assume_phase_dynamics):
     ocp = prepare_test_ocp(assume_phase_dynamics=assume_phase_dynamics)
-    t = [0, 1]
+    t = [0]
     x = [0]
     u = [DM.ones((4, 1)) * value]
     p = []
@@ -677,7 +678,7 @@ def test_penalty_track_torque(penalty_origin, value, assume_phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_muscles_control(penalty_origin, value, assume_phase_dynamics):
     ocp = prepare_test_ocp(with_muscles=True, assume_phase_dynamics=assume_phase_dynamics)
-    t = [0, 1]
+    t = [0]
     x = [0]
     u = [DM.ones((8, 1)) * value]
     p = []

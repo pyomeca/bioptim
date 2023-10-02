@@ -407,8 +407,8 @@ class Bounds(OptionGeneric):
             The number of shooting points in the ocp
         """
 
-        self.min.check_and_adjust_dimensions(n_elements, n_shooting, "Bound min")
-        self.max.check_and_adjust_dimensions(n_elements, n_shooting, "Bound max")
+        self.min.check_and_adjust_dimensions(n_elements, n_shooting, f"Bound min of key {self.key}")
+        self.max.check_and_adjust_dimensions(n_elements, n_shooting, f"Bound max of key {self.key}")
         self.t = self.min.t
         self.n_shooting = self.min.n_shooting
 

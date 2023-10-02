@@ -23,7 +23,7 @@ class CustomPlot:
 
     Attributes
     ----------
-    function: Callable[states, controls, parameters, stochastic_variables]
+    function: Callable[time, states, controls, parameters, stochastic_variables]
         The function to call to update the graph
     type: PlotType
         Type of plot to use
@@ -67,7 +67,7 @@ class CustomPlot:
         """
         Parameters
         ----------
-        update_function: Callable[states, controls, parameters, stochastic_variables]
+        update_function: Callable[time, states, controls, parameters, stochastic_variables]
             The function to call to update the graph
         plot_type: PlotType
             Type of plot to use
@@ -355,10 +355,11 @@ class PlotOcp:
                             casadi_function = nlp.plot[key].parameters["penalty"].weighted_function_non_threaded[0]
                             if nlp.plot[key].parameters["penalty"].multinode_penalty:
                                 if casadi_function is not None:
-                                    size_x = len(casadi_function.nominal_in(0))
-                                    size_u = len(casadi_function.nominal_in(1))
-                                    size_p = len(casadi_function.nominal_in(2))
-                                    size_s = len(casadi_function.nominal_in(3))
+                                    # size_t = len(casadi_function.nominal_in(0))
+                                    size_x = len(casadi_function.nominal_in(1))
+                                    size_u = len(casadi_function.nominal_in(2))
+                                    size_p = len(casadi_function.nominal_in(3))
+                                    size_s = len(casadi_function.nominal_in(4))
                             else:
                                 size_x = nlp.states.shape
                                 size_u = nlp.controls.shape
@@ -384,7 +385,7 @@ class PlotOcp:
                         )
                         nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
                     else:
-                        size = len(nlp.plot[key].phase_mappings.to_second.map_idx)
+                        size = max(nlp.plot[key].phase_mappings.to_second.map_idx) + 1
                     if key not in variable_sizes[i]:
                         variable_sizes[i][key] = size
                     else:
@@ -431,7 +432,7 @@ class PlotOcp:
                     continue
 
                 mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
-                mapping_range_index = list(range(len(nlp.plot[variable].phase_mappings.to_second.map_idx)))
+                mapping_range_index = list(range(max(nlp.plot[variable].phase_mappings.to_second.map_idx) + 1))
                 for ctr in mapping_range_index:
                     ax = axes[ctr]
                     if ctr in mapping_to_first_index:
@@ -803,10 +804,13 @@ class PlotOcp:
                         y_tp[:, :] = val
                         all_y.append(y_tp)
 
-                    for idx in range(len(self.plot_func[key][i].phase_mappings.to_second.map_idx)):
+                    for idx in range(max(self.plot_func[key][i].phase_mappings.to_second.map_idx) + 1):
                         y_tp = []
-                        for y in all_y:
-                            y_tp.append(y[idx, :])
+                        if idx in self.plot_func[key][i].phase_mappings.to_second.map_idx:
+                            for y in all_y:
+                                y_tp.append(y[idx, :])
+                        else:
+                            y_tp = None
                         self.__append_to_ydata([y_tp])
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
@@ -814,6 +818,22 @@ class PlotOcp:
                         if self.plot_func[key][i].parameters["penalty"].multinode_penalty:
                             y = np.array([np.nan])
                             penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
+
+                            t_phase = np.ndarray((0, len(penalty.nodes_phase)))
+                            if sol.ocp.n_phases == 1 and isinstance(data_time, dict):
+                                data_time = [data_time]
+                            for time_key in data_time[i].keys():
+                                t_phase_tp = np.ndarray((data_time[i][time_key].shape[0], 0))
+                                for tp in range(len(penalty.nodes_phase)):
+                                    phase_tp = penalty.nodes_phase[tp]
+                                    node_idx_tp = penalty.all_nodes_index[tp]
+                                    t_phase_tp = np.hstack(
+                                        (
+                                            t_phase_tp,
+                                            data_time[phase_tp][time_key][:, node_idx_tp][:, np.newaxis],
+                                        )
+                                    )
+                                t_phase = np.vstack((t_phase, t_phase_tp))
 
                             x_phase = np.ndarray((0, len(penalty.nodes_phase)))
                             if sol.ocp.n_phases == 1 and isinstance(data_states, dict):
@@ -1040,9 +1060,13 @@ class PlotOcp:
         """
         Update the plotted data from ydata
         """
+
         assert len(self.plots) == len(self.ydata)
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
+            if y is None:
+                # Jump the plots which are empty
+                y = (np.nan,) * len(plot[2])
 
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):

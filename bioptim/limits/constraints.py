@@ -269,6 +269,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.max_bound = np.array([np.inf, np.inf])
 
             contact = controller.get_nlp.contact_forces_func(
+                controller.time.cx,
                 controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx,
@@ -687,6 +688,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             stochastic_sym = MX.sym("stochastic_sym", controller.stochastic_variables.shape, 1)
 
             dx = controller.extra_dynamics(0)(
+                controller.time.mx,
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,
                 parameters_sym,
@@ -699,6 +701,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             DF_DX_fun = Function(
                 "DF_DX_fun",
                 [
+                    controller.time.mx,
                     q_root,
                     q_joints,
                     qdot_root,
@@ -713,6 +716,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             DF_DX = DF_DX_fun(
+                controller.time.cx,
                 controller.states["q"].cx_start[:nb_root],
                 controller.states["q"].cx_start[nb_root:],
                 controller.states["qdot"].cx_start[:nb_root],
