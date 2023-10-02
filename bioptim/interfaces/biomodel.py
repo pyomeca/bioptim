@@ -115,7 +115,7 @@ class BioModel(Protocol):
     def angular_momentum(self, q, qdot) -> MX:
         """Get the angular momentum of the model"""
 
-    def reshape_qdot(self, q, qdot):
+    def reshape_qdot(self, q, qdot) -> MX:
         """
         In case, qdot need to be reshaped, such as if one want to get velocities from quaternions.
         Since we don't know if this is the case, this function is always called
@@ -155,16 +155,18 @@ class BioModel(Protocol):
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
         """reorder the qddot, from the root dof and the joints dof"""
 
-    def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
+    def forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
         """compute the forward dynamics"""
 
-    def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None) -> MX:
+    def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
         """compute the forward dynamics with constraints"""
 
-    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None) -> MX:
+    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, external_forces=None, translational_forces=None) -> MX:
         """compute the inverse dynamics"""
 
-    def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, f_ext=None) -> MX:
+    def contact_forces_from_constrained_forward_dynamics(
+        self, q, qdot, tau, external_forces=None, translational_forces=None
+    ) -> MX:
         """compute the contact forces"""
 
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
@@ -295,7 +297,7 @@ class BioModel(Protocol):
         """
 
     def partitioned_forward_dynamics(
-        self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None
+        self, q_u, qdot_u, tau, external_forces=None, translational_forces=None, q_v_init=None
     ) -> MX:
         """
         This is the forward dynamics of the model, but only for the independent joints
@@ -310,8 +312,8 @@ class BioModel(Protocol):
             The generalized torques
         external_forces: MX
             The external forces
-        f_contacts: MX
-            The contact forces
+        translational_forces: MX
+            The translational forces
 
         Returns
         -------
