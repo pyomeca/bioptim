@@ -966,10 +966,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             defects = dynamics_defects
             defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
 
+            #todo: sigma_w should be defined without motor_noise
             sigma_w = vertcat(controller.model.sensory_noise_sym, controller.model.motor_noise_sym)
 
+            #todo: z should include first node? to be tested without?
             dg_dx = jacobian(defects, vertcat(x_q_joints, x_qdot_joints))
-            dg_dw = jacobian(defects, sigma_w)
+            dg_dw = jacobian(defects, sigma_w)#todo: should be only w
 
             dg_dx_fun = Function(
                 "dg_dx",
@@ -992,7 +994,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             non_sym_states = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
             dg_dx_evaluated = dg_dx_fun(
-                non_sym_states[:nb_root, 0],
+                non_sym_states[:nb_root, 0], #todo: create a variable of the model for idx
                 non_sym_states[nb_root : nb_root + nu, 0],
                 non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
                 non_sym_states[2 * nb_root + nu :, 0],
@@ -1042,7 +1044,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.model.sensory_noise_magnitude,
             )
 
+            #todo: not sure sigma_matrix should be
             sigma_w_num = vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude)
+
+            #tod: sigma_matrix should be independent of sigma_w_num: probably "number of std"
             sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
 
             cov_next_computed = (
@@ -1053,6 +1058,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 )
                 @ m_matrix.T
             )
+
             cov_implicit_defect = cov_matrix_next - cov_next_computed
 
             out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_defect)
