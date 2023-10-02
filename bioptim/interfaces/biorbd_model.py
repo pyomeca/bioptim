@@ -124,10 +124,6 @@ class BiorbdModel:
     def serialize(self) -> tuple[Callable, dict]:
         return BiorbdModel, dict(bio_model=self.path)
 
-    def set_gravity(self, new_gravity) -> None:
-        self.model.setGravity(new_gravity)
-        return
-
     @property
     def friction_coefficients(self) -> MX | np.ndarray:
         return self._friction_coefficients
@@ -136,13 +132,17 @@ class BiorbdModel:
     def gravity(self) -> MX:
         return self.model.getGravity().to_mx()
 
-    @property
-    def nb_segments(self) -> int:
-        return self.model.nbSegment()
+    def set_gravity(self, new_gravity) -> None:
+        self.model.setGravity(new_gravity)
+        return
 
     @property
     def nb_tau(self) -> int:
         return self.model.nbGeneralizedTorque()
+
+    @property
+    def nb_segments(self) -> int:
+        return self.model.nbSegment()
 
     def segment_index(self, name) -> int:
         return biorbd.segment_index(self.model, name)
@@ -150,6 +150,10 @@ class BiorbdModel:
     @property
     def nb_quaternions(self) -> int:
         return self.model.nbQuat()
+
+    @property
+    def nb_dof(self) -> int:
+        return self.model.nbDof()
 
     @property
     def nb_q(self) -> int:
@@ -171,7 +175,7 @@ class BiorbdModel:
     def segments(self) -> tuple[biorbd.Segment]:
         return self.model.segments()
 
-    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> biorbd.RotoTrans:
+    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> tuple:
         # Todo: one of the last ouput of BiorbdModel which is not a MX but a biorbd object
         rt_matrix = self.model.globalJCS(GeneralizedCoordinates(q), segment_id)
         return rt_matrix.transpose() if inverse else rt_matrix
@@ -494,10 +498,6 @@ class BiorbdModel:
 
     def markers_jacobian(self, q) -> list[MX]:
         return [m.to_mx() for m in self.model.markersJacobian(GeneralizedCoordinates(q))]
-
-    @property
-    def nb_dof(self) -> int:
-        return self.model.nbDof()
 
     @property
     def marker_names(self) -> tuple[str, ...]:

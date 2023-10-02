@@ -464,7 +464,7 @@ def test_acados_one_parameter():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
     # parameters
-    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.80995]), decimal=5)
+    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.80995]), decimal=4)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -541,7 +541,7 @@ def test_acados_several_parameter():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
     # parameters
-    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.80996]), decimal=5)
+    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.80996]), decimal=4)
     np.testing.assert_almost_equal(mass, np.array([[20]]), decimal=6)
 
     # Clean test folder

@@ -115,7 +115,7 @@ class BioModel(Protocol):
     def angular_momentum(self, q, qdot) -> MX:
         """Get the angular momentum of the model"""
 
-    def reshape_qdot(self, q, qdot):
+    def reshape_qdot(self, q, qdot) -> MX:
         """
         In case, qdot need to be reshaped, such as if one want to get velocities from quaternions.
         Since we don't know if this is the case, this function is always called
