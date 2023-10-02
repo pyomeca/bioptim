@@ -164,7 +164,9 @@ class BioModel(Protocol):
     def inverse_dynamics(self, q, qdot, qddot, f_ext=None, external_forces=None, translational_forces=None) -> MX:
         """compute the inverse dynamics"""
 
-    def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
+    def contact_forces_from_constrained_forward_dynamics(
+        self, q, qdot, tau, external_forces=None, translational_forces=None
+    ) -> MX:
         """compute the contact forces"""
 
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:

@@ -326,7 +326,9 @@ class BiorbdModel:
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         tau_biorbd = GeneralizedTorque(tau)
-        return self.model.ForwardDynamicsConstraintsDirect(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
+        return self.model.ForwardDynamicsConstraintsDirect(
+            q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set
+        ).to_mx()
 
     def inverse_dynamics(self, q, qdot, qddot, external_forces=None, translational_forces=None) -> MX:
         external_forces_set = self._dispatch_forces(external_forces, translational_forces)
@@ -336,7 +338,9 @@ class BiorbdModel:
         qddot_biorbd = GeneralizedAcceleration(qddot)
         return self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd, external_forces_set).to_mx()
 
-    def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
+    def contact_forces_from_constrained_forward_dynamics(
+        self, q, qdot, tau, external_forces=None, translational_forces=None
+    ) -> MX:
         external_forces_set = self._dispatch_forces(external_forces, translational_forces)
 
         q_biorbd = GeneralizedCoordinates(q)
@@ -523,7 +527,7 @@ class BiorbdModel:
             tp = MX.zeros(3)
             used_axes = [i for i, val in enumerate(contact.axes()) if val]
             n_contacts = len(used_axes)
-            tp[used_axes] = fext[count:count+n_contacts]
+            tp[used_axes] = fext[count : count + n_contacts]
             f_contact_vec.append([parent_name, tp, contact.to_mx()])
             count += n_contacts
         return f_contact_vec

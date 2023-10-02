@@ -155,10 +155,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         )
 
         # compute b vector
-        tau_augmented = (
-            tau
-            - self.model.NonLinearEffect(q_biorbd, qdot_biorbd, external_forces_set).to_mx()
-        )
+        tau_augmented = tau - self.model.NonLinearEffect(q_biorbd, qdot_biorbd, external_forces_set).to_mx()
 
         biais = -self.holonomic_constraints_jacobian(qdot) @ qdot
         if self.stabilization:
