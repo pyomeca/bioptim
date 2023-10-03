@@ -30,7 +30,6 @@ version 4
     mesh 0 -1 0
     mesh 1 -1 0
     mesh 1 -1 -1
-    externalforceindex 0
 endsegment
 	
     // Marker on Seg1
@@ -57,5 +56,4 @@ endsegment
 segment Test
     parent Seg1
     translations y
-    externalforceindex 1
 endsegment
