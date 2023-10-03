@@ -57,7 +57,6 @@ def get_force_field(q, force_field_magnitude):
     tau_force_field = -f_force_field @ hand_pos
     return tau_force_field
 
-
 def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
     """
     Get the effect of the feedback.
@@ -75,232 +74,8 @@ def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
     """
     return k @ ((hand_pos_velo - ref) + sensory_noise)
 
-def prepare_collocation(method="legendre", d=5):
 
-    # Get collocation points
-    tau_root = np.append(0, cas.collocation_points(d, method))
-
-    # Coefficients of the collocation equation
-    C = np.zeros((d + 1, d + 1))
-
-    # Coefficients of the continuity equation
-    D = np.zeros(d + 1)
-
-    # Coefficients of the quadrature function
-    B = np.zeros(d + 1)
-
-    # Construct polynomial basis
-    for j in range(d + 1):
-        # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-        p = np.poly1d([1])
-        for r in range(d + 1):
-            if r != j:
-                p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
-
-        # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-        D[j] = p(1.0)
-
-        # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
-        pder = np.polyder(p)
-        for r in range(d + 1):
-            C[j, r] = pder(tau_root[r])
-
-        # # Evaluate the integral of the polynomial to get the coefficients of the quadrature function
-        pint = np.polyint(p)
-        B[j] = pint(1.0)
-
-
-
-
-
-    return B, C, D
-
-def generate_F_G(model,d, h):
-    # Declare model variables
-
-    nx = model.nb_q + model.nb_qdot
-    q = cas.SX.sym("q", model.nb_q)
-    qd = cas.SX.sym("qd", model.nb_qdot)
-    x = cas.vertcat(q, qd)
-    u = cas.SX.sym("u", model.nb_u)
-    w = cas.SX.sym("w", model.nb_u) # motor noise
-    Sigma_ww = cas.SX.eye(model.nb_u) * w
-    T = cas.SX.sym("T")# Time horizon
-    p = cas.vertcat(T, w)
-    P = cas.SX.sym("P", nx, nx)
-    M = cas.SX.sym("M", nx, nx * (d + 1))
-
-    # Continuous time dynamics
-    xdot = model.dynamics_numerical(
-            states=x,
-            controls=u,  # Piecewise constant control
-            motor_noise=w,
-    )
-
-    dyn_fun = cas.Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"])#.expand()
-
-
-    # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
-    _b, _c, _d = prepare_collocation("legendre", d)
-
-
-    # The helper state sample used by collocation
-    z = []
-    for j in range(d+1):
-        zj = cas.SX.sym("z_" + str(j), nx)
-        z.append(zj)
-
-
-    # Loop over collocation points
-    x0 = _d[0] * z[0]
-    G_argout = [x0+x]
-    xf = x0
-    for j in range(1, d + 1):
-        # Expression for the state derivative at the collocation point
-        xp = _c[0, j] * x
-        for r in range(1, d + 1):
-            xp = xp + _c[r, j] * z[r]
-
-        # Append collocation equations
-        fj = dyn_fun(z[j], u, w)
-        G_argout.append(xp - h * fj)
-
-        # Add contribution to the end state
-        xf = xf + _d[j] * z[j]
-
-    z_ = cas.vertcat(*z)
-    # The function G in 0 = G(x_k,z_k,u_k,w_k)
-    G = cas.Function("G", [z_, x, u, p], [cas.vertcat(*G_argout)], ['z', 'x', 'u', 'p'], ['g'])
-
-    # The function F in x_{k+1} = F(z_k)
-    F = cas.Function("F", [z_], [xf], ['z'], ['xf'])
-
-    Gdx = cas.jacobian(G(z_, x, u, p), x)
-    Gdz = cas.jacobian(G(z_, x, u, p), z_)
-    Gdw = cas.jacobian(G(z_, x, u, p), u)
-    Fdz = cas.jacobian(F(z_), z_)
-
-    # M expression to initialize only
-    Mf = cas.Function("M", [x, z_, u, p], [-Fdz @ cas.inv(Gdz)])
-    # Constraint Equality defining M
-    Mc = cas.Function("M_cons", [x, z_, u, p, M], [Fdz.T - Gdz.T @ M.T])
-    # Covariance propagation rule
-    Pf = cas.Function("P_next", [x, z_, u, p, P, M], [M @ (Gdx @ P @ Gdx.T + Gdw @ Sigma_ww @ Gdw.T) @ M.T])
-
-
-    return F, G, Mc, Pf, Mf
-
-def integration_collocations(model, d, h):
-
-    _, _, D = prepare_collocation("legendre", d)
-    F, G, _, _, _ = generate_F_G(model, d, h)
-
-    ifcn = cas.rootfinder("ifcn", "newton", G)
-
-    nx = model.nb_q + model.nb_qdot
-    q = cas.MX.sym("q", model.nb_q)
-    qd = cas.MX.sym("qd", model.nb_qdot)
-    x = cas.vertcat(q, qd)
-    u = cas.MX.sym("u", model.nb_u)
-    w = cas.MX.sym("w", model.nb_u)
-    T = cas.MX.sym("T")  # Time horizon
-    p = cas.vertcat(T, w)
-    P = cas.MX.sym("P", nx, nx)
-    Sigma_ww = cas.MX.eye(model.nb_u) * w
-
-    x_irk_points = ifcn(cas.MX(), x, u, p)
-    z = [x_irk_points[r * nx: (r + 1) * nx] for r in range(d + 1)]
-
-    # Get an expression for the state at the end of the finite element
-    xf = cas.MX.zeros(nx, d + 1)  # 0 #
-    for r in range(d + 1):
-        xf[:, r] = xf[:, r - 1] + D[r] * z[r]
-
-    F = cas.Function(
-        "irk_integrator",
-        {"x0": x, "u": u, "p": p, "xf": xf[:, -1]},
-        cas.integrator_in(),
-        cas.integrator_out(),
-    )
-
-    Fdx = cas.jacobian(F(x0=x, u=u, p=p)['xf'], x)
-    Fdw = cas.jacobian(F(x0=x, u=u, p=p)['xf'], w)
-    # jac = F.factory("jac_IRK", F.name_in(), ["xf", "jac:xf:x0", "jac:xf:p"])
-
-    # Covariance propagation rule
-    Pf = cas.Function("P_irk", [x, u, p, P], [Fdx @ P @ Fdx.T + Fdw @ Sigma_ww @ Fdw.T])  # .expand()
-
-    return F, Pf
-
-
-
-def integrator_rk4(model, q, qdot, u, stochastic_variables, fun_cov, fun_states, n_shooting, duration):
-    step_time = duration / n_shooting
-    n_step = 5
-    h_norm = 1 / n_step
-    h = step_time * h_norm
-
-    nb_q = q.shape[0]
-    x = np.zeros((2 * nb_q, n_step + 1))
-    for j in range(nb_q):
-        x[j, 0] = q[j]
-    for j in range(nb_q):
-        x[j + nb_q, 0] = qdot[j]
-
-    s = np.zeros((stochastic_variables.shape[0], n_step + 1))
-    s[:, 0] = stochastic_variables
-
-    for i in range(1, n_step + 1):
-        k1_states = fun_states(x[:nb_q, i - 1], x[nb_q:, i - 1], u, model.motor_noise_magnitude)
-        k1_cov = fun_cov(x[:nb_q, i - 1], x[nb_q:, i - 1], s[:, i - 1], model.motor_noise_magnitude)
-        k2_states = fun_states(
-            x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
-            x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:],
-            u,
-            model.motor_noise_magnitude,
-        )
-        k2_cov = fun_cov(
-            x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
-            x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:],
-            s[:, i - 1] + h / 2 * k1_cov,
-            model.motor_noise_magnitude,
-        )
-        k3_states = fun_states(
-            x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
-            x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:],
-            u,
-            model.motor_noise_magnitude,
-        )
-        k3_cov = fun_cov(
-            x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
-            x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:],
-            s[:, i - 1] + h / 2 * k2_cov,
-            model.motor_noise_magnitude,
-        )
-        k4_states = fun_states(
-            x[:nb_q, i - 1] + h * k3_states[:nb_q],
-            x[nb_q:, i - 1] + h * k3_states[nb_q:],
-            u,
-            model.motor_noise_magnitude,
-        )
-        k4_cov = fun_cov(
-            x[:nb_q, i - 1] + h * k3_states[:nb_q],
-            x[nb_q:, i - 1] + h * k3_states[nb_q:],
-            s[:, i - 1] + h * k3_cov,
-            model.motor_noise_magnitude,
-        )
-        x[:, i] = np.reshape(
-            x[:, i - 1] + h / 6 * (k1_states + 2 * k2_states + 2 * k3_states + k4_states),
-            (-1,),
-        )
-
-        s[:, i] = np.reshape(s[:, i - 1] + h / 6 * (k1_cov + 2 * k2_cov + 2 * k3_cov + k4_cov), (-1,))
-        # todo: voir pour l'ordre
-
-    return s[:, -1]
-
-
-def get_m_init(
+def get_m_cov_init(
     model,
     n_stochastic,
     n_shooting,
@@ -309,133 +84,46 @@ def get_m_init(
     q_last,
     qdot_last,
     u_last,
+    cov_init,
 ):
     """
     M = -dF_dz @ inv(dG_dz)
     """
 
     nx = model.nb_q + model.nb_qdot
-    m_last = np.zeros((nx * nx * (polynomial_degree + 1), n_shooting + 1))
-
-    _, _, _, _, Mf = generate_F_G(model, polynomial_degree, duration / n_shooting)
-
-
-
-    for i in range(n_shooting + 1):
-        idx = i*(polynomial_degree+1)
-        index_this_time = [i * polynomial_degree + j for j in range(polynomial_degree + 1)]
-        input_num_list = [
-            q_last[:, index_this_time[0]],
-            qdot_last[:, index_this_time[0]],
-        ]
-        for j in range(polynomial_degree):
-            input_num_list += [
-                q_last[:, index_this_time[j + 1]],
-                qdot_last[:, index_this_time[j + 1]],
-            ]
-        input_num_list += [
-            u_last[:, i],
-            np.vstack(
-                (
-                    np.zeros((2 * n_joints * 2 * n_joints * (polynomial_degree + 1), 1)),  # M
-                    np.zeros((2 * n_joints * 2 * n_joints, 1)),
-                )
-            ),  # cov
-        ]
-        df_dz_evaluated = df_dz_fun(*input_num_list)
-        dg_dz_evaluated = dg_dz_fun(*input_num_list)
-
-        m_this_time = Mf()  # Does not varry
-
-
-        m_last[:, i] = m_this_time.reshape((-1, ))
-
-
-    return m_last
-
-
-def get_cov_init_collocations(
-    model,
-    n_shooting,
-    n_stochastic,
-    polynomial_degree,
-    duration,
-    q_last,
-    qdot_last,
-    u_last,
-    m_last,
-    cov_init,
-    motor_noise_magnitude,
-):
-    """
-    P_k+1 = M_k @ (dG_dx @ P_k @ dG_dx.T + dG_dw @ sigma_w @ dG_dw.T) @ M_k.T
-    """
-
     nu = model.nb_u
-    F, Pf = integration_collocations(model, polynomial_degree, duration / n_shooting)
 
-    cov_last = np.zeros((2 * nu * 2 * nu, n_shooting + 1))
-    cov_last[:, 0] = cov_init[:, 0]
+    m_last = np.zeros((nx * nx * (polynomial_degree + 1), n_shooting + 1))
+    cov_last = np.zeros((nu * nu, n_shooting + 1))
+    cov_last[:, 0] = cov_init
+    p0 = np.array([duration, 0, 0])
+
+    #F and G for test only
+    F, G, _, Pf, Mf = generate_F_G(model, polynomial_degree, duration / n_shooting)
 
     for i in range(n_shooting):
+        idx = i*(polynomial_degree+1)
         index_this_time = [i * polynomial_degree + j for j in range(polynomial_degree + 1)]
-        input_num_list = [
-            q_last[:, index_this_time[0]],
-            qdot_last[:, index_this_time[0]],
-        ]
-        for j in range(polynomial_degree):
-            input_num_list += [
-                q_last[:, index_this_time[j + 1]],
-                qdot_last[:, index_this_time[j + 1]],
-            ]
-        input_num_list += [
-            u_last[:, i],
-            np.vstack(
-                (
-                    m_last[:, i].reshape((-1, 1)),
-                    np.zeros((2 * n_joints * 2 * n_joints, 1)),
-                )
-            ),  # cov
-            motor_noise_magnitude,
-        ]
-        dg_dx_evaluated = dg_dx_fun(*input_num_list)
-        dg_dw_evaluated = dg_dw_fun(*input_num_list)
 
-        m_matrix = np.zeros(model.matrix_shape_m)
-        shape_0, shape_1 = model.matrix_shape_m
-        for s0 in range(shape_1):
-            for s1 in range(shape_0):
-                m_matrix[s1, s0] = m_last[s0 * shape_0 + s1, i]
-
-        cov_matrix = np.zeros((2 * n_joints, 2 * n_joints))
-        for s0 in range(2 * n_joints):
-            for s1 in range(2 * n_joints):
-                cov_matrix[s1, s0] = cov_last[s0 * 2 * n_joints + s1, i]
-
-        cov_this_time = (
-            m_matrix
-            @ (dg_dx_evaluated @ cov_matrix @ dg_dx_evaluated.T + dg_dw_evaluated @ sigma_w_dm @ dg_dw_evaluated.T)
-            @ m_matrix.T
+        x = np.concatenate(
+            (q_last[:, index_this_time[0]],
+            qdot_last[:, index_this_time[0]],)
         )
-        for s0 in range(2 * n_joints):
-            for s1 in range(2 * n_joints):
-                cov_last[2 * n_joints * s1 + s0, i + 1] = cov_this_time[s0, s1]
-    return cov_last
 
+        z = np.concatenate((q_last[:, index_this_time], qdot_last[:, index_this_time]))
+        z = z.reshape((-1,), order="F")
 
-def get_cov_init_sampling(    model,
-    n_shooting,
-    n_stochastic,
-    polynomial_degree,
-    duration,
-    q_last,
-    qdot_last,
-    u_last,
-    cov_init,
-    motor_noise_magnitude,
-):
+        u = u_last[:, i]
 
-    return 0
+        m = Mf(x, z, u, p0)
+        m_last[:, i] = StochasticBioModel.reshape_to_vector(m.full())
+
+        cov = StochasticBioModel.reshape_to_matrix(cov_last[:, i], model.matrix_shape_cov)
+        P_next = Pf(x, z, u, p0, cov, m)
+        cov_last[:, i] = StochasticBioModel.reshape_to_vector(P_next.full())
+
+    return m_last, cov_last
+
 
 def get_cov_init_irk(
     model,
@@ -828,3 +516,182 @@ def reshape_to_matrix(var, shape):
         for s1 in range(shape_0):
             matrix[s1, s0] = var[s0 * shape_0 + s1]
     return matrix
+
+def generate_F_G(model,d, h):
+    # Declare model variables
+
+
+    # Declare model variables
+    nx = model.nb_q + model.nb_qdot
+    q = cas.SX.sym("q", model.nb_q)
+    qd = cas.SX.sym("qd", model.nb_qdot)
+    x = cas.vertcat(q, qd)
+    u = cas.SX.sym("u", model.nb_u)
+    w = cas.SX.sym("w", model.nb_u) # motor noise
+    Sigma_ww = cas.SX.eye(model.nb_u) #* w
+    T = cas.SX.sym("T")# Time horizon
+    p = cas.vertcat(T, w)
+
+    # Control discretization
+    hsym = cas.SX.sym("h")
+
+    P = cas.SX.sym("P", nx, nx)
+    M = cas.SX.sym("M", nx, nx * (d + 1))
+
+    # Continuous time dynamics
+    xdot = model.dynamics_numerical(
+            states=x,
+            controls=u,  # Piecewise constant control
+            motor_noise=w,
+    )
+    dyn_fun = cas.Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"])
+
+    # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
+    _b, _c, _d = prepare_collocation("legendre", d)
+
+    # The helper state sample used by collocation
+    z = []
+    for j in range(d+1):
+        zj = cas.SX.sym("z_" + str(j), nx)
+        z.append(zj)
+
+
+    # Loop over collocation points
+    x0 = _d[0] * z[0]
+    G_argout = [x0+x]
+    xf = x0
+    for j in range(1, d + 1):
+        # Expression for the state derivative at the collocation point
+        xp = _c[0, j] * x
+        for r in range(1, d + 1):
+            xp = xp + _c[r, j] * z[r]
+
+        # Append collocation equations
+        fj = dyn_fun(z[j], u, w)
+        G_argout.append(xp - h * fj)
+
+        # Add contribution to the end state
+        xf = xf + _d[j] * z[j]
+
+    z_ = cas.vertcat(*z)
+    # The function G in 0 = G(x_k,z_k,u_k,w_k)
+    G = cas.Function("G", [z_, x, u, p], [cas.vertcat(*G_argout)], ['z', 'x', 'u', 'p'], ['g'])
+
+    # The function F in x_{k+1} = F(z_k)
+    F = cas.Function("F", [z_], [xf], ['z'], ['xf'])
+
+    Gdx = cas.jacobian(G(z_, x, u, p), x)
+    Gdz = cas.jacobian(G(z_, x, u, p), z_)
+    Gdw = cas.jacobian(G(z_, x, u, p), u)
+    Fdz = cas.jacobian(F(z_), z_)
+
+    # M expression to initialize only
+    Mf = cas.Function("M", [x, z_, u, p], [-Fdz @ cas.inv(Gdz)])
+    # Constraint Equality defining M
+    Mc = cas.Function("M_cons", [x, z_, u, p, M], [Fdz.T - Gdz.T @ M.T])
+    # Covariance propagation rule
+    Pf = cas.Function("P_next", [x, z_, u, p, P, M], [M @ (Gdx @ P @ Gdx.T + Gdw @ Sigma_ww @ Gdw.T) @ M.T])
+
+
+    return F, G, Mc, Pf, Mf
+
+def prepare_collocation(method="legendre", d=5):
+
+    # Get collocation points
+    tau_root = np.append(0, cas.collocation_points(d, method))
+
+    # Coefficients of the collocation equation
+    C = np.zeros((d + 1, d + 1))
+
+    # Coefficients of the continuity equation
+    D = np.zeros(d + 1)
+
+    # Coefficients of the quadrature function
+    B = np.zeros(d + 1)
+
+    # Construct polynomial basis
+    for j in range(d + 1):
+        # Construct Lagrange polynomials to get the polynomial basis at the collocation point
+        p = np.poly1d([1])
+        for r in range(d + 1):
+            if r != j:
+                p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
+
+        # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
+        D[j] = p(1.0)
+
+        # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
+        pder = np.polyder(p)
+        for r in range(d + 1):
+            C[j, r] = pder(tau_root[r])
+
+        # # Evaluate the integral of the polynomial to get the coefficients of the quadrature function
+        pint = np.polyint(p)
+        B[j] = pint(1.0)
+
+    return B, C, D
+
+def integrator_rk4(model, q, qdot, u, stochastic_variables, fun_cov, fun_states, n_shooting, duration):
+    step_time = duration / n_shooting
+    n_step = 5
+    h_norm = 1 / n_step
+    h = step_time * h_norm
+
+    nb_q = q.shape[0]
+    x = np.zeros((2 * nb_q, n_step + 1))
+    for j in range(nb_q):
+        x[j, 0] = q[j]
+    for j in range(nb_q):
+        x[j + nb_q, 0] = qdot[j]
+
+    s = np.zeros((stochastic_variables.shape[0], n_step + 1))
+    s[:, 0] = stochastic_variables
+
+    for i in range(1, n_step + 1):
+        k1_states = fun_states(x[:nb_q, i - 1], x[nb_q:, i - 1], u, model.motor_noise_magnitude)
+        k1_cov = fun_cov(x[:nb_q, i - 1], x[nb_q:, i - 1], s[:, i - 1], model.motor_noise_magnitude)
+        k2_states = fun_states(
+            x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
+            x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:],
+            u,
+            model.motor_noise_magnitude,
+        )
+        k2_cov = fun_cov(
+            x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
+            x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:],
+            s[:, i - 1] + h / 2 * k1_cov,
+            model.motor_noise_magnitude,
+        )
+        k3_states = fun_states(
+            x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
+            x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:],
+            u,
+            model.motor_noise_magnitude,
+        )
+        k3_cov = fun_cov(
+            x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
+            x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:],
+            s[:, i - 1] + h / 2 * k2_cov,
+            model.motor_noise_magnitude,
+        )
+        k4_states = fun_states(
+            x[:nb_q, i - 1] + h * k3_states[:nb_q],
+            x[nb_q:, i - 1] + h * k3_states[nb_q:],
+            u,
+            model.motor_noise_magnitude,
+        )
+        k4_cov = fun_cov(
+            x[:nb_q, i - 1] + h * k3_states[:nb_q],
+            x[nb_q:, i - 1] + h * k3_states[nb_q:],
+            s[:, i - 1] + h * k3_cov,
+            model.motor_noise_magnitude,
+        )
+        x[:, i] = np.reshape(
+            x[:, i - 1] + h / 6 * (k1_states + 2 * k2_states + 2 * k3_states + k4_states),
+            (-1,),
+        )
+
+        s[:, i] = np.reshape(s[:, i - 1] + h / 6 * (k1_cov + 2 * k2_cov + 2 * k3_cov + k4_cov), (-1,))
+        # todo: voir pour l'ordre order='F'
+
+    return s[:, -1]
