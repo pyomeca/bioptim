@@ -736,44 +736,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             out_vector = StochasticBioModel.reshape_to_vector(out)
             return out_vector
 
-        @staticmethod
-        def prepare_collocation(d, poly="legendre"):
-
-            # Get collocation points
-            tau_root = np.append(0, collocation_points(d, poly))
-
-            # Coefficients of the collocation equation
-            C = np.zeros((d + 1, d + 1))
-
-            # Coefficients of the continuity equation
-            D = np.zeros(d + 1)
-
-            # Coefficients of the quadrature function
-            B = np.zeros(d + 1)
-
-            # Construct polynomial basis
-            for j in range(d + 1):
-                # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-                p = np.poly1d([1])
-                for r in range(d + 1):
-                    if r != j:
-                        p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
-
-                # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-                D[j] = p(1.0)
-
-                # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
-                pder = np.polyder(p)
-                for r in range(d + 1):
-                    C[j, r] = pder(tau_root[r])
-
-                # # Evaluate the integral of the polynomial to get the coefficients of the quadrature function
-                pint = np.polyint(p)
-                B[j] = pint(1.0)
-
-            return B, C, D
-
-
 
         @staticmethod
         def stochastic_helper_matrix_collocation(
@@ -787,23 +749,130 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             and G = collocation slope constraints (defects).
             """
 
+            def prepare_collocation(method, d):
 
+                # Get collocation points
+                tau_root = np.append(0, collocation_points(d, method))
+
+                # Coefficients of the collocation equation
+                C = np.zeros((d + 1, d + 1))
+
+                # Coefficients of the continuity equation
+                D = np.zeros(d + 1)
+
+                # Coefficients of the quadrature function
+                B = np.zeros(d + 1)
+
+                # Construct polynomial basis
+                for j in range(d + 1):
+                    # Construct Lagrange polynomials to get the polynomial basis at the collocation point
+                    p = np.poly1d([1])
+                    for r in range(d + 1):
+                        if r != j:
+                            p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
+
+                    # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
+                    D[j] = p(1.0)
+
+                    # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
+                    pder = np.polyder(p)
+                    for r in range(d + 1):
+                        C[j, r] = pder(tau_root[r])
+
+                    # # Evaluate the integral of the polynomial to get the coefficients of the quadrature function
+                    pint = np.polyint(p)
+                    B[j] = pint(1.0)
+
+                return B, C, D
+
+            def collocation_fun_jac(model, method, d, h):
+                # Declare model variables
+                nq = model.nb_q
+                nqdot = model.nb_qdot
+                nu = model.n_u
+                nx = nq + nqdot
+                q = SX.sym("q", nq)
+                qd = SX.sym("qd", nqdot)
+                x = vertcat(q, qd)
+                u = SX.sym("u", nu)
+                w = SX.sym("w", nu)  # motor noise
+                Sigma_ww = SX.eye(nu)  # * w
+                T = SX.sym("T")  # Time horizon
+                p = vertcat(T, w)
+
+                # Control discretization
+                hsym = SX.sym("h")
+
+                P = SX.sym("P", nx, nx)
+                M = SX.sym("M", nx, nx * (d + 1))
+
+                # Continuous time dynamics
+                xdot = model.dynamics_numerical(
+                    states=x,
+                    controls=u,  # Piecewise constant control
+                    motor_noise=w,
+                )
+                dyn_fun = Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"])
+
+                # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
+                _b, _c, _d = prepare_collocation(method, d)
+
+                # The helper state sample used by collocation
+                z = []
+                for j in range(d + 1):
+                    zj = SX.sym("z_" + str(j), nx)
+                    z.append(zj)
+
+                # Loop over collocation points
+                x0 = _d[0] * z[0]
+                G_argout = [x0 + x]
+                xf = x0
+                for j in range(1, d + 1):
+                    # Expression for the state derivative at the collocation point
+                    xp = _c[0, j] * x
+                    for r in range(1, d + 1):
+                        xp = xp + _c[r, j] * z[r]
+
+                    # Append collocation equations
+                    fj = dyn_fun(z[j], u, w)
+                    G_argout.append(xp - h * fj)
+
+                    # Add contribution to the end state
+                    xf = xf + _d[j] * z[j]
+
+                z_ = vertcat(*z)
+                # The function G in 0 = G(x_k,z_k,u_k,w_k)
+                G = Function("G", [z_, x, u, p], [vertcat(*G_argout)], ['z', 'x', 'u', 'p'], ['g'])
+
+                # The function F in x_{k+1} = F(z_k)
+                F = Function("F", [z_], [xf], ['z'], ['xf'])
+
+                Gdx = jacobian(G(z_, x, u, p), x)
+                Gdz = jacobian(G(z_, x, u, p), z_)
+                Gdw = jacobian(G(z_, x, u, p), u)
+                Fdz = jacobian(F(z_), z_)
+
+                # Constraint Equality defining M
+                Mc = Function("M_cons", [x, z_, u, p, M], [Fdz.T - Gdz.T @ M.T])
+                # Covariance propagation rule
+                Pf = Function("P_next", [x, z_, u, p, P, M], [M @ (Gdx @ P @ Gdx.T + Gdw @ Sigma_ww @ Gdw.T) @ M.T])
+
+                return F, G, Mc, Pf,
 
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
+            collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
-            # polynomial_ = controller.get.ode_solver.
+            F, G, Mc, Pf = collocation_fun_jac(controller.model, collocation_method, polynomial_degree, controller.get_nlp.dt)
 
-            B, C, D = prepare_collocation(polynomial_degree, )
+            non_sym_states = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
 
 
             nb_root = controller.model.nb_root
-
-
-
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = controller.model.nb_q - controller.model.nb_root
+
             non_root_index_continuity = []
             non_root_index_defects = []
             for i in range(2):
@@ -860,7 +929,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 jacobian(defects, z_qdot_joints),
             )
 
-            non_sym_states = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
             df_dz_fun = Function(
                 "df_dz",
                 [
@@ -950,13 +1018,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
             P_k+1 = M_k @ (dg/dx @ P_k @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it
+
 
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             nb_root = controller.model.nb_root
+
+
+
+
 
             nu = controller.model.nb_q - nb_root
             non_root_index_continuity = []

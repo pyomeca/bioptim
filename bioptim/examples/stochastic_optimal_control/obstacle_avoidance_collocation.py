@@ -199,6 +199,21 @@ def prepare_ocp(
     nb_qdot = bio_model.nb_qdot
     nb_u = bio_model.nb_u
 
+    # Dynamics
+    dynamics = DynamicsList()
+    dynamics.add(
+        configure_optimal_control_problem,
+        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+            states,
+            controls,
+            parameters,
+            stochastic_variables,
+            nlp,
+            with_noise=with_noise,
+        ),
+        expand=not isinstance(socp_type, SocpType.IRK),
+    )
+
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
@@ -226,22 +241,6 @@ def prepare_ocp(
     #     node=Node.START,
     #     target=np.zeros(1),
     # )
-
-
-    # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        configure_optimal_control_problem,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
-            states,
-            controls,
-            parameters,
-            stochastic_variables,
-            nlp,
-            with_noise=with_noise,
-        ),
-        expand=not isinstance(socp_type, SocpType.IRK),
-    )
 
     x_bounds = BoundsList()
     min_q = np.ones((nb_q, 3)) * -cas.inf
@@ -329,10 +328,28 @@ def prepare_socp(
         motor_noise_magnitude=motor_noise_magnitude,
         polynomial_degree=polynomial_degree,
     )
+
     nb_q = bio_model.nb_q
     nb_qdot = bio_model.nb_qdot
     nx = nb_q + nb_qdot
     nb_u = bio_model.nb_u
+
+    # Dynamics
+    dynamics = DynamicsList()
+    dynamics.add(
+        configure_stochastic_optimal_control_problem_collocations
+        if isinstance(socp_type, SocpType.COLLOCATION)
+        else configure_stochastic_optimal_control_problem_dms,
+        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+            states,
+            controls,
+            parameters,
+            stochastic_variables,
+            nlp,
+            with_noise=with_noise,
+        ),
+        expand=True,
+    )
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -343,11 +360,6 @@ def prepare_socp(
         weight=1e-2 / (2 * n_shooting),
         node=Node.ALL_SHOOTING,
         quadratic=True,
-    )
-
-    multinode_functions = MultinodeObjectiveList()
-    multinode_functions.add(
-        MultinodeObjectiveFcn.STOCHASTIC_EQUALITY, weight=10, key="cov", nodes=(0, n_shooting), nodes_phase=(0, 0)
     )
 
     # Constraints
@@ -380,24 +392,12 @@ def prepare_socp(
     )
     # constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
     # constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
+    phase_transitions = PhaseTransitionList()
+    phase_transitions.add(PhaseTransitionFcn.CYCLIC)
+    phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)  # , phase_pre_idx=0)
 
-    # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        configure_stochastic_optimal_control_problem_collocations
-        if isinstance(socp_type, SocpType.COLLOCATION)
-        else configure_stochastic_optimal_control_problem_dms,
-        dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
-            states,
-            controls,
-            parameters,
-            stochastic_variables,
-            nlp,
-            with_noise=with_noise,
-        ),
-        expand=False,
-    )
 
+    # BOUNDS and INITIAL GUESS
     x_bounds = BoundsList()
     min_q = np.ones((nb_q, 3)) * -cas.inf
     max_q = np.ones((nb_q, 3)) * cas.inf
@@ -487,26 +487,17 @@ def prepare_socp(
         #                         cov_0,
         #                         motor_noise_magnitude)
 
-    # plt.plot(cov_init[::5,:].T)
-    # plt.plot(cov_init2[::5,:].T, '--')
-    # plt.plot(cov_init.T)
-    # plt.plot(cov_init2.T, '--')
+
 
     s_init.add(
         "cov",
         initial_guess=cov_init,
         interpolation=InterpolationType.EACH_FRAME,
     )
-    # s_bounds.add(
-    #     "cov",
-    #     min_bound=[-cas.inf] * n_cov,
-    #     max_bound=[cas.inf] * n_cov,
-    #     interpolation=InterpolationType.CONSTANT,
-    # )
+
     cov_min = np.ones((n_cov, 3)) * -cas.inf
     cov_max = np.ones((n_cov, 3)) * cas.inf
-    # cov_min[:, 0] = cov_init[:, 0]
-    # cov_max[:, 0] = cov_init[:, 0]
+
     s_bounds.add(
         "cov",
         min_bound=cov_min,
@@ -526,9 +517,6 @@ def prepare_socp(
                 f"Initial guess for cov is incompatible with the robustified constraint, something went wrong at the {i}th node."
             )
 
-    phase_transitions = PhaseTransitionList()
-    phase_transitions.add(PhaseTransitionFcn.CYCLIC)
-    phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)  # , phase_pre_idx=0)
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -542,7 +530,6 @@ def prepare_socp(
         u_bounds=u_bounds,
         s_bounds=s_bounds,
         objective_functions=objective_functions,
-        multinode_objectives=multinode_functions,
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=6,
@@ -561,7 +548,7 @@ def main():
     step #2: solve the stochastic version without the robustified constraint
     step #3: solve the stochastic version with the robustified constraint
     """
-    run_step_1 = True
+    run_step_1 = False
     run_step_2 = True
     run_step_3 = True  # True
 

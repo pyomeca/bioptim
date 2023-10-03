@@ -99,7 +99,7 @@ def get_m_cov_init(
     p0 = np.array([duration, 0, 0])
 
     #F and G for test only
-    F, G, _, Pf, Mf = generate_F_G(model, polynomial_degree, duration / n_shooting)
+    F, G, _, Pf, Mf = collocation_fun_jac(model, polynomial_degree, duration / n_shooting)
 
     for i in range(n_shooting):
         idx = i*(polynomial_degree+1)
@@ -517,7 +517,7 @@ def reshape_to_matrix(var, shape):
             matrix[s1, s0] = var[s0 * shape_0 + s1]
     return matrix
 
-def generate_F_G(model,d, h):
+def collocation_fun_jac(model, d, h):
     # Declare model variables
 
 
