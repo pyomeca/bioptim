@@ -1445,7 +1445,7 @@ class ConstraintFcn(FcnEnum):
         Returns the type of the penalty
     """
 
-    CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
+    CONTINUITY = (PenaltyFunctionAbstract.Functions.state_continuity,)
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)

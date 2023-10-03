@@ -1082,7 +1082,7 @@ class PenaltyFunctionAbstract:
             return controller.mx_to_cx("vector_orientations_difference", out, controller.states["q"])
 
         @staticmethod
-        def continuity(penalty: PenaltyOption, controller: PenaltyController | list):
+        def state_continuity(penalty: PenaltyOption, controller: PenaltyController | list):
             if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE):
                 u = controller.controls.cx_start
             elif controller.control_type == ControlType.LINEAR_CONTINUOUS:

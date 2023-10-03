@@ -219,13 +219,13 @@ def prepare_ocp(
     constraints.add(
         path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0 + epsilon, max_bound=cas.inf, quadratic=False
     )
-    constraints.add(
-        ConstraintFcn.TRACK_STATE,
-        key="q",
-        index=0,
-        node=Node.START,
-        target=0
-    )
+    # constraints.add(
+    #     ConstraintFcn.TRACK_STATE,
+    #     key="q",
+    #     index=0,
+    #     node=Node.START,
+    #     target=np.zeros(1),
+    # )
 
 
     # Dynamics
@@ -331,6 +331,7 @@ def prepare_socp(
     )
     nb_q = bio_model.nb_q
     nb_qdot = bio_model.nb_qdot
+    nx = nb_q + nb_qdot
     nb_u = bio_model.nb_u
 
     # Add objective functions
@@ -434,14 +435,18 @@ def prepare_socp(
         n_m = 4 * 4 * (polynomial_degree + 1)
         n_stochastic += n_m
 
-        cov_init_matrix = np.eye(nb_u) * 0.01
+        cov_init_matrix = np.eye(nb_q+nb_qdot) * 0.01
         cov_0 = cov_init_matrix.reshape((-1,), order="F")
 
         if m_init is None:
-            m_init, cov_init = get_m_cov_init(
-                bio_model, n_stochastic, n_shooting, final_time, polynomial_degree,
-                q_init, qdot_init, u_init, cov_0,
-            )
+            m_init = np.zeros( (nx * (nx * (polynomial_degree+1)), n_shooting))
+            cov_init = np.zeros((nx * nx, n_shooting+1))
+
+
+            # m_init, cov_init = get_m_cov_init(
+            #     bio_model, n_stochastic, n_shooting, final_time, polynomial_degree,
+            #     q_init, qdot_init, u_init, cov_0,
+            # )
         s_init.add(
             "m",
             initial_guess=m_init,
@@ -506,7 +511,7 @@ def prepare_socp(
         "cov",
         min_bound=cov_min,
         max_bound=cov_max,
-        interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
+        interpolation=InterpolationType.EACH_FRAME,
     )
 
     for i in range(n_shooting + 1):

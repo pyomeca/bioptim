@@ -94,7 +94,7 @@ def get_m_cov_init(
     nu = model.nb_u
 
     m_last = np.zeros((nx * nx * (polynomial_degree + 1), n_shooting + 1))
-    cov_last = np.zeros((nu * nu, n_shooting + 1))
+    cov_last = np.zeros((nx * nx, n_shooting + 1))
     cov_last[:, 0] = cov_init
     p0 = np.array([duration, 0, 0])
 
@@ -523,6 +523,7 @@ def generate_F_G(model,d, h):
 
     # Declare model variables
     nx = model.nb_q + model.nb_qdot
+    nu = model.nb_u
     q = cas.SX.sym("q", model.nb_q)
     qd = cas.SX.sym("qd", model.nb_qdot)
     x = cas.vertcat(q, qd)
