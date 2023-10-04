@@ -216,6 +216,7 @@ def prepare_ocp(
     constraints.add(
         path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0 + epsilon, max_bound=cas.inf, quadratic=False
     )
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.START, target=0)
 
 
     # Initial guesses
@@ -327,7 +328,7 @@ def prepare_socp(
         is_robustified=is_robustified,
         quadratic=False,
     )
-    # constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.START, target=0)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.START, target=0)
     # constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
     # constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
     phase_transitions = PhaseTransitionList()
@@ -349,9 +350,12 @@ def prepare_socp(
         interpolation=InterpolationType.CONSTANT,
     )
 
+
+    cov0 = (np.eye(bio_model.matrix_shape_cov[0]) * 0.01).reshape((-1,), order="F")
+
     s_init.add(
         "cov",
-        initial_guess=[0]*bio_model.matrix_shape_cov[0]*bio_model.matrix_shape_cov[1],
+        initial_guess=cov0,
         interpolation=InterpolationType.CONSTANT,
     )
 
@@ -449,12 +453,15 @@ def main():
         ax[0].contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
 
     ax[0].plot(q_init[0], q_init[1], "-k", label="Initial guess")
+    ax[0].plot(q_deterministic[0][0], q_deterministic[1][0], "og")
     ax[0].plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
 
     ax[1].plot(q_deterministic[0], q_deterministic[1], "b")
     ax[1].plot(u_deterministic[0], u_deterministic[1], "r")
     for i in range(n_shooting):
-        ax[1].plot((u_deterministic[0, i], q_deterministic[0, i]), (u_deterministic[1, i], q_deterministic[1, i]), "k")
+        j=i*(polynomial_degree+1)
+        ax[1].plot((u_deterministic[0][i], q_deterministic[0][j]),
+                   (u_deterministic[1][i], q_deterministic[1][j]), "k")
 
     if run_step_2:
         socp = prepare_socp(
@@ -511,11 +518,8 @@ def main():
 
     ax[0].plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
 
-    if isinstance(socp_type, SocpType.COLLOCATION):
-        nb_points = polynomial_degree + 1
-    else:
-        nb_points = 1
 
+    nb_points = polynomial_degree + 1
     for j in range(cov_stochastic.shape[1]):
         ax[0].plot(q_stochastic[0, j * nb_points], q_stochastic[1, j * nb_points], "or", markersize=2)
         cov_reshaped_to_matrix = np.zeros(bio_model.matrix_shape_cov)
@@ -551,11 +555,10 @@ def main():
         qdot_robustified = sol_rsocp.states["qdot"]
         u_robustified = sol_rsocp.controls["u"]
         # time_robustified = sol_rsocp.parameters["time"][0][0]
-        if isinstance(socp_type, SocpType.COLLOCATION):
-            m_robustified = sol_rsocp.stochastic_variables["m"]
-        else:
-            m_robustified = None
+
+        m_robustified = sol_rsocp.stochastic_variables["m"]
         cov_robustified = sol_rsocp.stochastic_variables["cov"]
+
         robustified_data = {
             "q_robustified": q_robustified,
             "qdot_robustified": qdot_robustified,
