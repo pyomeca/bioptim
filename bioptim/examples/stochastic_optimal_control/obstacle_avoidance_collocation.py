@@ -122,30 +122,6 @@ def configure_stochastic_optimal_control_problem_collocations(ocp: OptimalContro
     )
 
 
-def configure_stochastic_optimal_control_problem_dms(ocp: OptimalControlProgram, nlp: NonLinearProgram):
-    ConfigureProblem.configure_q(ocp, nlp, True, False, False)
-    ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
-    ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
-
-    # Stochastic variables
-    ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=4)
-    ConfigureProblem.configure_dynamics_function(
-        ocp,
-        nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, with_noise=False
-        ),
-    )
-    ConfigureProblem.configure_dynamics_function(
-        ocp,
-        nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, with_noise=True
-        ),
-        allow_free_variables=True,
-    )
-
-
 def path_constraint(controller: PenaltyController, super_elipse_index: int, is_robustified: bool = False):
     p_x = controller.states["q"].cx_start[0]
     p_y = controller.states["q"].cx_start[1]
@@ -240,41 +216,13 @@ def prepare_ocp(
     constraints.add(
         path_constraint, node=Node.ALL, super_elipse_index=1, min_bound=0 + epsilon, max_bound=cas.inf, quadratic=False
     )
-    # constraints.add(
-    #     ConstraintFcn.TRACK_STATE,
-    #     key="q",
-    #     index=0,
-    #     node=Node.START,
-    #     target=np.zeros(1),
-    # )
 
-    x_bounds = BoundsList()
-    min_q = np.ones((nb_q, 3)) * -cas.inf
-    max_q = np.ones((nb_q, 3)) * cas.inf
-    x_bounds.add(
-        "q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
-    )
-    x_bounds.add(
-        "qdot",
-        min_bound=[-30] * nb_qdot,
-        max_bound=[30] * nb_qdot,
-        interpolation=InterpolationType.CONSTANT,
-    )
-
-    u_bounds = BoundsList()
-    u_bounds.add("u", min_bound=[-cas.inf] * nb_u, max_bound=[cas.inf] * nb_u, interpolation=InterpolationType.CONSTANT)
 
     # Initial guesses
     x_init = InitialGuessList()
-    if isinstance(socp_type, SocpType.COLLOCATION):
-        n_points = n_shooting * (polynomial_degree + 1) + 1
-        q_init = initialize_circle(n_points)
-        x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.ALL_POINTS)
-    else:
-        n_points = n_shooting + 1
-        q_init = initialize_circle(n_points)
-        x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.EACH_FRAME)
-    x_init.add("qdot", initial_guess=np.zeros((nb_qdot, 1)), interpolation=InterpolationType.CONSTANT)
+    n_points = n_shooting * (polynomial_degree + 1) + 1
+    q_init = initialize_circle(n_points)
+    x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.ALL_POINTS)
 
     u_init = InitialGuessList()
     u_init.add("u", initial_guess=np.zeros((nb_u, 1)), interpolation=InterpolationType.CONSTANT)
@@ -282,14 +230,8 @@ def prepare_ocp(
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
 
-    if isinstance(socp_type, SocpType.COLLOCATION):
-        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
-    elif isinstance(socp_type, SocpType.DMS):
-        ode_solver = OdeSolver.RK4()
-    elif isinstance(socp_type, SocpType.IRK):
-        ode_solver = OdeSolver.IRK()
-    else:
-        raise RuntimeError("Invalid socp_type")
+    ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
+
 
     return OptimalControlProgram(
         bio_model,
@@ -298,13 +240,11 @@ def prepare_ocp(
         final_time,
         x_init=x_init,
         u_init=u_init,
-        x_bounds=x_bounds,
-        u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
         phase_transitions=phase_transitions,
         ode_solver=ode_solver,
-        n_threads=1,
+        n_threads=6,
         assume_phase_dynamics=True,
     )
 
@@ -343,9 +283,7 @@ def prepare_socp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        configure_stochastic_optimal_control_problem_collocations
-        if isinstance(socp_type, SocpType.COLLOCATION)
-        else configure_stochastic_optimal_control_problem_dms,
+        configure_stochastic_optimal_control_problem_collocations,
         dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
             states,
             controls,
@@ -389,129 +327,35 @@ def prepare_socp(
         is_robustified=is_robustified,
         quadratic=False,
     )
-    constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.START, target=0)
+    # constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.START, target=0)
     # constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
     # constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
     phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)  # , phase_pre_idx=0)
 
-    # BOUNDS and INITIAL GUESS
-    x_bounds = BoundsList()
-    min_q = np.ones((nb_q, 3)) * -cas.inf
-    max_q = np.ones((nb_q, 3)) * cas.inf
-    x_bounds.add(
-        "q", min_bound=min_q, max_bound=max_q, interpolation=InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT
-    )
-    x_bounds.add(
-        "qdot",
-        min_bound=[-30] * nb_qdot,
-        max_bound=[30] * nb_qdot,
-        interpolation=InterpolationType.CONSTANT,
-    )
-
-    u_bounds = BoundsList()
-    u_bounds.add("u", min_bound=[-cas.inf] * nb_u, max_bound=[cas.inf] * nb_u, interpolation=InterpolationType.CONSTANT)
-
     # Initial guesses
     x_init = InitialGuessList()
-    if isinstance(socp_type, SocpType.COLLOCATION):
-        x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.ALL_POINTS)
-        x_init.add("qdot", initial_guess=qdot_init, interpolation=InterpolationType.ALL_POINTS)
-    else:
-        x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.EACH_FRAME)
-        x_init.add("qdot", initial_guess=qdot_init, interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.ALL_POINTS)
+    x_init.add("qdot", initial_guess=qdot_init, interpolation=InterpolationType.ALL_POINTS)
 
     control_init = InitialGuessList()
     control_init.add("u", initial_guess=u_init, interpolation=InterpolationType.EACH_FRAME)
 
     s_init = InitialGuessList()
-    s_bounds = BoundsList()
-    n_cov = 4 * 4
-    n_stochastic = n_cov
-
-    if isinstance(socp_type, SocpType.COLLOCATION):
-        n_m = 4 * 4 * (polynomial_degree + 1)
-        n_stochastic += n_m
-
-        cov_init_matrix = np.eye(nb_q + nb_qdot) * 0.01
-        cov_0 = cov_init_matrix.reshape((-1,), order="F")
-
-        if m_init is None:
-            m_init = np.zeros((nx * (nx * (polynomial_degree + 1)), n_shooting))
-            cov_init = np.zeros((nx * nx, n_shooting + 1))
-
-            # m_init, cov_init = get_m_cov_init(
-            #     bio_model, n_stochastic, n_shooting, final_time, polynomial_degree,
-            #     q_init, qdot_init, u_init, cov_0,
-            # )
-        s_init.add(
-            "m",
-            initial_guess=m_init,
-            interpolation=InterpolationType.EACH_FRAME,
-        )
-        s_bounds.add(
-            "m",
-            min_bound=[-cas.inf] * n_m,
-            max_bound=[cas.inf] * n_m,
-            interpolation=InterpolationType.CONSTANT,
-        )
-
-    if cov_init is None:
-        cov_init = get_cov_init_irk(
-            bio_model,
-            n_shooting,
-            n_stochastic,
-            polynomial_degree,
-            final_time,
-            q_init,
-            qdot_init,
-            u_init,
-            cov_0,
-            motor_noise_magnitude,
-        )
-
-        # cov_init2 = get_cov_init_dms(
-        #     bio_model, n_shooting, n_stochastic, final_time, q_init, qdot_init, u_init, cov_0, motor_noise_magnitude
-        # )
-    #
-    # cov_init = get_cov_init_slicot(bio_model,
-    #                         n_shooting,
-    #                         n_stochastic,
-    #                         final_time,
-    #                         q_init,
-    #                         qdot_init,
-    #                         u_init,
-    #                         cov_0,
-    #                         motor_noise_magnitude)
+    s_init.add(
+        "m",
+        initial_guess=[0]*bio_model.matrix_shape_m[0]*bio_model.matrix_shape_m[1],
+        interpolation=InterpolationType.CONSTANT,
+    )
 
     s_init.add(
         "cov",
-        initial_guess=cov_init,
-        interpolation=InterpolationType.EACH_FRAME,
+        initial_guess=[0]*bio_model.matrix_shape_cov[0]*bio_model.matrix_shape_cov[1],
+        interpolation=InterpolationType.CONSTANT,
     )
 
-    cov_min = np.ones((n_cov, 3)) * -cas.inf
-    cov_max = np.ones((n_cov, 3)) * cas.inf
 
-    s_bounds.add(
-        "cov",
-        min_bound=cov_min,
-        max_bound=cov_max,
-        interpolation=InterpolationType.EACH_FRAME,
-    )
-
-    for i in range(n_shooting + 1):
-        if not test_matrix_semi_definite_positiveness(cov_init[:, i]):
-            print(f"Initial guess for cov is not semi-definite positive, something went wrong at the {i}th node.")
-
-        if not test_eigen_values(cov_init[:, i]):
-            print(f"Something went wrong at the {i}th node. (Eigen values)")
-
-        if not test_robustified_constraint_value(bio_model, q_init, qdot_init, cov_init):
-            print(
-                f"Initial guess for cov is incompatible with the robustified constraint, something went wrong at the {i}th node."
-            )
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -521,9 +365,6 @@ def prepare_socp(
         x_init=x_init,
         u_init=control_init,
         s_init=s_init,
-        x_bounds=x_bounds,
-        u_bounds=u_bounds,
-        s_bounds=s_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
@@ -543,15 +384,13 @@ def main():
     step #2: solve the stochastic version without the robustified constraint
     step #3: solve the stochastic version with the robustified constraint
     """
-    run_step_1 = False
+    run_step_1 = True
     run_step_2 = True
     run_step_3 = True  # True
 
     # --- Prepare the ocp --- #
     polynomial_degree = 5
     socp_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
-    # socp_type = SocpType.DMS()
-    # socp_type = SocpType.IRK(polynomial_degree=polynomial_degree, method="legendre")
 
     n_shooting = 40
     final_time = 4
@@ -595,10 +434,8 @@ def main():
             u_deterministic = data_deterministic["u_deterministic"]
             time_deterministic = data_deterministic["time_deterministic"]
 
-    if isinstance(socp_type, SocpType.COLLOCATION):
-        q_init = initialize_circle(6 * n_shooting + 1)
-    else:
-        q_init = initialize_circle(n_shooting + 1)
+    q_init = initialize_circle(6 * n_shooting + 1)
+
     fig, ax = plt.subplots(1, 2)
     for i in range(2):
         a = bio_model.super_ellipse_a[i]
@@ -610,7 +447,6 @@ def main():
         X, Y, Z = superellipse(a, b, n, x_0, y_0)
 
         ax[0].contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
-        # ax.contour(X, Y, Z, levels=[0], colors='black')
 
     ax[0].plot(q_init[0], q_init[1], "-k", label="Initial guess")
     ax[0].plot(q_deterministic[0], q_deterministic[1], "-g", label="Deterministic")
