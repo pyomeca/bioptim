@@ -57,6 +57,7 @@ def get_force_field(q, force_field_magnitude):
     tau_force_field = -f_force_field @ hand_pos
     return tau_force_field
 
+
 def get_excitation_with_feedback(k, hand_pos_velo, ref, sensory_noise):
     """
     Get the effect of the feedback.
@@ -98,16 +99,18 @@ def get_m_cov_init(
     cov_last[:, 0] = cov_init
     p0 = np.array([duration, 0, 0])
 
-    #F and G for test only
+    # F and G for test only
     F, G, _, Pf, Mf = collocation_fun_jac(model, polynomial_degree, duration / n_shooting)
 
     for i in range(n_shooting):
-        idx = i*(polynomial_degree+1)
+        idx = i * (polynomial_degree + 1)
         index_this_time = [i * polynomial_degree + j for j in range(polynomial_degree + 1)]
 
         x = np.concatenate(
-            (q_last[:, index_this_time[0]],
-            qdot_last[:, index_this_time[0]],)
+            (
+                q_last[:, index_this_time[0]],
+                qdot_last[:, index_this_time[0]],
+            )
         )
 
         z = np.concatenate((q_last[:, index_this_time], qdot_last[:, index_this_time]))
@@ -137,10 +140,9 @@ def get_cov_init_irk(
     cov_init,
     motor_noise_magnitude,
 ):
-
     nq = model.nb_q
     nx = model.nb_q + model.nb_qdot
-    F, Pf =  integration_collocations(model, polynomial_degree, duration/n_shooting)
+    F, Pf = integration_collocations(model, polynomial_degree, duration / n_shooting)
     # Function(irk_integrator:(x0[4],z0[],p[5],u[],adj_xf[],adj_zf[],adj_qf[])->(xf[4],zf[],qf[],adj_x0[],adj_z0[],adj_p[],adj_u[]) MXFunction)
     # Function(P_irk:(i0[nx],i1[nu],i2[nw+1],i3[nx,nx])->(o0[nx,nx]) MXFunction)
 
@@ -154,29 +156,25 @@ def get_cov_init_irk(
     iter = 500
     X_next = np.zeros((nx, iter))
 
-
     fig, ax = plt.subplots(1, 1)
     for i in range(n_shooting):
         u = u_last[:, i]
         x = np.concatenate((q_last[:, i], qdot_last[:, i]))
         cov_matrix = reshape_to_matrix(cov_last[:, i], model.matrix_shape_cov)
         cov_next = Pf(x, u, p0, cov_matrix)
-        draw_cov_ellipse(cov_next[:nq, :nq].full(), q_last[:, i+1], ax, "r")
-
+        draw_cov_ellipse(cov_next[:nq, :nq].full(), q_last[:, i + 1], ax, "r")
 
         noise = np.random.randn(model.nb_u, iter)
         for j in range(iter):
             X_next[:, j] = F(x0=x, u=u, p=np.append(noise[:, j], duration))["xf"].full().squeeze()
-        plt.plot(X_next[0, :], X_next[1, :],'.')
+        plt.plot(X_next[0, :], X_next[1, :], ".")
         cov = np.cov(X_next)
         # confidence_ellipse(X_next[0,:], X_next[1,:], ax)
         draw_cov_ellipse(cov[:nq, :nq], np.mean(X_next[:nq, :], axis=1), ax, "b")
-        cov_last2[:, i+1] = StochasticBioModel.reshape_to_vector(cov)
+        cov_last2[:, i + 1] = StochasticBioModel.reshape_to_vector(cov)
 
         if not (np.all(np.linalg.eigvals(cov_next.full()) >= 0)):
             print("IRK cov not semi-positive definite")
-
-
 
         cov_last[:, i + 1] = StochasticBioModel.reshape_to_vector(cov_next.full())
 
@@ -203,26 +201,28 @@ def get_cov_init_dms(
     qd = cas.SX.sym("qd", model.nb_qdot)
     x = cas.vertcat(q, qd)
     u = cas.SX.sym("u", model.nb_u)
-    w = cas.SX.sym("w", model.nb_u) # motor noise
-    Sigma_ww = cas.SX.eye(model.nb_u)#* w
+    w = cas.SX.sym("w", model.nb_u)  # motor noise
+    Sigma_ww = cas.SX.eye(model.nb_u)  # * w
     P = cas.SX.sym("P", nx, nx)
 
     # Continuous time dynamics
     xdot = model.dynamics_numerical(
-            states=x,
-            controls=u,  # Piecewise constant control
-            motor_noise=w,
+        states=x,
+        controls=u,  # Piecewise constant control
+        motor_noise=w,
     )
 
     A = cas.jacobian(xdot, x)
     B = cas.jacobian(xdot, w)
     Pdot = A @ P + P @ A.T + B @ Sigma_ww @ B.T
     Pdot_vec = StochasticBioModel.reshape_to_vector(Pdot)
-    dyn_fun = cas.Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"])#.expand()
-    Pdot_fun = cas.Function('Pdot',[x, u, w, P], [Pdot_vec], ["x", "u", "w", "P"], ["Pdot"])
-    all_dot = cas.Function("dyn_fun", [x, u, w, P], [cas.vertcat(xdot, Pdot_vec)], ["x", "u", "w", "P"], ["xPdot"])#.expand()
+    dyn_fun = cas.Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"])  # .expand()
+    Pdot_fun = cas.Function("Pdot", [x, u, w, P], [Pdot_vec], ["x", "u", "w", "P"], ["Pdot"])
+    all_dot = cas.Function(
+        "dyn_fun", [x, u, w, P], [cas.vertcat(xdot, Pdot_vec)], ["x", "u", "w", "P"], ["xPdot"]
+    )  # .expand()
 
-    p0 = model.motor_noise_magnitude*0
+    p0 = model.motor_noise_magnitude * 0
     cov_last = np.zeros((nx * nx, n_shooting + 1))
     cov_last[:, 0] = cov_init.squeeze()
     for i in range(n_shooting):
@@ -230,11 +230,12 @@ def get_cov_init_dms(
 
         def dyn(t, x):
             return (
-                all_dot(x[:nx],
-                        u_last[:, i],
-                        p0,
-                        reshape_to_matrix(x[nx:], model.matrix_shape_cov),
-                        )
+                all_dot(
+                    x[:nx],
+                    u_last[:, i],
+                    p0,
+                    reshape_to_matrix(x[nx:], model.matrix_shape_cov),
+                )
                 .full()
                 .squeeze()
             )
@@ -381,6 +382,7 @@ def test_matrix_semi_definite_positiveness(var):
 
     return is_ok
 
+
 def test_robustified_constraint_value(model, q, qdot, cov_num):
     """
     This function tests if the robustified constraint contains NaNs.
@@ -446,6 +448,7 @@ def test_robustified_constraint_value(model, q, qdot, cov_num):
 
     return is_ok
 
+
 def test_eigen_values(var):
     is_ok = True
     shape_0 = int(np.sqrt(var.shape[0]))
@@ -458,6 +461,7 @@ def test_eigen_values(var):
     if np.sum(vals < 0) != 0:
         is_ok = False
     return is_ok
+
 
 def confidence_ellipse(x, y, ax, n_std=1.0):
     if x.size != y.size:
@@ -483,6 +487,7 @@ def confidence_ellipse(x, y, ax, n_std=1.0):
     ellipse.set_transform(transf + ax.transData)
     return ax.add_patch(ellipse)
 
+
 def draw_cov_ellipse(cov, pos, ax, color="b"):
     """
     Draw an ellipse representing the covariance at a given point.
@@ -503,6 +508,7 @@ def draw_cov_ellipse(cov, pos, ax, color="b"):
     ax.add_patch(ellip)
     return ellip
 
+
 def reshape_to_matrix(var, shape):
     """
     Restore the matrix form of the variables
@@ -517,9 +523,9 @@ def reshape_to_matrix(var, shape):
             matrix[s1, s0] = var[s0 * shape_0 + s1]
     return matrix
 
+
 def collocation_fun_jac(model, d, h):
     # Declare model variables
-
 
     # Declare model variables
     nx = model.nb_q + model.nb_qdot
@@ -528,9 +534,9 @@ def collocation_fun_jac(model, d, h):
     qd = cas.SX.sym("qd", model.nb_qdot)
     x = cas.vertcat(q, qd)
     u = cas.SX.sym("u", model.nb_u)
-    w = cas.SX.sym("w", model.nb_u) # motor noise
-    Sigma_ww = cas.SX.eye(model.nb_u) #* w
-    T = cas.SX.sym("T")# Time horizon
+    w = cas.SX.sym("w", model.nb_u)  # motor noise
+    Sigma_ww = cas.SX.eye(model.nb_u)  # * w
+    T = cas.SX.sym("T")  # Time horizon
     p = cas.vertcat(T, w)
 
     # Control discretization
@@ -541,9 +547,9 @@ def collocation_fun_jac(model, d, h):
 
     # Continuous time dynamics
     xdot = model.dynamics_numerical(
-            states=x,
-            controls=u,  # Piecewise constant control
-            motor_noise=w,
+        states=x,
+        controls=u,  # Piecewise constant control
+        motor_noise=w,
     )
     dyn_fun = cas.Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"])
 
@@ -552,14 +558,13 @@ def collocation_fun_jac(model, d, h):
 
     # The helper state sample used by collocation
     z = []
-    for j in range(d+1):
+    for j in range(d + 1):
         zj = cas.SX.sym("z_" + str(j), nx)
         z.append(zj)
 
-
     # Loop over collocation points
     x0 = _d[0] * z[0]
-    G_argout = [x0+x]
+    G_argout = [x0 + x]
     xf = x0
     for j in range(1, d + 1):
         # Expression for the state derivative at the collocation point
@@ -576,10 +581,10 @@ def collocation_fun_jac(model, d, h):
 
     z_ = cas.vertcat(*z)
     # The function G in 0 = G(x_k,z_k,u_k,w_k)
-    G = cas.Function("G", [z_, x, u, p], [cas.vertcat(*G_argout)], ['z', 'x', 'u', 'p'], ['g'])
+    G = cas.Function("G", [z_, x, u, p], [cas.vertcat(*G_argout)], ["z", "x", "u", "p"], ["g"])
 
     # The function F in x_{k+1} = F(z_k)
-    F = cas.Function("F", [z_], [xf], ['z'], ['xf'])
+    F = cas.Function("F", [z_], [xf], ["z"], ["xf"])
 
     Gdx = cas.jacobian(G(z_, x, u, p), x)
     Gdz = cas.jacobian(G(z_, x, u, p), z_)
@@ -593,11 +598,10 @@ def collocation_fun_jac(model, d, h):
     # Covariance propagation rule
     Pf = cas.Function("P_next", [x, z_, u, p, P, M], [M @ (Gdx @ P @ Gdx.T + Gdw @ Sigma_ww @ Gdw.T) @ M.T])
 
-
     return F, G, Mc, Pf, Mf
 
-def prepare_collocation(method="legendre", d=5):
 
+def prepare_collocation(method="legendre", d=5):
     # Get collocation points
     tau_root = np.append(0, cas.collocation_points(d, method))
 
@@ -631,6 +635,7 @@ def prepare_collocation(method="legendre", d=5):
         B[j] = pint(1.0)
 
     return B, C, D
+
 
 def integrator_rk4(model, q, qdot, u, stochastic_variables, fun_cov, fun_states, n_shooting, duration):
     step_time = duration / n_shooting

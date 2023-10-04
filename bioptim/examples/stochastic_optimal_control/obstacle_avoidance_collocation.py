@@ -80,6 +80,7 @@ def draw_cov_ellipse(cov, pos, ax, color="b"):
     ax.add_patch(ellip)
     return ellip
 
+
 def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
@@ -92,6 +93,7 @@ def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinear
             states, controls, parameters, stochastic_variables, nlp, with_noise=False
         ),
     )
+
 
 def configure_stochastic_optimal_control_problem_collocations(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
@@ -119,6 +121,7 @@ def configure_stochastic_optimal_control_problem_collocations(ocp: OptimalContro
         allow_free_variables=True,
     )
 
+
 def configure_stochastic_optimal_control_problem_dms(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
@@ -141,6 +144,7 @@ def configure_stochastic_optimal_control_problem_dms(ocp: OptimalControlProgram,
         ),
         allow_free_variables=True,
     )
+
 
 def path_constraint(controller: PenaltyController, super_elipse_index: int, is_robustified: bool = False):
     p_x = controller.states["q"].cx_start[0]
@@ -173,6 +177,7 @@ def path_constraint(controller: PenaltyController, super_elipse_index: int, is_r
 
     return out
 
+
 def initialize_circle(n_points):
     """
     Initialize the positions equally distributed over a circle of radius 3
@@ -182,6 +187,7 @@ def initialize_circle(n_points):
         q_init[0, i] = 3 * np.sin(i * 2 * np.pi / (n_points - 1))
         q_init[1, i] = 3 * np.cos(i * 2 * np.pi / (n_points - 1))
     return q_init
+
 
 def prepare_ocp(
     final_time: float,
@@ -383,19 +389,12 @@ def prepare_socp(
         is_robustified=is_robustified,
         quadratic=False,
     )
-    constraints.add(
-        ConstraintFcn.TRACK_STATE,
-        key="q",
-        index=0,
-        node=Node.START,
-        target=0
-    )
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.START, target=0)
     # constraints.add(ConstraintFcn.SYMMETRIC_MATRIX, node=Node.START, key="cov")
     # constraints.add(ConstraintFcn.SEMIDEFINITE_POSITIVE_MATRIX, node=Node.START, key="cov", min_bound=0, max_bound=cas.inf, quadratic=False)
     phase_transitions = PhaseTransitionList()
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
     phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)  # , phase_pre_idx=0)
-
 
     # BOUNDS and INITIAL GUESS
     x_bounds = BoundsList()
@@ -435,13 +434,12 @@ def prepare_socp(
         n_m = 4 * 4 * (polynomial_degree + 1)
         n_stochastic += n_m
 
-        cov_init_matrix = np.eye(nb_q+nb_qdot) * 0.01
+        cov_init_matrix = np.eye(nb_q + nb_qdot) * 0.01
         cov_0 = cov_init_matrix.reshape((-1,), order="F")
 
         if m_init is None:
-            m_init = np.zeros( (nx * (nx * (polynomial_degree+1)), n_shooting))
-            cov_init = np.zeros((nx * nx, n_shooting+1))
-
+            m_init = np.zeros((nx * (nx * (polynomial_degree + 1)), n_shooting))
+            cov_init = np.zeros((nx * nx, n_shooting + 1))
 
             # m_init, cov_init = get_m_cov_init(
             #     bio_model, n_stochastic, n_shooting, final_time, polynomial_degree,
@@ -460,34 +458,32 @@ def prepare_socp(
         )
 
     if cov_init is None:
-            cov_init = get_cov_init_irk(
-                bio_model,
-                n_shooting,
-                n_stochastic,
-                polynomial_degree,
-                final_time,
-                q_init,
-                qdot_init,
-                u_init,
-                cov_0,
-                motor_noise_magnitude,
-            )
+        cov_init = get_cov_init_irk(
+            bio_model,
+            n_shooting,
+            n_stochastic,
+            polynomial_degree,
+            final_time,
+            q_init,
+            qdot_init,
+            u_init,
+            cov_0,
+            motor_noise_magnitude,
+        )
 
-            # cov_init2 = get_cov_init_dms(
-            #     bio_model, n_shooting, n_stochastic, final_time, q_init, qdot_init, u_init, cov_0, motor_noise_magnitude
-            # )
-        #
-        # cov_init = get_cov_init_slicot(bio_model,
-        #                         n_shooting,
-        #                         n_stochastic,
-        #                         final_time,
-        #                         q_init,
-        #                         qdot_init,
-        #                         u_init,
-        #                         cov_0,
-        #                         motor_noise_magnitude)
-
-
+        # cov_init2 = get_cov_init_dms(
+        #     bio_model, n_shooting, n_stochastic, final_time, q_init, qdot_init, u_init, cov_0, motor_noise_magnitude
+        # )
+    #
+    # cov_init = get_cov_init_slicot(bio_model,
+    #                         n_shooting,
+    #                         n_stochastic,
+    #                         final_time,
+    #                         q_init,
+    #                         qdot_init,
+    #                         u_init,
+    #                         cov_0,
+    #                         motor_noise_magnitude)
 
     s_init.add(
         "cov",
@@ -516,7 +512,6 @@ def prepare_socp(
             print(
                 f"Initial guess for cov is incompatible with the robustified constraint, something went wrong at the {i}th node."
             )
-
 
     return StochasticOptimalControlProgram(
         bio_model,

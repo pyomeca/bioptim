@@ -736,9 +736,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             out_vector = StochasticBioModel.reshape_to_vector(out)
             return out_vector
 
-
         @staticmethod
-        def stochastic_helper_matrix_collocation(
+        def stochastic_helper_matrix_collocation(  # self,
             penalty: Constraint,
             controller: PenaltyController,
         ):
@@ -749,264 +748,45 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             and G = collocation slope constraints (defects).
             """
 
-            def prepare_collocation(method, d):
-
-                # Get collocation points
-                tau_root = np.append(0, collocation_points(d, method))
-
-                # Coefficients of the collocation equation
-                C = np.zeros((d + 1, d + 1))
-
-                # Coefficients of the continuity equation
-                D = np.zeros(d + 1)
-
-                # Coefficients of the quadrature function
-                B = np.zeros(d + 1)
-
-                # Construct polynomial basis
-                for j in range(d + 1):
-                    # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-                    p = np.poly1d([1])
-                    for r in range(d + 1):
-                        if r != j:
-                            p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
-
-                    # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-                    D[j] = p(1.0)
-
-                    # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
-                    pder = np.polyder(p)
-                    for r in range(d + 1):
-                        C[j, r] = pder(tau_root[r])
-
-                    # # Evaluate the integral of the polynomial to get the coefficients of the quadrature function
-                    pint = np.polyint(p)
-                    B[j] = pint(1.0)
-
-                return B, C, D
-
-            def collocation_fun_jac(model, method, d, h):
-                # Declare model variables
-                nq = model.nb_q
-                nqdot = model.nb_qdot
-                nu = model.n_u
-                nx = nq + nqdot
-                q = SX.sym("q", nq)
-                qd = SX.sym("qd", nqdot)
-                x = vertcat(q, qd)
-                u = SX.sym("u", nu)
-                w = SX.sym("w", nu)  # motor noise
-                Sigma_ww = SX.eye(nu)  # * w
-                T = SX.sym("T")  # Time horizon
-                p = vertcat(T, w)
-
-                # Control discretization
-                hsym = SX.sym("h")
-
-                P = SX.sym("P", nx, nx)
-                M = SX.sym("M", nx, nx * (d + 1))
-
-                # Continuous time dynamics
-                xdot = model.dynamics_numerical(
-                    states=x,
-                    controls=u,  # Piecewise constant control
-                    motor_noise=w,
-                )
-                dyn_fun = Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"])
-
-                # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
-                _b, _c, _d = prepare_collocation(method, d)
-
-                # The helper state sample used by collocation
-                z = []
-                for j in range(d + 1):
-                    zj = SX.sym("z_" + str(j), nx)
-                    z.append(zj)
-
-                # Loop over collocation points
-                x0 = _d[0] * z[0]
-                G_argout = [x0 + x]
-                xf = x0
-                for j in range(1, d + 1):
-                    # Expression for the state derivative at the collocation point
-                    xp = _c[0, j] * x
-                    for r in range(1, d + 1):
-                        xp = xp + _c[r, j] * z[r]
-
-                    # Append collocation equations
-                    fj = dyn_fun(z[j], u, w)
-                    G_argout.append(xp - h * fj)
-
-                    # Add contribution to the end state
-                    xf = xf + _d[j] * z[j]
-
-                z_ = vertcat(*z)
-                # The function G in 0 = G(x_k,z_k,u_k,w_k)
-                G = Function("G", [z_, x, u, p], [vertcat(*G_argout)], ['z', 'x', 'u', 'p'], ['g'])
-
-                # The function F in x_{k+1} = F(z_k)
-                F = Function("F", [z_], [xf], ['z'], ['xf'])
-
-                Gdx = jacobian(G(z_, x, u, p), x)
-                Gdz = jacobian(G(z_, x, u, p), z_)
-                Gdw = jacobian(G(z_, x, u, p), u)
-                Fdz = jacobian(F(z_), z_)
-
-                # Constraint Equality defining M
-                Mc = Function("M_cons", [x, z_, u, p, M], [Fdz.T - Gdz.T @ M.T])
-                # Covariance propagation rule
-                Pf = Function("P_next", [x, z_, u, p, P, M], [M @ (Gdx @ P @ Gdx.T + Gdw @ Sigma_ww @ Gdw.T) @ M.T])
-
-                return F, G, Mc, Pf,
-
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
-            F, G, Mc, Pf = collocation_fun_jac(controller.model, collocation_method, polynomial_degree, controller.get_nlp.dt)
-
-            non_sym_states = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-
-
-            nb_root = controller.model.nb_root
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = controller.model.nb_q - controller.model.nb_root
-
-            non_root_index_continuity = []
-            non_root_index_defects = []
-            for i in range(2):
-                for j in range(polynomial_degree + 1):
-                    non_root_index_defects += list(
-                        range(
-                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root,
-                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root + nu,
-                        )
-                    )
-                non_root_index_continuity += list(
-                    range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu)
-                )
-
-            x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
-            x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
-            x_qdot_root = controller.cx.sym("x_qdot_root", nb_root, 1)
-            x_qdot_joints = controller.cx.sym("x_qdot_joints", nu, 1)
-            z_q_root = controller.cx.sym("z_q_root", nb_root, polynomial_degree)
-            z_q_joints = controller.cx.sym("z_q_joints", nu, polynomial_degree)
-            z_qdot_root = controller.cx.sym("z_qdot_root", nb_root, polynomial_degree)
-            z_qdot_joints = controller.cx.sym("z_qdot_joints", nu, polynomial_degree)
-
-            states_full = vertcat(
-                horzcat(x_q_root, z_q_root),
-                horzcat(x_q_joints, z_q_joints),
-                horzcat(x_qdot_root, z_qdot_root),
-                horzcat(x_qdot_joints, z_qdot_joints),
+            _, _, Mc, Pf = ConstraintFunction.Functions.collocation_fun_jac(
+                controller.model, collocation_method, polynomial_degree,
             )
 
-            dynamics_xf, dynamics_xall, dynamics_defects = controller.integrate_extra_dynamics(0)(
-                states_full,
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-            )
+            # todo: test if z0 = x in required in the stochastic integration
+            z = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
+            z_ = z.reshape((-1,1))
+            x = controller.states.cx_start
+            u = controller.controls.cx_start
 
-            initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-            final_polynomial_evaluation = dynamics_xf[non_root_index_continuity]
-            defects = dynamics_defects
-            defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
+            nx = x.numel()
+            nu = u.numel()
 
-            df_dz = horzcat(
-                jacobian(final_polynomial_evaluation, x_q_joints),
-                jacobian(final_polynomial_evaluation, z_q_joints),
-                jacobian(final_polynomial_evaluation, x_qdot_joints),
-                jacobian(final_polynomial_evaluation, z_qdot_joints),
-            )
+            p0 = controller.get_nlp.dt
+            p0 = vertcat(p0, type(p0).zeros(nu))
+            sv = controller.stochastic_variables.cx_start
 
-            dg_dz = horzcat(
-                jacobian(defects, x_q_joints),
-                jacobian(defects, z_q_joints),
-                jacobian(defects, x_qdot_joints),
-                jacobian(defects, z_qdot_joints),
-            )
+            s0, s1 = controller.model.matrix_shape_cov
+            s2, s3 = controller.model.matrix_shape_m
+            Mvec = sv[s0 * s1 : s0 * s1 + s2 * s3]
+            M = StochasticBioModel.reshape_to_matrix(Mvec, controller.model.matrix_shape_m)
 
-            df_dz_fun = Function(
-                "df_dz",
-                [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ],
-                [df_dz],
-            )
-            dg_dz_fun = Function(
-                "dg_dz",
-                [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ],
-                [dg_dz],
-            )
 
-            df_dz_evaluated = df_dz_fun(
-                non_sym_states[:nb_root, 0],
-                non_sym_states[nb_root : nb_root + nu, 0],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
-                non_sym_states[2 * nb_root + nu :, 0],
-                non_sym_states[:nb_root, 1:],
-                non_sym_states[nb_root : nb_root + nu, 1:],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 1:],
-                non_sym_states[2 * nb_root + nu :, 1:],
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-                controller.model.motor_noise_magnitude,
-                controller.model.sensory_noise_magnitude,
-            )
-            dg_dz_evaluated = dg_dz_fun(
-                non_sym_states[:nb_root, 0],
-                non_sym_states[nb_root : nb_root + nu, 0],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
-                non_sym_states[2 * nb_root + nu :, 0],
-                non_sym_states[:nb_root, 1:],
-                non_sym_states[nb_root : nb_root + nu, 1:],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 1:],
-                non_sym_states[2 * nb_root + nu :, 1:],
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-                controller.model.motor_noise_magnitude,
-                controller.model.sensory_noise_magnitude,
-            )
+            # M constraint function of x, z_, u, p, M
+            constraint = Mc(x,z_, u, p0, M)
 
-            m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
-            )
+            # todo: integrate those variables?
+            # controller.parameters.cx_start
+            # controller.stochastic_variables.cx_start,
+            # controller.model.motor_noise_magnitude,
+            # controller.model.sensory_noise_magnitude,
 
-            constraint = df_dz_evaluated.T - dg_dz_evaluated.T @ m_matrix.T
+            return StochasticBioModel.reshape_to_vector(constraint)
 
-            out_vector = StochasticBioModel.reshape_to_vector(constraint)
-            return out_vector
 
         @staticmethod
         def stochastic_covariance_matrix_continuity_collocation(
@@ -1020,16 +800,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it
 
-
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             nb_root = controller.model.nb_root
-
-
-
-
 
             nu = controller.model.nb_q - nb_root
             non_root_index_continuity = []
@@ -1095,12 +870,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             defects = dynamics_defects
             defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
 
-            #todo: sigma_w should be defined without motor_noise
+            # todo: sigma_w should be defined without motor_noise
             sigma_w = vertcat(controller.model.sensory_noise_sym, controller.model.motor_noise_sym)
 
-            #todo: z should include first node? to be tested without?
+            # todo: z should include first node? to be tested without?
             dg_dx = jacobian(defects, vertcat(x_q_joints, x_qdot_joints))
-            dg_dw = jacobian(defects, sigma_w)#todo: should be only w
+            dg_dw = jacobian(defects, sigma_w)  # todo: should be only w
 
             dg_dx_fun = Function(
                 "dg_dx",
@@ -1123,7 +898,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             non_sym_states = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
             dg_dx_evaluated = dg_dx_fun(
-                non_sym_states[:nb_root, 0], #todo: create a variable of the model for idx
+                non_sym_states[:nb_root, 0],  # todo: create a variable of the model for idx
                 non_sym_states[nb_root : nb_root + nu, 0],
                 non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
                 non_sym_states[2 * nb_root + nu :, 0],
@@ -1173,10 +948,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.model.sensory_noise_magnitude,
             )
 
-            #todo: not sure sigma_matrix should be
+            # todo: not sure sigma_matrix should be
             sigma_w_num = vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude)
 
-            #tod: sigma_matrix should be independent of sigma_w_num: probably "number of std"
+            # tod: sigma_matrix should be independent of sigma_w_num: probably "number of std"
             sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
 
             cov_next_computed = (
@@ -1498,6 +1273,118 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             diagonal_terms = func(matrix)
 
             return diagonal_terms
+
+        @staticmethod
+        def collocation_fun_jac(model, method, d):
+            def prepare_collocation(method, d):
+                # Get collocation points
+                tau_root = np.append(0, collocation_points(d, method))
+
+                # Coefficients of the collocation equation
+                C = np.zeros((d + 1, d + 1))
+
+                # Coefficients of the continuity equation
+                D = np.zeros(d + 1)
+
+                # Coefficients of the quadrature function
+                B = np.zeros(d + 1)
+
+                # Construct polynomial basis
+                for j in range(d + 1):
+                    # Construct Lagrange polynomials to get the polynomial basis at the collocation point
+                    p = np.poly1d([1])
+                    for r in range(d + 1):
+                        if r != j:
+                            p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
+
+                    # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
+                    D[j] = p(1.0)
+
+                    # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
+                    pder = np.polyder(p)
+                    for r in range(d + 1):
+                        C[j, r] = pder(tau_root[r])
+
+                    # # Evaluate the integral of the polynomial to get the coefficients of the quadrature function
+                    pint = np.polyint(p)
+                    B[j] = pint(1.0)
+
+                return B, C, D
+
+            # Declare model variables
+            nq = model.nb_q
+            nqdot = model.nb_qdot
+            nu = model.nb_u
+            nx = nq + nqdot
+            q = SX.sym("q", nq)
+            qd = SX.sym("qd", nqdot)
+            x = vertcat(q, qd)
+            u = SX.sym("u", nu)
+            w = SX.sym("w", nu)  # motor noise
+            Sigma_ww = SX.eye(nu)  # * w
+            h = SX.sym("h")  # Control discretization
+            p = vertcat(h, w)
+
+            P = SX.sym("P", nx, nx)
+            M = SX.sym("M", nx, nx * (d + 1))
+
+            # Continuous time dynamics
+            xdot = model.dynamics_numerical(
+                states=x,
+                controls=u,  # Piecewise constant control
+                motor_noise=w,
+            )
+            dyn_fun = Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"]).expand()
+
+            # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
+            _b, _c, _d = prepare_collocation(method, d)
+
+            # The helper state sample used by collocation
+            z = []
+            for j in range(d + 1):
+                zj = SX.sym("z_" + str(j), nx)
+                z.append(zj)
+
+            # Loop over collocation points
+            x0 = _d[0] * z[0]
+            G_argout = [x0 + x]
+            xf = x0
+            for j in range(1, d + 1):
+                # Expression for the state derivative at the collocation point
+                xp = _c[0, j] * x
+                for r in range(1, d + 1):
+                    xp = xp + _c[r, j] * z[r]
+
+                # Append collocation equations
+                fj = dyn_fun(z[j], u, w)
+                G_argout.append(xp - h * fj)
+
+                # Add contribution to the end state
+                xf = xf + _d[j] * z[j]
+
+            z_ = vertcat(*z)
+            # The function G in 0 = G(x_k,z_k,u_k,w_k)
+            G = Function("G", [z_, x, u, p], [vertcat(*G_argout)], ["z", "x", "u", "p"], ["g"]).expand()
+
+            # The function F in x_{k+1} = F(z_k)
+            F = Function("F", [z_], [xf], ["z"], ["xf"]).expand()
+
+            Gdx = jacobian(G(z_, x, u, p), x)
+            Gdz = jacobian(G(z_, x, u, p), z_)
+            Gdw = jacobian(G(z_, x, u, p), u)
+            Fdz = jacobian(F(z_), z_)
+
+            # Constraint Equality defining M
+            Mc = Function("M_cons", [x, z_, u, p, M], [Fdz.T - Gdz.T @ M.T]).expand()
+            # Covariance propagation rule
+            Pf = Function("P_next", [x, z_, u, p, P, M], [M @ (Gdx @ P @ Gdx.T + Gdw @ Sigma_ww @ Gdw.T) @ M.T]).expand()
+
+            return (
+                F,
+                G,
+                Mc,
+                Pf,
+            )
 
     @staticmethod
     def get_dt(_):
