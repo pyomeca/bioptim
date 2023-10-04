@@ -14,7 +14,7 @@ from ..misc.utils import check_version
 from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping, BiMappingList
 
-check_version(biorbd, "1.9.9", "1.10.0")
+check_version(biorbd, "1.10.0", "1.11.0")
 
 
 def _dof_mapping(key, model, mapping: BiMapping = None) -> dict:
@@ -104,7 +104,7 @@ def bounds_from_ranges(model, key: str, mapping: BiMapping | BiMappingList = Non
 
 class BiorbdModel:
     """
-    This class allows to define a biorbd model.
+    This class wraps the biorbd model and allows the user to call the biorbd functions from the biomodel protocol
     """
 
     def __init__(self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None):
@@ -124,10 +124,6 @@ class BiorbdModel:
     def serialize(self) -> tuple[Callable, dict]:
         return BiorbdModel, dict(bio_model=self.path)
 
-    def set_gravity(self, new_gravity) -> None:
-        self.model.setGravity(new_gravity)
-        return
-
     @property
     def friction_coefficients(self) -> MX | np.ndarray:
         return self._friction_coefficients
@@ -136,13 +132,17 @@ class BiorbdModel:
     def gravity(self) -> MX:
         return self.model.getGravity().to_mx()
 
-    @property
-    def nb_segments(self) -> int:
-        return self.model.nbSegment()
+    def set_gravity(self, new_gravity) -> None:
+        self.model.setGravity(new_gravity)
+        return
 
     @property
     def nb_tau(self) -> int:
         return self.model.nbGeneralizedTorque()
+
+    @property
+    def nb_segments(self) -> int:
+        return self.model.nbSegment()
 
     def segment_index(self, name) -> int:
         return biorbd.segment_index(self.model, name)
@@ -150,6 +150,10 @@ class BiorbdModel:
     @property
     def nb_quaternions(self) -> int:
         return self.model.nbQuat()
+
+    @property
+    def nb_dof(self) -> int:
+        return self.model.nbDof()
 
     @property
     def nb_q(self) -> int:
@@ -171,7 +175,7 @@ class BiorbdModel:
     def segments(self) -> tuple[biorbd.Segment]:
         return self.model.segments()
 
-    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> biorbd.RotoTrans:
+    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> tuple:
         # Todo: one of the last ouput of BiorbdModel which is not a MX but a biorbd object
         rt_matrix = self.model.globalJCS(GeneralizedCoordinates(q), segment_id)
         return rt_matrix.transpose() if inverse else rt_matrix
@@ -266,42 +270,88 @@ class BiorbdModel:
     def reorder_qddot_root_joints(qddot_root, qddot_joints) -> MX:
         return vertcat(qddot_root, qddot_joints)
 
-    def forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
+    def _dispatch_forces(self, external_forces, translational_forces):
+        def extract_elements(e) -> tuple[str, Any] | tuple[Any, str, Any]:
+            value_message = ValueError(
+                "The external_forces at each frame should be of the form: [segment_name, spatial_vector],\n"
+                "where the segment_name is a str corresponding to the name of the parent and the spatial_vector\n"
+                "is a 6 element vectors (Mx, My, Mz, Fx, Fy, Fz) of the type tuple, list, np.ndarray or MX."
+            )
+            if not isinstance(e, (list, tuple)) and len(e) < 2:
+                raise value_message
+
+            name = e[0]
+            if not isinstance(name, str):
+                raise value_message
+
+            values = e[1]
+            if isinstance(values, (list, tuple)):
+                values = np.array(values)
+            if not isinstance(values, (np.ndarray, MX)):
+                raise value_message
+
+            # If it is a force, we are done
+            if len(e) < 3:
+                return name, values
+
+            # If it is a contact point, add it
+            point_of_application = e[2]
+            if isinstance(point_of_application, (list, tuple)):
+                point_of_application = np.array(point_of_application)
+            if not isinstance(point_of_application, (np.ndarray, MX)):
+                raise value_message
+            return values, name, point_of_application
+
+        external_forces_set = self.model.externalForceSet()
+
         if external_forces is not None:
-            external_forces = biorbd.to_spatial_vector(external_forces)
+            for elements in external_forces:
+                name, values = extract_elements(elements)
+                external_forces_set.add(name, values)
+
+        if translational_forces is not None:
+            for elements in translational_forces:
+                values, name, point_of_application = extract_elements(elements)
+                external_forces_set.addTranslationalForce(values, name, point_of_application)
+
+        return external_forces_set
+
+    def forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
+        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
 
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         tau_biorbd = GeneralizedTorque(tau)
-        return self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces, f_contacts).to_mx()
+        return self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
 
-    def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None) -> MX:
-        if external_forces is not None:
-            external_forces = biorbd.to_spatial_vector(external_forces)
+    def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
+        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
 
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         tau_biorbd = GeneralizedTorque(tau)
-        return self.model.ForwardDynamicsConstraintsDirect(q_biorbd, qdot_biorbd, tau_biorbd, external_forces).to_mx()
+        return self.model.ForwardDynamicsConstraintsDirect(
+            q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set
+        ).to_mx()
 
-    def inverse_dynamics(self, q, qdot, qddot, external_forces=None, f_contacts=None) -> MX:
-        if external_forces is not None:
-            external_forces = biorbd.to_spatial_vector(external_forces)
+    def inverse_dynamics(self, q, qdot, qddot, external_forces=None, translational_forces=None) -> MX:
+        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
 
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         qddot_biorbd = GeneralizedAcceleration(qddot)
-        return self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd, external_forces, f_contacts).to_mx()
+        return self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd, external_forces_set).to_mx()
 
-    def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, external_forces=None) -> MX:
-        if external_forces is not None:
-            external_forces = biorbd.to_spatial_vector(external_forces)
+    def contact_forces_from_constrained_forward_dynamics(
+        self, q, qdot, tau, external_forces=None, translational_forces=None
+    ) -> MX:
+        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
 
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         tau_biorbd = GeneralizedTorque(tau)
         return self.model.ContactForcesFromForwardDynamicsConstraintsDirect(
-            q_biorbd, qdot_biorbd, tau_biorbd, external_forces
+            q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set
         ).to_mx()
 
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
@@ -378,7 +428,7 @@ class BiorbdModel:
             Second contact with axis Z
             rigid_contact_index(0) = (1, 2)
         """
-        return self.model.rigidContactAxisIdx(contact_index)
+        return self.model.rigidContacts()[contact_index].availableAxesIndices()
 
     def marker_velocities(self, q, qdot, reference_index=None) -> list[MX]:
         if reference_index is None:
@@ -450,10 +500,6 @@ class BiorbdModel:
         return [m.to_mx() for m in self.model.markersJacobian(GeneralizedCoordinates(q))]
 
     @property
-    def nb_dof(self) -> int:
-        return self.model.nbDof()
-
-    @property
     def marker_names(self) -> tuple[str, ...]:
         return tuple([s.to_string() for s in self.model.markerNames()])
 
@@ -471,14 +517,19 @@ class BiorbdModel:
 
         return soft_contact_forces
 
-    def reshape_fext_to_fcontact(self, fext: MX) -> biorbd.VecBiorbdVector:
+    def reshape_fext_to_fcontact(self, fext: MX) -> list:
         count = 0
-        f_contact_vec = biorbd.VecBiorbdVector()
-        for ii in range(self.nb_rigid_contacts):
-            n_f_contact = len(self.model.rigidContactAxisIdx(ii))
-            idx = [i + count for i in range(n_f_contact)]
-            f_contact_vec.append(fext[idx])
-            count = count + n_f_contact
+        f_contact_vec = []
+        for i in range(self.nb_rigid_contacts):
+            contact = self.model.rigidContact(i)
+            parent_name = self.model.segment(self.model.getBodyRbdlIdToBiorbdId(contact.parentId())).name().to_string()
+
+            tp = MX.zeros(3)
+            used_axes = [i for i, val in enumerate(contact.axes()) if val]
+            n_contacts = len(used_axes)
+            tp[used_axes] = fext[count : count + n_contacts]
+            f_contact_vec.append([parent_name, tp, contact.to_mx()])
+            count += n_contacts
         return f_contact_vec
 
     def normalize_state_quaternions(self, x: MX | SX) -> MX | SX:

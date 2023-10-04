@@ -956,7 +956,7 @@ class DynamicsFunctions:
         Torques in tau
         """
 
-        if len(nlp.external_forces) != 0:
+        if nlp.external_forces is not None and len(nlp.external_forces) != 0:
             if "tau" in nlp.states:
                 tau_shape = nlp.states["tau"].mx.shape[0]
             elif "tau" in nlp.controls:
