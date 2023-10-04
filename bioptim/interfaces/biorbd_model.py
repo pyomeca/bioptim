@@ -104,7 +104,7 @@ def bounds_from_ranges(model, key: str, mapping: BiMapping | BiMappingList = Non
 
 class BiorbdModel:
     """
-    This class allows to define a biorbd model.
+    This class wraps the biorbd model and allows the user to call the biorbd functions from the biomodel protocol
     """
 
     def __init__(self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None):

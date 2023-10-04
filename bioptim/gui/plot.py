@@ -819,22 +819,6 @@ class PlotOcp:
                             y = np.array([np.nan])
                             penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
 
-                            t_phase = np.ndarray((0, len(penalty.nodes_phase)))
-                            if sol.ocp.n_phases == 1 and isinstance(data_time, dict):
-                                data_time = [data_time]
-                            for time_key in data_time[i].keys():
-                                t_phase_tp = np.ndarray((data_time[i][time_key].shape[0], 0))
-                                for tp in range(len(penalty.nodes_phase)):
-                                    phase_tp = penalty.nodes_phase[tp]
-                                    node_idx_tp = penalty.all_nodes_index[tp]
-                                    t_phase_tp = np.hstack(
-                                        (
-                                            t_phase_tp,
-                                            data_time[phase_tp][time_key][:, node_idx_tp][:, np.newaxis],
-                                        )
-                                    )
-                                t_phase = np.vstack((t_phase, t_phase_tp))
-
                             x_phase = np.ndarray((0, len(penalty.nodes_phase)))
                             if sol.ocp.n_phases == 1 and isinstance(data_states, dict):
                                 data_states = [data_states]
