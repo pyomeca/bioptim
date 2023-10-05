@@ -218,7 +218,6 @@ def prepare_ocp(
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.START, target=0)
 
-
     # Initial guesses
     x_init = InitialGuessList()
     n_points = n_shooting * (polynomial_degree + 1) + 1
@@ -232,7 +231,6 @@ def prepare_ocp(
     phase_transitions.add(PhaseTransitionFcn.CYCLIC)
 
     ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
-
 
     return OptimalControlProgram(
         bio_model,
@@ -346,10 +344,9 @@ def prepare_socp(
     s_init = InitialGuessList()
     s_init.add(
         "m",
-        initial_guess=[0]*bio_model.matrix_shape_m[0]*bio_model.matrix_shape_m[1],
+        initial_guess=[0] * bio_model.matrix_shape_m[0] * bio_model.matrix_shape_m[1],
         interpolation=InterpolationType.CONSTANT,
     )
-
 
     cov0 = (np.eye(bio_model.matrix_shape_cov[0]) * 0.01).reshape((-1,), order="F")
 
@@ -358,8 +355,6 @@ def prepare_socp(
         initial_guess=cov0,
         interpolation=InterpolationType.CONSTANT,
     )
-
-
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -405,8 +400,6 @@ def main():
     # TODO: include SLICOT solver (for solving ill-conditioned, ill-scaled, large-scale problems by preserving the stucture of the problem)
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
-    solver.set_maximum_iterations(1000)  # 1000
-    # solver._nlp_scaling_method = "None"
 
     if run_step_1:
         ocp = prepare_ocp(
@@ -459,9 +452,8 @@ def main():
     ax[1].plot(q_deterministic[0], q_deterministic[1], "b")
     ax[1].plot(u_deterministic[0], u_deterministic[1], "r")
     for i in range(n_shooting):
-        j=i*(polynomial_degree+1)
-        ax[1].plot((u_deterministic[0][i], q_deterministic[0][j]),
-                   (u_deterministic[1][i], q_deterministic[1][j]), "k")
+        j = i * (polynomial_degree + 1)
+        ax[1].plot((u_deterministic[0][i], q_deterministic[0][j]), (u_deterministic[1][i], q_deterministic[1][j]), "k")
 
     if run_step_2:
         socp = prepare_socp(
@@ -517,7 +509,6 @@ def main():
         #     print(f"Something went wrong at the {i}th node. (Constraint evaluation)")
 
     ax[0].plot(q_stochastic[0], q_stochastic[1], "--r", label="Stochastic")
-
 
     nb_points = polynomial_degree + 1
     for j in range(cov_stochastic.shape[1]):

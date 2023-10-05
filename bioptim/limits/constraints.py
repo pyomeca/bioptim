@@ -754,12 +754,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             _, _, Mc, _ = ConstraintFunction.Functions.collocation_fun_jac(
-                controller.model, collocation_method, polynomial_degree,
+                controller.model,
+                collocation_method,
+                polynomial_degree,
             )
 
             # todo: test if z0 = x in required in the stochastic integration
             z = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-            z_ = z.reshape((-1,1))
+            z_ = z.reshape((-1, 1))
             x = controller.states.cx_start
             u = controller.controls.cx_start
 
@@ -768,14 +770,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             p0 = controller.get_nlp.dt
             p0 = vertcat(p0, type(p0).zeros(nu))
-            sv = controller.stochastic_variables.cx_start
 
             m_matrix = StochasticBioModel.reshape_to_matrix(
                 controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
             )
 
             # M constraint function of x, z_, u, p, M
-            constraint = Mc(x,z_, u, p0, m_matrix)
+            constraint = Mc(x, z_, u, p0, m_matrix)
 
             # todo: integrate those variables?
             # controller.parameters.cx_start
@@ -784,7 +785,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # controller.model.sensory_noise_magnitude,
 
             return StochasticBioModel.reshape_to_vector(constraint)
-
 
         @staticmethod
         def stochastic_covariance_matrix_continuity_collocation(
@@ -804,9 +804,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             _, _, _, Pf = ConstraintFunction.Functions.collocation_fun_jac(
-                controller.model, collocation_method, polynomial_degree,
+                controller.model,
+                collocation_method,
+                polynomial_degree,
             )
-            #todo: integrate case due to cholesky
+            # todo: integrate case due to cholesky
 
             # todo: test if z0 = x in required in the stochastic integration
             z = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
@@ -833,7 +835,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # P continuity function of x, z_, u, p, M
             cov_next_computed = Pf(x, z_, u, p0, m_matrix, cov_matrix)
 
-
             # todo: integrate those variables?
             # controller.parameters.cx_start
             # controller.stochastic_variables.cx_start,
@@ -848,7 +849,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             penalty.multi_thread = True
 
             return out_vector
-
 
         @staticmethod
         def stochastic_covariance_matrix_continuity_dms(
@@ -1207,6 +1207,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             M = SX.sym("M", nx, nx * (d + 1))
 
             # Continuous time dynamics
+            # todo: use controller.extra_dynamics(0)?
             xdot = model.dynamics_numerical(
                 states=x,
                 controls=u,  # Piecewise constant control
@@ -1255,7 +1256,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # Constraint Equality defining M
             Mc = Function("M_cons", [x, z_, u, p, M], [Fdz.T - Gdz.T @ M.T]).expand()
             # Covariance propagation rule
-            Pf = Function("P_next", [x, z_, u, p, M, P], [M @ (Gdx @ P @ Gdx.T + Gdw @ Sigma_ww @ Gdw.T) @ M.T]).expand()
+            Pf = Function(
+                "P_next", [x, z_, u, p, M, P], [M @ (Gdx @ P @ Gdx.T + Gdw @ Sigma_ww @ Gdw.T) @ M.T]
+            ).expand()
 
             return (
                 F,
