@@ -830,7 +830,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             else:
                 p0 = vertcat(p0, type(p0).zeros(nu))
 
-
             cov_matrix = StochasticBioModel.reshape_to_matrix(
                 controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
             )
@@ -967,7 +966,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             u = SX.sym("u", nu)
             w = SX.sym("w", nu)  # motor noise
 
-            Sigma_ww = diag(SX(model.motor_noise_magnitude)) #todo: in rockit should be 0 # * w
+            Sigma_ww = diag(SX(model.motor_noise_magnitude))  # todo: in rockit should be 0 # * w
             h = SX.sym("h")  # Control discretization
             p = vertcat(h, w)
 

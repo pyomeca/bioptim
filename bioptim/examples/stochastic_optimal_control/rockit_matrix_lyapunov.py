@@ -131,7 +131,7 @@ def prepare_socp(
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.START, target=0.5)
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", index=0, node=Node.START, target=0)
 
-    #tood: modify the constraint to
+    # tood: modify the constraint to
     constraints.add(
         path_constraint,
         dt=final_time / n_shooting,
@@ -264,7 +264,7 @@ def main():
 
     # sol_ocp.graphs()
     plt.figure()
-    plt.plot(T, bound(T), 'k', label="bound")
+    plt.plot(T, bound(T), "k", label="bound")
     plt.plot(np.squeeze(T), np.squeeze(q), label="q")
     plt.step(ts, np.squeeze(u / 40), label="u/40")
 
