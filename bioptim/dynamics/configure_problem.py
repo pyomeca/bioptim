@@ -730,7 +730,7 @@ class ConfigureProblem:
 
         for func in dyn_func:
             dynamics_eval = func(
-                # nlp.time_mx,
+                nlp.time_mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
