@@ -45,8 +45,7 @@ def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinear
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp:
-        nlp.dynamics_type.dynamic_function(
+        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
             time, states, controls, parameters, stochastic_variables, nlp, with_noise=False
         ),
     )
@@ -65,16 +64,14 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp:
-        nlp.dynamics_type.dynamic_function(
+        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
             time, states, controls, parameters, stochastic_variables, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp:
-        nlp.dynamics_type.dynamic_function(
+        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
             time, states, controls, parameters, stochastic_variables, nlp, with_noise=True
         ),
         allow_free_variables=True,
@@ -93,7 +90,7 @@ def bound(t):
 # def path_constraint(controller: PenaltyController, dt, is_robustified: bool = False):
 def path_constraint(controller, dt, is_robustified: bool = False):
     # todo: modify to work with assume_phase_dynamics = True
-    t = controller.node_index * dt
+    t = controller.time.cx_start #controller.node_index * dt
     q = controller.states["q"].cx_start
     sup = bound(t)
     if is_robustified:
@@ -156,7 +153,8 @@ def prepare_socp(
     if is_stochastic:
         dynamics.add(
             configure_stochastic_optimal_control_problem,
-            dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp,
+                                    with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
@@ -193,16 +191,16 @@ def prepare_socp(
             objective_functions=objective_functions,
             constraints=constraints,
             n_threads=1,
-            assume_phase_dynamics=False,
+            assume_phase_dynamics=True,
             problem_type=problem_type,
         )
 
     else:
+
         dynamics.add(
             configure_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, with_noise:
-            bio_model.dynamics(
-                time,
+            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp,
+                                    with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
@@ -225,7 +223,7 @@ def prepare_socp(
             constraints=constraints,
             ode_solver=ode_solver,
             n_threads=1,
-            assume_phase_dynamics=False,
+            assume_phase_dynamics=True,
         )
 
 
@@ -233,7 +231,7 @@ def main():
     """
     Prepare, solve and plot the solution
     """
-    isStochastic = False
+    isStochastic = True
     isRobust = False
     if not isStochastic:
         isRobust = False

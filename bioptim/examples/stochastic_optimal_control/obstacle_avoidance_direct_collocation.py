@@ -78,8 +78,8 @@ def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinear
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, stochastic_variables, nlp, with_noise=False
         ),
     )
 
@@ -97,15 +97,15 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, stochastic_variables, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            states, controls, parameters, stochastic_variables, nlp, with_noise=True
+        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, stochastic_variables, nlp, with_noise=True
         ),
         allow_free_variables=True,
     )
@@ -224,7 +224,8 @@ def prepare_socp(
     if is_sotchastic:
         dynamics.add(
             configure_stochastic_optimal_control_problem,
-            dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp,
+                                    with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
@@ -270,7 +271,8 @@ def prepare_socp(
     else:
         dynamics.add(
             configure_optimal_control_problem,
-            dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp,
+                                    with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
@@ -303,7 +305,7 @@ def main():
     """
     Prepare, solve and plot the solution
     """
-    isStochastic = True
+    isStochastic = False
     isRobust = False
     if not isStochastic:
         isRobust = False

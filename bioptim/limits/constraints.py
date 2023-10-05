@@ -997,13 +997,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             xf = x0
             for j in range(1, d + 1):
                 # Expression for the state derivative at the collocation point
-                xp = _c[0, j] * x
+                xp_j = _c[0, j] * x
                 for r in range(1, d + 1):
-                    xp = xp + _c[r, j] * z[r]
+                    xp_j += _c[r, j] * z[r]
 
                 # Append collocation equations
                 fj = dyn_fun(z[j], u, w)
-                G_argout.append(xp - h * fj)
+                G_argout.append(xp_j - h * fj)
 
                 # Add contribution to the end state
                 xf = xf + _d[j] * z[j]

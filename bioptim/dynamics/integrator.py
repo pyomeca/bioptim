@@ -793,7 +793,7 @@ class COLLOCATION(Integrator):
                         self.get_u(controls, time),
                         params * param_scaling,
                         stochastic_variables,
-                        xp_j / h,
+                        xp_j, h,
                     )
                 )
             else:
@@ -832,6 +832,104 @@ class COLLOCATION(Integrator):
             ["xf", "xall", "defects"],
             {"allow_free": self.allow_free_variables},
         )
+
+
+class COLLOCATION2(COLLOCATION):
+    """
+    Legendre or Radau polynomial method with 1 extra helper at t=0 compared to COLLOCATION
+
+    Attributes
+    ----------
+    degree: int
+        The interpolation order of the polynomial approximation
+
+    Methods
+    -------
+    get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray
+        Get the control at a given time
+    dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
+        The dynamics of the system
+    """
+
+    def dxdt(
+        self,
+        h: float,
+        time: float | MX | SX,
+        states: MX | SX,
+        controls: MX | SX,
+        params: MX | SX,
+        param_scaling,
+        stochastic_variables: MX | SX,
+    ) -> tuple:
+        """
+        The dynamics of the system
+
+        Parameters
+        ----------
+        h: float
+            The time step
+        time: float | MX | SX
+            The time of the system
+        states: MX | SX
+            The states of the system
+        controls: MX | SX
+            The controls of the system
+        params: MX | SX
+            The parameters of the system
+        param_scaling: MX | SX
+            The parameters scaling of the system
+        stochastic_variables: MX | SX
+            The stochastic variables of the system
+
+        Returns
+        -------
+        states_end: MX | SX
+            The evaluation of the polynomial at the end of the interval (states integrated)
+        horzcat(states[0], states_end): MX | SX
+            The states at each collocation point
+        defects: list[MX | SX] (shape = degree)
+            The constraints insuring that the polynomial has the right derivative at each collocation point
+        """
+        # Total number of variables for one finite element
+        state0 = self._d[0] * states[1] #state = [x z]
+        defects = [state0 - states[0]]
+        states_end = state0
+
+        for j in range(1, self.degree + 1):
+            # Expression for the state derivative at the collocation point
+            xp_j = self._c[0, j] * states[0]
+            for r in range(self.degree + 1):
+                xp_j += self._c[r, j] * states[r+1]
+
+            if self.defects_type == DefectType.EXPLICIT:
+                f_j = self.fun(
+                    time,
+                    states[j],
+                    self.get_u(controls, self.step_time[j]),
+                    params * param_scaling,
+                    stochastic_variables,
+                )[:, self.idx]
+                defects.append(h * f_j - xp_j)
+            elif self.defects_type == DefectType.IMPLICIT:
+                defects.append(
+                    self.implicit_fun(
+                        time,
+                        states[j],
+                        self.get_u(controls, time),
+                        params * param_scaling,
+                        stochastic_variables,
+                        xp_j / h,  # todo: modify to have xp_j - h*fj
+                    )
+                )
+            else:
+                raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
+
+            # Add contribution to the end state
+            states_end += self._d[j] * states[j]
+
+        # Concatenate constraints
+        defects = vertcat(*defects)
+        return states_end, horzcat(states[0], states_end), defects
 
 
 class IRK(COLLOCATION):
