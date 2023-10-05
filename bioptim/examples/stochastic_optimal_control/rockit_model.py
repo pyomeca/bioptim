@@ -78,19 +78,13 @@ class RockitModel:
 
         return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
-    def dynamics_numerical(self, states, controls, stochastic_variables, with_noise=False):
-        """
-        The dynamics from equation (line 42).
-        """
+    def dynamics_numerical(self, states, controls, motor_noise=0):
+
         q = states[: self.nb_q]
         qdot = states[self.nb_q :]
         u = controls
 
-        motor_noise = 0
-        if with_noise:
-            motor_noise = self.motor_noise_sym
-
-        qddot = -0.1 * (1 - q**2) * qdot - q + u + motor_noise
+        qddot = -0.1 * (1 - q**2) * qdot - q + u #+ motor_noise
 
         return vertcat(qdot, qddot)
 

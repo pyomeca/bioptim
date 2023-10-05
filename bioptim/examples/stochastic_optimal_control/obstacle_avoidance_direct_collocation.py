@@ -164,7 +164,6 @@ def prepare_socp(
     is_robustified: bool = False,
     socp_type: SocpType = SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
-
     problem_type = socp_type
     bio_model = MassPointModel(
         socp_type=problem_type,
@@ -175,36 +174,6 @@ def prepare_socp(
     nb_q = bio_model.nb_q
     nb_qdot = bio_model.nb_qdot
     nb_u = bio_model.nb_u
-
-    # Dynamics
-    dynamics = DynamicsList()
-    if is_sotchastic:
-        dynamics.add(
-            configure_stochastic_optimal_control_problem,
-            dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
-                states,
-                controls,
-                parameters,
-                stochastic_variables,
-                nlp,
-                with_noise=with_noise,
-            ),
-            expand=True,
-        )
-    else:
-        dynamics = DynamicsList()
-        dynamics.add(
-            configure_optimal_control_problem,
-            dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
-                states,
-                controls,
-                parameters,
-                stochastic_variables,
-                nlp,
-                with_noise=with_noise,
-            ),
-            expand=True,
-        )
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -249,7 +218,23 @@ def prepare_socp(
     control_init = InitialGuessList()
     control_init.add("u", initial_guess=[0] * nb_u, interpolation=InterpolationType.CONSTANT)
 
+    # Dynamics
+    dynamics = DynamicsList()
+
     if is_sotchastic:
+        dynamics.add(
+            configure_stochastic_optimal_control_problem,
+            dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+                states,
+                controls,
+                parameters,
+                stochastic_variables,
+                nlp,
+                with_noise=with_noise,
+            ),
+            expand=True,
+        )
+
         phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
         s_init = InitialGuessList()
         s_init.add(
@@ -283,6 +268,18 @@ def prepare_socp(
         )
 
     else:
+        dynamics.add(
+            configure_optimal_control_problem,
+            dynamic_function=lambda states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+                states,
+                controls,
+                parameters,
+                stochastic_variables,
+                nlp,
+                with_noise=with_noise,
+            ),
+            expand=True,
+        )
         ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
 
         return OptimalControlProgram(
@@ -307,7 +304,7 @@ def main():
     Prepare, solve and plot the solution
     """
     isStochastic = True
-    isRobust = True
+    isRobust = False
     if not isStochastic:
         isRobust = False
 

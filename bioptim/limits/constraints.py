@@ -8,11 +8,13 @@ from casadi import (
     lt,
     SX,
     MX,
+    DM,
     jacobian,
     Function,
     MX_eye,
     horzcat,
     ldl,
+    diag,
     rootfinder,
     integrator_in,
     integrator_out,
@@ -769,7 +771,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nu = u.numel()
 
             p0 = controller.get_nlp.dt
-            p0 = vertcat(p0, type(p0).zeros(nu))
+            if isinstance(p0, float):
+                p0 = vertcat(p0, DM.zeros(nu))
+            else:
+                p0 = vertcat(p0, type(p0).zeros(nu))
 
             m_matrix = StochasticBioModel.reshape_to_matrix(
                 controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
@@ -820,7 +825,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nu = u.numel()
 
             p0 = controller.get_nlp.dt
-            p0 = vertcat(p0, type(p0).zeros(nu))
+            if isinstance(p0, float):
+                p0 = vertcat(p0, DM.zeros(nu))
+            else:
+                p0 = vertcat(p0, type(p0).zeros(nu))
+
 
             cov_matrix = StochasticBioModel.reshape_to_matrix(
                 controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
@@ -849,248 +858,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             penalty.multi_thread = True
 
             return out_vector
-
-        @staticmethod
-        def stochastic_covariance_matrix_continuity_dms(
-            penalty,
-            controller: PenaltyController,
-        ):
-            """
-            This functions allows to explicitly integrate the covariance matrix using
-            d/dt(P_k) = A @ P_k  + P_k @ A.T
-            """
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-
-            def cov_integrate(model, q, qdot, u, cov, fun_cov, fun_states):
-                duration = controller.parameters["time"].cx if "time" in controller.parameters.keys() else controller.tf
-                step_time = duration / controller.ns
-                n_step = 5  # to be changed
-                h_norm = 1 / n_step
-                h = step_time * h_norm
-
-                nb_q = q.shape[0]
-                x = MX.zeros(2 * nb_q, n_step + 1)
-                for j in range(nb_q):
-                    x[j, 0] = q[j]
-                for j in range(nb_q):
-                    x[j + nb_q, 0] = qdot[j]
-
-                s = MX.zeros(cov.shape[0], n_step + 1)
-                s[:, 0] = cov
-
-                for i in range(1, n_step + 1):
-                    k1_states = fun_states(x[:nb_q, i - 1], x[nb_q:, i - 1], u, duration, cov)
-                    k1_cov = fun_cov(
-                        x[:nb_q, i - 1], x[nb_q:, i - 1], u, duration, s[:, i - 1], model.motor_noise_magnitude
-                    )
-                    k2_states = fun_states(
-                        x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
-                        x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:],
-                        u,
-                        duration,
-                        cov,
-                    )
-                    k2_cov = fun_cov(
-                        x[:nb_q, i - 1] + h / 2 * k1_states[:nb_q],
-                        x[nb_q:, i - 1] + h / 2 * k1_states[nb_q:],
-                        u,
-                        duration,
-                        s[:, i - 1] + h / 2 * k1_cov,
-                        model.motor_noise_magnitude,
-                    )
-                    k3_states = fun_states(
-                        x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
-                        x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:],
-                        u,
-                        duration,
-                        cov,
-                    )
-                    k3_cov = fun_cov(
-                        x[:nb_q, i - 1] + h / 2 * k2_states[:nb_q],
-                        x[nb_q:, i - 1] + h / 2 * k2_states[nb_q:],
-                        u,
-                        duration,
-                        s[:, i - 1] + h / 2 * k2_cov,
-                        model.motor_noise_magnitude,
-                    )
-                    k4_states = fun_states(
-                        x[:nb_q, i - 1] + h * k3_states[:nb_q], x[nb_q:, i - 1] + h * k3_states[nb_q:], u, duration, cov
-                    )
-                    k4_cov = fun_cov(
-                        x[:nb_q, i - 1] + h * k3_states[:nb_q],
-                        x[nb_q:, i - 1] + h * k3_states[nb_q:],
-                        u,
-                        duration,
-                        s[:, i - 1] + h * k3_cov,
-                        model.motor_noise_magnitude,
-                    )
-                    x[:, i] = x[:, i - 1] + h / 6 * (k1_states + 2 * k2_states + 2 * k3_states + k4_states)
-                    s[:, i] = s[:, i - 1] + h / 6 * (k1_cov + 2 * k2_cov + 2 * k3_cov + k4_cov)
-
-                return s[:, -1]
-
-            if not controller.get_nlp.is_stochastic:
-                raise RuntimeError("This function is only valid for stochastic problems")
-
-            nb_root = controller.model.nb_root
-
-            nu = controller.model.nb_q - nb_root
-            non_root_index_continuity = []
-            for i in range(2):
-                non_root_index_continuity += list(
-                    range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu)
-                )
-
-            cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
-            )
-
-            x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
-            x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
-            x_qdot_root = controller.cx.sym("x_qdot_root", nb_root, 1)
-            x_qdot_joints = controller.cx.sym("x_qdot_joints", nu, 1)
-
-            states_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-
-            dx_dt_without = controller.dynamics(
-                states_full,
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-            )
-            dx_dt_with = controller.extra_dynamics(0)(
-                states_full,
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-            )
-
-            A = jacobian(dx_dt_with[non_root_index_continuity], vertcat(x_q_joints, x_qdot_joints))
-            B = jacobian(dx_dt_with[non_root_index_continuity], controller.model.motor_noise_sym)
-
-            sigma_w = MX.zeros(controller.model.motor_noise_sym.shape[0], controller.model.motor_noise_sym.shape[0])
-            for i in range(sigma_w.shape[0]):
-                sigma_w[i, i] = controller.model.motor_noise_sym[i]
-
-            cov_derivative = A @ cov_matrix + cov_matrix @ A.T + B @ sigma_w @ B.T
-            cov_derivative_vector = StochasticBioModel.reshape_to_vector(cov_derivative)
-            states_derivative_func = Function(
-                "states_derivative_func",
-                [
-                    x_q_joints,
-                    x_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                ],
-                [dx_dt_without],
-            )
-            cov_derivative_func = Function(
-                "cov_derivative_func",
-                [
-                    x_q_joints,
-                    x_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables["cov"].cx_start,
-                    controller.model.motor_noise_sym,
-                ],
-                [cov_derivative_vector],
-            )
-
-            cov_next_computed = cov_integrate(
-                controller.model,
-                controller.states["q"].cx_start,
-                controller.states["qdot"].cx_start,
-                controller.controls.cx_start,
-                controller.stochastic_variables["cov"].cx_start,
-                cov_derivative_func,
-                states_derivative_func,
-            )
-
-            cov_integration_defect = controller.stochastic_variables["cov"].cx_end - cov_next_computed
-
-            penalty.explicit_derivative = True
-            penalty.multi_thread = True
-
-            return cov_integration_defect
-
-        @staticmethod
-        def stochastic_covariance_matrix_continuity_irk(
-            penalty,
-            controller: PenaltyController,
-        ):
-            if not controller.get_nlp.is_stochastic:
-                raise RuntimeError("This function is only valid for stochastic problems")
-
-            polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
-            nb_root = controller.model.nb_root
-
-            nu = controller.model.nb_q - nb_root
-            non_root_index_continuity = []
-            non_root_index_defects = []
-            for i in range(2):
-                for j in range(polynomial_degree + 1):
-                    non_root_index_defects += list(
-                        range(
-                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root,
-                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root + nu,
-                        )
-                    )
-                non_root_index_continuity += list(
-                    range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu)
-                )
-
-            if "cholesky_cov" in controller.stochastic_variables.keys():
-                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controller.stochastic_variables["cholesky_cov"].cx_start,
-                    controller.model.matrix_shape_cov_cholesky,
-                )
-                l_cov_matrix_next = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controller.stochastic_variables["cholesky_cov"].cx_end,
-                    controller.model.matrix_shape_cov_cholesky,
-                )
-                cov_matrix = l_cov_matrix @ l_cov_matrix.T
-                cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
-            else:
-                cov_matrix = StochasticBioModel.reshape_to_matrix(
-                    controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
-                )
-                cov_matrix_next = StochasticBioModel.reshape_to_matrix(
-                    controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
-                )
-
-            irk_integrator = controller.integrate_extra_dynamics(0).function
-            jac = irk_integrator.factory("jac_IRK", irk_integrator.name_in(), ["jac:xf:x0", "jac:xf:p"])
-
-            sigma_w_num = vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude)
-            sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
-
-            u = controller.controls.cx_start
-            p = vertcat(
-                controller.model.motor_noise_magnitude,  # *0,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-            )
-            x0 = vertcat(
-                controller.states["q"].cx_start,
-                controller.states["qdot"].cx_start,
-            )
-
-            J = jac(x0=x0, u=u, p=p)
-            phi_x = J["jac_xf_x0"]
-            phi_w = J["jac_xf_p"][:, :nu]
-
-            sink = phi_x @ cov_matrix @ phi_x.T
-            source = phi_w @ sigma_matrix @ phi_w.T
-            cov_next_computed = sink + source
-
-            cov_integration_defect = StochasticBioModel.reshape_to_vector(cov_matrix_next - cov_next_computed)
-
-            penalty.explicit_derivative = True
-            penalty.multi_thread = True
-
-            return cov_integration_defect
 
         @staticmethod
         def stochastic_mean_sensory_input_equals_reference(
@@ -1199,7 +966,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             x = vertcat(q, qd)
             u = SX.sym("u", nu)
             w = SX.sym("w", nu)  # motor noise
-            Sigma_ww = SX.eye(nu)  # * w
+
+            Sigma_ww = diag(SX(model.motor_noise_magnitude)) #todo: in rockit should be 0 # * w
             h = SX.sym("h")  # Control discretization
             p = vertcat(h, w)
 
@@ -1299,12 +1067,6 @@ class ConstraintFcn(FcnEnum):
     STOCHASTIC_HELPER_MATRIX_COLLOCATION = (ConstraintFunction.Functions.stochastic_helper_matrix_collocation,)
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_collocation,
-    )
-    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_DMS = (
-        ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_dms,
-    )
-    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IRK = (
-        ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_irk,
     )
 
     STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (

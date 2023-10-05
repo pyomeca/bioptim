@@ -74,7 +74,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
     ):
         """ """
 
-        if not (isinstance(problem_type, SocpType.COLLOCATION) or isinstance(problem_type, SocpType.DMS)):
+        if not isinstance(problem_type, SocpType.COLLOCATION):
             if "n_thread" in kwargs:
                 if kwargs["n_thread"] != 1:
                     raise ValueError(
@@ -92,7 +92,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 "\n- DMS: OdeSolver.RK4()"
             )
 
-        if not (isinstance(problem_type, SocpType.COLLOCATION) or isinstance(problem_type, SocpType.DMS)):
+        if not isinstance(problem_type, SocpType.COLLOCATION):
             if "assume_phase_dynamics" in kwargs:
                 if kwargs["assume_phase_dynamics"]:
                     raise ValueError(
@@ -113,10 +113,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             ode_solver = OdeSolver.COLLOCATION(
                 method=problem_type.method, polynomial_degree=problem_type.polynomial_degree
             )
-        elif isinstance(problem_type, SocpType.DMS):
-            ode_solver = OdeSolver.RK4()
-        elif isinstance(problem_type, SocpType.IRK):
-            ode_solver = OdeSolver.IRK(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree)
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 
@@ -252,14 +248,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             )
         elif isinstance(self.problem_type, SocpType.COLLOCATION):
             self._prepare_stochastic_dynamics_collocation(
-                constraints=constraints,
-            )
-        elif isinstance(self.problem_type, SocpType.DMS):
-            self._prepare_stochastic_dynamics_dms(
-                constraints=constraints,
-            )
-        elif isinstance(self.problem_type, SocpType.IRK):
-            self._prepare_stochastic_dynamics_irk(
                 constraints=constraints,
             )
         else:
