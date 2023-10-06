@@ -1347,7 +1347,7 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
 
     ode_solver_obj = ode_solver
     ode_solver = ode_solver()
-    if phase_dynamics and too_much_constraints:
+    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and too_much_constraints:
         with pytest.raises(
             ValueError,
             match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
