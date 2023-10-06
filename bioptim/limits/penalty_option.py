@@ -795,8 +795,8 @@ class PenaltyOption(OptionGeneric):
                 if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 else controller.integrate(
                     x0=state_cx,
-                    p=control_cx_end,
-                    params=controller.parameters.cx,
+                    u=control_cx_end,
+                    p=controller.parameters.cx,
                     s=stochastic_cx,
                 )["xf"]
             )

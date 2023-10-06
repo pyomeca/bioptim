@@ -558,7 +558,7 @@ class OdeSolver:
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                     ),
-                    ["t", "x0", "u", "p", "s"],
+                    ["t", "x0", "u", "params", "s"],
                     ["xf", "xall"],
                 )
             ]
