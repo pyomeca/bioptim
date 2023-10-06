@@ -635,7 +635,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             cov_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
             cov_implicit_deffect = cov_next - cov_matrix
 
-            penalty.expand = controller.get_nlp.dynamics_type.expand
+            penalty.expand = controller.get_nlp.dynamics_type.expand_dynamics  # TODO: Charbie -> should this be always true?
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
