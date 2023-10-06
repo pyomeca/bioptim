@@ -3,7 +3,6 @@ Test for file IO
 """
 import os
 import pytest
-import sys
 
 import numpy as np
 from bioptim import OdeSolver, ControlType, PhaseDynamics
@@ -24,10 +23,6 @@ def test_muscle_driven_ocp(ode_solver, phase_dynamics):
     else:
         control_type = ControlType.CONSTANT
 
-    if sys.platform == "win32" and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-        # it works but not with the CI
-        return
-
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp = ocp_module.prepare_ocp(
@@ -39,6 +34,7 @@ def test_muscle_driven_ocp(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
         control_type=control_type,
+        n_threads=1,
     )
     sol = ocp.solve()
 

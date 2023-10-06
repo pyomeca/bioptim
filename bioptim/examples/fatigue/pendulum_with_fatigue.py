@@ -84,7 +84,7 @@ def prepare_ocp(
     tau_min, tau_max, tau_init = -100, 100, 0
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", expand_dynamics=expand_dynamics)
+    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", expand=expand_dynamics)
 
     # Fatigue parameters
     fatigue_dynamics = FatigueList()
@@ -146,7 +146,7 @@ def prepare_ocp(
             raise ValueError("fatigue_type not implemented")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics, phase_dynamics=phase_dynamics, expand_dynamics=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()

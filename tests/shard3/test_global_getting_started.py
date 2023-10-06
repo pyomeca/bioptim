@@ -1091,7 +1091,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
     if not expand_dynamics and ode_solver != OdeSolver.IRK:
         # There is no point testing that
         return
-    if expand_dynamics and ode_solver == OdeSolver.IRK:
+    if expand_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and ode_solver == OdeSolver.IRK:
         with pytest.raises(RuntimeError):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
