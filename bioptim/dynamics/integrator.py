@@ -918,7 +918,7 @@ class COLLOCATION2(COLLOCATION):
                         self.get_u(controls, time),
                         params * param_scaling,
                         stochastic_variables,
-                        xp_j / h,  # todo: modify to have xp_j - h*fj
+                        xp_j, h,  # todo: modify to have xp_j - h*fj
                     )
                 )
             else:

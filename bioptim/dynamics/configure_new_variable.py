@@ -384,8 +384,8 @@ class NewVariableConfiguration:
         if self.as_states:
             for node_index in range((0 if self.ocp.assume_phase_dynamics else self.nlp.ns) + 1):
                 n_cx = (
-                    self.nlp.ode_solver.polynomial_degree + 2
-                    if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION)
+                    self.nlp.ode_solver.n_cx
+                    if self.nlp.ode_solver.is_direct_collocation
                     else 3
                 )
                 cx_scaled = (

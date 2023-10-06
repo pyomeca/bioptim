@@ -282,7 +282,7 @@ def prepare_socp(
             ),
             expand=True,
         )
-        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
+        ode_solver = OdeSolver.COLLOCATION2(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
 
         return OptimalControlProgram(
             bio_model,
