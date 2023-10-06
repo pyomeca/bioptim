@@ -24,6 +24,7 @@ from bioptim import (
     OdeSolverBase,
     OptimalControlProgram,
     NonLinearProgram,
+    PhaseDynamics,
 )
 
 
@@ -96,7 +97,7 @@ def prepare_ocp(
     control_type: ControlType,
     minimize_time: bool,
     use_sx: bool,
-    assume_phase_dynamics: bool = False,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -115,10 +116,11 @@ def prepare_ocp(
         Add a minimized time objective
     use_sx: bool
         If the ocp should be built with SX. Please note that ACADOS requires SX
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
 
     Returns
     -------
@@ -144,7 +146,7 @@ def prepare_ocp(
     dynamics = DynamicsList()
     expand = not isinstance(ode_solver, OdeSolver.IRK)
     for i in range(len(bio_model)):
-        dynamics.add(custom_configure, dynamic_function=time_dynamic, phase=i, expand=expand)
+        dynamics.add(custom_configure, dynamic_function=time_dynamic, phase=i, expand_dynamics=expand, phase_dynamics=phase_dynamics)
 
     # Define states path constraint
     x_bounds = BoundsList()
@@ -191,7 +193,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         control_type=control_type,
         use_sx=use_sx,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

@@ -8,7 +8,7 @@ from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from .solver_interface import SolverInterface
 from ..interfaces.solver_options import Solver
-from ..misc.enums import Node, SolverType
+from ..misc.enums import Node, SolverType, PhaseDynamics
 from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType
@@ -95,8 +95,8 @@ class AcadosInterface(SolverInterface):
         if not isinstance(ocp.cx(), SX):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS. Please set use_sx to True in OCP")
 
-        if not ocp.assume_phase_dynamics:
-            raise RuntimeError("ACADOS necessitate assume_phase_dynamics=True")
+        if ocp.nlp[0].phase_dynamics != PhaseDynamics.SHARED_DURING_THE_PHASE:
+            raise RuntimeError("ACADOS necessitate phase_dynamics=True")
 
         if ocp.nlp[0].stochastic_variables.cx_start.shape[0] != 0:
             raise RuntimeError("ACADOS does not support stochastic variables yet")

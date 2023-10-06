@@ -5,7 +5,7 @@ from casadi import horzcat, vertcat, Function, MX, SX, jacobian, diag
 import numpy as np
 
 from .penalty_controller import PenaltyController
-from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule
+from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.options import OptionGeneric
 from ..interfaces.stochastic_bio_model import StochasticBioModel
 
@@ -305,8 +305,8 @@ class PenaltyOption(OptionGeneric):
                 (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
             )
             if self.target[0].shape != shape:
-                # A second chance the shape is correct is if the targets are declared but assume_phase_dynamics is False
-                if not controller.ocp.assume_phase_dynamics and self.target[0].shape[-1] == len(self.node_idx):
+                # A second chance the shape is correct is if the targets are declared but phase_dynamics is ONE_PER_NODE
+                if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and self.target[0].shape[-1] == len(self.node_idx):
                     pass
                 else:
                     raise RuntimeError(
@@ -351,8 +351,8 @@ class PenaltyOption(OptionGeneric):
 
             for target in self.target:
                 if target.shape != shape:
-                    # A second chance the shape is correct if assume_phase_dynamics is False
-                    if not controller.ocp.assume_phase_dynamics and target.shape[-1] == len(self.node_idx):
+                    # A second chance the shape is correct if phase_dynamics is ONE_PER_NODE
+                    if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and target.shape[-1] == len(self.node_idx):
                         pass
                     else:
                         raise RuntimeError(
@@ -487,7 +487,7 @@ class PenaltyOption(OptionGeneric):
             else:
                 state_cx_scaled = controllers[1].states_scaled.cx
             if (
-                controllers[1].get_nlp.assume_phase_dynamics
+                controllers[1].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                 or controllers[1].node_index < controllers[1].ns
                 or controllers[1].get_nlp.control_type != ControlType.CONSTANT
             ):
@@ -522,7 +522,7 @@ class PenaltyOption(OptionGeneric):
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx, fake)
                 else:
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx)
-                if controllers[0].get_nlp.assume_phase_dynamics or controllers[0].node_index < controllers[0].ns:
+                if controllers[0].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or controllers[0].node_index < controllers[0].ns:
                     if controllers[1].controls_scaled.cx.shape[0] > controllers[0].controls_scaled.cx.shape[0]:
                         fake = controllers[0].cx(
                             controllers[1].controls_scaled.cx.shape[0] - controllers[0].controls_scaled.cx.shape[0], 1
@@ -554,7 +554,7 @@ class PenaltyOption(OptionGeneric):
                 else:
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
                 if (
-                    controllers[0].get_nlp.assume_phase_dynamics
+                    controllers[0].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     or controllers[0].node_index < controllers[0].ns
                     or controllers[1].get_nlp.control_type != ControlType.CONSTANT
                 ):
@@ -638,7 +638,7 @@ class PenaltyOption(OptionGeneric):
             ocp = controller.ocp
             name = self.name
             state_cx_scaled = controller.states_scaled.cx_start
-            if controller.get_nlp.assume_phase_dynamics or controller.node_index < controller.ns:
+            if controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or controller.node_index < controller.ns:
                 if self.integrate or controller.ode_solver.is_direct_collocation:
                     if not (len(self.node_idx) == 1 and self.node_idx[0] == controller.ns):
                         if not self.derivative or self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
@@ -657,7 +657,7 @@ class PenaltyOption(OptionGeneric):
                             self.node[0] == controller.ns - 1
                             and ocp.nlp[self.phase].control_type == ControlType.CONSTANT
                         )
-                        or ocp.assume_phase_dynamics
+                        or ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     ):
                         control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
                     stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
@@ -706,7 +706,7 @@ class PenaltyOption(OptionGeneric):
                 state_cx_scaled = vertcat(controller.states_scaled.cx_end, controller.states_scaled.cx_start)
             if (
                 not (node == ocp.nlp[self.phase].ns and ocp.nlp[self.phase].control_type == ControlType.CONSTANT)
-                or ocp.assume_phase_dynamics
+                or ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             ):
                 control_cx_scaled = vertcat(controller.controls_scaled.cx_end, controller.controls_scaled.cx_start)
             stochastic_cx_scaled = vertcat(
@@ -1020,7 +1020,7 @@ class PenaltyOption(OptionGeneric):
                 else controllers[0].t
             )
 
-        if ocp.assume_phase_dynamics:
+        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
             for controller in controllers:
                 controller.node_index = 0
                 controller.cx_index_to_get = 0

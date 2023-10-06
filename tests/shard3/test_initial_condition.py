@@ -14,6 +14,7 @@ from bioptim import (
     ObjectiveFcn,
     OptimalControlProgram,
     InitialGuessList,
+    PhaseDynamics,
 )
 from bioptim.limits.path_conditions import InitialGuess
 
@@ -133,8 +134,8 @@ def test_initial_guess_spline():
         np.testing.assert_almost_equal(init.init.evaluate_at(t), expected_val)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_initial_guess_update(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_initial_guess_update(phase_dynamics):
     # Load pendulum
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
@@ -144,7 +145,7 @@ def test_initial_guess_update(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
 
@@ -195,8 +196,8 @@ def test_initial_guess_custom():
         np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_simulate_from_initial_multiple_shoot(phase_dynamics):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -205,8 +206,8 @@ def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
-        n_threads=4 if assume_phase_dynamics else 1,
-        assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=4 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
     X = InitialGuessList()
@@ -240,8 +241,8 @@ def test_simulate_from_initial_multiple_shoot(assume_phase_dynamics):
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.89, 1.8)))
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_simulate_from_initial_single_shoot(phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
@@ -251,8 +252,8 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=10,
-        n_threads=4 if assume_phase_dynamics else 1,
-        assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=4 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
     X = InitialGuessList()
@@ -286,8 +287,8 @@ def test_simulate_from_initial_single_shoot(assume_phase_dynamics):
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.89, 1.8)))
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_initial_guess_error_messages(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_initial_guess_error_messages(phase_dynamics):
     """
     This tests that the error messages are properly raised. The OCP is adapted from the getting_started/pendulum.py example.
     """
@@ -302,7 +303,7 @@ def test_initial_guess_error_messages(assume_phase_dynamics):
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
 
     # check the error messages
     with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessList"):
@@ -313,7 +314,6 @@ def test_initial_guess_error_messages(assume_phase_dynamics):
             phase_time=1,
             x_init=1,
             objective_functions=objective_functions,
-            assume_phase_dynamics=assume_phase_dynamics,
         )
     with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuessList"):
         OptimalControlProgram(
@@ -323,5 +323,4 @@ def test_initial_guess_error_messages(assume_phase_dynamics):
             phase_time=1,
             u_init=1,
             objective_functions=objective_functions,
-            assume_phase_dynamics=assume_phase_dynamics,
         )

@@ -16,6 +16,7 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     Solver,
+    PhaseDynamics,
 )
 
 
@@ -24,7 +25,7 @@ def prepare_ocp(
     n_shooting: int,
     final_time: float,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
@@ -39,10 +40,11 @@ def prepare_ocp(
         The time at final node
     ode_solver: OdeSolverBase
         The ode solver to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     expand_dynamics: bool
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
@@ -65,7 +67,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_residual_torque=True, expand=expand_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_residual_torque=True, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     n_q = bio_model.nb_q
@@ -102,7 +104,6 @@ def prepare_ocp(
         x_init=x_init,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

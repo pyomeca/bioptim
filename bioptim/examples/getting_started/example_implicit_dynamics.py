@@ -23,6 +23,7 @@ from bioptim import (
     ObjectiveList,
     RigidBodyDynamics,
     Solution,
+    PhaseDynamics,
 )
 import matplotlib.pyplot as plt
 import numpy as np
@@ -36,7 +37,7 @@ def prepare_ocp(
     use_sx: bool = False,
     n_threads: int = 1,
     rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
@@ -58,10 +59,11 @@ def prepare_ocp(
         The number of threads to use in the paralleling (1 = no parallel computing)
     rigidbody_dynamics: RigidBodyDynamics
         rigidbody dynamics ODE or DAE
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     expand_dynamics: bool
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
@@ -78,7 +80,7 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics, expand=expand_dynamics)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, rigidbody_dynamics=rigidbody_dynamics, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     tau_min, tau_max, tau_init = -100.0, 100.0, 0.0
@@ -126,7 +128,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

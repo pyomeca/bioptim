@@ -17,6 +17,7 @@ from bioptim import (
     DynamicsEvaluation,
     ConstraintList,
     ParameterList,
+    PhaseDynamics,
 )
 
 from tests.utils import TestUtils
@@ -25,14 +26,15 @@ from tests.utils import TestUtils
 class OptimalControlProgram:
     def __init__(self, nlp):
         self.cx = nlp.cx
-        self.assume_phase_dynamics = True
+        self.phase_dynamics = PhaseDynamics.SHARED_DURING_THE_PHASE
         self.n_phases = 1
         self.nlp = [nlp]
         self.parameters = ParameterList()
         self.implicit_constraints = ConstraintList()
+        self.n_threads = 1
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
@@ -40,9 +42,9 @@ class OptimalControlProgram:
     "rigidbody_dynamics",
     [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_FORWARD_DYNAMICS, RigidBodyDynamics.DAE_INVERSE_DYNAMICS],
 )
-def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics, assume_phase_dynamics):
+def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -66,7 +68,8 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             DynamicsFcn.TORQUE_DRIVEN,
             with_contact=with_contact,
             rigidbody_dynamics=rigidbody_dynamics,
-            expand=True,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics
         ),
         False,
     )
@@ -185,12 +188,12 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                 )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_driven_implicit(with_contact, cx, assume_phase_dynamics):
+def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -215,7 +218,8 @@ def test_torque_driven_implicit(with_contact, cx, assume_phase_dynamics):
             DynamicsFcn.TORQUE_DRIVEN,
             with_contact=with_contact,
             rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
-            expand=True,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics
         ),
         False,
     )
@@ -255,13 +259,13 @@ def test_torque_driven_implicit(with_contact, cx, assume_phase_dynamics):
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact, assume_phase_dynamics):
+def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -283,7 +287,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
         ocp,
         "dynamics_type",
         Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact, expand=True
+            DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact, expand_dynamics=True, phase_dynamics=phase_dynamics,
         ),
         False,
     )
@@ -324,13 +328,13 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_derivative_driven(with_contact, with_external_force, cx, assume_phase_dynamics):
+def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -353,7 +357,8 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, assume_
         Dynamics(
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
             with_contact=with_contact,
-            expand=True,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
         ),
         False,
     )
@@ -463,12 +468,12 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, assume_
             )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_derivative_driven_implicit(with_contact, cx, assume_phase_dynamics):
+def test_torque_derivative_driven_implicit(with_contact, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -492,7 +497,8 @@ def test_torque_derivative_driven_implicit(with_contact, cx, assume_phase_dynami
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
             with_contact=with_contact,
             rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
-            expand=True,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
         ),
         False,
     )
@@ -565,13 +571,13 @@ def test_torque_derivative_driven_implicit(with_contact, cx, assume_phase_dynami
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("implicit_contact", [False, True])
-def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact, assume_phase_dynamics):
+def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -595,7 +601,8 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
             DynamicsFcn.TORQUE_DERIVATIVE_DRIVEN,
             with_contact=with_contact,
             soft_contacts_dynamics=implicit_contact,
-            expand=True,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
         ),
         False,
     )
@@ -662,14 +669,14 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize(
     "dynamics",
     [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, DynamicsFcn.MUSCLE_DRIVEN],
 )
-def test_soft_contacts_dynamics_errors(dynamics, assume_phase_dynamics):
+def test_soft_contacts_dynamics_errors(dynamics, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -684,7 +691,7 @@ def test_soft_contacts_dynamics_errors(dynamics, assume_phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, soft_contacts_dynamics=True, expand=True),
+        Dynamics(dynamics, soft_contacts_dynamics=True, expand_dynamics=True, phase_dynamics=phase_dynamics),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -704,14 +711,11 @@ def test_soft_contacts_dynamics_errors(dynamics, assume_phase_dynamics):
         ConfigureProblem.initialize(ocp, nlp)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize(
-    "dynamics",
-    [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN],
-)
-def test_implicit_dynamics_errors(dynamics, assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("dynamics", [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN])
+def test_implicit_dynamics_errors(dynamics, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -726,7 +730,7 @@ def test_implicit_dynamics_errors(dynamics, assume_phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS, expand=True),
+        Dynamics(dynamics, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS, expand_dynamics=True, phase_dynamics=phase_dynamics),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -746,13 +750,13 @@ def test_implicit_dynamics_errors(dynamics, assume_phase_dynamics):
         ConfigureProblem.initialize(ocp, nlp)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
-def test_torque_activation_driven(with_contact, with_external_force, cx, assume_phase_dynamics):
+def test_torque_activation_driven(with_contact, with_external_force, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -772,7 +776,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, assume_
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=with_contact, expand=True),
+        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=with_contact, expand_dynamics=True, phase_dynamics=phase_dynamics),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -850,16 +854,16 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, assume_
             )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_residual_torque", [False, True])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_passive_torque", [False, True])
 def test_torque_activation_driven_with_residual_torque(
-    with_residual_torque, with_external_force, with_passive_torque, cx, assume_phase_dynamics
+    with_residual_torque, with_external_force, with_passive_torque, cx, phase_dynamics
 ):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/2segments_2dof_2contacts.bioMod"
     )
@@ -878,7 +882,7 @@ def test_torque_activation_driven_with_residual_torque(
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_residual_torque=with_residual_torque, expand=True),
+        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_residual_torque=with_residual_torque, expand_dynamics=True, phase_dynamics=phase_dynamics),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -963,7 +967,7 @@ def test_torque_activation_driven_with_residual_torque(
                 )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
@@ -971,16 +975,10 @@ def test_torque_activation_driven_with_residual_torque(
 @pytest.mark.parametrize("with_excitations", [False, True])
 @pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
 def test_muscle_driven(
-    with_excitations,
-    with_contact,
-    with_residual_torque,
-    with_external_force,
-    rigidbody_dynamics,
-    cx,
-    assume_phase_dynamics,
+    with_excitations, with_contact, with_residual_torque, with_external_force, rigidbody_dynamics, cx, phase_dynamics
 ):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
@@ -1005,7 +1003,8 @@ def test_muscle_driven(
             with_excitations=with_excitations,
             with_contact=with_contact,
             rigidbody_dynamics=rigidbody_dynamics,
-            expand=True,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
         ),
         False,
     )
@@ -1474,12 +1473,12 @@ def test_muscle_driven(
                         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("rigid_body_dynamics", RigidBodyDynamics)
-def test_joints_acceleration_driven(cx, rigid_body_dynamics, assume_phase_dynamics):
+def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/getting_started/models/double_pendulum.bioMod")
 
     nlp.ns = 5
@@ -1499,7 +1498,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, assume_phase_dynami
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, rigidbody_dynamics=rigid_body_dynamics, expand=True),
+        Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, rigidbody_dynamics=rigid_body_dynamics, expand_dynamics=True, phase_dynamics=phase_dynamics),
         False,
     )
     np.random.seed(42)
@@ -1531,9 +1530,9 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, assume_phase_dynami
         np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("with_contact", [False, True])
-def test_custom_dynamics(with_contact, assume_phase_dynamics):
+def test_custom_dynamics(with_contact, phase_dynamics):
     def custom_dynamic(
         time, states, controls, parameters, stochastic_variables, nlp, with_contact=False
     ) -> DynamicsEvaluation:
@@ -1556,7 +1555,7 @@ def test_custom_dynamics(with_contact, assume_phase_dynamics):
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
     # Prepare the program
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -1575,7 +1574,7 @@ def test_custom_dynamics(with_contact, assume_phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(configure, dynamic_function=custom_dynamic, with_contact=with_contact, expand=True),
+        Dynamics(configure, dynamic_function=custom_dynamic, with_contact=with_contact, expand_dynamics=True, phase_dynamics=phase_dynamics),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -1614,7 +1613,7 @@ def test_custom_dynamics(with_contact, assume_phase_dynamics):
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize(
     "dynamics_fcn",
     [
@@ -1624,7 +1623,7 @@ def test_custom_dynamics(with_contact, assume_phase_dynamics):
         DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
     ],
 )
-def test_with_contact_error(dynamics_fcn, assume_phase_dynamics):
+def test_with_contact_error(dynamics_fcn, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
     from bioptim import BoundsList, ObjectiveList, OdeSolver, OptimalControlProgram
 
@@ -1636,7 +1635,7 @@ def test_with_contact_error(dynamics_fcn, assume_phase_dynamics):
     objective_functions = ObjectiveList()
 
     # Dynamics
-    dynamics = Dynamics(dynamics_fcn, with_contact=True, expand=True)
+    dynamics = Dynamics(dynamics_fcn, with_contact=True, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -1659,5 +1658,4 @@ def test_with_contact_error(dynamics_fcn, assume_phase_dynamics):
             u_bounds=u_bounds,
             objective_functions=objective_functions,
             ode_solver=OdeSolver.RK4(),
-            assume_phase_dynamics=assume_phase_dynamics,
         )

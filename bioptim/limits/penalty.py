@@ -3,11 +3,11 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian, DM, trace
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian, trace
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
-from ..misc.enums import Node, Axis, ControlType, QuadratureRule
+from ..misc.enums import Node, Axis, ControlType, QuadratureRule, PhaseDynamics
 from ..misc.mapping import BiMapping
 from ..interfaces.stochastic_bio_model import StochasticBioModel
 
@@ -1094,9 +1094,9 @@ class PenaltyFunctionAbstract:
             if isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
                 raise RuntimeError("continuity should be called one node at a time")
 
-            penalty.expand = controller.get_nlp.dynamics_type.expand
+            penalty.expand = controller.get_nlp.dynamics_type.expand_continuity
 
-            if len(penalty.node_idx) > 1 and not controller.ocp.assume_phase_dynamics:
+            if len(penalty.node_idx) > 1 and not controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 raise NotImplementedError(
                     f"Length of node index superior to 1 is not implemented yet,"
                     f" actual length {len(penalty.node_idx[0])} "
@@ -1175,8 +1175,8 @@ class PenaltyFunctionAbstract:
                 ):
                     raise RuntimeError(
                         "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined.\n"
-                        "Please note that you may run into this error message if assume_phase_dynamics "
-                        "was set to False. One workaround is to define your penalty one node at a time instead of "
+                        "Please note that you may run into this error message if phase_dynamics was set "
+                        "to PhaseDynamics.ONE_PER_NODE. One workaround is to define your penalty one node at a time instead of "
                         "using the built-in ALL_SHOOTING (or something similar)."
                     )
                 penalty.min_bound = val[0]

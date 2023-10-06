@@ -6,27 +6,27 @@ import pytest
 import sys
 
 import numpy as np
-from bioptim import OdeSolver, ControlType
+from bioptim import OdeSolver, ControlType, PhaseDynamics
 
 from tests.utils import TestUtils
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION, OdeSolver.TRAPEZOIDAL])
-def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
+def test_muscle_driven_ocp(ode_solver, phase_dynamics):
     from bioptim.examples.muscle_driven_ocp import static_arm as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
     if ode_solver == OdeSolver.TRAPEZOIDAL:
         control_type = ControlType.LINEAR_CONTINUOUS
     else:
         control_type = ControlType.CONSTANT
 
-    #    if sys.platform == "win32" and not assume_phase_dynamics:
-    # it works but not with the CI
-    #        return
+    if sys.platform == "win32" and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
+        # it works but not with the CI
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -36,7 +36,7 @@ def test_muscle_driven_ocp(ode_solver, assume_phase_dynamics):
         n_shooting=5,
         weight=1,
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
         control_type=control_type,
     )

@@ -6,11 +6,11 @@ import platform
 
 import pytest
 import numpy as np
-from bioptim import Solver, MultiCyclicCycleSolutions
+from bioptim import Solver, MultiCyclicCycleSolutions, PhaseDynamics
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_multi_cyclic_nmpc_get_final(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_multi_cyclic_nmpc_get_final(phase_dynamics):
     if platform.system() != "Linux":
         # This is a long test and CI is already long for Windows and Mac
         return
@@ -33,7 +33,7 @@ def test_multi_cyclic_nmpc_get_final(assume_phase_dynamics):
         n_cycles_simultaneous=n_cycles_simultaneous,
         n_cycles_to_advance=n_cycles_to_advance,
         max_torque=50,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
     sol = nmpc.solve(
@@ -102,8 +102,8 @@ def test_multi_cyclic_nmpc_get_final(assume_phase_dynamics):
     np.testing.assert_almost_equal(sol[2][3].cost.toarray().squeeze(), 18.6181199)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_multi_cyclic_nmpc_not_get_final(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_multi_cyclic_nmpc_not_get_final(phase_dynamics):
     if platform.system() != "Linux":
         # This is a long test and CI is already long for Windows and Mac
         return
@@ -126,7 +126,7 @@ def test_multi_cyclic_nmpc_not_get_final(assume_phase_dynamics):
         n_cycles_simultaneous=n_cycles_simultaneous,
         n_cycles_to_advance=n_cycles_to_advance,
         max_torque=50,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
     sol = nmpc.solve(
         update_functions,

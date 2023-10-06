@@ -1,10 +1,10 @@
 import re
 from typing import Callable
 
-from casadi import MX, SX, integrator as casadi_integrator, horzcat, vertcat, Function, collocation_points
+from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, collocation_points
 
 from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES, TRAPEZOIDAL
-from ..misc.enums import ControlType, DefectType
+from ..misc.enums import ControlType, DefectType, PhaseDynamics
 
 
 class OdeSolverBase:
@@ -75,7 +75,7 @@ class OdeSolverBase:
         for i in range(len(nlp.dynamics_func)):
             dynamics = []
             dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=0, node_index=0)
-            if ocp.assume_phase_dynamics:
+            if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 dynamics = dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
@@ -153,7 +153,7 @@ class RK(OdeSolverBase):
 
         if ode["ode"].size2_out("xdot") != 1:
             # If the ode is designed for each node, use the proper node, otherwise use the first one
-            # Please note this is unrelated to ocp.assume_phase_dynamics
+            # Please note this is unrelated to nlp.phase_dynamics
             ode_opt["idx"] = node_index
         return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 

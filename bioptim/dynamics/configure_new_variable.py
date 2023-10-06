@@ -5,11 +5,7 @@ from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
-from ..misc.enums import (
-    PlotType,
-    ControlType,
-    VariableType,
-)
+from ..misc.enums import PlotType, ControlType, VariableType, PhaseDynamics
 from ..misc.mapping import BiMapping
 
 
@@ -137,6 +133,7 @@ class NewVariableConfiguration:
             # Therefore, we can exit now
             return
 
+        self._check_for_n_threads_compatibility()
         self._declare_auto_variable_mapping()
         self._check_phase_mapping_of_variable()
         self._declare_phase_copy_booleans()
@@ -153,23 +150,30 @@ class NewVariableConfiguration:
             self._declare_legend()
         self._declare_cx_and_plot()
 
+    def _check_for_n_threads_compatibility(self):
+        if self.ocp.n_threads > 1 and self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE:
+            raise RuntimeError("Multiprocessing is not supported with phase_dynamics=PhaseDynamics.ONE_PER_NODE")
+
     def _check_combine_state_control_plot(self):
         """Check if combine_state_control_plot and combine_name are defined simultaneously"""
         if self.combine_state_control_plot and self.combine_name is not None:
             raise ValueError("combine_name and combine_state_control_plot cannot be defined simultaneously")
 
     def _check_phase_mapping_of_variable(self):
-        """Check if the use of states from another phases is compatible with assume_phase_dynamics"""
-        if not self.ocp.assume_phase_dynamics and (
+        """Check if the use of states from another phases is compatible with nlp.phase_dynamics"""
+        if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and (
             self.nlp.use_states_from_phase_idx != self.nlp.phase_idx
             or self.nlp.use_states_dot_from_phase_idx != self.nlp.phase_idx
             or self.nlp.use_controls_from_phase_idx != self.nlp.phase_idx
         ):
             # This check allows to use states[0], controls[0] in the following copy
-            raise ValueError("map_state=True must be used alongside with assume_phase_dynamics=True")
+            raise ValueError(
+                "map_state=True must be used alongside with nlp.phase_dynamics = PhaseDynamics.SHARED_DURING_THE_PHASE"
+            )
 
     def _declare_phase_copy_booleans(self):
-        """Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True"""
+        """Use of states[0] and controls[0] is permitted since nlp.phase_dynamics
+        is PhaseDynamics.SHARED_DURING_THE_PHASE"""
         nlp = self.ocp.nlp
         phase_idx = self.nlp.phase_idx
 
@@ -322,7 +326,8 @@ class NewVariableConfiguration:
             )
 
     def _use_copy(self):
-        """Use of states[0] and controls[0] is permitted since ocp.assume_phase_dynamics is True"""
+        """Use of states[0] and controls[0] is permitted since nlp.phase_dynamics
+        is PhaseDynamics.SHARED_DURING_THE_PHASE"""
         self.mx_states = (
             [] if not self.copy_states else [self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[0][self.name].mx]
         )
@@ -382,7 +387,7 @@ class NewVariableConfiguration:
 
     def _declare_cx_and_plot(self):
         if self.as_states:
-            for node_index in range((0 if self.ocp.assume_phase_dynamics else self.nlp.ns) + 1):
+            for node_index in range((0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1):
                 n_cx = (
                     self.nlp.ode_solver.polynomial_degree + 2
                     if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION)
@@ -419,7 +424,7 @@ class NewVariableConfiguration:
             for node_index in range(
                 (
                     1
-                    if self.ocp.assume_phase_dynamics
+                    if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     else (
                         self.nlp.ns
                         + +(
@@ -463,7 +468,7 @@ class NewVariableConfiguration:
                     )
 
         if self.as_states_dot:
-            for node_index in range((0 if self.ocp.assume_phase_dynamics else self.nlp.ns) + 1):
+            for node_index in range((0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1):
                 n_cx = (
                     self.nlp.ode_solver.polynomial_degree + 1
                     if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION)
@@ -491,7 +496,7 @@ class NewVariableConfiguration:
                 )
 
         if self.as_stochastic:
-            for node_index in range((0 if self.ocp.assume_phase_dynamics else self.nlp.ns) + 1):
+            for node_index in range((0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1):
                 n_cx = 3
                 cx_scaled = self.define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.s_scaling[self.name].scaling)

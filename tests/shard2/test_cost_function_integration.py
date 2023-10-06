@@ -20,6 +20,7 @@ from bioptim import (
     DynamicsFcn,
     BoundsList,
     Solver,
+    PhaseDynamics,
 )
 
 
@@ -31,7 +32,7 @@ def prepare_ocp(
     objective: str,
     target: np.ndarray = None,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -52,10 +53,11 @@ def prepare_ocp(
         The target value to reach
     ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
 
     Returns
     -------
@@ -81,7 +83,7 @@ def prepare_ocp(
         raise ValueError("Wrong objective")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -110,7 +112,6 @@ def prepare_ocp(
         use_sx=True,
         n_threads=1,
         control_type=control_type,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -128,7 +129,7 @@ def sum_cost_function_output(sol):
     return float(output[idx:])
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [False, True])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize(
     "objective",
     ["torque", "qdot"],
@@ -145,7 +146,7 @@ def sum_cost_function_output(sol):
         QuadratureRule.TRAPEZOIDAL,
     ],
 )
-def test_pendulum(control_type, integration_rule, objective, assume_phase_dynamics):
+def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -156,7 +157,7 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
         integration_rule=integration_rule,
         objective=objective,
         control_type=control_type,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(5)
@@ -258,7 +259,7 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
                 np.testing.assert_almost_equal(j_printed, 18.799673213312587)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize(
     "objective",
     ["torque", "qdot"],
@@ -277,7 +278,7 @@ def test_pendulum(control_type, integration_rule, objective, assume_phase_dynami
         QuadratureRule.MIDPOINT,
     ],
 )
-def test_pendulum_collocation(control_type, integration_rule, objective, assume_phase_dynamics):
+def test_pendulum_collocation(control_type, integration_rule, objective, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -298,7 +299,7 @@ def test_pendulum_collocation(control_type, integration_rule, objective, assume_
                 objective=objective,
                 control_type=control_type,
                 ode_solver=OdeSolver.COLLOCATION(),
-                assume_phase_dynamics=assume_phase_dynamics,
+                phase_dynamics=phase_dynamics,
             )
         return
 
@@ -309,7 +310,7 @@ def test_pendulum_collocation(control_type, integration_rule, objective, assume_
         objective=objective,
         control_type=control_type,
         ode_solver=OdeSolver.COLLOCATION(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
     solver = Solver.IPOPT()
     solver.set_maximum_iterations(5)
@@ -345,7 +346,7 @@ def test_pendulum_collocation(control_type, integration_rule, objective, assume_
                 np.testing.assert_almost_equal(j_printed, 12.336208562756564)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize(
     "objective",
     ["torque", "qdot"],
@@ -362,7 +363,7 @@ def test_pendulum_collocation(control_type, integration_rule, objective, assume_
         QuadratureRule.TRAPEZOIDAL,
     ],
 )
-def test_pendulum_target(control_type, integration_rule, objective, assume_phase_dynamics):
+def test_pendulum_target(control_type, integration_rule, objective, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -513,7 +514,7 @@ def test_pendulum_target(control_type, integration_rule, objective, assume_phase
         objective=objective,
         control_type=control_type,
         target=target,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
 
     solver = Solver.IPOPT()
@@ -592,7 +593,7 @@ def test_pendulum_target(control_type, integration_rule, objective, assume_phase
                 np.testing.assert_almost_equal(j_printed, 55.5377703306112)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize(
     "integration_rule",
     [
@@ -601,7 +602,7 @@ def test_pendulum_target(control_type, integration_rule, objective, assume_phase
         QuadratureRule.TRAPEZOIDAL,
     ],
 )
-def test_error_mayer_trapz(integration_rule, assume_phase_dynamics):
+def test_error_mayer_trapz(integration_rule, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -617,5 +618,5 @@ def test_error_mayer_trapz(integration_rule, assume_phase_dynamics):
             integration_rule=integration_rule,
             objective="mayer",
             control_type=ControlType.LINEAR_CONTINUOUS,
-            assume_phase_dynamics=assume_phase_dynamics,
+            phase_dynamics=phase_dynamics,
         )

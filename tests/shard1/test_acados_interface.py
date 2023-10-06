@@ -25,6 +25,7 @@ from bioptim import (
     InterpolationType,
     Solver,
     BoundsList,
+    PhaseDynamics,
 )
 
 from tests.utils import TestUtils
@@ -685,7 +686,7 @@ def test_acados_constraints_end_all():
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.19389194, 9.99905781, -2.37713652, -0.19858311)), decimal=6)
 
 
-def test_acados_assume_phase_dynamics_reject():
+def test_acados_phase_dynamics_reject():
     if platform == "win32":
         print("Test for ACADOS on Windows is skipped")
         return
@@ -698,13 +699,13 @@ def test_acados_assume_phase_dynamics_reject():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=10,
-        assume_phase_dynamics=False,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         expand_dynamics=True,
     )
 
     with pytest.raises(
         RuntimeError,
-        match=f"ACADOS necessitate assume_phase_dynamics=True",
+        match=f"ACADOS necessitate phase_dynamics==SHARED_DURING_PHASE",
     ):
         ocp.solve(solver=Solver.ACADOS())
 
@@ -761,7 +762,6 @@ def test_acados_bounds_not_implemented(failing):
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,
-        assume_phase_dynamics=True,
     )
 
     def update_functions(mhe, t, _):

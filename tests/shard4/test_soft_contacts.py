@@ -1,11 +1,12 @@
 import os
+
 import numpy as np
-from bioptim import OdeSolver
+from bioptim import OdeSolver, PhaseDynamics
 import pytest
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_soft_contact(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_soft_contact(phase_dynamics):
     from bioptim.examples.torque_driven_ocp import example_soft_contact as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -16,10 +17,10 @@ def test_soft_contact(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/soft_contact_sphere.bioMod",
         final_time=0.37,
         n_shooting=37,
-        n_threads=8 if assume_phase_dynamics else 1,
+        n_threads=8 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
         use_sx=False,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
 
     ocp.print(to_console=True, to_graph=False)

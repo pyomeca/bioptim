@@ -16,6 +16,7 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     Node,
+    PhaseDynamics
 )
 
 from tests.utils import TestUtils
@@ -29,7 +30,7 @@ def prepare_ocp(
     marker_in_first_coordinates_system: bool,
     control_type: ControlType,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
     Prepare an ocp that targets some marker velocities, either by finite differences or by jacobian
@@ -50,10 +51,11 @@ def prepare_ocp(
         The type of controls
     ode_solver: OdeSolverBase
         The ode solver to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
 
     Returns
     -------
@@ -93,7 +95,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=not isinstance(ode_solver, OdeSolver.IRK))
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=not isinstance(ode_solver, OdeSolver.IRK), phase_dynamics=phase_dynamics)
 
     # Path constraint
     nq = bio_model.nb_q
@@ -122,13 +124,12 @@ def prepare_ocp(
         objective_functions=objective_functions,
         control_type=control_type,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_and_minimize_marker_displacement_global(ode_solver, assume_phase_dynamics):
+def test_track_and_minimize_marker_displacement_global(ode_solver, phase_dynamics):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
@@ -139,7 +140,7 @@ def test_track_and_minimize_marker_displacement_global(ode_solver, assume_phase_
         marker_in_first_coordinates_system=False,
         control_type=ControlType.CONSTANT,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -174,9 +175,9 @@ def test_track_and_minimize_marker_displacement_global(ode_solver, assume_phase_
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_and_minimize_marker_displacement_RT(ode_solver, assume_phase_dynamics):
+def test_track_and_minimize_marker_displacement_RT(ode_solver, phase_dynamics):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
@@ -187,7 +188,7 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, assume_phase_dyna
         marker_in_first_coordinates_system=True,
         control_type=ControlType.CONSTANT,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -223,9 +224,9 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, assume_phase_dyna
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_and_minimize_marker_velocity(ode_solver, assume_phase_dynamics):
+def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
     # Load track_and_minimize_marker_velocity
     ode_solver = ode_solver()
     ocp = prepare_ocp(
@@ -236,7 +237,7 @@ def test_track_and_minimize_marker_velocity(ode_solver, assume_phase_dynamics):
         marker_in_first_coordinates_system=True,
         control_type=ControlType.CONSTANT,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
     sol = ocp.solve()
 
@@ -270,9 +271,9 @@ def test_track_and_minimize_marker_velocity(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, assume_phase_dynamics):
+def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dynamics):
     # Load track_and_minimize_marker_velocity
     if ode_solver == OdeSolver.IRK:
         ode_solver = ode_solver()
@@ -287,7 +288,7 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, assume_p
                 marker_in_first_coordinates_system=True,
                 control_type=ControlType.LINEAR_CONTINUOUS,
                 ode_solver=ode_solver,
-                assume_phase_dynamics=assume_phase_dynamics,
+                phase_dynamics=phase_dynamics,
             )
     else:
         ode_solver = ode_solver()
@@ -299,7 +300,7 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, assume_p
             marker_in_first_coordinates_system=True,
             control_type=ControlType.LINEAR_CONTINUOUS,
             ode_solver=ode_solver,
-            assume_phase_dynamics=assume_phase_dynamics,
+            phase_dynamics=phase_dynamics,
         )
         sol = ocp.solve()
 

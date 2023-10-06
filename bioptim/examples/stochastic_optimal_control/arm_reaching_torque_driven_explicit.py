@@ -34,6 +34,7 @@ from bioptim import (
     InitialGuessList,
     Axis,
     ControlType,
+    PhaseDynamics,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
@@ -438,7 +439,8 @@ def prepare_socp(
     dynamics.add(
         configure_stochastic_optimal_control_problem,
         dynamic_function=stochastic_forward_dynamics,
-        expand=False,
+        expand_dynamics=False,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
     )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf
@@ -554,7 +556,6 @@ def prepare_socp(
         multinode_constraints=multinode_constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
-        assume_phase_dynamics=False,
         problem_type=SocpType.TRAPEZOIDAL_EXPLICIT(),
         integrated_value_functions=integrated_value_functions,
     )

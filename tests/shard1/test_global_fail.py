@@ -11,6 +11,7 @@ from bioptim import (
     ConstraintList,
     InitialGuessList,
     PenaltyController,
+    PhaseDynamics,
 )
 
 from tests.utils import TestUtils
@@ -39,25 +40,24 @@ def test_custom_constraint_multiple_nodes_fail():
         RuntimeError,
         match=re.escape(
             "You cannot have non linear bounds for custom constraints and min_bound or max_bound defined.\n"
-            "Please note that you may run into this error message if assume_phase_dynamics "
-            "was set to False. One workaround is to define your penalty one node at a time instead of "
-            "using the built-in ALL_SHOOTING (or something similar)."
+            "Please note that you may run into this error message if phase_dynamics "
+            "was set to PhaseDynamics.ONE_PER_NODE. One workaround is to define your penalty one node at a "
+            "time instead of using the built-in ALL_SHOOTING (or something similar)."
         ),
     ):
         OptimalControlProgram(
             BiorbdModel(model_path),
-            Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True),
+            Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=PhaseDynamics.ONE_PER_NODE),
             30,
             2,
             constraints=constraints,
             x_init=x_init,
             u_init=u_init,
-            assume_phase_dynamics=False,
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_custom_constraint_mx_fail(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_custom_constraint_mx_fail(phase_dynamics):
     def custom_mx_fail(controller: PenaltyController):
         if controller.u_scaled is None:
             return None
@@ -78,13 +78,12 @@ def test_custom_constraint_mx_fail(assume_phase_dynamics):
 
     ocp = OptimalControlProgram(
         BiorbdModel(model_path),
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics),
         30,
         2,
         constraints=constraints,
         x_init=x_init,
         u_init=u_init,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     with pytest.raises(RuntimeError, match="Ipopt doesn't support SX/MX types in constraints bounds"):

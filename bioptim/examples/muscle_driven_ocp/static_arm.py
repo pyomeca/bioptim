@@ -20,7 +20,7 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     Solver,
-    RigidBodyDynamics,
+    PhaseDynamics,
     ControlType,
 )
 
@@ -30,10 +30,11 @@ def prepare_ocp(
     final_time: float,
     n_shooting: int,
     weight: float,
-    ode_solver: OdeSolverBase = OdeSolver.IRK(),
-    assume_phase_dynamics: bool = True,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
     control_type: ControlType = ControlType.CONSTANT,
+    n_threads: int = 8,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -51,14 +52,19 @@ def prepare_ocp(
         the model will try to reach the marker. This is in relation with the other objective functions
     ode_solver: OdeSolverBase
         The ode solver to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     expand_dynamics: bool
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
         (for instance IRK is not compatible with expanded dynamics)
+    control_type: ControlType
+        The type of control to use (CONSTANT, LINEAR_CONTROL, POLYNOMIAL_CONTROL)
+    n_threads: int
+        The number of threads to use in casadi (default: number of cores of your machine)
 
     Returns
     -------
@@ -78,9 +84,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        DynamicsFcn.MUSCLE_DRIVEN,
-        with_residual_torque=True,
-        expand=expand_dynamics,
+        DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics,
     )
 
     # Path constraint
@@ -116,8 +120,8 @@ def prepare_ocp(
         u_init=u_init,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
         control_type=control_type,
+        n_threads=n_threads,
     )
 
 

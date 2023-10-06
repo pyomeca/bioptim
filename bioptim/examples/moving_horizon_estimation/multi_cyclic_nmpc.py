@@ -18,7 +18,7 @@ from bioptim import (
     ConstraintList,
     ConstraintFcn,
     BoundsList,
-    InitialGuessList,
+    PhaseDynamics,
     Solver,
     Node,
     Axis,
@@ -48,11 +48,11 @@ def prepare_nmpc(
     n_cycles_simultaneous,
     n_cycles_to_advance,
     max_torque,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ):
     model = BiorbdModel(model_path)
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     x_bounds = BoundsList()
     x_bounds["q"] = model.bounds_from_ranges("q")
@@ -90,7 +90,6 @@ def prepare_nmpc(
         constraints=constraints,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

@@ -272,7 +272,6 @@ def prepare_socp(
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=2,
-        assume_phase_dynamics=True,
         problem_type=problem_type,
     )
 

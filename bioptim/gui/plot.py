@@ -11,7 +11,7 @@ from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
 from ..limits.multinode_constraint import MultinodeConstraint
-from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator, QuadratureRule
+from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator, QuadratureRule, PhaseDynamics
 from ..misc.mapping import Mapping, BiMapping
 from ..optimization.solution import Solution
 from ..dynamics.ode_solver import OdeSolver
@@ -338,7 +338,7 @@ class PlotOcp:
                         nlp.plot[key] = nlp.plot[key][0]
 
                     if nlp.plot[key].phase_mappings is None:
-                        node_index = 0  # TODO deal with assume_phase_dynamics=False
+                        node_index = 0  # TODO deal with phase_dynamics == ONE_PER_NODE
                         if nlp.plot[key].node_idx is not None:
                             node_index = nlp.plot[key].node_idx[0]
                         nlp.states.node_index = node_index
@@ -919,7 +919,7 @@ class PlotOcp:
                                         states = state[
                                             :, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size
                                         ]
-                                    if self.ocp.assume_phase_dynamics:
+                                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                                         control_tp = control[:, node_idx : node_idx + 1 + 1]
                                     else:
                                         control_tp = control[:, node_idx : node_idx + 1 + u_mod]

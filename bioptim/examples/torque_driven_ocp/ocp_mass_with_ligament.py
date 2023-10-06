@@ -14,6 +14,7 @@ from bioptim import (
     BiorbdModel,
     DynamicsFcn,
     RigidBodyDynamics,
+    PhaseDynamics,
 )
 
 
@@ -22,7 +23,7 @@ def prepare_ocp(
     use_sx: bool = False,
     ode_solver=OdeSolver.RK4(),
     rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     n_threads: int = 8,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
@@ -39,10 +40,11 @@ def prepare_ocp(
         The type of integrator
     rigidbody_dynamics: RigidBodyDynamics
         The rigidbody dynamics to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     n_threads: int
         Number of threads to use
     expand_dynamics: bool
@@ -73,7 +75,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         rigidbody_dynamics=rigidbody_dynamics,
         with_ligament=True,
-        expand=expand_dynamics,
+        expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics,
     )
 
     # Path constraint
@@ -108,7 +110,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         n_threads=n_threads,
         use_sx=use_sx,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
