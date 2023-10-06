@@ -47,7 +47,7 @@ class RockitModel:
         return 1
 
     @property
-    def nb_u(self):
+    def nb_tau(self):
         return 1
 
     @property

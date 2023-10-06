@@ -89,7 +89,6 @@ def bound(t):
 
 # def path_constraint(controller: PenaltyController, dt, is_robustified: bool = False):
 def path_constraint(controller, dt, is_robustified: bool = False):
-    # todo: modify to work with assume_phase_dynamics = True
     t = controller.time.cx_start  # controller.node_index * dt
     q = controller.states["q"].cx_start
     sup = bound(t)
@@ -120,7 +119,7 @@ def prepare_socp(
     )
 
     nb_q = bio_model.nb_q
-    nb_u = bio_model.nb_u
+    nb_u = bio_model.nb_tau
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -130,8 +129,6 @@ def prepare_socp(
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.START, target=0.5)
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", index=0, node=Node.START, target=0)
-
-    # tood: modify the constraint to
     constraints.add(
         path_constraint,
         dt=final_time / n_shooting,
@@ -219,7 +216,7 @@ def prepare_socp(
             objective_functions=objective_functions,
             constraints=constraints,
             ode_solver=ode_solver,
-            n_threads=1,
+            n_threads=6,
             assume_phase_dynamics=True,
         )
 
@@ -229,7 +226,7 @@ def main():
     Prepare, solve and plot the solution
     """
     isStochastic = True
-    isRobust = False
+    isRobust = True
     if not isStochastic:
         isRobust = False
 
@@ -286,7 +283,7 @@ def main():
 
         plt.plot(
             [ts, ts],
-            np.squeeze([q[:, :: d + 1] - sigma, q[:, :: d + 1] + sigma]),
+            np.squeeze([q[:, :: d + 2] - sigma, q[:, :: d + 2] + sigma]),
             "k",
         )
 

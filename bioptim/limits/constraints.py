@@ -756,7 +756,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             _, _, Mc, _ = ConstraintFunction.Functions.collocation_fun_jac(
-                controller.model,
+                controller,
                 collocation_method,
                 polynomial_degree,
             )
@@ -807,7 +807,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             _, _, _, Pf = ConstraintFunction.Functions.collocation_fun_jac(
-                controller.model,
+                controller,
                 collocation_method,
                 polynomial_degree,
             )
@@ -916,7 +916,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return diagonal_terms
 
         @staticmethod
-        def collocation_fun_jac(model, method, d):
+        def collocation_fun_jac(controller, method, d):
             def prepare_collocation(method, d):
                 # Get collocation points
                 tau_root = np.append(0, collocation_points(d, method))
@@ -952,10 +952,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                 return B, C, D
 
+            model = controller.model
             # Declare model variables
             nq = model.nb_q
             nqdot = model.nb_qdot
-            nu = model.nb_u
+            nu = model.nb_tau
             nx = nq + nqdot
             q = SX.sym("q", nq)
             qd = SX.sym("qd", nqdot)
@@ -971,7 +972,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             M = SX.sym("M", nx, nx * (d + 1))
 
             # Continuous time dynamics
-            # todo: use controller.extra_dynamics(0)?
+            # todo: use controller.extra_dynamics(0) but we need the w params
             xdot = model.dynamics_numerical(
                 states=x,
                 controls=u,  # Piecewise constant control

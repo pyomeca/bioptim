@@ -173,7 +173,7 @@ def prepare_socp(
 
     nb_q = bio_model.nb_q
     nb_qdot = bio_model.nb_qdot
-    nb_u = bio_model.nb_u
+    nb_u = bio_model.nb_tau
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -369,7 +369,7 @@ def main():
     ax[0, 1].plot(q[0], q[1], "b")
     ax[0, 1].plot(u[0], u[1], "r")
     for i in range(n_shooting):
-        ax[0, 1].plot((u[0][i], q[0][i * (d + 1)]), (u[1][i], q[1][i * (d + 1)]), ":k")
+        ax[0, 1].plot((u[0][i], q[0][i * (d + 2)]), (u[1][i], q[1][i * (d + 2)]), ":k")
 
     ax[1, 0].plot(tgrid, q[0, :: d + 2], "--", label="px")
     ax[1, 0].plot(tgrid, q[1, :: d + 2], "-", label="py")
@@ -389,7 +389,7 @@ def main():
                 print(f"Something went wrong at the {i}th node. (Eigen values)")
 
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
-            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (d + 1)], ax[0, 0], color="b")
+            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (d + 2)], ax[0, 0], color="b")
 
     plt.show()
 

@@ -67,7 +67,7 @@ class MassPointModel:
         return 2
 
     @property
-    def nb_u(self):
+    def nb_tau(self):
         return 2
 
     @property

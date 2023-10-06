@@ -931,6 +931,10 @@ class COLLOCATION2(COLLOCATION):
         defects = vertcat(*defects)
         return states_end, horzcat(states[0], states_end), defects
 
+    def _finish_init(self):
+        super(COLLOCATION2, self)._finish_init()
+        self.step_time = [0] + self.step_time
+
 
 class IRK(COLLOCATION):
     """
