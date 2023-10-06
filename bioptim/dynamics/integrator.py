@@ -627,7 +627,7 @@ class TRAPEZOIDAL(Integrator):
                 self.param_scaling,
                 self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "u", "p", "s"],
             ["xf", "xall"],
         )
 
@@ -828,7 +828,7 @@ class COLLOCATION(Integrator):
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "u", "p", "s"],
             ["xf", "xall", "defects"],
             {"allow_free": self.allow_free_variables},
         )
@@ -1034,6 +1034,7 @@ class IRK(COLLOCATION):
         """
         xf, xall = self.dxdt(
             h=self.h,
+            time=self.time_integration_grid[0],
             states=self.x_sym,
             controls=self.u_sym,
             params=self.param_sym,
@@ -1066,7 +1067,7 @@ class IRK(COLLOCATION):
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "u", "p", "s"],
             ["xf", "xall"],
         )
 

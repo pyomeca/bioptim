@@ -507,7 +507,7 @@ class OdeSolver:
             if not isinstance(ocp.cx(), MX):
                 raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")
             if ocp.parameters.shape != 0:
-                raise RuntimeError("CVODES cannot be used while optimizing parameters")
+                raise RuntimeError("CVODES cannot be used while optimizing parameters") #todo: should accept parameters now
             if nlp.stochastic_variables.cx_start.shape != 0 and nlp.stochastic_variables.cx_start.shape != (0, 0):
                 raise RuntimeError("CVODES cannot be used while optimizing stochastic variables")
             if nlp.external_forces:
@@ -519,7 +519,7 @@ class OdeSolver:
 
             ode = {
                 "x": nlp.states.scaled.cx_start,
-                "p": nlp.controls.scaled.cx_start,
+                "u": nlp.controls.scaled.cx_start, #todo: add p=parameters
                 "ode": nlp.dynamics_func[dynamics_index](
                     nlp.time_cx,
                     nlp.states.scaled.cx_start,
@@ -560,13 +560,13 @@ class OdeSolver:
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                     ),
-                    ["t", "x0", "p", "params", "s"],
+                    ["t", "x0", "u", "p", "s"],
                     ["xf", "xall"],
                 )
             ]
 
         @staticmethod
-        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, p: MX | SX):
+        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, u: MX | SX):
             """
             Interface to make xf and xall as outputs
 
@@ -576,7 +576,7 @@ class OdeSolver:
                 Handler on a CasADi function
             x0: MX | SX
                 Symbolic variable of states
-            p: MX | SX
+            u: MX | SX
                 Symbolic variable of controls
 
             Returns
@@ -584,7 +584,7 @@ class OdeSolver:
             xf and xall
             """
 
-            xf = integrator_func(x0=x0, p=p)["xf"]
+            xf = integrator_func(x0=x0, u=u)["xf"]
             return xf, horzcat(x0, xf)
 
         def __str__(self):
