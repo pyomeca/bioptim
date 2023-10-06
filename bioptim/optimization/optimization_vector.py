@@ -289,7 +289,7 @@ class OptimizationVectorHelper:
 
             repeat = 1
             if current_nlp.ode_solver.is_direct_collocation:
-                repeat += current_nlp.ode_solver.n_cx-2 #polynomial_degree #todo: replace by n_cx-2?
+                repeat += current_nlp.ode_solver.n_cx-2 #polynomial_degree
 
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
@@ -549,7 +549,7 @@ class OptimizationVectorHelper:
 
         if nlp.ode_solver.is_direct_collocation:
             if interpolation_type != InterpolationType.EACH_FRAME:
-                n_points *= nlp.ode_solver.steps + 1
+                n_points *= nlp.ode_solver.n_cx-1 #   nlp.ode_solver.steps + 1
         return n_points
 
     @staticmethod

@@ -385,7 +385,7 @@ class NewVariableConfiguration:
             for node_index in range((0 if self.ocp.assume_phase_dynamics else self.nlp.ns) + 1):
                 n_cx = (
                     self.nlp.ode_solver.n_cx
-                    if self.nlp.ode_solver.is_direct_collocation
+                    if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION)
                     else 3
                 )
                 cx_scaled = (

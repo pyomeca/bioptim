@@ -110,7 +110,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         ):
             ode_solver = OdeSolver.TRAPEZOIDAL()
         elif isinstance(problem_type, SocpType.COLLOCATION):
-            ode_solver = OdeSolver.COLLOCATION(
+            ode_solver = OdeSolver.COLLOCATION2(
                 method=problem_type.method, polynomial_degree=problem_type.polynomial_degree
             )
         else:

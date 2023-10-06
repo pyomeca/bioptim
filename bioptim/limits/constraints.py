@@ -760,9 +760,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 collocation_method,
                 polynomial_degree,
             )
-
-            # todo: test if z0 = x in required in the stochastic integration
-            z = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
+            z = horzcat(*(controller.states.cx_intermediates_list))
             z_ = z.reshape((-1, 1))
             x = controller.states.cx_start
             u = controller.controls.cx_start
@@ -815,8 +813,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             # todo: integrate case due to cholesky
 
-            # todo: test if z0 = x in required in the stochastic integration
-            z = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
+            z = horzcat(*(controller.states.cx_intermediates_list))
             z_ = z.reshape((-1, 1))
             x = controller.states.cx_start
             u = controller.controls.cx_start

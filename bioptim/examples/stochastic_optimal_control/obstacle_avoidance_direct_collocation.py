@@ -305,8 +305,8 @@ def main():
     """
     Prepare, solve and plot the solution
     """
-    isStochastic = False
-    isRobust = False
+    isStochastic = True
+    isRobust = True
     if not isStochastic:
         isRobust = False
 
@@ -329,6 +329,8 @@ def main():
         q_init[:, k] = zq_init[:, j]
         q_init[:, k+1:k+1+(d+1)] = zq_init[:, j:j+(d+1)]
 
+    # q_init = zq_init
+
 
 
     socp = prepare_socp(
@@ -349,8 +351,10 @@ def main():
 
     q = sol_socp.states["q"]
     u = sol_socp.controls["u"]
+    Tf = sol_socp.time[-1]
+    tgrid = np.linspace(0, Tf, n_shooting + 1).squeeze()
 
-    fig, ax = plt.subplots(1, 2)
+    fig, ax = plt.subplots(2, 2)
     for i in range(2):
         a = bio_model.super_ellipse_a[i]
         b = bio_model.super_ellipse_b[i]
@@ -360,16 +364,21 @@ def main():
 
         X, Y, Z = superellipse(a, b, n, x_0, y_0)
 
-        ax[0].contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
+        ax[0, 0].contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
 
-    ax[0].plot(q_init[0], q_init[1], "-k", label="Initial guess")
-    ax[0].plot(q[0][0], q[1][0], "og")
-    ax[0].plot(q[0], q[1], "-g", label="q")
+    ax[0 ,0].plot(q_init[0], q_init[1], "-k", label="Initial guess")
+    ax[0, 0].plot(q[0][0], q[1][0], "og")
+    ax[0, 0].plot(q[0], q[1], "-g", label="q")
 
-    ax[1].plot(q[0], q[1], "b")
-    ax[1].plot(u[0], u[1], "r")
+    ax[0, 1].plot(q[0], q[1], "b")
+    ax[0, 1].plot(u[0], u[1], "r")
     for i in range(n_shooting):
-        ax[1].plot((u[0][i], q[0][i * (d + 1)]), (u[1][i], q[1][i * (d + 1)]), ":k")
+        ax[0, 1].plot((u[0][i], q[0][i * (d + 1)]), (u[1][i], q[1][i * (d + 1)]), ":k")
+
+    ax[1, 0].plot(tgrid, q[0, ::d+2], "--", label="px")
+    ax[1, 0].plot(tgrid, q[1, ::d+2], "-", label="py")
+    ax[1, 0].step(tgrid, u.T, "-.", label="u")
+    ax[1, 0].set_xlabel("t")
 
     if isStochastic:
         m = sol_socp.stochastic_variables["m"]
@@ -384,7 +393,7 @@ def main():
                 print(f"Something went wrong at the {i}th node. (Eigen values)")
 
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
-            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (d + 1)], ax[0], color="b")
+            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (d + 1)], ax[0,0], color="b")
 
     plt.show()
 
