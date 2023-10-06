@@ -387,7 +387,9 @@ class NewVariableConfiguration:
 
     def _declare_cx_and_plot(self):
         if self.as_states:
-            for node_index in range((0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1):
+            for node_index in range(
+                (0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1
+            ):
                 n_cx = (
                     self.nlp.ode_solver.polynomial_degree + 2
                     if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION)
@@ -468,7 +470,9 @@ class NewVariableConfiguration:
                     )
 
         if self.as_states_dot:
-            for node_index in range((0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1):
+            for node_index in range(
+                (0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1
+            ):
                 n_cx = (
                     self.nlp.ode_solver.polynomial_degree + 1
                     if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION)
@@ -496,7 +500,9 @@ class NewVariableConfiguration:
                 )
 
         if self.as_stochastic:
-            for node_index in range((0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1):
+            for node_index in range(
+                (0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1
+            ):
                 n_cx = 3
                 cx_scaled = self.define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.s_scaling[self.name].scaling)

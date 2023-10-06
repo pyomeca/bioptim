@@ -16,7 +16,7 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
     from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
 
     # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if  phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)

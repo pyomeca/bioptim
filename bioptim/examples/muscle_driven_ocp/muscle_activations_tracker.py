@@ -281,7 +281,12 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=use_residual_torque, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics.add(
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_residual_torque=use_residual_torque,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
 
     # Path constraint
     x_bounds = BoundsList()

@@ -83,7 +83,11 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         # Dynamics
         dynamics = DynamicsList()
         expand = True
-        dynamics.add(self.configure_torque_driven, expand_dynamics=expand, skip_continuity=True,)
+        dynamics.add(
+            self.configure_torque_driven,
+            expand_dynamics=expand,
+            skip_continuity=True,
+        )
 
         if qdot_bounds is None or not isinstance(qdot_bounds, BoundsList):
             raise ValueError(

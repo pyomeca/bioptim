@@ -4,7 +4,6 @@ import numpy as np
 from bioptim import BiorbdModel, BoundsList, InitialGuessList, MagnitudeType, PhaseDynamics
 
 
-
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_noisy_multiphase(phase_dynamics):
     from bioptim.examples.getting_started import example_multiphase as ocp_module

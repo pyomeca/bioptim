@@ -210,12 +210,7 @@ def test_generate_time(ode_solver, merge_phase, keep_intermediate_points, shooti
 @pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE, Shooting.MULTIPLE])
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
 def test_generate_integrate(
-    ode_solver,
-    merge_phase,
-    keep_intermediate_points,
-    shooting_type,
-    integrator,
-    phase_dynamics
+    ode_solver, merge_phase, keep_intermediate_points, shooting_type, integrator, phase_dynamics
 ):
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module

@@ -92,7 +92,12 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", index=0, weight=-1)
 
     # Dynamics
-    dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(
+        custom_configure,
+        dynamic_function=custom_dynamic,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
 
     # Path constraint
     x_bounds = BoundsList()

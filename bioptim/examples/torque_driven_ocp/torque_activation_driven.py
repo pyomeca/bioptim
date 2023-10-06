@@ -67,7 +67,12 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_residual_torque=True, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics.add(
+        DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+        with_residual_torque=True,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
 
     # Path constraint
     n_q = bio_model.nb_q

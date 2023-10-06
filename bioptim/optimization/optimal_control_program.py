@@ -54,7 +54,7 @@ from ..misc.enums import (
     InterpolationType,
     PenaltyType,
     Node,
-    PhaseDynamics
+    PhaseDynamics,
 )
 from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict

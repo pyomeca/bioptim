@@ -306,7 +306,9 @@ class PenaltyOption(OptionGeneric):
             )
             if self.target[0].shape != shape:
                 # A second chance the shape is correct is if the targets are declared but phase_dynamics is ONE_PER_NODE
-                if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and self.target[0].shape[-1] == len(self.node_idx):
+                if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and self.target[0].shape[-1] == len(
+                    self.node_idx
+                ):
                     pass
                 else:
                     raise RuntimeError(
@@ -352,7 +354,9 @@ class PenaltyOption(OptionGeneric):
             for target in self.target:
                 if target.shape != shape:
                     # A second chance the shape is correct if phase_dynamics is ONE_PER_NODE
-                    if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and target.shape[-1] == len(self.node_idx):
+                    if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and target.shape[-1] == len(
+                        self.node_idx
+                    ):
                         pass
                     else:
                         raise RuntimeError(
@@ -522,7 +526,10 @@ class PenaltyOption(OptionGeneric):
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx, fake)
                 else:
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx)
-                if controllers[0].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or controllers[0].node_index < controllers[0].ns:
+                if (
+                    controllers[0].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                    or controllers[0].node_index < controllers[0].ns
+                ):
                     if controllers[1].controls_scaled.cx.shape[0] > controllers[0].controls_scaled.cx.shape[0]:
                         fake = controllers[0].cx(
                             controllers[1].controls_scaled.cx.shape[0] - controllers[0].controls_scaled.cx.shape[0], 1
@@ -638,7 +645,10 @@ class PenaltyOption(OptionGeneric):
             ocp = controller.ocp
             name = self.name
             state_cx_scaled = controller.states_scaled.cx_start
-            if controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or controller.node_index < controller.ns:
+            if (
+                controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                or controller.node_index < controller.ns
+            ):
                 if self.integrate or controller.ode_solver.is_direct_collocation:
                     if not (len(self.node_idx) == 1 and self.node_idx[0] == controller.ns):
                         if not self.derivative or self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:

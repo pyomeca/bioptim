@@ -69,7 +69,9 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(configure_dynamics, dynamic_function=dynamics, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics.add(
+        configure_dynamics, dynamic_function=dynamics, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+    )
 
     # Path constraint
     # the pendulum is constrained to point down with zero velocity at the beginning

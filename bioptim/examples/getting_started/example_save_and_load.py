@@ -23,7 +23,7 @@ from bioptim import (
     Objective,
     OdeSolver,
     OdeSolverBase,
-    PhaseDynamics
+    PhaseDynamics,
 )
 
 

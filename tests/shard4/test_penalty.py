@@ -40,14 +40,22 @@ def prepare_test_ocp(
     elif with_muscles:
         bio_model = BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod")
         dynamics = DynamicsList()
-        dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand_dynamics=True, phase_dynamics=phase_dynamics)
+        dynamics.add(
+            DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand_dynamics=True, phase_dynamics=phase_dynamics
+        )
     elif with_contact:
         bio_model = BiorbdModel(
             bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
         )
         dynamics = DynamicsList()
         rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand_dynamics=True, phase_dynamics=phase_dynamics, rigidbody_dynamics=rigidbody_dynamics)
+        dynamics.add(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=True,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+            rigidbody_dynamics=rigidbody_dynamics,
+        )
     elif with_actuator:
         bio_model = BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod")
         dynamics = DynamicsList()

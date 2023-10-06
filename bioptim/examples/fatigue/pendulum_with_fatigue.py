@@ -146,7 +146,12 @@ def prepare_ocp(
             raise ValueError("fatigue_type not implemented")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, fatigue=fatigue_dynamics, phase_dynamics=phase_dynamics, expand_dynamics=expand_dynamics)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN,
+        fatigue=fatigue_dynamics,
+        phase_dynamics=phase_dynamics,
+        expand_dynamics=expand_dynamics,
+    )
 
     # Path constraint
     x_bounds = BoundsList()

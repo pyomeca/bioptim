@@ -102,7 +102,12 @@ def prepare_ocp_first_pass(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, state_continuity_weight=state_continuity_weight, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics = Dynamics(
+        DynamicsFcn.TORQUE_DRIVEN,
+        state_continuity_weight=state_continuity_weight,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
 
     # Path constraint
     x_bounds = BoundsList()

@@ -75,7 +75,8 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         rigidbody_dynamics=rigidbody_dynamics,
         with_ligament=True,
-        expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
     )
 
     # Path constraint

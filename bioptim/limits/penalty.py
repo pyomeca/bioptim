@@ -1096,7 +1096,10 @@ class PenaltyFunctionAbstract:
 
             penalty.expand = controller.get_nlp.dynamics_type.expand_continuity
 
-            if len(penalty.node_idx) > 1 and not controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+            if (
+                len(penalty.node_idx) > 1
+                and not controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+            ):
                 raise NotImplementedError(
                     f"Length of node index superior to 1 is not implemented yet,"
                     f" actual length {len(penalty.node_idx[0])} "

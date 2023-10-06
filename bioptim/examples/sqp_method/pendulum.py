@@ -15,7 +15,7 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     Solver,
-    PhaseDynamics
+    PhaseDynamics,
 )
 
 

@@ -84,7 +84,9 @@ def prepare_ocp(
     dynamics = DynamicsList()
     if actuator_type:
         if actuator_type == 1:
-            dynamics.add(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+            dynamics.add(
+                DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+            )
         elif actuator_type == 2:
             dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
         else:

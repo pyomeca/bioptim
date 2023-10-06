@@ -11,7 +11,15 @@ from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
 from ..limits.multinode_constraint import MultinodeConstraint
-from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator, QuadratureRule, PhaseDynamics
+from ..misc.enums import (
+    PlotType,
+    ControlType,
+    InterpolationType,
+    Shooting,
+    SolutionIntegrator,
+    QuadratureRule,
+    PhaseDynamics,
+)
 from ..misc.mapping import Mapping, BiMapping
 from ..optimization.solution import Solution
 from ..dynamics.ode_solver import OdeSolver

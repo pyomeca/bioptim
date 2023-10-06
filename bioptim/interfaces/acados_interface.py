@@ -96,7 +96,7 @@ class AcadosInterface(SolverInterface):
             raise RuntimeError("CasADi graph must be SX to be solved with ACADOS. Please set use_sx to True in OCP")
 
         if ocp.nlp[0].phase_dynamics != PhaseDynamics.SHARED_DURING_THE_PHASE:
-            raise RuntimeError("ACADOS necessitate phase_dynamics=True")
+            raise RuntimeError("ACADOS necessitate phase_dynamics==PhaseDynamics.SHARED_DURING_THE_PHASE")
 
         if ocp.nlp[0].stochastic_variables.cx_start.shape[0] != 0:
             raise RuntimeError("ACADOS does not support stochastic variables yet")

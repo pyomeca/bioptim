@@ -152,7 +152,13 @@ def prepare_ocp(
     dynamics = DynamicsList()
     expand = not isinstance(ode_solver, OdeSolver.IRK)
     for i in range(len(bio_model)):
-        dynamics.add(custom_configure, dynamic_function=time_dynamic, phase=i, expand_dynamics=expand, phase_dynamics=phase_dynamics)
+        dynamics.add(
+            custom_configure,
+            dynamic_function=time_dynamic,
+            phase=i,
+            expand_dynamics=expand,
+            phase_dynamics=phase_dynamics,
+        )
 
     # Define states path constraint
     x_bounds = BoundsList()

@@ -140,7 +140,11 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         # By default it assume Continuous. It can be change later
         full_phase_transitions = [
-            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, weight=ocp.nlp[i].dynamics_type.state_continuity_weight)
+            PhaseTransition(
+                phase_pre_idx=i,
+                transition=PhaseTransitionFcn.CONTINUOUS,
+                weight=ocp.nlp[i].dynamics_type.state_continuity_weight,
+            )
             for i in range(ocp.n_phases - 1)
         ]
 

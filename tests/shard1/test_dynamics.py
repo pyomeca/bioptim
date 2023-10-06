@@ -69,7 +69,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             with_contact=with_contact,
             rigidbody_dynamics=rigidbody_dynamics,
             expand_dynamics=True,
-            phase_dynamics=phase_dynamics
+            phase_dynamics=phase_dynamics,
         ),
         False,
     )
@@ -219,7 +219,7 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
             with_contact=with_contact,
             rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
             expand_dynamics=True,
-            phase_dynamics=phase_dynamics
+            phase_dynamics=phase_dynamics,
         ),
         False,
     )
@@ -287,7 +287,11 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
         ocp,
         "dynamics_type",
         Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN, with_contact=with_contact, soft_contacts_dynamics=implicit_contact, expand_dynamics=True, phase_dynamics=phase_dynamics,
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=with_contact,
+            soft_contacts_dynamics=implicit_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
         ),
         False,
     )
@@ -730,7 +734,12 @@ def test_implicit_dynamics_errors(dynamics, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(dynamics, rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS, expand_dynamics=True, phase_dynamics=phase_dynamics),
+        Dynamics(
+            dynamics,
+            rigidbody_dynamics=RigidBodyDynamics.DAE_INVERSE_DYNAMICS,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+        ),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -776,7 +785,12 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_contact=with_contact, expand_dynamics=True, phase_dynamics=phase_dynamics),
+        Dynamics(
+            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+            with_contact=with_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+        ),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -882,7 +896,12 @@ def test_torque_activation_driven_with_residual_torque(
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN, with_residual_torque=with_residual_torque, expand_dynamics=True, phase_dynamics=phase_dynamics),
+        Dynamics(
+            DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN,
+            with_residual_torque=with_residual_torque,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+        ),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]
@@ -1498,7 +1517,12 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN, rigidbody_dynamics=rigid_body_dynamics, expand_dynamics=True, phase_dynamics=phase_dynamics),
+        Dynamics(
+            DynamicsFcn.JOINTS_ACCELERATION_DRIVEN,
+            rigidbody_dynamics=rigid_body_dynamics,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+        ),
         False,
     )
     np.random.seed(42)
@@ -1574,7 +1598,13 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(configure, dynamic_function=custom_dynamic, with_contact=with_contact, expand_dynamics=True, phase_dynamics=phase_dynamics),
+        Dynamics(
+            configure,
+            dynamic_function=custom_dynamic,
+            with_contact=with_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+        ),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]

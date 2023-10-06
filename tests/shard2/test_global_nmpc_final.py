@@ -13,7 +13,8 @@ from bioptim import Solver, MultiCyclicCycleSolutions, PhaseDynamics
 def test_multi_cyclic_nmpc_get_final(phase_dynamics):
     if platform.system() != "Linux":
         # This is a long test and CI is already long for Windows and Mac
-        return
+        pass
+        # return
 
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform

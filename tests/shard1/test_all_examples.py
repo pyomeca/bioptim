@@ -63,7 +63,9 @@ def test__getting_started__custom_constraints():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE, expand_dynamics=False
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+        expand_dynamics=False,
     )
 
 

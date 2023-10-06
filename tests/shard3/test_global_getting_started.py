@@ -11,7 +11,15 @@ import platform
 import pytest
 import numpy as np
 from casadi import sum1, sum2
-from bioptim import InterpolationType, OdeSolver, MultinodeConstraintList, MultinodeConstraintFcn, Node, ControlType, PhaseDynamics
+from bioptim import (
+    InterpolationType,
+    OdeSolver,
+    MultinodeConstraintList,
+    MultinodeConstraintFcn,
+    Node,
+    ControlType,
+    PhaseDynamics,
+)
 
 from tests.utils import TestUtils
 

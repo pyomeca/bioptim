@@ -1258,7 +1258,10 @@ class Solution:
             u0 = np.concatenate(
                 [self._controls["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].controls]
             )
-            if self.ocp.nlp[phase - 1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or not np.isnan(u0).any():
+            if (
+                self.ocp.nlp[phase - 1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                or not np.isnan(u0).any()
+            ):
                 u0 = vertcat(u0, u0)
             params = []
             s0 = []

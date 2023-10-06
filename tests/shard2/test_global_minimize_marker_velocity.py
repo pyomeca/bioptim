@@ -16,7 +16,7 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     Node,
-    PhaseDynamics
+    PhaseDynamics,
 )
 
 from tests.utils import TestUtils
@@ -95,7 +95,11 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=not isinstance(ode_solver, OdeSolver.IRK), phase_dynamics=phase_dynamics)
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN,
+        expand_dynamics=not isinstance(ode_solver, OdeSolver.IRK),
+        phase_dynamics=phase_dynamics,
+    )
 
     # Path constraint
     nq = bio_model.nb_q

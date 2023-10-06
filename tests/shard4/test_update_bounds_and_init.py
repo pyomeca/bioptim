@@ -12,7 +12,7 @@ from bioptim import (
     InitialGuessList,
     OdeSolver,
     MagnitudeType,
-    PhaseDynamics
+    PhaseDynamics,
 )
 
 from tests.utils import TestUtils

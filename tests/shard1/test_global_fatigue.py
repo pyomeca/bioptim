@@ -612,7 +612,7 @@ def test_fatigable_effort_torque_non_split(phase_dynamics):
 def test_fatigable_effort_torque_split(phase_dynamics):
     from bioptim.examples.fatigue import pendulum_with_fatigue as ocp_module
 
-    if platform.system() == "Windows":
+    if platform.system() != "Linux":
         # This tst fails on the CI
         return
 

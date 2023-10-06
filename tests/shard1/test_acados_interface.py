@@ -703,10 +703,7 @@ def test_acados_phase_dynamics_reject():
         expand_dynamics=True,
     )
 
-    with pytest.raises(
-        RuntimeError,
-        match=f"ACADOS necessitate phase_dynamics==SHARED_DURING_PHASE",
-    ):
+    with pytest.raises(RuntimeError, match=f"ACADOS necessitate phase_dynamics==PhaseDynamics.SHARED_DURING_THE_PHASE"):
         ocp.solve(solver=Solver.ACADOS())
 
 

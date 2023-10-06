@@ -33,7 +33,14 @@ class MyCyclicNMPC(CyclicNonlinearModelPredictiveControl):
         return True
 
 
-def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE, expand_dynamics=True):
+def prepare_nmpc(
+    model_path,
+    cycle_len,
+    cycle_duration,
+    max_torque,
+    phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+    expand_dynamics=True,
+):
     model = BiorbdModel(model_path)
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 

@@ -140,7 +140,9 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     expand = not isinstance(ode_solver, OdeSolver.IRK)
-    dynamics.add(custom_configure, dynamic_function=time_dependent_dynamic, expand_dynamics=expand, phase_dynamics=phase_dynamics)
+    dynamics.add(
+        custom_configure, dynamic_function=time_dependent_dynamic, expand_dynamics=expand, phase_dynamics=phase_dynamics
+    )
 
     # Path constraint
     x_bounds = BoundsList()
