@@ -199,7 +199,7 @@ class Integrator:
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "u", "p", "s"],
             ["xf", "xall"],
             {"allow_free": self.allow_free_variables},
         )
@@ -793,7 +793,7 @@ class COLLOCATION(Integrator):
                         self.get_u(controls, time),
                         params * param_scaling,
                         stochastic_variables,
-                        xp_j, h,
+                        xp_j/h,
                     )
                 )
             else:
@@ -918,7 +918,7 @@ class COLLOCATION2(COLLOCATION):
                         self.get_u(controls, time),
                         params * param_scaling,
                         stochastic_variables,
-                        xp_j, h,  # todo: modify to have xp_j - h*fj
+                        xp_j/h,  # todo: modify to have xp_j - h*fj
                     )
                 )
             else:

@@ -321,7 +321,15 @@ def main():
     motor_noise_magnitude = np.array([1, 1])
     bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
-    q_init = initialize_circle((d + 1) * n_shooting + 1)
+    q_init = np.zeros((bio_model.nb_q, (d + 2) * n_shooting + 1))
+    zq_init = initialize_circle((d + 1) * n_shooting + 1)
+    for i in range(n_shooting + 1):
+        j = i * (d + 1)
+        k = i * (d + 2)
+        q_init[:, k] = zq_init[:, j]
+        q_init[:, k+1:k+1+(d+1)] = zq_init[:, j:j+(d+1)]
+
+
 
     socp = prepare_socp(
         final_time=final_time,
