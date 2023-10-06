@@ -71,7 +71,7 @@ class NonControlledMethod:
         The value of the derivative of each state dx/dt at the current time t
         """
         a_dot = 100 + b
-        b_dot = a / ((t - t_phase) + 1)
+        b_dot = a / (((t - t_phase) + 1) * 100)
         c_dot = a * b + c
         return vertcat(a_dot, b_dot, c_dot)
 
@@ -136,7 +136,7 @@ def prepare_ocp(
     time_min: list,
     time_max: list,
     use_sx: bool,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=1),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
@@ -202,6 +202,9 @@ def prepare_ocp(
     objective_functions.add(
         ObjectiveFcn.Mayer.MINIMIZE_STATE, target=5, key="c", node=Node.END, quadratic=True, weight=1, phase=9
     )
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, target=100, key="a", node=Node.END, quadratic=True, weight=0.001, phase=9
+    )
 
     # Sets the bound for all the phases
     x_bounds = BoundsList()
@@ -251,7 +254,10 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1.0546674423227002e-12)
+    np.testing.assert_almost_equal(f[0, 0], 0.2919065990591678)
+
+    # Check finishing time
+    np.testing.assert_almost_equal(sol.time[-1][-1], 0.8299336018055604)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -259,52 +265,54 @@ def test_main_control_type_none(use_sx, phase_dynamics):
         np.testing.assert_almost_equal(g[i * 19 + 0 : i * 19 + 15], np.zeros((15, 1)))
     np.testing.assert_almost_equal(
         g[18:-1:19, 0],
-        [0.09652524, 0.05752794, 0.0166813, 0.01370305, 0.01262233, 0.01206028, 0.01171445, 0.01147956, 0.01130926],
+        [0.09848005, 0.0974753, 0.09652673, 0.09540809, 0.0939693, 0.09197322, 0.08894771, 0.08377719, 0.07337567],
     )
     np.testing.assert_equal(g.shape, (187, 1))
 
     # Check some results
     # first phase
     np.testing.assert_almost_equal(
-        sol.states[0]["a"][0], np.array([0.0, 1.93089445, 3.86250911, 5.79554351, 7.73067582, 9.66856407]), decimal=2
+        sol.states[0]["a"][0], np.array([0.0, 1.96960231, 3.93921216, 5.90883684, 7.87848335, 9.84815843]), decimal=8
     )
     np.testing.assert_almost_equal(
-        sol.states[0]["b"][0], np.array([0.0, 0.01885085, 0.07450486, 0.16582235, 0.2917295, 0.45121394]), decimal=2
+        sol.states[0]["b"][0], np.array([0.0, 0.00019337, 0.00076352, 0.00169617, 0.00297785, 0.0045958]), decimal=8
     )
     np.testing.assert_almost_equal(
-        sol.states[0]["c"][0], np.array([0.0, 0.00017626, 0.00280773, 0.01415365, 0.044552, 0.10835496]), decimal=2
+        sol.states[0]["c"][0],
+        np.array([0.00000000e00, 1.88768128e-06, 3.00098595e-05, 1.50979104e-04, 4.74274962e-04, 1.15105831e-03]),
+        decimal=8,
     )
 
     # intermediate phase
     np.testing.assert_almost_equal(
         sol.states[5]["a"][0],
-        np.array([19.82368302, 20.06913812, 20.31469147, 20.5603441, 20.80609698, 21.05195111]),
-        decimal=2,
+        np.array([48.20121535, 50.04237763, 51.88365353, 53.72504579, 55.56655709, 57.40819004]),
+        decimal=8,
     )
     np.testing.assert_almost_equal(
         sol.states[5]["b"][0],
-        np.array([1.74152087, 1.78205032, 1.82299542, 1.86435469, 1.90612665, 1.94830984]),
-        decimal=2,
+        np.array([0.08926236, 0.0953631, 0.10161488, 0.10801404, 0.11455708, 0.1212406]),
+        decimal=8,
     )
     np.testing.assert_almost_equal(
         sol.states[5]["c"][0],
-        np.array([1.80803497, 1.89726612, 1.98974375, 2.08554493, 2.1847476, 2.28743059]),
-        decimal=2,
+        np.array([0.60374532, 0.69912979, 0.80528341, 0.92297482, 1.05299864, 1.19617563]),
+        decimal=8,
     )
 
     # last phase
     np.testing.assert_almost_equal(
         sol.states[9]["a"][0],
-        np.array([24.58043802, 24.80998012, 25.03962276, 25.26936668, 25.49921265, 25.72916138]),
-        decimal=2,
+        np.array([82.06013653, 82.2605896, 82.4610445, 82.6615012, 82.86195973, 83.06242009]),
+        decimal=8,
     )
     np.testing.assert_almost_equal(
         sol.states[9]["b"][0],
-        np.array([2.59589214, 2.64067279, 2.68578796, 2.73123661, 2.77701775, 2.82313034]),
-        decimal=2,
+        np.array([0.22271563, 0.22362304, 0.22453167, 0.2254415, 0.22635253, 0.22726477]),
+        decimal=8,
     )
     np.testing.assert_almost_equal(
         sol.states[9]["c"][0],
-        np.array([4.18639942, 4.3405686, 4.49893797, 4.66158258, 4.82857814, 5.00000103]),
-        decimal=2,
+        np.array([4.83559727, 4.88198772, 4.92871034, 4.97576671, 5.02315844, 5.07088713]),
+        decimal=8,
     )
