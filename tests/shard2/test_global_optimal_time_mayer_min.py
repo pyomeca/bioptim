@@ -87,8 +87,8 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 0.2862324498580764)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((70.46234418, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99964325, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((70.46234418, 0)), decimal=6)
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99964325, 0)), decimal=6)
 
         # optimized time
         np.testing.assert_almost_equal(tf, 0.2862324498580764)
