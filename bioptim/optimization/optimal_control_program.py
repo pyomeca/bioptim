@@ -54,6 +54,7 @@ from ..misc.enums import (
     InterpolationType,
     PenaltyType,
     Node,
+    PhaseDynamics,
 )
 from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
@@ -174,11 +175,8 @@ class OptimalControlProgram:
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
         s_scaling: VariableScalingList = None,
-        state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
-        skip_continuity: bool = False,
-        assume_phase_dynamics: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
     ):
         """
@@ -249,10 +247,6 @@ class OptimalControlProgram:
             The number of thread to use while solving (multi-threading if > 1)
         use_sx: bool
             The nature of the casadi variables. MX are used if False.
-        skip_continuity: bool
-            This is mainly for internal purposes when creating an OCP not destined to be solved
-        assume_phase_dynamics: bool
-            If the dynamics of for each shooting node in phases are assumed to be the same
         """
 
         self._check_bioptim_version()
@@ -288,10 +282,8 @@ class OptimalControlProgram:
             parameter_init,
             parameter_constraints,
             parameter_objectives,
-            state_continuity_weight,
             n_threads,
             use_sx,
-            assume_phase_dynamics,
             integrated_value_functions,
         )
 
@@ -338,7 +330,6 @@ class OptimalControlProgram:
             parameter_objectives,
             ode_solver,
             use_sx,
-            assume_phase_dynamics,
             bio_model,
             external_forces,
             plot_mappings,
@@ -356,8 +347,6 @@ class OptimalControlProgram:
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
 
         self._finalize_penalties(
-            skip_continuity,
-            state_continuity_weight,
             constraints,
             parameter_constraints,
             objective_functions,
@@ -406,10 +395,8 @@ class OptimalControlProgram:
         parameter_init,
         parameter_constraints,
         parameter_objectives,
-        state_continuity_weight,
         n_threads,
         use_sx,
-        assume_phase_dynamics,
         integrated_value_functions,
     ):
         # Placed here because of MHE
@@ -452,10 +439,8 @@ class OptimalControlProgram:
             "parameter_init": parameter_init,
             "parameter_objectives": parameter_objectives,
             "parameter_constraints": parameter_constraints,
-            "state_continuity_weight": state_continuity_weight,
             "n_threads": n_threads,
             "use_sx": use_sx,
-            "assume_phase_dynamics": assume_phase_dynamics,
             "integrated_value_functions": integrated_value_functions,
         }
         return
@@ -488,7 +473,6 @@ class OptimalControlProgram:
         parameter_objectives,
         ode_solver,
         use_sx,
-        assume_phase_dynamics,
         bio_model,
         external_forces,
         plot_mappings,
@@ -634,14 +618,15 @@ class OptimalControlProgram:
         if not isinstance(use_sx, bool):
             raise RuntimeError("use_sx should be a bool")
 
-        if not assume_phase_dynamics and n_threads > 1:
-            raise RuntimeError("n_threads is greater than 1 is not compatible with assume_phase_dynamics=False")
+        if isinstance(dynamics, Dynamics):
+            tp = dynamics
+            dynamics = DynamicsList()
+            dynamics.add(tp)
+        if not isinstance(dynamics, DynamicsList):
+            raise ValueError("dynamics must be of type DynamicsList or Dynamics")
 
         # Type of CasADi graph
         self.cx = SX if use_sx else MX
-
-        # If the dynamics should be declared individually for each node of the phase or not
-        self.assume_phase_dynamics = assume_phase_dynamics
 
         # Declare optimization variables
         self.program_changed = True
@@ -652,7 +637,7 @@ class OptimalControlProgram:
         self.g_implicit = []
 
         # nlp is the core of a phase
-        self.nlp = [NLP(self.assume_phase_dynamics) for _ in range(self.n_phases)]
+        self.nlp = [NLP(dynamics[i].phase_dynamics) for i in range(self.n_phases)]
         NLP.add(self, "model", bio_model, False)
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
@@ -791,8 +776,6 @@ class OptimalControlProgram:
 
     def _finalize_penalties(
         self,
-        skip_continuity,
-        state_continuity_weight,
         constraints,
         parameter_constraints,
         objective_functions,
@@ -802,11 +785,10 @@ class OptimalControlProgram:
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
-        self.phase_transitions = phase_transitions.prepare_phase_transitions(self, state_continuity_weight)
+        self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
 
         # Skipping creates an OCP without built-in continuity constraints, make sure you declared constraints elsewhere
-        if not skip_continuity:
-            self._declare_continuity(state_continuity_weight)
+        self._declare_continuity()
 
         # Prepare constraints
         self.update_constraints(self.implicit_constraints)
@@ -953,22 +935,19 @@ class OptimalControlProgram:
                     option_dict.add(key, scaling_phase_0[key], phase=i)
         return option_dict
 
-    def _declare_continuity(self, state_continuity_weight: float = None) -> None:
+    def _declare_continuity(self) -> None:
         """
         Declare the continuity function for the state variables. By default, the continuity function
-        is a constraint, but it declared as an objective if  state_continuity_weight is not None
-
-        Parameters
-        ----------
-        state_continuity_weight:
-            The weight on continuity objective. If it is not None, then the continuity are objective
-            instead of constraints
+        is a constraint, but it declared as an objective if dynamics_type.state_continuity_weight is not None
         """
 
         for nlp in self.nlp:  # Inner-phase
-            if state_continuity_weight is None:
+            if nlp.dynamics_type.skip_continuity:
+                continue
+
+            if nlp.dynamics_type.state_continuity_weight is None:
                 # Continuity as constraints
-                if self.assume_phase_dynamics:
+                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                     penalty = Constraint(
                         ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
                     )
@@ -981,10 +960,10 @@ class OptimalControlProgram:
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
             else:
                 # Continuity as objectives
-                if self.assume_phase_dynamics:
+                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                     penalty = Objective(
                         ObjectiveFcn.Mayer.CONTINUITY,
-                        weight=state_continuity_weight,
+                        weight=nlp.dynamics_type.state_continuity_weight,
                         quadratic=True,
                         node=Node.ALL_SHOOTING,
                         penalty_type=PenaltyType.INTERNAL,
@@ -994,7 +973,7 @@ class OptimalControlProgram:
                     for shooting_point in range(nlp.ns):
                         penalty = Objective(
                             ObjectiveFcn.Mayer.CONTINUITY,
-                            weight=state_continuity_weight,
+                            weight=nlp.dynamics_type.state_continuity_weight,
                             quadratic=True,
                             node=shooting_point,
                             penalty_type=PenaltyType.INTERNAL,

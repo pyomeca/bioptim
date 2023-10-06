@@ -12,11 +12,12 @@ from bioptim import (
     DynamicsFcn,
     ObjectiveList,
     BoundsList,
+    PhaseDynamics,
 )
 from tests.utils import TestUtils
 
 
-def prepare_ocp(biorbd_model_path, phase_1, phase_2, assume_phase_dynamics) -> OptimalControlProgram:
+def prepare_ocp(biorbd_model_path, phase_1, phase_2, phase_dynamics) -> OptimalControlProgram:
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path))
 
     # Problem parameters
@@ -29,9 +30,9 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, assume_phase_dynamics) -> O
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     multinode_constraints = MultinodeConstraintList()
     # hard constraint
@@ -82,7 +83,6 @@ def prepare_ocp(biorbd_model_path, phase_1, phase_2, assume_phase_dynamics) -> O
         objective_functions=objective_functions,
         multinode_constraints=multinode_constraints,
         ode_solver=OdeSolver.RK4(),
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -136,25 +136,23 @@ def test_multinode_fail_second_node(node):
             )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
 @pytest.mark.parametrize("phase_1", [-1, 0, 4])
 @pytest.mark.parametrize("phase_2", [-1, 1, 4])
-def test_multinode_wrong_phase(phase_1, phase_2, assume_phase_dynamics):
+def test_multinode_wrong_phase(phase_1, phase_2, phase_dynamics):
     model = TestUtils.bioptim_folder() + "/examples/getting_started/models/cube.bioMod"
-
-    # For reducing time assume_phase_dynamics=False is skipped for the failing tests
 
     if phase_1 == 4 or (phase_1 == 0 and phase_2 == 4) or (phase_1 == -1 and phase_2 == 4):
         with pytest.raises(
             ValueError,
             match="nodes_phase of the multinode_penalty must be between 0 and number of phases",
         ):
-            prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=True)
+            prepare_ocp(model, phase_1, phase_2, phase_dynamics=phase_dynamics)
     elif phase_1 == -1 or (phase_1 == 0 and phase_2 == -1):
         with pytest.raises(
             ValueError,
             match="nodes_phase of the multinode_penalty must be between 0 and number of phases",
         ):
-            prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=True)
+            prepare_ocp(model, phase_1, phase_2, phase_dynamics=phase_dynamics)
     else:
-        prepare_ocp(model, phase_1, phase_2, assume_phase_dynamics=assume_phase_dynamics)
+        prepare_ocp(model, phase_1, phase_2, phase_dynamics=phase_dynamics)

@@ -6,7 +6,7 @@ from casadi import SX, MX, Function, horzcat
 from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, PhaseDynamics
 from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
@@ -117,7 +117,7 @@ class NonLinearProgram:
         Add to the pool of declared casadi function. If the function already exists, it is skipped
     """
 
-    def __init__(self, assume_phase_dynamics):
+    def __init__(self, phase_dynamics: PhaseDynamics):
         self.casadi_func = {}
         self.contact_forces_func = None
         self.soft_contact_forces_func = None
@@ -172,14 +172,14 @@ class NonLinearProgram:
         self.S = None
         self.S_scaled = None
         self.s_scaling = None
-        self.assume_phase_dynamics = assume_phase_dynamics
+        self.phase_dynamics = phase_dynamics
         self.time_cx = None
         self.time_mx = None
-        self.states = OptimizationVariableContainer(assume_phase_dynamics)
-        self.states_dot = OptimizationVariableContainer(assume_phase_dynamics)
-        self.controls = OptimizationVariableContainer(assume_phase_dynamics)
-        self.stochastic_variables = OptimizationVariableContainer(assume_phase_dynamics)
-        self.integrated_values = OptimizationVariableContainer(assume_phase_dynamics)
+        self.states = OptimizationVariableContainer(self.phase_dynamics)
+        self.states_dot = OptimizationVariableContainer(self.phase_dynamics)
+        self.controls = OptimizationVariableContainer(self.phase_dynamics)
+        self.stochastic_variables = OptimizationVariableContainer(self.phase_dynamics)
+        self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
 
     def initialize(self, cx: MX | SX | Callable = None):
         """

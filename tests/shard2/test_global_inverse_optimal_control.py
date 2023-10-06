@@ -2,12 +2,14 @@
 Test for file IO
 """
 import os
+
+from bioptim import PhaseDynamics
 import numpy as np
 import pytest
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_double_pendulum_torque_driven_IOCP(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_double_pendulum_torque_driven_IOCP(phase_dynamics):
     # Load double pendulum ocp
     from bioptim.examples.inverse_optimal_control import double_pendulum_torque_driven_IOCP as ocp_module
 
@@ -18,8 +20,8 @@ def test_double_pendulum_torque_driven_IOCP(assume_phase_dynamics):
         weights=[0.4, 0.3, 0.3],
         coefficients=[1, 1, 1],
         biorbd_model_path=biorbd_model_path,
-        assume_phase_dynamics=assume_phase_dynamics,
-        n_threads=4 if assume_phase_dynamics else 1,
+        phase_dynamics=phase_dynamics,
+        n_threads=4 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
         expand_dynamics=True,
     )
 

@@ -22,6 +22,7 @@ from bioptim import (
     Node,
     NonLinearProgram,
     Solver,
+    PhaseDynamics,
 )
 
 
@@ -136,7 +137,7 @@ def prepare_ocp(
     time_max: list,
     use_sx: bool,
     ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -153,10 +154,11 @@ def prepare_ocp(
         The ode solver to use
     use_sx: bool
         Callable Mx or Sx used for ocp
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
 
     Returns
     -------
@@ -185,7 +187,8 @@ def prepare_ocp(
             custom_model.declare_variables,
             dynamic_function=custom_model.custom_dynamics,
             phase=i,
-            expand=True,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
         )
 
     # Creates the constraint for my n phases
@@ -221,13 +224,12 @@ def prepare_ocp(
         ode_solver=ode_solver,
         control_type=ControlType.NONE,
         use_sx=use_sx,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("use_sx", [False, True])
-def test_main_control_type_none(use_sx, assume_phase_dynamics):
+def test_main_control_type_none(use_sx, phase_dynamics):
     """
     Prepare and solve and animate a reaching task ocp
     """
@@ -243,7 +245,7 @@ def test_main_control_type_none(use_sx, assume_phase_dynamics):
         time_min=time_min,
         time_max=time_max,
         use_sx=use_sx,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
 
     # --- Solve the program --- #

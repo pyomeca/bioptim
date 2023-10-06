@@ -21,8 +21,7 @@ from bioptim import (
     OptimalControlProgram,
     StochasticOptimalControlProgram,
     StochasticBioModel,
-    StochasticBiorbdModel,
-    BioModel,
+    PhaseDynamics,
     InitialGuessList,
     ObjectiveFcn,
     Solver,
@@ -471,7 +470,8 @@ def prepare_socp(
             force_field_magnitude=force_field_magnitude,
             with_noise=with_noise,
         ),
-        expand=False,
+        expand_dynamics=False,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
     )
 
     n_muscles = 6
@@ -588,7 +588,6 @@ def prepare_socp(
         multinode_constraints=multinode_constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
-        assume_phase_dynamics=False,
         problem_type=SocpType.TRAPEZOIDAL_EXPLICIT(),
         integrated_value_functions=integrated_value_functions,
     )

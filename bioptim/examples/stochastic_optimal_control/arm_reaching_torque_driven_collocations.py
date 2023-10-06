@@ -168,7 +168,7 @@ def prepare_socp(
         DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
         problem_type=problem_type,
         with_cholesky=False,
-        expand=False,
+        expand_dynamics=False,
     )
 
     x_bounds = BoundsList()
@@ -272,7 +272,6 @@ def prepare_socp(
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=2,
-        assume_phase_dynamics=True,
         problem_type=problem_type,
     )
 

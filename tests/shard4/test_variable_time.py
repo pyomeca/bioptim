@@ -19,13 +19,14 @@ from bioptim import (
     ParameterList,
     ParameterObjectiveList,
     PenaltyController,
+    PhaseDynamics,
 )
 from bioptim.optimization.solution import Solution
 
 from tests.utils import TestUtils
 
 
-def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
+def prepare_ocp(phase_time_constraint, use_parameter, phase_dynamics):
     # --- Inputs --- #
     final_time = (2, 5, 4)
     time_min = [1, 3, 0.1]
@@ -51,9 +52,9 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0, expand=True)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1, expand=True)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2, expand=True)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Constraints
     constraints = ConstraintList()
@@ -138,15 +139,14 @@ def prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics):
         parameter_init=parameter_init,
         parameter_bounds=parameter_bounds,
         parameter_objectives=parameter_objectives,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("phase_time_constraint", [0, 1, 2])
 @pytest.mark.parametrize("use_parameter", [True, True])
-def test_variable_time(phase_time_constraint, use_parameter, assume_phase_dynamics):
-    ocp = prepare_ocp(phase_time_constraint, use_parameter, assume_phase_dynamics)
+def test_variable_time(phase_time_constraint, use_parameter, phase_dynamics):
+    ocp = prepare_ocp(phase_time_constraint, use_parameter, phase_dynamics)
 
     # --- Solve the program --- #
     np.random.seed(42)

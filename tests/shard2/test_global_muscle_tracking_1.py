@@ -6,25 +6,25 @@ import pytest
 import platform
 
 import numpy as np
-from bioptim import OdeSolver, Solver, BiorbdModel
+from bioptim import OdeSolver, PhaseDynamics, BiorbdModel
 
 from tests.utils import TestUtils
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, assume_phase_dynamics):
+def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, phase_dynamics):
     # Load muscle_activations_tracker
     from bioptim.examples.muscle_driven_ocp import muscle_activations_tracker as ocp_module
 
-    if platform.system() == "Windows" and not assume_phase_dynamics:
+    if platform.system() == "Windows" and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
         # This is a long test and CI is already long for Windows
         return
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
+    # For reducing time phase_dynamics=False is skipped for redundant tests
     # and because test fails on CI
-    # if not assume_phase_dynamics and ode_solver in (OdeSolver.RK4, OdeSolver.COLLOCATION):
-    #     return
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver in (OdeSolver.RK4, OdeSolver.COLLOCATION):
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -52,7 +52,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, a
         use_residual_torque=use_residual_torque,
         kin_data_to_track="q",
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()

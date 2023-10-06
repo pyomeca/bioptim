@@ -3,14 +3,14 @@ This example shows how to use multinode_objectives.
 It replicates the results from getting_started/pendulum.py
 """
 import platform
-from casadi import MX, sum1, sum2
+from casadi import MX, sum1
 
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
     BoundsList,
-    InitialGuessList,
+    PhaseDynamics,
     OdeSolver,
     OdeSolverBase,
     Solver,
@@ -40,7 +40,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
-    assume_phase_dynamics: bool = False,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
@@ -60,10 +60,11 @@ def prepare_ocp(
         If the SX variable should be used instead of MX (can be extensive on RAM)
     n_threads: int
         Number of thread to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     expand_dynamics: bool
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
@@ -88,7 +89,7 @@ def prepare_ocp(
     )
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -116,7 +117,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,  # This has to be set to 1 by definition.
-        assume_phase_dynamics=assume_phase_dynamics,  # This has to be set to False by definition.
     )
 
 

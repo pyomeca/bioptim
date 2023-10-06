@@ -124,7 +124,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         """
         raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
 
-    def prepare_phase_transitions(self, ocp, continuity_weight: float = None) -> list:
+    def prepare_phase_transitions(self, ocp) -> list:
         """
         Configure all the phase transitions and put them in a list
 
@@ -140,7 +140,11 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         # By default it assume Continuous. It can be change later
         full_phase_transitions = [
-            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, weight=continuity_weight)
+            PhaseTransition(
+                phase_pre_idx=i,
+                transition=PhaseTransitionFcn.CONTINUOUS,
+                weight=ocp.nlp[i].dynamics_type.state_continuity_weight,
+            )
             for i in range(ocp.n_phases - 1)
         ]
 

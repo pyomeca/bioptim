@@ -151,7 +151,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, expand=expand_dynamics)
+    dynamics.add(DynamicsFcn.HOLONOMIC_TORQUE_DRIVEN, expand_dynamics=expand_dynamics)
 
     # Path Constraints
     constraints = ConstraintList()
@@ -199,7 +199,6 @@ def prepare_ocp(
             x_init=x_init,
             u_init=u_init,
             objective_functions=objective_functions,
-            assume_phase_dynamics=True,
             variable_mappings=variable_bimapping,
             constraints=constraints,
         ),

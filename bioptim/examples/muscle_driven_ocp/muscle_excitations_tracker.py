@@ -31,6 +31,7 @@ from bioptim import (
     Node,
     Solver,
     RigidBodyDynamics,
+    PhaseDynamics,
 )
 from bioptim.optimization.optimization_variable import OptimizationVariableContainer
 
@@ -40,7 +41,7 @@ def generate_data(
     final_time: float,
     n_shooting: int,
     use_residual_torque: bool = True,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
@@ -55,10 +56,11 @@ def generate_data(
         The number of shooting points
     use_residual_torque: bool
         If residual torque are present or not in the dynamics
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
 
     Returns
     -------
@@ -87,7 +89,7 @@ def generate_data(
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus_controls))
 
     symbolic_parameters = MX.sym("u", 0, 0)
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = bio_model
     nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
@@ -98,9 +100,9 @@ def generate_data(
     }
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
-    nlp.states_dot = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
-    nlp.controls = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
+    nlp.states = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
+    nlp.states_dot = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
+    nlp.controls = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
     nlp.states.initialize_from_shooting(n_shooting, MX)
     nlp.states_dot.initialize_from_shooting(n_shooting, MX)
     nlp.controls.initialize_from_shooting(n_shooting, MX)
@@ -220,7 +222,7 @@ def prepare_ocp(
     use_residual_torque: bool,
     kin_data_to_track: str = "markers",
     ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
@@ -246,10 +248,11 @@ def prepare_ocp(
         If residual torque are present or not in the dynamics
     ode_solver: OdeSolverBase
         The ode solver to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     expand_dynamics: bool
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
@@ -285,7 +288,8 @@ def prepare_ocp(
         DynamicsFcn.MUSCLE_DRIVEN,
         with_excitations=True,
         with_residual_torque=use_residual_torque,
-        expand=expand_dynamics,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
     )
 
     # Path constraint
@@ -320,7 +324,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -334,11 +337,11 @@ def main():
     final_time = 0.5
     n_shooting_points = 30
     use_residual_torque = True
-    assume_phase_dynamics = True
+    phase_dynamics = PhaseDynamics.SHARED_DURING_THE_PHASE
 
     # Generate random data to fit
     t, markers_ref, x_ref, muscle_excitations_ref = generate_data(
-        bio_model, final_time, n_shooting_points, assume_phase_dynamics
+        bio_model, final_time, n_shooting_points, use_residual_torque, phase_dynamics
     )
 
     # Track these data

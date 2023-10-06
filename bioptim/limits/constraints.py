@@ -5,7 +5,7 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_ey
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
-from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType, PhaseDynamics
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 from ..interfaces.stochastic_bio_model import StochasticBioModel
@@ -324,11 +324,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 n_rows = value.shape[0] // 2
             else:
                 if (
-                    not controller.ocp.assume_phase_dynamics
+                    controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE
                     and not isinstance(constraint.rows, int)
                     and len(constraint.rows) == value.shape[0]
                 ):
-                    # This is a very special case where assume_phase_dynamics=False declare rows by itself, but because
+                    # This is a very special case where phase_dynamics==ONE_PER_NODE declare rows by itself, but because
                     # this constraint is twice the real length (two constraints per value), it declares it too large
                     # on the subsequent pass. In reality, it means the user did not declare 'rows' by themselves.
                     # Therefore, we are acting as such
@@ -635,7 +635,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             cov_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
             cov_implicit_deffect = cov_next - cov_matrix
 
-            penalty.expand = controller.get_nlp.dynamics_type.expand
+            penalty.expand = (
+                controller.get_nlp.dynamics_type.expand_dynamics
+            )  # TODO: Charbie -> should this be always true?
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 

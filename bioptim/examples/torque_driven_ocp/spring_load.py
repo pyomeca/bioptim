@@ -20,6 +20,7 @@ from bioptim import (
     NonLinearProgram,
     Solver,
     DynamicsEvaluation,
+    PhaseDynamics,
 )
 
 
@@ -80,7 +81,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
 
 def prepare_ocp(
     biorbd_model_path: str = "models/mass_point.bioMod",
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
 ):
     # BioModel path
@@ -91,7 +92,12 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", index=0, weight=-1)
 
     # Dynamics
-    dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic, expand=expand_dynamics)
+    dynamics = Dynamics(
+        custom_configure,
+        dynamic_function=custom_dynamic,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -112,7 +118,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

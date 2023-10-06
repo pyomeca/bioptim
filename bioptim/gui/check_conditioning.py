@@ -60,7 +60,7 @@ def check_conditioning(ocp):
             list_constraints = []
 
             for constraints in nlp.g:
-                node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
+                node_index = constraints.node_idx[0]  # TODO deal with phase_dynamics=PHASE_DYNAMICS.ONE_PER_NOE
                 nlp.states.node_index = node_index
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
@@ -160,7 +160,7 @@ def check_conditioning(ocp):
             list_hessian = []
             list_norm = []
             for constraints in nlp.g:
-                node_index = constraints.node_idx[0]  # TODO deal with assume_phase_dynamics=False
+                node_index = constraints.node_idx[0]  # TODO deal with phase_dynamics=PhaseDynamics.ONE_PER_NODE
                 nlp.states.node_index = node_index
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
@@ -319,7 +319,7 @@ def check_conditioning(ocp):
             for obj in nlp.J:
                 objective = 0
 
-                node_index = obj.node_idx[0]  # TODO deal with assume_phase_dynamics=False
+                node_index = obj.node_idx[0]  # TODO deal with phase_dynamics=PhaseDynamics.ONE_PER_NODE
                 nlp.states.node_index = node_index
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index

@@ -3,12 +3,12 @@ import os
 import pytest
 import numpy as np
 
-from bioptim import OdeSolver, Solver
+from bioptim import OdeSolver, Solver, PhaseDynamics
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-def test_node_time(ode_solver, assume_phase_dynamics):
+def test_node_time(ode_solver, phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -19,7 +19,7 @@ def test_node_time(ode_solver, assume_phase_dynamics):
         final_time=2,
         n_shooting=10,
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     solver = Solver.IPOPT(show_online_optim=False)
