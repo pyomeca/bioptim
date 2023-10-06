@@ -345,7 +345,6 @@ class OdeSolver:
             dt = collocation_points(self.polynomial_degree, self.method)
             return [t0 + dt[i] for i in range(0, self.steps)]
 
-
         def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
@@ -376,7 +375,7 @@ class OdeSolver:
             }
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
-            time_integration_grid = self.time_grid(t0) # [t0 + dt[i] for i in range(0, self.steps)]
+            time_integration_grid = self.time_grid(t0)  # [t0 + dt[i] for i in range(0, self.steps)]
             ode_opt = {
                 "t0": t0,
                 "tf": tf,
@@ -437,12 +436,9 @@ class OdeSolver:
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
-
         def time_grid(self, t0):
             dt = [0] + collocation_points(self.polynomial_degree, self.method)
             return [t0 + dt[i] for i in range(0, self.steps)]
-
-
 
     class IRK(COLLOCATION):
         """
@@ -507,7 +503,9 @@ class OdeSolver:
             if not isinstance(ocp.cx(), MX):
                 raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")
             if ocp.parameters.shape != 0:
-                raise RuntimeError("CVODES cannot be used while optimizing parameters") #todo: should accept parameters now
+                raise RuntimeError(
+                    "CVODES cannot be used while optimizing parameters"
+                )  # todo: should accept parameters now
             if nlp.stochastic_variables.cx_start.shape != 0 and nlp.stochastic_variables.cx_start.shape != (0, 0):
                 raise RuntimeError("CVODES cannot be used while optimizing stochastic variables")
             if nlp.external_forces:
@@ -519,7 +517,7 @@ class OdeSolver:
 
             ode = {
                 "x": nlp.states.scaled.cx_start,
-                "u": nlp.controls.scaled.cx_start, #todo: add p=parameters
+                "u": nlp.controls.scaled.cx_start,  # todo: add p=parameters
                 "ode": nlp.dynamics_func[dynamics_index](
                     nlp.time_cx,
                     nlp.states.scaled.cx_start,

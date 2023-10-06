@@ -224,8 +224,7 @@ def prepare_socp(
     if is_sotchastic:
         dynamics.add(
             configure_stochastic_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp,
-                                    with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
@@ -271,8 +270,7 @@ def prepare_socp(
     else:
         dynamics.add(
             configure_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp,
-                                    with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
@@ -327,11 +325,9 @@ def main():
         j = i * (d + 1)
         k = i * (d + 2)
         q_init[:, k] = zq_init[:, j]
-        q_init[:, k+1:k+1+(d+1)] = zq_init[:, j:j+(d+1)]
+        q_init[:, k + 1 : k + 1 + (d + 1)] = zq_init[:, j : j + (d + 1)]
 
     # q_init = zq_init
-
-
 
     socp = prepare_socp(
         final_time=final_time,
@@ -366,7 +362,7 @@ def main():
 
         ax[0, 0].contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
 
-    ax[0 ,0].plot(q_init[0], q_init[1], "-k", label="Initial guess")
+    ax[0, 0].plot(q_init[0], q_init[1], "-k", label="Initial guess")
     ax[0, 0].plot(q[0][0], q[1][0], "og")
     ax[0, 0].plot(q[0], q[1], "-g", label="q")
 
@@ -375,8 +371,8 @@ def main():
     for i in range(n_shooting):
         ax[0, 1].plot((u[0][i], q[0][i * (d + 1)]), (u[1][i], q[1][i * (d + 1)]), ":k")
 
-    ax[1, 0].plot(tgrid, q[0, ::d+2], "--", label="px")
-    ax[1, 0].plot(tgrid, q[1, ::d+2], "-", label="py")
+    ax[1, 0].plot(tgrid, q[0, :: d + 2], "--", label="px")
+    ax[1, 0].plot(tgrid, q[1, :: d + 2], "-", label="py")
     ax[1, 0].step(tgrid, u.T, "-.", label="u")
     ax[1, 0].set_xlabel("t")
 
@@ -393,7 +389,7 @@ def main():
                 print(f"Something went wrong at the {i}th node. (Eigen values)")
 
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
-            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (d + 1)], ax[0,0], color="b")
+            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (d + 1)], ax[0, 0], color="b")
 
     plt.show()
 

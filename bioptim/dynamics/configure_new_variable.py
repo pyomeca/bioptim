@@ -383,11 +383,7 @@ class NewVariableConfiguration:
     def _declare_cx_and_plot(self):
         if self.as_states:
             for node_index in range((0 if self.ocp.assume_phase_dynamics else self.nlp.ns) + 1):
-                n_cx = (
-                    self.nlp.ode_solver.n_cx
-                    if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION)
-                    else 3
-                )
+                n_cx = self.nlp.ode_solver.n_cx if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION) else 3
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[node_index][self.name].original_cx
                     if self.copy_states

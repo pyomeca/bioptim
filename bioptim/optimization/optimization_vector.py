@@ -62,7 +62,7 @@ class OptimizationVectorHelper:
                             nlp.cx.sym(
                                 "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
                                 nlp.states.scaled.shape,
-                                nlp.ode_solver.n_cx-1 #polynomial_degree + 1,
+                                nlp.ode_solver.n_cx - 1,  # polynomial_degree + 1,
                             )
                         )
                     else:
@@ -155,7 +155,7 @@ class OptimizationVectorHelper:
 
             repeat = 1
             if current_nlp.ode_solver.is_direct_collocation:
-                repeat += current_nlp.ode_solver.n_cx-2 #polynomial_degree #todo: replace by n_cx-1?
+                repeat += current_nlp.ode_solver.n_cx - 2  # polynomial_degree #todo: replace by n_cx-1?
 
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
@@ -289,7 +289,7 @@ class OptimizationVectorHelper:
 
             repeat = 1
             if current_nlp.ode_solver.is_direct_collocation:
-                repeat += current_nlp.ode_solver.n_cx-2 #polynomial_degree
+                repeat += current_nlp.ode_solver.n_cx - 2  # polynomial_degree
 
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
@@ -444,7 +444,7 @@ class OptimizationVectorHelper:
             nlp.controls.node_index = 0
 
             # n_points = nlp.ns * (1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.polynomial_degree + 1)) + 1
-            n_points = nlp.ns * (1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.n_cx-1)) + 1
+            n_points = nlp.ns * (1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.n_cx - 1)) + 1
             data_states.append({key: np.ndarray((nlp.states[key].shape, n_points)) for key in nlp.states})
             data_controls.append(
                 {
@@ -480,7 +480,7 @@ class OptimizationVectorHelper:
 
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
                 # repeat = (nlp.ode_solver.polynomial_degree + 1) if nlp.ode_solver.is_direct_collocation else 1
-                repeat = (nlp.ode_solver.n_cx-1) if nlp.ode_solver.is_direct_collocation else 1
+                repeat = (nlp.ode_solver.n_cx - 1) if nlp.ode_solver.is_direct_collocation else 1
                 for k in range((nlp.ns * repeat) + 1):
                     nlp.states.node_index = k // repeat
                     x_array = v_array[offset : offset + nx].reshape((nlp.states.scaled.shape, -1), order="F")
@@ -549,7 +549,7 @@ class OptimizationVectorHelper:
 
         if nlp.ode_solver.is_direct_collocation:
             if interpolation_type != InterpolationType.EACH_FRAME:
-                n_points *= nlp.ode_solver.n_cx-1 #   nlp.ode_solver.steps + 1
+                n_points *= nlp.ode_solver.n_cx - 1  #   nlp.ode_solver.steps + 1
         return n_points
 
     @staticmethod

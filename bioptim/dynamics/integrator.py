@@ -793,7 +793,7 @@ class COLLOCATION(Integrator):
                         self.get_u(controls, time),
                         params * param_scaling,
                         stochastic_variables,
-                        xp_j/h,
+                        xp_j / h,
                     )
                 )
             else:
@@ -891,7 +891,7 @@ class COLLOCATION2(COLLOCATION):
             The constraints insuring that the polynomial has the right derivative at each collocation point
         """
         # Total number of variables for one finite element
-        state0 = self._d[0] * states[1] #state = [x z]
+        state0 = self._d[0] * states[1]  # state = [x z]
         defects = [state0 + states[0]]
         states_end = state0
 
@@ -899,7 +899,7 @@ class COLLOCATION2(COLLOCATION):
             # Expression for the state derivative at the collocation point
             xp_j = self._c[0, j] * states[0]
             for r in range(1, self.degree + 1):
-                xp_j += self._c[r, j] * states[r+1]
+                xp_j += self._c[r, j] * states[r + 1]
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
@@ -918,7 +918,7 @@ class COLLOCATION2(COLLOCATION):
                         self.get_u(controls, time),
                         params * param_scaling,
                         stochastic_variables,
-                        xp_j/h,  # todo: modify to have xp_j - h*fj
+                        xp_j / h,  # todo: modify to have xp_j - h*fj
                     )
                 )
             else:
