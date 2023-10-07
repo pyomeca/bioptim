@@ -374,7 +374,7 @@ class OdeSolver:
             }
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
-            time_integration_grid = self.time_grid(t0)  # [t0 + dt[i] for i in range(0, self.steps)]
+            time_integration_grid = self.time_grid(t0)
             ode_opt = {
                 "t0": t0,
                 "tf": tf,
@@ -432,7 +432,7 @@ class OdeSolver:
             self.method = method
             self.defects_type = defects_type
             self.is_direct_collocation = True
-            self.steps = self.polynomial_degree
+            self.steps = self.polynomial_degree + 1
 
         def time_grid(self, t0):
             dt = [0] + collocation_points(self.polynomial_degree, self.method)

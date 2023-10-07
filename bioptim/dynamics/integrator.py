@@ -905,7 +905,7 @@ class COLLOCATION2(COLLOCATION):
                     params * param_scaling,
                     stochastic_variables,
                 )[:, self.idx]
-                defects.append(h * f_j - xp_j)
+                defects.append(xp_j - h * f_j)
             elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(
                     self.implicit_fun(
@@ -921,7 +921,7 @@ class COLLOCATION2(COLLOCATION):
                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 
             # Add contribution to the end state
-            states_end += self._d[j] * states[j]
+            states_end += self._d[j] * states[j+1]
 
         # Concatenate constraints
         defects = vertcat(*defects)
