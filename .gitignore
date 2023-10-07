@@ -119,3 +119,5 @@ bioptim/sandbox/
 *.DS_store
 
 bioptim/examples/stochastic_optimal_control/output.png
+
+*.png
