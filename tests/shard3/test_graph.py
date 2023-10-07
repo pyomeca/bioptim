@@ -26,6 +26,7 @@ from bioptim import (
     ParameterList,
     ParameterObjectiveList,
     MultinodeObjectiveList,
+    PhaseDynamics,
 )
 
 from bioptim.gui.graph import OcpToGraph
@@ -56,7 +57,7 @@ def prepare_ocp_phase_transitions(
     with_constraints: bool,
     with_mayer: bool,
     with_lagrange: bool,
-    assume_phase_dynamics: bool,
+    phase_dynamics: PhaseDynamics,
 ) -> OptimalControlProgram:
     # BioModel path
     bio_model = (
@@ -97,10 +98,10 @@ def prepare_ocp_phase_transitions(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=True)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Constraints
     constraints = ConstraintList()
@@ -188,7 +189,6 @@ def prepare_ocp_phase_transitions(
         constraints=constraints,
         phase_transitions=phase_transitions,
         multinode_objectives=multinode_objectives,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
@@ -219,7 +219,7 @@ def prepare_ocp_parameters(
     target_m,
     ode_solver=OdeSolver.RK4(),
     use_sx=False,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -252,10 +252,11 @@ def prepare_ocp_parameters(
         The type of ode solver used
     use_sx: bool
         If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
 
     Returns
     -------
@@ -272,7 +273,7 @@ def prepare_ocp_parameters(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=10)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -356,12 +357,11 @@ def prepare_ocp_parameters(
         parameter_init=parameter_init,
         ode_solver=ode_solver,
         use_sx=use_sx,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
 def prepare_ocp_custom_objectives(
-    biorbd_model_path, ode_solver=OdeSolver.RK4(), assume_phase_dynamics: bool = True
+    biorbd_model_path, ode_solver=OdeSolver.RK4(), phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -372,10 +372,11 @@ def prepare_ocp_custom_objectives(
         The path of the biorbd model
     ode_solver: OdeSolverBase
         The type of ode solver used
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
 
     Returns
     -------
@@ -421,7 +422,7 @@ def prepare_ocp_custom_objectives(
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, list_index=7, index=[1, 2], target=target)
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -446,15 +447,14 @@ def prepare_ocp_custom_objectives(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("with_mayer", [True, False])
 @pytest.mark.parametrize("with_lagrange", [True, False])
 @pytest.mark.parametrize("with_constraints", [True, False])
-def test_phase_transitions(with_mayer, with_lagrange, with_constraints, assume_phase_dynamics):
+def test_phase_transitions(with_mayer, with_lagrange, with_constraints, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
     ocp = prepare_ocp_phase_transitions(
@@ -462,7 +462,7 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints, assume_p
         with_mayer=with_mayer,
         with_lagrange=with_lagrange,
         with_constraints=with_constraints,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
     if with_lagrange and with_mayer is not False:
         ocp.nlp[0].J[0].quadratic = False
@@ -471,8 +471,8 @@ def test_phase_transitions(with_mayer, with_lagrange, with_constraints, assume_p
     OcpToGraph(ocp)._prepare_print()
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_parameters(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_parameters(phase_dynamics):
     optim_gravity = True
     optim_mass = True
     bioptim_folder = TestUtils.bioptim_folder()
@@ -489,18 +489,18 @@ def test_parameters(assume_phase_dynamics):
         max_m=30,
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
     )
     ocp.print(to_console=True, to_graph=False)  # False so it does not attack the programmer with lot of graphs!
     OcpToGraph(ocp)._prepare_print()
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("quadratic", [True, False])
-def test_objectives_target(quadratic, assume_phase_dynamics):
+def test_objectives_target(quadratic, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/cube.bioMod"
-    ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path, assume_phase_dynamics=assume_phase_dynamics)
+    ocp = prepare_ocp_custom_objectives(biorbd_model_path=model_path, phase_dynamics=phase_dynamics)
     ocp.nlp[0].J[1].quadratic = quadratic
     ocp.nlp[0].J[1].target = np.repeat([[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]], ocp.nlp[0].ns, axis=0).T
     ocp.print(to_graph=False)  # False so it does not attack the programmer with lot of graphs!

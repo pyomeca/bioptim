@@ -29,7 +29,7 @@ from bioptim import (
     InitialGuessList,
     Axis,
     DynamicsFcn,
-    OdeSolver,
+    PhaseDynamics,
     ControlType,
     VariableScalingList,
 )
@@ -182,7 +182,8 @@ def prepare_socp(
         DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
         problem_type=problem_type,
         with_cholesky=with_cholesky,
-        expand=False,
+        expand_dynamics=False,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
     )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf
@@ -333,7 +334,6 @@ def prepare_socp(
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
-        assume_phase_dynamics=False,
         problem_type=problem_type,
     )
 

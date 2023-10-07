@@ -11,7 +11,6 @@ where the vector is a 6x1 array (Mx, My, Mz, Fx, Fy, Fz)
 """
 import platform
 
-import numpy as np
 from bioptim import (
     BiorbdModel,
     Node,
@@ -26,6 +25,7 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     Solver,
+    PhaseDynamics,
 )
 
 
@@ -65,7 +65,10 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
+    dynamics.add(
+        # This must be PhaseDynamics.ONE_PER_NODE since external forces change at each node within the phase
+        DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=PhaseDynamics.ONE_PER_NODE
+    )
 
     # Constraints
     constraints = ConstraintList()
@@ -105,7 +108,6 @@ def prepare_ocp(
         constraints=constraints,
         external_forces=external_forces,
         ode_solver=ode_solver,
-        assume_phase_dynamics=False,  # This must be false since external forces change at each node within the phase
     )
 
 

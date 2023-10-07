@@ -11,13 +11,13 @@ from ..limits.constraints import (
     Constraint,
     ParameterConstraintList,
 )
-from ..limits.phase_transition import PhaseTransitionList, PhaseTransition, PhaseTransitionFcn
+from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraintFcn
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList
 from ..limits.path_conditions import BoundsList
 from ..limits.path_conditions import InitialGuessList
-from ..misc.enums import Node, ControlType
+from ..misc.enums import Node, ControlType, PhaseDynamics
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
@@ -63,11 +63,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
         s_scaling: VariableScalingList = None,
-        state_continuity_weight: float = None,
         n_threads: int = 1,
         use_sx: bool = False,
-        skip_continuity: bool = False,
-        assume_phase_dynamics: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
         problem_type=SocpType.TRAPEZOIDAL_IMPLICIT,
         **kwargs,
@@ -93,13 +90,12 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             )
 
         if not isinstance(problem_type, SocpType.COLLOCATION):
-            if "assume_phase_dynamics" in kwargs:
-                if kwargs["assume_phase_dynamics"]:
+            if "phase_dynamics" in kwargs:
+                if kwargs["phase_dynamics"] == PhaseDynamics.SHARED_DURING_THE_PHASE:
                     raise ValueError(
-                        "The dynamics cannot be assumed to be the same between nodes with a trapezoidal stochastic ocp."
-                        "assume_phase_dynamics is set to False by default."
+                        "The dynamics cannot be SHARED_DURING_THE_PHASE with a trapezoidal stochastic ocp."
+                        "phase_dynamics is set to PhaseDynamics.ONE_PER_NODE by default."
                     )
-        self.assume_phase_dynamics = assume_phase_dynamics
 
         self._check_bioptim_version()
 
@@ -145,10 +141,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_init,
             parameter_constraints,
             parameter_objectives,
-            state_continuity_weight,
             n_threads,
             use_sx,
-            assume_phase_dynamics,
             integrated_value_functions,
         )
 
@@ -195,7 +189,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_objectives,
             ode_solver,
             use_sx,
-            assume_phase_dynamics,
             bio_model,
             external_forces,
             plot_mappings,
@@ -215,8 +208,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints)
 
         self._finalize_penalties(
-            skip_continuity,
-            state_continuity_weight,
             constraints,
             parameter_constraints,
             objective_functions,

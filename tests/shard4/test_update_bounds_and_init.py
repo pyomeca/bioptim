@@ -12,20 +12,21 @@ from bioptim import (
     InitialGuessList,
     OdeSolver,
     MagnitudeType,
+    PhaseDynamics,
 )
 
 from tests.utils import TestUtils
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_double_update_bounds_and_init(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_double_update_bounds_and_init(phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
     nq = bio_model.nb_q
     ns = 10
 
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
     x_init["qdot"] = [0] * bio_model.nb_qdot
@@ -38,7 +39,6 @@ def test_double_update_bounds_and_init(assume_phase_dynamics):
         1.0,
         x_init=x_init,
         u_init=u_init,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     x_bounds = BoundsList()
@@ -94,8 +94,8 @@ def test_double_update_bounds_and_init(assume_phase_dynamics):
         ocp.update_bounds(None, u_init)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_update_bounds_and_init_with_param(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_update_bounds_and_init_with_param(phase_dynamics):
     def my_parameter_function(bio_model, value, extra_value):
         new_gravity = MX.zeros(3, 1)
         new_gravity[2] = value + extra_value
@@ -107,7 +107,7 @@ def test_update_bounds_and_init_with_param(assume_phase_dynamics):
     g_min, g_max, g_init = -10, -6, -8
 
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
 
     parameters = ParameterList()
     parameter_bounds = BoundsList()
@@ -130,7 +130,6 @@ def test_update_bounds_and_init_with_param(assume_phase_dynamics):
         parameters=parameters,
         parameter_init=parameter_init,
         parameter_bounds=parameter_bounds,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     # Before modifying
@@ -180,9 +179,9 @@ def test_update_bounds_and_init_with_param(assume_phase_dynamics):
     np.testing.assert_almost_equal(ocp.init_vector, expected)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
-def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
+def test_update_noised_init_rk4(interpolation, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
@@ -192,7 +191,7 @@ def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
     phase_time = 1.0
 
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
 
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
@@ -207,7 +206,6 @@ def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
         ode_solver=OdeSolver.RK4(),
         x_init=x_init,
         u_init=u_init,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     # Path constraint and control path constraints
@@ -532,9 +530,9 @@ def test_update_noised_init_rk4(interpolation, assume_phase_dynamics):
             ocp.update_bounds(x_init, u_init)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
-def test_update_noised_initial_guess_rk4(interpolation, assume_phase_dynamics):
+def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
@@ -549,7 +547,7 @@ def test_update_noised_initial_guess_rk4(interpolation, assume_phase_dynamics):
     u_init = InitialGuessList()
     u_init["tau"] = [0] * bio_model.nb_tau
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
     ocp = OptimalControlProgram(
         bio_model,
         dynamics,
@@ -557,7 +555,6 @@ def test_update_noised_initial_guess_rk4(interpolation, assume_phase_dynamics):
         phase_time=phase_time,
         x_init=x_init,
         u_init=u_init,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     # Path constraint and control path constraints
@@ -878,9 +875,9 @@ def test_update_noised_initial_guess_rk4(interpolation, assume_phase_dynamics):
             ocp.update_bounds(x, u)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
-def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dynamics):
+def test_update_noised_initial_guess_collocation(interpolation, phase_dynamics):
     bioptim_folder = TestUtils.bioptim_folder()
     bio_model = BiorbdModel(bioptim_folder + "/examples/getting_started/models/cube.bioMod")
     nq = bio_model.nb_q
@@ -891,7 +888,7 @@ def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dyn
     solver = OdeSolver.COLLOCATION(polynomial_degree=1)
 
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
 
     x_init = InitialGuessList()
     x_init["q"] = [0] * bio_model.nb_q
@@ -906,7 +903,6 @@ def test_update_noised_initial_guess_collocation(interpolation, assume_phase_dyn
         ode_solver=solver,
         x_init=x_init,
         u_init=u_init,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
     # Path constraint and control path constraints

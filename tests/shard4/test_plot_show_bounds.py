@@ -1,4 +1,6 @@
 import os
+
+from bioptim import PhaseDynamics
 from bioptim.limits.path_conditions import Bounds
 
 
@@ -15,7 +17,7 @@ def test_pendulum_show_bounds():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=30,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=True,
     )
     # Test the keys in the dict ocp.nlp[0].plot

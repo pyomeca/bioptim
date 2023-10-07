@@ -5,14 +5,14 @@ import pytest
 import os
 
 import numpy as np
-from bioptim import OdeSolver
+from bioptim import OdeSolver, PhaseDynamics
 
 from tests.utils import TestUtils
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_segment_on_rt(ode_solver, assume_phase_dynamics):
+def test_track_segment_on_rt(ode_solver, phase_dynamics):
     from bioptim.examples.track import track_segment_on_rt as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -22,7 +22,7 @@ def test_track_segment_on_rt(ode_solver, assume_phase_dynamics):
         final_time=0.5,
         n_shooting=8,
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -57,9 +57,9 @@ def test_track_segment_on_rt(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_track_marker_on_segment(ode_solver, assume_phase_dynamics):
+def test_track_marker_on_segment(ode_solver, phase_dynamics):
     from bioptim.examples.track import track_marker_on_segment as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -70,7 +70,7 @@ def test_track_marker_on_segment(ode_solver, assume_phase_dynamics):
         n_shooting=8,
         initialize_near_solution=True,
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -105,8 +105,8 @@ def test_track_marker_on_segment(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_track_vector_orientation(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_track_vector_orientation(phase_dynamics):
     from bioptim.examples.track import track_vector_orientation as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -115,7 +115,7 @@ def test_track_vector_orientation(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
         final_time=1,
         n_shooting=10,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
     sol = ocp.solve()

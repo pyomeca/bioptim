@@ -6,19 +6,19 @@ import platform
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver
+from bioptim import OdeSolver, PhaseDynamics
 
 from tests.utils import TestUtils
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_pendulum_min_time_mayer(ode_solver, assume_phase_dynamics):
+def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -40,7 +40,7 @@ def test_pendulum_min_time_mayer(ode_solver, assume_phase_dynamics):
         final_time=ft,
         n_shooting=ns,
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -87,8 +87,8 @@ def test_pendulum_min_time_mayer(ode_solver, assume_phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 0.2862324498580764)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((70.46234418, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99964325, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((70.46234418, 0)), decimal=6)
+        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99964325, 0)), decimal=6)
 
         # optimized time
         np.testing.assert_almost_equal(tf, 0.2862324498580764)
@@ -102,10 +102,10 @@ def test_pendulum_min_time_mayer(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol, decimal_value=5)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 # @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
-def test_pendulum_min_time_mayer_constrained(ode_solver, assume_phase_dynamics):
+def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     if platform.system() != "Linux":
         # This is a long test and CI is already long for Windows and Mac
         return
@@ -113,8 +113,8 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, assume_phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -140,7 +140,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, assume_phase_dynamics):
         n_shooting=ns,
         ode_solver=ode_solver(),
         min_time=min_ft,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()

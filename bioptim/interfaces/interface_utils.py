@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
-from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule
+from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule, PhaseDynamics
 from ..optimization.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
 
@@ -210,7 +210,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         def get_control_modificator(index):
             return (
                 1
-                if ocp.assume_phase_dynamics
+                if ocp.nlp[_penalty.nodes_phase[index]].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                 and (
                     _penalty.nodes[index] == Node.END
                     or _penalty.nodes[index] == ocp.nlp[_penalty.nodes_phase[index]].ns
@@ -256,13 +256,18 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 else:
                     _x_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].X[_penalty.all_nodes_index[1]][:, 0]
 
-                if ocp.assume_phase_dynamics or _penalty.all_nodes_index[0] < len(interface.ocp.nlp[0].U):
+                if interface.ocp.nlp[
+                    _penalty.nodes_phase[0]
+                ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _penalty.all_nodes_index[0] < len(
+                    interface.ocp.nlp[0].U
+                ):
                     if (
                         interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
                         > interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
                     ) and (
                         _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled)
-                        or ocp.assume_phase_dynamics
+                        or interface.ocp.nlp[_penalty.nodes_phase[1]].phase_dynamics
+                        == PhaseDynamics.SHARED_DURING_THE_PHASE
                     ):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
@@ -277,7 +282,9 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                         _u_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].U[_penalty.all_nodes_index[0] - u0_mode]
                 else:
                     _u_0 = []
-                if ocp.assume_phase_dynamics or _penalty.all_nodes_index[1] < len(
+                if interface.ocp.nlp[
+                    _penalty.nodes_phase[1]
+                ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _penalty.all_nodes_index[1] < len(
                     interface.ocp.nlp[_penalty.nodes_phase[1]].U
                 ):
                     if (
@@ -285,7 +292,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                         > interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
                     ) and (
                         _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled)
-                        or ocp.assume_phase_dynamics
+                        or interface.ocp.nlp[_penalty.nodes_phase[0]].phase_dynamics
+                        == PhaseDynamics.SHARED_DURING_THE_PHASE
                     ):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
@@ -364,7 +372,9 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 else:
                     _x_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[_penalty.all_nodes_index[1]][:, 0]
 
-                if ocp.assume_phase_dynamics or _penalty.all_nodes_index[0] < len(
+                if interface.ocp.nlp[
+                    _penalty.nodes_phase[0]
+                ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _penalty.all_nodes_index[0] < len(
                     interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled
                 ):
                     if (
@@ -372,7 +382,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                         > interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
                     ) and (
                         _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled)
-                        or ocp.assume_phase_dynamics
+                        or interface.ocp.nlp[_penalty.nodes_phase[1]].phase_dynamics
+                        == PhaseDynamics.SHARED_DURING_THE_PHASE
                     ):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
@@ -389,7 +400,9 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                         ]
                 else:
                     _u_0 = []
-                if ocp.assume_phase_dynamics or _penalty.all_nodes_index[1] < len(
+                if interface.ocp.nlp[
+                    _penalty.nodes_phase[1]
+                ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _penalty.all_nodes_index[1] < len(
                     interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled
                 ):
                     if (
@@ -397,7 +410,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                         > interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
                     ) and (
                         _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled)
-                        or ocp.assume_phase_dynamics
+                        or interface.ocp.nlp[_penalty.nodes_phase[0]].phase_dynamics
+                        == PhaseDynamics.SHARED_DURING_THE_PHASE
                     ):
                         fake = interface.ocp.cx(
                             interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
@@ -469,7 +483,11 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     else:
                         for i in range(nlp_i.X[index_i].shape[1]):
                             _x_tp = vertcat(_x_tp, nlp_i.X[index_i][:, i])
-                    _u_tp = nlp_i.U[index_i - ui_mode] if ocp.assume_phase_dynamics or index_i < len(nlp_i.U) else []
+                    _u_tp = (
+                        nlp_i.U[index_i - ui_mode]
+                        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or index_i < len(nlp_i.U)
+                        else []
+                    )
                     _s_tp = nlp_i.S[index_i]
                 else:
                     _x_tp = nlp_i.cx()
@@ -480,7 +498,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                             _x_tp = vertcat(_x_tp, nlp_i.X_scaled[index_i][:, i])
                     _u_tp = (
                         nlp_i.U_scaled[index_i - ui_mode]
-                        if ocp.assume_phase_dynamics or index_i < len(nlp_i.U_scaled)
+                        if nlp_i.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                        or index_i < len(nlp_i.U_scaled)
                         else []
                     )
                     _s_tp = nlp_i.S_scaled[index_i]
@@ -494,13 +513,21 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 _x = nlp.cx()
                 for i in range(nlp.X[_idx].shape[1]):
                     _x = vertcat(_x, nlp.X[_idx][:, i])
-                _u = nlp.U[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U) else []
+                _u = (
+                    nlp.U[_idx][:, 0]
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx < len(nlp.U)
+                    else []
+                )
                 _s = nlp.S[_idx]
             else:
                 _x = nlp.cx()
                 for i in range(nlp.X_scaled[_idx].shape[1]):
                     _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
-                _u = nlp.U_scaled[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U_scaled) else []
+                _u = (
+                    nlp.U_scaled[_idx][:, 0]
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx < len(nlp.U_scaled)
+                    else []
+                )
                 _s = nlp.S_scaled[_idx]
         else:
             if is_unscaled:
@@ -518,14 +545,18 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 if (
                     _idx == nlp.ns
                     and nlp.ode_solver.is_direct_collocation
-                    and nlp.assume_phase_dynamics
+                    and nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     and _penalty.node[0] != Node.END
                     and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 ):
                     for i in range(1, nlp.X[_idx - 1].shape[1]):
                         _x = vertcat(_x, nlp.X[_idx - 1][:, i])
 
-                _u = nlp.U[_idx][:, 0] if nlp.assume_phase_dynamics or _idx < len(nlp.U) else []
+                _u = (
+                    nlp.U[_idx][:, 0]
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx < len(nlp.U)
+                    else []
+                )
                 _s = nlp.S[_idx][:, 0]
             else:
                 _x = nlp.cx()
@@ -542,7 +573,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 if (
                     _idx == nlp.ns
                     and nlp.ode_solver.is_direct_collocation
-                    and nlp.assume_phase_dynamics
+                    and nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     and _penalty.node[0] != Node.END
                     and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                 ):
@@ -551,7 +582,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
                 if sum(_penalty.weighted_function[_idx].size_in(1)) == 0:
                     _u = []
-                elif nlp.assume_phase_dynamics and _idx == len(nlp.U_scaled):
+                elif nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx == len(nlp.U_scaled):
                     _u = nlp.U_scaled[_idx - 1][:, 0]
                 elif _idx < len(nlp.U_scaled):
                     _u = nlp.U_scaled[_idx][:, 0]
@@ -563,7 +594,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             if _idx < nlp.ns:
                 if is_unscaled:
                     x = nlp.X[_idx + 1][:, 0]
-                    if nlp.assume_phase_dynamics and _idx + 1 == len(nlp.U):
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx + 1 == len(nlp.U):
                         u = nlp.U[_idx][:, 0]
                     elif _idx + 1 < len(nlp.U):
                         u = nlp.U[_idx + 1][:, 0]
@@ -572,7 +603,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     s = nlp.S[_idx + 1][:, 0]
                 else:
                     x = nlp.X_scaled[_idx + 1][:, 0]
-                    if nlp.assume_phase_dynamics and _idx + 1 == len(nlp.U_scaled):
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx + 1 == len(nlp.U_scaled):
                         u = nlp.U_scaled[_idx][:, 0]
                     elif _idx + 1 < len(nlp.U_scaled):
                         u = nlp.U_scaled[_idx + 1][:, 0]
@@ -620,11 +651,15 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             _s = vertcat(_s, s)
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
-                    u = nlp.U[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U) else []
+                    u = (
+                        nlp.U[_idx + 1][:, 0]
+                        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U)
+                        else []
+                    )
                 else:
                     u = (
                         nlp.U_scaled[_idx + 1][:, 0]
-                        if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U_scaled)
+                        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U_scaled)
                         else []
                     )
                 _u = vertcat(_u, u)
@@ -632,11 +667,15 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         elif _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 if is_unscaled:
-                    u = nlp.U[_idx + 1][:, 0] if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U) else []
+                    u = (
+                        nlp.U[_idx + 1][:, 0]
+                        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U)
+                        else []
+                    )
                 else:
                     u = (
                         nlp.U_scaled[_idx + 1][:, 0]
-                        if nlp.assume_phase_dynamics or _idx + 1 < len(nlp.U_scaled)
+                        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U_scaled)
                         else []
                     )
                 _u = vertcat(_u, u)

@@ -29,6 +29,7 @@ from bioptim import (
     OptimalControlProgram,
     NonLinearProgram,
     Solver,
+    PhaseDynamics,
 )
 
 
@@ -100,7 +101,7 @@ def prepare_ocp(
     n_shooting: int,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = True,
-    assume_phase_dynamics: bool = False,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
     control_type: ControlType = ControlType.CONSTANT,
 ) -> OptimalControlProgram:
     """
@@ -118,10 +119,11 @@ def prepare_ocp(
         Which type of OdeSolver to use
     use_sx: bool
         If the SX variable should be used instead of MX (can be extensive on RAM)
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     control_type: ControlType
         The type of the controls
 
@@ -138,7 +140,9 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     expand = not isinstance(ode_solver, OdeSolver.IRK)
-    dynamics.add(custom_configure, dynamic_function=time_dependent_dynamic, expand=expand)
+    dynamics.add(
+        custom_configure, dynamic_function=time_dependent_dynamic, expand_dynamics=expand, phase_dynamics=phase_dynamics
+    )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -175,7 +179,6 @@ def prepare_ocp(
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         use_sx=use_sx,
-        assume_phase_dynamics=assume_phase_dynamics,
         control_type=control_type,
     )
 
