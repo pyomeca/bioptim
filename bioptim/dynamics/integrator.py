@@ -201,7 +201,6 @@ class Integrator:
             ),
             ["x0", "u", "p", "s"],
             ["xf", "xall"],
-            {"allow_free": self.allow_free_variables},
         )
 
 
@@ -236,7 +235,6 @@ class RK(Integrator):
             The ode options
         """
         super(RK, self).__init__(ode, ode_opt)
-        self.allow_free_variables = ode_opt["allow_free_variables"]
         self.n_step = ode_opt["number_of_finite_elements"]
         self.h_norm = 1 / self.n_step
         self.h = self.step_time * self.h_norm
@@ -663,7 +661,6 @@ class COLLOCATION(Integrator):
 
         self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
-        self.allow_free_variables = ode_opt["allow_free_variables"]
 
         # Coefficients of the collocation equation
         self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
@@ -830,7 +827,6 @@ class COLLOCATION(Integrator):
             ),
             ["x0", "u", "p", "s"],
             ["xf", "xall", "defects"],
-            {"allow_free": self.allow_free_variables},
         )
 
 

@@ -28,6 +28,7 @@ from bioptim import (
     ConfigureProblem,
     OdeSolver,
     StochasticBioModel,
+    PhaseDynamics,
 )
 from bioptim.examples.stochastic_optimal_control.rockit_model import RockitModel
 from bioptim.examples.stochastic_optimal_control.common import (
@@ -109,6 +110,8 @@ def prepare_socp(
     is_stochastic: bool = False,
     is_robustified: bool = False,
     socp_type: SocpType = SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
+    expand_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
     problem_type = socp_type
 
@@ -158,7 +161,8 @@ def prepare_socp(
                 nlp,
                 with_noise=with_noise,
             ),
-            expand=True,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=expand_dynamics,
         )
 
         s_init = InitialGuessList()
@@ -186,8 +190,7 @@ def prepare_socp(
             u_bounds=u_bounds,
             objective_functions=objective_functions,
             constraints=constraints,
-            n_threads=1,
-            assume_phase_dynamics=True,
+            n_threads=6,
             problem_type=problem_type,
         )
 
@@ -202,8 +205,10 @@ def prepare_socp(
                 nlp,
                 with_noise=with_noise,
             ),
-            expand=True,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=expand_dynamics,
         )
+
         ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
 
         return OptimalControlProgram(
@@ -217,7 +222,6 @@ def prepare_socp(
             constraints=constraints,
             ode_solver=ode_solver,
             n_threads=6,
-            assume_phase_dynamics=True,
         )
 
 
@@ -226,7 +230,7 @@ def main():
     Prepare, solve and plot the solution
     """
     isStochastic = True
-    isRobust = True
+    isRobust = False
     if not isStochastic:
         isRobust = False
 

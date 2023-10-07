@@ -30,6 +30,7 @@ from bioptim import (
     ConstraintFcn,
     StochasticBioModel,
     OdeSolver,
+    PhaseDynamics,
 )
 
 from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPointModel
@@ -163,6 +164,8 @@ def prepare_socp(
     is_sotchastic: bool = False,
     is_robustified: bool = False,
     socp_type: SocpType = SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
+    expand_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
     problem_type = socp_type
     bio_model = MassPointModel(
@@ -232,7 +235,8 @@ def prepare_socp(
                 nlp,
                 with_noise=with_noise,
             ),
-            expand=True,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=expand_dynamics,
         )
 
         phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
@@ -261,8 +265,7 @@ def prepare_socp(
             objective_functions=objective_functions,
             constraints=constraints,
             control_type=ControlType.CONSTANT,
-            n_threads=4,
-            assume_phase_dynamics=True,
+            n_threads=6,
             problem_type=problem_type,
             phase_transitions=phase_transitions,
         )
@@ -278,7 +281,8 @@ def prepare_socp(
                 nlp,
                 with_noise=with_noise,
             ),
-            expand=True,
+            phase_dynamics=phase_dynamics,
+            expand_dynamics=expand_dynamics,
         )
         ode_solver = OdeSolver.COLLOCATION2(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
 
@@ -292,8 +296,7 @@ def prepare_socp(
             objective_functions=objective_functions,
             constraints=constraints,
             control_type=ControlType.CONSTANT,
-            n_threads=4,
-            assume_phase_dynamics=True,
+            n_threads=6,
             phase_transitions=phase_transitions,
             ode_solver=ode_solver,
         )
