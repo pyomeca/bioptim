@@ -921,7 +921,7 @@ class COLLOCATION2(COLLOCATION):
                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 
             # Add contribution to the end state
-            states_end += self._d[j] * states[j+1]
+            states_end += self._d[j] * states[j + 1]
 
         # Concatenate constraints
         defects = vertcat(*defects)
