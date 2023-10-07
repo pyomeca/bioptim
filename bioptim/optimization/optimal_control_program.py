@@ -949,13 +949,13 @@ class OptimalControlProgram:
                 # Continuity as constraints
                 if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                     penalty = Constraint(
-                        ConstraintFcn.CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
+                        ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
                     )
                     penalty.add_or_replace_to_penalty_pool(self, nlp)
                 else:
                     for shooting_node in range(nlp.ns):
                         penalty = Constraint(
-                            ConstraintFcn.CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL
+                            ConstraintFcn.STATE_CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL
                         )
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
             else:
@@ -1378,7 +1378,7 @@ class OptimalControlProgram:
                 if not np.all(
                     x == 0
                 ):  # This is a hack to initialize the plots because it x is (N,2) and we need (N, M) in collocation
-                    state_value = x[:, :] if penalty.name == "CONTINUITY" else x[:, [0, -1]]
+                    state_value = x[:, :] if penalty.name == "STATE_CONTINUITY" else x[:, [0, -1]]
                     state_value = state_value.reshape((-1, 1))
                     control_value = control_value.reshape((-1, 1))
                     stochastic_value = stochastic_value.reshape((-1, 1))

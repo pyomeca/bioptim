@@ -887,9 +887,8 @@ class COLLOCATION2(COLLOCATION):
             The constraints insuring that the polynomial has the right derivative at each collocation point
         """
         # Total number of variables for one finite element
-        state0 = self._d[0] * states[1]  # state = [x z]
-        defects = [state0 + states[0]]
-        states_end = state0
+        defects = [states[1] - states[0]]
+        states_end = self._d[0] * states[1]
 
         for j in range(1, self.degree + 1):
             # Expression for the state derivative at the collocation point

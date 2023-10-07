@@ -919,7 +919,7 @@ class PlotOcp:
                                     )
                                 else:
                                     if (
-                                        self.plot_func[key][i].label == "CONTINUITY"
+                                        self.plot_func[key][i].label == "STATE_CONTINUITY"
                                         and nlp.ode_solver.is_direct_collocation
                                     ):
                                         states = state[:, node_idx * (step_size) : (node_idx + 1) * (step_size) + 1]

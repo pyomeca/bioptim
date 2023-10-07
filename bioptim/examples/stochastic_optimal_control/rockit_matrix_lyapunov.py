@@ -140,12 +140,27 @@ def prepare_socp(
         max_bound=0,
         node=Node.ALL,
     )
+    constraints.add(ConstraintFcn.BOUND_STATE, key="q", index=0, min_bound=-0.25, node=Node.ALL)
+    constraints.add(ConstraintFcn.BOUND_CONTROL, key="u", index=0, min_bound=-40, max_bound=40, node=Node.ALL_SHOOTING)
 
-    x_bounds = BoundsList()
-    x_bounds["q"] = [-0.25] * nb_q, [cas.inf] * nb_q
 
-    u_bounds = BoundsList()
-    u_bounds["u"] = [-40] * nb_u, [40] * nb_u
+    x_init = InitialGuessList()
+    x_init.add(
+        "q",
+        initial_guess=[1] * nb_q,
+        interpolation=InterpolationType.CONSTANT,
+    )
+    x_init.add(
+        "qdot",
+        initial_guess=[0.1] * nb_q,
+        interpolation=InterpolationType.CONSTANT,
+    )
+
+    # x_bounds = BoundsList()
+    # x_bounds["q"] = [-0.25] * nb_q, [cas.inf] * nb_q
+
+    # u_bounds = BoundsList()
+    # u_bounds["u"] = [-40] * nb_u, [40] * nb_u
 
     # Dynamics
     dynamics = DynamicsList()
@@ -186,8 +201,9 @@ def prepare_socp(
             n_shooting,
             final_time,
             s_init=s_init,
-            x_bounds=x_bounds,
-            u_bounds=u_bounds,
+            # x_bounds=x_bounds,
+            x_init=x_init,
+            # u_bounds=u_bounds,
             objective_functions=objective_functions,
             constraints=constraints,
             n_threads=6,
@@ -216,8 +232,8 @@ def prepare_socp(
             dynamics,
             n_shooting,
             final_time,
-            x_bounds=x_bounds,
-            u_bounds=u_bounds,
+            # x_bounds=x_bounds,
+            # u_bounds=u_bounds,
             objective_functions=objective_functions,
             constraints=constraints,
             ode_solver=ode_solver,
@@ -230,7 +246,7 @@ def main():
     Prepare, solve and plot the solution
     """
     isStochastic = True
-    isRobust = False
+    isRobust = True
     if not isStochastic:
         isRobust = False
 

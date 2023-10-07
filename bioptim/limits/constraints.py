@@ -381,6 +381,42 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             return controller.tf
 
+
+        @staticmethod
+        def bound_state(_: Constraint, controller: PenaltyController, key: str, ):
+            """
+            Bound the state according to key
+
+            Parameters
+            ----------
+            _: Constraint
+                The actual constraint to declare
+            controller: PenaltyController
+                The penalty node elements
+            key: str
+                The name of the state to constraint
+            """
+
+            return controller.states[key].cx_start
+
+        @staticmethod
+        def bound_control(_: Constraint, controller: PenaltyController, key: str, ):
+            """
+            Bound the state according to key
+
+            Parameters
+            ----------
+            _: Constraint
+                The actual constraint to declare
+            controller: PenaltyController
+                The penalty node elements
+            key: str
+                The name of the state to constraint
+            """
+
+            return controller.controls[key].cx_start
+
+
         @staticmethod
         def qddot_equals_forward_dynamics(
             _: Constraint,
@@ -992,9 +1028,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 z.append(zj)
 
             # Loop over collocation points
-            x0 = _d[0] * z[0]
-            G_argout = [x0 + x]
-            xf = x0
+            G_argout = [z[0] - x]
+            xf = _d[0] * z[0]
             for j in range(1, d + 1):
                 # Expression for the state derivative at the collocation point
                 xp_j = _c[0, j] * x
@@ -1052,29 +1087,28 @@ class ConstraintFcn(FcnEnum):
     def get_type() -> Callable
         Returns the type of the penalty
     """
-
-    CONTINUITY = (PenaltyFunctionAbstract.Functions.state_continuity,)
+    BOUND_STATE = (ConstraintFunction.Functions.bound_state,)
+    BOUND_CONTROL = (ConstraintFunction.Functions.bound_control,)
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
     PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
-    TRACK_STOCHASTIC = (PenaltyFunctionAbstract.Functions.stochastic_minimize_variables,)
+    SEMIDEFINITE_POSITIVE_MATRIX = (ConstraintFunction.Functions.semidefinite_positive_matrix,)
+    STATE_CONTINUITY = (PenaltyFunctionAbstract.Functions.state_continuity,)
+    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION = (
+        ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_collocation,
+    )
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
     STOCHASTIC_DF_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_df_dx_implicit,)
     STOCHASTIC_HELPER_MATRIX_COLLOCATION = (ConstraintFunction.Functions.stochastic_helper_matrix_collocation,)
-    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION = (
-        ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_collocation,
-    )
-
     STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (
         ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,
     )
-    SYMMETRIC_MATRIX = (ConstraintFunction.Functions.symmetric_matrix,)
-    SEMIDEFINITE_POSITIVE_MATRIX = (ConstraintFunction.Functions.semidefinite_positive_matrix,)
     SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
     SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
+    SYMMETRIC_MATRIX = (ConstraintFunction.Functions.symmetric_matrix,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)
     TORQUE_MAX_FROM_Q_AND_QDOT = (ConstraintFunction.Functions.torque_max_from_q_and_qdot,)
     TRACK_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
@@ -1094,6 +1128,7 @@ class ConstraintFcn(FcnEnum):
     TRACK_SEGMENT_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_segment_velocity,)
     TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
     TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+    TRACK_STOCHASTIC = (PenaltyFunctionAbstract.Functions.stochastic_minimize_variables,)
     TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,)
 
     @staticmethod

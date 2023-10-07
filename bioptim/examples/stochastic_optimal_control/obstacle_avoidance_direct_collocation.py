@@ -193,7 +193,7 @@ def prepare_socp(
     constraints = ConstraintList()
     constraints.add(
         path_constraint,
-        node=Node.ALL,
+        node=Node.ALL_SHOOTING,
         super_elipse_index=0,
         min_bound=0,
         max_bound=cas.inf,
@@ -202,7 +202,7 @@ def prepare_socp(
     )
     constraints.add(
         path_constraint,
-        node=Node.ALL,
+        node=Node.ALL_SHOOTING,
         super_elipse_index=1,
         min_bound=0,
         max_bound=cas.inf,
@@ -216,10 +216,6 @@ def prepare_socp(
     # Initial guesses
     x_init = InitialGuessList()
     x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.ALL_POINTS)
-    x_init.add("qdot", initial_guess=[0] * nb_qdot, interpolation=InterpolationType.CONSTANT)
-
-    control_init = InitialGuessList()
-    control_init.add("u", initial_guess=[0] * nb_u, interpolation=InterpolationType.CONSTANT)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -260,7 +256,6 @@ def prepare_socp(
             n_shooting,
             final_time,
             x_init=x_init,
-            u_init=control_init,
             s_init=s_init,
             objective_functions=objective_functions,
             constraints=constraints,
@@ -292,7 +287,6 @@ def prepare_socp(
             n_shooting,
             final_time,
             x_init=x_init,
-            u_init=control_init,
             objective_functions=objective_functions,
             constraints=constraints,
             control_type=ControlType.CONSTANT,
@@ -323,7 +317,7 @@ def main():
     bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
     q_init = np.zeros((bio_model.nb_q, (d + 2) * n_shooting + 1))
-    zq_init = initialize_circle((d + 1) * n_shooting + 1)
+    zq_init = initialize_circle((d + 1) * n_shooting + 1) + np.random.randn(2, (d + 1) * n_shooting + 1) * 1e-4
     for i in range(n_shooting + 1):
         j = i * (d + 1)
         k = i * (d + 2)
