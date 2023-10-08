@@ -143,7 +143,6 @@ def prepare_socp(
     constraints.add(ConstraintFcn.BOUND_STATE, key="q", index=0, min_bound=-0.25, node=Node.ALL)
     constraints.add(ConstraintFcn.BOUND_CONTROL, key="u", index=0, min_bound=-40, max_bound=40, node=Node.ALL_SHOOTING)
 
-
     x_init = InitialGuessList()
     x_init.add(
         "q",

@@ -381,9 +381,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             return controller.tf
 
-
         @staticmethod
-        def bound_state(_: Constraint, controller: PenaltyController, key: str, ):
+        def bound_state(
+            _: Constraint,
+            controller: PenaltyController,
+            key: str,
+        ):
             """
             Bound the state according to key
 
@@ -400,7 +403,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return controller.states[key].cx_start
 
         @staticmethod
-        def bound_control(_: Constraint, controller: PenaltyController, key: str, ):
+        def bound_control(
+            _: Constraint,
+            controller: PenaltyController,
+            key: str,
+        ):
             """
             Bound the state according to key
 
@@ -415,7 +422,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
 
             return controller.controls[key].cx_start
-
 
         @staticmethod
         def qddot_equals_forward_dynamics(
@@ -1087,6 +1093,7 @@ class ConstraintFcn(FcnEnum):
     def get_type() -> Callable
         Returns the type of the penalty
     """
+
     BOUND_STATE = (ConstraintFunction.Functions.bound_state,)
     BOUND_CONTROL = (ConstraintFunction.Functions.bound_control,)
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
