@@ -763,13 +763,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 polynomial_degree,
             )
 
-            constraint = Mc(controller.states.cx_start,
-                            vertcat(*(controller.states.cx_intermediates_list)),
-                            controller.controls.cx_start,
-                            controller.parameters.cx_start,
-                            controller.stochastic_variables.cx_start,
-                            controller.model.motor_noise_magnitude,
-                            controller.model.sensory_noise_magnitude)
+            constraint = Mc(
+                controller.states.cx_start,
+                vertcat(*(controller.states.cx_intermediates_list)),
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+                controller.model.motor_noise_magnitude,
+                controller.model.sensory_noise_magnitude,
+            )
 
             return StochasticBioModel.reshape_to_vector(constraint)
 
@@ -800,13 +802,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
             )
 
-            cov_next_computed = Pf(controller.states.cx_start,
-                                   vertcat(*(controller.states.cx_intermediates_list)),
-                                   controller.controls.cx_start,
-                                   controller.parameters.cx_start,
-                                   controller.stochastic_variables.cx_start,
-                                   controller.model.motor_noise_magnitude,
-                                   controller.model.sensory_noise_magnitude)
+            cov_next_computed = Pf(
+                controller.states.cx_start,
+                vertcat(*(controller.states.cx_intermediates_list)),
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+                controller.model.motor_noise_magnitude,
+                controller.model.sensory_noise_magnitude,
+            )
 
             cov_implicit_defect = cov_matrix_next - cov_next_computed
 
@@ -914,10 +918,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                 return B, C, D
 
-            sigma_ww = diag(vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))  # TODO: @mickaelbegon, what should we do with this ? -> in rockit should be 0 # * w
+            sigma_ww = diag(
+                vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym)
+            )  # TODO: @mickaelbegon, what should we do with this ? -> in rockit should be 0 # * w
 
-            cov_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov)
-            m_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m)
+            cov_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+            )
+            m_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
+            )
 
             # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
             _b, _c, _d = prepare_collocation(method, polynomial_degree)
@@ -946,73 +956,96 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 xf = xf + _d[j] * controller.states.cx_intermediates_list[j]
 
             # The function G in 0 = G(x_k,z_k,u_k,w_k)
-            G = Function("G", [vertcat(*controller.states.cx_intermediates_list),
-                                    controller.states.cx_start,
-                                    controller.controls.cx_start,
-                                    controller.parameters.cx_start,
-                                    controller.stochastic_variables.cx_start,
-                                    controller.model.motor_noise_sym,
-                                    controller.model.sensory_noise_sym],
-                         [vertcat(*G_argout)],
-                         ["z", "x", "u", "p", "s", "motor_noise", "sensory_noise"],
-                         ["g"]).expand()
+            G = Function(
+                "G",
+                [
+                    vertcat(*controller.states.cx_intermediates_list),
+                    controller.states.cx_start,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ],
+                [vertcat(*G_argout)],
+                ["z", "x", "u", "p", "s", "motor_noise", "sensory_noise"],
+                ["g"],
+            ).expand()
 
             # The function F in x_{k+1} = F(z_k)
-            F = Function("F", [vertcat(*controller.states.cx_intermediates_list)],
-                         [xf],
-                         ["z"],
-                         ["xf"]).expand()
+            F = Function("F", [vertcat(*controller.states.cx_intermediates_list)], [xf], ["z"], ["xf"]).expand()
 
-            Gdx = jacobian(G(vertcat(*controller.states.cx_intermediates_list),
-                             controller.states.cx_start,
-                             controller.controls.cx_start,
-                             controller.parameters.cx_start,
-                             controller.stochastic_variables.cx_start,
-                             controller.model.motor_noise_sym,
-                             controller.model.sensory_noise_sym),
-                           controller.states.cx_start)
+            Gdx = jacobian(
+                G(
+                    vertcat(*controller.states.cx_intermediates_list),
+                    controller.states.cx_start,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ),
+                controller.states.cx_start,
+            )
 
-            Gdz = jacobian(G(vertcat(*controller.states.cx_intermediates_list),
-                             controller.states.cx_start,
-                             controller.controls.cx_start,
-                             controller.parameters.cx_start,
-                             controller.stochastic_variables.cx_start,
-                             controller.model.motor_noise_sym,
-                             controller.model.sensory_noise_sym),
-                           vertcat(*controller.states.cx_intermediates_list))
+            Gdz = jacobian(
+                G(
+                    vertcat(*controller.states.cx_intermediates_list),
+                    controller.states.cx_start,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ),
+                vertcat(*controller.states.cx_intermediates_list),
+            )
 
-            Gdw = jacobian(G(vertcat(*controller.states.cx_intermediates_list),
-                             controller.states.cx_start,
-                             controller.controls.cx_start,
-                             controller.parameters.cx_start,
-                             controller.stochastic_variables.cx_start,
-                             controller.model.motor_noise_sym,
-                             controller.model.sensory_noise_sym),
-                           vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
+            Gdw = jacobian(
+                G(
+                    vertcat(*controller.states.cx_intermediates_list),
+                    controller.states.cx_start,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ),
+                vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym),
+            )
 
-            Fdz = jacobian(F(vertcat(*controller.states.cx_intermediates_list)),
-                           vertcat(*controller.states.cx_intermediates_list))
+            Fdz = jacobian(
+                F(vertcat(*controller.states.cx_intermediates_list)), vertcat(*controller.states.cx_intermediates_list)
+            )
 
             # Constraint Equality defining M
-            Mc = Function("M_cons", [controller.states.cx_start,
-                                     vertcat(*controller.states.cx_intermediates_list),
-                                     controller.controls.cx_start,
-                                     controller.parameters.cx_start,
-                                     controller.stochastic_variables.cx_start,
-                                     controller.model.motor_noise_sym,
-                                     controller.model.sensory_noise_sym],
-                          [Fdz.T - Gdz.T @ m_matrix.T]).expand()
+            Mc = Function(
+                "M_cons",
+                [
+                    controller.states.cx_start,
+                    vertcat(*controller.states.cx_intermediates_list),
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ],
+                [Fdz.T - Gdz.T @ m_matrix.T],
+            ).expand()
 
             # Covariance propagation rule
             Pf = Function(
-                "P_next", [controller.states.cx_start,
-                           vertcat(*controller.states.cx_intermediates_list),
-                           controller.controls.cx_start,
-                           controller.parameters.cx_start,
-                            controller.stochastic_variables.cx_start,
-                            controller.model.motor_noise_sym,
-                            controller.model.sensory_noise_sym],
-                [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T]
+                "P_next",
+                [
+                    controller.states.cx_start,
+                    vertcat(*controller.states.cx_intermediates_list),
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ],
+                [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T],
             ).expand()
 
             return (
@@ -1042,7 +1075,9 @@ class ConstraintFcn(FcnEnum):
     """
 
     CONTINUITY = (PenaltyFunctionAbstract.Functions.state_continuity,)
-    FIRST_COLLOCATION_HELPER_EQUALS_STATE = (PenaltyFunctionAbstract.Functions.first_collocation_helper_equals_final_state,)
+    FIRST_COLLOCATION_HELPER_EQUALS_STATE = (
+        PenaltyFunctionAbstract.Functions.first_collocation_helper_equals_final_state,
+    )
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)

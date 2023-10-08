@@ -324,8 +324,11 @@ class OdeSolver:
         """
 
         def __init__(
-            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT,
-                add_initial_collocation_point: bool = False
+            self,
+            polynomial_degree: int = 4,
+            method: str = "legendre",
+            defects_type: DefectType = DefectType.EXPLICIT,
+            add_initial_collocation_point: bool = False,
         ):
             """
             Parameters
@@ -364,10 +367,10 @@ class OdeSolver:
                 )
 
             if self.add_initial_collocation_point:
-                x_unscaled = nlp.states.cx_intermediates_list,
+                x_unscaled = (nlp.states.cx_intermediates_list,)
                 x_scaled = nlp.states.scaled.cx_intermediates_list
             else:
-                x_unscaled = [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
+                x_unscaled = ([nlp.states.cx_start] + nlp.states.cx_intermediates_list,)
                 x_scaled = [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list
 
             ode = {
@@ -406,7 +409,6 @@ class OdeSolver:
 
         def __str__(self):
             return f"{self.rk_integrator.__name__} {self.method} {self.polynomial_degree}"
-
 
     class IRK(COLLOCATION):
         """

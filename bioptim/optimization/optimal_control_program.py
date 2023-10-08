@@ -954,8 +954,9 @@ class OptimalControlProgram:
                     penalty.add_or_replace_to_penalty_pool(self, nlp)
                     if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.add_initial_collocation_point:
                         penalty = Constraint(
-                            ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE, node=Node.ALL_SHOOTING,
-                            penalty_type=PenaltyType.INTERNAL
+                            ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
+                            node=Node.ALL_SHOOTING,
+                            penalty_type=PenaltyType.INTERNAL,
                         )
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
                 else:
@@ -966,8 +967,9 @@ class OptimalControlProgram:
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
                         if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.add_initial_collocation_point:
                             penalty = Constraint(
-                                ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE, node=shooting_node,
-                                penalty_type=PenaltyType.INTERNAL
+                                ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
+                                node=shooting_node,
+                                penalty_type=PenaltyType.INTERNAL,
                             )
                             penalty.add_or_replace_to_penalty_pool(self, nlp)
             else:

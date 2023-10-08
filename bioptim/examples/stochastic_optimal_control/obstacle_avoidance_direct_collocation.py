@@ -163,11 +163,10 @@ def prepare_socp(
     q_init: np.ndarray,
     is_sotchastic: bool = False,
     is_robustified: bool = False,
-    socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
+    socp_type=SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
-
     problem_type = socp_type
 
     bio_model = MassPointModel(
@@ -287,7 +286,9 @@ def prepare_socp(
             phase_dynamics=phase_dynamics,
             expand_dynamics=expand_dynamics,
         )
-        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method, add_initial_collocation_point=True)
+        ode_solver = OdeSolver.COLLOCATION(
+            polynomial_degree=socp_type.polynomial_degree, method=socp_type.method, add_initial_collocation_point=True
+        )
 
         return OptimalControlProgram(
             bio_model,

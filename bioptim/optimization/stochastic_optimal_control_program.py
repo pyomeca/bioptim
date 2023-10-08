@@ -107,7 +107,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             ode_solver = OdeSolver.TRAPEZOIDAL()
         elif isinstance(problem_type, SocpType.COLLOCATION):
             ode_solver = OdeSolver.COLLOCATION(
-                method=problem_type.method, polynomial_degree=problem_type.polynomial_degree, add_initial_collocation_point=True
+                method=problem_type.method,
+                polynomial_degree=problem_type.polynomial_degree,
+                add_initial_collocation_point=True,
             )
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
@@ -223,8 +225,11 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
     def _declare_multi_node_penalties(
-        self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList, constraints: ConstraintList,
-            phase_transition: PhaseTransitionList,
+        self,
+        multinode_constraints: ConstraintList,
+        multinode_objectives: ObjectiveList,
+        constraints: ConstraintList,
+        phase_transition: PhaseTransitionList,
     ):
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)

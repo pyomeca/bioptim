@@ -323,7 +323,6 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
 
             return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
 
-
         @staticmethod
         def covariance_continuous(
             transition,
@@ -345,6 +344,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             """
 
             return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
+
 
 class PhaseTransitionFcn(FcnEnum):
     """

@@ -829,6 +829,7 @@ class COLLOCATION(Integrator):
             ["xf", "xall", "defects"],
         )
 
+
 class IRK(COLLOCATION):
     """
     Numerical integration using implicit Runge-Kutta method.
