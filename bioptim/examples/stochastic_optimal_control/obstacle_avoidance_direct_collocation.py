@@ -22,6 +22,7 @@ from bioptim import (
     Node,
     ConstraintList,
     InitialGuessList,
+    BoundsList,
     ControlType,
     PenaltyController,
     PhaseTransitionList,
@@ -217,6 +218,13 @@ def prepare_socp(
     x_init = InitialGuessList()
     x_init.add("q", initial_guess=q_init, interpolation=InterpolationType.ALL_POINTS)
 
+    x_bounds = BoundsList()
+    x_bounds.add("q", min_bound=[-10, -10], max_bound=[10, 10], interpolation=InterpolationType.CONSTANT)
+    x_bounds.add("qdot", min_bound=[-20, -20], max_bound=[20, 20], interpolation=InterpolationType.CONSTANT)
+
+    u_bounds = BoundsList()
+    u_bounds.add("u", min_bound=[-20, -20], max_bound=[20, 20], interpolation=InterpolationType.CONSTANT)
+
     # Dynamics
     dynamics = DynamicsList()
 
@@ -257,6 +265,8 @@ def prepare_socp(
             final_time,
             x_init=x_init,
             s_init=s_init,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
             objective_functions=objective_functions,
             constraints=constraints,
             control_type=ControlType.CONSTANT,
@@ -287,6 +297,8 @@ def prepare_socp(
             n_shooting,
             final_time,
             x_init=x_init,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
             objective_functions=objective_functions,
             constraints=constraints,
             control_type=ControlType.CONSTANT,
@@ -317,6 +329,9 @@ def main():
     bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
     q_init = np.zeros((bio_model.nb_q, (d + 2) * n_shooting + 1))
+    # for i in range(n_shooting):
+    #     print(path_constraint())
+
     zq_init = initialize_circle((d + 1) * n_shooting + 1) + np.random.randn(2, (d + 1) * n_shooting + 1) * 1e-4
     for i in range(n_shooting + 1):
         j = i * (d + 1)
@@ -339,7 +354,8 @@ def main():
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
-    solver.set_linear_solver("ma57")
+    solver._max_iter = 100
+    # solver.set_linear_solver("ma57")
     sol_socp = socp.solve(solver)
 
     q = sol_socp.states["q"]
