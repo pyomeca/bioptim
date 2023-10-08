@@ -1,7 +1,6 @@
 """
 This example aims to replicate the example provided in Rockit: matrix_lyapunov.py
-It uses the Lyapunov differential equation to approximate
-state covariance along the trajectory
+It uses the Lyapunov differential equation to approximate state covariance along the trajectory.
 """
 
 import matplotlib.pyplot as plt
@@ -88,9 +87,8 @@ def bound(t):
     return 2 + 0.1 * cas.cos(10 * t)
 
 
-# def path_constraint(controller: PenaltyController, dt, is_robustified: bool = False):
-def path_constraint(controller, dt, is_robustified: bool = False):
-    t = controller.time.cx_start  # controller.node_index * dt
+def path_constraint(controller, is_robustified: bool = False):
+    t = controller.time.cx_start
     q = controller.states["q"].cx_start
     sup = bound(t)
     if is_robustified:
@@ -134,7 +132,6 @@ def prepare_socp(
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", index=0, node=Node.START, target=0)
     constraints.add(
         path_constraint,
-        dt=final_time / n_shooting,
         is_robustified=is_robustified,
         min_bound=-cas.inf,
         max_bound=0,
@@ -229,15 +226,16 @@ def main():
     """
     Prepare, solve and plot the solution
     """
-    isStochastic = True
-    isRobust = False
-    if not isStochastic:
-        isRobust = False
+    is_stochastic = True
+    is_robust = False # True
+    if not is_stochastic:
+        is_robust = False
+
+    polynomial_degree = 5
 
     # --- Prepare the ocp --- #
-    d = 5  # polynomial_degree
-    socp_type = SocpType.COLLOCATION(polynomial_degree=d, method="legendre")
-    bio_model = RockitModel(socp_type=socp_type)
+    socp_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
+    bio_model = RockitModel(socp_type=socp_type) #### remove?
     n_shooting = 40
     final_time = 1
     dt = final_time / n_shooting
@@ -251,10 +249,10 @@ def main():
     socp = prepare_socp(
         final_time=final_time,
         n_shooting=n_shooting,
-        polynomial_degree=d,
+        polynomial_degree=polynomial_degree,
         motor_noise_magnitude=motor_noise_magnitude,
-        is_stochastic=isStochastic,
-        is_robustified=isRobust,
+        is_stochastic=is_stochastic,
+        is_robustified=is_robust,
         socp_type=socp_type,
     )
 
@@ -269,7 +267,7 @@ def main():
     plt.plot(np.squeeze(T), np.squeeze(q), label="q")
     plt.step(ts, np.squeeze(u / 40), label="u/40")
 
-    if isStochastic:
+    if is_stochastic:
         cov = sol_socp.stochastic_variables["cov"]
 
         o = np.array([[1, 0]])
@@ -287,7 +285,7 @@ def main():
 
         plt.plot(
             [ts, ts],
-            np.squeeze([q[:, :: d + 2] - sigma, q[:, :: d + 2] + sigma]),
+            np.squeeze([q[:, :: polynomial_degree + 2] - sigma, q[:, :: polynomial_degree + 2] + sigma]),
             "k",
         )
 

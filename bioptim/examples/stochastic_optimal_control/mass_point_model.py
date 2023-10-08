@@ -18,7 +18,7 @@ class MassPointModel:
         self,
         motor_noise_magnitude: np.ndarray | DM = None,
         polynomial_degree: int = 1,
-        socp_type: SocpType = None,
+        socp_type = None,
     ):
         self.socp_type = socp_type
 

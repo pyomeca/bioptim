@@ -163,7 +163,7 @@ def prepare_socp(
     q_init: np.ndarray,
     is_sotchastic: bool = False,
     is_robustified: bool = False,
-    socp_type: SocpType = SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
+    socp_type = SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
@@ -314,31 +314,28 @@ def main():
     if not is_stochastic:
         is_robust = False
 
-    # polynomial_degree
-    d = 5
+    polynomial_degree = 5
 
     # --- Prepare the ocp --- #
-    socp_type = SocpType.COLLOCATION(polynomial_degree=d, method="legendre")
+    socp_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
 
     n_shooting = 40
     final_time = 4
     motor_noise_magnitude = np.array([1, 1])
     bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
-    q_init = np.zeros((bio_model.nb_q, (d + 2) * n_shooting + 1))
-    zq_init = initialize_circle((d + 1) * n_shooting + 1)
+    q_init = np.zeros((bio_model.nb_q, (polynomial_degree + 2) * n_shooting + 1))
+    zq_init = initialize_circle((polynomial_degree + 1) * n_shooting + 1)
     for i in range(n_shooting + 1):
-        j = i * (d + 1)
-        k = i * (d + 2)
+        j = i * (polynomial_degree + 1)
+        k = i * (polynomial_degree + 2)
         q_init[:, k] = zq_init[:, j]
-        q_init[:, k + 1 : k + 1 + (d + 1)] = zq_init[:, j : j + (d + 1)]
-
-    # q_init = zq_init
+        q_init[:, k + 1 : k + 1 + (polynomial_degree + 1)] = zq_init[:, j : j + (polynomial_degree + 1)]
 
     socp = prepare_socp(
         final_time=final_time,
         n_shooting=n_shooting,
-        polynomial_degree=d,
+        polynomial_degree=polynomial_degree,
         motor_noise_magnitude=motor_noise_magnitude,
         q_init=q_init,
         is_sotchastic=is_stochastic,
@@ -375,10 +372,10 @@ def main():
     ax[0, 1].plot(q[0], q[1], "b")
     ax[0, 1].plot(u[0], u[1], "r")
     for i in range(n_shooting):
-        ax[0, 1].plot((u[0][i], q[0][i * (d + 2)]), (u[1][i], q[1][i * (d + 2)]), ":k")
+        ax[0, 1].plot((u[0][i], q[0][i * (polynomial_degree + 2)]), (u[1][i], q[1][i * (polynomial_degree + 2)]), ":k")
 
-    ax[1, 0].plot(tgrid, q[0, :: d + 2], "--", label="px")
-    ax[1, 0].plot(tgrid, q[1, :: d + 2], "-", label="py")
+    ax[1, 0].plot(tgrid, q[0, :: polynomial_degree + 2], "--", label="px")
+    ax[1, 0].plot(tgrid, q[1, :: polynomial_degree + 2], "-", label="py")
     ax[1, 0].step(tgrid, u.T, "-.", label="u")
     ax[1, 0].set_xlabel("t")
 
@@ -395,7 +392,7 @@ def main():
                 print(f"Something went wrong at the {i}th node. (Eigen values)")
 
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
-            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (d + 2)], ax[0, 0], color="b")
+            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="b")
 
     plt.show()
 
