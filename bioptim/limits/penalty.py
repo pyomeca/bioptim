@@ -1133,6 +1133,16 @@ class PenaltyFunctionAbstract:
             return continuity
 
         @staticmethod
+        def first_collocation_helper_equals_final_state(penalty: PenaltyOption, controller: PenaltyController | list):
+            """
+            Insures that the first collocation helper is equal to the states at the shooting node.
+            This is a necessary constraint for COLLOCATION with add_initial_collocation_point.
+            """
+            collocation_helper = controller.states.cx_intermediates_list[0]
+            states = controller.states.cx_start
+            return collocation_helper - states
+
+        @staticmethod
         def custom(penalty: PenaltyOption, controller: PenaltyController | list, **parameters: Any):
             """
             A user defined penalty function

@@ -3,7 +3,7 @@ from typing import Callable
 
 from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, collocation_points
 
-from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, COLLOCATION2, CVODES, TRAPEZOIDAL
+from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES, TRAPEZOIDAL
 from ..misc.enums import ControlType, DefectType, PhaseDynamics
 
 
@@ -314,6 +314,8 @@ class OdeSolver:
             The method of interpolation ("legendre" or "radau")
         defects_type: DefectType
             The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
+        add_initial_collocation_point: bool
+            Whether an additional collocation point should be added at the shooting node (this is typically used in SOCPs)
 
         Methods
         -------
@@ -322,7 +324,8 @@ class OdeSolver:
         """
 
         def __init__(
-            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
+            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT,
+                add_initial_collocation_point: bool = False
         ):
             """
             Parameters
@@ -333,7 +336,8 @@ class OdeSolver:
 
             super(OdeSolver.COLLOCATION, self).__init__()
             self.polynomial_degree = polynomial_degree
-            self.n_cx = polynomial_degree + 2
+            self.add_initial_collocation_point = add_initial_collocation_point
+            self.n_cx = polynomial_degree + 3 if add_initial_collocation_point else polynomial_degree + 2
             self.rk_integrator = COLLOCATION
             self.method = method
             self.defects_type = defects_type
@@ -359,9 +363,16 @@ class OdeSolver:
                     "developers and ping @EveCharbie"
                 )
 
+            if self.add_initial_collocation_point:
+                x_unscaled = [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
+                x_scaled = [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list
+            else:
+                x_unscaled = nlp.states.cx_intermediates_list,
+                x_scaled = nlp.states.scaled.cx_intermediates_list
+
             ode = {
-                "x_unscaled": [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
-                "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
+                "x_unscaled": x_unscaled,
+                "x_scaled": x_scaled,
                 "p_unscaled": nlp.controls.cx_start,
                 "p_scaled": nlp.controls.scaled.cx_start,
                 "s_unscaled": nlp.stochastic_variables.cx_start,
@@ -396,47 +407,6 @@ class OdeSolver:
         def __str__(self):
             return f"{self.rk_integrator.__name__} {self.method} {self.polynomial_degree}"
 
-    class COLLOCATION2(COLLOCATION):
-        """
-        An implicit Runge-Kutta solver similar to COLLOCATION with one extra helper at t=0
-
-        Attributes
-        ----------
-        polynomial_degree: int
-            The degree of the implicit RK
-        method : str
-            The method of interpolation ("legendre" or "radau")
-        defects_type: DefectType
-            The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
-
-        Methods
-        -------
-        integrator(self, ocp, nlp) -> list
-            The interface of the OdeSolver to the corresponding integrator
-        """
-
-        def __init__(
-            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
-        ):
-            """
-            Parameters
-            ----------
-            polynomial_degree: int
-                The degree of the implicit RK
-            """
-
-            super(OdeSolver.COLLOCATION2, self).__init__()
-            self.polynomial_degree = polynomial_degree
-            self.n_cx = polynomial_degree + 3
-            self.rk_integrator = COLLOCATION2
-            self.method = method
-            self.defects_type = defects_type
-            self.is_direct_collocation = True
-            self.steps = self.polynomial_degree + 1
-
-        def time_grid(self, t0):
-            dt = [0] + collocation_points(self.polynomial_degree, self.method)
-            return [t0 + dt[i] for i in range(0, self.steps)]
 
     class IRK(COLLOCATION):
         """

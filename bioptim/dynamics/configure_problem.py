@@ -721,8 +721,6 @@ class ConfigureProblem:
             user prerogative to wrap the Function around another function to lift the free variable
         """
 
-        nlp.dynamics_type.allow_free_variables = allow_free_variables
-
         nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
@@ -1023,7 +1021,7 @@ class ConfigureProblem:
 
         # TODO: compute values at collocation points
         # but for now only cx_start can be used
-        n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+        n_cx = nlp.ode_solver.n_cx - 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
         if n_cx < 3:
             n_cx = 3
 

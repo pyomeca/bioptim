@@ -167,7 +167,9 @@ def prepare_socp(
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
+
     problem_type = socp_type
+
     bio_model = MassPointModel(
         socp_type=problem_type,
         motor_noise_magnitude=motor_noise_magnitude,
@@ -239,7 +241,8 @@ def prepare_socp(
             expand_dynamics=expand_dynamics,
         )
 
-        phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
+        # phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
+
         s_init = InitialGuessList()
         s_init.add(
             "m",
@@ -284,7 +287,7 @@ def prepare_socp(
             phase_dynamics=phase_dynamics,
             expand_dynamics=expand_dynamics,
         )
-        ode_solver = OdeSolver.COLLOCATION2(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method)
+        ode_solver = OdeSolver.COLLOCATION(polynomial_degree=socp_type.polynomial_degree, method=socp_type.method, add_initial_collocation_point=True)
 
         return OptimalControlProgram(
             bio_model,
@@ -306,10 +309,10 @@ def main():
     """
     Prepare, solve and plot the solution
     """
-    isStochastic = True
-    isRobust = True
-    if not isStochastic:
-        isRobust = False
+    is_stochastic = False  # True
+    is_robust = False  # True
+    if not is_stochastic:
+        is_robust = False
 
     # polynomial_degree
     d = 5
@@ -338,8 +341,8 @@ def main():
         polynomial_degree=d,
         motor_noise_magnitude=motor_noise_magnitude,
         q_init=q_init,
-        is_sotchastic=isStochastic,
-        is_robustified=isRobust,
+        is_sotchastic=is_stochastic,
+        is_robustified=is_robust,
         socp_type=socp_type,
     )
 
@@ -379,7 +382,7 @@ def main():
     ax[1, 0].step(tgrid, u.T, "-.", label="u")
     ax[1, 0].set_xlabel("t")
 
-    if isStochastic:
+    if is_stochastic:
         m = sol_socp.stochastic_variables["m"]
         cov = sol_socp.stochastic_variables["cov"]
 
