@@ -176,6 +176,7 @@ def prepare_socp(
             interpolation=InterpolationType.CONSTANT,
         )
         constraints.add(ConstraintFcn.TRACK_STOCHASTIC, key="cov", node=Node.START, target=cov0)
+        constraints.add(ConstraintFcn.TRACK_STOCHASTIC, key="cov", node=Node.ALL, min_bound=1e-6, max_bound=cas.inf)
 
         return StochasticOptimalControlProgram(
             bio_model,
@@ -227,7 +228,7 @@ def main():
     Prepare, solve and plot the solution
     """
     is_stochastic = True
-    is_robust = False # True
+    is_robust = True
     if not is_stochastic:
         is_robust = False
 
@@ -235,7 +236,6 @@ def main():
 
     # --- Prepare the ocp --- #
     socp_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
-    bio_model = RockitModel(socp_type=socp_type) #### remove?
     n_shooting = 40
     final_time = 1
     dt = final_time / n_shooting
