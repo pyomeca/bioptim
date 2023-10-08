@@ -241,7 +241,7 @@ def prepare_socp(
             expand_dynamics=expand_dynamics,
         )
 
-        # phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
+        phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
 
         s_init = InitialGuessList()
         s_init.add(
@@ -309,8 +309,8 @@ def main():
     """
     Prepare, solve and plot the solution
     """
-    is_stochastic = False  # True
-    is_robust = False  # True
+    is_stochastic = True
+    is_robust = True
     if not is_stochastic:
         is_robust = False
 

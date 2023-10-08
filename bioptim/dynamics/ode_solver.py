@@ -364,11 +364,11 @@ class OdeSolver:
                 )
 
             if self.add_initial_collocation_point:
-                x_unscaled = [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
-                x_scaled = [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list
-            else:
                 x_unscaled = nlp.states.cx_intermediates_list,
                 x_scaled = nlp.states.scaled.cx_intermediates_list
+            else:
+                x_unscaled = [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
+                x_scaled = [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list
 
             ode = {
                 "x_unscaled": x_unscaled,

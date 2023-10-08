@@ -52,6 +52,8 @@ class PhaseTransition(MultinodePenalty):
         max_bound: float = 0,
         **params: Any,
     ):
+        # TODO: @pariterre: where did phase_post go !?
+
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
@@ -322,6 +324,28 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
 
 
+        @staticmethod
+        def covariance_continuous(
+            transition,
+            controllers: list[PenaltyController, PenaltyController],
+        ):
+            """
+            The most common continuity function, that is the covariance before equals covariance after for stochastic ocp
+
+            Parameters
+            ----------
+            transition : PhaseTransition
+                A reference to the phase transition
+            controllers: list[PenaltyController, PenaltyController]
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the covariance after and before
+            """
+
+            return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
+
 class PhaseTransitionFcn(FcnEnum):
     """
     Selection of valid phase transition functions
@@ -332,6 +356,7 @@ class PhaseTransitionFcn(FcnEnum):
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
     COVARIANCE_CYCLIC = (PhaseTransitionFunctions.Functions.covariance_cyclic,)
+    Covariance_CONTINUOUS = (PhaseTransitionFunctions.Functions.covariance_continuous,)
     CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
 
     @staticmethod

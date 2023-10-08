@@ -443,7 +443,6 @@ class OptimizationVectorHelper:
             nlp = ocp.nlp[p]
             nlp.controls.node_index = 0
 
-            # n_points = nlp.ns * (1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.polynomial_degree + 1)) + 1
             n_points = nlp.ns * (1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.n_cx - 1)) + 1
             data_states.append({key: np.ndarray((nlp.states[key].shape, n_points)) for key in nlp.states})
             data_controls.append(
@@ -479,7 +478,6 @@ class OptimizationVectorHelper:
             nx = nlp.states.shape
 
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                # repeat = (nlp.ode_solver.polynomial_degree + 1) if nlp.ode_solver.is_direct_collocation else 1
                 repeat = (nlp.ode_solver.n_cx - 1) if nlp.ode_solver.is_direct_collocation else 1
                 for k in range((nlp.ns * repeat) + 1):
                     nlp.states.node_index = k // repeat
