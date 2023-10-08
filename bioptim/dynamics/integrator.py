@@ -8,8 +8,6 @@ from casadi import (
     MX,
     SX,
     symvar,
-    integrator_in,
-    integrator_out,
 )
 import numpy as np
 
@@ -900,12 +898,6 @@ class IRK(COLLOCATION):
             stochastic_variables=stochastic_variables,
         )
 
-        u = controls
-        sym_variables = symvar(defect)
-        if hasattr(self.model, "motor_noise_sym"):
-            if any(var.name() == self.model.motor_noise_sym.name() for var in sym_variables):
-                u = vertcat(u, self.model.motor_noise_sym)
-
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         time_sym = []
         vfcn = Function(
@@ -939,14 +931,6 @@ class IRK(COLLOCATION):
             param_scaling=self.param_scaling,
             stochastic_variables=self.s_sym,
         )
-
-        u = self.u_sym
-        p = vertcat(self.param_sym, self.s_sym)
-        sym_variables = symvar(xf)
-
-        if hasattr(self.model, "motor_noise_sym"):
-            if any(var.name() == self.model.motor_noise_sym.name() for var in sym_variables):
-                p = vertcat(self.model.motor_noise_sym, p)
 
         self.function = Function(
             "integrator",

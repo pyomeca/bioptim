@@ -741,7 +741,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return out_vector
 
         @staticmethod
-        def stochastic_helper_matrix_collocation(  # self,
+        def stochastic_helper_matrix_collocation(
             penalty: Constraint,
             controller: PenaltyController,
         ):
