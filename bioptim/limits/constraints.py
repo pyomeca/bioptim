@@ -762,32 +762,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 collocation_method,
                 polynomial_degree,
             )
-            z = horzcat(*(controller.states.cx_intermediates_list))
-            z_ = z.reshape((-1, 1))
-            x = controller.states.cx_start
-            u = controller.controls.cx_start
 
-            nx = x.numel()
-            nu = u.numel()
-
-            p0 = controller.get_nlp.dt
-            if isinstance(p0, float):
-                p0 = vertcat(p0, DM.zeros(nu))
-            else:
-                p0 = vertcat(p0, type(p0).zeros(nu))
-
-            m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
-            )
-
-            # M constraint function of x, z_, u, p, M
-            constraint = Mc(x, z_, u, p0, m_matrix)
-
-            # todo: integrate those variables?
-            # controller.parameters.cx_start
-            # controller.stochastic_variables.cx_start,
-            # controller.model.motor_noise_magnitude,
-            # controller.model.sensory_noise_magnitude,
+            constraint = Mc(controller.states.cx_start,
+                            vertcat(*(controller.states.cx_intermediates_list)),
+                            controller.controls.cx_start,
+                            controller.parameters.cx_start,
+                            controller.stochastic_variables.cx_start,
+                            controller.model.motor_noise_magnitude,
+                            controller.model.sensory_noise_magnitude)
 
             return StochasticBioModel.reshape_to_vector(constraint)
 
@@ -801,7 +783,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
             P_k+1 = M_k @ (dg/dx @ P_k @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it
+            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
@@ -813,40 +795,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 collocation_method,
                 polynomial_degree,
             )
-            # todo: integrate case due to cholesky
 
-            z = horzcat(*(controller.states.cx_intermediates_list))
-            z_ = z.reshape((-1, 1))
-            x = controller.states.cx_start
-            u = controller.controls.cx_start
-
-            nx = x.numel()
-            nu = u.numel()
-
-            p0 = controller.get_nlp.dt
-            if isinstance(p0, float):
-                p0 = vertcat(p0, DM.zeros(nu))
-            else:
-                p0 = vertcat(p0, type(p0).zeros(nu))
-
-            cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
-            )
             cov_matrix_next = StochasticBioModel.reshape_to_matrix(
                 controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
             )
-            m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
-            )
 
-            # P continuity function of x, z_, u, p, M
-            cov_next_computed = Pf(x, z_, u, p0, m_matrix, cov_matrix)
-
-            # todo: integrate those variables?
-            # controller.parameters.cx_start
-            # controller.stochastic_variables.cx_start,
-            # controller.model.motor_noise_magnitude,
-            # controller.model.sensory_noise_magnitude,
+            cov_next_computed = Pf(controller.states.cx_start,
+                                   vertcat(*(controller.states.cx_intermediates_list)),
+                                   controller.controls.cx_start,
+                                   controller.parameters.cx_start,
+                                   controller.stochastic_variables.cx_start,
+                                   controller.model.motor_noise_magnitude,
+                                   controller.model.sensory_noise_magnitude)
 
             cov_implicit_defect = cov_matrix_next - cov_next_computed
 
@@ -918,25 +878,25 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return diagonal_terms
 
         @staticmethod
-        def collocation_fun_jac(controller, method, d):
-            def prepare_collocation(method, d):
+        def collocation_fun_jac(controller, method, polynomial_degree):
+            def prepare_collocation(method, polynomial_degree):
                 # Get collocation points
-                tau_root = np.append(0, collocation_points(d, method))
+                tau_root = np.append(0, collocation_points(polynomial_degree, method))
 
                 # Coefficients of the collocation equation
-                C = np.zeros((d + 1, d + 1))
+                C = np.zeros((polynomial_degree + 1, polynomial_degree + 1))
 
                 # Coefficients of the continuity equation
-                D = np.zeros(d + 1)
+                D = np.zeros(polynomial_degree + 1)
 
                 # Coefficients of the quadrature function
-                B = np.zeros(d + 1)
+                B = np.zeros(polynomial_degree + 1)
 
                 # Construct polynomial basis
-                for j in range(d + 1):
+                for j in range(polynomial_degree + 1):
                     # Construct Lagrange polynomials to get the polynomial basis at the collocation point
                     p = np.poly1d([1])
-                    for r in range(d + 1):
+                    for r in range(polynomial_degree + 1):
                         if r != j:
                             p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
 
@@ -945,7 +905,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                     # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
                     pder = np.polyder(p)
-                    for r in range(d + 1):
+                    for r in range(polynomial_degree + 1):
                         C[j, r] = pder(tau_root[r])
 
                     # # Evaluate the integral of the polynomial to get the coefficients of the quadrature function
@@ -954,77 +914,105 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
                 return B, C, D
 
-            model = controller.model
-            # Declare model variables
-            nq = model.nb_q
-            nqdot = model.nb_qdot
-            nu = model.nb_tau
-            nx = nq + nqdot
-            q = SX.sym("q", nq)
-            qd = SX.sym("qd", nqdot)
-            x = vertcat(q, qd)
-            u = SX.sym("u", nu)
-            w = SX.sym("w", nu)  # motor noise
+            sigma_ww = diag(vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))  # TODO: @mickaelbegon, what should we do with this ? -> in rockit should be 0 # * w
 
-            Sigma_ww = diag(SX(model.motor_noise_magnitude))  # todo: in rockit should be 0 # * w
-            h = SX.sym("h")  # Control discretization
-            p = vertcat(h, w)
-
-            P = SX.sym("P", nx, nx)
-            M = SX.sym("M", nx, nx * (d + 1))
-
-            # Continuous time dynamics
-            # todo: use controller.extra_dynamics(0) but we need the w params
-            xdot = model.dynamics_numerical(
-                states=x,
-                controls=u,  # Piecewise constant control
-                motor_noise=w,
-            )
-            dyn_fun = Function("dyn_fun", [x, u, w], [xdot], ["x", "u", "w"], ["xdot"]).expand()
+            cov_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov)
+            m_matrix = StochasticBioModel.reshape_to_matrix(controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m)
 
             # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
-            _b, _c, _d = prepare_collocation(method, d)
-
-            # The helper state sample used by collocation
-            z = []
-            for j in range(d + 1):
-                zj = SX.sym("z_" + str(j), nx)
-                z.append(zj)
+            _b, _c, _d = prepare_collocation(method, polynomial_degree)
 
             # Loop over collocation points
-            x0 = _d[0] * z[0]
-            G_argout = [x0 + x]
+            x0 = _d[0] * controller.states.cx_intermediates_list[0]
+            G_argout = [x0 + controller.states.cx_start]
             xf = x0
-            for j in range(1, d + 1):
+            for j in range(1, polynomial_degree + 1):
                 # Expression for the state derivative at the collocation point
-                xp_j = _c[0, j] * x
-                for r in range(1, d + 1):
-                    xp_j += _c[r, j] * z[r]
+                xp_j = _c[0, j] * controller.states.cx_start
+                for r in range(1, polynomial_degree + 1):
+                    xp_j += _c[r, j] * controller.states.cx_intermediates_list[r]
 
                 # Append collocation equations
-                fj = dyn_fun(z[j], u, w)
-                G_argout.append(xp_j - h * fj)
+                fj = controller.extra_dynamics(0)(
+                    controller.time.cx_start,
+                    controller.states.cx_intermediates_list[j],
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                )
+                G_argout.append(xp_j - controller.integrate.h * fj)
 
                 # Add contribution to the end state
-                xf = xf + _d[j] * z[j]
+                xf = xf + _d[j] * controller.states.cx_intermediates_list[j]
 
-            z_ = vertcat(*z)
             # The function G in 0 = G(x_k,z_k,u_k,w_k)
-            G = Function("G", [z_, x, u, p], [vertcat(*G_argout)], ["z", "x", "u", "p"], ["g"]).expand()
+            G = Function("G", [vertcat(*controller.states.cx_intermediates_list),
+                                    controller.states.cx_start,
+                                    controller.controls.cx_start,
+                                    controller.parameters.cx_start,
+                                    controller.stochastic_variables.cx_start,
+                                    controller.model.motor_noise_sym,
+                                    controller.model.sensory_noise_sym],
+                         [vertcat(*G_argout)],
+                         ["z", "x", "u", "p", "s", "motor_noise", "sensory_noise"],
+                         ["g"]).expand()
 
             # The function F in x_{k+1} = F(z_k)
-            F = Function("F", [z_], [xf], ["z"], ["xf"]).expand()
+            F = Function("F", [vertcat(*controller.states.cx_intermediates_list)],
+                         [xf],
+                         ["z"],
+                         ["xf"]).expand()
 
-            Gdx = jacobian(G(z_, x, u, p), x)
-            Gdz = jacobian(G(z_, x, u, p), z_)
-            Gdw = jacobian(G(z_, x, u, p), u)
-            Fdz = jacobian(F(z_), z_)
+            Gdx = jacobian(G(vertcat(*controller.states.cx_intermediates_list),
+                             controller.states.cx_start,
+                             controller.controls.cx_start,
+                             controller.parameters.cx_start,
+                             controller.stochastic_variables.cx_start,
+                             controller.model.motor_noise_sym,
+                             controller.model.sensory_noise_sym),
+                           controller.states.cx_start)
+
+            Gdz = jacobian(G(vertcat(*controller.states.cx_intermediates_list),
+                             controller.states.cx_start,
+                             controller.controls.cx_start,
+                             controller.parameters.cx_start,
+                             controller.stochastic_variables.cx_start,
+                             controller.model.motor_noise_sym,
+                             controller.model.sensory_noise_sym),
+                           vertcat(*controller.states.cx_intermediates_list))
+
+            Gdw = jacobian(G(vertcat(*controller.states.cx_intermediates_list),
+                             controller.states.cx_start,
+                             controller.controls.cx_start,
+                             controller.parameters.cx_start,
+                             controller.stochastic_variables.cx_start,
+                             controller.model.motor_noise_sym,
+                             controller.model.sensory_noise_sym),
+                           vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
+
+            Fdz = jacobian(F(vertcat(*controller.states.cx_intermediates_list)),
+                           vertcat(*controller.states.cx_intermediates_list))
 
             # Constraint Equality defining M
-            Mc = Function("M_cons", [x, z_, u, p, M], [Fdz.T - Gdz.T @ M.T]).expand()
+            Mc = Function("M_cons", [controller.states.cx_start,
+                                     vertcat(*controller.states.cx_intermediates_list),
+                                     controller.controls.cx_start,
+                                     controller.parameters.cx_start,
+                                     controller.stochastic_variables.cx_start,
+                                     controller.model.motor_noise_sym,
+                                     controller.model.sensory_noise_sym],
+                          [Fdz.T - Gdz.T @ m_matrix.T]).expand()
+
             # Covariance propagation rule
             Pf = Function(
-                "P_next", [x, z_, u, p, M, P], [M @ (Gdx @ P @ Gdx.T + Gdw @ Sigma_ww @ Gdw.T) @ M.T]
+                "P_next", [controller.states.cx_start,
+                           vertcat(*controller.states.cx_intermediates_list),
+                           controller.controls.cx_start,
+                           controller.parameters.cx_start,
+                            controller.stochastic_variables.cx_start,
+                            controller.model.motor_noise_sym,
+                            controller.model.sensory_noise_sym],
+                [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T]
             ).expand()
 
             return (
