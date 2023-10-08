@@ -757,15 +757,25 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
-            _, _, Mc, _ = ConstraintFunction.Functions.collocation_fun_jac(
+            Mc, _ = ConstraintFunction.Functions.collocation_fun_jac(
                 controller,
                 collocation_method,
                 polynomial_degree,
             )
 
+            nb_root = controller.model.nb_root
+            nu = controller.model.nb_q - nb_root
+            z_joints = horzcat(*(controller.states.cx_intermediates_list))
+
             constraint = Mc(
-                controller.states.cx_start,
-                vertcat(*(controller.states.cx_intermediates_list)),
+                controller.states.cx_start[:nb_root],  # x_q_root
+                controller.states.cx_start[nb_root: nb_root + nu],  # x_q_joints
+                controller.states.cx_start[nb_root + nu: 2*nb_root + nu],  # x_qdot_root
+                controller.states.cx_start[2*nb_root + nu: 2*(nb_root + nu)],  # x_qdot_joints
+                z_joints[:nb_root, :],  # z_q_root
+                z_joints[nb_root: nb_root + nu, :],  # z_q_joints
+                z_joints[nb_root + nu: 2*nb_root + nu, :],  # z_qdot_root
+                z_joints[2*nb_root + nu: 2*(nb_root + nu), :],  # z_qdot_joints
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
@@ -792,7 +802,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
-            _, _, _, Pf = ConstraintFunction.Functions.collocation_fun_jac(
+            _, Pf = ConstraintFunction.Functions.collocation_fun_jac(
                 controller,
                 collocation_method,
                 polynomial_degree,
@@ -802,9 +812,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
             )
 
+            nb_root = controller.model.nb_root
+            nu = controller.model.nb_q - nb_root
+            z_joints = horzcat(*(controller.states.cx_intermediates_list))
+
             cov_next_computed = Pf(
-                controller.states.cx_start,
-                vertcat(*(controller.states.cx_intermediates_list)),
+                controller.states.cx_start[:nb_root],  # x_q_root
+                controller.states.cx_start[nb_root: nb_root + nu],  # x_q_joints
+                controller.states.cx_start[nb_root + nu: 2*nb_root + nu],  # x_qdot_root
+                controller.states.cx_start[2*nb_root + nu: 2*(nb_root + nu)],  # x_qdot_joints
+                z_joints[:nb_root, :],  # z_q_root
+                z_joints[nb_root: nb_root + nu, :],  # z_q_joints
+                z_joints[nb_root + nu: 2*nb_root + nu, :],  # z_qdot_root
+                z_joints[2*nb_root + nu: 2*(nb_root + nu), :],  # z_qdot_joints
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
@@ -932,20 +952,37 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
             _b, _c, _d = prepare_collocation(method, polynomial_degree)
 
+
+            nb_root = controller.model.nb_root
+            nu = controller.model.nb_q - nb_root
+            joints_index = list(range(nb_root, nb_root + nu)) + list(range(2*nb_root + nu, 2*(nb_root + nu)))
+
+            x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
+            x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
+            x_qdot_root = controller.cx.sym("x_qdot_root", nb_root, 1)
+            x_qdot_joints = controller.cx.sym("x_qdot_joints", nu, 1)
+            z_q_root = controller.cx.sym("z_q_root", nb_root, polynomial_degree + 1)
+            z_q_joints = controller.cx.sym("z_q_joints", nu, polynomial_degree + 1)
+            z_qdot_root = controller.cx.sym("z_qdot_root", nb_root, polynomial_degree + 1)
+            z_qdot_joints = controller.cx.sym("z_qdot_joints", nu, polynomial_degree + 1)
+
+            x_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
+            z_full = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
+
             # Loop over collocation points
-            x0 = _d[0] * controller.states.cx_intermediates_list[0]
-            G_argout = [x0 + controller.states.cx_start]
+            x0 = _d[0] * z_full[:, 0]
+            G_argout = [x0 + x_full]
             xf = x0
             for j in range(1, polynomial_degree + 1):
                 # Expression for the state derivative at the collocation point
-                xp_j = _c[0, j] * controller.states.cx_start
+                xp_j = _c[0, j] * x_full
                 for r in range(1, polynomial_degree + 1):
-                    xp_j += _c[r, j] * controller.states.cx_intermediates_list[r]
+                    xp_j += _c[r, j] * z_full[:, r]
 
                 # Append collocation equations
                 fj = controller.extra_dynamics(0)(
                     controller.time.cx_start,
-                    controller.states.cx_intermediates_list[j],
+                    z_full[:, j],
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
@@ -953,58 +990,84 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 G_argout.append(xp_j - controller.integrate.h * fj)
 
                 # Add contribution to the end state
-                xf = xf + _d[j] * controller.states.cx_intermediates_list[j]
+                xf = xf + _d[j] * z_full[:, j]
+
+            G_joints = MX()
+            for i in range(polynomial_degree + 1):
+                G_joints = vertcat(G_joints, G_argout[i][joints_index])
 
             # The function G in 0 = G(x_k,z_k,u_k,w_k)
             G = Function(
                 "G",
                 [
-                    vertcat(*controller.states.cx_intermediates_list),
-                    controller.states.cx_start,
+                    x_q_root,
+                    x_q_joints,
+                    x_qdot_root,
+                    x_qdot_joints,
+                    z_q_root,
+                    z_q_joints,
+                    z_qdot_root,
+                    z_qdot_joints,
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
                     controller.model.motor_noise_sym,
                     controller.model.sensory_noise_sym,
                 ],
-                [vertcat(*G_argout)],
-                ["z", "x", "u", "p", "s", "motor_noise", "sensory_noise"],
-                ["g"],
+                [G_joints],
             ).expand()
 
             # The function F in x_{k+1} = F(z_k)
-            F = Function("F", [vertcat(*controller.states.cx_intermediates_list)], [xf], ["z"], ["xf"]).expand()
+            F = Function("F", [z_q_root, z_q_joints, z_qdot_root, z_qdot_joints], [xf]).expand()
 
             Gdx = jacobian(
                 G(
-                    vertcat(*controller.states.cx_intermediates_list),
-                    controller.states.cx_start,
+                    x_q_root,
+                    x_q_joints,
+                    x_qdot_root,
+                    x_qdot_joints,
+                    z_q_root,
+                    z_q_joints,
+                    z_qdot_root,
+                    z_qdot_joints,
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
                     controller.model.motor_noise_sym,
                     controller.model.sensory_noise_sym,
                 ),
-                controller.states.cx_start,
+                horzcat(x_q_joints, x_qdot_joints),
             )
 
             Gdz = jacobian(
                 G(
-                    vertcat(*controller.states.cx_intermediates_list),
-                    controller.states.cx_start,
+                    x_q_root,
+                    x_q_joints,
+                    x_qdot_root,
+                    x_qdot_joints,
+                    z_q_root,
+                    z_q_joints,
+                    z_qdot_root,
+                    z_qdot_joints,
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
                     controller.model.motor_noise_sym,
                     controller.model.sensory_noise_sym,
                 ),
-                vertcat(*controller.states.cx_intermediates_list),
+                horzcat(z_q_joints, z_qdot_joints),
             )
 
             Gdw = jacobian(
                 G(
-                    vertcat(*controller.states.cx_intermediates_list),
-                    controller.states.cx_start,
+                    x_q_root,
+                    x_q_joints,
+                    x_qdot_root,
+                    x_qdot_joints,
+                    z_q_root,
+                    z_q_joints,
+                    z_qdot_root,
+                    z_qdot_joints,
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
@@ -1015,15 +1078,21 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             Fdz = jacobian(
-                F(vertcat(*controller.states.cx_intermediates_list)), vertcat(*controller.states.cx_intermediates_list)
+                F(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints), horzcat(z_q_joints, z_qdot_joints)
             )
 
             # Constraint Equality defining M
             Mc = Function(
                 "M_cons",
                 [
-                    controller.states.cx_start,
-                    vertcat(*controller.states.cx_intermediates_list),
+                    x_q_root,
+                    x_q_joints,
+                    x_qdot_root,
+                    x_qdot_joints,
+                    z_q_root,
+                    z_q_joints,
+                    z_qdot_root,
+                    z_qdot_joints,
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
@@ -1037,8 +1106,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Pf = Function(
                 "P_next",
                 [
-                    controller.states.cx_start,
-                    vertcat(*controller.states.cx_intermediates_list),
+                    x_q_root,
+                    x_q_joints,
+                    x_qdot_root,
+                    x_qdot_joints,
+                    z_q_root,
+                    z_q_joints,
+                    z_qdot_root,
+                    z_qdot_joints,
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
@@ -1048,12 +1123,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T],
             ).expand()
 
-            return (
-                F,
-                G,
-                Mc,
-                Pf,
-            )
+            return Mc, Pf
 
     @staticmethod
     def get_dt(_):
