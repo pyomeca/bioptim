@@ -229,16 +229,29 @@ class PenaltyFunctionAbstract:
             e_fb = k_matrix @ ((ee - ref) + controller.model.sensory_noise_magnitude)
             jac_e_fb_x = jacobian(e_fb, vertcat(q_joints, qdot_joints))
 
-            fun_jac_e_fb_x = Function("jac_e_fb_x", [q_root, q_joints, qdot_root, qdot_joints, controller.controls.cx_start,
-                                    controller.parameters.cx_start, controller.stochastic_variables.cx_start], [jac_e_fb_x])
+            fun_jac_e_fb_x = Function(
+                "jac_e_fb_x",
+                [
+                    q_root,
+                    q_joints,
+                    qdot_root,
+                    qdot_joints,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                ],
+                [jac_e_fb_x],
+            )
 
-            eval_jac_e_fb_x = fun_jac_e_fb_x(controller.states.cx_start[:nb_root],
-                                             controller.states.cx_start[nb_root: nb_root + nu],
-                                             controller.states.cx_start[nb_root + nu: 2*nb_root + nu],
-                                             controller.states.cx_start[2*nb_root + nu: 2*(nb_root + nu)],
-                                             controller.controls.cx_start,
-                                             controller.parameters.cx_start,
-                                             controller.stochastic_variables.cx_start)
+            eval_jac_e_fb_x = fun_jac_e_fb_x(
+                controller.states.cx_start[:nb_root],
+                controller.states.cx_start[nb_root : nb_root + nu],
+                controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],
+                controller.states.cx_start[2 * nb_root + nu : 2 * (nb_root + nu)],
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+            )
             trace_jac_p_jack = trace(eval_jac_e_fb_x @ cov_matrix @ eval_jac_e_fb_x.T)
             expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
             return expectedEffort_fb_mx
