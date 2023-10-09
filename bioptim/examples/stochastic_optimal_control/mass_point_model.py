@@ -92,9 +92,7 @@ class MassPointModel:
         if with_noise:
             motor_noise = self.motor_noise_sym
         qddot = (
-            -self.kapa * (q - u)
-            - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2)
-            + motor_noise * 5
+            -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise * 5
         )
 
         return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
@@ -107,8 +105,6 @@ class MassPointModel:
         qdot = states[self.nb_q :]
         u = controls
 
-        qddot = (
-            -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
-        )
+        qddot = -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
 
         return vertcat(qdot, qddot)
