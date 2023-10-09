@@ -94,7 +94,7 @@ class MassPointModel:
         qddot = (
             -self.kapa * (q - u)
             - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2)
-            + motor_noise * 5  # TODO: @mickaelbegon, remove *5?
+            + motor_noise * 5
         )
 
         return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
@@ -108,7 +108,7 @@ class MassPointModel:
         u = controls
 
         qddot = (
-            -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise * 5
+            -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
         )
 
         return vertcat(qdot, qddot)

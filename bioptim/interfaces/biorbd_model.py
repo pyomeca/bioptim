@@ -202,7 +202,7 @@ class BiorbdModel:
         qddot_biorbd = GeneralizedAcceleration(qddot)
         return self.model.CoMddot(q_biorbd, qdot_biorbd, qddot_biorbd, True).to_mx()
 
-    def center_of_mass_rotation(self, q, qdot) -> MX:
+    def body_rotation_rate(self, q, qdot) -> MX:
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         return self.model.bodyAngularVelocity(q_biorbd, qdot_biorbd, True).to_mx()

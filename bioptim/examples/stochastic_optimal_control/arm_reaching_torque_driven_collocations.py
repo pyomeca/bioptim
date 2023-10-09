@@ -116,7 +116,7 @@ def prepare_socp(
         ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
         node=Node.ALL,
         weight=1e3 / 2,
-        quadratic=False,
+        quadratic=True,
     )
 
     # Constraints
