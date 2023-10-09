@@ -168,7 +168,7 @@ def prepare_socp(
         DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
         problem_type=problem_type,
         with_cholesky=False,
-        expand_dynamics=False,
+        expand_dynamics=True,
     )
 
     x_bounds = BoundsList()
@@ -306,7 +306,7 @@ def main():
     solver.set_dual_inf_tol(3e-4)
     solver.set_constr_viol_tol(1e-7)
     solver.set_maximum_iterations(10000)
-    solver.set_hessian_approximation("limited-memory")
+    # solver.set_hessian_approximation("limited-memory")
     solver.set_bound_frac(1e-8)
     solver.set_bound_push(1e-8)
     solver.set_nlp_scaling_method("none")
@@ -333,9 +333,7 @@ def main():
     ref_sol = sol_socp.stochastic_variables["ref"]
     m_sol = sol_socp.stochastic_variables["m"]
     cov_sol = sol_socp.stochastic_variables["cov"]
-    a_sol = sol_socp.stochastic_variables["a"]
-    c_sol = sol_socp.stochastic_variables["c"]
-    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol, a_sol, c_sol))
+    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol))
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
@@ -344,8 +342,6 @@ def main():
         "ref_sol": ref_sol,
         "m_sol": m_sol,
         "cov_sol": cov_sol,
-        "a_sol": a_sol,
-        "c_sol": c_sol,
         "stochastic_variables_sol": stochastic_variables_sol,
     }
 

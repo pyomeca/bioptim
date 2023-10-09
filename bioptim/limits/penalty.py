@@ -236,9 +236,9 @@ class PenaltyFunctionAbstract:
                     q_joints,
                     qdot_root,
                     qdot_joints,
-                    controller.controls.cx_start,
+                    controller.controls_scaled.cx_start,
                     controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
+                    controller.stochastic_variables_scaled.cx_start,
                 ],
                 [jac_e_fb_x],
             )
@@ -248,9 +248,9 @@ class PenaltyFunctionAbstract:
                 controller.states.cx_start[nb_root : nb_root + nu],
                 controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],
                 controller.states.cx_start[2 * nb_root + nu : 2 * (nb_root + nu)],
-                controller.controls.cx_start,
+                controller.controls_scaled.cx_start,
                 controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
+                controller.stochastic_variables_scaled.cx_start,
             )
             trace_jac_p_jack = trace(eval_jac_e_fb_x @ cov_matrix @ eval_jac_e_fb_x.T)
             expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
