@@ -112,8 +112,6 @@ def prepare_socp(
     objective_functions.add(
         ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=1e3 / 2, quadratic=True
     )
-    # The objective on k is a regularization term, in this realy simple case, SOCP is overkill, thus k has only a small effect
-    objective_functions.add(ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_VARIABLE, key="k", node=Node.ALL, weight=1e-3)
     objective_functions.add(
         ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
         node=Node.ALL,
