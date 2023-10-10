@@ -1066,9 +1066,7 @@ class ConstraintFcn(FcnEnum):
     """
 
     STATE_CONTINUITY = (PenaltyFunctionAbstract.Functions.state_continuity,)
-    FIRST_COLLOCATION_HELPER_EQUALS_STATE = (
-        PenaltyFunctionAbstract.Functions.first_collocation_point_equals_state,
-    )
+    FIRST_COLLOCATION_HELPER_EQUALS_STATE = (PenaltyFunctionAbstract.Functions.first_collocation_point_equals_state,)
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
