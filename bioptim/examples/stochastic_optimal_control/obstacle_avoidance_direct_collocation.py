@@ -31,6 +31,7 @@ from bioptim import (
     StochasticBioModel,
     OdeSolver,
     PhaseDynamics,
+    BoundsList,
 )
 
 from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPointModel
@@ -222,6 +223,14 @@ def prepare_socp(
     control_init = InitialGuessList()
     control_init.add("u", initial_guess=[0] * nb_u, interpolation=InterpolationType.CONSTANT)
 
+    # Initial bounds
+    x_bounds = BoundsList()
+    x_bounds.add("q", min_bound=[-10, -10], max_bound=[10, 10], interpolation=InterpolationType.CONSTANT)
+    x_bounds.add("qdot", min_bound=[-20, -20], max_bound=[20, 20], interpolation=InterpolationType.CONSTANT)
+
+    control_bounds = BoundsList()
+    control_bounds.add("u", min_bound=[-20, -20], max_bound=[20, 20], interpolation=InterpolationType.CONSTANT)
+
     # Dynamics
     dynamics = DynamicsList()
 
@@ -240,6 +249,7 @@ def prepare_socp(
             expand_dynamics=expand_dynamics,
         )
 
+        constraints.add(ConstraintFcn.TRACK_STOCHASTIC, key="cov", min_bound=1e-6, max_bound=cas.inf, node=Node.ALL)
         phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
 
         s_init = InitialGuessList()
@@ -264,6 +274,8 @@ def prepare_socp(
             x_init=x_init,
             u_init=control_init,
             s_init=s_init,
+            x_bounds=x_bounds,
+            u_bounds=control_bounds,
             objective_functions=objective_functions,
             constraints=constraints,
             control_type=ControlType.CONSTANT,
@@ -297,6 +309,8 @@ def prepare_socp(
             final_time,
             x_init=x_init,
             u_init=control_init,
+            x_bounds=x_bounds,
+            u_bounds=control_bounds,
             objective_functions=objective_functions,
             constraints=constraints,
             control_type=ControlType.CONSTANT,
