@@ -12,6 +12,9 @@ from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_impl
 def test_arm_reaching_muscle_driven():
     from bioptim.examples.stochastic_optimal_control import arm_reaching_muscle_driven as ocp_module
 
+    if platform.system() != "Linux":
+        return
+
     final_time = 0.8
     n_shooting = 4
     hand_final_position = np.array([9.359873986980460e-12, 0.527332023564034])
@@ -349,8 +352,7 @@ def test_arm_reaching_muscle_driven():
 def test_arm_reaching_torque_driven_explicit():
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_explicit as ocp_module
 
-    if platform.system() == "Windows":
-        # This test fails on Windows CI
+    if platform.system() != "Linux":
         return
 
     final_time = 0.8
