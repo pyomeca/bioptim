@@ -249,7 +249,6 @@ def prepare_socp(
             expand_dynamics=expand_dynamics,
         )
 
-        constraints.add(ConstraintFcn.TRACK_STOCHASTIC, key="cov", min_bound=1e-6, max_bound=cas.inf, node=Node.ALL)
         phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
 
         s_init = InitialGuessList()
