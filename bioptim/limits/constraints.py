@@ -969,9 +969,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_full = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
 
             # Loop over collocation points
-            x0 = _d[0] * z_full[:, 0]
-            G_argout = [x0 + x_full]
-            xf = x0
+            G_argout = [x_full - z_full[:, 0]]
+            xf = _d[0] * z_full[:, 0]
             for j in range(1, polynomial_degree + 1):
                 # Expression for the state derivative at the collocation point
                 xp_j = _c[0, j] * x_full
