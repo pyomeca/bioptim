@@ -8,19 +8,13 @@ from casadi import (
     lt,
     SX,
     MX,
-    DM,
     jacobian,
     Function,
     MX_eye,
     horzcat,
     ldl,
     diag,
-    rootfinder,
-    integrator_in,
-    integrator_out,
     collocation_points,
-    collocation_coeff,
-    collocation_interpolators,
 )
 
 from .path_conditions import Bounds
@@ -994,86 +988,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             for i in range(polynomial_degree + 1):
                 G_joints = vertcat(G_joints, G_argout[i][joints_index])
 
-            # The function G in 0 = G(x_k,z_k,u_k,w_k)
-            G = Function(
-                "G",
-                [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ],
-                [G_joints],
-            ).expand()
-
             # The function F in x_{k+1} = F(z_k)
             F = Function("F", [z_q_root, z_q_joints, z_qdot_root, z_qdot_joints], [xf]).expand()
 
-            Gdx = jacobian(
-                G(
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ),
-                horzcat(x_q_joints, x_qdot_joints),
-            )
+            Gdx = jacobian(G_joints, horzcat(x_q_joints, x_qdot_joints))
 
-            Gdz = jacobian(
-                G(
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ),
-                horzcat(z_q_joints, z_qdot_joints),
-            )
+            Gdz = jacobian(G_joints, horzcat(z_q_joints, z_qdot_joints))
 
-            Gdw = jacobian(
-                G(
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ),
-                vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym),
-            )
+            Gdw = jacobian(G_joints, vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
 
             Fdz = jacobian(F(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints), horzcat(z_q_joints, z_qdot_joints))
 
