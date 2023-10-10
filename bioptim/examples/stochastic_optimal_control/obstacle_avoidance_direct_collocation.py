@@ -298,7 +298,7 @@ def prepare_socp(
             expand_dynamics=expand_dynamics,
         )
         ode_solver = OdeSolver.COLLOCATION(
-            polynomial_degree=socp_type.polynomial_degree, method=socp_type.method, add_initial_collocation_point=True
+            polynomial_degree=socp_type.polynomial_degree, method=socp_type.method, include_starting_collocation_point=True
         )
 
         return OptimalControlProgram(

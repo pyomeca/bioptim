@@ -180,7 +180,7 @@ def get_cov_mat(nlp, node_index):
         cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym).shape[0]
     )
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
-    cov_matrix = StochasticBioModel.reshape_sym_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
+    cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(
         nlp.states.cx_start,
@@ -239,7 +239,7 @@ def reach_target_consistently(controllers: list[PenaltyController]) -> cas.MX:
     q_sym = cas.MX.sym("q_sym", controllers[-1].states["q"].cx_start.shape[0])
     qdot_sym = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx_start.shape[0])
     cov_sym = cas.MX.sym("cov", controllers[-1].integrated_values.cx_start.shape[0])
-    cov_matrix = StochasticBioModel.reshape_sym_to_matrix(cov_sym, controllers[-1].model.matrix_shape_cov)
+    cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, controllers[-1].model.matrix_shape_cov)
 
     hand_pos = controllers[0].model.markers(q_sym)[2][:2]
     hand_vel = controllers[0].model.marker_velocities(q_sym, qdot_sym)[2][:2]
@@ -287,10 +287,10 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
     # Get the symbolic variables
     ref = controllers[0].stochastic_variables["ref"].cx_start
     cov_sym = cas.MX.sym("cov", controllers[0].integrated_values.cx_start.shape[0])
-    cov_matrix = StochasticBioModel.reshape_sym_to_matrix(cov_sym, controllers[0].model.matrix_shape_cov)
+    cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, controllers[0].model.matrix_shape_cov)
 
     k = controllers[0].stochastic_variables["k"].cx_start
-    k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, controllers[0].model.matrix_shape_k)
+    k_matrix = StochasticBioModel.reshape_to_matrix(k, controllers[0].model.matrix_shape_k)
 
     # Compute the expected effort
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)

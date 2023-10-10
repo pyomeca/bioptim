@@ -922,15 +922,6 @@ class IRK(COLLOCATION):
         """
         Prepare the CasADi function from dxdt
         """
-        xf, xall = self.dxdt(
-            h=self.h,
-            time=self.time_integration_grid[0],
-            states=self.x_sym,
-            controls=self.u_sym,
-            params=self.param_sym,
-            param_scaling=self.param_scaling,
-            stochastic_variables=self.s_sym,
-        )
 
         self.function = Function(
             "integrator",

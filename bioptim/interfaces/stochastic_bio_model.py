@@ -47,39 +47,11 @@ class StochasticBioModel(BioModel):
         return matrix
 
     @staticmethod
-    def reshape_sym_to_matrix(var, shape):
-        """
-        Restore the matrix form of the variables
-        """
-
-        shape_0, shape_1 = shape
-        matrix = type(var).zeros(shape_0, shape_1)
-
-        for s0 in range(shape_1):
-            for s1 in range(shape_0):
-                matrix[s1, s0] = var[s0 * shape_0 + s1]
-        return matrix
-
-    @staticmethod
     def reshape_to_cholesky_matrix(var, shape):
         """
         Restore the lower diagonal matrix form of the variables vector
         """
 
-        shape_0, _ = shape
-        matrix = type(var).zeros(shape_0, shape_0)
-        i = 0
-        for s0 in range(shape_0):
-            for s1 in range(s0 + 1):
-                matrix[s1, s0] = var[i]
-                i += 1
-        return matrix
-
-    @staticmethod
-    def reshape_sym_to_cholesky_matrix(var, shape):
-        """
-        Restore the lower diagonal matrix form of the variables vector
-        """
         shape_0, _ = shape
         matrix = type(var).zeros(shape_0, shape_0)
         i = 0

@@ -751,7 +751,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
-            Mc, _ = ConstraintFunction.Functions.collocation_fun_jac(
+            Mc, _ = ConstraintFunction.Functions.collocation_jacobians(
+                penalty,
                 controller,
                 collocation_method,
                 polynomial_degree,
@@ -796,7 +797,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
-            _, Pf = ConstraintFunction.Functions.collocation_fun_jac(
+            _, Pf = ConstraintFunction.Functions.collocation_jacobians(
+                penalty,
                 controller,
                 collocation_method,
                 polynomial_degree,
@@ -896,7 +898,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return diagonal_terms
 
         @staticmethod
-        def collocation_fun_jac(controller, method, polynomial_degree):
+        def collocation_jacobians(penalty, controller, method, polynomial_degree):
             def prepare_collocation(method, polynomial_degree):
                 # Get collocation points
                 tau_root = np.append(0, collocation_points(polynomial_degree, method))
@@ -988,16 +990,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             for i in range(polynomial_degree + 1):
                 G_joints = vertcat(G_joints, G_argout[i][joints_index])
 
-            # The function F in x_{k+1} = F(z_k)
-            F = Function("F", [z_q_root, z_q_joints, z_qdot_root, z_qdot_joints], [xf]).expand()
-
             Gdx = jacobian(G_joints, horzcat(x_q_joints, x_qdot_joints))
 
             Gdz = jacobian(G_joints, horzcat(z_q_joints, z_qdot_joints))
 
             Gdw = jacobian(G_joints, vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
 
-            Fdz = jacobian(F(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints), horzcat(z_q_joints, z_qdot_joints))
+            Fdz = jacobian(xf, horzcat(z_q_joints, z_qdot_joints))
 
             # Constraint Equality defining M
             Mc = Function(
@@ -1018,7 +1017,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.model.sensory_noise_sym,
                 ],
                 [Fdz.T - Gdz.T @ m_matrix.T],
-            ).expand()
+            )
+            if penalty.expand:
+                Mc = Mc.expand()
 
             # Covariance propagation rule
             Pf = Function(
@@ -1039,7 +1040,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.model.sensory_noise_sym,
                 ],
                 [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T],
-            ).expand()
+            )
+            if penalty.expand:
+                Pf = Pf.expand()
 
             return Mc, Pf
 
@@ -1062,9 +1065,9 @@ class ConstraintFcn(FcnEnum):
         Returns the type of the penalty
     """
 
-    CONTINUITY = (PenaltyFunctionAbstract.Functions.state_continuity,)
+    STATE_CONTINUITY = (PenaltyFunctionAbstract.Functions.state_continuity,)
     FIRST_COLLOCATION_HELPER_EQUALS_STATE = (
-        PenaltyFunctionAbstract.Functions.first_collocation_helper_equals_final_state,
+        PenaltyFunctionAbstract.Functions.first_collocation_point_equals_state,
     )
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)

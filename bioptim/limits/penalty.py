@@ -1140,7 +1140,7 @@ class PenaltyFunctionAbstract:
 
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
-                if controller.get_nlp.ode_solver.add_initial_collocation_point:
+                if controller.get_nlp.ode_solver.include_starting_collocation_point:
                     cx = horzcat(*controller.states.cx_intermediates_list)
                 else:
                     cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
@@ -1170,10 +1170,10 @@ class PenaltyFunctionAbstract:
             return continuity
 
         @staticmethod
-        def first_collocation_helper_equals_final_state(penalty: PenaltyOption, controller: PenaltyController | list):
+        def first_collocation_point_equals_state(penalty: PenaltyOption, controller: PenaltyController | list):
             """
             Insures that the first collocation helper is equal to the states at the shooting node.
-            This is a necessary constraint for COLLOCATION with add_initial_collocation_point.
+            This is a necessary constraint for COLLOCATION with include_starting_collocation_point.
             """
             collocation_helper = controller.states.cx_intermediates_list[0]
             states = controller.states.cx_start

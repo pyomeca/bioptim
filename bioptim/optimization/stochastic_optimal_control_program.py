@@ -85,7 +85,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 "The ode_solver cannot be defined for a stochastic ocp. The value is chosen based on the type of problem solved:"
                 "\n- TRAPEZOIDAL_EXPLICIT: OdeSolver.TRAPEZOIDAL() "
                 "\n- TRAPEZOIDAL_IMPLICIT: OdeSolver.TRAPEZOIDAL() "
-                "\n- COLLOCATION: OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree, add_initial_collocation_point=True)"
+                "\n- COLLOCATION: OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree, include_starting_collocation_point=True)"
             )
 
         if not isinstance(problem_type, SocpType.COLLOCATION):
@@ -108,7 +108,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             ode_solver = OdeSolver.COLLOCATION(
                 method=problem_type.method,
                 polynomial_degree=problem_type.polynomial_degree,
-                add_initial_collocation_point=True,
+                include_starting_collocation_point=True,
             )
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
