@@ -77,8 +77,7 @@ def test_arm_reaching_torque_driven_collocations():
 
     np.testing.assert_almost_equal(
         k[:, 0],
-        np.array([-0.4667972 , -3.26899096, -0.1631994 , -1.9435918 ,  3.00992629,
-        3.20946796,  0.28313214,  3.40857073]),
+        np.array([-0.4667972, -3.26899096, -0.1631994, -1.9435918, 3.00992629, 3.20946796, 0.28313214, 3.40857073]),
         decimal=5,
     )
     np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
