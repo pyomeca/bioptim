@@ -432,32 +432,6 @@ class PenaltyOption(OptionGeneric):
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
-        def get_u(u: MX | SX, dt: MX | SX):
-            """
-            Get the control at a given time
-
-            Parameters
-            ----------
-            u: MX | SX
-                The control matrix
-            dt: MX | SX
-                The time a which control should be computed
-
-            Returns
-            -------
-            The control at a given time
-            """
-
-            if (
-                controller.control_type == ControlType.CONSTANT
-                or controller.control_type == ControlType.CONSTANT_WITH_LAST_NODE
-            ):
-                return u
-            elif controller.control_type == ControlType.LINEAR_CONTINUOUS:
-                return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
-            else:
-                raise RuntimeError(f"{controller.control_type} ControlType not implemented yet")
-
         if self.transition:
             name = (
                 self.name.replace("->", "_")
@@ -793,13 +767,17 @@ class PenaltyOption(OptionGeneric):
             )
 
             if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
-                control_cx_end_scaled = get_u(controller.controls_scaled.cx_start, dt_cx)
-                control_cx_end = get_u(controller.controls.cx_start, dt_cx)
+                control_cx_end_scaled = _get_u(controller.control_type, controller.controls_scaled.cx_start, dt_cx)
+                control_cx_end = _get_u(controller.control_type, controller.controls.cx_start, dt_cx)
             else:
-                control_cx_end_scaled = get_u(
-                    horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end), dt_cx
+                control_cx_end_scaled = _get_u(
+                    controller.control_type,
+                    horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end),
+                    dt_cx,
                 )
-                control_cx_end = get_u(horzcat(controller.controls.cx_start, controller.controls.cx_end), dt_cx)
+                control_cx_end = _get_u(
+                    controller.control_type, horzcat(controller.controls.cx_start, controller.controls.cx_end), dt_cx
+                )
             state_cx_end_scaled = (
                 controller.states_scaled.cx_end
                 if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
@@ -1141,3 +1119,29 @@ class PenaltyOption(OptionGeneric):
         s = [nlp.S[idx] for idx in t]
         s_scaled = [nlp.S_scaled[idx] for idx in t]
         return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx, s, s_scaled)
+
+
+def _get_u(control_type: ControlType, u: MX | SX, dt: MX | SX):
+    """
+    Helper function to get the control at a given time
+
+    Parameters
+    ----------
+    control_type: ControlType
+        The type of control
+    u: MX | SX
+        The control matrix
+    dt: MX | SX
+        The time a which control should be computed
+
+    Returns
+    -------
+    The control at a given time
+    """
+
+    if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+        return u
+    elif control_type == ControlType.LINEAR_CONTINUOUS:
+        return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
+    else:
+        raise RuntimeError(f"{control_type} ControlType not implemented yet")
