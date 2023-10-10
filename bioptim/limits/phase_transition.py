@@ -356,7 +356,7 @@ class PhaseTransitionFcn(FcnEnum):
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
     COVARIANCE_CYCLIC = (PhaseTransitionFunctions.Functions.covariance_cyclic,)
-    Covariance_CONTINUOUS = (PhaseTransitionFunctions.Functions.covariance_continuous,)
+    COVARIANCE_CONTINUOUS = (PhaseTransitionFunctions.Functions.covariance_continuous,)
     CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
 
     @staticmethod

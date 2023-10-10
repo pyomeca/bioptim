@@ -337,7 +337,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         if "ref" in self.nlp[0].stochastic_variables:
             constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
-            # @pariterre This seems dangerous ?
 
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
@@ -345,6 +344,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_HELPER_MATRIX_COLLOCATION,
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
+                expand=True,
             )
 
         # Constraints for P inner-phase
@@ -353,9 +353,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION,
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
+                expand=True,
             )
 
         # Constraints for P inter-phase
         for i_phase, nlp in enumerate(self.nlp):
-            if i_phase > 0 and i_phase < len(self.nlp) - 1:
+            if len(self.nlp) > 1 and i_phase < len(self.nlp) - 1:
                 phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
