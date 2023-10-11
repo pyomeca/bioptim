@@ -208,18 +208,51 @@ class PenaltyFunctionAbstract:
                 controller.stochastic_variables["k"].cx_start, controller.model.matrix_shape_k
             )
 
+            nb_root = controller.model.nb_root
+            nu = controller.model.nb_q - controller.model.nb_root
+
+            q_root = MX.sym("q_root", nb_root, 1)
+            q_joints = MX.sym("q_joints", nu, 1)
+            qdot_root = MX.sym("qdot_root", nb_root, 1)
+            qdot_joints = MX.sym("qdot_joints", nu, 1)
+
             # Compute the expected effort
             trace_k_sensor_k = trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
             ee = controller.model.sensory_reference(
-                states=controller.states.cx_start,
+                states=vertcat(q_root, q_joints, qdot_root, qdot_joints),
                 controls=controller.controls.cx_start,
                 parameters=controller.parameters.cx_start,
                 stochastic_variables=controller.stochastic_variables.cx_start,
                 nlp=controller.get_nlp,
             )
+
             e_fb = k_matrix @ ((ee - ref) + controller.model.sensory_noise_magnitude)
-            jac_e_fb_x = jacobian(e_fb, controller.states.cx_start)
-            trace_jac_p_jack = trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
+            jac_e_fb_x = jacobian(e_fb, vertcat(q_joints, qdot_joints))
+
+            fun_jac_e_fb_x = Function(
+                "jac_e_fb_x",
+                [
+                    q_root,
+                    q_joints,
+                    qdot_root,
+                    qdot_joints,
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables_scaled.cx_start,
+                ],
+                [jac_e_fb_x],
+            )
+
+            eval_jac_e_fb_x = fun_jac_e_fb_x(
+                controller.states.cx_start[:nb_root],
+                controller.states.cx_start[nb_root : nb_root + nu],
+                controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],
+                controller.states.cx_start[2 * nb_root + nu : 2 * (nb_root + nu)],
+                controller.controls_scaled.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables_scaled.cx_start,
+            )
+            trace_jac_p_jack = trace(eval_jac_e_fb_x @ cov_matrix @ eval_jac_e_fb_x.T)
             expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
             return expectedEffort_fb_mx
 
@@ -1082,7 +1115,7 @@ class PenaltyFunctionAbstract:
             return controller.mx_to_cx("vector_orientations_difference", out, controller.states["q"])
 
         @staticmethod
-        def continuity(penalty: PenaltyOption, controller: PenaltyController | list):
+        def state_continuity(penalty: PenaltyOption, controller: PenaltyController | list):
             if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE):
                 u = controller.controls.cx_start
             elif controller.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -1107,14 +1140,17 @@ class PenaltyFunctionAbstract:
 
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
-                cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
+                if controller.get_nlp.ode_solver.include_starting_collocation_point:
+                    cx = horzcat(*controller.states.cx_intermediates_list)
+                else:
+                    cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
                 continuity -= controller.integrate(
-                    x0=cx, p=u, params=controller.parameters.cx, s=controller.stochastic_variables.cx_start
+                    x0=cx, u=u, p=controller.parameters.cx, s=controller.stochastic_variables.cx_start
                 )["xf"]
                 continuity = vertcat(
                     continuity,
                     controller.integrate(
-                        x0=cx, p=u, params=controller.parameters.cx, s=controller.stochastic_variables.cx_start
+                        x0=cx, u=u, p=controller.parameters.cx, s=controller.stochastic_variables.cx_start
                     )["defects"],
                 )
 
@@ -1123,8 +1159,8 @@ class PenaltyFunctionAbstract:
             else:
                 continuity -= controller.integrate(
                     x0=controller.states.cx_start,
-                    p=u,
-                    params=controller.parameters.cx,
+                    u=u,
+                    p=controller.parameters.cx_start,
                     s=controller.stochastic_variables.cx_start,
                 )["xf"]
 
@@ -1132,6 +1168,16 @@ class PenaltyFunctionAbstract:
             penalty.multi_thread = True
 
             return continuity
+
+        @staticmethod
+        def first_collocation_point_equals_state(penalty: PenaltyOption, controller: PenaltyController | list):
+            """
+            Insures that the first collocation helper is equal to the states at the shooting node.
+            This is a necessary constraint for COLLOCATION with include_starting_collocation_point.
+            """
+            collocation_helper = controller.states.cx_intermediates_list[0]
+            states = controller.states.cx_start
+            return collocation_helper - states
 
         @staticmethod
         def custom(penalty: PenaltyOption, controller: PenaltyController | list, **parameters: Any):

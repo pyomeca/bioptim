@@ -1136,11 +1136,15 @@ class Solution:
         time_phase = self.phase_time
         for p, nlp in enumerate(self.ocp.nlp):
             is_direct_collocation = nlp.ode_solver.is_direct_collocation
+            include_starting_collocation_point = False
+            if is_direct_collocation:
+                include_starting_collocation_point = nlp.ode_solver.include_starting_collocation_point
 
             step_times = self._define_step_times(
                 dynamics_step_time=nlp.dynamics[0].step_time,
                 ode_solver_steps=nlp.ode_solver.steps,
                 is_direct_collocation=is_direct_collocation,
+                include_starting_collocation_point=include_starting_collocation_point,
                 keep_intermediate_points=keep_intermediate_points,
                 continuous=shooting_type == Shooting.SINGLE,
             )
@@ -1180,6 +1184,7 @@ class Solution:
         keep_intermediate_points: bool = None,
         continuous: bool = True,
         is_direct_collocation: bool = None,
+        include_starting_collocation_point: bool = False,
     ) -> np.ndarray:
         """
         Define the time steps for the integration of the whole phase
@@ -1198,6 +1203,8 @@ class Solution:
             arrival node and the beginning of the next one are expected to be almost equal when the problem converged
         is_direct_collocation: bool
             If the ode solver is direct collocation
+        include_starting_collocation_point
+            If the ode solver is direct collocation and an additional collocation point at the shooting node was used
 
         Returns
         -------
@@ -1210,11 +1217,13 @@ class Solution:
 
         if is_direct_collocation:
             # time is not linear because of the collocation points
-            step_times = (
-                np.array(dynamics_step_time + [1])
-                if keep_intermediate_points
-                else np.array(dynamics_step_time + [1])[[0, -1]]
-            )
+            if keep_intermediate_points:
+                if include_starting_collocation_point:
+                    step_times = np.array([0] + dynamics_step_time + [1])
+                else:
+                    step_times = np.array(dynamics_step_time + [1])
+            else:
+                step_times = np.array(dynamics_step_time + [1])[[0, -1]]
 
         else:
             # time is linear in the case of direct multiple shooting

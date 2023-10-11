@@ -52,12 +52,16 @@ class PhaseTransition(MultinodePenalty):
         max_bound: float = 0,
         **params: Any,
     ):
+        # TODO: @pariterre: where did phase_post go !?
+
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
             PhaseTransitionFcn,
-            nodes_phase=(-1, 0) if transition == transition.CYCLIC else (phase_pre_idx, phase_pre_idx + 1),
+            nodes_phase=(-1, 0)
+            if transition in [transition.CYCLIC, transition.COVARIANCE_CYCLIC]
+            else (phase_pre_idx, phase_pre_idx + 1),
             nodes=(Node.END, Node.START),
             multinode_penalty=transition,
             custom_function=custom_function,
@@ -298,6 +302,28 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             return func
 
         @staticmethod
+        def covariance_cyclic(
+            transition,
+            controllers: list[PenaltyController, PenaltyController],
+        ):
+            """
+            The most common continuity function, that is the covariance before equals covariance after for stochastic ocp
+
+            Parameters
+            ----------
+            transition : PhaseTransition
+                A reference to the phase transition
+            controllers: list[PenaltyController, PenaltyController]
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the covariance after and before
+            """
+
+            return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
+
+        @staticmethod
         def covariance_continuous(
             transition,
             controllers: list[PenaltyController, PenaltyController],
@@ -329,6 +355,7 @@ class PhaseTransitionFcn(FcnEnum):
     DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
+    COVARIANCE_CYCLIC = (PhaseTransitionFunctions.Functions.covariance_cyclic,)
     COVARIANCE_CONTINUOUS = (PhaseTransitionFunctions.Functions.covariance_continuous,)
     CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
 
