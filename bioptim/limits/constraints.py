@@ -362,6 +362,48 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return controller.tf
 
         @staticmethod
+        def bound_state(
+            _: Constraint,
+            controller: PenaltyController,
+            key: str,
+        ):
+            """
+            Bound the state according to key
+
+            Parameters
+            ----------
+            _: Constraint
+                The actual constraint to declare
+            controller: PenaltyController
+                The penalty node elements
+            key: str
+                The name of the state to constraint
+            """
+
+            return controller.states[key].cx_start
+
+        @staticmethod
+        def bound_control(
+            _: Constraint,
+            controller: PenaltyController,
+            key: str,
+        ):
+            """
+            Bound the control according to key
+
+            Parameters
+            ----------
+            _: Constraint
+                The actual constraint to declare
+            controller: PenaltyController
+                The penalty node elements
+            key: str
+                The name of the control to constraint
+            """
+
+            return controller.controls[key].cx_start
+
+        @staticmethod
         def qddot_equals_forward_dynamics(
             _: Constraint,
             controller: PenaltyController,
@@ -1090,19 +1132,21 @@ class ConstraintFcn(FcnEnum):
         Returns the type of the penalty
     """
 
+    BOUND_CONTROL = (ConstraintFunction.Functions.bound_control,)
+    BOUND_STATE = (ConstraintFunction.Functions.bound_state,)
     CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
     PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
+    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION = (
+        ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_collocation,
+    )
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
     STOCHASTIC_DF_DX_IMPLICIT = (ConstraintFunction.Functions.stochastic_df_dx_implicit,)
     STOCHASTIC_HELPER_MATRIX_COLLOCATION = (ConstraintFunction.Functions.stochastic_helper_matrix_collocation,)
-    STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION = (
-        ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_collocation,
-    )
     STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (
         ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,
     )
