@@ -77,6 +77,7 @@ class Constraint(PenaltyOption):
         super(Constraint, self).set_penalty(penalty, controller)
         self.min_bound = 0 if self.min_bound is None else self.min_bound
         self.max_bound = 0 if self.max_bound is None else self.max_bound
+        # TODO: MB- Add a message? since min_bound=0 by default does not make sense for all types of constraints
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
         if self.type == ConstraintFcn.TIME_CONSTRAINT:

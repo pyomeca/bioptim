@@ -133,6 +133,7 @@ def prepare_socp(
     # This constraint insures that the hand reaches the target with x_mean
     constraints.add(
         ConstraintFcn.TRACK_MARKERS, node=Node.END, target=hand_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
+        #todo: @pariterre why axes is plural while all others are singular?
     )
     # While this constraint insures that the hand still reaches the target with the proper position and velocity even
     # in the presence of noise
