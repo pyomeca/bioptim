@@ -211,7 +211,6 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 
 - [use_sx](#use_sx)
 - [n_threads](#n_threads)
-- [assume_phase_dynamics](#assume_phase_dynamics)
 - [expand](#expand)
 
 </details>
@@ -2459,9 +2458,6 @@ These are faster but require more RAM, so ensure you have enough RAM to use this
 Set n_threads to the number of threads you want to use in the OptimalControlProgram class.
 By default, it is set to 1. It will split the computation of the continuity constraints between threads and speed up the computation. If applicable to your problem, use the next option too.
 
-## assume_phase_dynamics
-See Enum: PhaseDynamics
-
 ## expand
 (For objective and constraint functions)
 Set the expand argument to True for objective and constraint functions to speed up the computation.
@@ -2473,7 +2469,7 @@ Fortunately, this troubleshooting section will guide you through solving some kn
 
 ## Freezing compute
 If your computer freezes before any optimization is performed, it is probably because your problem requires too much RAM.
-If you are using use_sx and/or expand options, try turning them off. If it does not work, try reducing the number of nodes. If assume_phase_dynamics is set to False, try setting it to True, if applicable to your problem.
+If you are using use_sx and/or expand options, try turning them off. If it does not work, try reducing the number of nodes.
 
 ## Free variables
 Sometimes when working on advanced custom problems, you may have *free variables* that prevent the solver from being launched.
