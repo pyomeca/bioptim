@@ -76,6 +76,8 @@ class NonLinearProgram:
         The time stamp of the beginning of the phase
     tf: float
         The time stamp of the end of the phase
+    tf_mx: float
+        The time stamp of the end of the phase in mx type
     variable_mappings: BiMappingList
         The list of mapping for all the variables
     u_bounds = Bounds()
@@ -153,6 +155,7 @@ class NonLinearProgram:
         self.T = None
         self.t0 = None
         self.tf = None
+        self.tf_mx = None
         self.variable_mappings = {}
         self.u_bounds = BoundsList()
         self.u_init = InitialGuessList()
@@ -385,7 +388,7 @@ class NonLinearProgram:
 
         return func.expand() if expand else func
 
-    def node_time(self, node_idx: int):
+    def node_time(self, node_idx: int, type: str = None):
         """
         Gives the time for a specific index
 
@@ -393,6 +396,8 @@ class NonLinearProgram:
         ----------
         node_idx: int
           Index of the node
+        type: str
+            The time type to return
 
         Returns
         -------
@@ -400,4 +405,20 @@ class NonLinearProgram:
         """
         if node_idx < 0 or node_idx > self.ns:
             return ValueError(f"node_index out of range [0:{self.ns}]")
-        return self.tf / self.ns * node_idx
+
+        if type is None:
+            tf = self.tf
+        elif type == "mx":
+            if isinstance(self.tf_mx, float):
+                raise RuntimeError(f"Incorrect type argument 'mx' as the time is not symbolic, use type = None instead")
+            tf = self.tf_mx
+        elif type == "sx":
+            if isinstance(self.tf, float):
+                raise RuntimeError(f"Incorrect type argument 'sx' as the time is not symbolic, use type = None instead")
+            if self.cx.type_name() == "MX":
+                raise RuntimeError(f"Incorrect type argument 'sx' as use_sx = False for the ocp, use type = mx instead")
+            tf = self.tf
+        else:
+            raise RuntimeError(f"Unknown type argument {type}")
+
+        return tf / self.ns * node_idx

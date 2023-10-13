@@ -67,7 +67,9 @@ def prepare_ocp(
     dynamics = DynamicsList()
     dynamics.add(
         # This must be PhaseDynamics.ONE_PER_NODE since external forces change at each node within the phase
-        DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=PhaseDynamics.ONE_PER_NODE
+        DynamicsFcn.TORQUE_DRIVEN,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
     )
 
     # Constraints

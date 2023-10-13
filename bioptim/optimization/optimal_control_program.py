@@ -1855,6 +1855,9 @@ class OptimalControlProgram:
         parameters["time"].cx = params
         parameters["time"].mx = MX.sym("time", params.shape[0], 1)
 
+        phase_time_mx = [parameters["time"].mx[i] for i in range(parameters["time"].mx.shape[0])]
+        NLP.add(self, "tf_mx", phase_time_mx, True)
+
         parameters_init.add("time", initial_time_guess, phase=0)
         parameters_bounds.add(
             "time", min_bound=time_min, max_bound=time_max, phase=0, interpolation=InterpolationType.CONSTANT
@@ -1903,7 +1906,7 @@ class OptimalControlProgram:
 
         self.program_changed = True
 
-    def node_time(self, phase_idx: int, node_idx: int):
+    def node_time(self, phase_idx: int, node_idx: int, type: str = None):
         """
         Gives the time of the node node_idx of from the phase phase_idx
 
@@ -1913,6 +1916,8 @@ class OptimalControlProgram:
           Index of the phase
         node_idx: int
           Index of the node
+        type: str
+            Type of the time to return (e.g. 'mx' or 'sx')
 
         Returns
         -------
@@ -1922,8 +1927,21 @@ class OptimalControlProgram:
             return ValueError(f"phase_index out of range [0:{self.n_phases}]")
         if node_idx < 0 or node_idx > self.nlp[phase_idx].ns:
             return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
-        previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
-        return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
+        if type is None:
+            previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
+        elif type == "mx":
+            if isinstance(self.nlp[0].tf_mx, float):
+                raise RuntimeError(f"Incorrect type argument 'mx' as the time is not symbolic, use type = None instead")
+            previous_phase_time = sum([nlp.tf_mx for nlp in self.nlp[:phase_idx]])
+        elif type == "sx":
+            if isinstance(self.nlp[0].tf, float):
+                raise RuntimeError(f"Incorrect type argument 'sx' as the time is not symbolic, use type = None instead")
+            if self.cx.type_name() == "MX":
+                raise RuntimeError(f"Incorrect type argument 'sx' as use_sx = False for the ocp, use type = mx instead")
+            previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
+        else:
+            raise RuntimeError(f"Unknown type argument {type}")
+        return previous_phase_time + self.nlp[phase_idx].node_time(node_idx, type=type)
 
 
 # helpers
