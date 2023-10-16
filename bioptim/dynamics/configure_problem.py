@@ -188,7 +188,7 @@ class ConfigureProblem:
         """
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        _check_soft_contacts_dynamics(rigidbody_dynamics, soft_contacts_dynamics, nlp.ns, nlp.phase_idx)
+        _check_soft_contacts_dynamics(rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
         _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
 
         # Declared rigidbody states and controls
@@ -410,7 +410,7 @@ class ConfigureProblem:
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
-        _check_soft_contacts_dynamics(rigidbody_dynamics, soft_contacts_dynamics, nlp.ns, nlp.phase_idx)
+        _check_soft_contacts_dynamics(rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
         _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
