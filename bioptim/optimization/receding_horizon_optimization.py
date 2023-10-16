@@ -452,7 +452,6 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             u_bounds=self.nlp[0].u_bounds,
             x_init=x_init,
             u_init=u_init,
-            skip_continuity=True,
             use_sx=self.original_values["use_sx"],
         )
         s_init = InitialGuessList()

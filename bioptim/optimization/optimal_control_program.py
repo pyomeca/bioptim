@@ -172,8 +172,6 @@ class OptimalControlProgram:
         x_scaling: VariableScalingList = None,
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
-        s_scaling: VariableScalingList = None,
-        state_continuity_weight: float = None,  # TODO: docstring
         n_threads: int = 1,
         use_sx: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
