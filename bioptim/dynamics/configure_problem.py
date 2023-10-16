@@ -13,6 +13,7 @@ from ..misc.enums import (
     ConstraintType,
     RigidBodyDynamics,
     SoftContactDynamics,
+    PhaseDynamics,
 )
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
@@ -758,7 +759,7 @@ class ConfigureProblem:
             )
 
             # TODO: allow expand for each dynamics independently
-            if nlp.dynamics_type.expand:
+            if nlp.dynamics_type.expand_dynamics:
                 try:
                     nlp.dynamics_func[-1] = nlp.dynamics_func[-1].expand()
                 except Exception as me:
@@ -789,7 +790,7 @@ class ConfigureProblem:
                         {"allow_free": allow_free_variables},
                     )
                 )
-                if nlp.dynamics_type.expand:
+                if nlp.dynamics_type.expand_dynamics:
                     try:
                         nlp.implicit_dynamics_func[-1] = nlp.implicit_dynamics_func[-1].expand()
                     except Exception as me:
@@ -1020,7 +1021,7 @@ class ConfigureProblem:
 
         # TODO: compute values at collocation points
         # but for now only cx_start can be used
-        n_cx = nlp.ode_solver.polynomial_degree + 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+        n_cx = nlp.ode_solver.n_cx - 1 if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION) else 3
         if n_cx < 3:
             n_cx = 3
 
@@ -1030,7 +1031,7 @@ class ConfigureProblem:
         nlp.integrated_values.append(
             name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0
         )
-        for node_index in range(1, nlp.ns + 1):  # cannot use assume_phase_dynamics = True
+        for node_index in range(1, nlp.ns + 1):  # cannot use phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             cx_scaled_next = nlp.integrated_value_functions[name](nlp, node_index)
             cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
             nlp.integrated_values.append(
@@ -1593,15 +1594,27 @@ class Dynamics(OptionGeneric):
     configure: Callable
         The configuration function provided by the user that declares the NLP (states and controls),
         usually only necessary when defining custom functions
-    expand: bool
-        If the continuity constraint should be expanded. This can be extensive on RAM
-
+    expand_dynamics: bool
+        If the dynamics function should be expanded
+    expand_continuity: bool
+        If the continuity function should be expanded. This can be extensive on the RAM usage
+    skip_continuity: bool
+        If the continuity should be skipped
+    state_continuity_weight: float | None
+        The weight of the continuity constraint. If None, the continuity is a constraint,
+        otherwise it is an objective
+    phase_dynamics: PhaseDynamics
+        If the dynamics should be shared between the nodes or not
     """
 
     def __init__(
         self,
         dynamics_type: Callable | DynamicsFcn,
-        expand: bool = True,
+        expand_dynamics: bool = True,
+        expand_continuity: bool = False,
+        skip_continuity: bool = False,
+        state_continuity_weight: float | None = None,
+        phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
         **params: Any,
     ):
         """
@@ -1611,8 +1624,17 @@ class Dynamics(OptionGeneric):
             The chosen dynamic functions
         params: Any
             Any parameters to pass to the dynamic and configure functions
-        expand: bool
-            If the continuity constraint should be expand. This can be extensive on RAM
+        expand_dynamics: bool
+            If the dynamics function should be expanded
+        expand_continuity: bool
+            If the continuity function should be expanded. This can be extensive on the RAM usage
+        skip_continuity: bool
+            If the continuity should be skipped
+        state_continuity_weight: float | None
+            The weight of the continuity constraint. If None, the continuity is a constraint,
+            otherwise it is an objective
+        phase_dynamics: PhaseDynamics
+            If the dynamics should be shared between the nodes or not
         """
 
         configure = None
@@ -1632,7 +1654,11 @@ class Dynamics(OptionGeneric):
         super(Dynamics, self).__init__(type=dynamics_type, **params)
         self.dynamic_function = dynamic_function
         self.configure = configure
-        self.expand = expand
+        self.expand_dynamics = expand_dynamics
+        self.expand_continuity = expand_continuity
+        self.skip_continuity = skip_continuity
+        self.state_continuity_weight = state_continuity_weight
+        self.phase_dynamics = phase_dynamics
 
 
 class DynamicsList(UniquePerPhaseOptionList):

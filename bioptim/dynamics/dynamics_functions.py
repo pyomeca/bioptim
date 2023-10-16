@@ -231,7 +231,7 @@ class DynamicsFunctions:
 
         ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
-        k_matrix = StochasticBioModel.reshape_sym_to_matrix(k, nlp.model.matrix_shape_k)
+        k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
         sensory_input = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
 
@@ -956,7 +956,7 @@ class DynamicsFunctions:
         Torques in tau
         """
 
-        if len(nlp.external_forces) != 0:
+        if nlp.external_forces is not None and len(nlp.external_forces) != 0:
             if "tau" in nlp.states:
                 tau_shape = nlp.states["tau"].mx.shape[0]
             elif "tau" in nlp.controls:

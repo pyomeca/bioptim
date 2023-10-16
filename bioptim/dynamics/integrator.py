@@ -1,4 +1,14 @@
-from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX
+from casadi import (
+    Function,
+    vertcat,
+    horzcat,
+    collocation_points,
+    tangent,
+    rootfinder,
+    MX,
+    SX,
+    symvar,
+)
 import numpy as np
 
 from ..misc.enums import ControlType, DefectType
@@ -187,7 +197,7 @@ class Integrator:
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "u", "p", "s"],
             ["xf", "xall"],
         )
 
@@ -222,7 +232,6 @@ class RK(Integrator):
         ode_opt: dict
             The ode options
         """
-
         super(RK, self).__init__(ode, ode_opt)
         self.n_step = ode_opt["number_of_finite_elements"]
         self.h_norm = 1 / self.n_step
@@ -614,7 +623,7 @@ class TRAPEZOIDAL(Integrator):
                 self.param_scaling,
                 self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "u", "p", "s"],
             ["xf", "xall"],
         )
 
@@ -814,7 +823,7 @@ class COLLOCATION(Integrator):
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "u", "p", "s"],
             ["xf", "xall", "defects"],
         )
 
@@ -931,7 +940,7 @@ class IRK(COLLOCATION):
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "p", "params", "s"],
+            ["x0", "u", "p", "s"],
             ["xf", "xall"],
         )
 

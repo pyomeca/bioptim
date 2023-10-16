@@ -1,10 +1,10 @@
 import re
 from typing import Callable
 
-from casadi import MX, SX, integrator as casadi_integrator, horzcat, vertcat, Function, collocation_points
+from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, collocation_points
 
 from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES, TRAPEZOIDAL
-from ..misc.enums import ControlType, DefectType
+from ..misc.enums import ControlType, DefectType, PhaseDynamics
 
 
 class OdeSolverBase:
@@ -75,7 +75,7 @@ class OdeSolverBase:
         for i in range(len(nlp.dynamics_func)):
             dynamics = []
             dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=0, node_index=0)
-            if ocp.assume_phase_dynamics:
+            if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 dynamics = dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
@@ -153,7 +153,7 @@ class RK(OdeSolverBase):
 
         if ode["ode"].size2_out("xdot") != 1:
             # If the ode is designed for each node, use the proper node, otherwise use the first one
-            # Please note this is unrelated to ocp.assume_phase_dynamics
+            # Please note this is unrelated to nlp.phase_dynamics
             ode_opt["idx"] = node_index
         return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
@@ -314,6 +314,8 @@ class OdeSolver:
             The method of interpolation ("legendre" or "radau")
         defects_type: DefectType
             The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
+        include_starting_collocation_point: bool
+            Whether an additional collocation point should be added at the shooting node (this is typically used in SOCPs)
 
         Methods
         -------
@@ -322,7 +324,11 @@ class OdeSolver:
         """
 
         def __init__(
-            self, polynomial_degree: int = 4, method: str = "legendre", defects_type: DefectType = DefectType.EXPLICIT
+            self,
+            polynomial_degree: int = 4,
+            method: str = "legendre",
+            defects_type: DefectType = DefectType.EXPLICIT,
+            include_starting_collocation_point: bool = False,
         ):
             """
             Parameters
@@ -333,11 +339,17 @@ class OdeSolver:
 
             super(OdeSolver.COLLOCATION, self).__init__()
             self.polynomial_degree = polynomial_degree
+            self.include_starting_collocation_point = include_starting_collocation_point
+            self.n_cx = polynomial_degree + 3 if include_starting_collocation_point else polynomial_degree + 2
             self.rk_integrator = COLLOCATION
             self.method = method
             self.defects_type = defects_type
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
+
+        def time_grid(self, t0):
+            dt = collocation_points(self.polynomial_degree, self.method)
+            return [t0 + dt[i] for i in range(0, self.steps)]
 
         def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
             nlp.states.node_index = node_index
@@ -354,9 +366,16 @@ class OdeSolver:
                     "developers and ping @EveCharbie"
                 )
 
+            if self.include_starting_collocation_point:
+                x_unscaled = (nlp.states.cx_intermediates_list,)
+                x_scaled = nlp.states.scaled.cx_intermediates_list
+            else:
+                x_unscaled = ([nlp.states.cx_start] + nlp.states.cx_intermediates_list,)
+                x_scaled = [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list
+
             ode = {
-                "x_unscaled": [nlp.states.cx_start] + nlp.states.cx_intermediates_list,
-                "x_scaled": [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list,
+                "x_unscaled": x_unscaled,
+                "x_scaled": x_scaled,
                 "p_unscaled": nlp.controls.cx_start,
                 "p_scaled": nlp.controls.scaled.cx_start,
                 "s_unscaled": nlp.stochastic_variables.cx_start,
@@ -369,8 +388,7 @@ class OdeSolver:
             }
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
-            dt = collocation_points(self.polynomial_degree, self.method)
-            time_integration_grid = [t0 + dt[i] for i in range(0, self.steps)]
+            time_integration_grid = self.time_grid(t0)
             ode_opt = {
                 "t0": t0,
                 "tf": tf,
@@ -455,7 +473,9 @@ class OdeSolver:
             if not isinstance(ocp.cx(), MX):
                 raise RuntimeError("use_sx=True and OdeSolver.CVODES are not yet compatible")
             if ocp.parameters.shape != 0:
-                raise RuntimeError("CVODES cannot be used while optimizing parameters")
+                raise RuntimeError(
+                    "CVODES cannot be used while optimizing parameters"
+                )  # todo: should accept parameters now
             if nlp.stochastic_variables.cx_start.shape != 0 and nlp.stochastic_variables.cx_start.shape != (0, 0):
                 raise RuntimeError("CVODES cannot be used while optimizing stochastic variables")
             if nlp.external_forces:
@@ -467,7 +487,7 @@ class OdeSolver:
 
             ode = {
                 "x": nlp.states.scaled.cx_start,
-                "p": nlp.controls.scaled.cx_start,
+                "u": nlp.controls.scaled.cx_start,  # todo: add p=parameters
                 "ode": nlp.dynamics_func[dynamics_index](
                     nlp.time_cx,
                     nlp.states.scaled.cx_start,
@@ -508,13 +528,13 @@ class OdeSolver:
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                     ),
-                    ["t", "x0", "p", "params", "s"],
+                    ["t", "x0", "u", "params", "s"],
                     ["xf", "xall"],
                 )
             ]
 
         @staticmethod
-        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, p: MX | SX):
+        def _adapt_integrator_output(integrator_func: Callable, x0: MX | SX, u: MX | SX):
             """
             Interface to make xf and xall as outputs
 
@@ -524,7 +544,7 @@ class OdeSolver:
                 Handler on a CasADi function
             x0: MX | SX
                 Symbolic variable of states
-            p: MX | SX
+            u: MX | SX
                 Symbolic variable of controls
 
             Returns
@@ -532,7 +552,7 @@ class OdeSolver:
             xf and xall
             """
 
-            xf = integrator_func(x0=x0, p=p)["xf"]
+            xf = integrator_func(x0=x0, u=u)["xf"]
             return xf, horzcat(x0, xf)
 
         def __str__(self):

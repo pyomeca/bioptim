@@ -18,6 +18,7 @@ from bioptim import (
     CostType,
     Solver,
     DynamicsList,
+    PhaseDynamics,
 )
 
 
@@ -27,7 +28,7 @@ def prepare_ocp(
     n_shooting: int,
     configure_dynamics: callable = None,
     ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     n_threads: int = 2,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
@@ -46,10 +47,11 @@ def prepare_ocp(
         The function to configure the dynamics
     ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     n_threads: int
         Number of threads to use
     expand_dynamics: bool
@@ -67,7 +69,9 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(configure_dynamics, dynamic_function=dynamics, expand=expand_dynamics)
+    dynamics.add(
+        configure_dynamics, dynamic_function=dynamics, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+    )
 
     # Path constraint
     # the pendulum is constrained to point down with zero velocity at the beginning
@@ -106,7 +110,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=False,
         n_threads=n_threads,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

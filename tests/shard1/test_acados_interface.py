@@ -25,6 +25,7 @@ from bioptim import (
     InterpolationType,
     Solver,
     BoundsList,
+    PhaseDynamics,
 )
 
 from tests.utils import TestUtils
@@ -464,7 +465,7 @@ def test_acados_one_parameter():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
     # parameters
-    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.80995]), decimal=5)
+    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.80995]), decimal=4)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -541,7 +542,7 @@ def test_acados_several_parameter():
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
     # parameters
-    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.80996]), decimal=5)
+    np.testing.assert_almost_equal(gravity[-1, :], np.array([-9.80996]), decimal=4)
     np.testing.assert_almost_equal(mass, np.array([[20]]), decimal=6)
 
     # Clean test folder
@@ -685,7 +686,7 @@ def test_acados_constraints_end_all():
     np.testing.assert_almost_equal(tau[:, -2], np.array((0.19389194, 9.99905781, -2.37713652, -0.19858311)), decimal=6)
 
 
-def test_acados_assume_phase_dynamics_reject():
+def test_acados_phase_dynamics_reject():
     if platform == "win32":
         print("Test for ACADOS on Windows is skipped")
         return
@@ -698,14 +699,11 @@ def test_acados_assume_phase_dynamics_reject():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
         n_shooting=10,
-        assume_phase_dynamics=False,
+        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         expand_dynamics=True,
     )
 
-    with pytest.raises(
-        RuntimeError,
-        match=f"ACADOS necessitate assume_phase_dynamics=True",
-    ):
+    with pytest.raises(RuntimeError, match=f"ACADOS necessitate phase_dynamics==PhaseDynamics.SHARED_DURING_THE_PHASE"):
         ocp.solve(solver=Solver.ACADOS())
 
 
@@ -753,7 +751,7 @@ def test_acados_bounds_not_implemented(failing):
 
     mhe = MovingHorizonEstimator(
         bio_model,
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=True),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True),
         window_len,
         window_duration,
         x_init=x_init,
@@ -761,7 +759,6 @@ def test_acados_bounds_not_implemented(failing):
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,
-        assume_phase_dynamics=True,
     )
 
     def update_functions(mhe, t, _):

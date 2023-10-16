@@ -1,11 +1,25 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat
+from casadi import (
+    sum1,
+    if_else,
+    vertcat,
+    lt,
+    SX,
+    MX,
+    jacobian,
+    Function,
+    MX_eye,
+    horzcat,
+    ldl,
+    diag,
+    collocation_points,
+)
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
-from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
+from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType, PhaseDynamics
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 from ..interfaces.stochastic_bio_model import StochasticBioModel
@@ -324,11 +338,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 n_rows = value.shape[0] // 2
             else:
                 if (
-                    not controller.ocp.assume_phase_dynamics
+                    controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE
                     and not isinstance(constraint.rows, int)
                     and len(constraint.rows) == value.shape[0]
                 ):
-                    # This is a very special case where assume_phase_dynamics=False declare rows by itself, but because
+                    # This is a very special case where phase_dynamics==ONE_PER_NODE declare rows by itself, but because
                     # this constraint is twice the real length (two constraints per value), it declares it too large
                     # on the subsequent pass. In reality, it means the user did not declare 'rows' by themselves.
                     # Therefore, we are acting as such
@@ -635,7 +649,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             cov_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
             cov_implicit_deffect = cov_next - cov_matrix
 
-            penalty.expand = controller.get_nlp.dynamics_type.expand
+            penalty.expand = (
+                controller.get_nlp.dynamics_type.expand_dynamics
+            )  # TODO: Charbie -> should this be always true?
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
@@ -733,130 +749,28 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
+            collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
+            Mc, _ = ConstraintFunction.Functions.collocation_jacobians(
+                penalty,
+                controller,
+                collocation_method,
+                polynomial_degree,
+            )
+
             nb_root = controller.model.nb_root
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
-            nu = controller.model.nb_q - controller.model.nb_root
-            non_root_index_continuity = []
-            non_root_index_defects = []
-            for i in range(2):
-                for j in range(polynomial_degree + 1):
-                    non_root_index_defects += list(
-                        range(
-                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root,
-                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root + nu,
-                        )
-                    )
-                non_root_index_continuity += list(
-                    range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu)
-                )
+            nu = controller.model.nb_q - nb_root
+            z_joints = horzcat(*(controller.states.cx_intermediates_list))
 
-            x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
-            x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
-            x_qdot_root = controller.cx.sym("x_qdot_root", nb_root, 1)
-            x_qdot_joints = controller.cx.sym("x_qdot_joints", nu, 1)
-            z_q_root = controller.cx.sym("z_q_root", nb_root, polynomial_degree)
-            z_q_joints = controller.cx.sym("z_q_joints", nu, polynomial_degree)
-            z_qdot_root = controller.cx.sym("z_qdot_root", nb_root, polynomial_degree)
-            z_qdot_joints = controller.cx.sym("z_qdot_joints", nu, polynomial_degree)
-
-            states_full = vertcat(
-                horzcat(x_q_root, z_q_root),
-                horzcat(x_q_joints, z_q_joints),
-                horzcat(x_qdot_root, z_qdot_root),
-                horzcat(x_qdot_joints, z_qdot_joints),
-            )
-
-            dynamics_xf, dynamics_xall, dynamics_defects = controller.integrate_extra_dynamics(0)(
-                states_full,
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-            )
-
-            initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-            final_polynomial_evaluation = dynamics_xf[non_root_index_continuity]
-            defects = dynamics_defects
-            defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
-
-            df_dz = horzcat(
-                jacobian(final_polynomial_evaluation, x_q_joints),
-                jacobian(final_polynomial_evaluation, z_q_joints),
-                jacobian(final_polynomial_evaluation, x_qdot_joints),
-                jacobian(final_polynomial_evaluation, z_qdot_joints),
-            )
-
-            dg_dz = horzcat(
-                jacobian(defects, x_q_joints),
-                jacobian(defects, z_q_joints),
-                jacobian(defects, x_qdot_joints),
-                jacobian(defects, z_qdot_joints),
-            )
-
-            non_sym_states = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-            df_dz_fun = Function(
-                "df_dz",
-                [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ],
-                [df_dz],
-            )
-            dg_dz_fun = Function(
-                "dg_dz",
-                [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ],
-                [dg_dz],
-            )
-
-            df_dz_evaluated = df_dz_fun(
-                non_sym_states[:nb_root, 0],
-                non_sym_states[nb_root : nb_root + nu, 0],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
-                non_sym_states[2 * nb_root + nu :, 0],
-                non_sym_states[:nb_root, 1:],
-                non_sym_states[nb_root : nb_root + nu, 1:],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 1:],
-                non_sym_states[2 * nb_root + nu :, 1:],
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-                controller.model.motor_noise_magnitude,
-                controller.model.sensory_noise_magnitude,
-            )
-            dg_dz_evaluated = dg_dz_fun(
-                non_sym_states[:nb_root, 0],
-                non_sym_states[nb_root : nb_root + nu, 0],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
-                non_sym_states[2 * nb_root + nu :, 0],
-                non_sym_states[:nb_root, 1:],
-                non_sym_states[nb_root : nb_root + nu, 1:],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 1:],
-                non_sym_states[2 * nb_root + nu :, 1:],
+            constraint = Mc(
+                controller.states.cx_start[:nb_root],  # x_q_root
+                controller.states.cx_start[nb_root : nb_root + nu],  # x_q_joints
+                controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],  # x_qdot_root
+                controller.states.cx_start[2 * nb_root + nu : 2 * (nb_root + nu)],  # x_qdot_joints
+                z_joints[:nb_root, :],  # z_q_root
+                z_joints[nb_root : nb_root + nu, :],  # z_q_joints
+                z_joints[nb_root + nu : 2 * nb_root + nu, :],  # z_qdot_root
+                z_joints[2 * nb_root + nu : 2 * (nb_root + nu), :],  # z_qdot_joints
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
@@ -864,14 +778,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.model.sensory_noise_magnitude,
             )
 
-            m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
-            )
-
-            constraint = df_dz_evaluated.T - dg_dz_evaluated.T @ m_matrix.T
-
-            out_vector = StochasticBioModel.reshape_to_vector(constraint)
-            return out_vector
+            return StochasticBioModel.reshape_to_vector(constraint)
 
         @staticmethod
         def stochastic_covariance_matrix_continuity_collocation(
@@ -888,107 +795,32 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
+            collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
+            _, Pf = ConstraintFunction.Functions.collocation_jacobians(
+                penalty,
+                controller,
+                collocation_method,
+                polynomial_degree,
+            )
+
+            cov_matrix_next = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
+            )
+
             nb_root = controller.model.nb_root
-
             nu = controller.model.nb_q - nb_root
-            non_root_index_continuity = []
-            non_root_index_defects = []
-            for i in range(2):
-                for j in range(polynomial_degree + 1):
-                    non_root_index_defects += list(
-                        range(
-                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root,
-                            (nb_root + nu) * (i * (polynomial_degree + 1) + j) + nb_root + nu,
-                        )
-                    )
-                non_root_index_continuity += list(
-                    range((nb_root + nu) * i + nb_root, (nb_root + nu) * i + nb_root + nu)
-                )
+            z_joints = horzcat(*(controller.states.cx_intermediates_list))
 
-            if "cholesky_cov" in controller.stochastic_variables.keys():
-                l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controller.stochastic_variables["cholesky_cov"].cx_start,
-                    controller.model.matrix_shape_cov_cholesky,
-                )
-                l_cov_matrix_next = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controller.stochastic_variables["cholesky_cov"].cx_end,
-                    controller.model.matrix_shape_cov_cholesky,
-                )
-                cov_matrix = l_cov_matrix @ l_cov_matrix.T
-                cov_matrix_next = l_cov_matrix_next @ l_cov_matrix_next.T
-            else:
-                cov_matrix = StochasticBioModel.reshape_to_matrix(
-                    controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
-                )
-                cov_matrix_next = StochasticBioModel.reshape_to_matrix(
-                    controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
-                )
-            m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
-            )
-
-            x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
-            x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
-            x_qdot_root = controller.cx.sym("x_qdot_root", nb_root, 1)
-            x_qdot_joints = controller.cx.sym("x_qdot_joints", nu, 1)
-            z_q_root = controller.cx.sym("z_q_root", nb_root, polynomial_degree)
-            z_q_joints = controller.cx.sym("z_q_joints", nu, polynomial_degree)
-            z_qdot_root = controller.cx.sym("z_qdot_root", nb_root, polynomial_degree)
-            z_qdot_joints = controller.cx.sym("z_qdot_joints", nu, polynomial_degree)
-
-            states_full = vertcat(
-                horzcat(x_q_root, z_q_root),
-                horzcat(x_q_joints, z_q_joints),
-                horzcat(x_qdot_root, z_qdot_root),
-                horzcat(x_qdot_joints, z_qdot_joints),
-            )
-
-            dynamics_xf, dynamics_xall, dynamics_defects = controller.integrate_extra_dynamics(0)(
-                states_full,
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-            )
-
-            initial_polynomial_evaluation = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-            defects = dynamics_defects
-            defects = vertcat(initial_polynomial_evaluation, defects)[non_root_index_defects]
-
-            sigma_w = vertcat(controller.model.sensory_noise_sym, controller.model.motor_noise_sym)
-
-            dg_dx = jacobian(defects, vertcat(x_q_joints, x_qdot_joints))
-            dg_dw = jacobian(defects, sigma_w)
-
-            dg_dx_fun = Function(
-                "dg_dx",
-                [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ],
-                [dg_dx],
-            )
-            non_sym_states = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-            dg_dx_evaluated = dg_dx_fun(
-                non_sym_states[:nb_root, 0],
-                non_sym_states[nb_root : nb_root + nu, 0],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
-                non_sym_states[2 * nb_root + nu :, 0],
-                non_sym_states[:nb_root, 1:],
-                non_sym_states[nb_root : nb_root + nu, 1:],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 1:],
-                non_sym_states[2 * nb_root + nu :, 1:],
+            cov_next_computed = Pf(
+                controller.states.cx_start[:nb_root],  # x_q_root
+                controller.states.cx_start[nb_root : nb_root + nu],  # x_q_joints
+                controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],  # x_qdot_root
+                controller.states.cx_start[2 * nb_root + nu : 2 * (nb_root + nu)],  # x_qdot_joints
+                z_joints[:nb_root, :],  # z_q_root
+                z_joints[nb_root : nb_root + nu, :],  # z_q_joints
+                z_joints[nb_root + nu : 2 * nb_root + nu, :],  # z_qdot_root
+                z_joints[2 * nb_root + nu : 2 * (nb_root + nu), :],  # z_qdot_joints
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
@@ -996,55 +828,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.model.sensory_noise_magnitude,
             )
 
-            dg_dw_fun = Function(
-                "dg_dw",
-                [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
-                ],
-                [dg_dw],
-            )
-            dg_dw_evaluated = dg_dw_fun(
-                non_sym_states[:nb_root, 0],
-                non_sym_states[nb_root : nb_root + nu, 0],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 0],
-                non_sym_states[2 * nb_root + nu :, 0],
-                non_sym_states[:nb_root, 1:],
-                non_sym_states[nb_root : nb_root + nu, 1:],
-                non_sym_states[nb_root + nu : 2 * nb_root + nu, 1:],
-                non_sym_states[2 * nb_root + nu :, 1:],
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-                controller.model.motor_noise_magnitude,
-                controller.model.sensory_noise_magnitude,
-            )
+            cov_implicit_defect = cov_matrix_next - cov_next_computed
 
-            sigma_w_num = vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude)
-            sigma_matrix = sigma_w_num * MX_eye(sigma_w_num.shape[0])
-
-            cov_next_computed = (
-                m_matrix
-                @ (
-                    dg_dx_evaluated @ cov_matrix @ dg_dx_evaluated.T
-                    + dg_dw_evaluated @ sigma_matrix @ dg_dw_evaluated.T
-                )
-                @ m_matrix.T
-            )
-            cov_implicit_deffect = cov_matrix_next - cov_next_computed
-
-            out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_deffect)
+            out_vector = StochasticBioModel.reshape_to_vector(cov_implicit_defect)
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True
@@ -1069,6 +855,197 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             return sensory_input - ref
 
+        @staticmethod
+        def symmetric_matrix(
+            penalty: Constraint,
+            controller: PenaltyController,
+            key: str,
+        ):
+            """
+            This function constrains a matrix to be symmetric
+            """
+            variable = controller.stochastic_variables[key].cx_start
+            if np.sqrt(variable.shape[0]) % 1 != 0:
+                raise RuntimeError(f"The matrix {key} is not square")
+            else:
+                matrix_shape = int(np.sqrt(variable.shape[0]))
+            matrix = StochasticBioModel.reshape_to_matrix(variable, (matrix_shape, matrix_shape))
+            symmetry_constraint = matrix - matrix.T
+            return StochasticBioModel.reshape_to_vector(symmetry_constraint)
+
+        @staticmethod
+        def semidefinite_positive_matrix(
+            penalty: Constraint,
+            controller: PenaltyController,
+            key: str,
+        ):
+            """
+            This function constrains a matrix to be semi-definite positive.
+            """
+            variable = controller.stochastic_variables[key].cx_start
+            if np.sqrt(variable.shape[0]) % 1 != 0:
+                raise RuntimeError(f"The matrix {key} is not square")
+            else:
+                matrix_shape = int(np.sqrt(variable.shape[0]))
+
+            A = SX.sym("A", matrix_shape, matrix_shape)
+            D = ldl(A)[0]  # Only guaranteed to work by casadi for positive definite matrix.
+            func = Function("diagonal_terms", [A], [D])
+
+            matrix = StochasticBioModel.reshape_to_matrix(variable, (matrix_shape, matrix_shape))
+            diagonal_terms = func(matrix)
+
+            return diagonal_terms
+
+        @staticmethod
+        def collocation_jacobians(penalty, controller, method, polynomial_degree):
+            def prepare_collocation(method, polynomial_degree):
+                # Get collocation points
+                tau_root = np.append(0, collocation_points(polynomial_degree, method))
+
+                # Coefficients of the collocation equation
+                C = np.zeros((polynomial_degree + 1, polynomial_degree + 1))
+
+                # Coefficients of the continuity equation
+                D = np.zeros(polynomial_degree + 1)
+
+                # Coefficients of the quadrature function
+                B = np.zeros(polynomial_degree + 1)
+
+                # Construct polynomial basis
+                for j in range(polynomial_degree + 1):
+                    # Construct Lagrange polynomials to get the polynomial basis at the collocation point
+                    p = np.poly1d([1])
+                    for r in range(polynomial_degree + 1):
+                        if r != j:
+                            p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
+
+                    # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
+                    D[j] = p(1.0)
+
+                    # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
+                    pder = np.polyder(p)
+                    for r in range(polynomial_degree + 1):
+                        C[j, r] = pder(tau_root[r])
+
+                    # # Evaluate the integral of the polynomial to get the coefficients of the quadrature function
+                    pint = np.polyint(p)
+                    B[j] = pint(1.0)
+
+                return B, C, D
+
+            sigma_ww = diag(
+                vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym)
+            )  # TODO: @mickaelbegon, what should we do with this ? -> in rockit should be 0 # * w
+
+            cov_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+            )
+            m_matrix = StochasticBioModel.reshape_to_matrix(
+                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
+            )
+
+            # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
+            _b, _c, _d = prepare_collocation(method, polynomial_degree)
+
+            nb_root = controller.model.nb_root
+            nu = controller.model.nb_q - nb_root
+            joints_index = list(range(nb_root, nb_root + nu)) + list(range(2 * nb_root + nu, 2 * (nb_root + nu)))
+
+            x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
+            x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
+            x_qdot_root = controller.cx.sym("x_qdot_root", nb_root, 1)
+            x_qdot_joints = controller.cx.sym("x_qdot_joints", nu, 1)
+            z_q_root = controller.cx.sym("z_q_root", nb_root, polynomial_degree + 1)
+            z_q_joints = controller.cx.sym("z_q_joints", nu, polynomial_degree + 1)
+            z_qdot_root = controller.cx.sym("z_qdot_root", nb_root, polynomial_degree + 1)
+            z_qdot_joints = controller.cx.sym("z_qdot_joints", nu, polynomial_degree + 1)
+
+            x_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
+            z_full = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
+
+            # Loop over collocation points
+            G_argout = [x_full - z_full[:, 0]]
+            xf = _d[0] * z_full[:, 0]
+            for j in range(1, polynomial_degree + 1):
+                # Expression for the state derivative at the collocation point
+                xp_j = _c[0, j] * x_full
+                for r in range(1, polynomial_degree + 1):
+                    xp_j += _c[r, j] * z_full[:, r]
+
+                # Append collocation equations
+                fj = controller.extra_dynamics(0)(
+                    controller.time.cx_start,
+                    z_full[:, j],
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                )
+                G_argout.append(xp_j - controller.integrate.h * fj)
+
+                # Add contribution to the end state
+                xf = xf + _d[j] * z_full[:, j]
+
+            G_joints = MX()
+            for i in range(polynomial_degree + 1):
+                G_joints = vertcat(G_joints, G_argout[i][joints_index])
+
+            Gdx = jacobian(G_joints, horzcat(x_q_joints, x_qdot_joints))
+
+            Gdz = jacobian(G_joints, horzcat(z_q_joints, z_qdot_joints))
+
+            Gdw = jacobian(G_joints, vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
+
+            Fdz = jacobian(xf, horzcat(z_q_joints, z_qdot_joints))
+
+            # Constraint Equality defining M
+            Mc = Function(
+                "M_cons",
+                [
+                    x_q_root,
+                    x_q_joints,
+                    x_qdot_root,
+                    x_qdot_joints,
+                    z_q_root,
+                    z_q_joints,
+                    z_qdot_root,
+                    z_qdot_joints,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ],
+                [Fdz.T - Gdz.T @ m_matrix.T],
+            )
+            if penalty.expand:
+                Mc = Mc.expand()
+
+            # Covariance propagation rule
+            Pf = Function(
+                "P_next",
+                [
+                    x_q_root,
+                    x_q_joints,
+                    x_qdot_root,
+                    x_qdot_joints,
+                    z_q_root,
+                    z_q_joints,
+                    z_qdot_root,
+                    z_qdot_joints,
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ],
+                [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T],
+            )
+            if penalty.expand:
+                Pf = Pf.expand()
+
+            return Mc, Pf
+
     @staticmethod
     def get_dt(_):
         return 1
@@ -1088,11 +1065,13 @@ class ConstraintFcn(FcnEnum):
         Returns the type of the penalty
     """
 
-    CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
+    STATE_CONTINUITY = (PenaltyFunctionAbstract.Functions.state_continuity,)
+    FIRST_COLLOCATION_HELPER_EQUALS_STATE = (PenaltyFunctionAbstract.Functions.first_collocation_point_equals_state,)
     CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
     PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
+    TRACK_STOCHASTIC = (PenaltyFunctionAbstract.Functions.stochastic_minimize_variables,)
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
@@ -1101,9 +1080,12 @@ class ConstraintFcn(FcnEnum):
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_collocation,
     )
+
     STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE = (
         ConstraintFunction.Functions.stochastic_mean_sensory_input_equals_reference,
     )
+    SYMMETRIC_MATRIX = (ConstraintFunction.Functions.symmetric_matrix,)
+    SEMIDEFINITE_POSITIVE_MATRIX = (ConstraintFunction.Functions.semidefinite_positive_matrix,)
     SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
     SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
     TIME_CONSTRAINT = (ConstraintFunction.Functions.time_constraint,)

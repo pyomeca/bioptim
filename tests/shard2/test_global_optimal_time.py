@@ -21,14 +21,15 @@ from bioptim import (
     OptimalControlProgram,
     OdeSolver,
     ControlType,
+    PhaseDynamics,
 )
 
 from tests.utils import TestUtils
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK, OdeSolver.TRAPEZOIDAL])
-def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
+def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
@@ -36,8 +37,8 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
         # This is a long test and CI is already long for Windows
         return
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -70,7 +71,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
         ode_solver=ode_solver(),
         max_time=max_ft,
         weight=-1,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
         control_type=control_type,
     )
@@ -115,9 +116,9 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol, decimal_value=6)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_pendulum_min_time_lagrange(ode_solver, assume_phase_dynamics):
+def test_pendulum_min_time_lagrange(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Lagrange
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Lagrange as ocp_module
 
@@ -125,8 +126,8 @@ def test_pendulum_min_time_lagrange(ode_solver, assume_phase_dynamics):
         # This test fails on the CI
         return
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -148,7 +149,7 @@ def test_pendulum_min_time_lagrange(ode_solver, assume_phase_dynamics):
         final_time=ft,
         n_shooting=ns,
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -288,9 +289,9 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_time_constraint(ode_solver, assume_phase_dynamics):
+def test_time_constraint(ode_solver, phase_dynamics):
     if platform.system() != "Linux":
         # This is a long test and CI is already long for Windows and Mac
         return
@@ -298,8 +299,8 @@ def test_time_constraint(ode_solver, assume_phase_dynamics):
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import time_constraint as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -323,7 +324,7 @@ def test_time_constraint(ode_solver, assume_phase_dynamics):
         time_min=0.2,
         time_max=1,
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -391,14 +392,14 @@ def test_time_constraint(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol, decimal_value=6)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_monophase_time_constraint(ode_solver, assume_phase_dynamics):
+def test_monophase_time_constraint(ode_solver, phase_dynamics):
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -410,7 +411,7 @@ def test_monophase_time_constraint(ode_solver, assume_phase_dynamics):
         time_max=(2, 4, 0.8),
         n_shooting=(20,),
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -455,17 +456,14 @@ def test_monophase_time_constraint(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-@pytest.mark.parametrize(
-    "ode_solver",
-    [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK],
-)
-def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+def test_multiphase_time_constraint(ode_solver, phase_dynamics):
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -477,7 +475,7 @@ def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
         time_max=(2, 4, 0.8),
         n_shooting=(20, 30, 20),
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -530,14 +528,14 @@ def test_multiphase_time_constraint(ode_solver, assume_phase_dynamics):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, assume_phase_dynamics):
+def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_dynamics):
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import multiphase_time_constraint as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.COLLOCATION:
+    # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -549,7 +547,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, assume_
         time_max=(2, 4, 1),
         n_shooting=(20, 30, 20),
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         with_phase_time_equality=True,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
@@ -609,7 +607,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, assume_
     TestUtils.simulate(sol)
 
 
-def partial_ocp_parameters(n_phases):
+def partial_ocp_parameters(n_phases, phase_dynamics):
     if n_phases != 1 and n_phases != 3:
         raise RuntimeError("n_phases should be 1 or 3")
 
@@ -621,10 +619,10 @@ def partial_ocp_parameters(n_phases):
     time_max = [2, 4, 0.8]
     tau_min, tau_max, tau_init = -100, 100, 0
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
     if n_phases > 1:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
 
     x_bounds = BoundsList()
     x_bounds["q"] = bio_model[0].bounds_from_ranges("q")
@@ -699,7 +697,7 @@ def test_mayer_neg_monophase_time_constraint():
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(n_phases=1)
+    ) = partial_ocp_parameters(n_phases=1, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
@@ -738,7 +736,7 @@ def test_mayer1_neg_multiphase_time_constraint():
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(n_phases=3)
+    ) = partial_ocp_parameters(n_phases=3, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
@@ -778,7 +776,7 @@ def test_mayer2_neg_multiphase_time_constraint():
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(n_phases=3)
+    ) = partial_ocp_parameters(n_phases=3, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
@@ -803,8 +801,8 @@ def test_mayer2_neg_multiphase_time_constraint():
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_mayer_multiphase_time_constraint(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_mayer_multiphase_time_constraint(phase_dynamics):
     (
         bio_model,
         n_shooting,
@@ -819,7 +817,7 @@ def test_mayer_multiphase_time_constraint(assume_phase_dynamics):
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(n_phases=3)
+    ) = partial_ocp_parameters(n_phases=3, phase_dynamics=phase_dynamics)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
@@ -840,12 +838,11 @@ def test_mayer_multiphase_time_constraint(assume_phase_dynamics):
         u_init=u_init,
         objective_functions=objective_functions,
         constraints=constraints,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_lagrange_neg_monophase_time_constraint(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_lagrange_neg_monophase_time_constraint(phase_dynamics):
     (
         bio_model,
         n_shooting,
@@ -860,7 +857,7 @@ def test_lagrange_neg_monophase_time_constraint(assume_phase_dynamics):
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(n_phases=1)
+    ) = partial_ocp_parameters(n_phases=1, phase_dynamics=phase_dynamics)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
@@ -882,12 +879,11 @@ def test_lagrange_neg_monophase_time_constraint(assume_phase_dynamics):
             u_init=u_init,
             objective_functions=objective_functions,
             constraints=constraints,
-            assume_phase_dynamics=assume_phase_dynamics,
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_lagrange1_neg_multiphase_time_constraint(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_lagrange1_neg_multiphase_time_constraint(phase_dynamics):
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         (
             bio_model,
@@ -903,7 +899,7 @@ def test_lagrange1_neg_multiphase_time_constraint(assume_phase_dynamics):
             x_init,
             u_bounds,
             u_init,
-        ) = partial_ocp_parameters(n_phases=3)
+        ) = partial_ocp_parameters(n_phases=3, phase_dynamics=phase_dynamics)
 
         objective_functions = ObjectiveList()
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
@@ -926,12 +922,11 @@ def test_lagrange1_neg_multiphase_time_constraint(assume_phase_dynamics):
             u_init=u_init,
             objective_functions=objective_functions,
             constraints=constraints,
-            assume_phase_dynamics=assume_phase_dynamics,
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_lagrange2_neg_multiphase_time_constraint(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_lagrange2_neg_multiphase_time_constraint(phase_dynamics):
     with pytest.raises(RuntimeError, match="Time constraint/objective cannot be declared more than once"):
         (
             bio_model,
@@ -947,7 +942,7 @@ def test_lagrange2_neg_multiphase_time_constraint(assume_phase_dynamics):
             x_init,
             u_bounds,
             u_init,
-        ) = partial_ocp_parameters(n_phases=3)
+        ) = partial_ocp_parameters(n_phases=3, phase_dynamics=phase_dynamics)
 
         objective_functions = ObjectiveList()
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
@@ -970,12 +965,11 @@ def test_lagrange2_neg_multiphase_time_constraint(assume_phase_dynamics):
             u_init=u_init,
             objective_functions=objective_functions,
             constraints=constraints,
-            assume_phase_dynamics=assume_phase_dynamics,
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_lagrange_multiphase_time_constraint(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_lagrange_multiphase_time_constraint(phase_dynamics):
     (
         bio_model,
         n_shooting,
@@ -990,7 +984,7 @@ def test_lagrange_multiphase_time_constraint(assume_phase_dynamics):
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(n_phases=3)
+    ) = partial_ocp_parameters(n_phases=3, phase_dynamics=phase_dynamics)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
@@ -1011,12 +1005,11 @@ def test_lagrange_multiphase_time_constraint(assume_phase_dynamics):
         u_init=u_init,
         objective_functions=objective_functions,
         constraints=constraints,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_mayer_neg_two_objectives(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_mayer_neg_two_objectives(phase_dynamics):
     (
         bio_model,
         n_shooting,
@@ -1031,7 +1024,7 @@ def test_mayer_neg_two_objectives(assume_phase_dynamics):
         x_init,
         u_bounds,
         u_init,
-    ) = partial_ocp_parameters(n_phases=1)
+    ) = partial_ocp_parameters(n_phases=1, phase_dynamics=phase_dynamics)
 
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, phase=0)
@@ -1048,5 +1041,4 @@ def test_mayer_neg_two_objectives(assume_phase_dynamics):
             x_init=x_init,
             u_init=u_init,
             objective_functions=objective_functions,
-            assume_phase_dynamics=assume_phase_dynamics,
         )

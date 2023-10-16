@@ -11,12 +11,20 @@ import platform
 import pytest
 import numpy as np
 from casadi import sum1, sum2
-from bioptim import InterpolationType, OdeSolver, MultinodeConstraintList, MultinodeConstraintFcn, Node, ControlType
+from bioptim import (
+    InterpolationType,
+    OdeSolver,
+    MultinodeConstraintList,
+    MultinodeConstraintFcn,
+    Node,
+    ControlType,
+    PhaseDynamics,
+)
 
 from tests.utils import TestUtils
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize(
@@ -32,17 +40,17 @@ from tests.utils import TestUtils
         OdeSolver.TRAPEZOIDAL,
     ],
 )
-def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
+def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
 
     if platform.system() == "Windows":
         # These tests fail on CI for Windows
         return
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if n_threads > 1 and not assume_phase_dynamics:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
         return
-    if not assume_phase_dynamics and ode_solver not in (OdeSolver.RK4, OdeSolver.COLLOCATION):
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver not in (OdeSolver.RK4, OdeSolver.COLLOCATION):
         return
     if ode_solver == OdeSolver.RK8 and not use_sx:
         return
@@ -63,7 +71,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
                 n_threads=n_threads,
                 use_sx=use_sx,
                 ode_solver=ode_solver_obj,
-                assume_phase_dynamics=assume_phase_dynamics,
+                phase_dynamics=phase_dynamics,
                 expand_dynamics=False,
             )
         return
@@ -79,7 +87,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
                 n_threads=n_threads,
                 use_sx=use_sx,
                 ode_solver=ode_solver_obj,
-                assume_phase_dynamics=assume_phase_dynamics,
+                phase_dynamics=phase_dynamics,
                 expand_dynamics=False,
             )
         return
@@ -96,7 +104,7 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
         n_threads=n_threads,
         use_sx=use_sx,
         ode_solver=ode_solver_obj,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver not in (OdeSolver.IRK, OdeSolver.CVODES),
         control_type=control_type,
     )
@@ -222,19 +230,19 @@ def test_pendulum(ode_solver, use_sx, n_threads, assume_phase_dynamics):
     return
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [False, True])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
-def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_phase_dynamics):
+def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
     if platform.system() == "Windows":
         # This is a long test and CI is already long for Windows
         return
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if n_threads > 1 and not assume_phase_dynamics:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -251,7 +259,7 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_pha
                     n_threads=n_threads,
                     use_sx=use_sx,
                     ode_solver=ode_solver,
-                    assume_phase_dynamics=assume_phase_dynamics,
+                    phase_dynamics=phase_dynamics,
                     expand_dynamics=ode_solver_orig != OdeSolver.IRK,
                 )
         else:
@@ -262,7 +270,7 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_pha
                 n_threads=n_threads,
                 use_sx=use_sx,
                 ode_solver=ode_solver,
-                assume_phase_dynamics=assume_phase_dynamics,
+                phase_dynamics=phase_dynamics,
                 expand_dynamics=ode_solver_orig != OdeSolver.IRK,
             )
             sol = ocp.solve()
@@ -301,7 +309,7 @@ def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, assume_pha
             n_threads=n_threads,
             use_sx=use_sx,
             ode_solver=ode_solver,
-            assume_phase_dynamics=assume_phase_dynamics,
+            phase_dynamics=phase_dynamics,
             expand_dynamics=ode_solver_orig != OdeSolver.IRK,
         )
         sol = ocp.solve()
@@ -403,9 +411,9 @@ def test_pendulum_save_and_load_rk8(use_sx):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_custom_constraint_track_markers(ode_solver, assume_phase_dynamics):
+def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import custom_constraint as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -416,7 +424,7 @@ def test_custom_constraint_track_markers(ode_solver, assume_phase_dynamics):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -461,11 +469,11 @@ def test_custom_constraint_track_markers(ode_solver, assume_phase_dynamics):
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("random_init", [True, False])
 @pytest.mark.parametrize("interpolation", [*InterpolationType])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
-def test_initial_guesses(ode_solver, interpolation, random_init, assume_phase_dynamics):
+def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics):
     from bioptim.examples.getting_started import custom_initial_guess as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -483,7 +491,7 @@ def test_initial_guesses(ode_solver, interpolation, random_init, assume_phase_dy
                 random_init=random_init,
                 initial_guess=interpolation,
                 ode_solver=ode_solver,
-                assume_phase_dynamics=assume_phase_dynamics,
+                phase_dynamics=phase_dynamics,
                 expand_dynamics=True,
             )
         return
@@ -495,7 +503,7 @@ def test_initial_guesses(ode_solver, interpolation, random_init, assume_phase_dy
         random_init=random_init,
         initial_guess=interpolation,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
 
@@ -541,9 +549,9 @@ def test_initial_guesses(ode_solver, interpolation, random_init, assume_phase_dy
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13954.735000000004)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_cyclic_objective(ode_solver, assume_phase_dynamics):
+def test_cyclic_objective(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -558,7 +566,7 @@ def test_cyclic_objective(ode_solver, assume_phase_dynamics):
         n_shooting=10,
         loop_from_constraint=False,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -596,9 +604,9 @@ def test_cyclic_objective(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 13224.252515047212)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_cyclic_constraint(ode_solver, assume_phase_dynamics):
+def test_cyclic_constraint(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -613,7 +621,7 @@ def test_cyclic_constraint(ode_solver, assume_phase_dynamics):
         n_shooting=10,
         loop_from_constraint=True,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -651,13 +659,13 @@ def test_cyclic_constraint(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 78921.61000000013)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_phase_transitions(ode_solver, assume_phase_dynamics):
+def test_phase_transitions(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import custom_phase_transitions as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -665,7 +673,7 @@ def test_phase_transitions(ode_solver, assume_phase_dynamics):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -721,14 +729,14 @@ def test_phase_transitions(ode_solver, assume_phase_dynamics):
     np.testing.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 21941.02244926652)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.COLLOCATION])  # OdeSolver.IRK
-def test_parameter_optimization(ode_solver, assume_phase_dynamics):
+def test_parameter_optimization(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import custom_parameters as ocp_module
 
     return  # TODO: Fix parameter scaling :(
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver in (OdeSolver.RK8, OdeSolver.COLLOCATION):
+    # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver in (OdeSolver.RK8, OdeSolver.COLLOCATION):
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -748,7 +756,7 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -836,14 +844,14 @@ def test_parameter_optimization(ode_solver, assume_phase_dynamics):
     TestUtils.assert_warm_start(ocp, sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("problem_type_custom", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, assume_phase_dynamics):
+def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import custom_dynamics as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+    # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -855,7 +863,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, assum
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         problem_type_custom=problem_type_custom,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -954,13 +962,13 @@ def test_example_external_forces(ode_solver):
     TestUtils.simulate(sol)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver_type", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK, OdeSolver.COLLOCATION])
-def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
+def test_example_multiphase(ode_solver_type, phase_dynamics):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver_type in [OdeSolver.RK8, OdeSolver.COLLOCATION]:
+    # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver_type in [OdeSolver.RK8, OdeSolver.COLLOCATION]:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -969,7 +977,7 @@ def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_type != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -1079,9 +1087,9 @@ def test_example_multiphase(ode_solver_type, assume_phase_dynamics):
 
 
 @pytest.mark.parametrize("expand_dynamics", [True, False])
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
-def test_contact_forces_inequality_greater_than_constraint(ode_solver, assume_phase_dynamics, expand_dynamics):
+def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dynamics, expand_dynamics):
     from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -1091,7 +1099,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, assume_ph
     if not expand_dynamics and ode_solver != OdeSolver.IRK:
         # There is no point testing that
         return
-    if expand_dynamics and ode_solver == OdeSolver.IRK:
+    if expand_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and ode_solver == OdeSolver.IRK:
         with pytest.raises(RuntimeError):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts.bioMod",
@@ -1101,7 +1109,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, assume_ph
                 max_bound=np.inf,
                 mu=0.2,
                 ode_solver=ode_solver(),
-                assume_phase_dynamics=assume_phase_dynamics,
+                phase_dynamics=phase_dynamics,
                 expand_dynamics=expand_dynamics,
             )
         return
@@ -1114,7 +1122,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, assume_ph
         max_bound=np.inf,
         mu=0.2,
         ode_solver=ode_solver(),
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=expand_dynamics,
     )
     sol = ocp.solve()
@@ -1206,9 +1214,9 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.2005516965424669)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8])  # use_SX and IRK are not compatible
-def test_multinode_objective(ode_solver, assume_phase_dynamics):
+def test_multinode_objective(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_multinode_objective as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -1216,13 +1224,14 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
     ode_solver = ode_solver()
 
     n_shooting = 20
-    if assume_phase_dynamics:
+    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
         with pytest.raises(
             ValueError,
             match=(
                 "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, "
                 "you probably tried to add more penalties than available in a multinode constraint. "
-                "You can try to split the constraints into more penalties or use assume_phase_dynamics=False."
+                "You can try to split the constraints into more penalties or use "
+                "phase_dynamics=PhaseDynamics.ONE_PER_NODE"
             ),
         ):
             ocp = ocp_module.prepare_ocp(
@@ -1230,7 +1239,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
                 n_shooting=n_shooting,
                 final_time=1,
                 ode_solver=ode_solver,
-                assume_phase_dynamics=assume_phase_dynamics,
+                phase_dynamics=phase_dynamics,
                 expand_dynamics=True,
             )
         return
@@ -1240,7 +1249,7 @@ def test_multinode_objective(ode_solver, assume_phase_dynamics):
         n_shooting=n_shooting,
         final_time=1,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
     sol = ocp.solve()
@@ -1336,28 +1345,28 @@ def test_multinode_constraints_wrong_nodes(node):
             )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("too_much_constraints", [True, False])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
-def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constraints, assume_phase_dynamics):
+def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constraints, phase_dynamics):
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ode_solver_obj = ode_solver
     ode_solver = ode_solver()
-    if assume_phase_dynamics and too_much_constraints:
+    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and too_much_constraints:
         with pytest.raises(
             ValueError,
             match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
             "add more penalties than available in a multinode constraint. You can try to split the constraints "
-            "into more penalties or use assume_phase_dynamics=False.",
+            "into more penalties or use phase_dynamics=PhaseDynamics.ONE_PER_NODE",
         ):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
                 n_shootings=(8, 8, 8),
                 ode_solver=ode_solver,
-                assume_phase_dynamics=assume_phase_dynamics,
+                phase_dynamics=phase_dynamics,
                 with_too_much_constraints=too_much_constraints,
                 expand_dynamics=ode_solver_obj != OdeSolver.IRK,
             )
@@ -1366,19 +1375,19 @@ def test_multinode_constraints_too_much_constraints(ode_solver, too_much_constra
             biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
             n_shootings=(8, 8, 8),
             ode_solver=ode_solver,
-            assume_phase_dynamics=assume_phase_dynamics,
+            phase_dynamics=phase_dynamics,
             with_too_much_constraints=too_much_constraints,
             expand_dynamics=ode_solver_obj != OdeSolver.IRK,
         )
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_multinode_constraints(ode_solver, assume_phase_dynamics):
+def test_multinode_constraints(ode_solver, phase_dynamics):
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
 
-    # For reducing time assume_phase_dynamics=False is skipped for redundant tests
-    if not assume_phase_dynamics and ode_solver == OdeSolver.RK8:
+    # For reducing time phase_dynamics == PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.RK8:
         return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -1390,7 +1399,7 @@ def test_multinode_constraints(ode_solver, assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shootings=(8, 10, 8),
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
     )
     sol = ocp.solve()
@@ -1427,8 +1436,7 @@ def test_multinode_constraints(ode_solver, assume_phase_dynamics):
     TestUtils.save_and_load(sol, ocp, False)
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_multistart(assume_phase_dynamics):
+def test_multistart():
     from bioptim.examples.getting_started import example_multistart as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -1614,8 +1622,8 @@ def test_multistart(assume_phase_dynamics):
     shutil.rmtree(f"{save_folder}")
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_example_variable_scaling(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_example_variable_scaling(phase_dynamics):
     from bioptim.examples.getting_started import example_variable_scaling as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
@@ -1624,7 +1632,7 @@ def test_example_variable_scaling(assume_phase_dynamics):
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1 / 10,
         n_shooting=30,
-        assume_phase_dynamics=assume_phase_dynamics,
+        phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
     sol = ocp.solve()

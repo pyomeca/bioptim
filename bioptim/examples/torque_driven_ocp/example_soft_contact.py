@@ -26,6 +26,7 @@ from bioptim import (
     SoftContactDynamics,
     RigidBodyDynamics,
     SolutionIntegrator,
+    PhaseDynamics,
 )
 
 
@@ -62,7 +63,6 @@ def prepare_single_shooting(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=True,
     )
 
 
@@ -107,7 +107,7 @@ def prepare_ocp(
     slack: float = 1e-4,
     n_threads: int = 8,
     use_sx: bool = False,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -147,7 +147,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         rigidbody_dynamics=RigidBodyDynamics.ODE,
         soft_contacts_dynamics=SoftContactDynamics.ODE,
-        expand=True,
+        phase_dynamics=phase_dynamics,
     )
 
     # Constraints
@@ -191,7 +191,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

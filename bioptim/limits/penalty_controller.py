@@ -3,7 +3,7 @@ from typing import Any, Callable
 from casadi import MX, SX, vertcat
 
 from ..dynamics.ode_solver import OdeSolver
-from ..misc.enums import ControlType
+from ..misc.enums import ControlType, PhaseDynamics
 from ..misc.mapping import BiMapping
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -56,7 +56,8 @@ class PenaltyController:
         s_scaled: list
             References to the scaled stochastic variables
         node_index: int
-            Current node index if ocp.assume_phase_dynamics is True, then node_index is expected to be set to 0
+            Current node index if nlp.phase_dynamics is SHARED_DURING_THE_PHASE,
+            then node_index is expected to be set to 0
         """
 
         self._ocp: Any = ocp
@@ -133,7 +134,7 @@ class PenaltyController:
         The time at node node_index
         """
 
-        tp = OptimizationVariableList(self._nlp.cx, self._nlp.assume_phase_dynamics)
+        tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
         tp.append(
             "time",
             mx=self._nlp.time_mx,

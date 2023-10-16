@@ -18,6 +18,7 @@ from ..misc.enums import (
     SolutionIntegrator,
     Node,
     QuadratureRule,
+    PhaseDynamics,
 )
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -237,7 +238,7 @@ class Solution:
             self.x_scaling = nlp.x_scaling
             self.u_scaling = nlp.u_scaling
             self.s_scaling = nlp.s_scaling
-            self.assume_phase_dynamics = nlp.assume_phase_dynamics
+            self.phase_dynamics = nlp.phase_dynamics
 
     class SimplifiedOCP:
         """
@@ -277,7 +278,6 @@ class Solution:
             self.phase_transitions = ocp.phase_transitions
             self.prepare_plots = ocp.prepare_plots
             self.time_phase_mapping = ocp.time_phase_mapping
-            self.assume_phase_dynamics = ocp.assume_phase_dynamics
             self.n_threads = ocp.n_threads
 
     def __init__(self, ocp, sol: dict | list | tuple | np.ndarray | DM | None):
@@ -1136,11 +1136,15 @@ class Solution:
         time_phase = self.phase_time
         for p, nlp in enumerate(self.ocp.nlp):
             is_direct_collocation = nlp.ode_solver.is_direct_collocation
+            include_starting_collocation_point = False
+            if is_direct_collocation:
+                include_starting_collocation_point = nlp.ode_solver.include_starting_collocation_point
 
             step_times = self._define_step_times(
                 dynamics_step_time=nlp.dynamics[0].step_time,
                 ode_solver_steps=nlp.ode_solver.steps,
                 is_direct_collocation=is_direct_collocation,
+                include_starting_collocation_point=include_starting_collocation_point,
                 keep_intermediate_points=keep_intermediate_points,
                 continuous=shooting_type == Shooting.SINGLE,
             )
@@ -1180,6 +1184,7 @@ class Solution:
         keep_intermediate_points: bool = None,
         continuous: bool = True,
         is_direct_collocation: bool = None,
+        include_starting_collocation_point: bool = False,
     ) -> np.ndarray:
         """
         Define the time steps for the integration of the whole phase
@@ -1198,6 +1203,8 @@ class Solution:
             arrival node and the beginning of the next one are expected to be almost equal when the problem converged
         is_direct_collocation: bool
             If the ode solver is direct collocation
+        include_starting_collocation_point
+            If the ode solver is direct collocation and an additional collocation point at the shooting node was used
 
         Returns
         -------
@@ -1210,11 +1217,13 @@ class Solution:
 
         if is_direct_collocation:
             # time is not linear because of the collocation points
-            step_times = (
-                np.array(dynamics_step_time + [1])
-                if keep_intermediate_points
-                else np.array(dynamics_step_time + [1])[[0, -1]]
-            )
+            if keep_intermediate_points:
+                if include_starting_collocation_point:
+                    step_times = np.array([0] + dynamics_step_time + [1])
+                else:
+                    step_times = np.array(dynamics_step_time + [1])
+            else:
+                step_times = np.array(dynamics_step_time + [1])[[0, -1]]
 
         else:
             # time is linear in the case of direct multiple shooting
@@ -1258,7 +1267,10 @@ class Solution:
             u0 = np.concatenate(
                 [self._controls["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].controls]
             )
-            if self.ocp.assume_phase_dynamics or not np.isnan(u0).any():
+            if (
+                self.ocp.nlp[phase - 1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                or not np.isnan(u0).any()
+            ):
                 u0 = vertcat(u0, u0)
             params = []
             s0 = []
@@ -2010,7 +2022,7 @@ class Solution:
                             col_x_idx += [(idx + 1) * steps]
                             if (
                                 not (idx == nlp.ns - 1 and nlp.control_type == ControlType.CONSTANT)
-                                or nlp.assume_phase_dynamics
+                                or nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                             ):
                                 col_u_idx += [idx + 1]
                             col_s_idx += [idx + 1]
@@ -2040,7 +2052,7 @@ class Solution:
 
                 # Deal with final node which sometime is nan (meaning it should be removed to fit the dimensions of the
                 # casadi function
-                if not self.ocp.assume_phase_dynamics and (
+                if not nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and (
                     (isinstance(u, list) and u != []) or isinstance(u, np.ndarray)
                 ):
                     u = u[:, ~np.isnan(np.sum(u, axis=0))]

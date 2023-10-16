@@ -21,6 +21,7 @@ from bioptim import (
     Node,
     Axis,
     Solution,
+    PhaseDynamics,
 )
 
 
@@ -32,9 +33,16 @@ class MyCyclicNMPC(CyclicNonlinearModelPredictiveControl):
         return True
 
 
-def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque, assume_phase_dynamics=True, expand_dynamics=True):
+def prepare_nmpc(
+    model_path,
+    cycle_len,
+    cycle_duration,
+    max_torque,
+    phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+    expand_dynamics=True,
+):
     model = BiorbdModel(model_path)
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand=expand_dynamics)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     x_bound = BoundsList()
     x_bound["q"] = model.bounds_from_ranges("q")
@@ -65,7 +73,6 @@ def prepare_nmpc(model_path, cycle_len, cycle_duration, max_torque, assume_phase
         constraints=constraints,
         x_bounds=x_bound,
         u_bounds=u_bound,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

@@ -35,6 +35,7 @@ from bioptim import (
     Axis,
     VariableType,
     Solver,
+    PhaseDynamics,
 )
 
 
@@ -45,7 +46,7 @@ def prepare_ocp(
     fatigue_type: str,
     ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     torque_level: int = 0,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     n_threads: int = 8,
     expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
@@ -65,10 +66,11 @@ def prepare_ocp(
         The ode solver to use
     torque_level: int
         0 no residual torque, 1 with residual torque, 2 with fatigable residual torque
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     n_threads: int
         Number ot threads to use
     expand_dynamics: bool
@@ -151,9 +153,10 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(
         DynamicsFcn.MUSCLE_DRIVEN,
-        expand=expand_dynamics,
+        expand_dynamics=expand_dynamics,
         fatigue=fatigue_dynamics,
         with_residual_torque=torque_level > 0,
+        phase_dynamics=phase_dynamics,
     )
 
     # Add objective functions
@@ -208,7 +211,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=False,
         n_threads=n_threads,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

@@ -370,7 +370,7 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
+        STATE_CONTINUITY = (PenaltyFunctionAbstract.Functions.state_continuity,)
         CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
         MINIMIZE_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
         MINIMIZE_COM_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_com_acceleration,)

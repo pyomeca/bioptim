@@ -211,7 +211,6 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
 
 - [use_sx](#use_sx)
 - [n_threads](#n_threads)
-- [assume_phase_dynamics](#assume_phase_dynamics)
 - [expand](#expand)
 
 </details>
@@ -453,12 +452,8 @@ ocp = OptimalControlProgram(
         x_init=x_init,
         u_init=u_init,
         objective_functions=objective_functions,
-        assume_phase_dynamics=True,
     )
 ```
-The argument `assume_phase_dynamics` should be set to `True` if we assume the dynamics are the same within each phase of the ocp problem. 
-This argument increases the speed to mount the problem; it should be considered each time you build an Optimal Control Program.
-The default value is `False`, meaning we consider the dynamic equations are different for each shooting node (e.g., when applying a different external force at each shooting node).
 
 
 ## Checking the ocp
@@ -600,7 +595,6 @@ ocp = OptimalControlProgram(
         x_init=x_init,
         u_init=u_init,
         objective_functions=objective_functions,
-        assume_phase_dynamics=True,
     )
     
 sol = ocp.solve(show_online_optim=True)
@@ -713,7 +707,6 @@ OptimalControlProgram(
     phase_transitions: PhaseTransitionList,
     n_threads: int,
     use_sx: bool,
-    assume_phase_dynamics=False,
 )
 ```
 Of these, only the first four are mandatory.  
@@ -1633,6 +1626,20 @@ The accepted values are:
 - ̀`Acados`
 - ̀`SQP`
 
+### Enum: PhaseDynamics
+
+- SHARED_DURING_THE_PHASE
+- ONE_PER_NODE
+
+The argument should be set to SHARED_DURING_THE_PHASE if we assume the dynamics are the same within each phase of the ocp problem. 
+This argument increases the speed to mount the problem; it should be considered each time you build an Optimal Control Program.
+The default value is ONE_PER_NODE, meaning we consider the dynamic equations to be different for each shooting node (e.g., when applying a different external force at each shooting node).
+
+In the case, you want to use this feature you have to specify it when adding the dynamics of each phase.
+```python3
+dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
+```
+
 ### Enum: ControlType
 The type the controls are. 
 Typically, the controls for an optimal control program are constant over the shooting intervals. 
@@ -2451,10 +2458,6 @@ These are faster but require more RAM, so ensure you have enough RAM to use this
 Set n_threads to the number of threads you want to use in the OptimalControlProgram class.
 By default, it is set to 1. It will split the computation of the continuity constraints between threads and speed up the computation. If applicable to your problem, use the next option too.
 
-## assume_phase_dynamics
-Set assume_phase_dynamics to True in the OptimalControlProgram class if your dynamic equations are phase-independent but not node-specific.
-It will speed up the computation of the continuity constraints since only one continuity constraint will be computed per phase instead of one per node.
-
 ## expand
 (For objective and constraint functions)
 Set the expand argument to True for objective and constraint functions to speed up the computation.
@@ -2466,7 +2469,7 @@ Fortunately, this troubleshooting section will guide you through solving some kn
 
 ## Freezing compute
 If your computer freezes before any optimization is performed, it is probably because your problem requires too much RAM.
-If you are using use_sx and/or expand options, try turning them off. If it does not work, try reducing the number of nodes. If assume_phase_dynamics is set to False, try setting it to True, if applicable to your problem.
+If you are using use_sx and/or expand options, try turning them off. If it does not work, try reducing the number of nodes.
 
 ## Free variables
 Sometimes when working on advanced custom problems, you may have *free variables* that prevent the solver from being launched.

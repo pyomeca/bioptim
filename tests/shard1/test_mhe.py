@@ -12,21 +12,22 @@ from bioptim import (
     DynamicsFcn,
     InterpolationType,
     BoundsList,
+    PhaseDynamics,
 )
 
 from tests.utils import TestUtils
 from bioptim.misc.enums import SolverType
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("solver", [Solver.ACADOS, Solver.IPOPT])
-def test_mhe(solver, assume_phase_dynamics):
+def test_mhe(solver, phase_dynamics):
     solver = solver()
     if solver.type == SolverType.ACADOS:
         if platform == "win32":
             # ACADOS is not installed on the CI for Windows
             return
-        if not assume_phase_dynamics:
+        if phase_dynamics == PhaseDynamics.ONE_PER_NODE:
             return
 
     from bioptim.examples.moving_horizon_estimation import mhe as ocp_module
@@ -66,8 +67,7 @@ def test_mhe(solver, assume_phase_dynamics):
         max_torque=torque_max,
         x_init=x_init,
         u_init=u_init,
-        assume_phase_dynamics=assume_phase_dynamics,
-        n_threads=4 if assume_phase_dynamics else 1,
+        n_threads=4 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
         expand_dynamics=True,
     ).solve(update_functions, **ocp_module.get_solver_options(solver))
 
@@ -81,8 +81,8 @@ def test_mhe(solver, assume_phase_dynamics):
         shutil.rmtree(f"./c_generated_code/")
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_mhe_redim_xbounds_and_init(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_mhe_redim_xbounds_and_init(phase_dynamics):
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
 
@@ -104,13 +104,12 @@ def test_mhe_redim_xbounds_and_init(assume_phase_dynamics):
 
     mhe = MovingHorizonEstimator(
         bio_model,
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics),
         window_len,
         window_duration,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        n_threads=8 if assume_phase_dynamics else 1,
-        assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=8 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
     )
 
     def update_functions(mhe, t, _):
@@ -119,8 +118,8 @@ def test_mhe_redim_xbounds_and_init(assume_phase_dynamics):
     mhe.solve(update_functions, Solver.IPOPT())
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test_mhe_redim_xbounds_not_implemented(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_mhe_redim_xbounds_not_implemented(phase_dynamics):
     root_folder = TestUtils.bioptim_folder() + "/examples/moving_horizon_estimation/"
     bio_model = BiorbdModel(root_folder + "models/cart_pendulum.bioMod")
     nq = bio_model.nb_q
@@ -147,13 +146,12 @@ def test_mhe_redim_xbounds_not_implemented(assume_phase_dynamics):
 
     mhe = MovingHorizonEstimator(
         bio_model,
-        Dynamics(DynamicsFcn.TORQUE_DRIVEN),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics),
         window_len,
         window_duration,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        n_threads=8 if assume_phase_dynamics else 1,
-        assume_phase_dynamics=assume_phase_dynamics,
+        n_threads=8 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
     )
 
     def update_functions(mhe, t, _):

@@ -1,7 +1,7 @@
 import os
 import pytest
 import numpy as np
-from bioptim import InterpolationType
+from bioptim import InterpolationType, PhaseDynamics
 
 
 def test__acados__cube():
@@ -52,7 +52,7 @@ def test__getting_started__custom_bounds():
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         n_shooting=30,
         final_time=2,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=True,
     )
 
@@ -63,7 +63,9 @@ def test__getting_started__custom_constraints():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod", assume_phase_dynamics=True, expand_dynamics=False
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+        expand_dynamics=False,
     )
 
 
@@ -74,7 +76,7 @@ def test__getting_started__custom_dynamics():
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -92,7 +94,7 @@ def test__getting_started__custom_initial_guess(interpolation, random):
         final_time=2,
         random_init=random,
         initial_guess=interpolation,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=True,
     )
 
@@ -104,7 +106,7 @@ def test__getting_started__custom_objectives():
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -126,7 +128,7 @@ def test__getting_started__custom_parameters():
         max_m=30,
         target_g=np.array([0, 0, -9.81]),
         target_m=20,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -138,7 +140,7 @@ def test__getting_started__custom_phase_transitions():
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -152,7 +154,7 @@ def test__getting_started__custom_plotting():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=50,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -167,7 +169,7 @@ def test__getting_started__example_cyclic_movement():
         n_shooting=30,
         final_time=2,
         loop_from_constraint=True,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -195,7 +197,7 @@ def test__getting_started__example_inequality_constraint():
         min_bound=50,
         max_bound=np.inf,
         mu=0.2,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -212,7 +214,7 @@ def test__getting_started__example_multiphase():
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
         long_optim=True,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -224,7 +226,7 @@ def test__getting_started__example_multinode_constraints():
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         n_shootings=(8, 8, 8),
         expand_dynamics=False,
     )
@@ -246,13 +248,13 @@ def test__getting_started__example_multinode_objective():
         ValueError,
         match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
         "add more penalties than available in a multinode constraint. You can try to split the constraints "
-        "into more penalties or use assume_phase_dynamics=False.",
+        "into more penalties or use phase_dynamics=PhaseDynamics.ONE_PER_NODE",
     ):
         ocp_module.prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
             final_time=1,
             n_shooting=10,
-            assume_phase_dynamics=True,
+            phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
             expand_dynamics=False,
         )
 
@@ -261,22 +263,22 @@ def test__getting_started__example_optimal_time():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module
 
 
-@pytest.mark.parametrize("assume_phase_dynamics", [True, False])
-def test__getting_started__example_save_and_load(assume_phase_dynamics):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test__getting_started__example_save_and_load(phase_dynamics):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    if not assume_phase_dynamics:
+    if phase_dynamics == PhaseDynamics.ONE_PER_NODE:
         with pytest.raises(
-            RuntimeError, match="n_threads is greater than 1 is not compatible with assume_phase_dynamics=False"
+            RuntimeError, match="Multiprocessing is not supported with phase_dynamics=PhaseDynamics.ONE_PER_NODE"
         ):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
                 final_time=3,
                 n_shooting=100,
                 n_threads=4,
-                assume_phase_dynamics=assume_phase_dynamics,
+                phase_dynamics=phase_dynamics,
                 expand_dynamics=False,
             )
     else:
@@ -285,7 +287,7 @@ def test__getting_started__example_save_and_load(assume_phase_dynamics):
             final_time=3,
             n_shooting=100,
             n_threads=4,
-            assume_phase_dynamics=assume_phase_dynamics,
+            phase_dynamics=phase_dynamics,
             expand_dynamics=False,
         )
 
@@ -294,7 +296,7 @@ def test__getting_started__example_save_and_load(assume_phase_dynamics):
         final_time=3,
         n_shooting=100,
         n_threads=1,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -312,7 +314,7 @@ def test__getting_started__pendulum():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=3,
         n_shooting=100,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -339,7 +341,7 @@ def test__muscle_driven_ocp__static_arm():
         final_time=3,
         n_shooting=50,
         weight=1000,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -363,7 +365,7 @@ def test__optimal_time_ocp__multiphase_time_constraint():
         time_min=time_min,
         time_max=time_max,
         n_shooting=ns,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -377,7 +379,7 @@ def test__optimal_time_ocp__pendulum_min_time_Lagrange():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=50,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -391,7 +393,7 @@ def test__optimal_time_ocp__pendulum_min_time_Mayer():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=2,
         n_shooting=50,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -418,7 +420,7 @@ def test__symmetrical_torque_driven_ocp__symmetry_by_constraint():
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -430,7 +432,7 @@ def test__symmetrical_torque_driven_ocp__symmetry_by_mapping():
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/cubeSym.bioMod",
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -447,7 +449,7 @@ def test__torque_driven_ocp__maximize_predicted_height_CoM():
         use_actuators=False,
         objective_name="MINIMIZE_COM_VELOCITY",
         com_constraints=True,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -461,7 +463,7 @@ def test__torque_driven_ocp__multi_biorbd_model():
         biorbd_model_path=bioptim_folder + "/models/triple_pendulum.bioMod",
         biorbd_model_path_modified_inertia=bioptim_folder + "/models/triple_pendulum_modified_inertia.bioMod",
         n_shooting=40,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -475,7 +477,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
         biorbd_model_path_with_translations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
         n_shooting=(5, 5),
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -488,7 +490,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds()
     ocp_module.prepare_ocp(
         biorbd_model_path_with_translations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
         n_shooting=(5, 5),
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -518,7 +520,7 @@ def test__torque_driven_ocp__track_markers_with_torque_actuators():
         n_shooting=30,
         final_time=2,
         actuator_type=1,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -544,7 +546,7 @@ def test__torque_driven_ocp__minimize_segment_velocity():
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/triple_pendulum.bioMod",
         n_shooting=5,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -559,7 +561,7 @@ def test__track__track_marker_on_segment():
         n_shooting=30,
         final_time=2,
         initialize_near_solution=True,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -573,7 +575,7 @@ def test__track__track_segment_on_rt():
         biorbd_model_path=bioptim_folder + "/models/cube_and_line.bioMod",
         n_shooting=30,
         final_time=1,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -600,7 +602,7 @@ def test__getting_started__example_variable_scaling():
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1 / 10,
         n_shooting=30,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -614,7 +616,7 @@ def test__torque_driven_ocp__torque_activation_driven():
         biorbd_model_path=bioptim_folder + "/models/2segments_2dof_2contacts.bioMod",
         final_time=2,
         n_shooting=30,
-        assume_phase_dynamics=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
 
@@ -628,22 +630,6 @@ def test__inverse_optimal_control__double_pendulum_torque_driven_IOCP():
         weights=[0.4, 0.3, 0.3],
         coefficients=[1, 1, 1],
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
-        expand_dynamics=False,
-    )
-
-
-@pytest.mark.parametrize("assume_phase_dynamics", [False])
-def test__contact_and_muscle_forces_example():
-    from bioptim.examples.muscle_driven_with_contact import contact_forces_inequality_constraint_muscle as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
-        phase_time=0.3,
-        n_shooting=10,
-        min_bound=50,
-        max_bound=np.inf,
         expand_dynamics=False,
     )
 
