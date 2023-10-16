@@ -138,6 +138,18 @@ class OptimalControlProgram:
     __modify_penalty(self, new_penalty: PenaltyOption | Parameter)
         The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
         overrides an objective only the latter is preserved when saved
+    __set_nlp_is_stochastic(self)
+        Set the nlp as stochastic if any of the phases is stochastic
+    __set_stochastic_internal_stochastic_variables(self)
+        Set the internal stochastic variables (s_init, s_bounds, s_scaling) if any of the phases is stochastic
+    _set_stochastic_variables_to_original_values(self, s_init, s_bounds, s_scaling)
+        Set the original_values with the stochastic variables (s_init, s_bounds, s_scaling) if any of the phases is
+        stochastic
+    _check_quaternions_hasattr(self, bio_model)
+        Check if the bio_model has quaternions and set the flag accordingly
+    _check_and_prepare_dynamics(self, dynamics)
+        Check if the dynamics is a Dynamics or a DynamicsList and set the flag accordingly
+    _set_original_values(
     """
 
     # TODO: OCP should not be aware of s (s_init, s_bounds...)
@@ -276,7 +288,7 @@ class OptimalControlProgram:
             use_sx,
             integrated_value_functions,
         )
-        s_init, s_bounds, s_scaling = self.__set_stochastic_internal_stochastic_variables()
+        s_init, s_bounds, s_scaling = self._set_stochastic_internal_stochastic_variables()
         self._set_stochastic_variables_to_original_values(s_init, s_bounds, s_scaling)
 
         self._check_and_set_threads(n_threads)
@@ -346,7 +358,7 @@ class OptimalControlProgram:
         NLP.add(self, "u_scaling", u_scaling, True)
         NLP.add(self, "s_scaling", s_scaling, True)
 
-        self.__set_nlp_is_stochastic()
+        self._set_nlp_is_stochastic()
 
         self._prepare_node_mapping(node_mappings)
         self._prepare_dynamics()
@@ -1971,7 +1983,7 @@ class OptimalControlProgram:
         """
         pass
 
-    def __set_stochastic_internal_stochastic_variables(self):
+    def _set_stochastic_internal_stochastic_variables(self):
         """
         Set the stochastic variables to their internal values
 
@@ -1980,12 +1992,12 @@ class OptimalControlProgram:
         This method is overrided in StochasticOptimalControlProgram
         """
         # s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
-        self.__s_init = InitialGuessList()
-        self.__s_bounds = BoundsList()
-        self.__s_scaling = VariableScalingList()
-        return self.__s_init, self.__s_bounds, self.__s_scaling
+        self._s_init = InitialGuessList()
+        self._s_bounds = BoundsList()
+        self._s_scaling = VariableScalingList()
+        return self._s_init, self._s_bounds, self._s_scaling
 
-    def __set_nlp_is_stochastic(self):
+    def _set_nlp_is_stochastic(self):
         """
         Set the is_stochastic variable to False
         because it's not relevant for traditional OCP,

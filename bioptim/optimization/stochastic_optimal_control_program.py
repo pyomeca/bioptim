@@ -81,9 +81,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs)
 
         self.problem_type = problem_type
-        self.__s_init = s_init
-        self.__s_bounds = s_bounds
-        self.__s_scaling = s_scaling
+        self._s_init = s_init
+        self._s_bounds = s_bounds
+        self._s_scaling = s_scaling
 
         super(StochasticOptimalControlProgram, self).__init__(
             bio_model=bio_model,
@@ -118,13 +118,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             use_sx=use_sx,
             integrated_value_functions=integrated_value_functions,
         )
-
-    def _prepare_dynamics(self):
-        # Prepare the dynamics
-        for i in range(self.n_phases):
-            self.nlp[i].initialize(self.cx)
-            ConfigureProblem.initialize(self, self.nlp[i])
-            self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
     def _declare_multi_node_penalties(
         self,
@@ -336,38 +329,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 
-    def _prepare_all_decision_variables(
-        self,
-        x_bounds,
-        x_init,
-        x_scaling,
-        u_bounds,
-        u_init,
-        u_scaling,
-        xdot_scaling,
-        s_bounds,
-        s_init,
-        s_scaling,
-    ):
-        """
-        This function checks if the decision variables are of the right type for initial guess and bounds.
-        It also prepares the scaling for the decision variables.
-
-        Note
-        ----
-        s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
-        This method is overriden in StochasticOptimalControlProgram
-        """
-
-        x_bounds, x_init, x_scaling = self._check_and_prepare_decision_variables("x", x_bounds, x_init, x_scaling)
-        u_bounds, u_init, u_scaling = self._check_and_prepare_decision_variables("u", u_bounds, u_init, u_scaling)
-        s_bounds, s_init, s_scaling = self._check_and_prepare_decision_variables("s", s_bounds, s_init, s_scaling)
-
-        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
-
-        return x_bounds, u_bounds, s_bounds, x_init, u_init, s_init, x_scaling, xdot_scaling, u_scaling, s_scaling
-
-    def __set_stochastic_internal_stochastic_variables(self):
+    def _set_stochastic_internal_stochastic_variables(self):
         """
         Set the stochastic variables to their internal values
 
@@ -375,9 +337,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         ----
         This method overrides the method in OptimalControlProgram
         """
-        pass  # Nothing to do here as they are already set before calling super().__init__
+        return (
+            self._s_init,
+            self._s_bounds,
+            self._s_scaling,
+        )  # Nothing to do here as they are already set before calling super().__init__
 
-    def __set_nlp_is_stochastic(self):
+    def _set_nlp_is_stochastic(self):
         """
         Set the is_stochastic variable to True for all the nlp
 
