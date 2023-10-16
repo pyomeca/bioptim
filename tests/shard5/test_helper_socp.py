@@ -8,8 +8,6 @@ from bioptim.optimization.stochastic_optimal_control_program import (
 )
 
 
-# Your functions would come here...
-
 # Tests for _check_multi_threading_and_problem_type()
 def test_check_multi_threading_and_problem_type_no_n_thread():
     _check_multi_threading_and_problem_type("some_type")
