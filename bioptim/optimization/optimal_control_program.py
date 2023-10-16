@@ -244,11 +244,6 @@ class OptimalControlProgram:
 
         bio_model = self._initialize_model(bio_model)
 
-        # s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
-        s_init = InitialGuessList()
-        s_bounds = BoundsList()
-        s_scaling = VariableScalingList()
-
         # Placed here because of MHE
         self._check_and_prepare_dynamics(dynamics)
 
@@ -281,16 +276,36 @@ class OptimalControlProgram:
             use_sx,
             integrated_value_functions,
         )
+        s_init, s_bounds, s_scaling = self.__set_stochastic_internal_stochastic_variables()
+        self._set_stochastic_variables_to_original_values(s_init, s_bounds, s_scaling)
 
         self._check_and_set_threads(n_threads)
         self._check_and_set_shooting_points(n_shooting)
         self._check_and_set_phase_time(phase_time)
 
-        x_bounds, x_init, x_scaling = self._check_and_prepare_decision_variables("x", x_bounds, x_init, x_scaling)
-        u_bounds, u_init, u_scaling = self._check_and_prepare_decision_variables("u", u_bounds, u_init, u_scaling)
-        s_bounds, s_init, s_scaling = self._check_and_prepare_decision_variables("s", s_bounds, s_init, s_scaling)
-
-        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
+        (
+            x_bounds,
+            x_init,
+            x_scaling,
+            u_bounds,
+            u_init,
+            u_scaling,
+            s_bounds,
+            s_init,
+            s_scaling,
+            xdot_scaling,
+        ) = self._prepare_all_decision_variables(
+            x_bounds,
+            x_init,
+            x_scaling,
+            u_bounds,
+            u_init,
+            u_scaling,
+            xdot_scaling,
+            s_bounds,
+            s_init,
+            s_scaling,
+        )
 
         (
             constraints,
@@ -331,8 +346,7 @@ class OptimalControlProgram:
         NLP.add(self, "u_scaling", u_scaling, True)
         NLP.add(self, "s_scaling", s_scaling, True)
 
-        # set to False because it's not relevant for traditional OCP, only relevant for StochasticOptimalControlProgram
-        NLP.add(self, "is_stochastic", False, True)
+        self.__set_nlp_is_stochastic()
 
         self._prepare_node_mapping(node_mappings)
         self._prepare_dynamics()
@@ -492,6 +506,37 @@ class OptimalControlProgram:
 
         return bounds, init, scaling
 
+    def _prepare_all_decision_variables(
+        self,
+        x_bounds,
+        x_init,
+        x_scaling,
+        u_bounds,
+        u_init,
+        u_scaling,
+        xdot_scaling,
+        s_bounds,
+        s_init,
+        s_scaling,
+    ):
+        """
+        This function checks if the decision variables are of the right type for initial guess and bounds.
+        It also prepares the scaling for the decision variables.
+
+        Note
+        ----
+        s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
+        This method is overriden in StochasticOptimalControlProgram
+        """
+
+        x_bounds, x_init, x_scaling = self._check_and_prepare_decision_variables("x", x_bounds, x_init, x_scaling)
+        u_bounds, u_init, u_scaling = self._check_and_prepare_decision_variables("u", u_bounds, u_init, u_scaling)
+        s_bounds, s_init, s_scaling = self._check_and_prepare_decision_variables("s", s_bounds, s_init, s_scaling)
+
+        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
+
+        return x_bounds, u_bounds, s_bounds, x_init, u_init, s_init, x_scaling, xdot_scaling, u_scaling, s_scaling
+
     def _check_arguments_and_build_nlp(
         self,
         dynamics,
@@ -584,7 +629,7 @@ class OptimalControlProgram:
             raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
 
         if ode_solver is None:
-            ode_solver = OdeSolver.RK4()
+            ode_solver = self._set_default_ode_solver()
         elif not isinstance(ode_solver, OdeSolverBase):
             raise RuntimeError("ode_solver should be built an instance of OdeSolver")
 
@@ -733,7 +778,20 @@ class OptimalControlProgram:
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
-    def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
+    def _declare_multi_node_penalties(
+        self,
+        multinode_constraints: ConstraintList,
+        multinode_objectives: ObjectiveList,
+        constraints: ConstraintList,
+        phase_transition: PhaseTransitionList,
+    ):
+        """
+        This function declares the multi node penalties (constraints and objectives) to the penalty pool.
+
+        Note
+        ----
+        This function is overriden in StochasticOptimalControlProgram
+        """
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
@@ -1887,6 +1945,57 @@ class OptimalControlProgram:
             return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
         previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
         return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
+
+    def _set_default_ode_solver(self):
+        """
+        Set the default ode solver to RK4
+
+        Note
+        ----
+        This method is overrided in StochasticOptimalControlProgram
+        """
+        return OdeSolver.RK4()
+
+    def _set_stochastic_variables_to_original_values(
+        self,
+        s_init: InitialGuessList,
+        s_bounds: BoundsList,
+        s_scaling: VariableScalingList,
+    ):
+        """
+        Set the stochastic variables to their original values
+
+        Note
+        ----
+        This method is overrided in StochasticOptimalControlProgram
+        """
+        pass
+
+    def __set_stochastic_internal_stochastic_variables(self):
+        """
+        Set the stochastic variables to their internal values
+
+        Note
+        ----
+        This method is overrided in StochasticOptimalControlProgram
+        """
+        # s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
+        self.__s_init = InitialGuessList()
+        self.__s_bounds = BoundsList()
+        self.__s_scaling = VariableScalingList()
+        return self.__s_init, self.__s_bounds, self.__s_scaling
+
+    def __set_nlp_is_stochastic(self):
+        """
+        Set the is_stochastic variable to False
+        because it's not relevant for traditional OCP,
+        only relevant for StochasticOptimalControlProgram
+
+        Note
+        ----
+        This method is thus overriden in StochasticOptimalControlProgram
+        """
+        NLP.add(self, "is_stochastic", False, True)
 
 
 # helpers
