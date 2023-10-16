@@ -39,7 +39,9 @@ def test_check_has_no_ode_solver_defined_without_ode_solver():
 # Tests for _check_has_no_phase_dynamics_shared_during_the_phase()
 def test_check_has_no_phase_dynamics_shared_during_the_phase_shared_dynamics():
     with pytest.raises(ValueError, match="The dynamics cannot be SHARED_DURING_THE_PHASE"):
-        _check_has_no_phase_dynamics_shared_during_the_phase("some_type", phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
+        _check_has_no_phase_dynamics_shared_during_the_phase(
+            "some_type", phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE
+        )
 
 
 def test_check_has_no_phase_dynamics_shared_during_the_phase_not_shared_dynamics():
