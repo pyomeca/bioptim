@@ -1930,7 +1930,7 @@ class OptimalControlProgram:
         if type is None:
             previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
         elif type == "mx":
-            if isinstance(self.nlp[0].tf_mx, float):
+            if isinstance(self.nlp[0].tf, float):
                 raise RuntimeError(f"Incorrect type argument 'mx' as the time is not symbolic, use type = None instead")
             previous_phase_time = sum([nlp.tf_mx for nlp in self.nlp[:phase_idx]])
         elif type == "sx":

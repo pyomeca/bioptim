@@ -409,7 +409,7 @@ class NonLinearProgram:
         if type is None:
             tf = self.tf
         elif type == "mx":
-            if isinstance(self.tf_mx, float):
+            if isinstance(self.tf, float):
                 raise RuntimeError(f"Incorrect type argument 'mx' as the time is not symbolic, use type = None instead")
             tf = self.tf_mx
         elif type == "sx":
