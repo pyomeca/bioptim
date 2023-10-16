@@ -284,7 +284,16 @@ class OptimalControlProgram:
         self._check_and_set_phase_time(phase_time)
 
         (
-            x_bounds, x_init, x_scaling, u_bounds, u_init, u_scaling, s_bounds, s_init, s_scaling, xdot_scaling,
+            x_bounds,
+            x_init,
+            x_scaling,
+            u_bounds,
+            u_init,
+            u_scaling,
+            s_bounds,
+            s_init,
+            s_scaling,
+            xdot_scaling,
         ) = self._prepare_all_decision_variables(
             x_bounds,
             x_init,
