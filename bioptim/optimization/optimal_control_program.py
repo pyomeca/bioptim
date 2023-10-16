@@ -536,7 +536,6 @@ class OptimalControlProgram:
         Note
         ----
         s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
-        This method is overriden in StochasticOptimalControlProgram
         """
 
         x_bounds, x_init, x_scaling = self._check_and_prepare_decision_variables("x", x_bounds, x_init, x_scaling)
