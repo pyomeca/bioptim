@@ -63,18 +63,6 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
-    # Dynamics
-    dynamics = DynamicsList()
-    dynamics.add(
-        # This must be PhaseDynamics.ONE_PER_NODE since external forces change at each node within the phase
-        DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=PhaseDynamics.ONE_PER_NODE
-    )
-
-    # Constraints
-    constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
-
     # External forces. external_forces is of len 1 because there is only one phase.
     # The inner array is of len 30 since there is 30. At each node, two forces are added to the segments "Seg1" and
     # "Test" respectively and is of the format [Mx, My, Mz, Fx, Fy, Fz]
@@ -82,8 +70,21 @@ def prepare_ocp(
     # Change the values (index 1) of the 5th node (index 4) and 1st (index 0) and 2nd (index 1) forces
     external_forces[4][0][1] = (0, 0, 0, 0, 0, -22)
     external_forces[4][1][1] = (0, 0, 0, 0, 0, 52)
-    # Wrap external_forces in a list so there is only one value for the phase
-    external_forces = [external_forces]
+    # # Wrap external_forces in a list so there is only one value for the phase
+    # external_forces = [external_forces]
+
+    # Dynamics
+    dynamics = DynamicsList()
+    dynamics.add(
+        # This must be PhaseDynamics.ONE_PER_NODE since external forces change at each node within the phase
+        DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+        external_forces=external_forces,
+    )
+
+    # Constraints
+    constraints = ConstraintList()
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="m0", second_marker="m1")
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2")
 
     # Path constraint
     x_bounds = BoundsList()
@@ -106,7 +107,6 @@ def prepare_ocp(
         u_bounds=u_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
-        external_forces=external_forces,
         ode_solver=ode_solver,
     )
 
