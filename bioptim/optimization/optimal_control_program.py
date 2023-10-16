@@ -284,16 +284,7 @@ class OptimalControlProgram:
         self._check_and_set_phase_time(phase_time)
 
         (
-            x_bounds,
-            x_init,
-            x_scaling,
-            u_bounds,
-            u_init,
-            u_scaling,
-            s_bounds,
-            s_init,
-            s_scaling,
-            xdot_scaling,
+            x_bounds, x_init, x_scaling, u_bounds, u_init, u_scaling, s_bounds, s_init, s_scaling, xdot_scaling,
         ) = self._prepare_all_decision_variables(
             x_bounds,
             x_init,
@@ -354,7 +345,7 @@ class OptimalControlProgram:
             x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
         )
 
-        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
+        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints, phase_transitions)
 
         self._finalize_penalties(
             constraints,
@@ -535,7 +526,7 @@ class OptimalControlProgram:
 
         xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
 
-        return x_bounds, u_bounds, s_bounds, x_init, u_init, s_init, x_scaling, xdot_scaling, u_scaling, s_scaling
+        return x_bounds, x_init, x_scaling, u_bounds, u_init, u_scaling, s_bounds, s_init, s_scaling, xdot_scaling
 
     def _check_arguments_and_build_nlp(
         self,
