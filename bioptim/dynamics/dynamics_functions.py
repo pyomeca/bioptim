@@ -956,12 +956,12 @@ class DynamicsFunctions:
 
     @staticmethod
     def inverse_dynamics(
-            nlp: NonLinearProgram,
-            q: MX | SX,
-            qdot: MX | SX,
-            qddot: MX | SX,
-            with_contact: bool,
-            external_forces: list = None,
+        nlp: NonLinearProgram,
+        q: MX | SX,
+        qdot: MX | SX,
+        qddot: MX | SX,
+        with_contact: bool,
+        external_forces: list = None,
     ):
         """
         Easy accessor to torques from inverse dynamics

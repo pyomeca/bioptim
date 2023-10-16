@@ -149,16 +149,16 @@ class ConfigureProblem:
 
     @staticmethod
     def torque_driven(
-            ocp,
-            nlp,
-            with_contact: bool = False,
-            with_passive_torque: bool = False,
-            with_ligament: bool = False,
-            with_friction: bool = False,
-            rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-            soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
-            fatigue: FatigueList = None,
-            external_forces: list = None,
+        ocp,
+        nlp,
+        with_contact: bool = False,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
+        with_friction: bool = False,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
+        fatigue: FatigueList = None,
+        external_forces: list = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -197,13 +197,13 @@ class ConfigureProblem:
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True, fatigue=fatigue)
 
         if (
-                rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-                or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
         ):
             ConfigureProblem.configure_qddot(ocp, nlp, False, True, True)
         elif (
-                rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
-                or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
         ):
             ConfigureProblem.configure_qddot(ocp, nlp, True, False, True)
             ConfigureProblem.configure_qdddot(ocp, nlp, False, True)
@@ -212,8 +212,8 @@ class ConfigureProblem:
 
         # Algebraic constraints of rigidbody dynamics if needed
         if (
-                rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
-                or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
+            rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS_JERK
         ):
             ocp.implicit_constraints.add(
                 ImplicitConstraintFcn.TAU_EQUALS_INVERSE_DYNAMICS,
@@ -243,8 +243,8 @@ class ConfigureProblem:
                             phase=nlp.phase_idx,
                         )
         if (
-                rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
-                or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
+            rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS
+            or rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS_JERK
         ):
             # contacts forces are directly handled with this constraint
             ocp.implicit_constraints.add(
@@ -295,13 +295,13 @@ class ConfigureProblem:
 
     @staticmethod
     def stochastic_torque_driven(
-            ocp,
-            nlp,
-            problem_type,
-            with_contact: bool = False,
-            with_friction: bool = True,
-            with_cholesky: bool = False,
-            initial_matrix: DM = None,
+        ocp,
+        nlp,
+        problem_type,
+        with_contact: bool = False,
+        with_friction: bool = True,
+        with_cholesky: bool = False,
+        initial_matrix: DM = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -373,14 +373,14 @@ class ConfigureProblem:
 
     @staticmethod
     def torque_derivative_driven(
-            ocp,
-            nlp,
-            with_contact=False,
-            with_passive_torque: bool = False,
-            with_ligament: bool = False,
-            rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-            soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
-            external_forces: list = None,
+        ocp,
+        nlp,
+        with_contact=False,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
+        external_forces: list = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -458,13 +458,13 @@ class ConfigureProblem:
 
     @staticmethod
     def torque_activations_driven(
-            ocp,
-            nlp,
-            with_contact: bool = False,
-            with_passive_torque: bool = False,
-            with_residual_torque: bool = False,
-            with_ligament: bool = False,
-            external_forces: list[Any] = None,
+        ocp,
+        nlp,
+        with_contact: bool = False,
+        with_passive_torque: bool = False,
+        with_residual_torque: bool = False,
+        with_ligament: bool = False,
+        external_forces: list[Any] = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
@@ -572,16 +572,16 @@ class ConfigureProblem:
 
     @staticmethod
     def muscle_driven(
-            ocp,
-            nlp,
-            with_excitations: bool = False,
-            fatigue: FatigueList = None,
-            with_residual_torque: bool = False,
-            with_contact: bool = False,
-            with_passive_torque: bool = False,
-            with_ligament: bool = False,
-            rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-            external_forces: list[Any] = None,
+        ocp,
+        nlp,
+        with_excitations: bool = False,
+        fatigue: FatigueList = None,
+        with_residual_torque: bool = False,
+        with_contact: bool = False,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        external_forces: list[Any] = None,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -908,7 +908,7 @@ class ConfigureProblem:
                     to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
-                lambda t, x, u, p, s: nlp.soft_contact_forces_func(t, x, u, p, s)[(i_sc * 6): ((i_sc + 1) * 6), :],
+                lambda t, x, u, p, s: nlp.soft_contact_forces_func(t, x, u, p, s)[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
                 legend=all_soft_contact_names,
@@ -916,19 +916,19 @@ class ConfigureProblem:
 
     @staticmethod
     def configure_new_variable(
-            name: str,
-            name_elements: list,
-            ocp,
-            nlp,
-            as_states: bool,
-            as_controls: bool,
-            as_states_dot: bool = False,
-            as_stochastic: bool = False,
-            fatigue: FatigueList = None,
-            combine_name: str = None,
-            combine_state_control_plot: bool = False,
-            skip_plot: bool = False,
-            axes_idx: BiMapping = None,
+        name: str,
+        name_elements: list,
+        ocp,
+        nlp,
+        as_states: bool,
+        as_controls: bool,
+        as_states_dot: bool = False,
+        as_stochastic: bool = False,
+        fatigue: FatigueList = None,
+        combine_name: str = None,
+        combine_state_control_plot: bool = False,
+        skip_plot: bool = False,
+        axes_idx: BiMapping = None,
     ):
         """
         Add a new variable to the states/controls pool
@@ -980,11 +980,11 @@ class ConfigureProblem:
 
     @staticmethod
     def configure_integrated_value(
-            name: str,
-            name_elements: list,
-            ocp,
-            nlp,
-            initial_matrix: DM,
+        name: str,
+        name_elements: list,
+        ocp,
+        nlp,
+        initial_matrix: DM,
     ):
         """
         Add a new integrated value. This creates an MX (not an optimization variable) that is integrated using the
@@ -1206,7 +1206,7 @@ class ConfigureProblem:
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_a += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
 
         ConfigureProblem.configure_new_variable(
             name,
@@ -1238,7 +1238,7 @@ class ConfigureProblem:
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_cov += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
         ConfigureProblem.configure_integrated_value(
             name,
             name_cov,
@@ -1265,7 +1265,7 @@ class ConfigureProblem:
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
             for name_2 in [f"X_{i}" for i in range(n_noised_states)]:
                 name_cov += [name_1 + "_&_" + name_2]
-        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states ** 2)), list(range(n_noised_states ** 2)))
+        nlp.variable_mappings[name] = BiMapping(list(range(n_noised_states**2)), list(range(n_noised_states**2)))
         ConfigureProblem.configure_new_variable(
             name,
             name_cov,
@@ -1593,14 +1593,14 @@ class Dynamics(OptionGeneric):
     """
 
     def __init__(
-            self,
-            dynamics_type: Callable | DynamicsFcn,
-            expand_dynamics: bool = True,
-            expand_continuity: bool = False,
-            skip_continuity: bool = False,
-            state_continuity_weight: float | None = None,
-            phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-            **params: Any,
+        self,
+        dynamics_type: Callable | DynamicsFcn,
+        expand_dynamics: bool = True,
+        expand_continuity: bool = False,
+        skip_continuity: bool = False,
+        state_continuity_weight: float | None = None,
+        phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+        **params: Any,
     ):
         """
         Parameters
@@ -1684,7 +1684,7 @@ class DynamicsList(UniquePerPhaseOptionList):
 
 
 def _check_external_forces_format(external_forces: list[list[Any]], n_shooting: int, phase_idx: int):
-    """  Check if the external_forces is of the right format  """
+    """Check if the external_forces is of the right format"""
     if external_forces is not None and len(external_forces) != n_shooting:
         raise RuntimeError(
             f"Phase {phase_idx} has {n_shooting} shooting points but the external_forces "
@@ -1696,15 +1696,15 @@ def _check_external_forces_format(external_forces: list[list[Any]], n_shooting: 
 
 
 def _check_soft_contacts_dynamics(
-        rigidbody_dynamics: RigidBodyDynamics,
-        soft_contacts_dynamics: SoftContactDynamics,
-        nb_soft_contacts,
-        phase_idx: int,
+    rigidbody_dynamics: RigidBodyDynamics,
+    soft_contacts_dynamics: SoftContactDynamics,
+    nb_soft_contacts,
+    phase_idx: int,
 ):
     if nb_soft_contacts != 0:
         if (
-                soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
-                and soft_contacts_dynamics != SoftContactDynamics.ODE
+            soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
+            and soft_contacts_dynamics != SoftContactDynamics.ODE
         ):
             raise ValueError(
                 f"Phase {phase_idx} has soft contacts but the soft_contacts_dynamics is not "
