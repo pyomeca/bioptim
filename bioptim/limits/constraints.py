@@ -899,44 +899,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
         @staticmethod
         def collocation_jacobians(penalty, controller, method, polynomial_degree):
-            def prepare_collocation(method, polynomial_degree):
-                # Get collocation points
-                tau_root = np.append(0, collocation_points(polynomial_degree, method))
-
-                # Coefficients of the collocation equation
-                C = np.zeros((polynomial_degree + 1, polynomial_degree + 1))
-
-                # Coefficients of the continuity equation
-                D = np.zeros(polynomial_degree + 1)
-
-                # Coefficients of the quadrature function
-                B = np.zeros(polynomial_degree + 1)
-
-                # Construct polynomial basis
-                for j in range(polynomial_degree + 1):
-                    # Construct Lagrange polynomials to get the polynomial basis at the collocation point
-                    p = np.poly1d([1])
-                    for r in range(polynomial_degree + 1):
-                        if r != j:
-                            p *= np.poly1d([1, -tau_root[r]]) / (tau_root[j] - tau_root[r])
-
-                    # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
-                    D[j] = p(1.0)
-
-                    # Evaluate the time derivative of the polynomial at all collocation points to get the coefficients of the continuity equation
-                    pder = np.polyder(p)
-                    for r in range(polynomial_degree + 1):
-                        C[j, r] = pder(tau_root[r])
-
-                    # # Evaluate the integral of the polynomial to get the coefficients of the quadrature function
-                    pint = np.polyint(p)
-                    B[j] = pint(1.0)
-
-                return B, C, D
-
+            """
+            This function computes the jacobians of the collocation equation and of the continuity equation with respect to the collocation points and the noise
+            """
             sigma_ww = diag(
                 vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym)
-            )  # TODO: @mickaelbegon, what should we do with this ? -> in rockit should be 0 # * w
+            )
 
             cov_matrix = StochasticBioModel.reshape_to_matrix(
                 controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
@@ -944,9 +912,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             m_matrix = StochasticBioModel.reshape_to_matrix(
                 controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
             )
-
-            # Coefficients of the collocation equation (_c) and of the continuity equation (_d)
-            _b, _c, _d = prepare_collocation(method, polynomial_degree)
 
             nb_root = controller.model.nb_root
             nu = controller.model.nb_q - nb_root
@@ -964,38 +929,24 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             x_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
             z_full = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
 
-            # Loop over collocation points
-            G_argout = [x_full - z_full[:, 0]]
-            xf = _d[0] * z_full[:, 0]
-            for j in range(1, polynomial_degree + 1):
-                # Expression for the state derivative at the collocation point
-                xp_j = _c[0, j] * x_full
-                for r in range(1, polynomial_degree + 1):
-                    xp_j += _c[r, j] * z_full[:, r]
-
-                # Append collocation equations
-                fj = controller.extra_dynamics(0)(
-                    controller.time.cx_start,
-                    z_full[:, j],
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
-                )
-                G_argout.append(xp_j - controller.integrate.h * fj)
-
-                # Add contribution to the end state
-                xf = xf + _d[j] * z_full[:, j]
-
-            G_joints = MX()
-            for i in range(polynomial_degree + 1):
-                G_joints = vertcat(G_joints, G_argout[i][joints_index])
+            xf, xall, defects = controller.integrate_extra_dynamics(0).function(
+                z_full,
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.stochastic_variables.cx_start,
+            )
+            G_joints = [z_full[joints_index, 0] - x_full[joints_index]]
+            nx = 2 * (nb_root + nu)
+            for i in range(controller.ode_solver.polynomial_degree):
+                idx = [j+i*nx for j in joints_index]
+                G_joints.append(defects[idx])
+            G_joints = vertcat(*G_joints)
 
             Gdx = jacobian(G_joints, horzcat(x_q_joints, x_qdot_joints))
-
             Gdz = jacobian(G_joints, horzcat(z_q_joints, z_qdot_joints))
-
-            Gdw = jacobian(G_joints, vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
-
+            Gdw = jacobian(G_joints,
+                vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym),
+            )
             Fdz = jacobian(xf, horzcat(z_q_joints, z_qdot_joints))
 
             # Constraint Equality defining M
