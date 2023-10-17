@@ -282,7 +282,7 @@ class ConfigureProblem:
 
         # Configure the contact forces
         if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces)
         # Configure the soft contact forces
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         # Algebraic constraints of soft contact forces if needed
@@ -447,7 +447,12 @@ class ConfigureProblem:
             )
 
         if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+            ConfigureProblem.configure_contact_function(
+                ocp,
+                nlp,
+                DynamicsFunctions.forces_from_torque_driven,
+                external_forces=external_forces,
+            )
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:

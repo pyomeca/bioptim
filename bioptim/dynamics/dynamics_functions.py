@@ -119,6 +119,8 @@ class DynamicsFunctions:
             which rigidbody dynamics should be used
         fatigue : FatigueList
             A list of fatigue elements
+        external_forces: list[Any]
+            The external forces
 
         Returns
         ----------
