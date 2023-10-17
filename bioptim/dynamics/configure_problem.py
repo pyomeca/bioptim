@@ -524,8 +524,7 @@ class ConfigureProblem:
 
         if with_contact:
             ConfigureProblem.configure_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven
-            )
+                ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven, external_forces=external_forces)
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
@@ -667,7 +666,7 @@ class ConfigureProblem:
             )
 
         if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven)
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven, external_forces=external_forces)
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
