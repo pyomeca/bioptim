@@ -248,8 +248,7 @@ class DynamicsFunctions:
         tau += mapped_motor_noise + mapped_sensory_feedback_torque
         tau = tau + nlp.model.friction_coefficients @ qdot if with_friction else tau
 
-        # dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)  #Do not use this, since it gives errors
-        dq = qdot
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
         dxdt = MX(nlp.states.shape, ddq.shape[1])
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
