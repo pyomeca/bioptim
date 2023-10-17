@@ -1,5 +1,5 @@
 """
-This is a very simple example aiming to show how vairable scaling can be used.
+This is a very simple example aiming to show how variable scaling can be used.
 Variable scaling is important for the conditioning of the problem thus it might improve for convergence.
 This example is copied from the getting_started/pendulum.py example.
 

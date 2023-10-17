@@ -749,12 +749,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             Mc, _ = ConstraintFunction.Functions.collocation_jacobians(
                 penalty,
                 controller,
-                collocation_method,
                 polynomial_degree,
             )
 
@@ -795,12 +793,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            collocation_method = controller.get_nlp.ode_solver.method
             polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             _, Pf = ConstraintFunction.Functions.collocation_jacobians(
                 penalty,
                 controller,
-                collocation_method,
                 polynomial_degree,
             )
 
@@ -898,7 +894,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return diagonal_terms
 
         @staticmethod
-        def collocation_jacobians(penalty, controller, method, polynomial_degree):
+        def collocation_jacobians(penalty, controller, polynomial_degree):
             """
             This function computes the jacobians of the collocation equation and of the continuity equation with respect to the collocation points and the noise
             """
@@ -930,12 +926,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_full = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
 
             xf, xall, defects = controller.integrate_extra_dynamics(0).function(
-                z_full,
+                horzcat(x_full, z_full),
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
             )
-            G_joints = [z_full[joints_index, 0] - x_full[joints_index]]
+            G_joints = [x_full - z_full[:, 0]]
             nx = 2 * (nb_root + nu)
             for i in range(controller.ode_solver.polynomial_degree):
                 idx = [j+i*nx for j in joints_index]

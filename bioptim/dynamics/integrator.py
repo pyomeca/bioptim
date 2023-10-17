@@ -662,7 +662,8 @@ class COLLOCATION(Integrator):
 
         self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
-        self.allow_free_vairables = ode_opt["allow_free_variables"]
+        self.include_starting_collocation_point = ode_opt["include_starting_collocation_point"]
+        self.allow_free_variables = ode_opt["allow_free_variables"]
 
         # Coefficients of the collocation equation
         self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
@@ -767,28 +768,28 @@ class COLLOCATION(Integrator):
         """
 
         # Total number of variables for one finite element
-        states_end = self._d[0] * states[0]
+        states_end = self._d[0] * states[1]
         defects = []
         for j in range(1, self.degree + 1):
             # Expression for the state derivative at the collocation point
-            xp_j = 0
-            for r in range(self.degree + 1):
-                xp_j += self._c[r, j] * states[r]
+            xp_j = self._c[0, j] * states[0]
+            for r in range(1, self.degree + 1):
+                xp_j += self._c[r, j] * states[r+1]
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
                     time,
-                    states[j],
+                    states[j+1],
                     self.get_u(controls, self.step_time[j]),
                     params * param_scaling,
                     stochastic_variables,
                 )[:, self.idx]
-                defects.append(h * f_j - xp_j)
+                defects.append(xp_j - h * f_j)
             elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(
                     self.implicit_fun(
                         time,
-                        states[j],
+                        states[j+1],
                         self.get_u(controls, time),
                         params * param_scaling,
                         stochastic_variables,
@@ -799,11 +800,11 @@ class COLLOCATION(Integrator):
                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 
             # Add contribution to the end state
-            states_end += self._d[j] * states[j]
+            states_end += self._d[j] * states[j+1]
 
         # Concatenate constraints
         defects = vertcat(*defects)
-        return states_end, horzcat(states[0], states_end), defects
+        return states_end, horzcat(states[1], states_end), defects
 
     def _finish_init(self):
         """
@@ -813,7 +814,7 @@ class COLLOCATION(Integrator):
         self.function = Function(
             "integrator",
             [
-                horzcat(*self.x_sym),
+                horzcat(*self.x_sym) if self.include_starting_collocation_point else horzcat(*self.x_sym[1:]),
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,

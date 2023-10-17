@@ -72,20 +72,29 @@ class OdeSolverBase:
         nlp: NonLinearProgram
             A reference to the current phase of the ocp
         """
-        for i in range(len(nlp.dynamics_func)):
-            dynamics = []
-            dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=0, node_index=0)
+
+        # Primary dynamics
+        dynamics = []
+        dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=0, node_index=0, allow_free_variables=False)
+        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+            dynamics = dynamics * nlp.ns
+        else:
+            for node_index in range(1, nlp.ns):
+                dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=0, node_index=node_index)
+        nlp.dynamics = dynamics
+
+        # Extra dynamics
+        extra_dynamics = []
+        for i in range(1, len(nlp.dynamics_func)):
+            allow_free_variables = nlp.dynamics_func[i].has_free()
+            extra_dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=allow_free_variables)
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
-                dynamics = dynamics * nlp.ns
+                extra_dynamics = extra_dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
-                    dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=0, node_index=node_index)
-
-            if i == 0:
-                nlp.dynamics = dynamics
-            else:
-                # TODO include this in nlp.dynamics so the index of nlp.dynamics_func and nlp.dynamics match
-                nlp.extra_dynamics.append(dynamics)
+                    extra_dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=node_index)
+            # TODO include this in nlp.dynamics so the index of nlp.dynamics_func and nlp.dynamics match
+            nlp.extra_dynamics.append(extra_dynamics)
 
 
 class RK(OdeSolverBase):
@@ -369,11 +378,11 @@ class OdeSolver:
                 )
 
             if self.include_starting_collocation_point:
-                x_unscaled = (nlp.states.cx_intermediates_list,)
-                x_scaled = nlp.states.scaled.cx_intermediates_list
-            else:
                 x_unscaled = ([nlp.states.cx_start] + nlp.states.cx_intermediates_list,)
                 x_scaled = [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list
+            else:
+                x_unscaled = ([nlp.states.cx_start] + [nlp.states.cx_start] + nlp.states.cx_intermediates_list,)
+                x_scaled = [nlp.states.scaled.cx_start] + [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list
 
             ode = {
                 "x_unscaled": x_unscaled,
@@ -403,6 +412,7 @@ class OdeSolver:
                 "irk_polynomial_interpolation_degree": self.polynomial_degree,
                 "method": self.method,
                 "defects_type": self.defects_type,
+                "include_starting_collocation_point": self.include_starting_collocation_point,
                 "allow_free_variables": allow_free_variables,
             }
 
