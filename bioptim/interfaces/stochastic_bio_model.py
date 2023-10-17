@@ -31,6 +31,11 @@ class StochasticBioModel(BioModel):
     def stochastic_dynamics(self, q, qdot, tau, ref, k, with_noise=True):
         """The stochastic dynamics that should be applied to the model"""
 
+    def compute_torques_from_noise_and_feedback(self, k_matrix, sensory_input, ref, sensory_noise_sym):
+        """Compute the torques from the sensory feedback"""
+        mapped_sensory_feedback_torque = k_matrix @ ((sensory_input - ref) + sensory_noise_sym)
+        return mapped_sensory_feedback_torque
+
     @staticmethod
     def reshape_to_matrix(var, shape):
         """
