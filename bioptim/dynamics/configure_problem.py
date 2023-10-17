@@ -190,6 +190,7 @@ class ConfigureProblem:
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
         _check_soft_contacts_dynamics(rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
         _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
+        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -412,6 +413,7 @@ class ConfigureProblem:
 
         _check_soft_contacts_dynamics(rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
         _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
+        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -492,6 +494,7 @@ class ConfigureProblem:
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
         _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
+        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -615,6 +618,7 @@ class ConfigureProblem:
         """
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
         _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
+        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
@@ -1683,7 +1687,7 @@ class DynamicsList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of DynamicsList is not ready yet")
 
 
-def _check_external_forces_format(external_forces: list[list[Any]], n_shooting: int, phase_idx: int):
+def _check_external_forces_format(external_forces: list[Any], n_shooting: int, phase_idx: int):
     """Check if the external_forces is of the right format"""
     if external_forces is not None and len(external_forces) != n_shooting:
         raise RuntimeError(
@@ -1692,6 +1696,15 @@ def _check_external_forces_format(external_forces: list[list[Any]], n_shooting: 
             f"The external_forces should be of format list[Any] "
             f"where the list is the number of shooting points of the phase and the dict is the Any "
             f"is the specific way to add external_force for the specific implementation of the biomodel."
+        )
+
+
+def _check_external_forces_and_phase_dynamics(external_forces: list[Any], phase_dynamics: PhaseDynamics, phase_idx: int):
+    """ If external_forces is not None, phase_dynamics should be PhaseDynamics.ONE_PER_NODE """
+    if external_forces is not None and phase_dynamics != PhaseDynamics.ONE_PER_NODE:
+        raise RuntimeError(
+            f"Phase {phase_idx} has external_forces but the phase_dynamics is {phase_dynamics}."
+            f"Please set phase_dynamics=PhaseDynamics.ONE_PER_NODE"
         )
 
 
