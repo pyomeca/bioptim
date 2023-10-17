@@ -188,7 +188,9 @@ class ConfigureProblem:
         """
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        _check_soft_contacts_dynamics(rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
+        _check_soft_contacts_dynamics(
+            rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
+        )
         _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
         _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
@@ -282,7 +284,9 @@ class ConfigureProblem:
 
         # Configure the contact forces
         if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces)
+            ConfigureProblem.configure_contact_function(
+                ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces
+            )
         # Configure the soft contact forces
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         # Algebraic constraints of soft contact forces if needed
@@ -411,7 +415,9 @@ class ConfigureProblem:
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
-        _check_soft_contacts_dynamics(rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx)
+        _check_soft_contacts_dynamics(
+            rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
+        )
         _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
         _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
@@ -524,7 +530,8 @@ class ConfigureProblem:
 
         if with_contact:
             ConfigureProblem.configure_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven, external_forces=external_forces)
+                ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven, external_forces=external_forces
+            )
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
@@ -666,7 +673,9 @@ class ConfigureProblem:
             )
 
         if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven, external_forces=external_forces)
+            ConfigureProblem.configure_contact_function(
+                ocp, nlp, DynamicsFunctions.forces_from_muscle_driven, external_forces=external_forces
+            )
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
@@ -1703,8 +1712,10 @@ def _check_external_forces_format(external_forces: list[Any], n_shooting: int, p
         )
 
 
-def _check_external_forces_and_phase_dynamics(external_forces: list[Any], phase_dynamics: PhaseDynamics, phase_idx: int):
-    """ If external_forces is not None, phase_dynamics should be PhaseDynamics.ONE_PER_NODE """
+def _check_external_forces_and_phase_dynamics(
+    external_forces: list[Any], phase_dynamics: PhaseDynamics, phase_idx: int
+):
+    """If external_forces is not None, phase_dynamics should be PhaseDynamics.ONE_PER_NODE"""
     if external_forces is not None and phase_dynamics != PhaseDynamics.ONE_PER_NODE:
         raise RuntimeError(
             f"Phase {phase_idx} has external_forces but the phase_dynamics is {phase_dynamics}."
