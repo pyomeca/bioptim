@@ -70,8 +70,6 @@ def prepare_ocp(
     # Change the values (index 1) of the 5th node (index 4) and 1st (index 0) and 2nd (index 1) forces
     external_forces[4][0][1] = (0, 0, 0, 0, 0, -22)
     external_forces[4][1][1] = (0, 0, 0, 0, 0, 52)
-    # # Wrap external_forces in a list so there is only one value for the phase
-    # external_forces = [external_forces]
 
     # Dynamics
     dynamics = DynamicsList()
