@@ -31,6 +31,7 @@ def test_arm_reaching_torque_driven_collocations():
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
         final_time=final_time,
         n_shooting=n_shooting,
+        polynomial_degree=3,
         hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
