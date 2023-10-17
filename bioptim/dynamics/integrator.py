@@ -94,6 +94,7 @@ class Integrator:
         self.step_time = ode_opt["tf"] - ode_opt["t0"]
         self.h = self.step_time
         self.function = None
+        self.allow_free_variables = ode_opt["allow_free_variables"]
 
     def __call__(self, *args, **kwargs):
         """
@@ -199,6 +200,7 @@ class Integrator:
             ),
             ["x0", "u", "p", "s"],
             ["xf", "xall"],
+            {"allow_free": self.allow_free_variables},
         )
 
 
@@ -625,6 +627,7 @@ class TRAPEZOIDAL(Integrator):
             ),
             ["x0", "u", "p", "s"],
             ["xf", "xall"],
+            {"allow_free": self.allow_free_variables},
         )
 
 
@@ -659,6 +662,7 @@ class COLLOCATION(Integrator):
 
         self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
+        self.allow_free_vairables = ode_opt["allow_free_variables"]
 
         # Coefficients of the collocation equation
         self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
@@ -825,6 +829,7 @@ class COLLOCATION(Integrator):
             ),
             ["x0", "u", "p", "s"],
             ["xf", "xall", "defects"],
+            {"allow_free": self.allow_free_variables},
         )
 
 
@@ -942,6 +947,7 @@ class IRK(COLLOCATION):
             ),
             ["x0", "u", "p", "s"],
             ["xf", "xall"],
+            {"allow_free": self.allow_free_variables},
         )
 
 

@@ -38,7 +38,7 @@ class OdeSolverBase:
         self.is_direct_collocation = False
         self.is_direct_shooting = False
 
-    def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
+    def integrator(self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False) -> list:
         """
         The interface of the OdeSolver to the corresponding integrator
 
@@ -111,7 +111,7 @@ class RK(OdeSolverBase):
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
-    def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
+    def integrator(self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False) -> list:
         nlp.states.node_index = node_index
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
@@ -149,6 +149,7 @@ class RK(OdeSolverBase):
             "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
             if len(nlp.implicit_dynamics_func) > 0
             else nlp.implicit_dynamics_func,
+            "allow_free_variables": allow_free_variables,
         }
 
         if ode["ode"].size2_out("xdot") != 1:
@@ -250,7 +251,7 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
+        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False) -> list:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -293,6 +294,7 @@ class OdeSolver:
                 "idx": 0,
                 "control_type": nlp.control_type,
                 "defects_type": DefectType.NOT_APPLICABLE,
+                "allow_free_variables": allow_free_variables,
             }
 
             if ode["ode"].size2_out("xdot") != 1:
@@ -351,7 +353,7 @@ class OdeSolver:
             dt = collocation_points(self.polynomial_degree, self.method)
             return [t0 + dt[i] for i in range(0, self.steps)]
 
-        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
+        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False) -> list:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -401,6 +403,7 @@ class OdeSolver:
                 "irk_polynomial_interpolation_degree": self.polynomial_degree,
                 "method": self.method,
                 "defects_type": self.defects_type,
+                "allow_free_variables": allow_free_variables,
             }
 
             if ode["ode"].size2_out("xdot") != 1:
@@ -445,11 +448,11 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.steps = 1
 
-        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
+        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False) -> list:
             if ocp.cx is SX:
                 raise NotImplementedError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
-            return super(OdeSolver.IRK, self).integrator(ocp, nlp, dynamics_index, node_index)
+            return super(OdeSolver.IRK, self).integrator(ocp, nlp, dynamics_index, node_index, allow_free_variables=allow_free_variables)
 
     class CVODES(OdeSolverBase):
         """
@@ -464,7 +467,7 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int) -> list:
+        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False) -> list:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -530,6 +533,7 @@ class OdeSolver:
                     ),
                     ["t", "x0", "u", "params", "s"],
                     ["xf", "xall"],
+                    {"allow_free": allow_free_variables},
                 )
             ]
 
