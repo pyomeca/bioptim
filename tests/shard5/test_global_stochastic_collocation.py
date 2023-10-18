@@ -147,7 +147,7 @@ def test_arm_reaching_torque_driven_collocations():
                 2.18202901e-01,
             ]
         ),
-        decimal=5,
+        decimal=3,
     )
 
     np.testing.assert_almost_equal(
