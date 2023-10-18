@@ -906,9 +906,10 @@ class IRK(COLLOCATION):
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         time_sym = []
+        collocation_states = vertcat(*states[1:]) if self.include_starting_collocation_point else vertcat(*states[2:])
         vfcn = Function(
             "vfcn",
-            [vertcat(*states[1:]), time_sym, states[0], controls, params, stochastic_variables],
+            [collocation_states, time_sym, states[0], controls, params, stochastic_variables],
             [defect],
         ).expand()
 

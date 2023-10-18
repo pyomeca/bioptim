@@ -140,6 +140,7 @@ class RK(OdeSolverBase):
             "control_type": nlp.control_type,
             "number_of_finite_elements": self.steps,
             "defects_type": DefectType.NOT_APPLICABLE,
+            "allow_free_variables": allow_free_variables,
         }
 
         ode = {
@@ -158,7 +159,6 @@ class RK(OdeSolverBase):
             "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
             if len(nlp.implicit_dynamics_func) > 0
             else nlp.implicit_dynamics_func,
-            "allow_free_variables": allow_free_variables,
         }
 
         if ode["ode"].size2_out("xdot") != 1:
