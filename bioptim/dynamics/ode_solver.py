@@ -92,7 +92,7 @@ class OdeSolverBase:
                 extra_dynamics = extra_dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
-                    extra_dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=node_index)
+                    extra_dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=node_index, allow_free_variables=allow_free_variables)
             # TODO include this in nlp.dynamics so the index of nlp.dynamics_func and nlp.dynamics match
             nlp.extra_dynamics.append(extra_dynamics)
 
