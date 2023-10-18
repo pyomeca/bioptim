@@ -86,13 +86,12 @@ class OdeSolverBase:
         # Extra dynamics
         extra_dynamics = []
         for i in range(1, len(nlp.dynamics_func)):
-            allow_free_variables = nlp.dynamics_func[i].has_free()
-            extra_dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=allow_free_variables)
+            extra_dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True)
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 extra_dynamics = extra_dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
-                    extra_dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=node_index, allow_free_variables=allow_free_variables)
+                    extra_dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=node_index, allow_free_variables=True)
             # TODO include this in nlp.dynamics so the index of nlp.dynamics_func and nlp.dynamics match
             nlp.extra_dynamics.append(extra_dynamics)
 
