@@ -1,7 +1,7 @@
 import pytest
 
 from bioptim import PhaseDynamics, RigidBodyDynamics, SoftContactDynamics
-from bioptim.dynamics.configure_problem import  (
+from bioptim.dynamics.configure_problem import (
     _check_external_forces_format,
     _check_external_forces_and_phase_dynamics,
     _check_soft_contacts_dynamics,
