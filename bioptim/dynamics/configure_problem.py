@@ -1716,6 +1716,9 @@ def _check_external_forces_and_phase_dynamics(
     external_forces: list[Any], phase_dynamics: PhaseDynamics, phase_idx: int
 ):
     """If external_forces is not None, phase_dynamics should be PhaseDynamics.ONE_PER_NODE"""
+    # Note to the developer: External_forces doesn't necessitate ONE_PER_NODE, we made it anyway
+    # because at this stage it makes more sens to send full time series of external forces
+    # but one day someone could be interested in sending a unique value that could be applied to all nodes
     if external_forces is not None and phase_dynamics != PhaseDynamics.ONE_PER_NODE:
         raise RuntimeError(
             f"Phase {phase_idx} has external_forces but the phase_dynamics is {phase_dynamics}."

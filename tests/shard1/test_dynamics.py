@@ -36,13 +36,7 @@ class OptimalControlProgram:
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
-@pytest.mark.parametrize(
-    "with_external_force",
-    [
-        # False,
-        True,
-    ],
-)
+@pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize(
     "rigidbody_dynamics",

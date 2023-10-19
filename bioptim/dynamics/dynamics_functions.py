@@ -948,6 +948,8 @@ class DynamicsFunctions:
             return qdot_var.mapping.to_first.map(qddot)
         else:
             dxdt = MX(len(qdot_var.mapping.to_first), nlp.ns)
+            # Todo: Should be added to pass f_ext in controls (as a symoblic value)
+            #  this would avoid to create multiple equations of motions per node
             for i, f_ext in enumerate(external_forces):
                 if with_contact:
                     qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, f_ext)
@@ -998,6 +1000,8 @@ class DynamicsFunctions:
             else:
                 tau_shape = nlp.model.nb_tau
             tau = MX(tau_shape, nlp.ns)
+            # Todo: Should be added to pass f_ext in controls (as a symoblic value)
+            #  this would avoid to create multiple equations of motions per node
             for i, f_ext in enumerate(nlp.external_forces):
                 tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, f_ext)
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
