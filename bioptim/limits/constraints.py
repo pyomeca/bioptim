@@ -898,9 +898,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             This function computes the jacobians of the collocation equation and of the continuity equation with respect to the collocation points and the noise
             """
-            sigma_ww = diag(
-                vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym)
-            )
+            sigma_ww = diag(vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
 
             cov_matrix = StochasticBioModel.reshape_to_matrix(
                 controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
@@ -934,13 +932,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             G_joints = [x_full - z_full[:, 0]]
             nx = 2 * (nb_root + nu)
             for i in range(controller.ode_solver.polynomial_degree):
-                idx = [j+i*nx for j in joints_index]
+                idx = [j + i * nx for j in joints_index]
                 G_joints.append(defects[idx])
             G_joints = vertcat(*G_joints)
 
             Gdx = jacobian(G_joints, horzcat(x_q_joints, x_qdot_joints))
             Gdz = jacobian(G_joints, horzcat(z_q_joints, z_qdot_joints))
-            Gdw = jacobian(G_joints,
+            Gdw = jacobian(
+                G_joints,
                 vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym),
             )
             Fdz = jacobian(xf, horzcat(z_q_joints, z_qdot_joints))

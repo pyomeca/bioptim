@@ -774,12 +774,12 @@ class COLLOCATION(Integrator):
             # Expression for the state derivative at the collocation point
             xp_j = self._c[0, j] * states[0]
             for r in range(1, self.degree + 1):
-                xp_j += self._c[r, j] * states[r+1]
+                xp_j += self._c[r, j] * states[r + 1]
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
                     time,
-                    states[j+1],
+                    states[j + 1],
                     self.get_u(controls, self.step_time[j]),
                     params * param_scaling,
                     stochastic_variables,
@@ -789,7 +789,7 @@ class COLLOCATION(Integrator):
                 defects.append(
                     self.implicit_fun(
                         time,
-                        states[j+1],
+                        states[j + 1],
                         self.get_u(controls, time),
                         params * param_scaling,
                         stochastic_variables,
@@ -800,7 +800,7 @@ class COLLOCATION(Integrator):
                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 
             # Add contribution to the end state
-            states_end += self._d[j] * states[j+1]
+            states_end += self._d[j] * states[j + 1]
 
         # Concatenate constraints
         defects = vertcat(*defects)

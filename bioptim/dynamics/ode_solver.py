@@ -86,12 +86,16 @@ class OdeSolverBase:
         # Extra dynamics
         extra_dynamics = []
         for i in range(1, len(nlp.dynamics_func)):
-            extra_dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True)
+            extra_dynamics += nlp.ode_solver.integrator(
+                ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True
+            )
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 extra_dynamics = extra_dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
-                    extra_dynamics += nlp.ode_solver.integrator(ocp, nlp, dynamics_index=i, node_index=node_index, allow_free_variables=True)
+                    extra_dynamics += nlp.ode_solver.integrator(
+                        ocp, nlp, dynamics_index=i, node_index=node_index, allow_free_variables=True
+                    )
             # TODO include this in nlp.dynamics so the index of nlp.dynamics_func and nlp.dynamics match
             nlp.extra_dynamics.append(extra_dynamics)
 
@@ -259,7 +263,9 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False) -> list:
+        def integrator(
+            self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False
+        ) -> list:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -361,7 +367,9 @@ class OdeSolver:
             dt = collocation_points(self.polynomial_degree, self.method)
             return [t0 + dt[i] for i in range(0, self.steps)]
 
-        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False) -> list:
+        def integrator(
+            self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False
+        ) -> list:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
@@ -381,7 +389,11 @@ class OdeSolver:
                 x_scaled = [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list
             else:
                 x_unscaled = ([nlp.states.cx_start] + [nlp.states.cx_start] + nlp.states.cx_intermediates_list,)
-                x_scaled = [nlp.states.scaled.cx_start] + [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list
+                x_scaled = (
+                    [nlp.states.scaled.cx_start]
+                    + [nlp.states.scaled.cx_start]
+                    + nlp.states.scaled.cx_intermediates_list
+                )
 
             ode = {
                 "x_unscaled": x_unscaled,
@@ -457,11 +469,15 @@ class OdeSolver:
             self.is_direct_shooting = True
             self.steps = 1
 
-        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False) -> list:
+        def integrator(
+            self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False
+        ) -> list:
             if ocp.cx is SX:
                 raise NotImplementedError("use_sx=True and OdeSolver.IRK are not yet compatible")
 
-            return super(OdeSolver.IRK, self).integrator(ocp, nlp, dynamics_index, node_index, allow_free_variables=allow_free_variables)
+            return super(OdeSolver.IRK, self).integrator(
+                ocp, nlp, dynamics_index, node_index, allow_free_variables=allow_free_variables
+            )
 
     class CVODES(OdeSolverBase):
         """
@@ -476,7 +492,9 @@ class OdeSolver:
             self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
-        def integrator(self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False) -> list:
+        def integrator(
+            self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False
+        ) -> list:
             nlp.states.node_index = node_index
             nlp.states_dot.node_index = node_index
             nlp.controls.node_index = node_index
