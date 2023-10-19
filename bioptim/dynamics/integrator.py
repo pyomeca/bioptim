@@ -747,7 +747,9 @@ class COLLOCATION(Integrator):
         time: float | MX | SX
             The time of the system
         states: MX | SX
-            The states of the system
+            The states of the system in the following format
+            add_initial_collocation_point = True -> [cx_start, cx_start, cx_intermediate_list(polynomial_degree+1)]
+            add_initial_collocation_point = True -> [cx_start, cx_intermediate_list(polynomial_degree+2)]
         controls: MX | SX
             The controls of the system
         params: MX | SX
@@ -772,9 +774,12 @@ class COLLOCATION(Integrator):
         defects = []
         for j in range(1, self.degree + 1):
             # Expression for the state derivative at the collocation point
-            xp_j = self._c[0, j] * states[0]
-            for r in range(1, self.degree + 1):
-                xp_j += self._c[r, j] * states[r + 1]
+            xp_j = 0
+            for r in range(self.degree + 2):
+                if r == 1:
+                    # We skip r=1 because this collocation point is the same as the initial point
+                    continue
+                xp_j += self._c[r - 1 if r > 0 else r, j] * states[r]
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
