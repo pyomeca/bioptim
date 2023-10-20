@@ -293,7 +293,6 @@ def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time
                         np.testing.assert_almost_equal(sol.controls["tau"][0][20], -0.19302027184867174)
                         np.testing.assert_almost_equal(sol.time[-1], 1.0165215559480536)
                     else:
-                        # if mac return
                         if platform.system() == "Darwin":
                             return
                         np.testing.assert_almost_equal(np.array(sol.cost), np.array([[253.86966024]]))
