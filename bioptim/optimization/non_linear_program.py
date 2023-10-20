@@ -82,6 +82,8 @@ class NonLinearProgram:
         The bounds for the controls
     u_init = InitialGuess()
         The initial guess for the controls
+    u_scaling:
+        The scaling for the controls
     U: list[MX | SX]
         The casadi variables for the integration at each node of the phase
     controls: OptimizationVariableContainer
@@ -92,12 +94,18 @@ class NonLinearProgram:
         The initial guess for the states
     X: list[MX | SX]
         The casadi variables for the integration at each node of the phase
+    x_scaling:
+        The scaling for the states
     states: OptimizationVariableContainer
         A list of all the state variables
     s_bounds = Bounds()
         The bounds for the stochastic variables
     s_init = InitialGuess()
         The initial guess for the stochastic variables
+    s_scaling:
+        The scaling for the stochastic variables
+    phase_dynamics: PhaseDynamics
+        The dynamics of the current phase (e.g. SHARED_DURING_PHASE, or ONE_PER_NODE)
     S: list[MX | SX]
         The casadi variables for the stochastic variables
 
@@ -113,8 +121,14 @@ class NonLinearProgram:
         Add a new element to the nlp of the format 'nlp.param_name = param' or 'nlp.name["param_name"] = param'
     add_path_condition(ocp: OptimalControlProgram, var: Any, path_name: str, type_option: Any, type_list: Any)
         Interface to add for PathCondition classes
-    def add_casadi_func(self, name: str, function: Callable, *all_param: Any) -> casadi.Function:
+    add_casadi_func(self, name: str, function: Callable, *all_param: Any) -> casadi.Function:
         Add to the pool of declared casadi function. If the function already exists, it is skipped
+    to_casadi_func
+        Converts a symbolic expression into a casadi function
+    mx_to_cx
+        Add to the pool of declared casadi function. If the function already exists, it is skipped
+    node_time(self, node_idx: int)
+        Gives the time for a specific index
     """
 
     def __init__(self, phase_dynamics: PhaseDynamics):

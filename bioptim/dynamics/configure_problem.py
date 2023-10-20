@@ -158,6 +158,7 @@ class ConfigureProblem:
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
+        external_forces: list = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -182,26 +183,16 @@ class ConfigureProblem:
             which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
-
+        external_forces: list[Any]
+            A list of external forces
         """
-        if with_contact and nlp.model.nb_contacts == 0:
-            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
-        if nlp.model.nb_soft_contacts != 0:
-            if (
-                soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
-                and soft_contacts_dynamics != SoftContactDynamics.ODE
-            ):
-                raise ValueError(
-                    "soft_contacts_dynamics can be used only with SoftContactDynamics.ODE or SoftContactDynamics.CONSTRAINT"
-                )
 
-            if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-                if soft_contacts_dynamics == SoftContactDynamics.ODE:
-                    raise ValueError(
-                        "Soft contacts dynamics should not be used with SoftContactDynamics.ODE "
-                        "when rigidbody dynamics is not RigidBodyDynamics.ODE . "
-                        "Please set soft_contacts_dynamics=SoftContactDynamics.CONSTRAINT"
-                    )
+        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_soft_contacts_dynamics(
+            rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
+        )
+        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
+        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -288,11 +279,14 @@ class ConfigureProblem:
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
                 with_friction=with_friction,
+                external_forces=external_forces,
             )
 
         # Configure the contact forces
         if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+            ConfigureProblem.configure_contact_function(
+                ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces
+            )
         # Configure the soft contact forces
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         # Algebraic constraints of soft contact forces if needed
@@ -391,6 +385,7 @@ class ConfigureProblem:
         with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
+        external_forces: list = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -411,30 +406,20 @@ class ConfigureProblem:
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
+        external_forces: list[Any]
+            A list of external forces
 
         """
-        if with_contact and nlp.model.nb_contacts == 0:
-            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
+        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
 
         if rigidbody_dynamics not in (RigidBodyDynamics.DAE_INVERSE_DYNAMICS, RigidBodyDynamics.ODE):
             raise NotImplementedError("TORQUE_DERIVATIVE_DRIVEN cannot be used with this enum RigidBodyDynamics yet")
 
-        if nlp.model.nb_soft_contacts != 0:
-            if (
-                soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
-                and soft_contacts_dynamics != SoftContactDynamics.ODE
-            ):
-                raise ValueError(
-                    "soft_contacts_dynamics can be used only with RigidBodyDynamics.ODE or SoftContactDynamics.CONSTRAINT"
-                )
-
-            if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
-                if soft_contacts_dynamics == SoftContactDynamics.ODE:
-                    raise ValueError(
-                        "Soft contacts dynamics should not be used with RigidBodyDynamics.ODE "
-                        "when rigidbody dynamics is not RigidBodyDynamics.ODE . "
-                        "Please set soft_contacts_dynamics=SoftContactDynamics.CONSTRAINT"
-                    )
+        _check_soft_contacts_dynamics(
+            rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
+        )
+        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
+        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -464,10 +449,16 @@ class ConfigureProblem:
                 rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
+                external_forces=external_forces,
             )
 
         if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
+            ConfigureProblem.configure_contact_function(
+                ocp,
+                nlp,
+                DynamicsFunctions.forces_from_torque_driven,
+                external_forces=external_forces,
+            )
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
@@ -486,6 +477,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_residual_torque: bool = False,
         with_ligament: bool = False,
+        external_forces: list[Any] = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
@@ -506,11 +498,14 @@ class ConfigureProblem:
             If the dynamic with a residual torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
+        external_forces: list[Any]
+            A list of external forces
 
         """
 
-        if with_contact and nlp.model.nb_contacts == 0:
-            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
+        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
+        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -530,11 +525,12 @@ class ConfigureProblem:
                 with_passive_torque=with_passive_torque,
                 with_residual_torque=with_residual_torque,
                 with_ligament=with_ligament,
+                external_forces=external_forces,
             )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven
+                ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven, external_forces=external_forces
             )
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
@@ -599,6 +595,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        external_forces: list[Any] = None,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -627,10 +624,12 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
-
+        external_forces: list[Any]
+            A list of external forces
         """
-        if with_contact and nlp.model.nb_contacts == 0:
-            raise ValueError("No contact defined in the .bioMod, set with_contact to False")
+        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
+        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
@@ -670,10 +669,13 @@ class ConfigureProblem:
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
                 rigidbody_dynamics=rigidbody_dynamics,
+                external_forces=external_forces,
             )
 
         if with_contact:
-            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_muscle_driven)
+            ConfigureProblem.configure_contact_function(
+                ocp, nlp, DynamicsFunctions.forces_from_muscle_driven, external_forces=external_forces
+            )
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
@@ -1696,3 +1698,59 @@ class DynamicsList(UniquePerPhaseOptionList):
         Print the DynamicsList to the console
         """
         raise NotImplementedError("Printing of DynamicsList is not ready yet")
+
+
+def _check_external_forces_format(external_forces: list[Any], n_shooting: int, phase_idx: int):
+    """Check if the external_forces is of the right format"""
+    if external_forces is not None and len(external_forces) != n_shooting:
+        raise RuntimeError(
+            f"Phase {phase_idx} has {n_shooting} shooting points but the external_forces "
+            f"has {len(external_forces)} shooting points."
+            f"The external_forces should be of format list[Any] "
+            f"where the list is the number of shooting points of the phase and the dict is the Any "
+            f"is the specific way to add external_force for the specific implementation of the biomodel."
+        )
+
+
+def _check_external_forces_and_phase_dynamics(
+    external_forces: list[Any], phase_dynamics: PhaseDynamics, phase_idx: int
+):
+    """If external_forces is not None, phase_dynamics should be PhaseDynamics.ONE_PER_NODE"""
+    # Note to the developer: External_forces doesn't necessitate ONE_PER_NODE, we made it anyway
+    # because at this stage it makes more sens to send full time series of external forces
+    # but one day someone could be interested in sending a unique value that could be applied to all nodes
+    if external_forces is not None and phase_dynamics != PhaseDynamics.ONE_PER_NODE:
+        raise RuntimeError(
+            f"Phase {phase_idx} has external_forces but the phase_dynamics is {phase_dynamics}."
+            f"Please set phase_dynamics=PhaseDynamics.ONE_PER_NODE"
+        )
+
+
+def _check_soft_contacts_dynamics(
+    rigidbody_dynamics: RigidBodyDynamics,
+    soft_contacts_dynamics: SoftContactDynamics,
+    nb_soft_contacts,
+    phase_idx: int,
+):
+    if nb_soft_contacts != 0:
+        if (
+            soft_contacts_dynamics != SoftContactDynamics.CONSTRAINT
+            and soft_contacts_dynamics != SoftContactDynamics.ODE
+        ):
+            raise ValueError(
+                f"Phase {phase_idx} has soft contacts but the soft_contacts_dynamics is not "
+                f"SoftContactDynamics.CONSTRAINT or SoftContactDynamics.ODE."
+            )
+
+        if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
+            if soft_contacts_dynamics == SoftContactDynamics.ODE:
+                raise ValueError(
+                    f"Phase {phase_idx} has soft contacts but the rigidbody_dynamics is "
+                    f"RigidBodyDynamics.DAE_INVERSE_DYNAMICS and soft_contacts_dynamics is SoftContactDynamics.ODE."
+                    f"Please set soft_contacts_dynamics=SoftContactDynamics.CONSTRAINT"
+                )
+
+
+def _check_contacts_in_biorbd_model(with_contact: bool, nb_contacts: int, phase_idx: int):
+    if with_contact and nb_contacts == 0:
+        raise ValueError(f"No contact defined in the .bioMod of phase {phase_idx}, set with_contact to False.")
