@@ -34,6 +34,7 @@ from bioptim import (
     Axis,
     InitialGuessList,
     InterpolationType,
+    PhaseDynamics,
 )
 
 def get_markers_pos(x: DM | np.ndarray, idx_marker: int, fun: Callable, n_q: int) -> DM | np.ndarray:
@@ -144,6 +145,8 @@ def prepare_optimal_estimation(
     time_ref: float,
     n_shooting: int,
     markers_ref: np.ndarray,
+    q_ref: np.ndarray,
+    qdot_ref: np.ndarray,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
 ) -> OptimalControlProgram:
     """
@@ -176,14 +179,14 @@ def prepare_optimal_estimation(
             node=i,
             weight=100,
             target=markers_ref[:, :, i],
-            phase=0
         )
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, target=time_ref, quadratic=True)
+    # objective_functions.add(ObjectiveFcn.Mayer.TRACK_MARKERS, weight=100, target=markers_ref, quadratic=True)
+    # objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, target=time_ref, quadratic=True)
     # objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", weight=1e-6, quadratic=True)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=PhaseDynamics.ONE_PER_NODE)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -196,6 +199,10 @@ def prepare_optimal_estimation(
     u_bounds = BoundsList()
     u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
 
+    x_init = InitialGuessList()
+    x_init.add("q", initial_guess=q_ref, interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("qdot", initial_guess=qdot_ref, interpolation=InterpolationType.EACH_FRAME)
+
     return OptimalControlProgram(
         bio_model,
         dynamics,
@@ -203,6 +210,7 @@ def prepare_optimal_estimation(
         time_ref,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
+        x_init=x_init,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
     )
@@ -246,7 +254,9 @@ def main():
         biorbd_model_path=biorbd_model_path,
         time_ref=time,
         n_shooting=n_shooting,
-        markers_ref=markers_ref)
+        markers_ref=markers_ref,
+        q_ref=q,
+        qdot_ref=qdot,)
 
     # # --- plot markers position --- #
     # title_markers = ["x", "y", "z"]
@@ -290,9 +300,14 @@ def main():
     q = sol.states["q"]
     qdot = sol.states["qdot"]
     tau = sol.controls["tau"]
-    time = sol.parameters["time"][0][0]
+    # time = sol.parameters["time"][0][0]
 
-    sol.animate()
+    # sol.animate(show_tracked_markers=True)
+    import bioviz
+    b = bioviz.Viz(biorbd_model_path)
+    b.load_movement(q)
+    b.load_experimental_markers(markers_ref)
+    b.exec()
 
 
 

@@ -19,8 +19,6 @@ from ..misc.enums import (
     Node,
     QuadratureRule,
     PhaseDynamics,
-    IntegralApproximation,
-    Axis,
 )
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
@@ -1840,7 +1838,6 @@ class Solution:
                 data_to_animate = data_to_animate.interpolate(sum(self.ns) + 1)
             except RuntimeError:
                 pass
-
         elif n_frames > 0:
             data_to_animate = data_to_animate.interpolate(n_frames)
 
@@ -1896,16 +1893,16 @@ class Solution:
                         ObjectiveFcn.Mayer.TRACK_MARKERS,
                         ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        if "axes" in objective.extra_arguments:
-                            target_3D = np.zeros((3, objective.target[0].shape[1], objective.target[0].shape[2]))
-                            for i_ax, ax in enumerate(Axis):
-                                if ax in objective.extra_arguments["axes"]:
-                                    target_3D[i_ax, :, :] = objective.target[0][objective.extra_arguments["axes"].index(ax), :, :]
-                        else:
-                            target_3D = objective.target[0]
-                        all_bioviz[-1].load_experimental_markers(target_3D)
-                        n_frames = target_3D.shape[2]
-                        #######################################
+                        # if "axes" in objective.extra_arguments:
+                        #     target_3D = np.zeros((3, objective.target[0].shape[1], objective.target[0].shape[2]))
+                        #     for i_ax, ax in enumerate(Axis):
+                        #         if ax in objective.extra_arguments["axes"]:
+                        #             target_3D[i_ax, :, :] = objective.target[0][objective.extra_arguments["axes"].index(ax), :, :]
+                        # else:
+                        #     target_3D = objective.target[0]
+                        # all_bioviz[-1].load_experimental_markers(target_3D)
+                        # n_frames = target_3D.shape[2]
+                        # #######################################
                         tracked_markers = np.full((3, nlp.model.nb_markers, self.ns[phase] + 1), np.nan)
                         for i in range(len(objective.rows)):
                             tracked_markers[objective.rows[i], objective.cols, :] = objective.target[0][i, :, :]
