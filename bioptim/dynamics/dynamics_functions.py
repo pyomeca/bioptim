@@ -238,12 +238,9 @@ class DynamicsFunctions:
 
         sensory_input = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
 
-        # TODO: Most of the equations should be displaced in the StochasticBiorbdModel @ipuch: it this ok?
-        #   - compute_sensory_feedback_torque(k, ref, sensory_input)
-        #   - compute_torques_from_motor_noise_and_sensory_feedback(k, ref, sensory_input)
         mapped_motor_noise = nlp.model.motor_noise_sym
         mapped_sensory_feedback_torque = nlp.model.compute_torques_from_noise_and_feedback(
-            k_matrix, sensory_input, ref, nlp.model.sensory_noise_sym
+            k_matrix, sensory_input, ref
         )
         if "tau" in nlp.model.motor_noise_mapping.keys():
             mapped_motor_noise = nlp.model.motor_noise_mapping["tau"].to_second.map(nlp.model.motor_noise_sym)
