@@ -58,5 +58,5 @@ class StochasticBiorbdModel(BiorbdModel):
 
     def compute_torques_from_noise_and_feedback(self, k_matrix, sensory_input, ref):
         """Compute the torques from the sensory feedback"""
-        mapped_sensory_feedback_torque = k_matrix @ ((sensory_input - ref) + self.model.sensory_noise_sym)
+        mapped_sensory_feedback_torque = k_matrix @ ((sensory_input - ref) + self.sensory_noise_sym)
         return mapped_sensory_feedback_torque

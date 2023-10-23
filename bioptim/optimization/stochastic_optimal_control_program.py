@@ -100,7 +100,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             parameter_init=parameter_init,
             parameter_objectives=parameter_objectives,
             parameter_constraints=parameter_constraints,
-            external_forces=external_forces,
             ode_solver=None,
             control_type=control_type,
             variable_mappings=variable_mappings,
