@@ -2,7 +2,7 @@ from typing import Callable, Any
 
 from .penalty import PenaltyFunctionAbstract, PenaltyOption
 from .penalty_controller import PenaltyController
-from ..misc.enums import Node, IntegralApproximation, PenaltyType
+from ..misc.enums import Node, QuadratureRule, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 
@@ -12,7 +12,9 @@ class Objective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(self, objective: Any, custom_type: Any = None, phase: int = -1, **params: Any):
+    def __init__(
+        self, objective: Any, custom_type: Any = None, phase: int = -1, is_stochastic: bool = False, **params: Any
+    ):
         """
         Parameters
         ----------
@@ -50,10 +52,18 @@ class Objective(PenaltyOption):
 
         # sanity check on the integration method
         if isinstance(objective, ObjectiveFcn.Lagrange):
-            if "integration_rule" not in params.keys() or params["integration_rule"] == IntegralApproximation.DEFAULT:
-                params["integration_rule"] = IntegralApproximation.RECTANGLE
+            if "integration_rule" not in params.keys() or params["integration_rule"] == QuadratureRule.DEFAULT:
+                params["integration_rule"] = QuadratureRule.RECTANGLE_LEFT
+            if params["integration_rule"] not in (
+                QuadratureRule.RECTANGLE_LEFT,
+                QuadratureRule.TRAPEZOIDAL,
+                QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
+            ):
+                raise NotImplementedError(
+                    f"{params['integration_rule']} has not been implemented yet for objective functions."
+                )
         elif isinstance(objective, ObjectiveFcn.Mayer):
-            if "integration_rule" in params.keys() and params["integration_rule"] != IntegralApproximation.DEFAULT:
+            if "integration_rule" in params.keys() and params["integration_rule"] != QuadratureRule.DEFAULT:
                 raise ValueError(
                     "Mayer objective functions cannot be integrated, "
                     "remove the argument "
@@ -63,7 +73,9 @@ class Objective(PenaltyOption):
         elif isinstance(objective, ObjectiveFcn.Parameter):
             pass
 
-        super(Objective, self).__init__(penalty=objective, phase=phase, custom_function=custom_function, **params)
+        super(Objective, self).__init__(
+            penalty=objective, phase=phase, custom_function=custom_function, is_stochastic=is_stochastic, **params
+        )
 
     def _add_penalty_to_pool(self, controller: PenaltyController):
         if isinstance(controller, (list, tuple)):
@@ -83,7 +95,7 @@ class Objective(PenaltyOption):
 
     def ensure_penalty_sanity(self, ocp, nlp):
         """
-        Resets a objective function. A negative penalty index creates a new empty objective function.
+        Resets an objective function. A negative penalty index creates a new empty objective function.
 
         Parameters
         ----------
@@ -301,37 +313,45 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
-        TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
-        MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
-        MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
-        TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
-        SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
-        MINIMIZE_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
-        TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
-        MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
-        MINIMIZE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
-        TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
-        PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
-        PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
-        MINIMIZE_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
-        MINIMIZE_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
-        TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
-        MINIMIZE_SOFT_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_soft_contact_forces,)
-        TRACK_SOFT_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_soft_contact_forces,)
+        CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
+        MINIMIZE_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
+        MINIMIZE_COM_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_com_acceleration,)
         MINIMIZE_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
         MINIMIZE_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
-        MINIMIZE_COM_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_com_acceleration,)
-        MINIMIZE_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
+        MINIMIZE_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+        MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
+        MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
         MINIMIZE_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
-        TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
-        TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+        MINIMIZE_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
+        MINIMIZE_MARKERS_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_markers_acceleration,)
+        MINIMIZE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+        MINIMIZE_POWER = (PenaltyFunctionAbstract.Functions.minimize_power,)
+        MINIMIZE_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
         MINIMIZE_SEGMENT_ROTATION = (PenaltyFunctionAbstract.Functions.minimize_segment_rotation,)
         MINIMIZE_SEGMENT_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_segment_velocity,)
+        MINIMIZE_SOFT_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_soft_contact_forces,)
+        MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+        MINIMIZE_TIME = (ObjectiveFunction.LagrangeFunction.Functions.minimize_time,)
+        PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
+        PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
+        STOCHASTIC_MINIMIZE_VARIABLE = (PenaltyFunctionAbstract.Functions.stochastic_minimize_variables,)
+        STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS = (
+            PenaltyFunctionAbstract.Functions.stochastic_minimize_expected_feedback_efforts,
+        )
+        SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
+        TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
+        TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
+        TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+        TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
+        TRACK_MARKERS_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_markers_acceleration,)
+        TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+        TRACK_POWER = (PenaltyFunctionAbstract.Functions.minimize_power,)
+        TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
+        TRACK_SOFT_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_soft_contact_forces,)
+        TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (
             PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,
         )
-        CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
         def get_type() -> Callable:
@@ -350,33 +370,40 @@ class ObjectiveFcn:
             Returns the type of the penalty
         """
 
-        CONTINUITY = (PenaltyFunctionAbstract.Functions.continuity,)
-        MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
-        MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
-        TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
-        MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
-        MINIMIZE_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
-        TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
-        MINIMIZE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
-        TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
-        SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
-        SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
-        PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
-        MINIMIZE_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
-        MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyFunctionAbstract.Functions.minimize_predicted_com_height,)
+        STATE_CONTINUITY = (PenaltyFunctionAbstract.Functions.state_continuity,)
+        CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
+        MINIMIZE_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
+        MINIMIZE_COM_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_com_acceleration,)
         MINIMIZE_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
         MINIMIZE_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
-        MINIMIZE_COM_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_com_acceleration,)
-        MINIMIZE_ANGULAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_angular_momentum,)
+        MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
+        MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
         MINIMIZE_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
-        TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
-        TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+        MINIMIZE_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
+        MINIMIZE_MARKERS_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_markers_acceleration,)
+        MINIMIZE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+        MINIMIZE_POWER = (PenaltyFunctionAbstract.Functions.minimize_power,)
+        MINIMIZE_PREDICTED_COM_HEIGHT = (PenaltyFunctionAbstract.Functions.minimize_predicted_com_height,)
+        MINIMIZE_QDDOT = (PenaltyFunctionAbstract.Functions.minimize_qddot,)
         MINIMIZE_SEGMENT_ROTATION = (PenaltyFunctionAbstract.Functions.minimize_segment_rotation,)
         MINIMIZE_SEGMENT_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_segment_velocity,)
+        MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+        MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
+        PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
+        STOCHASTIC_MINIMIZE_VARIABLE = (PenaltyFunctionAbstract.Functions.stochastic_minimize_variables,)
+        SUPERIMPOSE_MARKERS = (PenaltyFunctionAbstract.Functions.superimpose_markers,)
+        SUPERIMPOSE_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.superimpose_markers_velocity,)
+        TRACK_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
+        TRACK_MARKER_WITH_SEGMENT_AXIS = (PenaltyFunctionAbstract.Functions.track_marker_with_segment_axis,)
+        TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
+        TRACK_MARKERS_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_markers_acceleration,)
+        TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+        TRACK_POWER = (PenaltyFunctionAbstract.Functions.minimize_power,)
+        TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
+        TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
         TRACK_VECTOR_ORIENTATIONS_FROM_MARKERS = (
             PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,
         )
-        CUSTOM = (PenaltyFunctionAbstract.Functions.custom,)
 
         @staticmethod
         def get_type() -> Callable:

@@ -105,6 +105,8 @@ class Solver:
             Maximum number of iterations.
         _hessian_approximation: str
             Indicates what Hessian information is to be used.
+        _nlp_scaling_method: str
+            Indicates the method used by IPOPT to scale the nlp
         _limited_memory_max_history: int
             Maximum size of the history for the limited quasi-Newton Hessian approximation.
         _linear_solver: str
@@ -146,6 +148,7 @@ class Solver:
         _acceptable_compl_inf_tol: float = 1e-2
         _max_iter: int = 1000
         _hessian_approximation: str = "exact"  # "exact", "limited-memory"
+        _nlp_scaling_method: str = "gradient-based"  # "none"
         _limited_memory_max_history: int = 50
         _linear_solver: str = "mumps"  # "ma57", "ma86", "mumps"
         _mu_init: float = 0.1
@@ -166,11 +169,11 @@ class Solver:
 
         @property
         def dual_inf_tol(self):
-            return self._constr_viol_tol
+            return self._dual_inf_tol
 
         @property
         def constr_viol_tol(self):
-            return self._tol
+            return self._constr_viol_tol
 
         @property
         def compl_inf_tol(self):
@@ -199,6 +202,10 @@ class Solver:
         @property
         def hessian_approximation(self):
             return self._hessian_approximation
+
+        @property
+        def nlp_scaling_method(self):
+            return self._nlp_scaling_method
 
         @property
         def limited_memory_max_history(self):
@@ -230,7 +237,7 @@ class Solver:
 
         @property
         def warm_start_slack_bound_frac(self):
-            return self._warm_start_init_point
+            return self._warm_start_slack_bound_frac
 
         @property
         def warm_start_bound_frac(self):
@@ -256,10 +263,10 @@ class Solver:
             self._tol = val
 
         def set_dual_inf_tol(self, val: float):
-            self._constr_viol_tol = val
+            self._dual_inf_tol = val
 
         def set_constr_viol_tol(self, val: float):
-            self._tol = val
+            self._constr_viol_tol = val
 
         def set_compl_inf_tol(self, val: float):
             self._compl_inf_tol = val
@@ -281,6 +288,9 @@ class Solver:
 
         def set_hessian_approximation(self, val: str):
             self._hessian_approximation = val
+
+        def set_nlp_scaling_method(self, val: str):
+            self._nlp_scaling_method = val
 
         def set_limited_memory_max_history(self, num: int):
             self._limited_memory_max_history = num
@@ -392,6 +402,8 @@ class Solver:
             Armijo condition, coefficient of decrease in merit
         set_hessian_approximation(hessian_approximation: str):
             Hessian approximation method
+        set_nlp_scaling_method(scaling_method: str):
+            Method used to scale the NLP
         set_lbfgs_memory(lbfgs_memory: int):
             Size of L-BFGS memory.
         set_maximum_iterations(max_iter: int):
@@ -517,6 +529,9 @@ class Solver:
 
         def set_hessian_approximation(self, hessian_approximation: str):
             self._hessian_approximation = hessian_approximation
+
+        def set_nlp_scaling_method(self, nlp_scaling_metod: str):
+            self._nlp_scaling_metod = nlp_scaling_metod
 
         def set_lbfgs_memory(self, lbfgs_memory: int):
             """

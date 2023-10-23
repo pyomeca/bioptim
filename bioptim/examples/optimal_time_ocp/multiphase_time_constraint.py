@@ -21,6 +21,7 @@ from bioptim import (
     Node,
     OdeSolverBase,
     BiMapping,
+    PhaseDynamics,
 )
 
 
@@ -31,8 +32,9 @@ def prepare_ocp(
     n_shooting: tuple,
     biorbd_model_path: str = "models/cube.bioMod",
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     with_phase_time_equality: bool = False,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program. This example can be called as a normal single phase (all list len equals to 1)
@@ -52,12 +54,17 @@ def prepare_ocp(
         The path to the bioMod
     ode_solver: OdeSolverBase
         The ode solver to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     with_phase_time_equality: bool
         If the phase time equality should be applied, this is ignored if len(n_shooting) = 1 (instead of 3)
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -88,11 +95,10 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0, expand=expand)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=0, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
     if n_phases == 3:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1, expand=expand)
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2, expand=expand)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=1, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase=2, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Constraints
     constraints = ConstraintList()
@@ -154,7 +160,6 @@ def prepare_ocp(
         constraints=constraints,
         ode_solver=ode_solver,
         time_phase_mapping=time_phase_mapping,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

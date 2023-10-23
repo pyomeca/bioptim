@@ -1,4 +1,5 @@
-from typing import Protocol, Callable
+import numpy as np
+from typing import Protocol, Callable, Any
 
 from casadi import MX, SX
 from ..misc.mapping import BiMapping, BiMappingList
@@ -6,11 +7,22 @@ from ..interfaces.biorbd_model import Bounds
 
 
 class BioModel(Protocol):
+    """
+    This protocol defines the minimal set of attributes and methods a model should possess to access every feature of
+    bioptim.
+    As a reminder for developers: only necessary attributes and methods should appear here.
+    """
+
     def copy(self):
         """copy the model by reloading one"""
 
     def serialize(self) -> tuple[Callable, dict]:
         """transform the class into a save and load format"""
+
+    @property
+    def friction_coefficients(self) -> MX:
+        """Get the coefficient of friction to apply to specified elements in the dynamics"""
+        return MX()
 
     @property
     def gravity(self) -> MX:
@@ -68,7 +80,7 @@ class BioModel(Protocol):
         """Get all segments"""
         return ()
 
-    def homogeneous_matrices_in_global(self, q, reference_idx, inverse=False) -> tuple:
+    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> tuple:
         """
         Get the homogeneous matrices of all segments in the world frame,
         such as: P_R0 = T_R0_R1 * P_R1
@@ -77,9 +89,9 @@ class BioModel(Protocol):
         P_R1 the position of any point P in the segment R1 frame.
         """
 
-    def homogeneous_matrices_in_child(self, *args) -> tuple:
+    def homogeneous_matrices_in_child(self, segment_id) -> MX:
         """
-        Get the homogeneous matrices of all segments in their parent frame,
+        Get the homogeneous matrices of one segment in its parent frame,
         such as: P_R1 = T_R1_R2 * P_R2
         with P_R1 the position of any point P in the segment R1 frame,
         with P_R2 the position of any point P in the segment R2 frame,
@@ -103,7 +115,7 @@ class BioModel(Protocol):
     def angular_momentum(self, q, qdot) -> MX:
         """Get the angular momentum of the model"""
 
-    def reshape_qdot(self, q, qdot):
+    def reshape_qdot(self, q, qdot) -> MX:
         """
         In case, qdot need to be reshaped, such as if one want to get velocities from quaternions.
         Since we don't know if this is the case, this function is always called
@@ -143,16 +155,18 @@ class BioModel(Protocol):
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
         """reorder the qddot, from the root dof and the joints dof"""
 
-    def forward_dynamics(self, q, qdot, tau, fext=None, f_contacts=None) -> MX:
+    def forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
         """compute the forward dynamics"""
 
-    def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None) -> MX:
+    def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
         """compute the forward dynamics with constraints"""
 
-    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, f_contacts=None) -> MX:
+    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, external_forces=None, translational_forces=None) -> MX:
         """compute the inverse dynamics"""
 
-    def contact_forces_from_constrained_forward_dynamics(self, q, qdot, tau, f_ext=None) -> MX:
+    def contact_forces_from_constrained_forward_dynamics(
+        self, q, qdot, tau, external_forces=None, translational_forces=None
+    ) -> MX:
         """compute the contact forces"""
 
     def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
@@ -164,10 +178,16 @@ class BioModel(Protocol):
     def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
         """Get the muscular joint torque"""
 
+    def muscle_length_jacobian(self, q) -> MX:
+        """Get the muscle velocity"""
+
+    def muscle_velocity(self, q, qdot) -> MX:
+        """Get the muscle velocity"""
+
     def marker(self, q, marker_index: int, reference_frame_idx: int = None) -> MX:
         """Get the position of a marker"""
 
-    def markers(self, q) -> MX:
+    def markers(self, q) -> list[MX]:
         """Get the markers of the model"""
 
     @property
@@ -183,8 +203,11 @@ class BioModel(Protocol):
         """Get the number of rigid contacts"""
         return -1
 
-    def marker_velocities(self, q, qdot, reference_index=None) -> MX:
+    def marker_velocities(self, q, qdot, reference_index=None) -> list[MX]:
         """Get the marker velocities of the model"""
+
+    def marker_accelerations(self, q, qdot, qddot, reference_index=None) -> list[MX]:
+        """Get the marker accelerations of the model"""
 
     def tau_max(self, q, qdot) -> tuple[MX, MX]:
         """Get the maximum torque"""
@@ -255,4 +278,74 @@ class BioModel(Protocol):
         Returns
         -------
         Create the desired bounds
+        """
+
+    def lagrangian(self, q: MX | SX, qdot: MX | SX) -> MX | SX:
+        """
+        Compute the Lagrangian of a biorbd model.
+
+        Parameters
+        ----------
+        q: MX | SX
+            The generalized coordinates.
+        qdot: MX | SX
+            The generalized velocities.
+
+        Returns
+        -------
+        The Lagrangian.
+        """
+
+    def partitioned_forward_dynamics(
+        self, q_u, qdot_u, tau, external_forces=None, translational_forces=None, q_v_init=None
+    ) -> MX:
+        """
+        This is the forward dynamics of the model, but only for the independent joints
+
+        Parameters
+        ----------
+        q_u: MX
+            The independent generalized coordinates
+        qdot_u: MX
+            The independent generalized velocities
+        tau: MX
+            The generalized torques
+        external_forces: MX
+            The external forces
+        translational_forces: MX
+            The translational forces
+
+        Returns
+        -------
+        MX
+            The generalized accelerations
+
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        """
+
+    @staticmethod
+    def animate(
+        solution: Any, show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
+    ) -> None | list:
+        """
+        Animate a solution
+
+        Parameters
+        ----------
+        solution: Any
+            The solution to animate
+        show_now: bool
+            If the animation should be shown immediately or not
+        tracked_markers: list[np.ndarray, ...]
+            The tracked markers (3, n_markers, n_frames)
+        kwargs: dict
+            The options to pass to the animator
+
+        Returns
+        -------
+        The animator object or None if show_now
         """

@@ -1,0 +1,167 @@
+version 3
+
+// SEGMENT DEFINITION
+
+segment base
+    inertia
+        0 0 0
+        0 0 0
+        0 0 0
+    meshfile mesh/ground_ribs.vtp
+    meshrt 3.14/2 -3.14/2 0 xyz -0.14 -0.05 -0.02
+endsegment
+
+segment upperArm
+    parent base
+    RTinMatrix    1
+    RT
+        1    0    0    0
+        0    1    0    0
+        0    0    1    0
+        0    0    0    1
+	rotations z
+    mass 1.4
+    inertia
+        0.0    0.0    0.0
+        0.0    0.0    0.0
+        0.0    0.0    0.025
+    com    0.11 0 0
+    meshfile mesh/arm_r_humerus.vtp
+    meshrt 0 0 3.14/2 xyz 0 0 0
+endsegment
+
+segment foreArm
+    parent upperArm
+    RTinMatrix    1
+    RT
+        1    0    0    0.33
+        0    1    0    0
+        0    0    1    0
+        0    0    0    1
+        // -1    0    0    0.33
+        // 0    1    0    0
+        // 0    0    -1    0
+        // 0    0    0    1
+    rotations z
+    mass 1.0
+    inertia
+        0.0    0.0    0.0
+        0.0    0.0    0.0
+        0.0    0.0    0.045
+    com    0.16 0 0
+    meshfile mesh/arm_r_ulna.vtp
+    meshrt 0 0.16 3.14/2-0.1 xyz 0 0.02 0
+endsegment
+
+    // Markers
+    marker    target_start
+        parent    base
+        position    0.02817553 0.28440442 0.0                   
+    endmarker
+	marker    target_end
+        parent    base
+        position   0.017223 0.55190516 0.0                       
+    endmarker
+    marker    end_effector
+        parent    foreArm
+        position   0.33 0 0
+    endmarker
+
+
+
+// MUSCLE DEFINITION
+
+// upperArm > foreArm
+musclegroup upperArm_to_foreArm
+    OriginParent        upperArm
+    InsertionParent        foreArm
+endmusclegroup
+
+   muscle    muscle_1
+        Type    degroote
+        statetype   degroote
+        musclegroup    upperArm_to_foreArm
+        OriginPosition    -0.039234999999999999 0.00347 0.14795 //?
+        InsertionPosition    0.0075100000000000002 -0.048390000000000002 0.02179  //?
+        optimalLength    0.1157  //?
+        maximalForce    624.29999999999995  //?
+        tendonSlackLength    0.27229999999999999  //?
+        pennationAngle    0  //?
+        maxVelocity    10
+    endmuscle
+
+    /*
+  /////////////////////////??????????????????????
+        viapoint    BIClong-P2
+            parent    base
+            muscle    BIClong
+            musclegroup    upperArm_to_foreArm
+            position    -0.028944999999999999 0.01391 0.15639
+        endviapoint
+  /////////////////////////??????????????????????
+*/
+
+    muscle    muscle_2
+        Type    degroote
+        statetype   degroote
+        musclegroup    upperArm_to_foreArm
+        OriginPosition    -0.039234999999999999 0.00347 0.14795  // ?
+        InsertionPosition    0.0075100000000000002 -0.048390000000000002 0.02179  // ?
+        optimalLength    0.1157  // ?
+        maximalForce    624.29999999999995  // ?
+        tendonSlackLength    0.27229999999999999  // ?
+        pennationAngle    0  // ?
+        maxVelocity    10
+    endmuscle
+
+    muscle    muscle_3
+        Type    degroote
+        statetype   degroote
+        musclegroup    upperArm_to_foreArm
+        OriginPosition    0.0046750000000000003 -0.01231 0.13475000000000001  // ?
+        InsertionPosition    0.0075100000000000002 -0.048390000000000002 0.02179  // ?
+        optimalLength    0.1321  // ?
+        maximalForce    435.56  // ?
+        tendonSlackLength    0.1923  // ?
+        pennationAngle    0  // ?
+        maxVelocity    10
+    endmuscle
+
+   muscle    muscle_4
+        Type    degroote
+        statetype   degroote
+        musclegroup    upperArm_to_foreArm
+        OriginPosition    -0.039234999999999999 0.00347 0.14795 //?
+        InsertionPosition    0.0075100000000000002 -0.048390000000000002 0.02179  //?
+        optimalLength    0.1157  //?
+        maximalForce    624.29999999999995  //?
+        tendonSlackLength    0.27229999999999999  //?
+        pennationAngle    0  //?
+        maxVelocity    10
+    endmuscle
+
+    muscle    muscle_5
+        Type    degroote
+        statetype   degroote
+        musclegroup    upperArm_to_foreArm
+        OriginPosition    -0.039234999999999999 0.00347 0.14795  // ?
+        InsertionPosition    0.0075100000000000002 -0.048390000000000002 0.02179  // ?
+        optimalLength    0.1157  // ?
+        maximalForce    624.29999999999995  // ?
+        tendonSlackLength    0.27229999999999999  // ?
+        pennationAngle    0  // ?
+        maxVelocity    10
+    endmuscle
+
+    muscle    muscle_6
+        Type    degroote
+        statetype   degroote
+        musclegroup    upperArm_to_foreArm
+        OriginPosition    0.0046750000000000003 -0.01231 0.13475000000000001  // ?
+        InsertionPosition    0.0075100000000000002 -0.048390000000000002 0.02179  // ?
+        optimalLength    0.1321  // ?
+        maximalForce    435.56  // ?
+        tendonSlackLength    0.1923  // ?
+        pennationAngle    0  // ?
+        maxVelocity    10
+    endmuscle

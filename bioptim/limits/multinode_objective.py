@@ -6,12 +6,13 @@ from .objective_functions import ObjectiveFunction
 
 
 class MultinodeObjective(MultinodePenalty):
-    def __init__(self, *args, weight: float = 0, **kwargs):
+    def __init__(self, *args, weight: float = 0, is_stochastic: bool = False, **kwargs):
         super(MultinodeObjective, self).__init__(MultinodeObjectiveFcn, *args, **kwargs)
 
         self.weight = weight if weight is not None else 0
         self.quadratic = kwargs["quadratic"] if "quadratic" in kwargs else True
         self.base = ObjectiveFunction.MayerFunction
+        self.is_stochastic = is_stochastic
 
     def _get_pool_to_add_penalty(self, ocp, nlp):
         return nlp.J_internal if nlp else ocp.J_internal
@@ -57,6 +58,7 @@ class MultinodeObjectiveFcn(FcnEnum):
     """
 
     STATES_EQUALITY = (MultinodeObjectiveFunctions.Functions.states_equality,)
+    STOCHASTIC_EQUALITY = (MultinodeObjectiveFunctions.Functions.stochastic_equality,)
     CONTROLS_EQUALITY = (MultinodeObjectiveFunctions.Functions.controls_equality,)
     CUSTOM = (MultinodeObjectiveFunctions.Functions.custom,)
     COM_EQUALITY = (MultinodeObjectiveFunctions.Functions.com_equality,)

@@ -9,11 +9,11 @@ class OptimizationVectorHelper:
     Methods
     -------
     vector(self)
-        Format the x, u and p so they are in one nice (and useful) vector
+        Format the x, u, p and s so they are in one nice (and useful) vector
     bounds(self)
-        Format the x, u and p bounds so they are in one nice (and useful) vector
+        Format the x, u, p and s bounds so they are in one nice (and useful) vector
     init(self)
-        Format the x, u and p init so they are in one nice (and useful) vector
+        Format the x, u, p and s init so they are in one nice (and useful) vector
     extract_phase_time(self, data: np.ndarray | DM) -> list
         Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
     to_dictionaries(self, data: np.ndarray | DM) -> tuple
@@ -37,12 +37,21 @@ class OptimizationVectorHelper:
         x_scaled = []
         u = []
         u_scaled = []
+        s = []
+        s_scaled = []
         for nlp in ocp.nlp:
             x.append([])
             x_scaled.append([])
             u.append([])
             u_scaled.append([])
-            if nlp.control_type not in (ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.NONE):
+            s.append([])
+            s_scaled.append([])
+            if nlp.control_type not in (
+                ControlType.CONSTANT,
+                ControlType.CONSTANT_WITH_LAST_NODE,
+                ControlType.LINEAR_CONTINUOUS,
+                ControlType.NONE,
+            ):
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
             for k in range(nlp.ns + 1):
@@ -53,7 +62,7 @@ class OptimizationVectorHelper:
                             nlp.cx.sym(
                                 "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
                                 nlp.states.scaled.shape,
-                                nlp.ode_solver.polynomial_degree + 1,
+                                nlp.ode_solver.n_cx - 1,  # do not include the cx_end
                             )
                         )
                     else:
@@ -84,6 +93,17 @@ class OptimizationVectorHelper:
                     u_scaled[nlp.phase_idx] = u_scaled[nlp.use_controls_from_phase_idx]
                     u[nlp.phase_idx] = u[nlp.use_controls_from_phase_idx]
 
+                s_scaled[nlp.phase_idx].append(
+                    nlp.cx.sym("S_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.stochastic_variables.shape, 1)
+                )
+                if nlp.stochastic_variables.keys():
+                    s[nlp.phase_idx].append(
+                        s_scaled[nlp.phase_idx][0]
+                        * np.concatenate([nlp.s_scaling[key].scaling for key in nlp.stochastic_variables.keys()])
+                    )
+                else:
+                    s[nlp.phase_idx].append(s_scaled[nlp.phase_idx][0])
+
             OptimizationVectorHelper._set_node_index(nlp, 0)
 
             nlp.X_scaled = x_scaled[nlp.phase_idx]
@@ -92,26 +112,30 @@ class OptimizationVectorHelper:
             nlp.U_scaled = u_scaled[nlp.phase_idx]
             nlp.U = u[nlp.phase_idx]
 
+            nlp.S_scaled = s_scaled[nlp.phase_idx]
+            nlp.S = s[nlp.phase_idx]
+
     @staticmethod
     def vector(ocp):
         """
-        Format the x, u and p so they are in one nice (and useful) vector
+        Format the x, u, p and s so they are in one nice (and useful) vector
 
         Returns
         -------
         The vector of all variables
         """
-
         x_scaled = []
         u_scaled = []
+        s_scaled = []
         for nlp in ocp.nlp:
             if nlp.ode_solver.is_direct_collocation:
                 x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
             else:
                 x_scaled += nlp.X_scaled
             u_scaled += nlp.U_scaled
-
-        return vertcat(*x_scaled, *u_scaled, ocp.parameters.cx)
+            s_scaled += nlp.S_scaled
+        vector = vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled)
+        return vector
 
     @staticmethod
     def bounds_vectors(ocp) -> tuple[np.ndarray, np.ndarray]:
@@ -131,17 +155,22 @@ class OptimizationVectorHelper:
 
             repeat = 1
             if current_nlp.ode_solver.is_direct_collocation:
-                repeat += current_nlp.ode_solver.polynomial_degree
+                repeat += current_nlp.ode_solver.n_cx - 2
 
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
             for key in nlp.states:
                 if key in nlp.x_bounds.keys():
-                    nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
+                    if nlp.x_bounds[key].type == InterpolationType.ALL_POINTS:
+                        nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns * repeat)
+                    else:
+                        nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
 
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
                 for p in range(repeat if k != nlp.ns else 1):
+                    # This allows CONSTANT_WITH_FIRST_AND_LAST to work in collocations, but is flawed for the other ones
+                    # point refers to the column to use in the bounds matrix
                     point = k if k != 0 else 0 if p == 0 else 1
 
                     collapsed_values_min = np.ndarray((nlp.states.shape, 1))
@@ -149,10 +178,12 @@ class OptimizationVectorHelper:
                     for key in nlp.states:
                         if key in nlp.x_bounds.keys():
                             value_min = (
-                                nlp.x_bounds[key].min.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                                nlp.x_bounds[key].min.evaluate_at(shooting_point=point, repeat=repeat)
+                                / nlp.x_scaling[key].scaling
                             )[:, np.newaxis]
                             value_max = (
-                                nlp.x_bounds[key].max.evaluate_at(shooting_point=point) / nlp.x_scaling[key].scaling
+                                nlp.x_bounds[key].max.evaluate_at(shooting_point=point, repeat=repeat)
+                                / nlp.x_scaling[key].scaling
                             )[:, np.newaxis]
                         else:
                             value_min = -np.inf
@@ -171,7 +202,7 @@ class OptimizationVectorHelper:
             OptimizationVectorHelper._set_node_index(nlp, 0)
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 ns = nlp.ns
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
@@ -199,6 +230,7 @@ class OptimizationVectorHelper:
                 v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
                 v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
+        # For parameters
         collapsed_values_min = np.ones((ocp.parameters.shape, 1)) * -np.inf
         collapsed_values_max = np.ones((ocp.parameters.shape, 1)) * np.inf
         for key in ocp.parameters.keys():
@@ -210,6 +242,33 @@ class OptimizationVectorHelper:
             collapsed_values_max[ocp.parameters[key].index, :] = scaled_bounds.max
         v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
         v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
+
+        # For stochastic variables
+        for i_phase in range(ocp.n_phases):
+            nlp = ocp.nlp[i_phase]
+            OptimizationVectorHelper._set_node_index(nlp, 0)
+            for key in nlp.stochastic_variables.keys():
+                if key in nlp.s_bounds.keys():
+                    nlp.s_bounds[key].check_and_adjust_dimensions(nlp.stochastic_variables[key].cx.shape[0], nlp.ns)
+
+            for k in range(nlp.ns + 1):
+                OptimizationVectorHelper._set_node_index(nlp, k)
+                collapsed_values_min = np.ndarray((nlp.stochastic_variables.shape, 1))
+                collapsed_values_max = np.ndarray((nlp.stochastic_variables.shape, 1))
+                for key in nlp.stochastic_variables.keys():
+                    if key in nlp.s_bounds.keys():
+                        value_min = nlp.s_bounds[key].min.evaluate_at(shooting_point=k) / nlp.s_scaling[key].scaling
+                        value_max = nlp.s_bounds[key].max.evaluate_at(shooting_point=k) / nlp.s_scaling[key].scaling
+                    else:
+                        value_min = -np.inf
+                        value_max = np.inf
+
+                    # Organize the stochastic variables according to the correct indices
+                    collapsed_values_min[nlp.stochastic_variables[key].index, :] = np.reshape(value_min, (-1, 1))
+                    collapsed_values_max[nlp.stochastic_variables[key].index, :] = np.reshape(value_max, (-1, 1))
+
+                v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
+                v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
         return v_bounds_min, v_bounds_max
 
@@ -230,7 +289,7 @@ class OptimizationVectorHelper:
 
             repeat = 1
             if current_nlp.ode_solver.is_direct_collocation:
-                repeat += current_nlp.ode_solver.polynomial_degree
+                repeat += current_nlp.ode_solver.n_cx - 2
 
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
@@ -251,7 +310,7 @@ class OptimizationVectorHelper:
                             if nlp.x_init[key].type == InterpolationType.ALL_POINTS:
                                 point_to_eval = k * repeat + p
                             value = (
-                                nlp.x_init[key].init.evaluate_at(shooting_point=point_to_eval)
+                                nlp.x_init[key].init.evaluate_at(shooting_point=point_to_eval, repeat=repeat)
                                 / nlp.x_scaling[key].scaling
                             )[:, np.newaxis]
                         else:
@@ -269,7 +328,7 @@ class OptimizationVectorHelper:
             OptimizationVectorHelper._set_node_index(nlp, 0)
             if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                 ns = nlp.ns
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns + 1
             else:
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
@@ -292,6 +351,7 @@ class OptimizationVectorHelper:
 
                 v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
 
+        # For parameters
         collapsed_values = np.zeros((ocp.parameters.shape, 1))
         for key in ocp.parameters.keys():
             if key not in ocp.parameter_init.keys():
@@ -301,6 +361,29 @@ class OptimizationVectorHelper:
             scaled_init = ocp.parameter_init[key].scale(ocp.parameters[key].scaling)
             collapsed_values[ocp.parameters[key].index, :] = scaled_init.init
         v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
+
+        # For stochastic variables
+        for i_phase in range(len(ocp.nlp)):
+            nlp = ocp.nlp[i_phase]
+            OptimizationVectorHelper._set_node_index(nlp, 0)
+
+            for key in nlp.stochastic_variables.keys():
+                if key in nlp.s_init.keys():
+                    nlp.s_init[key].check_and_adjust_dimensions(nlp.stochastic_variables[key].cx.shape[0], nlp.ns)
+
+            for k in range(nlp.ns + 1):
+                OptimizationVectorHelper._set_node_index(nlp, k)
+                collapsed_values = np.ndarray((nlp.stochastic_variables.shape, 1))
+                for key in nlp.stochastic_variables:
+                    if key in nlp.s_init.keys():
+                        value = nlp.s_init[key].init.evaluate_at(shooting_point=k) / nlp.s_scaling[key].scaling
+                    else:
+                        value = 0
+
+                    # Organize the stochastic variables according to the correct indices
+                    collapsed_values[nlp.stochastic_variables[key].index, 0] = value
+
+                v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
 
         return v_init
 
@@ -353,26 +436,41 @@ class OptimizationVectorHelper:
         """
 
         v_array = np.array(data).squeeze()
-
         data_states = []
         data_controls = []
+        data_stochastic_variables = []
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
-            n_points = nlp.ns * (1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.polynomial_degree + 1)) + 1
+            nlp.controls.node_index = 0
+
+            n_points = nlp.ns * (1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.n_cx - 1)) + 1
             data_states.append({key: np.ndarray((nlp.states[key].shape, n_points)) for key in nlp.states})
             data_controls.append(
                 {
                     key: np.ndarray(
                         (
                             nlp.controls[key].shape,
-                            nlp.ns + (1 if nlp.control_type in (ControlType.LINEAR_CONTINUOUS,) else 0),
+                            nlp.ns
+                            + (
+                                1
+                                if nlp.control_type
+                                in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
+                                else 0
+                            ),
                         )
                     )
                     for key in ocp.nlp[p].controls
                 }
             )
+            data_stochastic_variables.append(
+                {
+                    key: np.ndarray((nlp.stochastic_variables[key].shape, nlp.ns + 1))
+                    for key in ocp.nlp[p].stochastic_variables
+                }
+            )
         data_parameters = {key: np.ndarray((0, 1)) for key in ocp.parameters.keys()}
 
+        # For states
         offset = 0
         p_idx = 0
         for p in range(ocp.n_phases):
@@ -380,7 +478,7 @@ class OptimizationVectorHelper:
             nx = nlp.states.shape
 
             if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                repeat = (nlp.ode_solver.polynomial_degree + 1) if nlp.ode_solver.is_direct_collocation else 1
+                repeat = (nlp.ode_solver.n_cx - 1) if nlp.ode_solver.is_direct_collocation else 1
                 for k in range((nlp.ns * repeat) + 1):
                     nlp.states.node_index = k // repeat
                     x_array = v_array[offset : offset + nx].reshape((nlp.states.scaled.shape, -1), order="F")
@@ -389,6 +487,7 @@ class OptimizationVectorHelper:
                     offset += nx
                 p_idx += 1
 
+        # For controls
         p_idx = 0
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
@@ -400,7 +499,7 @@ class OptimizationVectorHelper:
             if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                 if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
                     ns = nlp.ns
-                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                     ns = nlp.ns + 1
                 else:
                     raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
@@ -413,11 +512,30 @@ class OptimizationVectorHelper:
                     offset += nu
                 p_idx += 1
 
-        offset = v_array.shape[0] - ocp.parameters.shape
+        # For parameters
         for param in ocp.parameters:
             data_parameters[param.name] = v_array[[offset + i for i in param.index], np.newaxis] * param.scaling
+        offset += len(ocp.parameters)
 
-        return data_states, data_controls, data_parameters
+        # For stochastic variables
+        p_idx = 0
+        for p in range(ocp.n_phases):
+            nlp = ocp.nlp[p]
+            nstochastic = nlp.stochastic_variables.shape
+            if nstochastic > 0:
+                for k in range(nlp.ns + 1):
+                    nlp.stochastic_variables.node_index = k
+                    s_array = v_array[offset : offset + nstochastic].reshape(
+                        (nlp.stochastic_variables.shape, -1), order="F"
+                    )
+                    for key in nlp.stochastic_variables:
+                        data_stochastic_variables[p_idx][key][:, k : k + 1] = s_array[
+                            nlp.stochastic_variables[key].index, :
+                        ].reshape(nlp.stochastic_variables[key].shape, 1)
+                    offset += nstochastic
+                p_idx += 1
+
+        return data_states, data_controls, data_parameters, data_stochastic_variables
 
     @staticmethod
     def _nb_points(nlp, interpolation_type):
@@ -429,7 +547,7 @@ class OptimizationVectorHelper:
 
         if nlp.ode_solver.is_direct_collocation:
             if interpolation_type != InterpolationType.EACH_FRAME:
-                n_points *= nlp.ode_solver.steps + 1
+                n_points *= nlp.ode_solver.n_cx - 1
         return n_points
 
     @staticmethod
@@ -437,3 +555,4 @@ class OptimizationVectorHelper:
         nlp.states.node_index = node
         nlp.states_dot.node_index = node
         nlp.controls.node_index = node
+        nlp.stochastic_variables.node_index = node

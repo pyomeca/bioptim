@@ -14,8 +14,8 @@ from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    Bounds,
-    InitialGuess,
+    BoundsList,
+    InitialGuessList,
     ObjectiveFcn,
     Objective,
     OdeSolver,
@@ -65,22 +65,30 @@ def prepare_ocp(
     dynamics = Dynamics(DynamicsFcn.JOINTS_ACCELERATION_DRIVEN)
 
     # Path constraint
-    x_bounds = bio_model.bounds_from_ranges(["q", "qdot"])
-    x_bounds[:, [0, -1]] = 0
-    x_bounds[0, -1] = 3.14
-    x_bounds[1, -1] = 0
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][0, -1] = 3.14
+    x_bounds["q"][1, -1] = 0
 
     # Initial guess
     n_q = bio_model.nb_q
     n_qdot = bio_model.nb_qdot
-    x_init = InitialGuess([0] * (n_q + n_qdot))
+    x_init = InitialGuessList()
+    x_init.add("q", initial_guess=[0] * n_q)
+    x_init.add("qdot", initial_guess=[0] * n_qdot)
 
     # Define control path constraint
     n_qddot_joints = bio_model.nb_qddot - bio_model.nb_root  # 2 - 1 = 1 in this example
     qddot_joints_min, qddot_joints_max, qddot_joints_init = -100, 100, 0
-    u_bounds = Bounds([qddot_joints_min] * n_qddot_joints, [qddot_joints_max] * n_qddot_joints)
+    u_bounds = BoundsList()
+    u_bounds.add(
+        "qddot_joints", min_bound=[qddot_joints_min] * n_qddot_joints, max_bound=[qddot_joints_max] * n_qddot_joints
+    )
 
-    u_init = InitialGuess([qddot_joints_init] * n_qddot_joints)
+    u_init = InitialGuessList()
+    u_init.add("qddot_joints", initial_guess=[qddot_joints_init] * n_qddot_joints)
 
     return OptimalControlProgram(
         bio_model,
@@ -95,7 +103,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=True,
     )
 
 

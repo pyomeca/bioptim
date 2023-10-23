@@ -32,6 +32,7 @@ from bioptim import (
     Node,
     Solver,
     RigidBodyDynamics,
+    PhaseDynamics,
 )
 
 from bioptim.optimization.optimization_variable import OptimizationVariableContainer
@@ -42,7 +43,7 @@ def generate_data(
     final_time: float,
     n_shooting: int,
     use_residual_torque: bool = True,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> tuple:
     """
     Generate random data. If np.random.seed is defined before, it will always return the same results
@@ -57,10 +58,11 @@ def generate_data(
         The number of shooting points
     use_residual_torque: bool
         If residual torque are present or not in the dynamics
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
 
     Returns
     -------
@@ -75,7 +77,7 @@ def generate_data(
     n_mus = bio_model.nb_muscles
     dt = final_time / n_shooting
 
-    nlp = NonLinearProgram(assume_phase_dynamics=assume_phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
     nlp.model = bio_model
     nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
@@ -86,6 +88,7 @@ def generate_data(
     }
 
     # Casadi related stuff
+    symbolic_time = MX.sym("time", 0, 0)
     symbolic_q = MX.sym("q", n_q, 1)
     symbolic_qdot = MX.sym("qdot", n_qdot, 1)
     symbolic_qddot = MX.sym("qddot", n_qddot, 1)
@@ -94,64 +97,64 @@ def generate_data(
     symbolic_parameters = MX.sym("params", 0, 0)
     markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
-    nlp.states = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
-    nlp.states_dot = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
-    nlp.controls = OptimizationVariableContainer(assume_phase_dynamics=assume_phase_dynamics)
+    nlp.states = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
+    nlp.states_dot = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
+    nlp.controls = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
     nlp.states.initialize_from_shooting(n_shooting, MX)
     nlp.states_dot.initialize_from_shooting(n_shooting, MX)
     nlp.controls.initialize_from_shooting(n_shooting, MX)
 
     for node_index in range(n_shooting):
         nlp.states.append(
-            "q",
-            [symbolic_q, symbolic_q, symbolic_q],
-            [symbolic_q, symbolic_q, symbolic_q],
-            symbolic_q,
-            nlp.variable_mappings["q"],
-            node_index,
+            name="q",
+            cx=[symbolic_q, symbolic_q, symbolic_q],
+            cx_scaled=[symbolic_q, symbolic_q, symbolic_q],
+            mx=symbolic_q,
+            mapping=nlp.variable_mappings["q"],
+            node_index=node_index,
         )
         nlp.states.append(
-            "qdot",
-            [symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            [symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            symbolic_qdot,
-            nlp.variable_mappings["qdot"],
-            node_index,
+            name="qdot",
+            cx=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
+            cx_scaled=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
+            mx=symbolic_qdot,
+            mapping=nlp.variable_mappings["qdot"],
+            node_index=node_index,
         )
 
         nlp.states_dot.append(
-            "qdot",
-            [symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            [symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            symbolic_qdot,
-            nlp.variable_mappings["qdot"],
-            node_index,
+            name="qdot",
+            cx=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
+            cx_scaled=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
+            mx=symbolic_qdot,
+            mapping=nlp.variable_mappings["qdot"],
+            node_index=node_index,
         )
         nlp.states_dot.append(
-            "qddot",
-            [symbolic_qddot, symbolic_qddot, symbolic_qddot],
-            [symbolic_qddot, symbolic_qddot, symbolic_qddot],
-            symbolic_qddot,
-            nlp.variable_mappings["qddot"],
-            node_index,
+            name="qddot",
+            cx=[symbolic_qddot, symbolic_qddot, symbolic_qddot],
+            cx_scaled=[symbolic_qddot, symbolic_qddot, symbolic_qddot],
+            mx=symbolic_qddot,
+            mapping=nlp.variable_mappings["qddot"],
+            node_index=node_index,
         )
 
         if use_residual_torque:
             nlp.controls.append(
-                "tau",
-                [symbolic_tau, symbolic_tau, symbolic_tau],
-                [symbolic_tau, symbolic_tau, symbolic_tau],
-                symbolic_tau,
-                nlp.variable_mappings["tau"],
-                node_index,
+                name="tau",
+                cx=[symbolic_tau, symbolic_tau, symbolic_tau],
+                cx_scaled=[symbolic_tau, symbolic_tau, symbolic_tau],
+                mx=symbolic_tau,
+                mapping=nlp.variable_mappings["tau"],
+                node_index=node_index,
             )
         nlp.controls.append(
-            "muscles",
-            [symbolic_mus, symbolic_mus, symbolic_mus],
-            [symbolic_mus, symbolic_mus, symbolic_mus],
-            symbolic_mus,
-            nlp.variable_mappings["muscles"],
-            node_index,
+            name="muscles",
+            cx=[symbolic_mus, symbolic_mus, symbolic_mus],
+            cx_scaled=[symbolic_mus, symbolic_mus, symbolic_mus],
+            mx=symbolic_mus,
+            mapping=nlp.variable_mappings["muscles"],
+            node_index=node_index,
         )
 
     if use_residual_torque:
@@ -164,9 +167,11 @@ def generate_data(
     dynamics_func = biorbd.to_casadi_func(
         "ForwardDyn",
         dyn_func(
+            time=symbolic_time,
             states=symbolic_states,
             controls=symbolic_controls,
             parameters=symbolic_parameters,
+            stochastic_variables=MX(),
             nlp=nlp,
             with_contact=False,
             rigidbody_dynamics=RigidBodyDynamics.ODE,
@@ -217,7 +222,8 @@ def prepare_ocp(
     use_residual_torque: bool = True,
     ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     n_threads: int = 1,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp to solve
@@ -244,10 +250,15 @@ def prepare_ocp(
         The ode solver to use
     n_threads: int
         The number of threads
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -270,7 +281,12 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=use_residual_torque)
+    dynamics.add(
+        DynamicsFcn.MUSCLE_DRIVEN,
+        with_residual_torque=use_residual_torque,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -300,7 +316,6 @@ def prepare_ocp(
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         n_threads=n_threads,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

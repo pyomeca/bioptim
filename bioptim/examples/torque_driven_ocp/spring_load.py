@@ -20,21 +20,28 @@ from bioptim import (
     NonLinearProgram,
     Solver,
     DynamicsEvaluation,
+    PhaseDynamics,
 )
 
 
-def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgram) -> DynamicsEvaluation:
+def custom_dynamic(
+    time: MX, states: MX, controls: MX, parameters: MX, stochastic_variables: MX, nlp: NonLinearProgram
+) -> DynamicsEvaluation:
     """
     The dynamics of the system using an external force (see custom_dynamics for more explanation)
 
     Parameters
     ----------
+    time: MX
+        The current time of the system
     states: MX
         The current states of the system
     controls: MX
         The current controls of the system
     parameters: MX
         The current parameters of the system
+    stochastic_variables: MX
+        The current stochastic variables of the system
     nlp: NonLinearProgram
         A reference to the phase of the ocp
 
@@ -50,7 +57,7 @@ def custom_dynamic(states: MX, controls: MX, parameters: MX, nlp: NonLinearProgr
     force_vector = MX.zeros(6)
     force_vector[5] = 100 * q[0] ** 2
 
-    qddot = nlp.model.forward_dynamics(q, qdot, tau, force_vector)
+    qddot = nlp.model.forward_dynamics(q, qdot, tau, [["Point", force_vector]])
 
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
@@ -74,7 +81,8 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
 
 def prepare_ocp(
     biorbd_model_path: str = "models/mass_point.bioMod",
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    expand_dynamics: bool = True,
 ):
     # BioModel path
     m = BiorbdModel(biorbd_model_path)
@@ -84,7 +92,12 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", index=0, weight=-1)
 
     # Dynamics
-    dynamics = Dynamics(custom_configure, dynamic_function=custom_dynamic)
+    dynamics = Dynamics(
+        custom_configure,
+        dynamic_function=custom_dynamic,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
+    )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -105,7 +118,6 @@ def prepare_ocp(
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

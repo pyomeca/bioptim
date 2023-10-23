@@ -2,9 +2,11 @@ from typing import Any, Callable
 
 from casadi import MX, SX, vertcat
 
+from ..dynamics.ode_solver import OdeSolver
+from ..misc.enums import ControlType, PhaseDynamics
+from ..misc.mapping import BiMapping
 from ..optimization.non_linear_program import NonLinearProgram
-from ..optimization.optimization_variable import OptimizationVariableList
-from ..misc.enums import ControlType
+from ..optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
 
 
 class PenaltyController:
@@ -26,6 +28,8 @@ class PenaltyController:
         x_scaled: list,
         u_scaled: list,
         p: MX | SX | list,
+        s: list,
+        s_scaled: list,
         node_index: int = None,
     ):
         """
@@ -47,8 +51,13 @@ class PenaltyController:
             References to the scaled control variables
         p: MX | SX | list
             References to the parameter variables
+        s: list
+            References to the stochastic variables
+        s_scaled: list
+            References to the scaled stochastic variables
         node_index: int
-            Current node index if ocp.assume_phase_dynamics is True, then node_index is expected to be set to 0
+            Current node index if nlp.phase_dynamics is SHARED_DURING_THE_PHASE,
+            then node_index is expected to be set to 0
         """
 
         self._ocp: Any = ocp
@@ -58,6 +67,8 @@ class PenaltyController:
         self.u = u
         self.x_scaled = x_scaled
         self.u_scaled = u_scaled
+        self.s = s
+        self.s_scaled = s_scaled
         self.p = vertcat(p) if p is not None else p
         self.node_index = node_index
         self.cx_index_to_get = 0
@@ -90,6 +101,10 @@ class PenaltyController:
         return self._nlp.control_type
 
     @property
+    def ode_solver(self) -> OdeSolver:
+        return self._nlp.ode_solver
+
+    @property
     def phase_idx(self) -> int:
         return self._nlp.phase_idx
 
@@ -110,6 +125,25 @@ class PenaltyController:
         return self._nlp.model
 
     @property
+    def time(self) -> OptimizationVariable:
+        """
+        Return the time associated with the current node index
+
+        Returns
+        -------
+        The time at node node_index
+        """
+
+        tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        tp.append(
+            "time",
+            mx=self._nlp.time_mx,
+            cx=[self._nlp.time_cx, self._nlp.time_cx, self._nlp.time_cx],
+            bimapping=BiMapping(to_second=[0], to_first=[0]),
+        )
+        return tp["time"]
+
+    @property
     def states(self) -> OptimizationVariableList:
         """
         Return the states associated with the current node index
@@ -120,6 +154,20 @@ class PenaltyController:
         """
         self._nlp.states.node_index = self.node_index
         out = self._nlp.states.unscaled
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
+    def controls(self) -> OptimizationVariableList:
+        """
+        Return the controls associated with the current node index
+
+        Returns
+        -------
+        The controls at node node_index
+        """
+        self._nlp.controls.node_index = self.node_index
+        out = self._nlp.controls.unscaled
         out.current_cx_to_get = self.cx_index_to_get
         return out
 
@@ -138,12 +186,47 @@ class PenaltyController:
         return out
 
     @property
+    def stochastic_variables(self) -> OptimizationVariableList:
+        """
+        Return the stochastic_variables associated with the current node index
+        Returns
+        -------
+        The stochastic_variables at node node_index
+        """
+        # TODO: This variables should be renamed to "algebraic"
+        self._nlp.stochastic_variables.node_index = self.node_index
+        out = self._nlp.stochastic_variables.unscaled
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
+    def integrated_values(self) -> OptimizationVariableList:
+        """
+        Return the values associated with the current node index
+        Returns
+        -------
+        The integrated_values at node node_index
+        """
+        self._nlp.integrated_values.node_index = self.node_index
+        out = self._nlp.integrated_values
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
     def integrate(self):
         return self._nlp.dynamics[self.node_index]
 
+    def integrate_extra_dynamics(self, dynamics_index):
+        return self._nlp.extra_dynamics[dynamics_index][self.node_index]
+
     @property
     def dynamics(self):
-        return self._nlp.dynamics_func
+        return self._nlp.dynamics_func[0]
+
+    def extra_dynamics(self, dynamics_index):
+        # +1 - index so "integrate_extra_dynamics" and "extra_dynamics" share the same index.
+        # This is a hack which should be dealt properly at some point
+        return self._nlp.dynamics_func[dynamics_index + 1]
 
     @property
     def states_scaled(self) -> OptimizationVariableList:
@@ -159,6 +242,23 @@ class PenaltyController:
         """
         self._nlp.states.node_index = self.node_index
         out = self._nlp.states.scaled
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
+    def controls_scaled(self) -> OptimizationVariableList:
+        """
+        Return the scaled controls associated with the current node index.
+
+        Warning: Most of the time, the user does not want that controls but the normal `controls`, that said, it can
+        sometime be useful for very limited number of use case.
+
+        Returns
+        -------
+        The scaled controls at node node_index
+        """
+        self._nlp.controls.node_index = self.node_index
+        out = self._nlp.controls.scaled
         out.current_cx_to_get = self.cx_index_to_get
         return out
 
@@ -181,33 +281,19 @@ class PenaltyController:
         return out
 
     @property
-    def controls(self) -> OptimizationVariableList:
+    def stochastic_variables_scaled(self) -> OptimizationVariableList:
         """
-        Return the controls associated with the current node index
+        Return the scaled stochastic variables associated with the current node index.
+
+        Warning: Most of the time, the user does not want that stochastic variables but the normal
+        `stochastic_variables`, that said, it can sometime be useful for very limited number of use case.
 
         Returns
         -------
-        The controls at node node_index
+        The scaled stochastic variables at node node_index
         """
-        self._nlp.controls.node_index = self.node_index
-        out = self._nlp.controls.unscaled
-        out.current_cx_to_get = self.cx_index_to_get
-        return out
-
-    @property
-    def controls_scaled(self) -> OptimizationVariableList:
-        """
-        Return the scaled controls associated with the current node index.
-
-        Warning: Most of the time, the user does not want that controls but the normal `controls`, that said, it can
-        sometime be useful for very limited number of use case.
-
-        Returns
-        -------
-        The scaled controls at node node_index
-        """
-        self._nlp.controls.node_index = self.node_index
-        out = self._nlp.controls.scaled
+        self._nlp.stochastic_variables.node_index = self.node_index
+        out = self._nlp.stochastic_variables.scaled
         out.current_cx_to_get = self.cx_index_to_get
         return out
 

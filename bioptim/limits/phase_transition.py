@@ -52,12 +52,16 @@ class PhaseTransition(MultinodePenalty):
         max_bound: float = 0,
         **params: Any,
     ):
+        # TODO: @pariterre: where did phase_post go !?
+
         if not isinstance(transition, PhaseTransitionFcn):
             custom_function = transition
             transition = PhaseTransitionFcn.CUSTOM
         super(PhaseTransition, self).__init__(
             PhaseTransitionFcn,
-            nodes_phase=(-1, 0) if transition == transition.CYCLIC else (phase_pre_idx, phase_pre_idx + 1),
+            nodes_phase=(-1, 0)
+            if transition in [transition.CYCLIC, transition.COVARIANCE_CYCLIC]
+            else (phase_pre_idx, phase_pre_idx + 1),
             nodes=(Node.END, Node.START),
             multinode_penalty=transition,
             custom_function=custom_function,
@@ -124,7 +128,7 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         """
         raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
 
-    def prepare_phase_transitions(self, ocp, continuity_weight: float = None) -> list:
+    def prepare_phase_transitions(self, ocp) -> list:
         """
         Configure all the phase transitions and put them in a list
 
@@ -140,7 +144,11 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
 
         # By default it assume Continuous. It can be change later
         full_phase_transitions = [
-            PhaseTransition(phase_pre_idx=i, transition=PhaseTransitionFcn.CONTINUOUS, weight=continuity_weight)
+            PhaseTransition(
+                phase_pre_idx=i,
+                transition=PhaseTransitionFcn.CONTINUOUS,
+                weight=ocp.nlp[i].dynamics_type.state_continuity_weight,
+            )
             for i in range(ocp.n_phases - 1)
         ]
 
@@ -293,6 +301,50 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             func = pre.to_casadi_func(name, val, pre.states.mx, post.states.mx)(cx_end, cx_start)
             return func
 
+        @staticmethod
+        def covariance_cyclic(
+            transition,
+            controllers: list[PenaltyController, PenaltyController],
+        ):
+            """
+            The most common continuity function, that is the covariance before equals covariance after for stochastic ocp
+
+            Parameters
+            ----------
+            transition : PhaseTransition
+                A reference to the phase transition
+            controllers: list[PenaltyController, PenaltyController]
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the covariance after and before
+            """
+
+            return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
+
+        @staticmethod
+        def covariance_continuous(
+            transition,
+            controllers: list[PenaltyController, PenaltyController],
+        ):
+            """
+            The most common continuity function, that is the covariance before equals covariance after for stochastic ocp
+
+            Parameters
+            ----------
+            transition : PhaseTransition
+                A reference to the phase transition
+            controllers: list[PenaltyController, PenaltyController]
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the covariance after and before
+            """
+
+            return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
+
 
 class PhaseTransitionFcn(FcnEnum):
     """
@@ -303,6 +355,8 @@ class PhaseTransitionFcn(FcnEnum):
     DISCONTINUOUS = (PhaseTransitionFunctions.Functions.discontinuous,)
     IMPACT = (PhaseTransitionFunctions.Functions.impact,)
     CYCLIC = (PhaseTransitionFunctions.Functions.cyclic,)
+    COVARIANCE_CYCLIC = (PhaseTransitionFunctions.Functions.covariance_cyclic,)
+    COVARIANCE_CONTINUOUS = (PhaseTransitionFunctions.Functions.covariance_continuous,)
     CUSTOM = (MultinodePenaltyFunctions.Functions.custom,)
 
     @staticmethod

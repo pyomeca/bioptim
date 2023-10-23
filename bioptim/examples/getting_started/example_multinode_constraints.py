@@ -26,6 +26,7 @@ from bioptim import (
     MultinodeObjectiveFcn,
     PenaltyController,
     BiMapping,
+    PhaseDynamics,
 )
 
 
@@ -66,8 +67,9 @@ def prepare_ocp(
     biorbd_model_path: str,
     n_shootings: tuple,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     with_too_much_constraints: bool = False,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -80,14 +82,20 @@ def prepare_ocp(
         The number of shooting points
     ode_solver: OdeSolverBase
         The ode solve to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
     with_too_much_constraints: bool
         This is to show what happens in the case too many constraints are declared in the multinode constraints (that
-        is more than three in the same phase). It will raise ValueError if assume_phase_dynamics is True since maximum
-        three nodes are created by phase. If is it set too False, it will work just fine
+        is more than three in the same phase). It will raise ValueError if phase_dynamics is
+        PhaseDynamics.SHARED_DURING_THE_PHASE since maximum three nodes are created by phase.
+        If is it set to PhaseDynamics.ONE_PER_NODE, it will work just fine
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -108,10 +116,9 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand=expand)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Constraints
     constraints = ConstraintList()
@@ -144,7 +151,7 @@ def prepare_ocp(
     )
 
     # This is a useless constraint (as it already does that anyway) to show how to add three constraints on the same
-    # phase. More than 3 will only work with assume_phase_dynamics to False
+    # phase. More than 3 will only work with phase_dynamics to PhaseDynamics.ONE_PER_NODE
     multinode_constraints.add(
         MultinodeConstraintFcn.CONTROLS_EQUALITY,
         nodes_phase=(1, 1, 1),
@@ -152,7 +159,7 @@ def prepare_ocp(
         index=2,
     )
     # This constraint is for documentation purposes. Up to 3 nodes, it will work, but it won't for more than 3 if
-    # assume_phase_dynamics is set to True
+    # phase_dynamics is set to PhaseDynamics.SHARED_DURING_THE_PHASE
     if with_too_much_constraints:
         multinode_constraints.add(
             MultinodeConstraintFcn.STATES_EQUALITY, nodes_phase=(0, 0, 0, 0), nodes=(0, 1, 2, 3), key="all"
@@ -191,7 +198,6 @@ def prepare_ocp(
         multinode_constraints=multinode_constraints,
         multinode_objectives=multinode_objectives,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

@@ -5,19 +5,18 @@ constrains the z-distance between two markers to remain null.
 The behaviour of the pendulum should be the same as the one in bioptim/examples/getting_started/pendulum.py
 """
 from bioptim import (
+    BoundsList,
+    HolonomicConstraintsFcn,
+    HolonomicConstraintsList,
+    InitialGuessList,
     InterpolationType,
     Objective,
     ObjectiveFcn,
     Solver,
-    BoundsList,
-    InitialGuessList,
-)
-import numpy as np
-
-from bioptim.examples.discrete_mechanics_and_optimal_control.biorbd_model_holonomic import BiorbdModelCustomHolonomic
-from bioptim.examples.discrete_mechanics_and_optimal_control.variational_optimal_control_program import (
+    VariationalBiorbdModel,
     VariationalOptimalControlProgram,
 )
+import numpy as np
 
 
 def prepare_ocp(
@@ -45,7 +44,17 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved.
     """
 
-    bio_model = BiorbdModelCustomHolonomic(bio_model_path)
+    bio_model = VariationalBiorbdModel(bio_model_path)
+    # Holonomic constraints: The pendulum must not move on the z axis
+    holonomic_constraints = HolonomicConstraintsList()
+    holonomic_constraints.add(
+        "holonomic_constraints",
+        HolonomicConstraintsFcn.superimpose_markers,
+        biorbd_model=bio_model,
+        marker_1="marker_1",
+        index=slice(2, 3),
+    )
+    bio_model.set_holonomic_configuration(holonomic_constraints)
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -72,14 +81,15 @@ def prepare_ocp(
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively impose forces on z axis
     u_bounds["tau"][2, :] = 0  # Prevent the model from actively rotate
 
-    # Holonomic constraints: The pendulum must not move on the z axis
-    constraints, jac = bio_model.generate_constraint_and_jacobian_functions(marker_1="marker_1", index=slice(2, 3))
-
     # Make sure all are declared
     qdot_bounds = BoundsList()
     # Start and finish with zero velocity
-    qdot_bounds.add("qdot_start", min_bound=[0] * n_q, max_bound=[0] * n_q, interpolation=InterpolationType.CONSTANT)
-    qdot_bounds.add("qdot_end", min_bound=[0] * n_q, max_bound=[0] * n_q, interpolation=InterpolationType.CONSTANT)
+    qdot_bounds.add(
+        "qdot_start", min_bound=[-0.01] * n_q, max_bound=[0.01] * n_q, interpolation=InterpolationType.CONSTANT
+    )
+    qdot_bounds.add(
+        "qdot_end", min_bound=[-0.01] * n_q, max_bound=[0.01] * n_q, interpolation=InterpolationType.CONSTANT
+    )
 
     return VariationalOptimalControlProgram(
         bio_model,
@@ -89,8 +99,6 @@ def prepare_ocp(
         q_bounds=x_bounds,
         u_bounds=u_bounds,
         qdot_bounds=qdot_bounds,
-        holonomic_constraints=constraints,
-        holonomic_constraints_jacobian=jac,
         objective_functions=objective_functions,
         use_sx=use_sx,
     )
@@ -119,7 +127,7 @@ def main():
     # The states (q and lambdas) are displayed piecewise constant, but actually they are not.
     sol.graphs()
 
-    print(f"qdot0 :{sol.parameters['qdot0'].squeeze()}")
+    print(f"qdot0 :{sol.parameters['qdot_start'].squeeze()}")
     print(f"qdot_end :{sol.parameters['qdot_end'].squeeze()}")
 
 

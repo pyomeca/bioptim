@@ -26,6 +26,7 @@ from bioptim import (
     SoftContactDynamics,
     RigidBodyDynamics,
     SolutionIntegrator,
+    PhaseDynamics,
 )
 
 
@@ -62,7 +63,6 @@ def prepare_single_shooting(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=True,
     )
 
 
@@ -75,8 +75,10 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     x["qdot"] = [1e-10, 1e-10, 1e-10]
     u = InitialGuessList()
     u["tau"] = [0, 0, 0]
+    p = InitialGuessList()
+    s = InitialGuessList()
 
-    sol_from_initial_guess = Solution(ocp, [x, u])
+    sol_from_initial_guess = Solution(ocp, [x, u, p, s])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
 
@@ -87,8 +89,10 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     x["qdot"] = np.array([0] * 3)
     u = InitialGuessList()
     u["tau"] = [0, 0, -10]
+    p = InitialGuessList()
+    s = InitialGuessList()
 
-    sol_from_initial_guess = Solution(ocp, [x, u])
+    sol_from_initial_guess = Solution(ocp, [x, u, p, s])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
 
@@ -103,11 +107,10 @@ def prepare_ocp(
     slack: float = 1e-4,
     n_threads: int = 8,
     use_sx: bool = False,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
-
 
     Returns
     -------
@@ -144,6 +147,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         rigidbody_dynamics=RigidBodyDynamics.ODE,
         soft_contacts_dynamics=SoftContactDynamics.ODE,
+        phase_dynamics=phase_dynamics,
     )
 
     # Constraints
@@ -187,7 +191,6 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

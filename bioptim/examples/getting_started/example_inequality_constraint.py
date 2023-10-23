@@ -30,6 +30,7 @@ from bioptim import (
     OdeSolver,
     OdeSolverBase,
     Solver,
+    PhaseDynamics,
 )
 
 
@@ -40,8 +41,9 @@ def prepare_ocp(
     min_bound: float,
     max_bound: float,
     mu: float,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    assume_phase_dynamics: bool = True,
+    ode_solver: OdeSolverBase = OdeSolver.IRK(),
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    expand_dynamics: bool = True,
 ):
     """
     Prepare the actual control program to be solved
@@ -62,10 +64,15 @@ def prepare_ocp(
         The coefficient of friction to use in the simulation
     ode_solver
         The integrator solver to use
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -85,7 +92,9 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=True)
+    dynamics.add(
+        DynamicsFcn.TORQUE_DRIVEN, with_contact=True, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+    )
 
     # Constraints
     constraints = ConstraintList()
@@ -142,7 +151,6 @@ def prepare_ocp(
         constraints=constraints,
         variable_mappings=dof_mapping,
         ode_solver=ode_solver,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

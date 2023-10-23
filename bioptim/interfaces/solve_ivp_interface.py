@@ -11,6 +11,7 @@ def solve_ivp_interface(
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
+    s: np.ndarray,
     method: str | Any = "RK45",
     keep_intermediate_points: bool = False,
     control_type: ControlType = ControlType.CONSTANT,
@@ -24,12 +25,16 @@ def solve_ivp_interface(
         function that computes the dynamics of the system
     t_eval : np.ndarray | List[float]
         array of times t the controls u are evaluated at
+    t : np.ndarray
+        array of time
     x0 : np.ndarray
         array of initial conditions
     u : np.ndarray
         arrays of controls u evaluated at t_eval
     params : np.ndarray
         array of parameters
+    s : np.ndarray
+        array of arrays of stochastic variables
     method : str, optional
         method to use for the integration, by default "RK45"
     keep_intermediate_points : bool
@@ -46,12 +51,12 @@ def solve_ivp_interface(
     if isinstance(t_eval[0], np.ndarray):  # Direct multiple shooting
         y_final = np.array([], dtype=np.float64).reshape(x0.shape[0], 0)
 
-        for s, t_eval_step in enumerate(t_eval):
-            x0i = x0[:, s]
-            u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
+        for ss, t_eval_step in enumerate(t_eval):
+            x0i = x0[:, ss]
+            u_slice = slice(ss, ss + 1) if control_type == ControlType.CONSTANT else slice(ss, ss + 2)
 
             # resize u to match the size of t_eval according to the type of control
-            if control_type == ControlType.CONSTANT:
+            if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 ui = np.repeat(u[:, u_slice], t_eval_step.shape[0], axis=1)
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)
@@ -65,6 +70,7 @@ def solve_ivp_interface(
                 t_eval=t_eval_step,
                 x0=x0i,
                 u=ui,
+                s=s,
                 params=params,
                 method=method,
                 keep_intermediate_points=False,  # error raise in direct multiple shooting so it's always False
@@ -94,11 +100,11 @@ def solve_ivp_interface(
         x0i = x0
 
         y = None
-        for s, t_eval_step in enumerate(t_eval):
-            u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
+        for ss, t_eval_step in enumerate(t_eval):
+            u_slice = slice(ss, ss + 1) if control_type == ControlType.CONSTANT else slice(ss, ss + 2)
 
             # resize u to match the size of t_eval according to the type of control
-            if control_type == ControlType.CONSTANT:
+            if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                 ui = np.repeat(u[:, u_slice], t_eval_step.shape[0], axis=1)
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)
@@ -111,6 +117,7 @@ def solve_ivp_interface(
                 t_eval=t_eval_step,
                 x0=x0i,
                 u=ui,
+                s=s,
                 params=params,
                 method=method,
                 keep_intermediate_points=keep_intermediate_points,
@@ -130,6 +137,7 @@ def run_solve_ivp(
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
+    s: np.ndarray,
     method: str | Any = "RK45",
     keep_intermediate_points: bool = False,
     control_type: ControlType = ControlType.CONSTANT,
@@ -149,6 +157,8 @@ def run_solve_ivp(
         arrays of controls u evaluated at t_eval
     params : np.ndarray
         array of parameters
+    s : np.ndarray
+        array of arrays of the stochastic variables
     method : str, optional
         method to use for the integration, by default "RK45"
     keep_intermediate_points : bool
@@ -168,7 +178,7 @@ def run_solve_ivp(
 
     t_span = [t_eval[0], t_eval[-1]]
     integrated_sol = solve_ivp(
-        lambda t, x: np.array(dynamics_func(x, control_function(t), params))[:, 0],
+        lambda t, x: np.array(dynamics_func(t, x, control_function(t), params, s))[:, 0],
         t_span=t_span,
         y0=x0,
         t_eval=np.array(t_eval, dtype=np.float64),  # prevent error with dtype=object
@@ -191,7 +201,7 @@ def define_control_function(
     controls : np.ndarray
         arrays of controls u evaluated at t_eval
     control_type : ControlType
-        type of control such as CONSTANT or LINEAR_CONTINUOUS
+        type of control such as CONSTANT, CONSTANT_WITH_LAST_NODE, LINEAR_CONTINUOUS or NONE
     keep_intermediate_points : bool
         whether to keep the intermediate points or not
 
@@ -217,6 +227,10 @@ def define_control_function(
             )
             return lambda t: piecewise_constant_u(t, t_u, controls)
 
+        elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            controls = np.repeat(controls[:, :], n_step, axis=1)
+            return lambda t: piecewise_constant_u(t, t_u, controls)
+
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             # interpolate linearly the values of u at each time step to match the size of t_eval
             t_u = t_u[::n_step]  # get the actual time steps of u
@@ -224,7 +238,8 @@ def define_control_function(
     else:
         if control_type == ControlType.CONSTANT:
             return lambda t: piecewise_constant_u(t, t_u, controls)
-
+        elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            return lambda t: piecewise_constant_u(t, t_u, controls[:, :-1])
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             # interpolate linearly the values of u at each time step to match the size of t_eval
             return interp1d(t_u, controls, kind="linear", axis=1)
@@ -302,10 +317,12 @@ def piecewise_constant_u(t: float, t_eval: np.ndarray | List[float], u: np.ndarr
 def solve_ivp_bioptim_interface(
     dynamics_func: list[Callable],
     keep_intermediate_points: bool,
+    t: np.ndarray,
     x0: np.ndarray,
     u: np.ndarray,
     params: np.ndarray,
     param_scaling: np.ndarray,
+    s: np.ndarray,
     shooting_type: Shooting,
     control_type: ControlType,
 ):
@@ -318,6 +335,8 @@ def solve_ivp_bioptim_interface(
         function that computes the dynamics of the system
     keep_intermediate_points : bool
         whether to keep the intermediate points or not
+    t : np.ndarray
+        array of time
     x0 : np.ndarray
         array of initial conditions
     u : np.ndarray
@@ -326,10 +345,12 @@ def solve_ivp_bioptim_interface(
         array of parameters
     param_scaling : np.ndarray
         array of scaling factors for the parameters
+    s : np.ndarray
+        array of the stochastic variables of the system
     shooting_type : Shooting
         The way we integrate the solution such as SINGLE, SINGLE_CONTINUOUS, MULTIPLE
     control_type : ControlType
-        The type of control such as ControlType.CONSTANT or ControlType.LINEAR_CONTINUOUS
+        The type of control such as ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS or ControlType.NONE
 
     Returns
     -------
@@ -346,8 +367,8 @@ def solve_ivp_bioptim_interface(
 
     y_final = np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
 
-    for s, func in enumerate(dynamics_func):
-        u_slice = slice(s, s + 1) if control_type == ControlType.CONSTANT else slice(s, s + 2)
+    for ss, func in enumerate(dynamics_func):
+        u_slice = slice(ss, ss + 1) if control_type == ControlType.CONSTANT else slice(ss, ss + 2)
         u_controls = [] if control_type == ControlType.NONE else u[:, u_slice]
         # y always contains [x0, xf] of the interval
         y = np.concatenate(
@@ -355,7 +376,7 @@ def solve_ivp_bioptim_interface(
                 np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
                 if keep_intermediate_points
                 else x0i,  # x0 or None
-                np.array(func(x0=x0i, p=u_controls, params=params / param_scaling)[dynamics_output]),
+                np.array(func(x0=x0i, u=u_controls, p=params / param_scaling, s=s)[dynamics_output]),
             ),  # xf or xall
             axis=1,
         )
@@ -367,7 +388,7 @@ def solve_ivp_bioptim_interface(
             x0i = y[:, -1:]
         else:  # Shooting.MULTIPLE
             concatenated_y = y
-            x0i = x0[:, s + 1] if s < len(dynamics_func) - 1 else None
+            x0i = x0[:, ss + 1] if ss < len(dynamics_func) - 1 else None
 
         y_final = np.concatenate((y_final, concatenated_y), axis=1)
 

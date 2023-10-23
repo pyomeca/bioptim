@@ -172,8 +172,16 @@ from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver, OdeSolverBase
 from .interfaces.solver_options import Solver
-from .interfaces.biorbd_model import BiorbdModel, MultiBiorbdModel
+from .interfaces.biorbd_model import BiorbdModel
+from .interfaces.multi_biorbd_model import MultiBiorbdModel
 from .interfaces.biomodel import BioModel
+from .interfaces.holonomic_biomodel import HolonomicBioModel
+from .interfaces.variational_biomodel import VariationalBioModel
+from .interfaces.holonomic_biorbd_model import HolonomicBiorbdModel
+from .interfaces.variational_biorbd_model import VariationalBiorbdModel
+from .interfaces.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
+from .interfaces.stochastic_bio_model import StochasticBioModel
+from .interfaces.stochastic_biorbd_model import StochasticBiorbdModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
@@ -192,12 +200,13 @@ from .misc.enums import (
     Shooting,
     VariableType,
     SolutionIntegrator,
-    IntegralApproximation,
+    QuadratureRule,
     RigidBodyDynamics,
     SoftContactDynamics,
     DefectType,
     MagnitudeType,
     MultiCyclicCycleSolutions,
+    PhaseDynamics,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .optimization.multi_start import MultiStart
@@ -213,5 +222,8 @@ from .optimization.parameters import ParameterList
 from .optimization.solution import Solution
 from .optimization.optimization_variable import OptimizationVariableList
 from .optimization.variable_scaling import VariableScalingList, VariableScaling
+from .optimization.variational_optimal_control_program import VariationalOptimalControlProgram
 
+from .optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
+from .optimization.problem_type import SocpType
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero

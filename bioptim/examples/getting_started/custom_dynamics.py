@@ -28,13 +28,16 @@ from bioptim import (
     NonLinearProgram,
     Solver,
     DynamicsEvaluation,
+    PhaseDynamics,
 )
 
 
-def custom_dynamic(
+def custom_dynamics(
+    time: MX | SX,
     states: MX | SX,
     controls: MX | SX,
     parameters: MX | SX,
+    stochastic_variables: MX | SX,
     nlp: NonLinearProgram,
     my_additional_factor=1,
 ) -> DynamicsEvaluation:
@@ -43,6 +46,8 @@ def custom_dynamic(
 
     Parameters
     ----------
+    time: MX | SX
+        The time of the system
     states: MX | SX
         The state of the system
     controls: MX | SX
@@ -92,7 +97,7 @@ def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_addit
     ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_qdot(ocp, nlp, as_states=True, as_controls=False)
     ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
-    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamic, my_additional_factor=my_additional_factor)
+    ConfigureProblem.configure_dynamics_function(ocp, nlp, custom_dynamics, my_additional_factor=my_additional_factor)
 
 
 def prepare_ocp(
@@ -100,7 +105,8 @@ def prepare_ocp(
     problem_type_custom: bool = True,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = False,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     Prepare the program
@@ -116,10 +122,15 @@ def prepare_ocp(
         The type of ode solver used
     use_sx: bool
         If the program should be constructed using SX instead of MX (longer to create the CasADi graph, faster to solve)
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
 
     Returns
     -------
@@ -139,11 +150,21 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    expand = False if isinstance(ode_solver, OdeSolver.IRK) else True
     if problem_type_custom:
-        dynamics.add(custom_configure, dynamic_function=custom_dynamic, my_additional_factor=1, expand=expand)
+        dynamics.add(
+            custom_configure,
+            dynamic_function=custom_dynamics,
+            my_additional_factor=1,
+            expand_dynamics=expand_dynamics,
+            phase_dynamics=phase_dynamics,
+        )
     else:
-        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, dynamic_function=custom_dynamic, expand=expand)
+        dynamics.add(
+            DynamicsFcn.TORQUE_DRIVEN,
+            dynamic_function=custom_dynamics,
+            expand_dynamics=expand_dynamics,
+            phase_dynamics=phase_dynamics,
+        )
 
     # Constraints
     constraints = ConstraintList()
@@ -176,7 +197,6 @@ def prepare_ocp(
         constraints=constraints,
         ode_solver=ode_solver,
         use_sx=use_sx,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

@@ -21,6 +21,7 @@ from bioptim import (
     CostType,
     BiorbdModel,
     BiMappingList,
+    PhaseDynamics,
 )
 
 
@@ -28,8 +29,9 @@ def prepare_ocp(
     weights,
     coefficients,
     biorbd_model_path="models/double_pendulum.bioMod",
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     n_threads: int = 4,
+    expand_dynamics: bool = True,
 ):
     # Parameters of the problem
     biorbd_model = BiorbdModel(biorbd_model_path)
@@ -59,7 +61,7 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     n_q = biorbd_model.nb_q
@@ -89,7 +91,6 @@ def prepare_ocp(
         objective_functions=objective_functions,
         variable_mappings=tau_mappings,
         n_threads=n_threads,
-        assume_phase_dynamics=assume_phase_dynamics,
     )
 
 

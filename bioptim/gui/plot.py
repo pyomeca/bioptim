@@ -11,9 +11,18 @@ from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
 from ..limits.multinode_constraint import MultinodeConstraint
-from ..misc.enums import PlotType, ControlType, InterpolationType, Shooting, SolutionIntegrator, IntegralApproximation
+from ..misc.enums import (
+    PlotType,
+    ControlType,
+    InterpolationType,
+    Shooting,
+    SolutionIntegrator,
+    QuadratureRule,
+    PhaseDynamics,
+)
 from ..misc.mapping import Mapping, BiMapping
 from ..optimization.solution import Solution
+from ..dynamics.ode_solver import OdeSolver
 
 
 class CustomPlot:
@@ -22,7 +31,7 @@ class CustomPlot:
 
     Attributes
     ----------
-    function: Callable[states, controls, parameters]
+    function: Callable[time, states, controls, parameters, stochastic_variables]
         The function to call to update the graph
     type: PlotType
         Type of plot to use
@@ -60,13 +69,13 @@ class CustomPlot:
         node_idx: list = None,
         label: list = None,
         compute_derivative: bool = False,
-        integration_rule: IntegralApproximation = IntegralApproximation.RECTANGLE,
+        integration_rule: QuadratureRule = QuadratureRule.RECTANGLE_LEFT,
         **parameters: Any,
     ):
         """
         Parameters
         ----------
-        update_function: Callable[states, controls, parameters]
+        update_function: Callable[time, states, controls, parameters, stochastic_variables]
             The function to call to update the graph
         plot_type: PlotType
             Type of plot to use
@@ -111,6 +120,8 @@ class CustomPlot:
         self.node_idx = node_idx
         self.label = label
         self.compute_derivative = compute_derivative
+        if integration_rule == QuadratureRule.MIDPOINT or integration_rule == QuadratureRule.RECTANGLE_RIGHT:
+            raise NotImplementedError(f"{integration_rule} has not been implemented yet.")
         self.integration_rule = integration_rule
         self.parameters = parameters
 
@@ -335,27 +346,54 @@ class PlotOcp:
                         nlp.plot[key] = nlp.plot[key][0]
 
                     if nlp.plot[key].phase_mappings is None:
-                        node_index = 0  # TODO deal with assume_phase_dynamics=False
+                        node_index = 0  # TODO deal with phase_dynamics == ONE_PER_NODE
                         if nlp.plot[key].node_idx is not None:
                             node_index = nlp.plot[key].node_idx[0]
                         nlp.states.node_index = node_index
                         nlp.states_dot.node_index = node_index
                         nlp.controls.node_index = node_index
+                        nlp.stochastic_variables.node_index = node_index
+
+                        # If multi-node penalties = None, stays zero
+                        size_x = 0
+                        size_u = 0
+                        size_p = 0
+                        size_s = 0
+                        if "penalty" in nlp.plot[key].parameters:
+                            casadi_function = nlp.plot[key].parameters["penalty"].weighted_function_non_threaded[0]
+                            if nlp.plot[key].parameters["penalty"].multinode_penalty:
+                                if casadi_function is not None:
+                                    # size_t = len(casadi_function.nominal_in(0))
+                                    size_x = len(casadi_function.nominal_in(1))
+                                    size_u = len(casadi_function.nominal_in(2))
+                                    size_p = len(casadi_function.nominal_in(3))
+                                    size_s = len(casadi_function.nominal_in(4))
+                            else:
+                                size_x = nlp.states.shape
+                                size_u = nlp.controls.shape
+                                size_p = nlp.parameters.shape
+                                size_s = nlp.stochastic_variables.shape
+                        else:
+                            size_x = nlp.states.shape
+                            size_u = nlp.controls.shape
+                            size_p = nlp.parameters.shape
+                            size_s = nlp.stochastic_variables.shape
 
                         size = (
                             nlp.plot[key]
                             .function(
                                 node_index,
-                                np.zeros((nlp.states.shape, 2)),
-                                np.zeros((nlp.controls.shape, 2)),
-                                np.zeros((nlp.parameters.shape, 2)),
+                                np.zeros((size_x, 1)),
+                                np.zeros((size_u, 1)),
+                                np.zeros((size_p, 1)),
+                                np.zeros((size_s, 1)),
                                 **nlp.plot[key].parameters,
                             )
                             .shape[0]
                         )
                         nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
                     else:
-                        size = len(nlp.plot[key].phase_mappings.to_second.map_idx)
+                        size = max(nlp.plot[key].phase_mappings.to_second.map_idx) + 1
                     if key not in variable_sizes[i]:
                         variable_sizes[i][key] = size
                     else:
@@ -402,7 +440,7 @@ class PlotOcp:
                     continue
 
                 mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
-                mapping_range_index = list(range(len(nlp.plot[variable].phase_mappings.to_second.map_idx)))
+                mapping_range_index = list(range(max(nlp.plot[variable].phase_mappings.to_second.map_idx) + 1))
                 for ctr in mapping_range_index:
                     ax = axes[ctr]
                     if ctr in mapping_to_first_index:
@@ -419,19 +457,22 @@ class PlotOcp:
                                 y_min = nlp.plot[variable].bounds.min[mapping_to_first_index.index(ctr), :].min()
                                 y_max = nlp.plot[variable].bounds.max[mapping_to_first_index.index(ctr), :].max()
                             else:
+                                repeat = 1
+                                if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+                                    repeat = nlp.ode_solver.polynomial_degree + 1
                                 nlp.plot[variable].bounds.check_and_adjust_dimensions(
                                     len(mapping_to_first_index), nlp.ns
                                 )
                                 y_min = min(
                                     [
                                         nlp.plot[variable].bounds.min.evaluate_at(j)[mapping_to_first_index.index(ctr)]
-                                        for j in range(nlp.ns)
+                                        for j in range(nlp.ns * repeat)
                                     ]
                                 )
                                 y_max = max(
                                     [
                                         nlp.plot[variable].bounds.max.evaluate_at(j)[mapping_to_first_index.index(ctr)]
-                                        for j in range(nlp.ns)
+                                        for j in range(nlp.ns * repeat)
                                     ]
                                 )
                             if y_min.__array__()[0] < y_min_all[var_idx][mapping_to_first_index.index(ctr)]:
@@ -533,6 +574,9 @@ class PlotOcp:
                                 ns = nlp.plot[variable].bounds.min.shape[1] - 1
                             else:
                                 ns = nlp.ns
+
+                            # TODO: introduce repeat for the COLLOCATIONS min/max_bounds only for states graphs.
+                            # For now the plots in COLLOCATIONS with LINEAR are not giving the right values
                             nlp.plot[variable].bounds.check_and_adjust_dimensions(
                                 n_elements=len(mapping_to_first_index), n_shooting=ns
                             )
@@ -663,6 +707,7 @@ class PlotOcp:
         data_controls = sol.controls
         data_params = sol.parameters
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
+        data_stochastic = sol.stochastic_variables
 
         for _ in self.ocp.nlp:
             if self.t_idx_to_optimize:
@@ -679,21 +724,33 @@ class PlotOcp:
                 else nlp.ode_solver.steps + 1
             )
 
-            n_elements = data_time[i].shape[0]
+            if isinstance(data_states, dict):
+                n_elements = data_states[list(data_states.keys())[0]].shape[1]
+            elif isinstance(data_states, list):
+                n_elements = data_states[i][list(data_states[i].keys())[0]].shape[1]
+            else:
+                raise RuntimeError("Invalid data_states type")
             state = np.ndarray((0, n_elements))
-            for s in nlp.states:
+            for ss in nlp.states:
                 if nlp.use_states_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_states, (list, tuple)):
-                        state = np.concatenate((state, data_states[i][s]))
+                        state = np.concatenate((state, data_states[i][ss]))
                     else:
-                        state = np.concatenate((state, data_states[s]))
+                        state = np.concatenate((state, data_states[ss]))
             control = np.ndarray((0, nlp.ns + 1))
-            for s in nlp.controls:
+            for ss in nlp.controls:
                 if nlp.use_controls_from_phase_idx == nlp.phase_idx:
                     if isinstance(data_controls, (list, tuple)):
-                        control = np.concatenate((control, data_controls[i][s]))
+                        control = np.concatenate((control, data_controls[i][ss]))
                     else:
-                        control = np.concatenate((control, data_controls[s]))
+                        control = np.concatenate((control, data_controls[ss]))
+
+            stochastic = np.ndarray((0, nlp.ns + 1))
+            for ss in nlp.stochastic_variables:
+                if isinstance(data_stochastic, (list, tuple)):
+                    stochastic = np.concatenate((stochastic, data_stochastic[i][ss]))
+                else:
+                    stochastic = np.concatenate((stochastic, data_stochastic[ss]))
 
             for key in self.variable_sizes[i]:
                 if not self.plot_func[key][i]:
@@ -705,18 +762,17 @@ class PlotOcp:
                 x_mod = (
                     1
                     if self.plot_func[key][i].compute_derivative
-                    or self.plot_func[key][i].integration_rule == IntegralApproximation.TRAPEZOIDAL
-                    or self.plot_func[key][i].integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                    or self.plot_func[key][i].integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    or self.plot_func[key][i].integration_rule == QuadratureRule.TRAPEZOIDAL
                     else 0
                 )
                 u_mod = (
                     1
                     if (nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative)
-                    and not ("OBJECTIVES" in key or "CONSTRAINTS" in key or "PHASE_TRANSITION" in key)
                     or (
                         (
-                            self.plot_func[key][i].integration_rule == IntegralApproximation.TRAPEZOIDAL
-                            or self.plot_func[key][i].integration_rule == IntegralApproximation.TRUE_TRAPEZOIDAL
+                            self.plot_func[key][i].integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                            or self.plot_func[key][i].integration_rule == QuadratureRule.TRAPEZOIDAL
                         )
                         and nlp.control_type == ControlType.LINEAR_CONTINUOUS
                     )
@@ -736,6 +792,7 @@ class PlotOcp:
                             state[:, step_size * idx : step_size * (idx + 1) + x_mod],
                             control[:, idx : idx + u_mod + 1],
                             data_params_in_dyn,
+                            stochastic[:, idx : idx + 1 + 1],
                             **self.plot_func[key][i].parameters,
                         )
 
@@ -755,10 +812,13 @@ class PlotOcp:
                         y_tp[:, :] = val
                         all_y.append(y_tp)
 
-                    for idx in range(len(self.plot_func[key][i].phase_mappings.to_second.map_idx)):
+                    for idx in range(max(self.plot_func[key][i].phase_mappings.to_second.map_idx) + 1):
                         y_tp = []
-                        for y in all_y:
-                            y_tp.append(y[idx, :])
+                        if idx in self.plot_func[key][i].phase_mappings.to_second.map_idx:
+                            for y in all_y:
+                                y_tp.append(y[idx, :])
+                        else:
+                            y_tp = None
                         self.__append_to_ydata([y_tp])
 
                 elif self.plot_func[key][i].type == PlotType.POINT:
@@ -768,6 +828,8 @@ class PlotOcp:
                             penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
 
                             x_phase = np.ndarray((0, len(penalty.nodes_phase)))
+                            if sol.ocp.n_phases == 1 and isinstance(data_states, dict):
+                                data_states = [data_states]
                             for state_key in data_states[i].keys():
                                 x_phase_tp = np.ndarray((data_states[i][state_key].shape[0], 0))
                                 for tp in range(len(penalty.nodes_phase)):
@@ -781,27 +843,47 @@ class PlotOcp:
                                     )
                                 x_phase = np.vstack((x_phase, x_phase_tp))
 
-                            u_phase = np.ndarray((0, len(penalty.nodes_phase)))
+                            u_phase = None
+                            if sol.ocp.n_phases == 1 and isinstance(data_controls, dict):
+                                data_controls = [data_controls]
                             for control_key in data_controls[i].keys():
-                                u_phase_tp = np.ndarray((data_controls[i][control_key].shape[0], 0))
+                                u_phase_tp = None
                                 for tp in range(len(penalty.nodes_phase)):
                                     phase_tp = penalty.nodes_phase[tp]
                                     node_idx_tp = penalty.all_nodes_index[tp]
-                                    u_phase_tp = np.hstack(
+                                    if node_idx_tp != nlp.ns or (
+                                        node_idx_tp == nlp.ns and not np.isnan(data_controls[i][control_key][0, -1])
+                                    ):
+                                        new_value = data_controls[phase_tp][control_key][:, node_idx_tp][:, np.newaxis]
+                                        u_phase_tp = (
+                                            np.vstack((u_phase_tp, new_value))
+                                            if isinstance(u_phase_tp, np.ndarray)
+                                            else new_value
+                                        )
+                                u_phase = u_phase_tp if u_phase is None else np.hstack((u_phase, u_phase_tp))
+
+                            s_phase = np.ndarray((0, len(penalty.nodes_phase)))
+                            if sol.ocp.n_phases == 1 and isinstance(data_stochastic, dict):
+                                data_stochastic = [data_stochastic]
+                            for stochastic_key in data_stochastic[i].keys():
+                                s_phase_tp = np.ndarray((data_stochastic[i][stochastic_key].shape[0], 0))
+                                for tp in range(len(penalty.nodes_phase)):
+                                    phase_tp = penalty.nodes_phase[tp]
+                                    node_idx_tp = penalty.all_nodes_index[tp]
+                                    s_phase_tp = np.hstack(
                                         (
-                                            u_phase_tp,
-                                            data_controls[phase_tp][control_key][
-                                                :, node_idx_tp - (1 if node_idx_tp == nlp.ns else 0)
-                                            ][:, np.newaxis],
+                                            s_phase_tp,
+                                            data_stochastic[phase_tp][stochastic_key][:, node_idx_tp][:, np.newaxis],
                                         )
                                     )
-                                u_phase = np.vstack((u_phase, u_phase_tp))
+                                s_phase = np.vstack((s_phase, s_phase_tp))
 
                             val_tempo = self.plot_func[key][i].function(
                                 self.plot_func[key][i].node_idx[0],
                                 x_phase,
                                 u_phase,
                                 data_params_in_dyn,
+                                s_phase,
                                 **self.plot_func[key][i].parameters,
                             )
                             y[0] = val_tempo[abs(self.plot_func[key][i].phase_mappings.to_second.map_idx[i_var])]
@@ -827,11 +909,17 @@ class PlotOcp:
                                             )
                                         ),
                                         data_params_in_dyn,
+                                        np.hstack(
+                                            (
+                                                data_stochastic[node_idx]["all"][:, -1],
+                                                data_stochastic[node_idx + 1]["all"][:, 0],
+                                            )
+                                        ),
                                         **self.plot_func[key][i].parameters,
                                     )
                                 else:
                                     if (
-                                        self.plot_func[key][i].label == "CONTINUITY"
+                                        self.plot_func[key][i].label == "STATE_CONTINUITY"
                                         and nlp.ode_solver.is_direct_collocation
                                     ):
                                         states = state[:, node_idx * (step_size) : (node_idx + 1) * (step_size) + 1]
@@ -839,14 +927,20 @@ class PlotOcp:
                                         states = state[
                                             :, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size
                                         ]
-                                    control_tp = control[:, node_idx : node_idx + 1 + u_mod]
-                                    if np.isnan(control_tp).any():
-                                        control_tp = np.array(())
+                                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                                        control_tp = control[:, node_idx : node_idx + 1 + 1]
+                                    else:
+                                        control_tp = control[:, node_idx : node_idx + 1 + u_mod]
+                                        if np.isnan(control_tp).any():
+                                            control_tp = np.array(())
+                                    stochastic_tp = stochastic[:, node_idx : node_idx + 1 + 1]
+
                                     val = self.plot_func[key][i].function(
                                         node_idx,
                                         states,
                                         control_tp,
                                         data_params_in_dyn,
+                                        stochastic_tp,
                                         **self.plot_func[key][i].parameters,
                                     )
                                 y[i_node] = val[i_var]
@@ -864,6 +958,7 @@ class PlotOcp:
                                 state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
                                 control[:, node_idx : node_idx + 1 + 1],
                                 data_params_in_dyn,
+                                stochastic[:, node_idx : node_idx + 1 + 1],
                                 **self.plot_func[key][i].parameters,
                             )
                             for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):
@@ -890,6 +985,7 @@ class PlotOcp:
                             state[:, ::step_size],
                             control,
                             data_params_in_dyn,
+                            stochastic,
                             **self.plot_func[key][i].parameters,
                         )
                         if (
@@ -956,9 +1052,13 @@ class PlotOcp:
         """
         Update the plotted data from ydata
         """
+
         assert len(self.plots) == len(self.ydata)
         for i, plot in enumerate(self.plots):
             y = self.ydata[i]
+            if y is None:
+                # Jump the plots which are empty
+                y = (np.nan,) * len(plot[2])
 
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):
@@ -993,6 +1093,7 @@ class PlotOcp:
 
         for fig in self.all_figures:
             fig.set_tight_layout(True)
+            # TODO:  set_tight_layout function will be deprecated. Use set_layout_engine instead.
 
     @staticmethod
     def __compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: float) -> tuple:
@@ -1094,7 +1195,7 @@ class OnlineCallback(Callback):
 
         Callback.__init__(self)
         self.ocp = ocp
-        self.nx = self.ocp.v.vector.shape[0]
+        self.nx = self.ocp.variables_vector.shape[0]
         self.ng = 0
         self.construct("AnimateCallback", opts)
 

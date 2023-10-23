@@ -6,7 +6,7 @@ import pickle
 
 import numpy as np
 import pytest
-from casadi import MX
+from casadi import MX, Function
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -38,7 +38,7 @@ class TestUtils:
         return module
 
     @staticmethod
-    def save_and_load(sol, ocp, test_solve_of_loaded=False):
+    def save_and_load(sol, ocp, test_solve_of_loaded=False, solver=None):
         file_path = "test"
         ocp.save(sol, f"{file_path}.bo")
         ocp_load, sol_load = OptimalControlProgram.load(f"{file_path}.bo")
@@ -46,7 +46,7 @@ class TestUtils:
         TestUtils.deep_assert(sol, sol_load)
         TestUtils.deep_assert(sol_load, sol)
         if test_solve_of_loaded:
-            sol_from_load = ocp_load.solve()
+            sol_from_load = ocp_load.solve(solver)
             TestUtils.deep_assert(sol, sol_from_load)
             TestUtils.deep_assert(sol_from_load, sol)
 
@@ -134,6 +134,22 @@ class TestUtils:
                 )
             return
 
+        if sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in sol.ocp.nlp]):
+            with pytest.raises(
+                ValueError,
+                match="When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
+                "we cannot use the SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            ):
+                sol.integrate(
+                    merge_phases=True,
+                    shooting_type=Shooting.SINGLE,
+                    keep_intermediate_points=True,
+                    integrator=SolutionIntegrator.OCP,
+                )
+            return
+
         sol_single = sol.integrate(
             merge_phases=True,
             shooting_type=Shooting.SINGLE,
@@ -148,3 +164,52 @@ class TestUtils:
                 sol_single.states[key][:, -1],
                 decimal=decimal_value,
             )
+
+    @staticmethod
+    def mx_to_array(mx: MX, squeeze: bool = True, expand: bool = True) -> np.ndarray:
+        """
+        Convert a casadi MX to a numpy array if it is only numeric values
+        """
+        val = Function(
+            "f",
+            [],
+            [mx],
+            [],
+            ["f"],
+        )
+        if expand:
+            val = val.expand()
+        val = val()["f"].toarray()
+
+        return val.squeeze() if squeeze else val
+
+    @staticmethod
+    def to_array(value: MX | np.ndarray):
+        if isinstance(value, MX):
+            return TestUtils.mx_to_array(value)
+        else:
+            return value
+
+    @staticmethod
+    def mx_assert_equal(mx: MX, expected: Any, decimal: int = 6, squeeze: bool = True, expand: bool = True):
+        """
+        Assert that a casadi MX is equal to a numpy array if it is only numeric values
+        """
+        if isinstance(expected, MX):
+            expected = TestUtils.mx_to_array(mx, squeeze=squeeze, expand=expand)
+
+        np.testing.assert_almost_equal(
+            TestUtils.mx_to_array(mx, squeeze=squeeze, expand=expand), expected, decimal=decimal
+        )
+
+    @staticmethod
+    def assert_equal(
+        value: MX | np.ndarray, expected: Any, decimal: int = 6, squeeze: bool = True, expand: bool = True
+    ):
+        """
+        Assert that a casadi MX or numpy array is equal to a numpy array if it is only numeric values
+        """
+        if isinstance(value, MX):
+            TestUtils.mx_assert_equal(value, expected, decimal=decimal, squeeze=squeeze, expand=expand)
+        else:
+            np.testing.assert_almost_equal(value, expected, decimal=decimal)

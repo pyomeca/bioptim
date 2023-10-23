@@ -1,6 +1,11 @@
 from enum import Enum, IntEnum
 
 
+class PhaseDynamics(Enum):
+    SHARED_DURING_THE_PHASE = "shared_during_the_phase"
+    ONE_PER_NODE = "one_per_node"
+
+
 class Axis(IntEnum):
     """
     Selection of valid axis (X, Y or Z)
@@ -94,9 +99,10 @@ class ControlType(Enum):
     The goto value is CONSTANT
     """
 
-    CONSTANT = 1  # Constant over the integration step (=1 column)
-    LINEAR_CONTINUOUS = 2  # Linear interpolation between integration steps (=2 columns)
     NONE = 0  # Undeclared control type
+    CONSTANT = 1  # Constant over the integration step, the last node is a NaN (=1 column)
+    LINEAR_CONTINUOUS = 2  # Linear interpolation between integration steps (=2 columns)
+    CONSTANT_WITH_LAST_NODE = 3  # Constant over the integration step, the last node exists (=1 columns)
 
 
 class VariableType(Enum):
@@ -106,6 +112,9 @@ class VariableType(Enum):
 
     STATES = "states"
     CONTROLS = "controls"
+    STATES_DOT = "states_dot"
+    ALGEBRAIC = "algebraic"
+    STOCHASTIC = "stochastic"
 
 
 class SolutionIntegrator(Enum):
@@ -138,15 +147,17 @@ class ConstraintType(Enum):
     IMPLICIT = "implicit"
 
 
-class IntegralApproximation(Enum):
+class QuadratureRule(Enum):
     """
-    Selection of integral approximation
+    Selection of quadrature rule to approximate integrals.
     """
 
     DEFAULT = "default"
-    RECTANGLE = "rectangle"
+    RECTANGLE_LEFT = "rectangle_left"
+    RECTANGLE_RIGHT = "rectangle_right"
+    MIDPOINT = "midpoint"
+    APPROXIMATE_TRAPEZOIDAL = "approximate_trapezoidal"
     TRAPEZOIDAL = "trapezoidal"
-    TRUE_TRAPEZOIDAL = "true_trapezoidal"
 
 
 class SoftContactDynamics(Enum):

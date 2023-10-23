@@ -20,7 +20,15 @@ from bioptim import (
 )
 
 
-def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=False, n_threads=1):
+def prepare_ocp(
+    biorbd_model_path,
+    final_time,
+    n_shooting,
+    x_warm=None,
+    use_sx=False,
+    n_threads=1,
+    expand_dynamics=True,
+):
     # --- Options --- #
     # BioModel path
     bio_model = BiorbdModel(biorbd_model_path)
@@ -39,7 +47,7 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True)
+    dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand_dynamics=expand_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -78,7 +86,6 @@ def prepare_ocp(biorbd_model_path, final_time, n_shooting, x_warm=None, use_sx=F
         objective_functions=objective_functions,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=True,
     )
 
 

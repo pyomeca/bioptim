@@ -23,6 +23,8 @@ from bioptim import (
     CostType,
     Solver,
     BiorbdModel,
+    ControlType,
+    PhaseDynamics,
 )
 
 
@@ -33,7 +35,9 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = True,
     n_threads: int = 1,
-    assume_phase_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    expand_dynamics: bool = True,
+    control_type: ControlType = ControlType.CONSTANT,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -52,10 +56,17 @@ def prepare_ocp(
         If the SX variable should be used instead of MX (can be extensive on RAM)
     n_threads: int
         The number of threads to use in the paralleling (1 = no parallel computing)
-    assume_phase_dynamics: bool
-        If the dynamics equation within a phase is unique or changes at each node. True is much faster, but lacks the
-        capability to have changing dynamics within a phase. A good example of when False should be used is when
-        different external forces are applied at each node
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
+    expand_dynamics: bool
+        If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
+        the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
+        (for instance IRK is not compatible with expanded dynamics)
+    control_type: ControlType
+        The type of the controls
 
     Returns
     -------
@@ -68,7 +79,7 @@ def prepare_ocp(
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
 
     # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -106,7 +117,7 @@ def prepare_ocp(
         ode_solver=ode_solver,
         use_sx=use_sx,
         n_threads=n_threads,
-        assume_phase_dynamics=assume_phase_dynamics,
+        control_type=control_type,
     )
 
 
@@ -129,7 +140,7 @@ def main():
 
     # --- Solve the ocp --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
-    # sol.graphs()
+    # sol.graphs(show_bounds=True)
 
     # --- Show the results in a bioviz animation --- #
     sol.print_cost()

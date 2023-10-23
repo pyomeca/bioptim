@@ -116,7 +116,7 @@ class Parameter(PenaltyOption):
             else:
                 penalty.name = penalty.type.name
 
-        fake_penalty_controller = PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], ocp.parameters.cx)
+        fake_penalty_controller = PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], ocp.parameters.cx, [], [])
         penalty_function = penalty.type(penalty, fake_penalty_controller, **penalty.params)
         self.set_penalty(ocp, fake_penalty_controller, penalty, penalty_function, penalty.expand)
 
@@ -152,17 +152,26 @@ class Parameter(PenaltyOption):
         """ ""
 
         # Do not use nlp.add_casadi_func because all functions must be registered
+        time_cx = ocp.cx(0, 0)
         state_cx = ocp.cx(0, 0)
         control_cx = ocp.cx(0, 0)
         param_cx = ocp.parameters.cx
+        stochastic_cx = ocp.cx(0, 0)
 
         penalty.function.append(
             NonLinearProgram.to_casadi_func(
-                f"{self.name}", penalty_function, state_cx, control_cx, param_cx, expand=expand
+                f"{self.name}",
+                penalty_function,
+                time_cx,
+                state_cx,
+                control_cx,
+                param_cx,
+                stochastic_cx,
+                expand=expand,
             )
         )
 
-        modified_fcn = penalty.function[0](state_cx, control_cx, param_cx)
+        modified_fcn = penalty.function[0](time_cx, state_cx, control_cx, param_cx, stochastic_cx)
 
         dt_cx = ocp.cx.sym("dt", 1, 1)
         weight_cx = ocp.cx.sym("weight", 1, 1)
@@ -174,7 +183,16 @@ class Parameter(PenaltyOption):
         penalty.weighted_function.append(
             Function(  # Do not use nlp.add_casadi_func because all of them must be registered
                 f"{self.name}",
-                [state_cx, control_cx, param_cx, weight_cx, target_cx, dt_cx],
+                [
+                    time_cx,
+                    state_cx,
+                    control_cx,
+                    param_cx,
+                    stochastic_cx,
+                    weight_cx,
+                    target_cx,
+                    dt_cx,
+                ],
                 [weight_cx * modified_fcn * dt_cx],
             )
         )
