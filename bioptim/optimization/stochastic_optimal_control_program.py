@@ -57,7 +57,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         parameter_init: InitialGuessList = None,
         parameter_objectives: ParameterObjectiveList = None,
         parameter_constraints: ParameterConstraintList = None,
-        external_forces: list[list[Any], ...] | tuple[list[Any], ...] = None,
         control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
         time_phase_mapping: BiMapping = None,

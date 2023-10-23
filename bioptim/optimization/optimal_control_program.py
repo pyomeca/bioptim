@@ -169,7 +169,6 @@ class OptimalControlProgram:
         parameter_init: InitialGuessList = None,
         parameter_objectives: ParameterObjectiveList = None,
         parameter_constraints: ParameterConstraintList = None,
-        external_forces: tuple[tuple[Any], ...] | list[list[Any]] = None,
         ode_solver: list | OdeSolverBase | OdeSolver = None,
         control_type: ControlType | list = ControlType.CONSTANT,
         variable_mappings: BiMappingList = None,
@@ -225,10 +224,6 @@ class OptimalControlProgram:
             All the parameter objectives to optimize of the program
         parameter_constraints: ParameterConstraintList
             All the parameter constraints of the program
-        external_forces: tuple[tuple[Any]]
-            The external_forces should be of format tuple[tuple[Any]] where the outer list is the number of "
-            "phases, the inner list is the number of shooting points of each phase and the dict is the Any is "
-            "the specific way to add external_force for the specific implementation of the biomodel
         ode_solver: OdeSolverBase
             The solver for the ordinary differential equations
         control_type: ControlType
@@ -268,7 +263,7 @@ class OptimalControlProgram:
             x_scaling,
             xdot_scaling,
             u_scaling,
-            external_forces,
+            s_scaling,
             ode_solver,
             control_type,
             variable_mappings,
@@ -342,7 +337,6 @@ class OptimalControlProgram:
             ode_solver,
             use_sx,
             bio_model,
-            external_forces,
             plot_mappings,
             time_phase_mapping,
             control_type,
@@ -411,7 +405,7 @@ class OptimalControlProgram:
         x_scaling,
         xdot_scaling,
         u_scaling,
-        external_forces,
+        s_scaling,
         ode_solver,
         control_type,
         variable_mappings,
@@ -444,7 +438,6 @@ class OptimalControlProgram:
             "objective_functions": ObjectiveList(),
             "constraints": ConstraintList(),
             "parameters": ParameterList(),
-            "external_forces": external_forces,
             "ode_solver": ode_solver,
             "control_type": control_type,
             "variable_mappings": variable_mappings,
@@ -562,7 +555,6 @@ class OptimalControlProgram:
         ode_solver,
         use_sx,
         bio_model,
-        external_forces,
         plot_mappings,
         time_phase_mapping,
         control_type,
@@ -677,24 +669,6 @@ class OptimalControlProgram:
         NLP.add(self, "n_threads", self.n_threads, True)
         self.ocp_solver = None
         self.is_warm_starting = False
-
-        # External forces
-        # Todo: it should be placed in the dynamics, it does not make sense to have it here anymore
-        if external_forces is not None:
-            if len(external_forces) != self.n_phases:
-                raise RuntimeError(
-                    "The external_forces should be of format list[list[Any]] where the outer list is the number of "
-                    "phases, the inner list is the number of shooting points of each phase and the dict is the Any "
-                    "is the specific way to add external_force for the specific implementation of the biomodel"
-                )
-            for f, nlp in zip(external_forces, self.nlp):
-                if f is not None and len(f) != nlp.ns:
-                    raise RuntimeError(
-                        "The external_forces should be of format list[list[Any]] where the outer list is the number of "
-                        "phases, the inner list is the number of shooting points of each phase and the dict is the Any "
-                        "is the specific way to add external_force for the specific implementation of the biomodel"
-                    )
-            NLP.add(self, "external_forces", external_forces, False)
 
         plot_mappings = plot_mappings if plot_mappings is not None else {}
         reshaped_plot_mappings = []

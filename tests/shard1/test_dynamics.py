@@ -59,6 +59,88 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     nlp.u_scaling = VariableScalingList()
     nlp.s_scaling = VariableScalingList()
 
+    external_forces = (
+        [
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.374540118847362,
+                            0.950714306409916,
+                            0.731993941811405,
+                            0.598658484197037,
+                            0.156018640442437,
+                            0.155994520336203,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.058083612168199,
+                            0.866176145774935,
+                            0.601115011743209,
+                            0.708072577796045,
+                            0.020584494295802,
+                            0.969909852161994,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.832442640800422,
+                            0.212339110678276,
+                            0.181824967207101,
+                            0.183404509853434,
+                            0.304242242959538,
+                            0.524756431632238,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.431945018642116,
+                            0.291229140198042,
+                            0.611852894722379,
+                            0.139493860652042,
+                            0.292144648535218,
+                            0.366361843293692,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.456069984217036,
+                            0.785175961393014,
+                            0.19967378215836,
+                            0.514234438413612,
+                            0.592414568862042,
+                            0.046450412719998,
+                        ]
+                    ),
+                ]
+            ],
+        ]
+        if with_external_force
+        else None
+    )
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -70,6 +152,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             rigidbody_dynamics=rigidbody_dynamics,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
+            external_forces=external_forces,
         ),
         False,
     )
@@ -84,11 +167,18 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = np.random.rand(nlp.ns, 6)
-        nlp.external_forces = [[["Seg0", external_forces[i, :]]] for i in range(nlp.ns)]
+        np.random.rand(nlp.ns, 6)  # just not to change the values of the next random values
 
     # Prepare the dynamics
-    ConfigureProblem.initialize(ocp, nlp)
+    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and with_external_force:
+        with pytest.raises(
+            RuntimeError,
+            match="Phase 0 has external_forces but the phase_dynamics is PhaseDynamics.SHARED_DURING_THE_PHASE.Please set phase_dynamics=PhaseDynamics.ONE_PER_NODE",
+        ):
+            ConfigureProblem.initialize(ocp, nlp)
+        return
+    else:
+        ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
     states = np.random.rand(nlp.states.shape, nlp.ns)
@@ -355,6 +445,88 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
 
+    external_forces = (
+        [
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.3745401188473625,
+                            0.9507143064099162,
+                            0.7319939418114051,
+                            0.5986584841970366,
+                            0.15601864044243652,
+                            0.15599452033620265,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.05808361216819946,
+                            0.8661761457749352,
+                            0.6011150117432088,
+                            0.7080725777960455,
+                            0.020584494295802447,
+                            0.9699098521619943,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.8324426408004217,
+                            0.21233911067827616,
+                            0.18182496720710062,
+                            0.18340450985343382,
+                            0.3042422429595377,
+                            0.5247564316322378,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.43194501864211576,
+                            0.2912291401980419,
+                            0.6118528947223795,
+                            0.13949386065204183,
+                            0.29214464853521815,
+                            0.3663618432936917,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.45606998421703593,
+                            0.7851759613930136,
+                            0.19967378215835974,
+                            0.5142344384136116,
+                            0.5924145688620425,
+                            0.046450412719997725,
+                        ]
+                    ),
+                ]
+            ],
+        ]
+        if with_external_force
+        else None
+    )
+
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
@@ -363,6 +535,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             with_contact=with_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
+            external_forces=external_forces,
         ),
         False,
     )
@@ -378,11 +551,18 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = np.random.rand(nlp.ns, 6)
-        nlp.external_forces = [[["Seg0", external_forces[i, :]]] for i in range(nlp.ns)]
+        np.random.rand(nlp.ns, 6)
 
     # Prepare the dynamics
-    ConfigureProblem.initialize(ocp, nlp)
+    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and with_external_force:
+        with pytest.raises(
+            RuntimeError,
+            match="Phase 0 has external_forces but the phase_dynamics is PhaseDynamics.SHARED_DURING_THE_PHASE.Please set phase_dynamics=PhaseDynamics.ONE_PER_NODE",
+        ):
+            ConfigureProblem.initialize(ocp, nlp)
+        return
+    else:
+        ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
     states = np.random.rand(nlp.states.shape, nlp.ns)
@@ -780,6 +960,88 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     nlp.u_scaling = VariableScalingList()
     nlp.s_scaling = VariableScalingList()
 
+    external_forces = (
+        [
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.3745401188473625,
+                            0.9507143064099162,
+                            0.7319939418114051,
+                            0.5986584841970366,
+                            0.15601864044243652,
+                            0.15599452033620265,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.05808361216819946,
+                            0.8661761457749352,
+                            0.6011150117432088,
+                            0.7080725777960455,
+                            0.020584494295802447,
+                            0.9699098521619943,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.8324426408004217,
+                            0.21233911067827616,
+                            0.18182496720710062,
+                            0.18340450985343382,
+                            0.3042422429595377,
+                            0.5247564316322378,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.43194501864211576,
+                            0.2912291401980419,
+                            0.6118528947223795,
+                            0.13949386065204183,
+                            0.29214464853521815,
+                            0.3663618432936917,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.45606998421703593,
+                            0.7851759613930136,
+                            0.19967378215835974,
+                            0.5142344384136116,
+                            0.5924145688620425,
+                            0.046450412719997725,
+                        ]
+                    ),
+                ]
+            ],
+        ]
+        if with_external_force
+        else None
+    )
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -790,6 +1052,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             with_contact=with_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
+            external_forces=external_forces,
         ),
         False,
     )
@@ -804,11 +1067,18 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = np.random.rand(nlp.ns, 6)
-        nlp.external_forces = [[["Seg0", external_forces[i, :]]] for i in range(nlp.ns)]
+        np.random.rand(nlp.ns, 6)
 
     # Prepare the dynamics
-    ConfigureProblem.initialize(ocp, nlp)
+    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and with_external_force:
+        with pytest.raises(
+            RuntimeError,
+            match="Phase 0 has external_forces but the phase_dynamics is PhaseDynamics.SHARED_DURING_THE_PHASE.Please set phase_dynamics=PhaseDynamics.ONE_PER_NODE",
+        ):
+            ConfigureProblem.initialize(ocp, nlp)
+        return
+    else:
+        ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
     states = np.random.rand(nlp.states.shape, nlp.ns)
@@ -891,6 +1161,88 @@ def test_torque_activation_driven_with_residual_torque(
     nlp.u_scaling = VariableScalingList()
     nlp.s_scaling = VariableScalingList()
 
+    external_forces = (
+        [
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.3745401188473625,
+                            0.9507143064099162,
+                            0.7319939418114051,
+                            0.5986584841970366,
+                            0.15601864044243652,
+                            0.15599452033620265,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.05808361216819946,
+                            0.8661761457749352,
+                            0.6011150117432088,
+                            0.7080725777960455,
+                            0.020584494295802447,
+                            0.9699098521619943,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.8324426408004217,
+                            0.21233911067827616,
+                            0.18182496720710062,
+                            0.18340450985343382,
+                            0.3042422429595377,
+                            0.5247564316322378,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.43194501864211576,
+                            0.2912291401980419,
+                            0.6118528947223795,
+                            0.13949386065204183,
+                            0.29214464853521815,
+                            0.3663618432936917,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.45606998421703593,
+                            0.7851759613930136,
+                            0.19967378215835974,
+                            0.5142344384136116,
+                            0.5924145688620425,
+                            0.046450412719997725,
+                        ]
+                    ),
+                ]
+            ],
+        ]
+        if with_external_force
+        else None
+    )
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -901,6 +1253,7 @@ def test_torque_activation_driven_with_residual_torque(
             with_residual_torque=with_residual_torque,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
+            external_forces=external_forces,
         ),
         False,
     )
@@ -915,11 +1268,18 @@ def test_torque_activation_driven_with_residual_torque(
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = np.random.rand(nlp.ns, 6)
-        nlp.external_forces = [[["Seg0", external_forces[i, :]]] for i in range(nlp.ns)]
+        np.random.rand(nlp.ns, 6)
 
     # Prepare the dynamics
-    ConfigureProblem.initialize(ocp, nlp)
+    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and with_external_force:
+        with pytest.raises(
+            RuntimeError,
+            match="Phase 0 has external_forces but the phase_dynamics is PhaseDynamics.SHARED_DURING_THE_PHASE.Please set phase_dynamics=PhaseDynamics.ONE_PER_NODE",
+        ):
+            ConfigureProblem.initialize(ocp, nlp)
+        return
+    else:
+        ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
     states = np.random.rand(nlp.states.shape, nlp.ns)
@@ -1011,6 +1371,88 @@ def test_muscle_driven(
     nlp.s_scaling = VariableScalingList()
     nlp.phase_idx = 0
 
+    external_forces = (
+        [
+            [
+                [
+                    "r_ulna_radius_hand_rotation1",
+                    np.array(
+                        [
+                            0.3745401188473625,
+                            0.9507143064099162,
+                            0.7319939418114051,
+                            0.5986584841970366,
+                            0.15601864044243652,
+                            0.15599452033620265,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "r_ulna_radius_hand_rotation1",
+                    np.array(
+                        [
+                            0.05808361216819946,
+                            0.8661761457749352,
+                            0.6011150117432088,
+                            0.7080725777960455,
+                            0.020584494295802447,
+                            0.9699098521619943,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "r_ulna_radius_hand_rotation1",
+                    np.array(
+                        [
+                            0.8324426408004217,
+                            0.21233911067827616,
+                            0.18182496720710062,
+                            0.18340450985343382,
+                            0.3042422429595377,
+                            0.5247564316322378,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "r_ulna_radius_hand_rotation1",
+                    np.array(
+                        [
+                            0.43194501864211576,
+                            0.2912291401980419,
+                            0.6118528947223795,
+                            0.13949386065204183,
+                            0.29214464853521815,
+                            0.3663618432936917,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "r_ulna_radius_hand_rotation1",
+                    np.array(
+                        [
+                            0.45606998421703593,
+                            0.7851759613930136,
+                            0.19967378215835974,
+                            0.5142344384136116,
+                            0.5924145688620425,
+                            0.046450412719997725,
+                        ]
+                    ),
+                ]
+            ],
+        ]
+        if with_external_force
+        else None
+    )
+
     ocp = OptimalControlProgram(nlp)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
@@ -1024,6 +1466,7 @@ def test_muscle_driven(
             rigidbody_dynamics=rigidbody_dynamics,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
+            external_forces=external_forces,
         ),
         False,
     )
@@ -1038,13 +1481,20 @@ def test_muscle_driven(
 
     np.random.seed(42)
     if with_external_force:
-        external_forces = np.random.rand(nlp.ns, 6)
-        nlp.external_forces = [[["r_ulna_radius_hand_rotation1", external_forces[i, :]]] for i in range(nlp.ns)]
+        np.random.rand(nlp.ns, 6)  # just to make sure the next random is the same as before
 
     # Prepare the dynamics
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         pass
-    ConfigureProblem.initialize(ocp, nlp)
+    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and with_external_force:
+        with pytest.raises(
+            RuntimeError,
+            match="Phase 0 has external_forces but the phase_dynamics is PhaseDynamics.SHARED_DURING_THE_PHASE.Please set phase_dynamics=PhaseDynamics.ONE_PER_NODE",
+        ):
+            ConfigureProblem.initialize(ocp, nlp)
+        return
+    else:
+        ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
     states = np.random.rand(nlp.states.shape, nlp.ns)
@@ -1678,7 +2128,7 @@ def test_with_contact_error(dynamics_fcn, phase_dynamics):
     u_bounds["tau"] = [100] * n_tau, [100] * n_tau
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
-    with pytest.raises(ValueError, match="No contact defined in the .bioMod, set with_contact to False"):
+    with pytest.raises(ValueError, match="No contact defined in the .bioMod of phase 0, set with_contact to False"):
         OptimalControlProgram(
             bio_model=bio_model,
             dynamics=dynamics,

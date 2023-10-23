@@ -696,7 +696,6 @@ OptimalControlProgram(
     objective_functions: [Objective, ObjectiveList],
     constraints: [Constraint, ConstraintList],
     parameters: ParameterList,
-    external_forces: list[list[Any | np.ndarray]],
     ode_solver: OdeSolver,
     control_type: [ControlType, list],
     all_generalized_mapping: BiMapping,
@@ -724,8 +723,7 @@ In the case of a multiphase optimization, one model per phase should be passed i
 `u_scaling` is the scaling applied to the controls variables (see The variable scaling section).  
 `objective_functions` is the objective function set of the ocp (see The objective functions section).  
 `constraints` is the constraint set of the ocp (see The constraints section).  
-`parameters` is the parameter set of the ocp (see The parameters section).  
-`external_forces` are the external forces acting on the center of mass of the bodies. 
+`parameters` is the parameter set of the ocp (see The parameters section).
 It is a list (one element for each phase) of np.ndarray of shape (6, i, n), where the 6 components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform (defined by the externalforceindex) for each node n.  
 `ode_solver` is the ode solver used to solve the dynamic equations.  
 `control_type` is the type of discretization of the controls (usually CONSTANT) (see ControlType section).  
@@ -1872,22 +1870,17 @@ The solver must minimize the force to lift the box while reaching the marker in 
 It is designed to show how to use external forces. An example of external forces that depends on the state (for
 example, a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
 
-Please note that the point of application of the external forces is defined in the `bioMod` file by the
-`externalforceindex` tag in segment and is acting at the center of mass of this particular segment. Please note that
-this segment must have at least one degree of freedom defined (translations and/or rotations). Otherwise, the
-external_force is silently ignored. 
-
-`Bioptim` expects `external_forces` to be a list (one element for each phase) of
-a list (for each shooting node) of np.ndarray [6 x n], where the six components are [Mx, My, Mz, Fx, Fy, Fz], for the ith force platform
-(defined by the `externalforceindex`) for each node n. Let us take a look at the definition of the external forces in 
+`Bioptim` expects `external_forces` to be a list (for each shooting node) of np.ndarray [6 x n],
+where the six components are [Mx, My, Mz, Fx, Fy, Fz], expressed at the origin of the global reference frame for each node n.
+Let us take a look at the definition of the external forces in
 this example :
 
 ```python
-external_forces = external_forces = [[np.array([[0, 0, 0, 0, 0, -2], [0, 0, 0, 0, 0, 5]]).T for _ in range(n_shooting)]]
+external_forces = [[["Seg1", (0, 0, 0, 0, 0, -2)], ["Test", (0, 0, 0, 0, 0, 5)]] for _ in range(n_shooting)]
 ```
 
-`external_forces` is of len 1 because there is only one phase. The list is 30-element long, and each array are 6x2 since there
-is [Mx, My, Mz, Fx, Fy, Fz] for the two `externalforceindex` for each node (in this example, we take 30 shooting nodes).
+`external_forces` is 30-element long, and each sub list array are composed of a string, the name of the segment, and a tuple, the external force.
+The tuple is [Mx, My, Mz, Fx, Fy, Fz] for each node (in this example, we take 30 shooting nodes).
 
 ### The [example_implicit_dynamics.py](./bioptim/examples/getting_started/example_implicit_dynamics.py) file
 *#TODO*
