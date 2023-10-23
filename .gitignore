@@ -114,3 +114,5 @@ c_generated_code
 # Bioptim files
 bioptim/sandbox/
 *.pkl
+
+*.png
