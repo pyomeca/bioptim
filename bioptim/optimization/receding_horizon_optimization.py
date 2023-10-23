@@ -220,8 +220,6 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 controls_tp = controls_tp[:, :-1]
             u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
 
-        s_init = InitialGuessList()
-        p_init = InitialGuessList()
         model_class = self.original_values["bio_model"][0][0]
         model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
@@ -234,10 +232,10 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             u_bounds=self.nlp[0].u_bounds,
             x_init=x_init,
             u_init=u_init,
-            s_init=s_init,
             use_sx=self.original_values["use_sx"],
         )
-
+        s_init = InitialGuessList()
+        p_init = InitialGuessList()
         return Solution(solution_ocp, [x_init, u_init_for_solution, p_init, s_init])
 
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
@@ -443,9 +441,6 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             if self.original_values["control_type"] == ControlType.CONSTANT:
                 controls_tp = controls_tp[:, :-1]
             u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
-
-        s_init = InitialGuessList()
-        p_init = InitialGuessList()
         model_class = self.original_values["bio_model"][0][0]
         model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
@@ -457,9 +452,10 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             u_bounds=self.nlp[0].u_bounds,
             x_init=x_init,
             u_init=u_init,
-            s_init=s_init,
             use_sx=self.original_values["use_sx"],
         )
+        s_init = InitialGuessList()
+        p_init = InitialGuessList()
         return Solution(solution_ocp, [x_init, u_init_for_solution, p_init, s_init])
 
     def _initialize_state_idx_to_cycle(self, options):
@@ -680,8 +676,6 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                 controls_tp = controls_tp[:, :-1]
             u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME, phase=0)
 
-        s_init = InitialGuessList()
-        p_init = InitialGuessList()
         model_class = self.original_values["bio_model"][0][0]
         model_initializer = self.original_values["bio_model"][0][1]
         solution_ocp = OptimalControlProgram(
@@ -693,9 +687,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             phase_time=(self.cycle_len * self.total_optimization_run - 1) * self.nlp[0].dt,
             x_init=x_init,
             u_init=u_init,
-            s_init=s_init,
             use_sx=self.original_values["use_sx"],
         )
+        s_init = InitialGuessList()
+        p_init = InitialGuessList()
         return Solution(solution_ocp, [x_init, u_init_for_solution, p_init, s_init])
 
     def _initialize_one_cycle(self, states: np.ndarray, controls: np.ndarray):
@@ -723,8 +718,6 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         model_class = original_values["bio_model"][0][0]
         model_initializer = original_values["bio_model"][0][1]
 
-        s_init = InitialGuessList()
-        p_init = InitialGuessList()
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
             dynamics=original_values["dynamics"][0],
@@ -734,9 +727,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             phase_time=self.cycle_len * self.nlp[0].dt,
             x_init=x_init,
             u_init=u_init,
-            s_init=s_init,
             use_sx=original_values["use_sx"],
         )
+        s_init = InitialGuessList()
+        p_init = InitialGuessList()
         return Solution(solution_ocp, [x_init, u_init_for_solution, p_init, s_init])
 
 

@@ -94,6 +94,7 @@ class Integrator:
         self.step_time = ode_opt["tf"] - ode_opt["t0"]
         self.h = self.step_time
         self.function = None
+        self.allow_free_variables = ode_opt["allow_free_variables"]
 
     def __call__(self, *args, **kwargs):
         """
@@ -199,6 +200,7 @@ class Integrator:
             ),
             ["x0", "u", "p", "s"],
             ["xf", "xall"],
+            {"allow_free": self.allow_free_variables},
         )
 
 
@@ -625,6 +627,7 @@ class TRAPEZOIDAL(Integrator):
             ),
             ["x0", "u", "p", "s"],
             ["xf", "xall"],
+            {"allow_free": self.allow_free_variables},
         )
 
 
@@ -659,6 +662,8 @@ class COLLOCATION(Integrator):
 
         self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
+        self.include_starting_collocation_point = ode_opt["include_starting_collocation_point"]
+        self.allow_free_variables = ode_opt["allow_free_variables"]
 
         # Coefficients of the collocation equation
         self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
@@ -742,7 +747,9 @@ class COLLOCATION(Integrator):
         time: float | MX | SX
             The time of the system
         states: MX | SX
-            The states of the system
+            The states of the system in the following format
+            add_initial_collocation_point = True -> [cx_start, cx_start, cx_intermediate_list(polynomial_degree+1)]
+            add_initial_collocation_point = True -> [cx_start, cx_intermediate_list(polynomial_degree+2)]
         controls: MX | SX
             The controls of the system
         params: MX | SX
@@ -763,28 +770,31 @@ class COLLOCATION(Integrator):
         """
 
         # Total number of variables for one finite element
-        states_end = self._d[0] * states[0]
+        states_end = self._d[0] * states[1]
         defects = []
         for j in range(1, self.degree + 1):
             # Expression for the state derivative at the collocation point
             xp_j = 0
-            for r in range(self.degree + 1):
-                xp_j += self._c[r, j] * states[r]
+            for r in range(self.degree + 2):
+                if r == 1:
+                    # We skip r=1 because this collocation point is the same as the initial point
+                    continue
+                xp_j += self._c[r - 1 if r > 0 else r, j] * states[r]
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
                     time,
-                    states[j],
+                    states[j + 1],
                     self.get_u(controls, self.step_time[j]),
                     params * param_scaling,
                     stochastic_variables,
                 )[:, self.idx]
-                defects.append(h * f_j - xp_j)
+                defects.append(xp_j - h * f_j)
             elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(
                     self.implicit_fun(
                         time,
-                        states[j],
+                        states[j + 1],
                         self.get_u(controls, time),
                         params * param_scaling,
                         stochastic_variables,
@@ -795,11 +805,11 @@ class COLLOCATION(Integrator):
                 raise ValueError("Unknown defects type. Please use 'explicit' or 'implicit'")
 
             # Add contribution to the end state
-            states_end += self._d[j] * states[j]
+            states_end += self._d[j] * states[j + 1]
 
         # Concatenate constraints
         defects = vertcat(*defects)
-        return states_end, horzcat(states[0], states_end), defects
+        return states_end, horzcat(states[1], states_end), defects
 
     def _finish_init(self):
         """
@@ -809,7 +819,7 @@ class COLLOCATION(Integrator):
         self.function = Function(
             "integrator",
             [
-                horzcat(*self.x_sym),
+                horzcat(*self.x_sym) if self.include_starting_collocation_point else horzcat(*self.x_sym[1:]),
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
@@ -825,6 +835,7 @@ class COLLOCATION(Integrator):
             ),
             ["x0", "u", "p", "s"],
             ["xf", "xall", "defects"],
+            {"allow_free": self.allow_free_variables},
         )
 
 
@@ -900,9 +911,10 @@ class IRK(COLLOCATION):
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         time_sym = []
+        collocation_states = vertcat(*states[1:]) if self.include_starting_collocation_point else vertcat(*states[2:])
         vfcn = Function(
             "vfcn",
-            [vertcat(*states[1:]), time_sym, states[0], controls, params, stochastic_variables],
+            [collocation_states, time_sym, states[0], controls, params, stochastic_variables],
             [defect],
         ).expand()
 
@@ -942,6 +954,7 @@ class IRK(COLLOCATION):
             ),
             ["x0", "u", "p", "s"],
             ["xf", "xall"],
+            {"allow_free": self.allow_free_variables},
         )
 
 

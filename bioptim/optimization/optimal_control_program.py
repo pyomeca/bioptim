@@ -138,9 +138,19 @@ class OptimalControlProgram:
     __modify_penalty(self, new_penalty: PenaltyOption | Parameter)
         The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
         overrides an objective only the latter is preserved when saved
+    __set_nlp_is_stochastic(self)
+        Set the nlp as stochastic if any of the phases is stochastic
+    __set_stochastic_internal_stochastic_variables(self)
+        Set the internal stochastic variables (s_init, s_bounds, s_scaling) if any of the phases is stochastic
+    _set_stochastic_variables_to_original_values(self, s_init, s_bounds, s_scaling)
+        Set the original_values with the stochastic variables (s_init, s_bounds, s_scaling) if any of the phases is
+        stochastic
+    _check_quaternions_hasattr(self, bio_model)
+        Check if the bio_model has quaternions and set the flag accordingly
+    _check_and_prepare_dynamics(self, dynamics)
+        Check if the dynamics is a Dynamics or a DynamicsList and set the flag accordingly
+    _set_original_values(
     """
-
-    # TODO: OCP should not be aware of s (s_init, s_bounds...)
 
     def __init__(
         self,
@@ -150,10 +160,8 @@ class OptimalControlProgram:
         phase_time: int | float | list | tuple,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
-        s_bounds: BoundsList = None,
         x_init: InitialGuessList | None = None,
         u_init: InitialGuessList | None = None,
-        s_init: InitialGuessList | None = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
         parameters: ParameterList = None,
@@ -173,7 +181,6 @@ class OptimalControlProgram:
         x_scaling: VariableScalingList = None,
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
-        s_scaling: VariableScalingList = None,
         n_threads: int = 1,
         use_sx: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
@@ -193,22 +200,16 @@ class OptimalControlProgram:
             The initial guesses for the states
         u_init: InitialGuess | InitialGuessList
             The initial guesses for the controls
-        s_init: InitialGuess | InitialGuessList
-            The initial guesses for the stochastic variables
         x_bounds: Bounds | BoundsList
             The bounds for the states
         u_bounds: Bounds | BoundsList
             The bounds for the controls
-        s_bounds: Bounds | BoundsList
-            The bounds for the stochastic variables
         x_scaling: VariableScalingList
             The scaling for the states at each phase, if only one is sent, then the scaling is copied over the phases
         xdot_scaling: VariableScalingList
             The scaling for the states derivative, if only one is sent, then the scaling is copied over the phases
         u_scaling: VariableScalingList
             The scaling for the controls, if only one is sent, then the scaling is copied over the phases
-        s_scaling: VariableScalingList
-            The scaling for the stochastic variables, if only one is sent, then the scaling is copied over the phases
         objective_functions: Objective | ObjectiveList
             All the objective function of the program
         constraints: Constraint | ConstraintList
@@ -248,21 +249,20 @@ class OptimalControlProgram:
 
         bio_model = self._initialize_model(bio_model)
 
+        # Placed here because of MHE
+        self._check_and_prepare_dynamics(dynamics)
+
         self._set_original_values(
             bio_model,
-            dynamics,
             n_shooting,
             phase_time,
             x_init,
             u_init,
-            s_init,
             x_bounds,
             u_bounds,
-            s_bounds,
             x_scaling,
             xdot_scaling,
             u_scaling,
-            s_scaling,
             ode_solver,
             control_type,
             variable_mappings,
@@ -280,6 +280,36 @@ class OptimalControlProgram:
             use_sx,
             integrated_value_functions,
         )
+        s_init, s_bounds, s_scaling = self._set_stochastic_internal_stochastic_variables()
+        self._set_stochastic_variables_to_original_values(s_init, s_bounds, s_scaling)
+
+        self._check_and_set_threads(n_threads)
+        self._check_and_set_shooting_points(n_shooting)
+        self._check_and_set_phase_time(phase_time)
+
+        (
+            x_bounds,
+            x_init,
+            x_scaling,
+            u_bounds,
+            u_init,
+            u_scaling,
+            s_bounds,
+            s_init,
+            s_scaling,
+            xdot_scaling,
+        ) = self._prepare_all_decision_variables(
+            x_bounds,
+            x_init,
+            x_scaling,
+            u_bounds,
+            u_init,
+            u_scaling,
+            xdot_scaling,
+            s_bounds,
+            s_init,
+            s_scaling,
+        )
 
         (
             constraints,
@@ -289,29 +319,10 @@ class OptimalControlProgram:
             multinode_constraints,
             multinode_objectives,
             phase_transitions,
-            x_bounds,
-            u_bounds,
             parameter_bounds,
-            s_bounds,
-            x_init,
-            u_init,
             parameter_init,
-            s_init,
         ) = self._check_arguments_and_build_nlp(
             dynamics,
-            n_threads,
-            n_shooting,
-            phase_time,
-            x_bounds,
-            u_bounds,
-            s_bounds,
-            x_init,
-            u_init,
-            s_init,
-            x_scaling,
-            xdot_scaling,
-            u_scaling,
-            s_scaling,
             objective_functions,
             constraints,
             parameters,
@@ -331,13 +342,22 @@ class OptimalControlProgram:
             variable_mappings,
             integrated_value_functions,
         )
+
+        # Do not copy singleton since x_scaling was already dealt with before
+        NLP.add(self, "x_scaling", x_scaling, True)
+        NLP.add(self, "xdot_scaling", xdot_scaling, True)
+        NLP.add(self, "u_scaling", u_scaling, True)
+        NLP.add(self, "s_scaling", s_scaling, True)
+
+        self._set_nlp_is_stochastic()
+
         self._prepare_node_mapping(node_mappings)
         self._prepare_dynamics()
         self._prepare_bounds_and_init(
             x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
         )
 
-        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives)
+        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints, phase_transitions)
 
         self._finalize_penalties(
             constraints,
@@ -352,28 +372,38 @@ class OptimalControlProgram:
         return
 
     def _initialize_model(self, bio_model):
+        """
+        Initialize the bioptim model and check if the quaternions are used, if yes then setting them.
+        Setting the number of phases.
+        """
         if not isinstance(bio_model, (list, tuple)):
             bio_model = [bio_model]
         bio_model = self._check_quaternions_hasattr(bio_model)
         self.n_phases = len(bio_model)
         return bio_model
 
+    def _check_and_prepare_dynamics(self, dynamics):
+        if isinstance(dynamics, Dynamics):
+            dynamics_type_tp = DynamicsList()
+            dynamics_type_tp.add(dynamics)
+            self.dynamics = dynamics_type_tp
+        elif isinstance(dynamics, DynamicsList):
+            self.dynamics = dynamics
+        elif not isinstance(dynamics, DynamicsList):
+            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
+
     def _set_original_values(
         self,
         bio_model,
-        dynamics,
         n_shooting,
         phase_time,
         x_init,
         u_init,
-        s_init,
         x_bounds,
         u_bounds,
-        s_bounds,
         x_scaling,
         xdot_scaling,
         u_scaling,
-        s_scaling,
         ode_solver,
         control_type,
         variable_mappings,
@@ -391,29 +421,18 @@ class OptimalControlProgram:
         use_sx,
         integrated_value_functions,
     ):
-        # Placed here because of MHE
-        if isinstance(dynamics, Dynamics):
-            dynamics_type_tp = DynamicsList()
-            dynamics_type_tp.add(dynamics)
-            dynamics = dynamics_type_tp
-        elif not isinstance(dynamics, DynamicsList):
-            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
-
         self.original_values = {
             "bio_model": [m.serialize() for m in bio_model],
-            "dynamics": dynamics,
+            "dynamics": self.dynamics,
             "n_shooting": n_shooting,
             "phase_time": phase_time,
             "x_init": x_init,
             "u_init": u_init,
-            "s_init": s_init,
             "x_bounds": x_bounds,
             "u_bounds": u_bounds,
-            "s_bounds": s_bounds,
             "x_scaling": x_scaling,
             "xdot_scaling": xdot_scaling,
             "u_scaling": u_scaling,
-            "s_scaling": s_scaling,
             "objective_functions": ObjectiveList(),
             "constraints": ConstraintList(),
             "parameters": ParameterList(),
@@ -436,22 +455,91 @@ class OptimalControlProgram:
         }
         return
 
+    def _check_and_set_threads(self, n_threads):
+        if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
+            raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
+        self.n_threads = n_threads
+
+    def _check_and_set_shooting_points(self, n_shooting):
+        if not isinstance(n_shooting, int) or n_shooting < 2:
+            if isinstance(n_shooting, (tuple, list)):
+                if sum([True for i in n_shooting if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
+                    raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
+            else:
+                raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
+        self.n_shooting = n_shooting
+
+    def _check_and_set_phase_time(self, phase_time):
+        if not isinstance(phase_time, (int, float)):
+            if isinstance(phase_time, (tuple, list)):
+                if sum([True for i in phase_time if not isinstance(i, (int, float))]) != 0:
+                    raise RuntimeError("phase_time should be a number or a list of number")
+            else:
+                raise RuntimeError("phase_time should be a number or a list of number")
+        self.phase_time = phase_time
+
+    def _check_and_prepare_decision_variables(
+        self,
+        var_name: str,
+        bounds: BoundsList,
+        init: InitialGuessList,
+        scaling: VariableScalingList,
+    ):
+        """
+        This function checks if the decision variables are of the right type for initial guess and bounds.
+        It also prepares the scaling for the decision variables.
+        And set them in a dictionary for the phase.
+        """
+
+        if bounds is None:
+            bounds = BoundsList()
+        elif not isinstance(bounds, BoundsList):
+            raise RuntimeError(f"{var_name}_bounds should be built from a BoundsList")
+
+        if init is None:
+            init = InitialGuessList()
+        elif not isinstance(init, InitialGuessList):
+            raise RuntimeError(f"{var_name}_init should be built from a InitialGuessList")
+
+        bounds = self._prepare_option_dict_for_phase(f"{var_name}_bounds", bounds, BoundsList)
+        init = self._prepare_option_dict_for_phase(f"{var_name}_init", init, InitialGuessList)
+        scaling = self._prepare_option_dict_for_phase(f"{var_name}_scaling", scaling, VariableScalingList)
+
+        return bounds, init, scaling
+
+    def _prepare_all_decision_variables(
+        self,
+        x_bounds,
+        x_init,
+        x_scaling,
+        u_bounds,
+        u_init,
+        u_scaling,
+        xdot_scaling,
+        s_bounds,
+        s_init,
+        s_scaling,
+    ):
+        """
+        This function checks if the decision variables are of the right type for initial guess and bounds.
+        It also prepares the scaling for the decision variables.
+
+        Note
+        ----
+        s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
+        """
+
+        x_bounds, x_init, x_scaling = self._check_and_prepare_decision_variables("x", x_bounds, x_init, x_scaling)
+        u_bounds, u_init, u_scaling = self._check_and_prepare_decision_variables("u", u_bounds, u_init, u_scaling)
+        s_bounds, s_init, s_scaling = self._check_and_prepare_decision_variables("s", s_bounds, s_init, s_scaling)
+
+        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
+
+        return x_bounds, x_init, x_scaling, u_bounds, u_init, u_scaling, s_bounds, s_init, s_scaling, xdot_scaling
+
     def _check_arguments_and_build_nlp(
         self,
         dynamics,
-        n_threads,
-        n_shooting,
-        phase_time,
-        x_bounds,
-        u_bounds,
-        s_bounds,
-        x_init,
-        u_init,
-        s_init,
-        x_scaling,
-        xdot_scaling,
-        u_scaling,
-        s_scaling,
         objective_functions,
         constraints,
         parameters,
@@ -471,67 +559,6 @@ class OptimalControlProgram:
         variable_mappings,
         integrated_value_functions,
     ):
-        if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
-            raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
-
-        ns = n_shooting
-        if not isinstance(ns, int) or ns < 2:
-            if isinstance(ns, (tuple, list)):
-                if sum([True for i in ns if not isinstance(i, int) and not isinstance(i, bool)]) != 0:
-                    raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
-            else:
-                raise RuntimeError("n_shooting should be a positive integer (or a list of) greater or equal than 2")
-
-        if not isinstance(phase_time, (int, float)):
-            if isinstance(phase_time, (tuple, list)):
-                if sum([True for i in phase_time if not isinstance(i, (int, float))]) != 0:
-                    raise RuntimeError("phase_time should be a number or a list of number")
-            else:
-                raise RuntimeError("phase_time should be a number or a list of number")
-
-        if x_bounds is None:
-            x_bounds = BoundsList()
-        elif not isinstance(x_bounds, BoundsList):
-            raise RuntimeError("x_bounds should be built from a BoundsList")
-
-        if u_bounds is None:
-            u_bounds = BoundsList()
-        elif not isinstance(u_bounds, BoundsList):
-            raise RuntimeError("u_bounds should be built from a BoundsList")
-
-        if s_bounds is None:
-            s_bounds = BoundsList()
-        elif not isinstance(s_bounds, BoundsList):
-            raise RuntimeError("s_bounds should be built from a BoundsList")
-
-        if x_init is None:
-            x_init = InitialGuessList()
-        if not isinstance(x_init, InitialGuessList):
-            raise RuntimeError("x_init should be built from a InitialGuessList")
-
-        if u_init is None:
-            u_init = InitialGuessList()
-        if not isinstance(u_init, InitialGuessList):
-            raise RuntimeError("u_init should be built from a InitialGuessList")
-
-        if s_init is None:
-            s_init = InitialGuessList()
-        if not isinstance(s_init, InitialGuessList):
-            raise RuntimeError("s_init should be built from a InitialGuessList")
-
-        x_bounds = self._prepare_option_dict_for_phase("x_bounds", x_bounds, BoundsList)
-        u_bounds = self._prepare_option_dict_for_phase("u_bounds", u_bounds, BoundsList)
-        s_bounds = self._prepare_option_dict_for_phase("s_bounds", s_bounds, BoundsList)
-
-        x_init = self._prepare_option_dict_for_phase("x_init", x_init, InitialGuessList)
-        u_init = self._prepare_option_dict_for_phase("u_init", u_init, InitialGuessList)
-        s_init = self._prepare_option_dict_for_phase("s_init", s_init, InitialGuessList)
-
-        x_scaling = self._prepare_option_dict_for_phase("x_scaling", x_scaling, VariableScalingList)
-        xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
-        u_scaling = self._prepare_option_dict_for_phase("u_scaling", u_scaling, VariableScalingList)
-        s_scaling = self._prepare_option_dict_for_phase("s_scaling", s_scaling, VariableScalingList)
-
         if objective_functions is None:
             objective_functions = ObjectiveList()
         elif isinstance(objective_functions, Objective):
@@ -601,7 +628,7 @@ class OptimalControlProgram:
             raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
 
         if ode_solver is None:
-            ode_solver = OdeSolver.RK4()
+            ode_solver = self._set_default_ode_solver()
         elif not isinstance(ode_solver, OdeSolverBase):
             raise RuntimeError("ode_solver should be built an instance of OdeSolver")
 
@@ -632,13 +659,12 @@ class OptimalControlProgram:
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 
         # Define some aliases
-        NLP.add(self, "ns", n_shooting, False)
+        NLP.add(self, "ns", self.n_shooting, False)
         for nlp in self.nlp:
             if nlp.ns < 1:
                 raise RuntimeError("Number of shooting points must be at least 1")
 
-        self.n_threads = n_threads
-        NLP.add(self, "n_threads", n_threads, True)
+        NLP.add(self, "n_threads", self.n_threads, True)
         self.ocp_solver = None
         self.is_warm_starting = False
 
@@ -662,7 +688,9 @@ class OptimalControlProgram:
         self.time_phase_mapping = time_phase_mapping
 
         # Add any time related parameters to the parameters list before declaring it
-        self._define_time(phase_time, objective_functions, constraints, parameters, parameter_init, parameter_bounds)
+        self._define_time(
+            self.phase_time, objective_functions, constraints, parameters, parameter_init, parameter_bounds
+        )
 
         # Declare and fill the parameters
         self.parameters = ParameterList()
@@ -680,14 +708,8 @@ class OptimalControlProgram:
         variable_mappings = variable_mappings.variable_mapping_fill_phases(self.n_phases)
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
-        # Do not copy singleton since x_scaling was already dealt with before
-        NLP.add(self, "x_scaling", x_scaling, True)
-        NLP.add(self, "xdot_scaling", xdot_scaling, True)
-        NLP.add(self, "u_scaling", u_scaling, True)
-        NLP.add(self, "s_scaling", s_scaling, True)
-
         NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
-        NLP.add(self, "is_stochastic", False, True)
+
         return (
             constraints,
             objective_functions,
@@ -696,14 +718,8 @@ class OptimalControlProgram:
             multinode_constraints,
             multinode_objectives,
             phase_transitions,
-            x_bounds,
-            u_bounds,
             parameter_bounds,
-            s_bounds,
-            x_init,
-            u_init,
             parameter_init,
-            s_init,
         )
 
     def _prepare_node_mapping(self, node_mappings):
@@ -743,7 +759,20 @@ class OptimalControlProgram:
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
-    def _declare_multi_node_penalties(self, multinode_constraints: ConstraintList, multinode_objectives: ObjectiveList):
+    def _declare_multi_node_penalties(
+        self,
+        multinode_constraints: ConstraintList,
+        multinode_objectives: ObjectiveList,
+        constraints: ConstraintList,
+        phase_transition: PhaseTransitionList,
+    ):
+        """
+        This function declares the multi node penalties (constraints and objectives) to the penalty pool.
+
+        Note
+        ----
+        This function is overriden in StochasticOptimalControlProgram
+        """
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
@@ -1897,6 +1926,57 @@ class OptimalControlProgram:
             return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
         previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
         return previous_phase_time + self.nlp[phase_idx].node_time(node_idx)
+
+    def _set_default_ode_solver(self):
+        """
+        Set the default ode solver to RK4
+
+        Note
+        ----
+        This method is overrided in StochasticOptimalControlProgram
+        """
+        return OdeSolver.RK4()
+
+    def _set_stochastic_variables_to_original_values(
+        self,
+        s_init: InitialGuessList,
+        s_bounds: BoundsList,
+        s_scaling: VariableScalingList,
+    ):
+        """
+        Set the stochastic variables to their original values
+
+        Note
+        ----
+        This method is overrided in StochasticOptimalControlProgram
+        """
+        pass
+
+    def _set_stochastic_internal_stochastic_variables(self):
+        """
+        Set the stochastic variables to their internal values
+
+        Note
+        ----
+        This method is overrided in StochasticOptimalControlProgram
+        """
+        # s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
+        self._s_init = InitialGuessList()
+        self._s_bounds = BoundsList()
+        self._s_scaling = VariableScalingList()
+        return self._s_init, self._s_bounds, self._s_scaling
+
+    def _set_nlp_is_stochastic(self):
+        """
+        Set the is_stochastic variable to False
+        because it's not relevant for traditional OCP,
+        only relevant for StochasticOptimalControlProgram
+
+        Note
+        ----
+        This method is thus overriden in StochasticOptimalControlProgram
+        """
+        NLP.add(self, "is_stochastic", False, True)
 
 
 # helpers

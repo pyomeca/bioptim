@@ -54,6 +54,7 @@ def prepare_socp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
+    polynomial_degree: int,
     hand_final_position: np.ndarray,
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
@@ -69,6 +70,8 @@ def prepare_socp(
         The time in second required to perform the task
     n_shooting: int
         The number of shooting points to define int the direct multiple shooting program
+    polynomial_degree: int
+        The degree of the polynomial used for the collocation integration
     hand_final_position: np.ndarray
         The final position of the end effector
     motor_noise_magnitude: cas.DM
@@ -83,7 +86,7 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    problem_type = SocpType.COLLOCATION(polynomial_degree=3, method="legendre")
+    problem_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
 
     bio_model = StochasticBiorbdModel(
         biorbd_model_path,
@@ -93,7 +96,7 @@ def prepare_socp(
         n_references=4,  # This number must be in agreement with what is declared in sensory_reference
         n_noised_states=4,
         n_noised_controls=2,
-        n_collocation_points=3 + 1,
+        n_collocation_points=polynomial_degree + 1,
         friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
     )
 
@@ -130,7 +133,7 @@ def prepare_socp(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
 
-    # This constraint insures that the hand reaches the target with x_mean
+    # This constraint ensures that the hand reaches the target with x_mean
     constraints.add(
         ConstraintFcn.TRACK_MARKERS, node=Node.END, target=hand_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
     )
@@ -316,6 +319,7 @@ def main():
         biorbd_model_path=biorbd_model_path,
         final_time=final_time,
         n_shooting=n_shooting,
+        polynomial_degree=3,
         hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,

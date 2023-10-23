@@ -239,7 +239,7 @@ class DynamicsFunctions:
         sensory_input = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
 
         mapped_motor_noise = nlp.model.motor_noise_sym
-        mapped_sensory_feedback_torque = k_matrix @ ((sensory_input - ref) + nlp.model.sensory_noise_sym)
+        mapped_sensory_feedback_torque = nlp.model.compute_torques_from_noise_and_feedback(k_matrix, sensory_input, ref)
         if "tau" in nlp.model.motor_noise_mapping.keys():
             mapped_motor_noise = nlp.model.motor_noise_mapping["tau"].to_second.map(nlp.model.motor_noise_sym)
             mapped_sensory_feedback_torque = nlp.model.motor_noise_mapping["tau"].to_second.map(
@@ -248,8 +248,7 @@ class DynamicsFunctions:
         tau += mapped_motor_noise + mapped_sensory_feedback_torque
         tau = tau + nlp.model.friction_coefficients @ qdot if with_friction else tau
 
-        # dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
-        dq = qdot
+        dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
         dxdt = MX(nlp.states.shape, ddq.shape[1])
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])

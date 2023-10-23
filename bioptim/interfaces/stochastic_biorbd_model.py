@@ -55,3 +55,8 @@ class StochasticBiorbdModel(BiorbdModel):
         self.matrix_shape_cov = (self.n_noised_states, self.n_noised_states)
         self.matrix_shape_cov_cholesky = (self.n_noised_states, self.n_noised_states)
         self.matrix_shape_m = (self.n_noised_states, self.n_noised_states * self.n_collocation_points)
+
+    def compute_torques_from_noise_and_feedback(self, k_matrix, sensory_input, ref):
+        """Compute the torques from the sensory feedback"""
+        mapped_sensory_feedback_torque = k_matrix @ ((sensory_input - ref) + self.sensory_noise_sym)
+        return mapped_sensory_feedback_torque

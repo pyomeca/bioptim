@@ -1,4 +1,7 @@
 from typing import Callable, Any
+import sys
+
+import pickle
 
 from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics
@@ -18,10 +21,14 @@ from ..limits.objective_functions import ObjectiveList, Objective, ParameterObje
 from ..limits.path_conditions import BoundsList
 from ..limits.path_conditions import InitialGuessList
 from ..misc.enums import Node, ControlType, PhaseDynamics
+from ..misc.__version__ import __version__
+from ..misc.enums import Node, ControlType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
+from ..misc.utils import check_version
+from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
-from ..optimization.optimal_control_program import OptimalControlProgram
+from ..optimization.solution import Solution
 from ..optimization.variable_scaling import VariableScalingList
 
 
@@ -68,157 +75,47 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         problem_type=SocpType.TRAPEZOIDAL_IMPLICIT,
         **kwargs,
     ):
-        """ """
+        _check_multi_threading_and_problem_type(problem_type, **kwargs)
+        _check_has_no_ode_solver_defined(**kwargs)
+        _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs)
 
-        if not isinstance(problem_type, SocpType.COLLOCATION):
-            if "n_thread" in kwargs:
-                if kwargs["n_thread"] != 1:
-                    raise ValueError(
-                        "Multi-threading is not possible yet while solving a trapezoidal stochastic ocp."
-                        "n_thread is set to 1 by default."
-                    )
-        self.n_threads = n_threads
-
-        if "ode_solver" in kwargs:
-            raise ValueError(
-                "The ode_solver cannot be defined for a stochastic ocp. The value is chosen based on the type of problem solved:"
-                "\n- TRAPEZOIDAL_EXPLICIT: OdeSolver.TRAPEZOIDAL() "
-                "\n- TRAPEZOIDAL_IMPLICIT: OdeSolver.TRAPEZOIDAL() "
-                "\n- COLLOCATION: OdeSolver.COLLOCATION(method=problem_type.method, polynomial_degree=problem_type.polynomial_degree, include_starting_collocation_point=True)"
-            )
-
-        if not isinstance(problem_type, SocpType.COLLOCATION):
-            if "phase_dynamics" in kwargs:
-                if kwargs["phase_dynamics"] == PhaseDynamics.SHARED_DURING_THE_PHASE:
-                    raise ValueError(
-                        "The dynamics cannot be SHARED_DURING_THE_PHASE with a trapezoidal stochastic ocp."
-                        "phase_dynamics is set to PhaseDynamics.ONE_PER_NODE by default."
-                    )
-
-        self._check_bioptim_version()
-
-        bio_model = self._initialize_model(bio_model)
-
-        if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT) or isinstance(
-            problem_type, SocpType.TRAPEZOIDAL_EXPLICIT
-        ):
-            ode_solver = OdeSolver.TRAPEZOIDAL()
-        elif isinstance(problem_type, SocpType.COLLOCATION):
-            ode_solver = OdeSolver.COLLOCATION(
-                method=problem_type.method,
-                polynomial_degree=problem_type.polynomial_degree,
-                include_starting_collocation_point=True,
-            )
-        else:
-            raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
-
-        self._set_original_values(
-            bio_model,
-            dynamics,
-            n_shooting,
-            phase_time,
-            x_init,
-            u_init,
-            s_init,
-            x_bounds,
-            u_bounds,
-            s_bounds,
-            x_scaling,
-            xdot_scaling,
-            u_scaling,
-            s_scaling,
-            ode_solver,
-            control_type,
-            variable_mappings,
-            time_phase_mapping,
-            node_mappings,
-            plot_mappings,
-            phase_transitions,
-            multinode_constraints,
-            multinode_objectives,
-            parameter_bounds,
-            parameter_init,
-            parameter_constraints,
-            parameter_objectives,
-            n_threads,
-            use_sx,
-            integrated_value_functions,
-        )
-
-        (
-            constraints,
-            objective_functions,
-            parameter_constraints,
-            parameter_objectives,
-            multinode_constraints,
-            multinode_objectives,
-            phase_transitions,
-            x_bounds,
-            u_bounds,
-            parameter_bounds,
-            s_bounds,
-            x_init,
-            u_init,
-            parameter_init,
-            s_init,
-        ) = self._check_arguments_and_build_nlp(
-            dynamics,
-            n_threads,
-            n_shooting,
-            phase_time,
-            x_bounds,
-            u_bounds,
-            s_bounds,
-            x_init,
-            u_init,
-            s_init,
-            x_scaling,
-            xdot_scaling,
-            u_scaling,
-            s_scaling,
-            objective_functions,
-            constraints,
-            parameters,
-            phase_transitions,
-            multinode_constraints,
-            multinode_objectives,
-            parameter_bounds,
-            parameter_init,
-            parameter_constraints,
-            parameter_objectives,
-            ode_solver,
-            use_sx,
-            bio_model,
-            plot_mappings,
-            time_phase_mapping,
-            control_type,
-            variable_mappings,
-            integrated_value_functions,
-        )
         self.problem_type = problem_type
-        NLP.add(self, "is_stochastic", True, True)
-        self._prepare_node_mapping(node_mappings)
-        self._prepare_dynamics()
-        self._prepare_bounds_and_init(
-            x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
+        self._s_init = s_init
+        self._s_bounds = s_bounds
+        self._s_scaling = s_scaling
+
+        super(StochasticOptimalControlProgram, self).__init__(
+            bio_model=bio_model,
+            dynamics=dynamics,
+            n_shooting=n_shooting,
+            phase_time=phase_time,
+            x_bounds=x_bounds,
+            u_bounds=u_bounds,
+            x_init=x_init,
+            u_init=u_init,
+            objective_functions=objective_functions,
+            constraints=constraints,
+            parameters=parameters,
+            parameter_bounds=parameter_bounds,
+            parameter_init=parameter_init,
+            parameter_objectives=parameter_objectives,
+            parameter_constraints=parameter_constraints,
+            ode_solver=None,
+            control_type=control_type,
+            variable_mappings=variable_mappings,
+            time_phase_mapping=time_phase_mapping,
+            node_mappings=node_mappings,
+            plot_mappings=plot_mappings,
+            phase_transitions=phase_transitions,
+            multinode_constraints=multinode_constraints,
+            multinode_objectives=multinode_objectives,
+            x_scaling=x_scaling,
+            xdot_scaling=xdot_scaling,
+            u_scaling=u_scaling,
+            n_threads=n_threads,
+            use_sx=use_sx,
+            integrated_value_functions=integrated_value_functions,
         )
-
-        self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints, phase_transitions)
-
-        self._finalize_penalties(
-            constraints,
-            parameter_constraints,
-            objective_functions,
-            parameter_objectives,
-            phase_transitions,
-        )
-
-    def _prepare_dynamics(self):
-        # Prepare the dynamics
-        for i in range(self.n_phases):
-            self.nlp[i].initialize(self.cx)
-            ConfigureProblem.initialize(self, self.nlp[i])
-            self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
 
     def _declare_multi_node_penalties(
         self,
@@ -227,6 +124,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         constraints: ConstraintList,
         phase_transition: PhaseTransitionList,
     ):
+        """
+        This function declares the multi node penalties (constraints and objectives) to the penalty pool.
+
+        Note
+        ----
+        This function overrides the method in OptimalControlProgram
+        """
         multinode_constraints.add_or_replace_to_penalty_pool(self)
         multinode_objectives.add_or_replace_to_penalty_pool(self)
 
@@ -357,3 +261,128 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         for i_phase, nlp in enumerate(self.nlp):
             if len(self.nlp) > 1 and i_phase < len(self.nlp) - 1:
                 phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
+
+    def _set_stochastic_variables_to_original_values(
+        self,
+        s_init: InitialGuessList,
+        s_bounds: BoundsList,
+        s_scaling: VariableScalingList,
+    ):
+        self.original_values["s_init"] = s_init
+        self.original_values["s_bounds"] = s_bounds
+        self.original_values["s_scaling"] = s_scaling
+
+    @staticmethod
+    def load(file_path: str) -> list:
+        """
+        Reload a previous optimization (*.bo) saved using save
+
+        Parameters
+        ----------
+        file_path: str
+            The path to the *.bo file
+
+        Returns
+        -------
+        The ocp and sol structure. If it was saved, the iterations are also loaded
+        """
+
+        with open(file_path, "rb") as file:
+            try:
+                data = pickle.load(file)
+            except BaseException as error_message:
+                raise ValueError(
+                    f"The file '{file_path}' cannot be loaded, maybe the version of bioptim (version {__version__})\n"
+                    f"is not the same as the one that created the file (version unknown). For more information\n"
+                    "please refer to the original error message below\n\n"
+                    f"{type(error_message).__name__}: {error_message}"
+                )
+            ocp = StochasticOptimalControlProgram.from_loaded_data(data["ocp_initializer"])
+            for key in data["versions"].keys():
+                key_module = "biorbd_casadi" if key == "biorbd" else key
+                try:
+                    check_version(sys.modules[key_module], data["versions"][key], ocp.version[key], exclude_max=False)
+                except ImportError:
+                    raise ImportError(
+                        f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
+                        f"installed version ({ocp.version[key]})"
+                    )
+            sol = data["sol"]
+            sol.ocp = Solution.SimplifiedOCP(ocp)
+            out = [ocp, sol]
+        return out
+
+    def _set_default_ode_solver(self):
+        """It overrides the method in OptimalControlProgram that set a RK4 by default"""
+        if isinstance(self.problem_type, SocpType.TRAPEZOIDAL_IMPLICIT) or isinstance(
+            self.problem_type, SocpType.TRAPEZOIDAL_EXPLICIT
+        ):
+            return OdeSolver.TRAPEZOIDAL()
+        elif isinstance(self.problem_type, SocpType.COLLOCATION):
+            return OdeSolver.COLLOCATION(
+                method=self.problem_type.method,
+                polynomial_degree=self.problem_type.polynomial_degree,
+                include_starting_collocation_point=True,
+            )
+        else:
+            raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
+
+    def _set_stochastic_internal_stochastic_variables(self):
+        """
+        Set the stochastic variables to their internal values
+
+        Note
+        ----
+        This method overrides the method in OptimalControlProgram
+        """
+        return (
+            self._s_init,
+            self._s_bounds,
+            self._s_scaling,
+        )  # Nothing to do here as they are already set before calling super().__init__
+
+    def _set_nlp_is_stochastic(self):
+        """
+        Set the is_stochastic variable to True for all the nlp
+
+        Note
+        ----
+        This method overrides the method in OptimalControlProgram
+        """
+        NLP.add(self, "is_stochastic", True, True)
+
+
+def _check_multi_threading_and_problem_type(problem_type, **kwargs):
+    if not isinstance(problem_type, SocpType.COLLOCATION):
+        if "n_thread" in kwargs:
+            if kwargs["n_thread"] != 1:
+                raise ValueError(
+                    "Multi-threading is not possible yet while solving a trapezoidal stochastic ocp."
+                    "n_thread is set to 1 by default."
+                )
+
+
+def _check_has_no_ode_solver_defined(**kwargs):
+    if "ode_solver" in kwargs:
+        raise ValueError(
+            "The ode_solver cannot be defined for a stochastic ocp. "
+            "The value is chosen based on the type of problem solved:"
+            "\n- TRAPEZOIDAL_EXPLICIT: OdeSolver.TRAPEZOIDAL() "
+            "\n- TRAPEZOIDAL_IMPLICIT: OdeSolver.TRAPEZOIDAL() "
+            "\n- COLLOCATION: "
+            "OdeSolver.COLLOCATION("
+            "method=problem_type.method, "
+            "polynomial_degree=problem_type.polynomial_degree, "
+            "include_starting_collocation_point=True"
+            ")"
+        )
+
+
+def _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs):
+    if not isinstance(problem_type, SocpType.COLLOCATION):
+        if "phase_dynamics" in kwargs:
+            if kwargs["phase_dynamics"] == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                raise ValueError(
+                    "The dynamics cannot be SHARED_DURING_THE_PHASE with a trapezoidal stochastic ocp."
+                    "phase_dynamics is set to PhaseDynamics.ONE_PER_NODE by default."
+                )
