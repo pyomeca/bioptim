@@ -116,17 +116,6 @@ def prepare_ocp_to_track(
     u_bounds = BoundsList()
     u_bounds.add("tau", min_bound=[tau_min] * 3, max_bound=[tau_max] * 3)
 
-    # x_init = InitialGuessList()
-    # q_init_0 = np.zeros((4, n_shooting[0] + 1))
-    # q_init_0[2, :] = np.linspace(0, 6*np.pi, n_shooting[0] + 1)
-    # q_init_1 = np.zeros((4, n_shooting[0] + 1))
-    # q_init_1[2, :] = 6*np.pi
-    # q_init_1[3, :] = np.linspace(0, 6*np.pi, n_shooting[0] + 1)
-    # x_init.add("q", initial_guess=q_init_0, phase=0, interpolation=InterpolationType.EACH_FRAME)
-    # x_init.add("q", initial_guess=q_init_1, phase=1, interpolation=InterpolationType.EACH_FRAME)
-    # x_init.add("qdot", initial_guess=np.ones((4, 1)), phase=0)
-    # x_init.add("qdot", initial_guess=np.ones((4, 1)), phase=1)
-
     return OptimalControlProgram(
         bio_model,
         dynamics,
@@ -134,7 +123,6 @@ def prepare_ocp_to_track(
         final_time,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        # x_init=x_init,
         objective_functions=objective_functions,
         variable_mappings=variable_mappings,
         ode_solver=ode_solver,
@@ -173,20 +161,23 @@ def prepare_optimal_estimation(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    for i in range(n_shooting + 1):
-        objective_functions.add(
-            ObjectiveFcn.Mayer.TRACK_MARKERS,
-            node=i,
-            weight=100,
-            target=markers_ref[:, :, i],
-        )
+    # for i in range(n_shooting + 1):
+    #     objective_functions.add(
+    #         ObjectiveFcn.Mayer.TRACK_MARKERS,
+    #         node=i,
+    #         weight=100,
+    #         target=markers_ref[:, :, i],
+    #     )
     # objective_functions.add(ObjectiveFcn.Mayer.TRACK_MARKERS, weight=100, target=markers_ref, quadratic=True)
+    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref[:, :, :-1])  # OK
     # objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, target=time_ref, quadratic=True)
     # objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", weight=1e-6, quadratic=True)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=PhaseDynamics.ONE_PER_NODE)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN,
+                 expand_dynamics=True,
+                 phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
 
     # Path constraint
     x_bounds = BoundsList()
@@ -301,6 +292,28 @@ def main():
     qdot = sol.states["qdot"]
     tau = sol.controls["tau"]
     # time = sol.parameters["time"][0][0]
+
+    markers_opt = np.zeros((3, n_marker, n_shooting + 1))
+    for i_node in range(n_shooting + 1):
+        markers_opt[:, :, i_node] = markers_fun(q[:, i_node])
+
+    # --- Plot --- #
+    import matplotlib.pyplot as plt
+
+    plt.figure("Markers")
+    n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1
+    for i in range(markers_opt.shape[1]):
+        plt.plot(
+            np.linspace(0, final_time, n_shooting + 1),
+            markers_ref[:, i, :].T,
+            "k",
+        )
+        plt.plot(
+            np.linspace(0, final_time, n_shooting + 1),
+            markers_opt[:, i, :].T,
+            "r--",
+        )
+    plt.show()
 
     # sol.animate(show_tracked_markers=True)
     import bioviz
