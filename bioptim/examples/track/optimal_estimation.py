@@ -38,6 +38,7 @@ from bioptim import (
     PhaseDynamics,
 )
 
+
 def get_markers_pos(x: DM | np.ndarray, idx_marker: int, fun: Callable, n_q: int) -> DM | np.ndarray:
     """
     Get the position of a specific marker from the states
@@ -96,9 +97,20 @@ def prepare_ocp_to_track(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", node=Node.ALL_SHOOTING, weight=1e-6, quadratic=True)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", derivative=True, node=Node.ALL_SHOOTING, weight=1e-6, quadratic=True)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", node=Node.END, index=[3, 5], weight=-1000, quadratic=False)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", node=Node.ALL_SHOOTING, weight=1e-6, quadratic=True
+    )
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+        key="tau",
+        derivative=True,
+        node=Node.ALL_SHOOTING,
+        weight=1e-6,
+        quadratic=True,
+    )
+    objective_functions.add(
+        ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", node=Node.END, index=[3, 5], weight=-1000, quadratic=False
+    )
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=-1, quadratic=True)
 
     # Dynamics
@@ -128,6 +140,7 @@ def prepare_ocp_to_track(
         variable_mappings=variable_mappings,
         ode_solver=ode_solver,
     )
+
 
 def prepare_optimal_estimation(
     biorbd_model_path: str,
@@ -162,7 +175,9 @@ def prepare_optimal_estimation(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.TRACK_MARKERS, node=Node.ALL, weight=100, target=markers_ref, quadratic=True)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.TRACK_MARKERS, node=Node.ALL, weight=100, target=markers_ref, quadratic=True
+    )
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, target=time_ref, quadratic=True)
 
     # Dynamics
@@ -237,7 +252,8 @@ def main():
         n_shooting=n_shooting,
         markers_ref=markers_ref,
         q_ref=q,
-        qdot_ref=qdot,)
+        qdot_ref=qdot,
+    )
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
@@ -273,7 +289,6 @@ def main():
     # b.load_movement(q)
     # b.load_experimental_markers(markers_ref)
     # b.exec()
-
 
 
 if __name__ == "__main__":

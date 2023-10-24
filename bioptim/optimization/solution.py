@@ -1827,8 +1827,8 @@ class Solution:
             for objective in self.ocp.nlp[idx_phase].J:
                 if objective.target is not None:
                     if objective.type in (
-                            ObjectiveFcn.Mayer.TRACK_MARKERS,
-                            ObjectiveFcn.Lagrange.TRACK_MARKERS,
+                        ObjectiveFcn.Mayer.TRACK_MARKERS,
+                        ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
                         n_frames += objective.target[0].shape[2]
                         break
