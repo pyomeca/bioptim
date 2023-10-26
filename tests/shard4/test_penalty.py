@@ -130,7 +130,7 @@ def test_penalty_minimize_time(penalty_origin, value, phase_dynamics):
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
-    p = []
+    p = [1]
     s = []
 
     penalty_type = penalty_origin.MINIMIZE_TIME
@@ -378,7 +378,7 @@ def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, 
     t = [0]
     x = [DM.ones((8, 1)) * value]
     u = [0]
-    p = []
+    p = [0]
     s = []
     penalty_type = penalty_origin.MINIMIZE_MARKERS_ACCELERATION
 
@@ -1099,14 +1099,14 @@ def test_penalty_time_constraint(value, phase_dynamics):
     t = [0]
     x = [0]
     u = [0]
-    p = []
+    p = [0]
     s = []
 
     penalty_type = ConstraintFcn.TIME_CONSTRAINT
     penalty = Constraint(penalty_type)
     res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
-    np.testing.assert_almost_equal(res, np.array([]))
+    np.testing.assert_almost_equal(res, np.array(0))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

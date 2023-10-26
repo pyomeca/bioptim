@@ -514,9 +514,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             var = []
-            var.extend([controller.states[key] for key in controller.states])
-            var.extend([controller.controls[key] for key in controller.controls])
-            var.extend([controller.parameters[key] for key in controller.parameters])
+            var.extend([controller.states[key] for key in controller.states.keys()])
+            var.extend([controller.controls[key] for key in controller.controls.keys()])
+            var.extend([controller.parameters[key] for key in controller.parameters.keys()])
 
             return controller.mx_to_cx("contact_acceleration", contact_acceleration, *var)
 

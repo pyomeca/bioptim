@@ -339,11 +339,15 @@ class NonLinearProgram:
 
         cx_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
         mx = [var.mx if isinstance(var, cx_types) else var for var in all_param]
-        cx = [
-            var.mapping.to_second.map(var.cx_start) if hasattr(var, "mapping") else var.cx_start
-            for var in all_param
-            if isinstance(var, cx_types)
-        ]
+        cx = []
+        for var in all_param:
+            if hasattr(var, "mapping"):
+                cx += [var.mapping.to_second.map(var.cx_start)]
+            elif hasattr(var, "cx_start"):
+                cx += [var.cx_start]
+            else:
+                cx += [var.cx]  # This is a temporary hack until parameters are included as OptimizationVariables
+
         return NonLinearProgram.to_casadi_func(name, symbolic_expression, *mx)(*cx)
 
     @staticmethod
