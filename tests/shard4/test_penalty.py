@@ -11,6 +11,10 @@ from bioptim import (
     Axis,
     ConstraintFcn,
     Constraint,
+    MultinodeConstraintFcn,
+    MultinodeConstraintList,
+    MultinodeConstraint,
+    MultinodeObjective,
     Node,
     RigidBodyDynamics,
     ControlType,
@@ -65,11 +69,14 @@ def prepare_test_ocp(
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
 
+    objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_TIME)
+
     ocp = OptimalControlProgram(
         bio_model,
         dynamics,
         10,
         1.0,
+        objective_functions=objective_functions,
         use_sx=use_sx,
     )
 
@@ -79,7 +86,11 @@ def prepare_test_ocp(
 
 
 def get_penalty_value(ocp, penalty, t, x, u, p, s):
-    val = penalty.type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], [], s, [], 0), **penalty.params)
+    if isinstance(penalty, MultinodeConstraint) or isinstance(penalty, MultinodeObjective):
+        controller = [PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], p, s, [], 0) for i in range(len(penalty.nodes_phase))]
+    else:
+        controller = PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], p, s, [], 0)
+    val = penalty.type(penalty, controller, **penalty.params)
     # changed only this one
     if isinstance(val, float):
         return val
@@ -1094,6 +1105,34 @@ def test_penalty_time_constraint(value, phase_dynamics):
     res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, np.array([]))
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_constraint_total_time(value, phase_dynamics):
+    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+    p = [0.1]
+    s = []
+
+    penalty_type = MultinodeConstraintFcn.TRACK_TOTAL_TIME
+    penalty = MultinodeConstraintList()
+    penalty.add(penalty_type,
+                          min_bound=0.01,
+                          max_bound=20,
+                          nodes_phase=(0, 1),
+                          nodes=(Node.END, Node.END),
+                          )
+
+    penalty_type(penalty[0], [
+        PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0),
+        PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0)]
+                 )
+    res = get_penalty_value(ocp, penalty[0], t, x, u, p, s)
+
+    np.testing.assert_almost_equal(res, np.array(0.2))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
