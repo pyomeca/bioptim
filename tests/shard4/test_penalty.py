@@ -87,7 +87,9 @@ def prepare_test_ocp(
 
 def get_penalty_value(ocp, penalty, t, x, u, p, s):
     if isinstance(penalty, MultinodeConstraint) or isinstance(penalty, MultinodeObjective):
-        controller = [PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], p, s, [], 0) for i in range(len(penalty.nodes_phase))]
+        controller = [
+            PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], p, s, [], 0) for i in range(len(penalty.nodes_phase))
+        ]
     else:
         controller = PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], p, s, [], 0)
     val = penalty.type(penalty, controller, **penalty.params)
@@ -1119,17 +1121,21 @@ def test_penalty_constraint_total_time(value, phase_dynamics):
 
     penalty_type = MultinodeConstraintFcn.TRACK_TOTAL_TIME
     penalty = MultinodeConstraintList()
-    penalty.add(penalty_type,
-                          min_bound=0.01,
-                          max_bound=20,
-                          nodes_phase=(0, 1),
-                          nodes=(Node.END, Node.END),
-                          )
+    penalty.add(
+        penalty_type,
+        min_bound=0.01,
+        max_bound=20,
+        nodes_phase=(0, 1),
+        nodes=(Node.END, Node.END),
+    )
 
-    penalty_type(penalty[0], [
-        PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0),
-        PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0)]
-                 )
+    penalty_type(
+        penalty[0],
+        [
+            PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0),
+            PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0),
+        ],
+    )
     res = get_penalty_value(ocp, penalty[0], t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, np.array(0.2))
