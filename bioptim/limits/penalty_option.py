@@ -154,6 +154,7 @@ class PenaltyOption(OptionGeneric):
                 f"{params['integration_rule']} has not been implemented yet for objective functions."
             )
         self.integration_rule = integration_rule
+        self.extra_arguments = params
 
         if index is not None and rows is not None:
             raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
