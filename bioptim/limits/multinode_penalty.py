@@ -321,22 +321,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
 
-            def get_time_parameter_idx(controller: PenaltyController, i_phase):
-                time_idx = None
-                for i in range(controller.parameters.cx.shape[0]):
-                    param_name = controller.parameters.cx[i].name()
-                    if param_name == "time_phase_" + str(controller.phase_idx):
-                        time_idx = controller.phase_idx
-                if time_idx is None:
-                    raise RuntimeError(
-                        f"Time penalty can't be established since the {i_phase}th phase has no time parameter. "
-                        f"\nTime parameter can be added with : "
-                        f"\nobjective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
-                        f"\nwith constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
-                    )
-                return time_idx
-
-            time_idx = [get_time_parameter_idx(controller, i) for i, controller in enumerate(controllers)]
+            time_idx = [controller.get_time_parameter_idx() for i, controller in enumerate(controllers)]
 
             time_0 = controllers[0].parameters.cx[time_idx[0]]
             out = controllers[0].cx.zeros((1, 1))
@@ -345,6 +330,34 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 out += time_0 - time_i
 
             return out
+
+        @staticmethod
+        def track_total_time(penalty, controllers: list[PenaltyController, PenaltyController]):
+            """
+            The total duration of the phases must be equal to a defined duration
+
+            Parameters
+            ----------
+            penalty : MultinodePenalty
+                A reference to the phase penalty
+            controllers: list[PenaltyController, PenaltyController]
+                    The penalty node elements
+
+            Returns
+            -------
+            The difference between the duration of the phases
+            """
+
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+
+            time_idx = [controller.get_time_parameter_idx() for i, controller in enumerate(controllers)]
+
+            time = controllers[0].parameters.cx[time_idx[0]]
+            for i in range(1, len(controllers)):
+                time_i = controllers[i].parameters.cx[time_idx[i]]
+                time += time_i
+
+            return time
 
         @staticmethod
         def stochastic_helper_matrix_explicit(
