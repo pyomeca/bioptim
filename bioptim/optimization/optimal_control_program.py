@@ -1978,6 +1978,85 @@ class OptimalControlProgram:
         """
         NLP.add(self, "is_stochastic", False, True)
 
+    def _to_unscaled_values(
+            self,
+            states_scaled: list[dict],
+            controls_scaled: list[dict],
+            stochastic_variables_scaled: list[dict],
+    ) -> tuple[list[dict], list[dict], list[dict]]:
+
+        """
+        Convert values of scaled solution to unscaled values
+
+        Parameters
+        ----------
+        states_scaled: list[dict]
+            The states scaled
+        controls_scaled: list[dict]
+            The controls scaled
+        stochastic_variables_scaled: list[dict]
+            The stochastic variables scaled
+
+        Returns
+        -------
+        tuple[list[dict], list[dict], list[dict]]
+            The states, controls and stochastic variables unscaled
+
+        # TODO: The inside loop code should be in NonlinearProgram
+        """
+
+        states = [{} for _ in range(len(states_scaled))]
+        controls = [{} for _ in range(len(controls_scaled))]
+        stochastic_variables = [{} for _ in range(len(stochastic_variables_scaled))]
+        for phase in range(len(states_scaled)):
+            states[phase] = {}
+            controls[phase] = {}
+            stochastic_variables[phase] = {}
+            for key, value in states_scaled[phase].items():
+                states[phase][key] = value * self.nlp[phase].x_scaling[key].to_array(
+                    states_scaled[phase][key].shape[1])
+            for key, value in controls_scaled[phase].items():
+                controls[phase][key] = value * self.nlp[phase].u_scaling[key].to_array(
+                    controls_scaled[phase][key].shape[1]
+                )
+            for key, value in stochastic_variables_scaled[phase].items():
+                stochastic_variables[phase][key] = value * self.nlp[phase].s_scaling[key].to_array(
+                    stochastic_variables_scaled[phase][key].shape[1]
+                )
+
+        return states, controls, stochastic_variables
+
+    def _complete_control(self, controls: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+        """
+        Controls don't necessarily have dimensions that matches the states. This method aligns them
+        E.g. if the control is constant, it will add a column of nan to match the states
+        But if the control is linear, it won't do anything
+
+        # TODO: The inside loop code should be in NonlinearProgram
+        """
+
+        for p, nlp in enumerate(self.nlp):
+            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
+                for key in controls["scaled"][p]:
+                    controls["scaled"][p][key] = np.concatenate(
+                        (
+                            controls["scaled"][p][key],
+                            np.nan * np.zeros((controls["scaled"][p][key].shape[0], 1)),
+                        ),
+                        axis=1,
+                    )
+                    controls["unscaled"][p][key] = np.concatenate(
+                        (
+                            controls["unscaled"][p][key],
+                            np.nan * np.zeros((controls["unscaled"][p][key].shape[0], 1)),
+                        ),
+                        axis=1,
+                    )
+            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+                pass
+            else:
+                raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
+
 
 # helpers
 def _reshape_to_column(array) -> np.ndarray:
