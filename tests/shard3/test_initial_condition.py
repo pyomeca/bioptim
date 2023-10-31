@@ -218,7 +218,7 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
     P = InitialGuessList()
     S = InitialGuessList()
 
-    sol = Solution(ocp, [X, U, P, S])
+    sol = Solution.from_initial_guess(ocp, [X, U, P, S])
     controls = sol.controls
     sol = sol.integrate(
         shooting_type=Shooting.MULTIPLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP
@@ -264,7 +264,7 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
     P = InitialGuessList()
     S = InitialGuessList()
 
-    sol = Solution(ocp, [X, U, P, S])
+    sol = Solution.from_initial_guess(ocp, [X, U, P, S])
     sol_integrated = sol.integrate(
         shooting_type=Shooting.SINGLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP
     )

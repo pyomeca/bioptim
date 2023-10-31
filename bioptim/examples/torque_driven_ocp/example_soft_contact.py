@@ -78,7 +78,7 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     p = InitialGuessList()
     s = InitialGuessList()
 
-    sol_from_initial_guess = Solution(ocp, [x, u, p, s])
+    sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
 
@@ -92,7 +92,7 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     p = InitialGuessList()
     s = InitialGuessList()
 
-    sol_from_initial_guess = Solution(ocp, [x, u, p, s])
+    sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # s.animate()
 

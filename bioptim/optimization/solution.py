@@ -340,6 +340,138 @@ class Solution:
 
             return integrated_values_num
 
+        def _generate_time(
+            self,
+            time_phase: np.ndarray,
+            keep_intermediate_points: bool = None,
+            shooting_type: Shooting = None,
+        ):
+            is_direct_collocation = self.ode_solver.is_direct_collocation
+            include_starting_collocation_point = False
+            if is_direct_collocation:
+                include_starting_collocation_point = self.ode_solver.include_starting_collocation_point
+
+            step_times = self._define_step_times(
+                dynamics_step_time=self.dynamics[0].step_time,
+                ode_solver_steps=self.ode_solver.steps,
+                is_direct_collocation=is_direct_collocation,
+                include_starting_collocation_point=include_starting_collocation_point,
+                keep_intermediate_points=keep_intermediate_points,
+                continuous=shooting_type == Shooting.SINGLE,
+            )
+
+            if shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
+                # discard the last time step because continuity concerns only the end of the phases
+                # and not the end of each interval
+                step_times = step_times[:-1]
+
+            dt_ns = time_phase[self.phase_idx + 1] / self.ns
+            time = [(step_times * dt_ns + i * dt_ns).tolist() for i in range(self.ns)]
+
+            if shooting_type == Shooting.MULTIPLE:
+                # keep all the intervals in separate lists
+                flat_time = [np.array(sub_time) for sub_time in time]
+            else:
+                # flatten the list of list into a list of floats
+                flat_time = [st for sub_time in time for st in sub_time]
+
+            # add the final time of the phase
+            if shooting_type == Shooting.MULTIPLE:
+                flat_time.append(np.array([self.ns * dt_ns]))
+            if shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
+                flat_time += [self.ns * dt_ns]
+
+            return sum(time_phase[: self.phase_idx + 1]) + np.array(flat_time, dtype=object)
+
+        @staticmethod
+        def _define_step_times(
+            dynamics_step_time: list,
+            ode_solver_steps: int,
+            keep_intermediate_points: bool = None,
+            continuous: bool = True,
+            is_direct_collocation: bool = None,
+            include_starting_collocation_point: bool = False,
+        ) -> np.ndarray:
+            """
+            Define the time steps for the integration of the whole phase
+
+            Parameters
+            ----------
+            dynamics_step_time: list
+                The step time of the dynamics function
+            ode_solver_steps: int
+                The number of steps of the ode solver
+            keep_intermediate_points: bool
+                If the integration should return the intermediate values of the integration [False]
+                or only keep the node [True] effective keeping the initial size of the states
+            continuous: bool
+                If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
+                arrival node and the beginning of the next one are expected to be almost equal when the problem converged
+            is_direct_collocation: bool
+                If the ode solver is direct collocation
+            include_starting_collocation_point
+                If the ode solver is direct collocation and an additional collocation point at the shooting node was used
+
+            Returns
+            -------
+            step_times: np.ndarray
+                The time steps for each interval of the phase of ocp
+
+            # TODO: move it somewhere else too :)
+            """
+
+            if keep_intermediate_points is None:
+                keep_intermediate_points = True if is_direct_collocation else False
+
+            if is_direct_collocation:
+                # time is not linear because of the collocation points
+                if keep_intermediate_points:
+                    step_times = np.array(dynamics_step_time + [1])
+
+                    if include_starting_collocation_point:
+                        step_times = np.array([0] + step_times)
+                else:
+                    step_times = np.array(dynamics_step_time + [1])[[0, -1]]
+
+            else:
+                # time is linear in the case of direct multiple shooting
+                step_times = np.linspace(0, 1, ode_solver_steps + 1) if keep_intermediate_points else np.array([0, 1])
+            # it does not take the last nodes of each interval
+            if continuous:
+                step_times = step_times[:-1]
+
+            return step_times
+
+        def _complete_controls(self, controls: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+            """
+            Controls don't necessarily have dimensions that matches the states. This method aligns them
+            E.g. if the control is constant, it will add a column of nan to match the states
+            But if the control is linear, it won't do anything
+
+            Parameters
+            ----------
+            controls: dict[str, np.ndarray]
+                Control either scaled or unscaled it doesn't matter here.
+
+            Returns
+            -------
+            controls: dict[str, np.ndarray]
+                Controls with the extra NaN if relevant
+            """
+
+            def add_nan_column(matrix):
+                nan_column = np.nan * np.zeros((matrix.shape[0], 1))
+                return np.concatenate((matrix, nan_column), axis=1)
+
+            if self.control_type in (ControlType.CONSTANT, ControlType.NONE):
+                controls = {key: add_nan_column(matrix) for key, matrix in controls.items()}
+            elif self.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+                pass
+            else:
+                raise NotImplementedError(f"ControlType {self.control_type} is not implemented in _complete_control")
+
+            return controls
+
     class SimplifiedOCP:
         """
         A simplified version of the NonLinearProgram structure (compatible with pickle)
@@ -412,33 +544,96 @@ class Solution:
                 )
             return integrated_values_num
 
-        def _to_unscaled_values(self, states_scaled, controls_scaled, stochastic_variables_scaled) -> tuple:
+        def _generate_time(
+            self,
+            time_phase: list[float],
+            keep_intermediate_points: bool = None,
+            merge_phases: bool = False,
+            shooting_type: Shooting = None,
+        ) -> np.ndarray | list[np.ndarray]:
             """
-            Convert values of scaled solution to unscaled values
+            Generate time integration vector
+
+            Parameters
+            ----------
+            time_phase: list[float]
+                list of time phase for each phase
+            keep_intermediate_points
+                If the integration should return the intermediate values of the integration [False]
+                or only keep the node [True] effective keeping the initial size of the states
+            merge_phases: bool
+                If the phase should be merged in a unique phase
+            shooting_type: Shooting
+                Which type of integration such as Shooting.SINGLE_CONTINUOUS or Shooting.MULTIPLE,
+                default is None but behaves as Shooting.SINGLE.
+
+            Returns
+            -------
+            t_integrated: np.ndarray or list of np.ndarray
+            The time vector
+            """
+            if shooting_type is None:
+                shooting_type = Shooting.SINGLE_DISCONTINUOUS_PHASE
+
+            time_vector = []
+            for p, nlp in enumerate(self.nlp):
+                phase_time_vector = nlp._generate_time(time_phase, keep_intermediate_points, shooting_type)
+                time_vector.append(phase_time_vector)
+
+            if merge_phases:
+                return concatenate_optimization_variables(
+                    time_vector, continuous_phase=shooting_type == Shooting.SINGLE
+                )
+            else:
+                return time_vector
+
+        def _complete_controls(
+            self, controls: dict[str, list[dict[str, np.ndarray]]]
+        ) -> dict[str, list[dict[str, np.ndarray]]]:
+            """
+            Controls don't necessarily have dimensions that matches the states. This method aligns them
+            E.g. if the control is constant, it will add a column of nan to match the states
+            But if the control is linear, it won't do anything
+
+            Parameters
+            ----------
+            controls: dict[str, list[dict[str, np.ndarray]]]
+                Controls of the optimal control problem
+
+            Returns
+            -------
+            controls: dict[str, list[dict[str, np.ndarray]]]
+                Completed controls with the extra nan if relevant
+
             """
 
-            states = [{} for _ in range(len(states_scaled))]
-            controls = [{} for _ in range(len(controls_scaled))]
-            stochastic_variables = [{} for _ in range(len(stochastic_variables_scaled))]
-            for phase in range(len(states_scaled)):
-                states[phase] = {}
-                controls[phase] = {}
-                stochastic_variables[phase] = {}
-                for key, value in states_scaled[phase].items():
-                    states[phase][key] = value * self.nlp[phase].x_scaling[key].to_array(
-                        states_scaled[phase][key].shape[1])
-                for key, value in controls_scaled[phase].items():
-                    controls[phase][key] = value * self.nlp[phase].u_scaling[key].to_array(
-                        controls_scaled[phase][key].shape[1]
-                    )
-                for key, value in stochastic_variables_scaled[phase].items():
-                    stochastic_variables[phase][key] = value * self.nlp[phase].s_scaling[key].to_array(
-                        stochastic_variables_scaled[phase][key].shape[1]
-                    )
+            for p, nlp in enumerate(self.nlp):
+                controls["scaled"][p] = nlp._complete_controls(controls["scaled"][p])
+                controls["unscaled"][p] = nlp._complete_controls(controls["unscaled"][p])
 
-            return states, controls, stochastic_variables
+            return controls
 
-    def __init__(self, ocp, sol: dict | list | tuple | np.ndarray | DM | None):
+    def __init__(
+        self,
+        ocp,
+        ns: list,
+        vector: np.ndarray,
+        cost: np.ndarray,
+        lam_g: np.ndarray,
+        lam_p: np.ndarray,
+        lam_x: np.ndarray,
+        inf_pr: np.ndarray,
+        inf_du: np.ndarray,
+        solver_time_to_optimize: float,
+        real_time_to_optimize: float,
+        iterations: int,
+        status: int,
+        _states: dict = {},
+        _controls: dict = {},
+        parameters: dict = {},
+        _stochastic_variables: dict = {},
+        phase_time: list = [],
+    ):
         """
         Parameters
         ----------
@@ -449,7 +644,7 @@ class Solution:
         """
 
         self.ocp = Solution.SimplifiedOCP(ocp) if ocp else None
-        self.ns = [nlp.ns for nlp in self.ocp.nlp]
+        self.ns = ns
 
         # Current internal state of the data
         self.is_interpolated = False
@@ -457,295 +652,323 @@ class Solution:
         self.is_merged = False
         self.recomputed_time_steps = False
 
-        self.vector = None
-        self._cost = None
+        self.vector = vector
+        self._cost = cost
         self.constraints = None
         self._detailed_cost = None
 
-        self.lam_g = None
-        self.lam_p = None
-        self.lam_x = None
-        self.inf_pr = None
-        self.inf_du = None
-        self.solver_time_to_optimize = None
-        self.real_time_to_optimize = None
-        self.iterations = None
-        self.status = None
+        self.lam_g = lam_g
+        self.lam_p = lam_p
+        self.lam_x = lam_x
+        self.inf_pr = inf_pr
+        self.inf_du = inf_du
+        self.solver_time_to_optimize = solver_time_to_optimize
+        self.real_time_to_optimize = real_time_to_optimize
+        self.iterations = iterations
+        self.status = status
         self._time_vector = None
 
         # Extract the data now for further use
-        self._states = {}
-        self._controls = {}
-        self.parameters = {}
-        self._stochastic_variables = {}
-        self._integrated_values = {}
-        self.phase_time = []
+        (
+            _states["unscaled"],
+            _controls["unscaled"],
+            _stochastic_variables["unscaled"],
+        ) = self._to_unscaled_values(_states["scaled"], _controls["scaled"], _stochastic_variables["scaled"])
 
-        # def init_from_dict(cls, _sol: dict):
-        #     """
-        #     Initialize all the attributes from an Ipopt-like dictionary data structure
-        #
-        #     Parameters
-        #     ----------
-        #     _sol: dict
-        #         The solution in a Ipopt-like dictionary
-        #     """
-        #
-        #     self.vector = _sol["x"]
-        #     if _sol["solver"] == SolverType.IPOPT.value:
-        #         self._cost = _sol["f"]
-        #         self.constraints = _sol["g"]
-        #
-        #         self.lam_g = _sol["lam_g"]
-        #         self.lam_p = _sol["lam_p"]
-        #         self.lam_x = _sol["lam_x"]
-        #         self.inf_pr = _sol["inf_pr"]
-        #         self.inf_du = _sol["inf_du"]
-        #
-        #     self.solver_time_to_optimize = _sol["solver_time_to_optimize"]
-        #     self.real_time_to_optimize = _sol["real_time_to_optimize"]
-        #     self.iterations = _sol["iter"]
-        #     self.status = _sol["status"]
-        #
-        #     # Extract the data now for further use
-        #     (
-        #         self._states["scaled"],
-        #         self._controls["scaled"],
-        #         self.parameters,
-        #         self._stochastic_variables["scaled"],
-        #     ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
-        #     (
-        #         self._states["unscaled"],
-        #         self._controls["unscaled"],
-        #         self._stochastic_variables["unscaled"],
-        #     ) = self._to_unscaled_values(
-        #         self._states["scaled"], self._controls["scaled"], self._stochastic_variables["scaled"]
-        #     )
-        #     self._complete_control()
-        #     self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
-        #     self._time_vector = self._generate_time()
-        #     self._integrated_values = self.ocp.get_integrated_values(
-        #         self._states["unscaled"],
-        #         self._controls["unscaled"],
-        #         [self.parameters for _ in range(self.ocp.n_phases)],  # artificially duplicate to use it in every phase
-        #         self._stochastic_variables["unscaled"],
-        #     )
+        self._states = _states
+        self._controls = self.ocp._complete_controls(_controls)
+        self.parameters = parameters
+        self._stochastic_variables = _stochastic_variables
+        self.phase_time = phase_time
+        self._time_vector = self.ocp._generate_time(phase_time)
+        self._integrated_values = self.ocp.get_integrated_values(
+            self._states["unscaled"],
+            self._controls["unscaled"],
+            self.parameters,
+            self._stochastic_variables["unscaled"],
+        )
 
-        @classmethod
-        def init_from_dict(cls, ocp, _sol: dict):
-            """
-            Initialize all the attributes from an Ipopt-like dictionary data structure
+    @classmethod
+    def from_dict(cls, ocp, _sol: dict):
+        """
+        Initialize all the attributes from an Ipopt-like dictionary data structure
 
-            Parameters
-            ----------
-            _sol: dict
-                The solution in a Ipopt-like dictionary
-            """
+        Parameters
+        ----------
+        _sol: dict
+            The solution in a Ipopt-like dictionary
+        """
 
-            # Extract the data now for further use
-            _states = {}
-            _controls = {}
-            _stochastic_variables = {}
-            (
-                _states["scaled"],
-                _controls["scaled"],
-                parameters,
-                _stochastic_variables["scaled"],
-            ) = OptimizationVectorHelper.to_dictionaries(ocp, _sol["x"])
+        if not isinstance(_sol, dict):
+            raise ValueError("The _sol entry should be a dictionnary")
 
-            (
-                _states["unscaled"],
-                _controls["unscaled"],
-                _stochastic_variables["unscaled"],
-            ) = ocp._to_unscaled_values(
-                _states["scaled"], _controls["scaled"], _stochastic_variables["scaled"]
+        # Extract the data now for further use
+        _states = {}
+        _controls = {}
+        _stochastic_variables = {}
+
+        (
+            _states["scaled"],
+            _controls["scaled"],
+            parameters,
+            _stochastic_variables["scaled"],
+        ) = OptimizationVectorHelper.to_dictionaries(ocp, _sol["x"])
+
+        return cls(
+            ocp=ocp,
+            ns=[nlp.ns for nlp in ocp.nlp],
+            vector=_sol["x"],
+            cost=_sol["f"],
+            lam_g=_sol["lam_g"] if _sol["solver"] == SolverType.IPOPT.value else None,
+            lam_p=_sol["lam_p"] if _sol["solver"] == SolverType.IPOPT.value else None,
+            lam_x=_sol["lam_x"] if _sol["solver"] == SolverType.IPOPT.value else None,
+            inf_pr=_sol["inf_pr"] if _sol["solver"] == SolverType.IPOPT.value else None,
+            inf_du=_sol["inf_du"] if _sol["solver"] == SolverType.IPOPT.value else None,
+            solver_time_to_optimize=_sol["solver_time_to_optimize"],
+            real_time_to_optimize=_sol["real_time_to_optimize"],
+            iterations=_sol["iter"],
+            status=_sol["status"],
+            _states=_states,
+            _controls=_controls,
+            parameters=parameters,
+            _stochastic_variables=_stochastic_variables,
+            phase_time=OptimizationVectorHelper.extract_phase_time(ocp, _sol["x"]),
+        )
+
+    @classmethod
+    def from_initial_guess(cls, ocp, _sol: list):
+        """
+        Initialize all the attributes from a list of initial guesses (states, controls)
+
+        Parameters
+        ----------
+        _ocp:
+
+        _sol: list
+            The list of initial guesses
+        """
+
+        if not (isinstance(_sol, (list, tuple)) and len(_sol) == 4):
+            raise ValueError("_sol should be a list of tuple and the length should be 4")
+
+        n_param = len(ocp.parameters)
+        all_ns = [nlp.ns for nlp in ocp.nlp]
+
+        # Sanity checks
+        for i in range(len(_sol)):  # Convert to list if necessary and copy for as many phases there are
+            if isinstance(_sol[i], InitialGuess):
+                tp = InitialGuessList()
+                for _ in range(len(all_ns)):
+                    tp.add(deepcopy(_sol[i].init), interpolation=_sol[i].init.type)
+                _sol[i] = tp
+        if sum([isinstance(s, InitialGuessList) for s in _sol]) != 4:
+            raise ValueError(
+                "solution must be a solution dict, "
+                "an InitialGuess[List] of len 4 (states, controls, parameters, stochastic_variables), "
+                "or a None"
             )
-
-            # self._time_vector = self._generate_time()
-            # self._integrated_values = self.ocp.get_integrated_values(
-            #     _states["unscaled"],
-            #     _controls["unscaled"],
-            #     [parameters for _ in range(ocp.n_phases)],  # artificially duplicate to use it in every phase
-            #     _stochastic_variables["unscaled"],
-            # )
-            return cls(
-                ocp=ocp,
-                vector=_sol["x"],
-                cost=_sol["f"],
-                lam_g=_sol["lam_g"] if _sol["solver"] == SolverType.IPOPT.value else None,
-                lam_p=_sol["lam_p"] if _sol["solver"] == SolverType.IPOPT.value else None,
-                lam_x=_sol["lam_x"] if _sol["solver"] == SolverType.IPOPT.value else None,
-                inf_pr=_sol["inf_pr"] if _sol["solver"] == SolverType.IPOPT.value else None,
-                inf_du=_sol["inf_du"] if _sol["solver"] == SolverType.IPOPT.value else None,
-                solver_time_to_optimize=_sol["solver_time_to_optimize"],
-                real_time_to_optimize=_sol["real_time_to_optimize"],
-                iterations=_sol["iter"],
-                status=_sol["status"],
-                _states=_states,
-                _controls=ocp._complete_control(_controls),
-                parameters=parameters,
-                _stochastic_variables=_stochastic_variables,
-                phase_time=OptimizationVectorHelper.extract_phase_time(ocp, _sol["x"]),
-                _time_vector=self._time_vector,
-                _integrated_values=self._integrated_values,
-            )
-
-        def init_from_initial_guess(_sol: list):
-            """
-            Initialize all the attributes from a list of initial guesses (states, controls)
-
-            Parameters
-            ----------
-            _sol: list
-                The list of initial guesses
-            """
-
-            n_param = len(ocp.parameters)
-
-            # Sanity checks
-            for i in range(len(_sol)):  # Convert to list if necessary and copy for as many phases there are
-                if isinstance(_sol[i], InitialGuess):
-                    tp = InitialGuessList()
-                    for _ in range(len(self.ns)):
-                        tp.add(deepcopy(_sol[i].init), interpolation=_sol[i].init.type)
-                    _sol[i] = tp
-            if sum([isinstance(s, InitialGuessList) for s in _sol]) != 4:
+        if sum([len(s) != len(all_ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
+            raise ValueError("The InitialGuessList len must match the number of phases")
+        if n_param != 0:
+            if len(_sol) != 3 and len(_sol[3]) != 1 and _sol[3][0].shape != (n_param, 1):
                 raise ValueError(
-                    "solution must be a solution dict, "
-                    "an InitialGuess[List] of len 4 (states, controls, parameters, stochastic_variables), "
-                    "or a None"
+                    "The 3rd element is the InitialGuess of the parameter and "
+                    "should be a unique vector of size equal to n_param"
                 )
-            if sum([len(s) != len(self.ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
-                raise ValueError("The InitialGuessList len must match the number of phases")
-            if n_param != 0:
-                if len(_sol) != 3 and len(_sol[3]) != 1 and _sol[3][0].shape != (n_param, 1):
-                    raise ValueError(
-                        "The 3rd element is the InitialGuess of the parameter and "
-                        "should be a unique vector of size equal to n_param"
-                    )
 
-            self.vector = np.ndarray((0, 1))
-            sol_states, sol_controls, sol_params, sol_stochastic_variables = _sol
+        vector = np.ndarray((0, 1))
+        sol_states, sol_controls, sol_params, sol_stochastic_variables = _sol
 
-            # For states
-            for p, ss in enumerate(sol_states):
-                repeat = 1
-                if isinstance(self.ocp.nlp[p].ode_solver, OdeSolver.COLLOCATION):
-                    repeat = self.ocp.nlp[p].ode_solver.polynomial_degree + 1
+        # For states
+        for p, ss in enumerate(sol_states):
+            repeat = 1
+            if isinstance(ocp.nlp[p].ode_solver, OdeSolver.COLLOCATION):
+                repeat = ocp.nlp[p].ode_solver.polynomial_degree + 1
+            for key in ss.keys():
+                ns = ocp.nlp[p].ns + 1 if ss[key].init.type != InterpolationType.EACH_FRAME else ocp.nlp[p].ns
+                ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].states[key]), ns, "states")
+
+            for i in range(ns[p] + 1):
                 for key in ss.keys():
-                    ns = (
-                        self.ocp.nlp[p].ns + 1
-                        if ss[key].init.type != InterpolationType.EACH_FRAME
-                        else self.ocp.nlp[p].ns
-                    )
-                    ss[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].states[key]), ns, "states")
+                    vector = np.concatenate((vector, ss[key].init.evaluate_at(i, repeat)[:, np.newaxis]))
 
-                for i in range(self.ns[p] + 1):
-                    for key in ss.keys():
-                        self.vector = np.concatenate((self.vector, ss[key].init.evaluate_at(i, repeat)[:, np.newaxis]))
+        # For controls
+        for p, ss in enumerate(sol_controls):
+            control_type = ocp.nlp[p].control_type
+            if control_type == ControlType.CONSTANT:
+                off = 0
+            elif control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+                off = 1
+            else:
+                raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
 
-            # For controls
-            for p, ss in enumerate(sol_controls):
-                control_type = self.ocp.nlp[p].control_type
-                if control_type == ControlType.CONSTANT:
-                    off = 0
-                elif control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
-                    off = 1
-                else:
-                    raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
+            for key in ss.keys():
+                ocp.nlp[p].controls[key].node_index = 0
+                ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].controls[key]), all_ns[p], "controls")
 
+            for i in range(all_ns[p] + off):
                 for key in ss.keys():
-                    self.ocp.nlp[p].controls[key].node_index = 0
-                    ss[key].init.check_and_adjust_dimensions(len(self.ocp.nlp[p].controls[key]), self.ns[p], "controls")
+                    vector = np.concatenate((vector, ss[key].init.evaluate_at(i)[:, np.newaxis]))
 
-                for i in range(self.ns[p] + off):
-                    for key in ss.keys():
-                        self.vector = np.concatenate((self.vector, ss[key].init.evaluate_at(i)[:, np.newaxis]))
+        # For parameters
+        if n_param:
+            for p, ss in enumerate(sol_params):
+                vector = np.concatenate((vector, np.repeat(ss.init, all_ns[p] + 1)[:, np.newaxis]))
 
-            # For parameters
-            if n_param:
-                for p, ss in enumerate(sol_params):
-                    self.vector = np.concatenate((self.vector, np.repeat(ss.init, self.ns[p] + 1)[:, np.newaxis]))
+        # For stochastic variables
+        for p, ss in enumerate(sol_stochastic_variables):
+            for key in ss.keys():
+                ocp.nlp[p].stochastic_variables[key].node_index = 0
+                ss[key].init.check_and_adjust_dimensions(
+                    len(ocp.nlp[p].stochastic_variables[key]), all_ns[p], "stochastic_variables"
+                )
 
-            # For stochastic variables
-            for p, ss in enumerate(sol_stochastic_variables):
+            for i in range(all_ns[p] + 1):
                 for key in ss.keys():
-                    self.ocp.nlp[p].stochastic_variables[key].node_index = 0
-                    ss[key].init.check_and_adjust_dimensions(
-                        len(self.ocp.nlp[p].stochastic_variables[key]), self.ns[p], "stochastic_variables"
-                    )
+                    vector = np.concatenate((vector, ss[key].init.evaluate_at(i)[:, np.newaxis]))
 
-                for i in range(self.ns[p] + 1):
-                    for key in ss.keys():
-                        self.vector = np.concatenate((self.vector, ss[key].init.evaluate_at(i)[:, np.newaxis]))
+        _states = {}
+        _controls = {}
+        _stochastic_variables = {}
+        (
+            _states["scaled"],
+            _controls["scaled"],
+            parameters,
+            _stochastic_variables["scaled"],
+        ) = OptimizationVectorHelper.to_dictionaries(ocp, vector)
 
-            (
-                self._states["scaled"],
-                self._controls["scaled"],
-                self.parameters,
-                self._stochastic_variables["scaled"],
-            ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
-            (
-                self._states["unscaled"],
-                self._controls["unscaled"],
-                self._stochastic_variables["unscaled"],
-            ) = self._to_unscaled_values(
-                self._states["scaled"], self._controls["scaled"], self._stochastic_variables["scaled"]
-            )
-            self._complete_control()
-            self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
-            self._time_vector = self._generate_time()
-            self._integrated_values = self.ocp.get_integrated_values(
-                self._states["unscaled"],
-                self._controls["unscaled"],
-                self.parameters,
-                self._stochastic_variables["unscaled"],
-            )
+        return cls(
+            ocp=ocp,
+            ns=[nlp.ns for nlp in ocp.nlp],
+            vector=vector,
+            cost=_sol["f"],
+            lam_g=None,
+            lam_p=None,
+            lam_x=None,
+            inf_pr=None,
+            inf_du=None,
+            solver_time_to_optimize=None,
+            real_time_to_optimize=None,
+            iterations=None,
+            status=None,
+            _states=_states,
+            _controls=_controls,
+            parameters=parameters,
+            _stochastic_variables=_stochastic_variables,
+            phase_time=OptimizationVectorHelper.extract_phase_time(ocp, vector),
+        )
 
-        def init_from_vector(_sol: np.ndarray | DM):
-            """
-            Initialize all the attributes from a vector of solution
+    @classmethod
+    def from_vector(cls, ocp, _sol: np.ndarray | DM):
+        """
+        Initialize all the attributes from a vector of solution
 
-            Parameters
-            ----------
-            _sol: np.ndarray | DM
-                The solution in vector format
-            """
+        Parameters
+        ----------
+        _sol: np.ndarray | DM
+            The solution in vector format
+        """
 
-            self.vector = _sol
-            (
-                self._states["scaled"],
-                self._controls["scaled"],
-                self.parameters,
-                self._stochastic_variables["scaled"],
-            ) = OptimizationVectorHelper.to_dictionaries(self.ocp, self.vector)
-            (
-                self._states["unscaled"],
-                self._controls["unscaled"],
-                self._stochastic_variables["unscaled"],
-            ) = self._to_unscaled_values(
-                self._states["scaled"], self._controls["scaled"], self._stochastic_variables["scaled"]
-            )
-            self._complete_control()
-            self.phase_time = OptimizationVectorHelper.extract_phase_time(self.ocp, self.vector)
-            self._integrated_values = self.ocp.get_integrated_values(
-                self._states["unscaled"],
-                self._controls["unscaled"],
-                self.parameters,
-                self._stochastic_variables["unscaled"],
-            )
+        if not isinstance(_sol, (np.ndarray, DM)):
+            raise ValueError("The _sol entry shoulde be a np.ndarray or a DM.")
 
-        if isinstance(sol, dict):
-            init_from_dict(sol)
-        elif isinstance(sol, (list, tuple)) and len(sol) == 4:
-            init_from_initial_guess(sol)
-        elif isinstance(sol, (np.ndarray, DM)):
-            init_from_vector(sol)
-        elif sol is None:
-            self.ns = []
-        else:
-            raise ValueError("Solution called with unknown initializer")
+        vector = _sol
+        _states = {}
+        _controls = {}
+        _stochastic_variables = {}
+        (
+            _states["scaled"],
+            _controls["scaled"],
+            parameters,
+            _stochastic_variables["scaled"],
+        ) = OptimizationVectorHelper.to_dictionaries(ocp, vector)
 
+        return cls(
+            ocp=ocp,
+            ns=[nlp.ns for nlp in ocp.nlp],
+            vector=vector,
+            cost=_sol["f"],
+            lam_g=None,
+            lam_p=None,
+            lam_x=None,
+            inf_pr=None,
+            inf_du=None,
+            solver_time_to_optimize=None,
+            real_time_to_optimize=None,
+            iterations=None,
+            status=None,
+            _states=_states,
+            _controls=_controls,
+            parameters=parameters,
+            _stochastic_variables=_stochastic_variables,
+            phase_time=OptimizationVectorHelper.extract_phase_time(ocp, vector),
+        )
+
+    @classmethod
+    def from_ocp(cls, ocp):
+        """
+        Initialize all the attributes from a vector of solution
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+
+        """
+
+        return cls(
+            ocp=ocp,
+            ns=None,
+            vector=None,
+            cost=None,
+            lam_g=None,
+            lam_p=None,
+            lam_x=None,
+            inf_pr=None,
+            inf_du=None,
+            solver_time_to_optimize=None,
+            real_time_to_optimize=None,
+            iterations=None,
+            status=None,
+            _states=None,
+            _controls=None,
+            parameters=None,
+            _stochastic_variables=None,
+            phase_time=None,
+        )
+
+    def _to_unscaled_values(self, states_scaled, controls_scaled, stochastic_variables_scaled) -> tuple:
+        """
+        Convert values of scaled solution to unscaled values
+        """
+
+        states = [{} for _ in range(len(states_scaled))]
+        controls = [{} for _ in range(len(controls_scaled))]
+        stochastic_variables = [{} for _ in range(len(stochastic_variables_scaled))]
+        for phase in range(len(states_scaled)):
+            states[phase] = {}
+            controls[phase] = {}
+            stochastic_variables[phase] = {}
+            for key, value in states_scaled[phase].items():
+                states[phase][key] = value * self.ocp.nlp[phase].x_scaling[key].to_array(
+                    states_scaled[phase][key].shape[1])
+            for key, value in controls_scaled[phase].items():
+                controls[phase][key] = value * self.ocp.nlp[phase].u_scaling[key].to_array(
+                    controls_scaled[phase][key].shape[1]
+                )
+            for key, value in stochastic_variables_scaled[phase].items():
+                stochastic_variables[phase][key] = value * self.ocp.nlp[phase].s_scaling[key].to_array(
+                    stochastic_variables_scaled[phase][key].shape[1]
+                )
+            # for key, value in states_scaled[phase].items():
+            #     states[phase][key] = self.ocp.nlp[phase].x_scaling[key].apply(states_scaled[phase][key])
+            # for key, value in controls_scaled[phase].items():
+            #     controls[phase][key] = self.ocp.nlp[phase].u_scaling[key].apply(controls_scaled[phase][key])
+            # for key, value in stochastic_variables_scaled[phase].items():
+            #     stochastic_variables[phase][key] = (
+            #         self.ocp.nlp[phase].s_scaling[key].apply(stochastic_variables_scaled[phase][key])
+            #     )
+
+        return states, controls, stochastic_variables
 
     @property
     def cost(self):
@@ -776,7 +999,7 @@ class Solution:
         Return a Solution data structure
         """
 
-        new = Solution(self.ocp, None)
+        new = Solution.from_ocp(self.ocp, None)
 
         new.vector = deepcopy(self.vector)
         new._cost = deepcopy(self._cost)
@@ -1843,35 +2066,6 @@ class Solution:
             phase_time,
             ns,
         )
-
-    # def _complete_control(self):
-    #     """
-    #     Controls don't necessarily have dimensions that matches the states. This method aligns them
-    #     E.g. if the control is constant, it will add a column of nan to match the states
-    #     But if the control is linear, it won't do anything
-    #     """
-    #
-    #     for p, nlp in enumerate(self.ocp.nlp):
-    #         if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
-    #             for key in self._controls["scaled"][p]:
-    #                 self._controls["scaled"][p][key] = np.concatenate(
-    #                     (
-    #                         self._controls["scaled"][p][key],
-    #                         np.nan * np.zeros((self._controls["scaled"][p][key].shape[0], 1)),
-    #                     ),
-    #                     axis=1,
-    #                 )
-    #                 self._controls["unscaled"][p][key] = np.concatenate(
-    #                     (
-    #                         self._controls["unscaled"][p][key],
-    #                         np.nan * np.zeros((self._controls["unscaled"][p][key].shape[0], 1)),
-    #                     ),
-    #                     axis=1,
-    #                 )
-    #         elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
-    #             pass
-    #         else:
-    #             raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
 
     def graphs(
         self,
