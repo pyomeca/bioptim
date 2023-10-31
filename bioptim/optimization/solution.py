@@ -404,7 +404,7 @@ class Solution:
                             (nb_elements,),
                         )
                     integrated_values_num[i_phase][key] = integrated_values_data
-                return integrated_values_num
+            return integrated_values_num
 
         def init_from_dict(_sol: dict):
             """
