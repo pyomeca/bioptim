@@ -858,23 +858,20 @@ class Solver:
 
         def as_dict(self, solver):
             options = {}
-            for key in self.__annotations__.keys():
-                if (
-                    key == "_acados_dir"
-                    or key == "_cost_type"
-                    or key == "_constr_type"
-                    or key == "_has_tolerance_changed"
-                    or key == "_only_first_options_has_changed"
-                    or key == "type"
-                    or key == "_c_compile"
-                    or key == "_c_generated_code_path"
-                    or key == "_acados_model_name"
-                ):
-                    continue
-                if key[0] == "_":
-                    options[key[1:]] = self.__getattribute__(key)
-                else:
-                    options[key] = self.__getattribute__(key)
+            keys_to_skip = {
+                "_acados_dir", "_cost_type", "_constr_type", "_has_tolerance_changed",
+                "_only_first_options_has_changed", "type", "_c_compile",
+                "_c_generated_code_path", "_acados_model_name"
+            }
+
+            # Select the set of relevant keys before entering the loop
+            relevant_keys = set(self.__annotations__.keys()) - keys_to_skip
+
+            # Iterate only over relevant keys
+            for key in relevant_keys:
+                option_key = key[1:] if key[0] == "_" else key
+                options[option_key] = getattr(self, key)
+
             return options
 
         @property
