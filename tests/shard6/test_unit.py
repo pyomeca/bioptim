@@ -10,6 +10,11 @@ from bioptim.optimization.optimal_control_program import (
     _scale_values,
 )
 
+from bioptim.optimization.solution import (
+    concatenate_optimization_variables_dict,
+    concatenate_optimization_variables,
+)
+
 
 def test_reshape_to_column_1d():
     array = np.array([1, 2, 3, 4])
@@ -163,3 +168,30 @@ def test_scale_values_with_multinode():
     result = _scale_values(values, scaling_entities, penalty, scaling_data)
     expected = np.array([[1, 2], [1, 2], [2, 4], [1.5, 4]])
     assert np.allclose(result, expected)
+
+
+def test_concatenate_optimization_variables_dict():
+    variables = [
+        {"a": np.array([[1, 2, 3], [4, 5, 6]]), "b": np.array([[7, 8, 9], [10, 11, 12]])},
+        {"a": np.array([[13, 14, 15], [16, 17, 18]]), "b": np.array([[19, 20, 21], [22, 23, 24]])},
+    ]
+    result = concatenate_optimization_variables_dict(variables)
+    expected_a = np.array([[1, 2, 13, 14, 15], [4, 5, 16, 17, 18]])
+    expected_b = np.array([[7, 8, 19, 20, 21], [10, 11, 22, 23, 24]])
+    assert np.array_equal(result[0]["a"], expected_a)
+    assert np.array_equal(result[0]["b"], expected_b)
+
+    with pytest.raises(ValueError):
+        concatenate_optimization_variables_dict({"a": np.array([1, 2, 3])})
+
+
+def test_concatenate_optimization_variables_simple():
+    variables = [np.array([1, 2, 3]), np.array([4, 5, 6]), np.array([7, 8, 9])]
+    result = concatenate_optimization_variables(variables)
+    assert np.array_equal(result, np.array([1, 2, 4, 5, 7, 8, 9]))
+
+
+def test_concatenate_optimization_variables_flags():
+    variables = [np.array([1, 2, 3, 4]), np.array([5, 6, 7, 8])]
+    result = concatenate_optimization_variables(variables, continuous_phase=False)
+    assert np.array_equal(result, np.array([1, 2, 3, 4, 5, 6, 7, 8]))
