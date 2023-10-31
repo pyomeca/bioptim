@@ -859,9 +859,15 @@ class Solver:
         def as_dict(self, solver):
             options = {}
             keys_to_skip = {
-                "_acados_dir", "_cost_type", "_constr_type", "_has_tolerance_changed",
-                "_only_first_options_has_changed", "type", "_c_compile",
-                "_c_generated_code_path", "_acados_model_name"
+                "_acados_dir",
+                "_cost_type",
+                "_constr_type",
+                "_has_tolerance_changed",
+                "_only_first_options_has_changed",
+                "type",
+                "_c_compile",
+                "_c_generated_code_path",
+                "_acados_model_name",
             }
 
             # Select the set of relevant keys before entering the loop
