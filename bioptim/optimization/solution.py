@@ -384,7 +384,7 @@ class Solution:
             self,
             states: list[np.ndarray],
             controls: list[np.ndarray],
-            parameters: list[np.ndarray],
+            parameters: np.ndarray,
             stochastic_variables: list[np.ndarray],
         ):
             """
@@ -394,7 +394,7 @@ class Solution:
             ----------
             states: list[np.ndarray]
             controls: list[np.ndarray]
-            parameters: list[np.ndarray]
+            parameters: np.ndarray
             stochastic_variables: list[np.ndarray]
 
             Returns
@@ -407,7 +407,7 @@ class Solution:
                 integrated_values_num[i_phase] = nlp.get_integrated_values(
                     states[i_phase],
                     controls[i_phase],
-                    parameters[i_phase],
+                    parameters,
                     stochastic_variables[i_phase],
                 )
             return integrated_values_num
@@ -501,7 +501,7 @@ class Solution:
             self._integrated_values = self.ocp.get_integrated_values(
                 self._states["unscaled"],
                 self._controls["unscaled"],
-                [self.parameters for _ in range(self.ocp.n_phases)],  # artificially duplicate to use it in every phase
+                self.parameters,
                 self._stochastic_variables["unscaled"],
             )
 
@@ -613,7 +613,7 @@ class Solution:
             self._integrated_values = self.ocp.get_integrated_values(
                 self._states["unscaled"],
                 self._controls["unscaled"],
-                [self.parameters for _ in range(self.ocp.n_phases)],  # artificially duplicate to use it in every phase
+                self.parameters,
                 self._stochastic_variables["unscaled"],
             )
 
@@ -646,7 +646,7 @@ class Solution:
             self._integrated_values = self.ocp.get_integrated_values(
                 self._states["unscaled"],
                 self._controls["unscaled"],
-                [self.parameters for _ in range(self.ocp.n_phases)],  # artificially duplicate to use it in every phase
+                self.parameters,
                 self._stochastic_variables["unscaled"],
             )
 
