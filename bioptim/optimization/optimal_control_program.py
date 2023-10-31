@@ -2057,6 +2057,50 @@ class OptimalControlProgram:
             else:
                 raise NotImplementedError(f"ControlType {nlp.control_type} is not implemented  in _complete_control")
 
+    def _generate_time(
+        self,
+        keep_intermediate_points: bool = None,
+        merge_phases: bool = False,
+        shooting_type: Shooting = None,
+    ) -> np.ndarray | list[np.ndarray]:
+        """
+        Generate time integration vector
+
+        Parameters
+        ----------
+        keep_intermediate_points
+            If the integration should return the intermediate values of the integration [False]
+            or only keep the node [True] effective keeping the initial size of the states
+        merge_phases: bool
+            If the phase should be merged in a unique phase
+        shooting_type: Shooting
+            Which type of integration such as Shooting.SINGLE_CONTINUOUS or Shooting.MULTIPLE,
+            default is None but behaves as Shooting.SINGLE.
+
+        Returns
+        -------
+        t_integrated: np.ndarray or list of np.ndarray
+        The time vector
+
+        # TODO: Should be a method of OCP
+        # TODO: inner loop should be a method of NLP
+        """
+        if shooting_type is None:
+            shooting_type = Shooting.SINGLE_DISCONTINUOUS_PHASE
+
+        time_vector = []
+        time_phase = self.phase_time
+        for p, nlp in enumerate(self.nlp):
+
+            phase_time_vector = nlp._generate_time(keep_intermediate_points, shooting_type)
+            time_vector.append(phase_time_vector)
+
+        if merge_phases:
+            return concatenate_optimization_variables(time_vector,
+                                                      continuous_phase=shooting_type == Shooting.SINGLE)
+        else:
+            return time_vector
+
 
 # helpers
 def _reshape_to_column(array) -> np.ndarray:
@@ -2098,3 +2142,52 @@ def _scale_values(values, scaling_entities, penalty, scaling_data):
         scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
 
     return values / scaling
+
+
+def concatenate_optimization_variables(
+    variable: list[np.ndarray] | np.ndarray,
+    continuous_phase: bool = True,
+    continuous_interval: bool = True,
+    merge_phases: bool = True,
+) -> np.ndarray | list[dict[np.ndarray]]:
+    """
+    # TODO: remove from here I don't this function to be here forever, duplicated of solution helper.
+    This function concatenates the decision variables of the phases of the system
+    into a single array, omitting the last element of each phase except for the last one.
+
+    Parameters
+    ----------
+    variable : list or dict
+        list of decision variables of the phases of the system
+    continuous_phase: bool
+        If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
+    continuous_interval: bool
+        If the arrival value of a node of each interval should be discarded [True] or kept [False].
+        Only useful in direct multiple shooting
+    merge_phases: bool
+        If the decision variables of each phase should be merged into a single array [True] or kept separated [False].
+
+    Returns
+    -------
+    z_concatenated : np.ndarray or dict
+        array of the decision variables of the phases of the system concatenated
+    """
+    if len(variable[0].shape):
+        if isinstance(variable[0][0], np.ndarray):
+            z_final = []
+            for zi in variable:
+                z_final.append(concatenate_optimization_variables(zi, continuous_interval))
+
+            if merge_phases:
+                return concatenate_optimization_variables(z_final, continuous_phase)
+            else:
+                return z_final
+        else:
+            final_tuple = []
+            for i, y in enumerate(variable):
+                if i < (len(variable) - 1) and continuous_phase:
+                    final_tuple.append(y[:, :-1] if len(y.shape) == 2 else y[:-1])
+                else:
+                    final_tuple.append(y)
+
+        return np.hstack(final_tuple)
