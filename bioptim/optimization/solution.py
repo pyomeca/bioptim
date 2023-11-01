@@ -968,14 +968,6 @@ class Solution:
                 stochastic_variables[phase][key] = value * self.ocp.nlp[phase].s_scaling[key].to_array(
                     stochastic_variables_scaled[phase][key].shape[1]
                 )
-            # for key, value in states_scaled[phase].items():
-            #     states[phase][key] = self.ocp.nlp[phase].x_scaling[key].apply(states_scaled[phase][key])
-            # for key, value in controls_scaled[phase].items():
-            #     controls[phase][key] = self.ocp.nlp[phase].u_scaling[key].apply(controls_scaled[phase][key])
-            # for key, value in stochastic_variables_scaled[phase].items():
-            #     stochastic_variables[phase][key] = (
-            #         self.ocp.nlp[phase].s_scaling[key].apply(stochastic_variables_scaled[phase][key])
-            #     )
 
         return states, controls, stochastic_variables
 
