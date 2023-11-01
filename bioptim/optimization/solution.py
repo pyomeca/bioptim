@@ -184,24 +184,77 @@ class Solution:
         """
         A simplified version of the NonLinearProgram structure (compatible with pickle)
 
+        Methods
+        -------
+        get_integrated_values(self, states: dict, controls: dict, parameters: dict, stochastic_variables: dict) -> dict
+            TODO
+        _generate_time(self, time_phase: np.ndarray, keep_intermediate_points: bool = None,
+            shooting_type: Shooting = None) -> np.ndarray
+            Generate time vector steps for a phase considering all the phase final time
+        _define_step_times(self, dynamics_step_time: list, ode_solver_steps: int,
+            keep_intermediate_points: bool = None, continuous: bool = True,
+            is_direct_collocation: bool = None, include_starting_collocation_point: bool = False) -> np.ndarray
+            Define the time steps for the integration of the whole phase
+        _define_step_times(self, dynamics_step_time: list, ode_solver_steps: int,
+            keep_intermediate_points: bool = None, continuous: bool = True,
+            is_direct_collocation: bool = None, include_starting_collocation_point: bool = False) -> np.ndarray
+            Define the time steps for the integration of the whole phase
+        _complete_controls(self, controls: dict[str, np.ndarray]) -> dict[str, np.ndarray]
+            Controls don't necessarily have dimensions that matches the states. This method aligns them
+
+
         Attributes
         ----------
-        control_type: ControlType
-            The control type for the current nlp
+        tf: float
+            The time of the phase
+        phase_idx: int
+            The index of the phase
+        use_states_from_phase_idx: int
+            The index of the phase from which the states are taken
+        use_controls_from_phase_idx: int
+            The index of the phase from which the controls are taken
+        time_cx: MX.sym
+            The time of the phase
+        states: OptimizationVariableList
+            The states of the phase
+        states_dot: OptimizationVariableList
+            The derivative of the states of the phase
+        controls: OptimizationVariableList
+            The controls of the phase
+        stochastic_variables: OptimizationVariableList
+            The stochastic variables of the phase
+        integrated_values: dict
+            The integrated values of the phase
         dynamics: list[OdeSolver]
             All the dynamics for each of the node of the phase
-        g: list[list[Constraint]]
-            All the constraints at each of the node of the phase
-        J: list[list[Objective]]
-            All the objectives at each of the node of the phase
-        model: BioModel
-            A reference to the biorbd BioModel
-        variable_mappings: dict
-            All the BiMapping of the states and controls
+        dynamics_func: list[Function]
+            All the dynamics function for each of the node of the phase
         ode_solver: OdeSolverBase
             The number of finite element of the RK
+        control_type: ControlType
+            The control type for the current nlp
+        J: list[list[Objective]]
+            All the objectives at each of the node of the phase
+        J_internal: list[list[Objective]]
+            All the objectives at each of the node of the phase
+        g: list[list[Constraint]]
+            All the constraints at each of the node of the phase
+        g_internal: list[list[Constraint]]
+            All the constraints at each of the node of the phase (not built by the user)
+        g_implicit: list[list[Constraint]]
+            All the implicit constraints at each of the node of the phase (mostly implicit dynamics)
         ns: int
             The number of shooting points
+        parameters: OptimizationVariableList
+            The parameters of the phase
+        x_scaling: VariableScalingList
+            The scaling of the states
+        u_scaling: VariableScalingList
+            The scaling of the controls
+        s_scaling: VariableScalingList
+            The scaling of the stochastic variables
+        phase_dynamics: PhaseDynamics
+            The dynamics of the phase such as PhaseDynamics.ONE_PER_NODE
         """
 
         def __init__(self, nlp: NonLinearProgram):
@@ -240,18 +293,16 @@ class Solution:
             self.s_scaling = nlp.s_scaling
             self.phase_dynamics = nlp.phase_dynamics
 
-        def get_integrated_values(
-            self, states: np.ndarray, controls: np.ndarray, parameters: np.ndarray, stochastic_variables: np.ndarray
-        ) -> dict:
+        def get_integrated_values(self, states: dict, controls: dict, parameters: dict, stochastic_variables: dict) -> dict:
             """
             TODO :
 
             Parameters
             ----------
-            states: np.ndarray
-            controls: np.ndarray
-            parameters: np.ndarray
-            stochastic_variables: np.ndarray
+            states: dict
+            controls: dict
+            parameters: dict
+            stochastic_variables: dict
 
             Returns
             -------
@@ -346,6 +397,24 @@ class Solution:
             keep_intermediate_points: bool = None,
             shooting_type: Shooting = None,
         ):
+            """
+            Generate time vector steps for a phase considering all the phase final time
+
+            Parameters
+            ----------
+            time_phase: np.ndarray
+                The time of each phase
+            keep_intermediate_points: bool
+                If the integration should return the intermediate values of the integration [False]
+                or only keep the node [True] effective keeping the initial size of the states
+            shooting_type: Shooting
+                Which type of integration such as Shooting.SINGLE_CONTINUOUS or Shooting.MULTIPLE,
+                default is None but behaves as Shooting.SINGLE.
+
+            Returns
+            -------
+            np.ndarray
+            """
             is_direct_collocation = self.ode_solver.is_direct_collocation
             include_starting_collocation_point = False
             if is_direct_collocation:
@@ -416,8 +485,6 @@ class Solution:
             -------
             step_times: np.ndarray
                 The time steps for each interval of the phase of ocp
-
-            # TODO: move it somewhere else too :)
             """
 
             if keep_intermediate_points is None:
@@ -476,19 +543,43 @@ class Solution:
         """
         A simplified version of the NonLinearProgram structure (compatible with pickle)
 
+        Methods
+        -------
+        get_integrated_values(self, states: list[np.ndarray], controls: list[np.ndarray], parameters: np.ndarray,
+                                stochastic_variables: list[np.ndarray]) -> list[dict]
+            TODO
+        _generate_time(self, time_phase: list[float], keep_intermediate_points: bool = None,
+                        merge_phases: bool = False, shooting_type: Shooting = None) -> np.ndarray | list[np.ndarray]
+            Generate time integration vector
+        _complete_controls(self, controls: dict[str, list[dict[str, np.ndarray]]]) -> dict[str, list[dict[str, np.ndarray]]]
+            Controls don't necessarily have dimensions that matches the states. This method aligns them
+
         Attributes
         ----------
-        g: list
-            Constraints that are not phase dependent (mostly parameters and continuity constraints)
+        nlp: Solution.SimplifiedNLP
+            All the phases of the ocp
+        parameters: dict
+            The parameters of the ocp
+        n_phases: int
+            The number of phases
         J: list
             Objective values that are not phase dependent (mostly parameters)
-        nlp: NLP
-            All the phases of the ocp
+        J_internal: list
+            Objective values that are phase dependent
+        g: list
+            Constraints that are not phase dependent, made by the user
+        g_internal: list
+            Constraints that are phase dependent, not made by the user (mostly dynamics)
+        g_implicit: list
+            Constraints that are phase dependent, not made by the user (mostly implciit dynamics)
         phase_transitions: list[PhaseTransition]
             The list of transition constraint between phases
         prepare_plots: Callable
             The function to call to prepare the PlotOCP
-        The variable optimization holder
+        time_phase_mapping: list
+            The mapping between the time and the phase
+        n_threads: int
+            The number of threads to use for the parallelization
         """
 
         def __init__(self, ocp):
@@ -615,16 +706,16 @@ class Solution:
 
     def __init__(
         self,
-        ocp,
-        ns: list,
-        vector: np.ndarray,
-        cost: np.ndarray,
-        constraints: np.ndarray,
-        lam_g: np.ndarray,
-        lam_p: np.ndarray,
-        lam_x: np.ndarray,
-        inf_pr: np.ndarray,
-        inf_du: np.ndarray,
+        ocp: "OptimalControlProgram",
+        ns: list[float],
+        vector: np.ndarray | DM,
+        cost: np.ndarray | DM,
+        constraints: np.ndarray | DM,
+        lam_g: np.ndarray | DM,
+        lam_p: np.ndarray | DM,
+        lam_x: np.ndarray | DM,
+        inf_pr: np.ndarray | DM,
+        inf_du: np.ndarray | DM,
         solver_time_to_optimize: float,
         real_time_to_optimize: float,
         iterations: int,
@@ -639,8 +730,42 @@ class Solution:
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp to strip
-        sol: dict | list | tuple | np.ndarray | DM | None
-            The values of a solution
+        ns: list[float]
+            The number of shooting points for each phase
+        vector: np.ndarray | DM
+            The solution vector, containing all the states, controls, parameters and stochastic variables
+        cost: np.ndarray | DM
+            The cost value of the objective function
+        constraints: np.ndarray | DM
+            The constraints value
+        lam_g: np.ndarray | DM
+            The lagrange multipliers for the constraints
+        lam_p: np.ndarray | DM
+            The lagrange multipliers for the parameters
+        lam_x: np.ndarray | DM
+            The lagrange multipliers for the states
+        lam_g: np.ndarray | DM
+            The lagrange multipliers for the constraints
+        inf_pr: np.ndarray | DM
+            The primal infeasibility
+        inf_du: np.ndarray | DM
+            The dual infeasibility
+        solver_time_to_optimize: float
+            The time to optimize
+        real_time_to_optimize: float
+            The real time to optimize
+        iterations: int
+            The number of iterations
+        status: int
+            The status of the solution
+        _states: dict
+            The states of the solution
+        _controls: dict
+            The controls of the solution
+        parameters: dict
+            The parameters of the solution
+        _stochastic_variables: dict
+            The stochastic variables of the solution
         """
 
         self.ocp = Solution.SimplifiedOCP(ocp) if ocp else None
@@ -701,12 +826,16 @@ class Solution:
 
         Parameters
         ----------
+        _ocp: OptimalControlProgram
+            A reference to the OptimalControlProgram
         _sol: dict
             The solution in a Ipopt-like dictionary
         """
 
         if not isinstance(_sol, dict):
             raise ValueError("The _sol entry should be a dictionnary")
+
+        is_ipopt = _sol["solver"] == SolverType.IPOPT.value
 
         # Extract the data now for further use
         _states = {}
@@ -719,8 +848,6 @@ class Solution:
             parameters,
             _stochastic_variables["scaled"],
         ) = OptimizationVectorHelper.to_dictionaries(ocp, _sol["x"])
-
-        is_ipopt = _sol["solver"] == SolverType.IPOPT.value
 
         return cls(
             ocp=ocp,
@@ -750,8 +877,8 @@ class Solution:
 
         Parameters
         ----------
-        _ocp:
-
+        _ocp: OptimalControlProgram
+            A reference to the OptimalControlProgram
         _sol: list
             The list of initial guesses
         """
@@ -873,12 +1000,14 @@ class Solution:
 
         Parameters
         ----------
+        _ocp: OptimalControlProgram
+            A reference to the OptimalControlProgram
         _sol: np.ndarray | DM
             The solution in vector format
         """
 
         if not isinstance(_sol, (np.ndarray, DM)):
-            raise ValueError("The _sol entry shoulde be a np.ndarray or a DM.")
+            raise ValueError("The _sol entry should be a np.ndarray or a DM.")
 
         vector = _sol
         _states = {}
@@ -919,8 +1048,8 @@ class Solution:
 
         Parameters
         ----------
-        ocp: OptimalControlProgram
-
+        _ocp: OptimalControlProgram
+            A reference to the OptimalControlProgram
         """
 
         return cls(
