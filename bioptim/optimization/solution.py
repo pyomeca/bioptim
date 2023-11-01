@@ -293,7 +293,9 @@ class Solution:
             self.s_scaling = nlp.s_scaling
             self.phase_dynamics = nlp.phase_dynamics
 
-        def get_integrated_values(self, states: dict, controls: dict, parameters: dict, stochastic_variables: dict) -> dict:
+        def get_integrated_values(
+            self, states: dict, controls: dict, parameters: dict, stochastic_variables: dict
+        ) -> dict:
             """
             TODO :
 
