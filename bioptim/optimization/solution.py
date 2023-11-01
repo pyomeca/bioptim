@@ -619,6 +619,7 @@ class Solution:
         ns: list,
         vector: np.ndarray,
         cost: np.ndarray,
+        constraints: np.ndarray,
         lam_g: np.ndarray,
         lam_p: np.ndarray,
         lam_x: np.ndarray,
@@ -632,7 +633,6 @@ class Solution:
         _controls: dict = {},
         parameters: dict = {},
         _stochastic_variables: dict = {},
-        phase_time: list = [],
     ):
         """
         Parameters
@@ -652,9 +652,8 @@ class Solution:
         self.is_merged = False
         self.recomputed_time_steps = False
 
-        self.vector = vector
         self._cost = cost
-        self.constraints = None
+        self.constraints = constraints
         self._detailed_cost = None
 
         self.lam_g = lam_g
@@ -666,27 +665,34 @@ class Solution:
         self.real_time_to_optimize = real_time_to_optimize
         self.iterations = iterations
         self.status = status
-        self._time_vector = None
 
         # Extract the data now for further use
-        (
-            _states["unscaled"],
-            _controls["unscaled"],
-            _stochastic_variables["unscaled"],
-        ) = self._to_unscaled_values(_states["scaled"], _controls["scaled"], _stochastic_variables["scaled"])
+        if vector is None:
+            self._states = {}
+            self._controls = {}
+            self.parameters = {}
+            self._stochastic_variables = {}
 
-        self._states = _states
-        self._controls = self.ocp._complete_controls(_controls)
-        self.parameters = parameters
-        self._stochastic_variables = _stochastic_variables
-        self.phase_time = phase_time
-        self._time_vector = self.ocp._generate_time(phase_time)
-        self._integrated_values = self.ocp.get_integrated_values(
-            self._states["unscaled"],
-            self._controls["unscaled"],
-            self.parameters,
-            self._stochastic_variables["unscaled"],
-        )
+        else:
+            (
+                _states["unscaled"],
+                _controls["unscaled"],
+                _stochastic_variables["unscaled"],
+            ) = self._to_unscaled_values(_states["scaled"], _controls["scaled"], _stochastic_variables["scaled"])
+
+            self.vector = vector
+            self._states = _states
+            self._controls = self.ocp._complete_controls(_controls)
+            self.parameters = parameters
+            self._stochastic_variables = _stochastic_variables
+            self.phase_time = OptimizationVectorHelper.extract_phase_time(ocp, vector)
+            self._time_vector = self.ocp._generate_time(self.phase_time)
+            self._integrated_values = self.ocp.get_integrated_values(
+                self._states["unscaled"],
+                self._controls["unscaled"],
+                self.parameters,
+                self._stochastic_variables["unscaled"],
+            )
 
     @classmethod
     def from_dict(cls, ocp, _sol: dict):
@@ -714,16 +720,19 @@ class Solution:
             _stochastic_variables["scaled"],
         ) = OptimizationVectorHelper.to_dictionaries(ocp, _sol["x"])
 
+        is_ipopt = _sol["solver"] == SolverType.IPOPT.value
+
         return cls(
             ocp=ocp,
             ns=[nlp.ns for nlp in ocp.nlp],
             vector=_sol["x"],
-            cost=_sol["f"],
-            lam_g=_sol["lam_g"] if _sol["solver"] == SolverType.IPOPT.value else None,
-            lam_p=_sol["lam_p"] if _sol["solver"] == SolverType.IPOPT.value else None,
-            lam_x=_sol["lam_x"] if _sol["solver"] == SolverType.IPOPT.value else None,
-            inf_pr=_sol["inf_pr"] if _sol["solver"] == SolverType.IPOPT.value else None,
-            inf_du=_sol["inf_du"] if _sol["solver"] == SolverType.IPOPT.value else None,
+            cost=_sol["f"] if is_ipopt else None,
+            constraints=_sol["g"] if is_ipopt else None,
+            lam_g=_sol["lam_g"] if is_ipopt else None,
+            lam_p=_sol["lam_p"] if is_ipopt else None,
+            lam_x=_sol["lam_x"] if is_ipopt else None,
+            inf_pr=_sol["inf_pr"] if is_ipopt else None,
+            inf_du=_sol["inf_du"] if is_ipopt else None,
             solver_time_to_optimize=_sol["solver_time_to_optimize"],
             real_time_to_optimize=_sol["real_time_to_optimize"],
             iterations=_sol["iter"],
@@ -732,7 +741,6 @@ class Solution:
             _controls=_controls,
             parameters=parameters,
             _stochastic_variables=_stochastic_variables,
-            phase_time=OptimizationVectorHelper.extract_phase_time(ocp, _sol["x"]),
         )
 
     @classmethod
@@ -788,7 +796,7 @@ class Solution:
                 ns = ocp.nlp[p].ns + 1 if ss[key].init.type != InterpolationType.EACH_FRAME else ocp.nlp[p].ns
                 ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].states[key]), ns, "states")
 
-            for i in range(ns[p] + 1):
+            for i in range(all_ns[p] + 1):
                 for key in ss.keys():
                     vector = np.concatenate((vector, ss[key].init.evaluate_at(i, repeat)[:, np.newaxis]))
 
@@ -841,7 +849,8 @@ class Solution:
             ocp=ocp,
             ns=[nlp.ns for nlp in ocp.nlp],
             vector=vector,
-            cost=_sol["f"],
+            cost=None,
+            constraints=None,
             lam_g=None,
             lam_p=None,
             lam_x=None,
@@ -855,7 +864,6 @@ class Solution:
             _controls=_controls,
             parameters=parameters,
             _stochastic_variables=_stochastic_variables,
-            phase_time=OptimizationVectorHelper.extract_phase_time(ocp, vector),
         )
 
     @classmethod
@@ -887,7 +895,8 @@ class Solution:
             ocp=ocp,
             ns=[nlp.ns for nlp in ocp.nlp],
             vector=vector,
-            cost=_sol["f"],
+            cost=None,
+            constraints=None,
             lam_g=None,
             lam_p=None,
             lam_x=None,
@@ -901,7 +910,6 @@ class Solution:
             _controls=_controls,
             parameters=parameters,
             _stochastic_variables=_stochastic_variables,
-            phase_time=OptimizationVectorHelper.extract_phase_time(ocp, vector),
         )
 
     @classmethod
@@ -920,6 +928,7 @@ class Solution:
             ns=None,
             vector=None,
             cost=None,
+            constraints=None,
             lam_g=None,
             lam_p=None,
             lam_x=None,
@@ -933,7 +942,6 @@ class Solution:
             _controls=None,
             parameters=None,
             _stochastic_variables=None,
-            phase_time=None,
         )
 
     def _to_unscaled_values(self, states_scaled, controls_scaled, stochastic_variables_scaled) -> tuple:
@@ -999,7 +1007,7 @@ class Solution:
         Return a Solution data structure
         """
 
-        new = Solution.from_ocp(self.ocp, None)
+        new = Solution.from_ocp(self.ocp)
 
         new.vector = deepcopy(self.vector)
         new._cost = deepcopy(self._cost)
@@ -1435,141 +1443,6 @@ class Solution:
 
         return out
 
-    # def _generate_time(
-    #     self,
-    #     keep_intermediate_points: bool = None,
-    #     merge_phases: bool = False,
-    #     shooting_type: Shooting = None,
-    # ) -> np.ndarray | list[np.ndarray]:
-    #     """
-    #     Generate time integration vector
-    #
-    #     Parameters
-    #     ----------
-    #     keep_intermediate_points
-    #         If the integration should return the intermediate values of the integration [False]
-    #         or only keep the node [True] effective keeping the initial size of the states
-    #     merge_phases: bool
-    #         If the phase should be merged in a unique phase
-    #     shooting_type: Shooting
-    #         Which type of integration such as Shooting.SINGLE_CONTINUOUS or Shooting.MULTIPLE,
-    #         default is None but behaves as Shooting.SINGLE.
-    #
-    #     Returns
-    #     -------
-    #     t_integrated: np.ndarray or list of np.ndarray
-    #     The time vector
-    #
-    #     # TODO: Should be a method of OCP
-    #     # TODO: inner loop should be a method of NLP
-    #     """
-    #     if shooting_type is None:
-    #         shooting_type = Shooting.SINGLE_DISCONTINUOUS_PHASE
-    #
-    #     time_vector = []
-    #     time_phase = self.phase_time
-    #     for p, nlp in enumerate(self.ocp.nlp):
-    #         is_direct_collocation = nlp.ode_solver.is_direct_collocation
-    #         include_starting_collocation_point = False
-    #         if is_direct_collocation:
-    #             include_starting_collocation_point = nlp.ode_solver.include_starting_collocation_point
-    #
-    #         step_times = self._define_step_times(
-    #             dynamics_step_time=nlp.dynamics[0].step_time,
-    #             ode_solver_steps=nlp.ode_solver.steps,
-    #             is_direct_collocation=is_direct_collocation,
-    #             include_starting_collocation_point=include_starting_collocation_point,
-    #             keep_intermediate_points=keep_intermediate_points,
-    #             continuous=shooting_type == Shooting.SINGLE,
-    #         )
-    #
-    #         if shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-    #             # discard the last time step because continuity concerns only the end of the phases
-    #             # and not the end of each interval
-    #             step_times = step_times[:-1]
-    #
-    #         dt_ns = time_phase[p + 1] / nlp.ns
-    #         time = [(step_times * dt_ns + i * dt_ns).tolist() for i in range(nlp.ns)]
-    #
-    #         if shooting_type == Shooting.MULTIPLE:
-    #             # keep all the intervals in separate lists
-    #             flat_time = [np.array(sub_time) for sub_time in time]
-    #         else:
-    #             # flatten the list of list into a list of floats
-    #             flat_time = [st for sub_time in time for st in sub_time]
-    #
-    #         # add the final time of the phase
-    #         if shooting_type == Shooting.MULTIPLE:
-    #             flat_time.append(np.array([nlp.ns * dt_ns]))
-    #         if shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-    #             flat_time += [nlp.ns * dt_ns]
-    #
-    #         time_vector.append(sum(time_phase[: p + 1]) + np.array(flat_time, dtype=object))
-    #
-    #     if merge_phases:
-    #         return concatenate_optimization_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
-    #     else:
-    #         return time_vector
-    #
-    # @staticmethod
-    # def _define_step_times(
-    #     dynamics_step_time: list,
-    #     ode_solver_steps: int,
-    #     keep_intermediate_points: bool = None,
-    #     continuous: bool = True,
-    #     is_direct_collocation: bool = None,
-    #     include_starting_collocation_point: bool = False,
-    # ) -> np.ndarray:
-    #     """
-    #     Define the time steps for the integration of the whole phase
-    #
-    #     Parameters
-    #     ----------
-    #     dynamics_step_time: list
-    #         The step time of the dynamics function
-    #     ode_solver_steps: int
-    #         The number of steps of the ode solver
-    #     keep_intermediate_points: bool
-    #         If the integration should return the intermediate values of the integration [False]
-    #         or only keep the node [True] effective keeping the initial size of the states
-    #     continuous: bool
-    #         If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
-    #         arrival node and the beginning of the next one are expected to be almost equal when the problem converged
-    #     is_direct_collocation: bool
-    #         If the ode solver is direct collocation
-    #     include_starting_collocation_point
-    #         If the ode solver is direct collocation and an additional collocation point at the shooting node was used
-    #
-    #     Returns
-    #     -------
-    #     step_times: np.ndarray
-    #         The time steps for each interval of the phase of ocp
-    #
-    #     # TODO: move it somewhere else too :)
-    #     """
-    #
-    #     if keep_intermediate_points is None:
-    #         keep_intermediate_points = True if is_direct_collocation else False
-    #
-    #     if is_direct_collocation:
-    #         # time is not linear because of the collocation points
-    #         if keep_intermediate_points:
-    #             step_times = np.array(dynamics_step_time + [1])
-    #
-    #             if include_starting_collocation_point:
-    #                 step_times = np.array([0] + step_times)
-    #         else:
-    #             step_times = np.array(dynamics_step_time + [1])[[0, -1]]
-    #
-    #     else:
-    #         # time is linear in the case of direct multiple shooting
-    #         step_times = np.linspace(0, 1, ode_solver_steps + 1) if keep_intermediate_points else np.array([0, 1])
-    #     # it does not take the last nodes of each interval
-    #     if continuous:
-    #         step_times = step_times[:-1]
-    #
-    #     return step_times
-
     def _get_first_frame_states(self, sol, shooting_type: Shooting, phase: int) -> np.ndarray:
         """
         Get the first frame of the states for a given phase,
@@ -1675,7 +1548,8 @@ class Solution:
         out = self.copy(skip_data=True)
         out.recomputed_time_steps = integrator != SolutionIntegrator.OCP
         out._states["unscaled"] = [dict() for _ in range(len(self._states["unscaled"]))]
-        out._time_vector = self._generate_time(
+        out._time_vector = self.ocp._generate_time(
+            time_phase=self.phase_time,
             keep_intermediate_points=keep_intermediate_points,
             merge_phases=False,
             shooting_type=shooting_type,
