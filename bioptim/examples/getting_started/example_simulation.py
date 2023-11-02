@@ -27,7 +27,7 @@ def main():
     X = InitialGuess([0, 0, 0, 0])
     U = InitialGuess([-1, 1])
 
-    sol_from_initial_guess = Solution(ocp, [X, U])
+    sol_from_initial_guess = Solution.from_initial_guess(ocp, [X, U])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     print(f"Final position of q from single shooting of initial guess = {s.states['q'][:, -1]}")
     # Uncomment the next line to animate the integration
@@ -37,7 +37,7 @@ def main():
     U = np.random.rand(2, 31)
     U = InitialGuess(U, interpolation=InterpolationType.EACH_FRAME)
 
-    sol_from_initial_guess = Solution(ocp, [X, U])
+    sol_from_initial_guess = Solution.from_initial_guess(ocp, [X, U])
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     print(f"Final position of q from single shooting of initial guess = {s.states['q'][:, -1]}")
     # Uncomment the next line to animate the integration

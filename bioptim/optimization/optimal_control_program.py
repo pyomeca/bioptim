@@ -1584,7 +1584,7 @@ class OptimalControlProgram:
         self.ocp_solver.solve()
         self.is_warm_starting = False
 
-        return Solution(self, self.ocp_solver.get_optimized_value())
+        return Solution.from_dict(self, self.ocp_solver.get_optimized_value())
 
     def set_warm_start(self, sol: Solution):
         """

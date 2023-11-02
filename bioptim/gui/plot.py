@@ -687,7 +687,7 @@ class PlotOcp:
 
         self.ydata = []
 
-        sol = Solution(self.ocp, v)
+        sol = Solution.from_vector(self.ocp, v)
 
         if all([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]):
             # no need to integrate when using direct collocation

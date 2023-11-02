@@ -2,11 +2,12 @@ from typing import Callable, Any
 
 import casadi
 from casadi import SX, MX, Function, horzcat
+import numpy as np
 
 from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
-from ..misc.enums import ControlType, PhaseDynamics
+from ..misc.enums import ControlType, PhaseDynamics, Shooting
 from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation

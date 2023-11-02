@@ -150,7 +150,7 @@ def test_variable_time(phase_time_constraint, use_parameter, phase_dynamics):
 
     # --- Solve the program --- #
     np.random.seed(42)
-    sol = Solution(ocp, np.random.random((649 + use_parameter, 1)))
+    sol = Solution.from_vector(ocp, np.random.random((649 + use_parameter, 1)))
 
     # --- Show results --- #
     states, controls, parameters = sol.states, sol.controls, sol.parameters
