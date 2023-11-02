@@ -9,7 +9,7 @@ from .interface_utils import (
 )
 from .solver_interface import SolverInterface
 from ..interfaces.solver_options import Solver
-from ..optimization.solution import Solution
+from bioptim.optimization.solution.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
 from ..misc.enums import (
     SolverType,

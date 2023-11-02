@@ -1,4 +1,4 @@
-from typing import Callable, Any
+from typing import Callable
 import sys
 
 import pickle
@@ -6,7 +6,6 @@ import pickle
 from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver
-from ..dynamics.configure_problem import ConfigureProblem
 from ..interfaces.stochastic_bio_model import StochasticBioModel
 from ..limits.constraints import (
     ConstraintFcn,
@@ -20,7 +19,7 @@ from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList
 from ..limits.path_conditions import BoundsList
 from ..limits.path_conditions import InitialGuessList
-from ..misc.enums import Node, ControlType, PhaseDynamics
+from ..misc.enums import PhaseDynamics
 from ..misc.__version__ import __version__
 from ..misc.enums import Node, ControlType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
@@ -28,7 +27,7 @@ from ..misc.utils import check_version
 from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
-from ..optimization.solution import Solution
+from bioptim.optimization.solution.solution import Solution
 from ..optimization.variable_scaling import VariableScalingList
 
 

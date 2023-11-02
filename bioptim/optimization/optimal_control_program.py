@@ -60,7 +60,8 @@ from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
-from ..optimization.solution import Solution
+from bioptim.optimization.solution.solution import Solution
+from bioptim.optimization.solution.simplified_objects import SimplifiedOCP
 from ..optimization.variable_scaling import VariableScalingList
 from ..gui.check_conditioning import check_conditioning
 
@@ -1714,7 +1715,7 @@ class OptimalControlProgram:
                         f"installed version ({ocp.version[key]})"
                     )
             sol = data["sol"]
-            sol.ocp = Solution.SimplifiedOCP(ocp)
+            sol.ocp = SimplifiedOCP(ocp)
             out = [ocp, sol]
         return out
 
