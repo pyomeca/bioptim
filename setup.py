@@ -22,6 +22,7 @@ setup(
         "bioptim/limits",
         "bioptim/misc",
         "bioptim/optimization",
+        "bioptim/optimization/solution",
         "examples",
     ],
     license="LICENSE",
