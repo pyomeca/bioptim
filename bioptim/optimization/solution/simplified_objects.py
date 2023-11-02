@@ -189,9 +189,7 @@ class SimplifiedNLP:
         self.s_scaling = nlp.s_scaling
         self.phase_dynamics = nlp.phase_dynamics
 
-    def get_integrated_values(
-            self, states: dict, controls: dict, parameters: dict, stochastic_variables: dict
-    ) -> dict:
+    def get_integrated_values(self, states: dict, controls: dict, parameters: dict, stochastic_variables: dict) -> dict:
         """
         TODO :
 
@@ -282,7 +280,7 @@ class SimplifiedNLP:
             integrated_values_data = np.zeros((nb_elements, self.ns))
             for i_node in range(self.ns):
                 integrated_values_data[:, i_node] = np.reshape(
-                    integrated_values_this_time[i_node * nb_elements: (i_node + 1) * nb_elements],
+                    integrated_values_this_time[i_node * nb_elements : (i_node + 1) * nb_elements],
                     (nb_elements,),
                 )
             integrated_values_num[key] = integrated_values_data
@@ -290,10 +288,10 @@ class SimplifiedNLP:
         return integrated_values_num
 
     def _generate_time(
-            self,
-            time_phase: np.ndarray,
-            keep_intermediate_points: bool = None,
-            shooting_type: Shooting = None,
+        self,
+        time_phase: np.ndarray,
+        keep_intermediate_points: bool = None,
+        shooting_type: Shooting = None,
     ):
         """
         Generate time vector steps for a phase considering all the phase final time
@@ -352,12 +350,12 @@ class SimplifiedNLP:
 
     @staticmethod
     def _define_step_times(
-            dynamics_step_time: list,
-            ode_solver_steps: int,
-            keep_intermediate_points: bool = None,
-            continuous: bool = True,
-            is_direct_collocation: bool = None,
-            include_starting_collocation_point: bool = False,
+        dynamics_step_time: list,
+        ode_solver_steps: int,
+        keep_intermediate_points: bool = None,
+        continuous: bool = True,
+        is_direct_collocation: bool = None,
+        include_starting_collocation_point: bool = False,
     ) -> np.ndarray:
         """
         Define the time steps for the integration of the whole phase
@@ -503,11 +501,11 @@ class SimplifiedOCP:
         self.n_threads = ocp.n_threads
 
     def get_integrated_values(
-            self,
-            states: list[np.ndarray],
-            controls: list[np.ndarray],
-            parameters: np.ndarray,
-            stochastic_variables: list[np.ndarray],
+        self,
+        states: list[np.ndarray],
+        controls: list[np.ndarray],
+        parameters: np.ndarray,
+        stochastic_variables: list[np.ndarray],
     ):
         """
         TODO:
@@ -535,11 +533,11 @@ class SimplifiedOCP:
         return integrated_values_num
 
     def _generate_time(
-            self,
-            time_phase: list[float],
-            keep_intermediate_points: bool = None,
-            merge_phases: bool = False,
-            shooting_type: Shooting = None,
+        self,
+        time_phase: list[float],
+        keep_intermediate_points: bool = None,
+        merge_phases: bool = False,
+        shooting_type: Shooting = None,
     ) -> np.ndarray | list[np.ndarray]:
         """
         Generate time integration vector
@@ -571,14 +569,12 @@ class SimplifiedOCP:
             time_vector.append(phase_time_vector)
 
         if merge_phases:
-            return concatenate_optimization_variables(
-                time_vector, continuous_phase=shooting_type == Shooting.SINGLE
-            )
+            return concatenate_optimization_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
         else:
             return time_vector
 
     def _complete_controls(
-            self, controls: dict[str, list[dict[str, np.ndarray]]]
+        self, controls: dict[str, list[dict[str, np.ndarray]]]
     ) -> dict[str, list[dict[str, np.ndarray]]]:
         """
         Controls don't necessarily have dimensions that matches the states. This method aligns them

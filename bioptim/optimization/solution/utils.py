@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def concatenate_optimization_variables_dict(
     variable: list[dict[np.ndarray]], continuous: bool = True
 ) -> list[dict[np.ndarray]]:

@@ -1993,4 +1993,3 @@ class Solution:
             self.print_cost(CostType.CONSTRAINTS)
         else:
             raise ValueError("print can only be called with CostType.OBJECTIVES or CostType.CONSTRAINTS")
-
