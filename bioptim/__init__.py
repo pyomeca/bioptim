@@ -219,7 +219,7 @@ from .optimization.receding_horizon_optimization import (
     MultiCyclicNonlinearModelPredictiveControl,
 )
 from .optimization.parameters import ParameterList
-from .optimization.solution import Solution
+from bioptim.optimization.solution.solution import Solution
 from .optimization.optimization_variable import OptimizationVariableList
 from .optimization.variable_scaling import VariableScalingList, VariableScaling
 from .optimization.variational_optimal_control_program import VariationalOptimalControlProgram

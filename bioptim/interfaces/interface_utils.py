@@ -8,7 +8,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
 from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule, PhaseDynamics
-from ..optimization.solution import Solution
+from bioptim.optimization.solution.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
 
 

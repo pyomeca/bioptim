@@ -21,7 +21,7 @@ from ..misc.enums import (
     PhaseDynamics,
 )
 from ..misc.mapping import Mapping, BiMapping
-from ..optimization.solution import Solution
+from ..optimization.solution.solution import Solution
 from ..dynamics.ode_solver import OdeSolver
 
 

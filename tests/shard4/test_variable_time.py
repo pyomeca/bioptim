@@ -21,7 +21,7 @@ from bioptim import (
     PenaltyController,
     PhaseDynamics,
 )
-from bioptim.optimization.solution import Solution
+from bioptim.optimization.solution.solution import Solution
 
 from tests.utils import TestUtils
 

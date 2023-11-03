@@ -10,7 +10,7 @@ from bioptim.optimization.optimal_control_program import (
     _scale_values,
 )
 
-from bioptim.optimization.solution import (
+from bioptim.optimization.solution.utils import (
     concatenate_optimization_variables_dict,
     concatenate_optimization_variables,
 )
