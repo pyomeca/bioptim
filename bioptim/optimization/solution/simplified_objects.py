@@ -1,12 +1,13 @@
 from casadi import vertcat, Function
 import numpy as np
 
-from bioptim.optimization.non_linear_program import NonLinearProgram
-from bioptim.optimization.optimization_variable import OptimizationVariableList, OptimizationVariable
-from bioptim.misc.enums import (
+from ...misc.enums import (
     ControlType,
     Shooting,
 )
+from ..non_linear_program import NonLinearProgram
+from ..optimization_variable import OptimizationVariableList, OptimizationVariable
+
 from .utils import concatenate_optimization_variables
 
 

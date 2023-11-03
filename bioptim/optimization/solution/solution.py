@@ -7,9 +7,9 @@ from scipy.interpolate import interp1d
 from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
-from bioptim.limits.objective_functions import ObjectiveFcn
-from bioptim.limits.path_conditions import InitialGuess, InitialGuessList
-from bioptim.misc.enums import (
+from ...limits.objective_functions import ObjectiveFcn
+from ...limits.path_conditions import InitialGuess, InitialGuessList
+from ...misc.enums import (
     ControlType,
     CostType,
     Shooting,
@@ -20,9 +20,10 @@ from bioptim.misc.enums import (
     QuadratureRule,
     PhaseDynamics,
 )
-from bioptim.optimization.optimization_vector import OptimizationVectorHelper
-from bioptim.dynamics.ode_solver import OdeSolver
-from bioptim.interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
+from ...dynamics.ode_solver import OdeSolver
+from ...interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
+
+from ..optimization_vector import OptimizationVectorHelper
 
 from .utils import concatenate_optimization_variables_dict, concatenate_optimization_variables
 from .simplified_objects import SimplifiedOCP
