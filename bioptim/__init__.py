@@ -179,6 +179,7 @@ from .models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from .models.biorbd.stochastic_biorbd_model import StochasticBiorbdModel
 from .models.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
 from .models.protocols.stochastic_biomodel import StochasticBioModel
+from .models.protocols.biomodel import BioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
