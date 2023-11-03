@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from ..misc.enums import SolverType
 
+
 @dataclass
 class GenericSolver(ABC):
     """
@@ -71,4 +72,3 @@ class GenericSolver(ABC):
         num: int
             print_level
         """
-

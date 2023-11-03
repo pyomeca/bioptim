@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from ..misc.enums import SolverType
 from .abstract_options import GenericSolver
 
+
 @dataclass
 class SQP_METHOD(GenericSolver):
     """

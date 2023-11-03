@@ -23,7 +23,7 @@ setup(
         "bioptim/misc",
         "bioptim/optimization",
         "bioptim/optimization/solution",
-        "bioptim/models/"
+        "bioptim/models/",
         "bioptim/models/biorbd",
         "bioptim/models/protocols",
         "examples",
