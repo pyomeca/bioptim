@@ -14,6 +14,7 @@ from ..limits.path_conditions import InitialGuessList, BoundsList
 from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions, ControlType
 from ..optimization.parameters import ParameterList
 from ..interfaces.solver_options import Solver
+from ..interfaces.abstract_options import GenericSolver
 from ..models.protocols.biomodel import BioModel
 
 
@@ -68,9 +69,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
     def solve(
         self,
         update_function: Callable,
-        solver: Solver.Generic = None,
+        solver: GenericSolver = None,
         warm_start: Solution = None,
-        solver_first_iter: Solver.Generic = None,
+        solver_first_iter: GenericSolver = None,
         export_options: dict = None,
         max_consecutive_failing: int = inf,
         update_function_extra_params: dict = None,
@@ -399,9 +400,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
     def solve(
         self,
         update_function: Callable,
-        solver: Solver.Generic = None,
+        solver: GenericSolver = None,
         cyclic_options: dict = None,
-        solver_first_iter: Solver.Generic = None,
+        solver_first_iter: GenericSolver = None,
         **extra_options,
     ) -> Solution | tuple:
         if solver is None:

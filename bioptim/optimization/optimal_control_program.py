@@ -20,6 +20,7 @@ from ..gui.graph import OcpToConsole, OcpToGraph
 from ..models.protocols.biomodel import BioModel
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..interfaces.solver_options import Solver
+from ..interfaces.abstract_options import GenericSolver
 from ..limits.constraints import (
     ConstraintFunction,
     ConstraintFcn,
@@ -1533,7 +1534,7 @@ class OptimalControlProgram:
 
     def solve(
         self,
-        solver: Solver | Solver.Generic = None,
+        solver: GenericSolver = None,
         warm_start: Solution = None,
     ) -> Solution:
         """
@@ -1541,7 +1542,7 @@ class OptimalControlProgram:
 
         Parameters
         ----------
-        solver: Generic
+        solver: GenericSolver
             The solver which will be used to solve the ocp
         warm_start: Solution
             The solution to pass to the warm start method
