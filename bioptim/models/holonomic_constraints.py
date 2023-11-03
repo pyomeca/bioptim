@@ -5,7 +5,7 @@ from typing import Any, Callable
 
 from casadi import MX, Function, jacobian, vertcat
 
-from .biorbd_model import BiorbdModel
+from .biorbd.biorbd_model import BiorbdModel
 from ..misc.options import OptionDict
 
 

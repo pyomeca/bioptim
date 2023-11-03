@@ -9,7 +9,7 @@ from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, Axis, ControlType, QuadratureRule, PhaseDynamics
 from ..misc.mapping import BiMapping
-from ..interfaces.stochastic_bio_model import StochasticBioModel
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
 class PenaltyFunctionAbstract:

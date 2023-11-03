@@ -2,19 +2,18 @@ from typing import Callable, Any
 
 import casadi
 from casadi import SX, MX, Function, horzcat
-import numpy as np
 
 from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import InitialGuessList, BoundsList
-from ..misc.enums import ControlType, PhaseDynamics, Shooting
+from ..misc.enums import ControlType, PhaseDynamics
 from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
-from ..interfaces.biomodel import BioModel
-from ..interfaces.holonomic_biomodel import HolonomicBioModel
-from ..interfaces.variational_biomodel import VariationalBioModel
-from ..interfaces.stochastic_bio_model import StochasticBioModel
+from ..models.protocols.biomodel import BioModel
+from ..models.protocols.holonomic_biomodel import HolonomicBioModel
+from ..models.protocols.variational_biomodel import VariationalBioModel
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
 class NonLinearProgram:

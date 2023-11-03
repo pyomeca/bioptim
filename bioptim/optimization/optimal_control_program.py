@@ -17,8 +17,8 @@ from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProble
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
-from ..interfaces.biomodel import BioModel
-from ..interfaces.variational_biorbd_model import VariationalBiorbdModel
+from ..models.protocols.biomodel import BioModel
+from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..interfaces.solver_options import Solver
 from ..limits.constraints import (
     ConstraintFunction,
@@ -60,8 +60,8 @@ from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
-from bioptim.optimization.solution.solution import Solution
-from bioptim.optimization.solution.simplified_objects import SimplifiedOCP
+from ..optimization.solution.solution import Solution
+from ..optimization.solution.simplified_objects import SimplifiedOCP
 from ..optimization.variable_scaling import VariableScalingList
 from ..gui.check_conditioning import check_conditioning
 

@@ -172,16 +172,13 @@ from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver, OdeSolverBase
 from .interfaces.solver_options import Solver
-from .interfaces.biorbd_model import BiorbdModel
-from .interfaces.multi_biorbd_model import MultiBiorbdModel
-from .interfaces.biomodel import BioModel
-from .interfaces.holonomic_biomodel import HolonomicBioModel
-from .interfaces.variational_biomodel import VariationalBioModel
-from .interfaces.holonomic_biorbd_model import HolonomicBiorbdModel
-from .interfaces.variational_biorbd_model import VariationalBiorbdModel
-from .interfaces.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
-from .interfaces.stochastic_bio_model import StochasticBioModel
-from .interfaces.stochastic_biorbd_model import StochasticBiorbdModel
+from .models.biorbd.biorbd_model import BiorbdModel
+from .models.biorbd.multi_biorbd_model import MultiBiorbdModel
+from .models.biorbd.holonomic_biorbd_model import HolonomicBiorbdModel
+from .models.biorbd.variational_biorbd_model import VariationalBiorbdModel
+from .models.biorbd.stochastic_biorbd_model import StochasticBiorbdModel
+from .models.holonomic_constraints import HolonomicConstraintsFcn, HolonomicConstraintsList
+from .models.protocols.stochastic_biomodel import StochasticBioModel
 from .limits.constraints import ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList
 from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, PhaseTransition
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
@@ -219,7 +216,7 @@ from .optimization.receding_horizon_optimization import (
     MultiCyclicNonlinearModelPredictiveControl,
 )
 from .optimization.parameters import ParameterList
-from bioptim.optimization.solution.solution import Solution
+from .optimization.solution.solution import Solution
 from .optimization.optimization_variable import OptimizationVariableList
 from .optimization.variable_scaling import VariableScalingList, VariableScaling
 from .optimization.variational_optimal_control_program import VariationalOptimalControlProgram

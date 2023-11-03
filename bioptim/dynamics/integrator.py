@@ -12,7 +12,7 @@ from casadi import (
 import numpy as np
 
 from ..misc.enums import ControlType, DefectType
-from ..interfaces.biomodel import BioModel
+from ..models.protocols.biomodel import BioModel
 
 
 class Integrator:

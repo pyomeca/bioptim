@@ -6,7 +6,7 @@ import pickle
 from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver
-from ..interfaces.stochastic_bio_model import StochasticBioModel
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
@@ -27,7 +27,7 @@ from ..misc.utils import check_version
 from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
-from bioptim.optimization.solution.solution import Solution
+from ..optimization.solution.solution import Solution
 from ..optimization.variable_scaling import VariableScalingList
 
 

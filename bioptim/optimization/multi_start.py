@@ -4,7 +4,7 @@ from typing import Any, Callable
 
 from ..optimization.optimal_control_program import OptimalControlProgram
 from ..interfaces.solver_options import Solver
-from bioptim.optimization.solution.solution import Solution
+from ..optimization.solution.solution import Solution
 
 
 class MultiStart:

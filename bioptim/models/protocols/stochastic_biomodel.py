@@ -1,10 +1,9 @@
-from enum import Enum
 from typing import Callable
 from casadi import MX
 import numpy as np
 
-from .biomodel import BioModel
-from ..misc.mapping import BiMappingList
+from ..protocols.biomodel import BioModel
+from ...misc.mapping import BiMappingList
 
 
 class StochasticBioModel(BioModel):

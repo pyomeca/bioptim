@@ -4,16 +4,14 @@ import biorbd_casadi as biorbd
 from biorbd_casadi import (
     GeneralizedCoordinates,
     GeneralizedVelocity,
-    GeneralizedTorque,
-    GeneralizedAcceleration,
 )
-from casadi import SX, MX, vertcat, horzcat, norm_fro
-import numpy as np
+from casadi import SX, MX, vertcat
 
-from ..misc.utils import check_version
-from ..limits.path_conditions import Bounds
-from ..misc.mapping import BiMapping, BiMappingList
-from .biorbd_model import _q_mapping, _qdot_mapping, _qddot_mapping, BiorbdModel, bounds_from_ranges
+from ...misc.utils import check_version
+from ...limits.path_conditions import Bounds
+from ...misc.mapping import BiMapping, BiMappingList
+from ..utils import _q_mapping, _qdot_mapping, _qddot_mapping, bounds_from_ranges
+from .biorbd_model import BiorbdModel
 
 
 class MultiBiorbdModel:
