@@ -64,7 +64,6 @@ def concatenate_optimization_variables(
     """
     if len(variable[0].shape):
         if isinstance(variable[0][0], np.ndarray):
-
             z_final = [concatenate_optimization_variables(zi, continuous_interval) for zi in variable]
 
             return concatenate_optimization_variables(z_final, continuous_phase) if merge_phases else z_final
