@@ -202,7 +202,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             u = nlp.cx()
             s = nlp.cx()
             for idx in penalty.node_idx:
-                x_tp, u_tp, s_tp = get_x_and_u_at_idx(interface, nlp, penalty, idx, is_unscaled)
+                x_tp, u_tp, s_tp = get_x_u_s_at_idx(interface, nlp, penalty, idx, is_unscaled)
                 x = horzcat(x, x_tp)
                 u = horzcat(u, u_tp)
                 s = horzcat(s, s_tp)
@@ -234,7 +234,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     u = []
                     s = []
                 else:
-                    x, u, s = get_x_and_u_at_idx(interface, nlp, penalty, idx, is_unscaled)
+                    x, u, s = get_x_u_s_at_idx(interface, nlp, penalty, idx, is_unscaled)
                     time = interface.ocp.node_time(phase_idx=0 if nlp == [] else nlp.phase_idx, node_idx=idx)
                     p = vertcat(
                         p, penalty.weighted_function[idx](time, x, u, param, s, penalty.weight, target, penalty.dt)
@@ -280,8 +280,9 @@ def get_control_modificator(ocp, _penalty, index):
     )
 
 
-def get_x_and_u_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
-    """ """
+def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
+    """
+    """
 
     if _penalty.transition:
         ocp = interface.ocp
