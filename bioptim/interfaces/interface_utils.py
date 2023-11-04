@@ -287,246 +287,163 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
     """
 
     if _penalty.transition:
+
         ocp = interface.ocp
 
         u0_mode = get_control_modificator(ocp, _penalty, 0)
         u1_mode = get_control_modificator(ocp, _penalty, 1)
 
-        if is_unscaled:
-            if (
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].X[0][:, 0].shape[0]
-                    > interface.ocp.nlp[_penalty.nodes_phase[0]].X[0][:, 0].shape[0]
-            ):
-                fake = interface.ocp.cx(
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].X[0][:, 0].shape[0]
-                    - interface.ocp.nlp[_penalty.nodes_phase[0]].X[0][:, 0].shape[0],
-                    1,
-                )
-                _x_0 = vertcat(
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].X[_penalty.all_nodes_index[0]][:, 0],
-                    fake,
-                )
-            else:
-                _x_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].X[_penalty.all_nodes_index[0]][:, 0]
-            if (
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].X[0][:, 0].shape[0]
-                    > interface.ocp.nlp[_penalty.nodes_phase[1]].X[0][:, 0].shape[0]
-            ):
-                fake = interface.ocp.cx(
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].X[0][:, 0].shape[0]
-                    - interface.ocp.nlp[_penalty.nodes_phase[1]].X[0][:, 0].shape[0],
-                    1,
-                )
-                _x_1 = vertcat(
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].X[_penalty.all_nodes_index[1]][:, 0],
-                    fake,
-                )
-            else:
-                _x_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].X[_penalty.all_nodes_index[1]][:, 0]
+        all_nlp = interface.ocp.nlp
 
-            if interface.ocp.nlp[
-                _penalty.nodes_phase[0]
-            ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _penalty.all_nodes_index[0] < len(
-                interface.ocp.nlp[0].U
-            ):
-                if (
-                        interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
-                        > interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
-                ) and (
-                        _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled)
-                        or interface.ocp.nlp[_penalty.nodes_phase[1]].phase_dynamics
-                        == PhaseDynamics.SHARED_DURING_THE_PHASE
-                ):
-                    fake = interface.ocp.cx(
-                        interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
-                        - interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0],
-                        1,
-                    )
-                    _u_0 = vertcat(
-                        interface.ocp.nlp[_penalty.nodes_phase[0]].U[_penalty.all_nodes_index[0] - u0_mode],
-                        fake,
-                    )
+        phase_node0 = _penalty.nodes_phase[0]
+        phase_node1 = _penalty.nodes_phase[1]
+
+        node_idx_0 = _penalty.all_nodes_index[0]
+        node_idx_1 = _penalty.all_nodes_index[1]
+
+        if is_unscaled:
+            _x_0 = all_nlp[phase_node0].X[node_idx_0][:, 0]
+            _x_1 = all_nlp[phase_node1].X[node_idx_1][:, 0]
+
+            len_x_0 = _x_0.shape[0]
+            len_x_1 = _x_1.shape[0]
+
+            if len_x_1 > len_x_0:
+                fake_padding = interface.ocp.cx(len_x_1 - len_x_0, 1)
+                _x_0 = vertcat(_x_0, fake_padding)
+
+            if len_x_0 > len_x_1:
+                fake_padding = interface.ocp.cx(len_x_0 - len_x_1, 1)
+                _x_1 = vertcat(_x_1, fake_padding)
+
+            is_shared_dynamics_0 = all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+            is_node0_within_control_limit = node_idx_0 < len(all_nlp[phase_node0].U)
+            is_shared_dynamics_1 = all_nlp[phase_node1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+            is_node1_within_control_limit = node_idx_1 < len(all_nlp[phase_node1].U)
+
+            u_0 = all_nlp[phase_node0].U[node_idx_0 - u0_mode]
+            u_1 = all_nlp[phase_node0].U[node_idx_1 - u1_mode]
+
+            len_u_0 = u_0.shape[0]
+            len_u_1 = u_1.shape[0]
+
+            if is_shared_dynamics_0 or is_node0_within_control_limit:
+                should_apply_fake_padding_on_u0 = len_u_1 > len_u_0 and (is_node1_within_control_limit or is_shared_dynamics_1)
+                if should_apply_fake_padding_on_u0:
+                    fake_padding = interface.ocp.cx(len_u_1 - len_u_0, 1)
+                    _u_0 = vertcat(u_0, fake_padding)
                 else:
-                    _u_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].U[_penalty.all_nodes_index[0] - u0_mode]
+                    _u_0 = u_0
             else:
                 _u_0 = []
-            if interface.ocp.nlp[
-                _penalty.nodes_phase[1]
-            ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _penalty.all_nodes_index[1] < len(
-                interface.ocp.nlp[_penalty.nodes_phase[1]].U
-            ):
-                if (
-                        interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
-                        > interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0]
-                ) and (
-                        _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled)
-                        or interface.ocp.nlp[_penalty.nodes_phase[0]].phase_dynamics
-                        == PhaseDynamics.SHARED_DURING_THE_PHASE
-                ):
-                    fake = interface.ocp.cx(
-                        interface.ocp.nlp[_penalty.nodes_phase[0]].U[0].shape[0]
-                        - interface.ocp.nlp[_penalty.nodes_phase[1]].U[0].shape[0],
-                        1,
-                    )
-                    _u_1 = vertcat(
-                        interface.ocp.nlp[_penalty.nodes_phase[1]].U[_penalty.all_nodes_index[1] - u1_mode],
-                        fake,
-                    )
+
+            if is_shared_dynamics_1 or is_node1_within_control_limit:
+                should_apply_fake_padding_on_u1 = len_u_0 > len_u_1 and (is_node0_within_control_limit or is_shared_dynamics_0)
+                if should_apply_fake_padding_on_u1:
+                    fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
+                    _u_1 = vertcat(u_1, fake_padding)
                 else:
-                    _u_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].U[_penalty.all_nodes_index[1] - u1_mode]
+                    _u_1 = u_1
             else:
                 _u_1 = []
 
-            if (
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].S[0].shape[0]
-                    > interface.ocp.nlp[_penalty.nodes_phase[0]].S[0].shape[0]
-            ):
-                fake = interface.ocp.cx(
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].S[0].shape[0]
-                    - interface.ocp.nlp[_penalty.nodes_phase[0]].S[0].shape[0],
-                    1,
-                )
-                _s_0 = vertcat(
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].S[_penalty.all_nodes_index[0]],
-                    fake,
-                )
-            else:
-                _s_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].S[_penalty.all_nodes_index[0]]
-            if (
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].S[0].shape[0]
-                    > interface.ocp.nlp[_penalty.nodes_phase[1]].S[0].shape[0]
-            ):
-                fake = interface.ocp.cx(
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].S[0].shape[0]
-                    - interface.ocp.nlp[_penalty.nodes_phase[1]].S[0].shape[0],
-                    1,
-                )
-                _s_1 = vertcat(
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].S[_penalty.all_nodes_index[1]],
-                    fake,
-                )
-            else:
-                _s_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].S[_penalty.all_nodes_index[1]]
+            _s_0 = all_nlp[phase_node0].S[node_idx_0]
+            _s_1 = all_nlp[phase_node1].S[node_idx_1]
+
+            len_s_0 = _s_0.shape[0]
+            len_s_1 = _s_1.shape[0]
+
+            if len_s_1 > len_s_0:
+                fake_padding = interface.ocp.cx(len_s_1 - len_s_0, 1)
+                _s_0 = vertcat(_s_0, fake_padding)
+
+            if len_s_0 > len_s_1:
+                fake_padding = interface.ocp.cx(len_s_0 - len_s_1, 1)
+                _s_1 = vertcat(_s_1, fake_padding)
 
         else:
-            if (
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[0][:, 0].shape[0]
-                    > interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[0][:, 0].shape[0]
-            ):
-                fake = interface.ocp.cx(
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[0][:, 0].shape[0]
-                    - interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[0][:, 0].shape[0],
-                    1,
-                )
-                _x_0 = vertcat(
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[_penalty.all_nodes_index[0]][:, 0],
-                    fake,
-                )
-            else:
-                _x_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[_penalty.all_nodes_index[0]][:, 0]
-            if (
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[0][:, 0].shape[0]
-                    > interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[0][:, 0].shape[0]
-            ):
-                fake = interface.ocp.cx(
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].X_scaled[0][:, 0].shape[0]
-                    - interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[0][:, 0].shape[0],
-                    1,
-                )
-                _x_1 = vertcat(
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[_penalty.all_nodes_index[1]][:, 0],
-                    fake,
-                )
-            else:
-                _x_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].X_scaled[_penalty.all_nodes_index[1]][:, 0]
+            _x_0 = all_nlp[phase_node0].X_scaled[node_idx_0][:, 0]
+            _x_1 = all_nlp[phase_node1].X_scaled[node_idx_1][:, 0]
 
-            if interface.ocp.nlp[
-                _penalty.nodes_phase[0]
-            ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _penalty.all_nodes_index[0] < len(
-                interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled
+            len_x_0 = _x_0.shape[0]
+            len_x_1 = _x_1.shape[0]
+
+            if len_x_1 > len_x_0:
+                fake_padding = interface.ocp.cx(len_x_1 - len_x_0, 1)
+                _x_0 = vertcat(_x_0, fake_padding)
+
+            if len_x_0 > len_x_1:
+                fake_padding = interface.ocp.cx(len_x_0 - len_x_1, 1)
+                _x_1 = vertcat(_x_1, fake_padding)
+
+            if all_nlp[
+                phase_node0
+            ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or node_idx_0 < len(
+                all_nlp[phase_node0].U_scaled
             ):
                 if (
-                        interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
-                        > interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
+                        all_nlp[phase_node1].U_scaled[0].shape[0]
+                        > all_nlp[phase_node0].U_scaled[0].shape[0]
                 ) and (
-                        _penalty.all_nodes_index[1] < len(interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled)
-                        or interface.ocp.nlp[_penalty.nodes_phase[1]].phase_dynamics
+                        node_idx_1 < len(all_nlp[phase_node1].U_scaled)
+                        or all_nlp[phase_node1].phase_dynamics
                         == PhaseDynamics.SHARED_DURING_THE_PHASE
                 ):
                     fake = interface.ocp.cx(
-                        interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
-                        - interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0],
+                        all_nlp[phase_node1].U_scaled[0].shape[0]
+                        - all_nlp[phase_node0].U_scaled[0].shape[0],
                         1,
                     )
                     _u_0 = vertcat(
-                        interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[_penalty.all_nodes_index[0] - u0_mode],
+                        all_nlp[phase_node0].U_scaled[node_idx_0 - u0_mode],
                         fake,
                     )
                 else:
-                    _u_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[
-                        _penalty.all_nodes_index[0] - u0_mode
+                    _u_0 = all_nlp[phase_node0].U_scaled[
+                        node_idx_0 - u0_mode
                         ]
             else:
                 _u_0 = []
-            if interface.ocp.nlp[
-                _penalty.nodes_phase[1]
-            ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _penalty.all_nodes_index[1] < len(
-                interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled
+            if all_nlp[
+                phase_node1
+            ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or node_idx_1 < len(
+                all_nlp[phase_node1].U_scaled
             ):
                 if (
-                        interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
-                        > interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0]
+                        all_nlp[phase_node0].U_scaled[0].shape[0]
+                        > all_nlp[phase_node1].U_scaled[0].shape[0]
                 ) and (
-                        _penalty.all_nodes_index[0] < len(interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled)
-                        or interface.ocp.nlp[_penalty.nodes_phase[0]].phase_dynamics
+                        node_idx_0 < len(all_nlp[phase_node0].U_scaled)
+                        or all_nlp[phase_node0].phase_dynamics
                         == PhaseDynamics.SHARED_DURING_THE_PHASE
                 ):
                     fake = interface.ocp.cx(
-                        interface.ocp.nlp[_penalty.nodes_phase[0]].U_scaled[0].shape[0]
-                        - interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[0].shape[0],
+                        all_nlp[phase_node0].U_scaled[0].shape[0]
+                        - all_nlp[phase_node1].U_scaled[0].shape[0],
                         1,
                     )
                     _u_1 = vertcat(
-                        interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[_penalty.all_nodes_index[1] - u1_mode],
+                        all_nlp[phase_node1].U_scaled[node_idx_1 - u1_mode],
                         fake,
                     )
                 else:
-                    _u_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].U_scaled[
-                        _penalty.all_nodes_index[1] - u1_mode
-                        ]
+                    _u_1 = all_nlp[phase_node1].U_scaled[node_idx_1 - u1_mode]
             else:
                 _u_1 = []
 
-            if (
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[0].shape[0]
-                    > interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[0].shape[0]
-            ):
-                fake = interface.ocp.cx(
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[0].shape[0]
-                    - interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[0].shape[0],
-                    1,
-                )
-                _s_0 = vertcat(
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[_penalty.all_nodes_index[0]],
-                    fake,
-                )
-            else:
-                _s_0 = interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[_penalty.all_nodes_index[0]]
-            if (
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[0].shape[0]
-                    > interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[0].shape[0]
-            ):
-                fake = interface.ocp.cx(
-                    interface.ocp.nlp[_penalty.nodes_phase[0]].S_scaled[0].shape[0]
-                    - interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[0].shape[0],
-                    1,
-                )
-                _s_1 = vertcat(
-                    interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[_penalty.all_nodes_index[1]],
-                    fake,
-                )
-            else:
-                _s_1 = interface.ocp.nlp[_penalty.nodes_phase[1]].S_scaled[_penalty.all_nodes_index[1]]
+            _s_0 = all_nlp[phase_node0].S_scaled[node_idx_0]
+            _s_1 = all_nlp[phase_node1].S_scaled[node_idx_1]
+
+            len_s_0 = _s_0.shape[0]
+            len_s_1 = _s_1.shape[0]
+
+            if len_s_1 > len_s_0:
+                fake_padding = interface.ocp.cx(len_s_1 - len_s_0, 1)
+                _s_0 = vertcat(_s_0, fake_padding)
+
+            if len_s_0 > len_s_1:
+                fake_padding = interface.ocp.cx(len_s_0 - len_s_1, 1)
+                _s_1 = vertcat(_s_1, fake_padding)
 
         _x = vertcat(_x_1, _x_0)
         _u = vertcat(_u_1, _u_0)
@@ -748,4 +665,3 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                 )
             _u = vertcat(_u, u)
     return _x, _u, _s
-
