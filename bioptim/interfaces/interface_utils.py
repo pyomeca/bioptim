@@ -244,7 +244,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
     return out
 
 
-def format_target(penalty, target_in: np.array, idx) -> np.array:
+def format_target(penalty, target_in: np.ndarray, idx: int) -> np.ndarray:
     """
     Format the target of a penalty to a numpy array
 
@@ -252,32 +252,34 @@ def format_target(penalty, target_in: np.array, idx) -> np.array:
     ----------
     penalty:
         The penalty with a target
-    target_in: np.array
+    target_in: np.ndarray
         The target of the penalty
+    idx: int
+        The index of the node
     Returns
     -------
-        np.array
-            The target of the penalty formatted to a numpy array
+        np.ndarray
+            The target of the penalty formatted to a numpy ndarray
     """
-    if len(target_in.shape) == 2:
-        target_out = target_in[:, penalty.node_idx.index(idx)]
-    elif len(target_in.shape) == 3:
-        target_out = target_in[:, :, penalty.node_idx.index(idx)]
-    else:
+    if len(target_in.shape) not in [2, 3]:
         raise NotImplementedError("penalty target with dimension != 2 or 3 is not implemented yet")
+
+    target_out = target_in[..., penalty.node_idx.index(idx)]
+
     return target_out
 
 
-def get_control_modificator(ocp, _penalty, index):
-    return (
-        1
-        if ocp.nlp[_penalty.nodes_phase[index]].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-           and (
-                   _penalty.nodes[index] == Node.END
-                   or _penalty.nodes[index] == ocp.nlp[_penalty.nodes_phase[index]].ns
-           )
-        else 0
-    )
+def get_control_modificator(ocp, _penalty, index: int):
+
+    current_phase = ocp.nlp[_penalty.nodes_phase[index]]
+    current_node = _penalty.nodes[index]
+    phase_dynamics = current_phase.phase_dynamics
+    number_of_shooting_points = current_phase.ns
+
+    is_shared_dynamics = phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+    is_end_or_shooting_point = current_node == Node.END or current_node == number_of_shooting_points
+
+    return 1 if is_shared_dynamics and is_end_or_shooting_point else 0
 
 
 def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
@@ -287,8 +289,8 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
     if _penalty.transition:
         ocp = interface.ocp
 
-        u0_mode = get_control_modificator(ocp,_penalty, 0)
-        u1_mode = get_control_modificator(ocp,_penalty, 1)
+        u0_mode = get_control_modificator(ocp, _penalty, 0)
+        u1_mode = get_control_modificator(ocp, _penalty, 1)
 
         if is_unscaled:
             if (
