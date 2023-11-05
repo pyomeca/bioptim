@@ -66,11 +66,13 @@ def test_mx(nlp_mx):
     res = Function("test", [], [result_mx - expected])
     assert res()["o0"].is_zero()
 
+
 @pytest.fixture
 def nlp_control_sx():
     nlp = NonLinearProgram(PhaseDynamics.SHARED_DURING_THE_PHASE)
     nlp.U_scaled = [SX([[1], [2], [3]])]
     return nlp
+
 
 @pytest.fixture
 def nlp_control_mx():

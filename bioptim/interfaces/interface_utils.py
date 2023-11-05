@@ -628,14 +628,14 @@ def get_node_control_info(nlp, node_idx, attribute: str):
 
 
 def get_padded_control_array(
-        nlp,
-        node_idx: int,
-        u_mode: int,
-        attribute: str,
-        target_length: int,
-        is_within_control_limit_target: bool,
-        is_shared_dynamics_target: bool,
-        casadi_constructor: Callable,
+    nlp,
+    node_idx: int,
+    u_mode: int,
+    attribute: str,
+    target_length: int,
+    is_within_control_limit_target: bool,
+    is_shared_dynamics_target: bool,
+    casadi_constructor: Callable,
 ):
     """
     Get a padded array of the correct length
@@ -674,7 +674,7 @@ def get_padded_control_array(
 
     if is_shared_dynamics or is_within_control_limit:
         should_apply_fake_padding_on_u_sym = target_length > len_u and (
-                is_within_control_limit_target or is_shared_dynamics_target
+            is_within_control_limit_target or is_shared_dynamics_target
         )
         _u_sym = getattr(nlp, attribute)[node_idx - u_mode]
 
