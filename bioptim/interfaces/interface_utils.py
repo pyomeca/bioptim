@@ -376,61 +376,35 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                 fake_padding = interface.ocp.cx(len_x_0 - len_x_1, 1)
                 _x_1 = vertcat(_x_1, fake_padding)
 
-            if all_nlp[
-                phase_node0
-            ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or node_idx_0 < len(
-            if all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or node_idx_0 < len(
-                all_nlp[phase_node0].U_scaled
-            ):
-                if (
-                        all_nlp[phase_node1].U_scaled[0].shape[0]
-                        > all_nlp[phase_node0].U_scaled[0].shape[0]
-                ) and (
-                        node_idx_1 < len(all_nlp[phase_node1].U_scaled)
-                        or all_nlp[phase_node1].phase_dynamics
-                        == PhaseDynamics.SHARED_DURING_THE_PHASE
-                ):
-                    fake = interface.ocp.cx(
-                        all_nlp[phase_node1].U_scaled[0].shape[0]
-                        - all_nlp[phase_node0].U_scaled[0].shape[0],
-                        1,
-                    )
-                    _u_0 = vertcat(
-                        all_nlp[phase_node0].U_scaled[node_idx_0 - u0_mode],
-                        fake,
-                    )
-                else:
-                    _u_0 = all_nlp[phase_node0].U_scaled[
-                        node_idx_0 - u0_mode
-                        ]
-            else:
-                _u_0 = []
-            if all_nlp[
-                phase_node1
-            ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or node_idx_1 < len(
-                all_nlp[phase_node1].U_scaled
-            ):
-                if (
-                        all_nlp[phase_node0].U_scaled[0].shape[0]
-                        > all_nlp[phase_node1].U_scaled[0].shape[0]
-                ) and (
-                        node_idx_0 < len(all_nlp[phase_node0].U_scaled)
-                        or all_nlp[phase_node0].phase_dynamics
-                        == PhaseDynamics.SHARED_DURING_THE_PHASE
-                ):
-                    fake = interface.ocp.cx(
-                        all_nlp[phase_node0].U_scaled[0].shape[0]
-                        - all_nlp[phase_node1].U_scaled[0].shape[0],
-                        1,
-                    )
-                    _u_1 = vertcat(
-                        all_nlp[phase_node1].U_scaled[node_idx_1 - u1_mode],
-                        fake,
-                    )
-                else:
-                    _u_1 = all_nlp[phase_node1].U_scaled[node_idx_1 - u1_mode]
-            else:
-                _u_1 = []
+            is_shared_dynamics_0 = all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+            is_node0_within_control_limit = node_idx_0 < len(all_nlp[phase_node0].U_scaled)
+            is_shared_dynamics_1 = all_nlp[phase_node1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+            is_node1_within_control_limit = node_idx_1 < len(all_nlp[phase_node1].U_scaled)
+
+            _u_0 = []
+            _u_1 = []
+
+            if is_shared_dynamics_0 or is_node0_within_control_limit:
+                _u_0 = all_nlp[phase_node0].U_scaled[node_idx_0 - u0_mode]
+                _u_1 = all_nlp[phase_node1].U_scaled[node_idx_1 - u1_mode]
+                len_u_0 = _u_0.shape[0]
+                len_u_1 = _u_1.shape[0]
+                should_apply_fake_padding_on_u0 = len_u_1 > len_u_0 and (
+                            is_node1_within_control_limit or is_shared_dynamics_1)
+                if should_apply_fake_padding_on_u0:
+                    fake_padding = interface.ocp.cx(len_u_1 - len_u_0, 1)
+                    _u_0 = vertcat(_u_0, fake_padding)
+
+            if is_shared_dynamics_1 or is_node1_within_control_limit:
+                _u_0 = all_nlp[phase_node0].U_scaled[node_idx_0 - u0_mode]
+                _u_1 = all_nlp[phase_node1].U_scaled[node_idx_1 - u1_mode]
+                len_u_0 = _u_0.shape[0]
+                len_u_1 = _u_1.shape[0]
+                should_apply_fake_padding_on_u1 = len_u_0 > len_u_1 and (
+                            is_node0_within_control_limit or is_shared_dynamics_0)
+                if should_apply_fake_padding_on_u1:
+                    fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
+                    _u_1 = vertcat(_u_1, fake_padding)
 
             _s_0 = all_nlp[phase_node0].S_scaled[node_idx_0]
             _s_1 = all_nlp[phase_node1].S_scaled[node_idx_1]
