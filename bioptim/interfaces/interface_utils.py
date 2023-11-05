@@ -318,35 +318,31 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
             is_shared_dynamics_1 = all_nlp[phase_node1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             is_node1_within_control_limit = node_idx_1 < len(all_nlp[phase_node1].U)
 
-            u_0 = all_nlp[phase_node0].U[node_idx_0 - u0_mode]
-            u_1 = all_nlp[phase_node0].U[node_idx_1 - u1_mode]
+            len_u_0 = all_nlp[phase_node0].U[0].shape[0]
+            len_u_1 = all_nlp[phase_node1].U[0].shape[0]
 
-            len_u_0 = u_0.shape[0]
-            len_u_1 = u_1.shape[0]
+            _u_0 = []
+            _u_1 = []
 
             if is_shared_dynamics_0 or is_node0_within_control_limit:
                 should_apply_fake_padding_on_u0 = len_u_1 > len_u_0 and (
-                    is_node1_within_control_limit or is_shared_dynamics_1
+                        is_node1_within_control_limit or is_shared_dynamics_1
                 )
+                _u_0 = all_nlp[phase_node0].U_scaled[node_idx_0 - u0_mode]
+
                 if should_apply_fake_padding_on_u0:
                     fake_padding = interface.ocp.cx(len_u_1 - len_u_0, 1)
-                    _u_0 = vertcat(u_0, fake_padding)
-                else:
-                    _u_0 = u_0
-            else:
-                _u_0 = []
+                    _u_0 = vertcat(_u_0, fake_padding)
 
             if is_shared_dynamics_1 or is_node1_within_control_limit:
+                _u_1 = all_nlp[phase_node1].U_scaled[node_idx_1 - u1_mode]
+
                 should_apply_fake_padding_on_u1 = len_u_0 > len_u_1 and (
-                    is_node0_within_control_limit or is_shared_dynamics_0
+                        is_node0_within_control_limit or is_shared_dynamics_0
                 )
                 if should_apply_fake_padding_on_u1:
                     fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
-                    _u_1 = vertcat(u_1, fake_padding)
-                else:
-                    _u_1 = u_1
-            else:
-                _u_1 = []
+                    _u_1 = vertcat(_u_1, fake_padding)
 
             _s_0 = all_nlp[phase_node0].S[node_idx_0]
             _s_1 = all_nlp[phase_node1].S[node_idx_1]
@@ -641,3 +637,36 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                 )
             _u = vertcat(_u, u)
     return _x, _u, _s
+
+
+def get_padded_array(nlp, attribute, node_idx, target_length, casadi_constructor) -> SX | MX:
+    """
+    Get a padded array of the correct length
+
+    Parameters
+    ----------
+    nlp: NonLinearProgram
+        The current phase
+    attribute: str
+        The attribute to get the array from
+    node_idx: int
+        The node index
+    target_length: int
+        The target length of the array
+    casadi_constructor: Callable
+        The casadi constructor to use that either build SX or MX
+
+    Returns
+    -------
+    SX | MX
+        The padded array
+    """
+
+    padded_array = getattr(nlp, attribute)[node_idx][:, 0]
+    len_x = padded_array.shape[0]
+
+    if len_x > target_length:
+        fake_padding = casadi_constructor(len_x - target_length, 1)
+        padded_array = vertcat(padded_array, fake_padding)
+
+    return padded_array
