@@ -270,7 +270,6 @@ def format_target(penalty, target_in: np.ndarray, idx: int) -> np.ndarray:
 
 
 def get_control_modificator(ocp, _penalty, index: int):
-
     current_phase = ocp.nlp[_penalty.nodes_phase[index]]
     current_node = _penalty.nodes[index]
     phase_dynamics = current_phase.phase_dynamics
@@ -283,11 +282,9 @@ def get_control_modificator(ocp, _penalty, index: int):
 
 
 def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
-    """
-    """
+    """ """
 
     if _penalty.transition:
-
         ocp = interface.ocp
 
         u0_mode = get_control_modificator(ocp, _penalty, 0)
@@ -328,7 +325,9 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
             len_u_1 = u_1.shape[0]
 
             if is_shared_dynamics_0 or is_node0_within_control_limit:
-                should_apply_fake_padding_on_u0 = len_u_1 > len_u_0 and (is_node1_within_control_limit or is_shared_dynamics_1)
+                should_apply_fake_padding_on_u0 = len_u_1 > len_u_0 and (
+                    is_node1_within_control_limit or is_shared_dynamics_1
+                )
                 if should_apply_fake_padding_on_u0:
                     fake_padding = interface.ocp.cx(len_u_1 - len_u_0, 1)
                     _u_0 = vertcat(u_0, fake_padding)
@@ -338,7 +337,9 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                 _u_0 = []
 
             if is_shared_dynamics_1 or is_node1_within_control_limit:
-                should_apply_fake_padding_on_u1 = len_u_0 > len_u_1 and (is_node0_within_control_limit or is_shared_dynamics_0)
+                should_apply_fake_padding_on_u1 = len_u_0 > len_u_1 and (
+                    is_node0_within_control_limit or is_shared_dynamics_0
+                )
                 if should_apply_fake_padding_on_u1:
                     fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
                     _u_1 = vertcat(u_1, fake_padding)
@@ -390,7 +391,8 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                 len_u_0 = _u_0.shape[0]
                 len_u_1 = _u_1.shape[0]
                 should_apply_fake_padding_on_u0 = len_u_1 > len_u_0 and (
-                            is_node1_within_control_limit or is_shared_dynamics_1)
+                    is_node1_within_control_limit or is_shared_dynamics_1
+                )
                 if should_apply_fake_padding_on_u0:
                     fake_padding = interface.ocp.cx(len_u_1 - len_u_0, 1)
                     _u_0 = vertcat(_u_0, fake_padding)
@@ -401,7 +403,8 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                 len_u_0 = _u_0.shape[0]
                 len_u_1 = _u_1.shape[0]
                 should_apply_fake_padding_on_u1 = len_u_0 > len_u_1 and (
-                            is_node0_within_control_limit or is_shared_dynamics_0)
+                    is_node0_within_control_limit or is_shared_dynamics_0
+                )
                 if should_apply_fake_padding_on_u1:
                     fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
                     _u_1 = vertcat(_u_1, fake_padding)
@@ -434,7 +437,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         for i in range(len(_penalty.nodes_phase)):
             nlp_i = ocp.nlp[_penalty.nodes_phase[i]]
             index_i = _penalty.multinode_idx[i]
-            ui_mode = get_control_modificator(ocp, _penalty=_penalty,index=i)
+            ui_mode = get_control_modificator(ocp, _penalty=_penalty, index=i)
 
             if is_unscaled:
                 _x_tp = nlp_i.cx()
@@ -458,8 +461,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                         _x_tp = vertcat(_x_tp, nlp_i.X_scaled[index_i][:, i])
                 _u_tp = (
                     nlp_i.U_scaled[index_i - ui_mode]
-                    if nlp_i.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                       or index_i < len(nlp_i.U_scaled)
+                    if nlp_i.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or index_i < len(nlp_i.U_scaled)
                     else []
                 )
                 _s_tp = nlp_i.S_scaled[index_i]
@@ -493,8 +495,8 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         if is_unscaled:
             _x = nlp.cx()
             if (
-                    _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                    or _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
+                _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                or _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
             ):
                 _x = vertcat(_x, nlp.X[_idx][:, 0])
             else:
@@ -503,11 +505,11 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
 
             # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
             if (
-                    _idx == nlp.ns
-                    and nlp.ode_solver.is_direct_collocation
-                    and nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                    and _penalty.node[0] != Node.END
-                    and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                _idx == nlp.ns
+                and nlp.ode_solver.is_direct_collocation
+                and nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                and _penalty.node[0] != Node.END
+                and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
             ):
                 for i in range(1, nlp.X[_idx - 1].shape[1]):
                     _x = vertcat(_x, nlp.X[_idx - 1][:, i])
@@ -521,8 +523,8 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         else:
             _x = nlp.cx()
             if (
-                    _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                    or _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
+                _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                or _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
             ):
                 _x = vertcat(_x, nlp.X_scaled[_idx][:, 0])
             else:
@@ -531,11 +533,11 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
 
             # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
             if (
-                    _idx == nlp.ns
-                    and nlp.ode_solver.is_direct_collocation
-                    and nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                    and _penalty.node[0] != Node.END
-                    and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                _idx == nlp.ns
+                and nlp.ode_solver.is_direct_collocation
+                and nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                and _penalty.node[0] != Node.END
+                and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
             ):
                 for i in range(1, nlp.X_scaled[_idx - 1].shape[1]):
                     _x = vertcat(_x, nlp.X_scaled[_idx - 1][:, i])
