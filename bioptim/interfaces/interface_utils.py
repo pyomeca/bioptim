@@ -300,21 +300,37 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         node_idx_0 = _penalty.all_nodes_index[0]
         node_idx_1 = _penalty.all_nodes_index[1]
 
+        _x_0 = get_padded_array(
+            nlp=all_nlp[phase_node0],
+            attribute="X" if is_unscaled else "X_scaled",
+            node_idx=node_idx_0,
+            target_length=all_nlp[phase_node1].X_scaled[node_idx_1].shape[0],
+            casadi_constructor=cx,
+        )
+        _x_1 = get_padded_array(
+            nlp=all_nlp[phase_node1],
+            attribute="X" if is_unscaled else "X_scaled",
+            node_idx=node_idx_1,
+            target_length=all_nlp[phase_node0].X_scaled[node_idx_0].shape[0],
+            casadi_constructor=cx,
+        )
+
+        _s_0 = get_padded_array(
+            nlp=all_nlp[phase_node0],
+            attribute="S" if is_unscaled else "S_scaled",
+            node_idx=node_idx_0,
+            target_length=all_nlp[phase_node1].S[node_idx_1].shape[0],
+            casadi_constructor=cx,
+        )
+        _s_1 = get_padded_array(
+            nlp=all_nlp[phase_node1],
+            attribute="S" if is_unscaled else "S_scaled",
+            node_idx=node_idx_1,
+            target_length=all_nlp[phase_node0].S[node_idx_0].shape[0],
+            casadi_constructor=cx,
+        )
+
         if is_unscaled:
-            _x_0 = get_padded_array(
-                nlp=all_nlp[phase_node0],
-                attribute="X",
-                node_idx=node_idx_0,
-                target_length=all_nlp[phase_node1].X[node_idx_1].shape[0],
-                casadi_constructor=cx,
-            )
-            _x_1 = get_padded_array(
-                nlp=all_nlp[phase_node1],
-                attribute="X",
-                node_idx=node_idx_1,
-                target_length=all_nlp[phase_node0].X[node_idx_0].shape[0],
-                casadi_constructor=cx,
-            )
 
             is_shared_dynamics_0 = all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             is_node0_within_control_limit = node_idx_0 < len(all_nlp[phase_node0].U)
@@ -347,36 +363,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                     fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
                     _u_1 = vertcat(_u_1, fake_padding)
 
-            _s_0 = get_padded_array(
-                nlp=all_nlp[phase_node0],
-                attribute="S",
-                node_idx=node_idx_0,
-                target_length=all_nlp[phase_node1].S[node_idx_1].shape[0],
-                casadi_constructor=cx,
-            )
-            _s_1 = get_padded_array(
-                nlp=all_nlp[phase_node1],
-                attribute="S",
-                node_idx=node_idx_1,
-                target_length=all_nlp[phase_node0].S[node_idx_0].shape[0],
-                casadi_constructor=cx,
-            )
-
         else:
-            _x_0 = get_padded_array(
-                nlp=all_nlp[phase_node0],
-                attribute="X_scaled",
-                node_idx=node_idx_0,
-                target_length=all_nlp[phase_node1].X_scaled[node_idx_1].shape[0],
-                casadi_constructor=cx,
-            )
-            _x_1 = get_padded_array(
-                nlp=all_nlp[phase_node1],
-                attribute="X_scaled",
-                node_idx=node_idx_1,
-                target_length=all_nlp[phase_node0].X_scaled[node_idx_0].shape[0],
-                casadi_constructor=cx,
-            )
 
             is_shared_dynamics_0 = all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             is_node0_within_control_limit = node_idx_0 < len(all_nlp[phase_node0].U_scaled)
@@ -408,21 +395,6 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                 if should_apply_fake_padding_on_u1:
                     fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
                     _u_1 = vertcat(_u_1, fake_padding)
-
-            _s_0 = get_padded_array(
-                nlp=all_nlp[phase_node0],
-                attribute="S_scaled",
-                node_idx=node_idx_0,
-                target_length=all_nlp[phase_node1].S_scaled[node_idx_1].shape[0],
-                casadi_constructor=cx,
-            )
-            _s_1 = get_padded_array(
-                nlp=all_nlp[phase_node1],
-                attribute="S_scaled",
-                node_idx=node_idx_1,
-                target_length=all_nlp[phase_node0].S_scaled[node_idx_0].shape[0],
-                casadi_constructor=cx,
-            )
 
         _x = vertcat(_x_1, _x_0)
         _u = vertcat(_u_1, _u_0)
