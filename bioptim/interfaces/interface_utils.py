@@ -1,4 +1,5 @@
 from time import perf_counter
+from typing import Callable
 from sys import platform
 
 from casadi import Importer
@@ -286,6 +287,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
 
     if _penalty.transition:
         ocp = interface.ocp
+        cx = interface.ocp.cx
 
         u0_mode = get_control_modificator(ocp, _penalty, 0)
         u1_mode = get_control_modificator(ocp, _penalty, 1)
@@ -299,19 +301,21 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         node_idx_1 = _penalty.all_nodes_index[1]
 
         if is_unscaled:
-            _x_0 = all_nlp[phase_node0].X[node_idx_0][:, 0]
-            _x_1 = all_nlp[phase_node1].X[node_idx_1][:, 0]
 
-            len_x_0 = _x_0.shape[0]
-            len_x_1 = _x_1.shape[0]
-
-            if len_x_1 > len_x_0:
-                fake_padding = interface.ocp.cx(len_x_1 - len_x_0, 1)
-                _x_0 = vertcat(_x_0, fake_padding)
-
-            if len_x_0 > len_x_1:
-                fake_padding = interface.ocp.cx(len_x_0 - len_x_1, 1)
-                _x_1 = vertcat(_x_1, fake_padding)
+            _x_0 = get_padded_array(
+                nlp=all_nlp[phase_node0],
+                attribute="X",
+                node_idx=node_idx_0,
+                target_length=all_nlp[phase_node1].X[node_idx_1].shape[0],
+                casadi_constructor=cx,
+            )
+            _x_1 = get_padded_array(
+                nlp=all_nlp[phase_node1],
+                attribute="X",
+                node_idx=node_idx_1,
+                target_length=all_nlp[phase_node0].X[node_idx_0].shape[0],
+                casadi_constructor=cx,
+            )
 
             is_shared_dynamics_0 = all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             is_node0_within_control_limit = node_idx_0 < len(all_nlp[phase_node0].U)
@@ -344,34 +348,36 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                     fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
                     _u_1 = vertcat(_u_1, fake_padding)
 
-            _s_0 = all_nlp[phase_node0].S[node_idx_0]
-            _s_1 = all_nlp[phase_node1].S[node_idx_1]
-
-            len_s_0 = _s_0.shape[0]
-            len_s_1 = _s_1.shape[0]
-
-            if len_s_1 > len_s_0:
-                fake_padding = interface.ocp.cx(len_s_1 - len_s_0, 1)
-                _s_0 = vertcat(_s_0, fake_padding)
-
-            if len_s_0 > len_s_1:
-                fake_padding = interface.ocp.cx(len_s_0 - len_s_1, 1)
-                _s_1 = vertcat(_s_1, fake_padding)
+            _s_0 = get_padded_array(
+                nlp=all_nlp[phase_node0],
+                attribute="S",
+                node_idx=node_idx_0,
+                target_length=all_nlp[phase_node1].S[node_idx_1].shape[0],
+                casadi_constructor=cx,
+            )
+            _s_1 = get_padded_array(
+                nlp=all_nlp[phase_node1],
+                attribute="S",
+                node_idx=node_idx_1,
+                target_length=all_nlp[phase_node0].S[node_idx_0].shape[0],
+                casadi_constructor=cx,
+            )
 
         else:
-            _x_0 = all_nlp[phase_node0].X_scaled[node_idx_0][:, 0]
-            _x_1 = all_nlp[phase_node1].X_scaled[node_idx_1][:, 0]
-
-            len_x_0 = _x_0.shape[0]
-            len_x_1 = _x_1.shape[0]
-
-            if len_x_1 > len_x_0:
-                fake_padding = interface.ocp.cx(len_x_1 - len_x_0, 1)
-                _x_0 = vertcat(_x_0, fake_padding)
-
-            if len_x_0 > len_x_1:
-                fake_padding = interface.ocp.cx(len_x_0 - len_x_1, 1)
-                _x_1 = vertcat(_x_1, fake_padding)
+            _x_0 = get_padded_array(
+                nlp=all_nlp[phase_node0],
+                attribute="X_scaled",
+                node_idx=node_idx_0,
+                target_length=all_nlp[phase_node1].X_scaled[node_idx_1].shape[0],
+                casadi_constructor=cx,
+            )
+            _x_1 = get_padded_array(
+                nlp=all_nlp[phase_node1],
+                attribute="X_scaled",
+                node_idx=node_idx_1,
+                target_length=all_nlp[phase_node0].X_scaled[node_idx_0].shape[0],
+                casadi_constructor=cx,
+            )
 
             is_shared_dynamics_0 = all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             is_node0_within_control_limit = node_idx_0 < len(all_nlp[phase_node0].U_scaled)
@@ -404,19 +410,20 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                     fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
                     _u_1 = vertcat(_u_1, fake_padding)
 
-            _s_0 = all_nlp[phase_node0].S_scaled[node_idx_0]
-            _s_1 = all_nlp[phase_node1].S_scaled[node_idx_1]
-
-            len_s_0 = _s_0.shape[0]
-            len_s_1 = _s_1.shape[0]
-
-            if len_s_1 > len_s_0:
-                fake_padding = interface.ocp.cx(len_s_1 - len_s_0, 1)
-                _s_0 = vertcat(_s_0, fake_padding)
-
-            if len_s_0 > len_s_1:
-                fake_padding = interface.ocp.cx(len_s_0 - len_s_1, 1)
-                _s_1 = vertcat(_s_1, fake_padding)
+            _s_0 = get_padded_array(
+                nlp=all_nlp[phase_node0],
+                attribute="S_scaled",
+                node_idx=node_idx_0,
+                target_length=all_nlp[phase_node1].S_scaled[node_idx_1].shape[0],
+                casadi_constructor=cx,
+            )
+            _s_1 = get_padded_array(
+                nlp=all_nlp[phase_node1],
+                attribute="S_scaled",
+                node_idx=node_idx_1,
+                target_length=all_nlp[phase_node0].S_scaled[node_idx_0].shape[0],
+                casadi_constructor=cx,
+            )
 
         _x = vertcat(_x_1, _x_0)
         _u = vertcat(_u_1, _u_0)
@@ -639,7 +646,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
     return _x, _u, _s
 
 
-def get_padded_array(nlp, attribute, node_idx, target_length, casadi_constructor) -> SX | MX:
+def get_padded_array(nlp, attribute:str, node_idx:int, target_length:int, casadi_constructor: Callable) -> SX | MX:
     """
     Get a padded array of the correct length
 
@@ -648,9 +655,9 @@ def get_padded_array(nlp, attribute, node_idx, target_length, casadi_constructor
     nlp: NonLinearProgram
         The current phase
     attribute: str
-        The attribute to get the array from
+        The attribute to get the array from such as "X", "X_scaled", "U", "U_scaled", "S", "S_scaled"
     node_idx: int
-        The node index
+        The node index in the current phase
     target_length: int
         The target length of the array
     casadi_constructor: Callable
