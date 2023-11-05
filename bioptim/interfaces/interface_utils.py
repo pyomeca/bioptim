@@ -379,6 +379,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
             if all_nlp[
                 phase_node0
             ].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or node_idx_0 < len(
+            if all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or node_idx_0 < len(
                 all_nlp[phase_node0].U_scaled
             ):
                 if (
