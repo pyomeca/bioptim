@@ -27,44 +27,41 @@ def nlp_mx():
 
 
 def test_valid_input(nlp_sx):
-    result = get_padded_array(nlp_sx, 'X', 0, SX, 5)
+    result = get_padded_array(nlp_sx, "X", 0, SX, 5)
     expected = vertcat(SX([[1], [2], [3]]), SX(2, 1))
     assert (result - expected).is_zero()
 
 
 def test_no_padding(nlp_sx):
-    result = get_padded_array(nlp_sx, 'X', 0, SX)
+    result = get_padded_array(nlp_sx, "X", 0, SX)
     expected = SX([[1], [2], [3]])
     assert (result - expected).is_zero()
 
 
 def test_custom_target_length(nlp_sx):
-    result = get_padded_array(nlp_sx, 'X', 0, SX, 4)
+    result = get_padded_array(nlp_sx, "X", 0, SX, 4)
     expected = vertcat(SX([[1], [2], [3]]), SX(1, 1))
     assert (result - expected).is_zero()
 
 
 def test_invalid_attribute(nlp_sx):
     with pytest.raises(AttributeError):
-        get_padded_array(nlp_sx, 'invalid_attribute', 0, SX)
+        get_padded_array(nlp_sx, "invalid_attribute", 0, SX)
 
 
 def test_invalid_node_idx(nlp_sx):
     with pytest.raises(IndexError):
-        get_padded_array(nlp_sx, 'X', 10, SX)
+        get_padded_array(nlp_sx, "X", 10, SX)
 
 
 def test_sx(nlp_sx):
-    result_sx = get_padded_array(nlp_sx, 'X', 0, SX, 5)
+    result_sx = get_padded_array(nlp_sx, "X", 0, SX, 5)
     expected = vertcat(SX([[1], [2], [3]]), SX(2, 1))
     assert (result_sx - expected).is_zero()
 
 
 def test_mx(nlp_mx):
-    result_mx = get_padded_array(nlp_mx, 'X', 0, MX, 5)
-    expected = vertcat(
-        MX(np.array([[1], [2], [3]])),
-        MX(2,1)
-    )
-    res = Function('test', [], [result_mx-expected])
+    result_mx = get_padded_array(nlp_mx, "X", 0, MX, 5)
+    expected = vertcat(MX(np.array([[1], [2], [3]])), MX(2, 1))
+    res = Function("test", [], [result_mx - expected])
     assert res()["o0"].is_zero()

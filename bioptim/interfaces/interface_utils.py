@@ -331,7 +331,6 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         )
 
         if is_unscaled:
-
             is_shared_dynamics_0 = all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             is_node0_within_control_limit = node_idx_0 < len(all_nlp[phase_node0].U)
             is_shared_dynamics_1 = all_nlp[phase_node1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
@@ -364,7 +363,6 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                     _u_1 = vertcat(_u_1, fake_padding)
 
         else:
-
             is_shared_dynamics_0 = all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             is_node0_within_control_limit = node_idx_0 < len(all_nlp[phase_node0].U_scaled)
             is_shared_dynamics_1 = all_nlp[phase_node1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
@@ -617,7 +615,9 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
     return _x, _u, _s
 
 
-def get_padded_array(nlp, attribute: str, node_idx: int, casadi_constructor: Callable, target_length: int = None) -> SX | MX:
+def get_padded_array(
+    nlp, attribute: str, node_idx: int, casadi_constructor: Callable, target_length: int = None
+) -> SX | MX:
     """
     Get a padded array of the correct length
 
