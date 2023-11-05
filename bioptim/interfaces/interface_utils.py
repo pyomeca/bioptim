@@ -645,7 +645,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
     return _x, _u, _s
 
 
-def get_padded_array(nlp, attribute: str, node_idx: int, target_length: int, casadi_constructor: Callable) -> SX | MX:
+def get_padded_array(nlp, attribute: str, node_idx: int, casadi_constructor: Callable, target_length: int = None) -> SX | MX:
     """
     Get a padded array of the correct length
 
@@ -658,7 +658,8 @@ def get_padded_array(nlp, attribute: str, node_idx: int, target_length: int, cas
     node_idx: int
         The node index in the current phase
     target_length: int
-        The target length of the array
+        The target length of the array, in some cases, one side can be longer than the other one
+        (e.g. when using uneven transition phase with a different of states between the two phases)
     casadi_constructor: Callable
         The casadi constructor to use that either build SX or MX
 
@@ -667,12 +668,14 @@ def get_padded_array(nlp, attribute: str, node_idx: int, target_length: int, cas
     SX | MX
         The padded array
     """
-
     padded_array = getattr(nlp, attribute)[node_idx][:, 0]
     len_x = padded_array.shape[0]
 
-    if len_x > target_length:
-        fake_padding = casadi_constructor(len_x - target_length, 1)
+    if target_length is None:
+        target_length = len_x
+
+    if target_length > len_x:
+        fake_padding = casadi_constructor(target_length - len_x, 1)
         padded_array = vertcat(padded_array, fake_padding)
 
     return padded_array
