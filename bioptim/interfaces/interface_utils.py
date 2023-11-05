@@ -289,9 +289,6 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         ocp = interface.ocp
         cx = interface.ocp.cx
 
-        u0_mode = get_control_modificator(ocp, _penalty, 0)
-        u1_mode = get_control_modificator(ocp, _penalty, 1)
-
         all_nlp = interface.ocp.nlp
 
         phase_node0 = _penalty.nodes_phase[0]
@@ -299,6 +296,9 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
 
         node_idx_0 = _penalty.all_nodes_index[0]
         node_idx_1 = _penalty.all_nodes_index[1]
+
+        u0_mode = get_control_modificator(ocp, _penalty, 0)
+        u1_mode = get_control_modificator(ocp, _penalty, 1)
 
         _x_0 = get_padded_array(
             nlp=all_nlp[phase_node0],
@@ -330,69 +330,34 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
             casadi_constructor=cx,
         )
 
-        if is_unscaled:
-            is_shared_dynamics_0 = all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-            is_node0_within_control_limit = node_idx_0 < len(all_nlp[phase_node0].U)
-            is_shared_dynamics_1 = all_nlp[phase_node1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-            is_node1_within_control_limit = node_idx_1 < len(all_nlp[phase_node1].U)
+        is_shared_dynamics_0, is_node0_within_control_limit, len_u_0 = get_node_control_info(
+            all_nlp[phase_node0], node_idx_0, attribute="U" if is_unscaled else "U_scaled"
+        )
+        is_shared_dynamics_1, is_node1_within_control_limit, len_u_1 = get_node_control_info(
+            all_nlp[phase_node1], node_idx_1, attribute="U" if is_unscaled else "U_scaled"
+        )
 
-            len_u_0 = all_nlp[phase_node0].U[0].shape[0]
-            len_u_1 = all_nlp[phase_node1].U[0].shape[0]
+        _u_0 = get_padded_control_array(
+            all_nlp[phase_node0],
+            node_idx_0,
+            attribute="U" if is_unscaled else "U_scaled",
+            u_mode=u0_mode,
+            target_length=len_u_1,
+            is_shared_dynamics_target=is_shared_dynamics_1,
+            is_within_control_limit_target=is_node1_within_control_limit,
+            casadi_constructor=cx,
+        )
 
-            _u_0 = []
-            _u_1 = []
-
-            if is_shared_dynamics_0 or is_node0_within_control_limit:
-                should_apply_fake_padding_on_u0 = len_u_1 > len_u_0 and (
-                    is_node1_within_control_limit or is_shared_dynamics_1
-                )
-                _u_0 = all_nlp[phase_node0].U_scaled[node_idx_0 - u0_mode]
-
-                if should_apply_fake_padding_on_u0:
-                    fake_padding = interface.ocp.cx(len_u_1 - len_u_0, 1)
-                    _u_0 = vertcat(_u_0, fake_padding)
-
-            if is_shared_dynamics_1 or is_node1_within_control_limit:
-                _u_1 = all_nlp[phase_node1].U_scaled[node_idx_1 - u1_mode]
-
-                should_apply_fake_padding_on_u1 = len_u_0 > len_u_1 and (
-                    is_node0_within_control_limit or is_shared_dynamics_0
-                )
-                if should_apply_fake_padding_on_u1:
-                    fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
-                    _u_1 = vertcat(_u_1, fake_padding)
-
-        else:
-            is_shared_dynamics_0 = all_nlp[phase_node0].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-            is_node0_within_control_limit = node_idx_0 < len(all_nlp[phase_node0].U_scaled)
-            is_shared_dynamics_1 = all_nlp[phase_node1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-            is_node1_within_control_limit = node_idx_1 < len(all_nlp[phase_node1].U_scaled)
-
-            len_u_0 = all_nlp[phase_node0].U_scaled[0].shape[0]
-            len_u_1 = all_nlp[phase_node1].U_scaled[0].shape[0]
-
-            _u_0 = []
-            _u_1 = []
-
-            if is_shared_dynamics_0 or is_node0_within_control_limit:
-                should_apply_fake_padding_on_u0 = len_u_1 > len_u_0 and (
-                    is_node1_within_control_limit or is_shared_dynamics_1
-                )
-                _u_0 = all_nlp[phase_node0].U_scaled[node_idx_0 - u0_mode]
-
-                if should_apply_fake_padding_on_u0:
-                    fake_padding = interface.ocp.cx(len_u_1 - len_u_0, 1)
-                    _u_0 = vertcat(_u_0, fake_padding)
-
-            if is_shared_dynamics_1 or is_node1_within_control_limit:
-                _u_1 = all_nlp[phase_node1].U_scaled[node_idx_1 - u1_mode]
-
-                should_apply_fake_padding_on_u1 = len_u_0 > len_u_1 and (
-                    is_node0_within_control_limit or is_shared_dynamics_0
-                )
-                if should_apply_fake_padding_on_u1:
-                    fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
-                    _u_1 = vertcat(_u_1, fake_padding)
+        _u_1 = get_padded_control_array(
+            all_nlp[phase_node1],
+            node_idx_1,
+            attribute="U" if is_unscaled else "U_scaled",
+            u_mode=u1_mode,
+            target_length=len_u_0,
+            is_shared_dynamics_target=is_shared_dynamics_0,
+            is_within_control_limit_target=is_node0_within_control_limit,
+            casadi_constructor=cx,
+        )
 
         _x = vertcat(_x_1, _x_0)
         _u = vertcat(_u_1, _u_0)
@@ -651,3 +616,70 @@ def get_padded_array(
         padded_array = vertcat(padded_array, fake_padding)
 
     return padded_array
+
+
+def get_node_control_info(nlp, node_idx, attribute: str):
+    """This returns the information about the control at a given node to format controls properly"""
+    is_shared_dynamics = nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+    is_within_control_limit = node_idx < len(nlp.U_scaled)
+    len_u = getattr(nlp, attribute)[0].shape[0]
+
+    return is_shared_dynamics, is_within_control_limit, len_u
+
+
+def get_padded_control_array(
+        nlp,
+        node_idx: int,
+        u_mode: int,
+        attribute: str,
+        target_length: int,
+        is_within_control_limit_target: bool,
+        is_shared_dynamics_target: bool,
+        casadi_constructor: Callable,
+):
+    """
+    Get a padded array of the correct length
+
+    Parameters
+    ----------
+    nlp: NonLinearProgram
+        The current phase
+    node_idx: int
+        The node index in the current phase
+    u_mode: int
+        The control mode see get_control_modificator
+    attribute: str
+        The attribute to get the array from such as "X", "X_scaled", "U", "U_scaled", "S", "S_scaled"
+    target_length: int
+        The target length of the array, in some cases, one side can be longer than the other one
+        (e.g. when using uneven transition phase with a different of states between the two phases)
+    is_within_control_limit_target: bool
+        If the target node of a given phase is within the control limit
+        (e.g. when using uneven transition phase with a different of states between the two phases)
+    is_shared_dynamics_target: bool
+        If the target node of a given phase is shared during the phase
+        (e.g. when using uneven transition phase with a different of states between the two phases)
+    casadi_constructor: Callable
+        The casadi constructor to use that either build SX or MX
+
+    Returns
+    -------
+    SX | MX
+        The padded array
+    """
+
+    is_shared_dynamics, is_within_control_limit, len_u = get_node_control_info(nlp, node_idx, attribute=attribute)
+
+    _u_sym = []
+
+    if is_shared_dynamics or is_within_control_limit:
+        should_apply_fake_padding_on_u_sym = target_length > len_u and (
+                is_within_control_limit_target or is_shared_dynamics_target
+        )
+        _u_sym = getattr(nlp, attribute)[node_idx - u_mode]
+
+        if should_apply_fake_padding_on_u_sym:
+            fake_padding = casadi_constructor(target_length - len_u, 1)
+            _u_sym = vertcat(_u_sym, fake_padding)
+
+    return _u_sym
