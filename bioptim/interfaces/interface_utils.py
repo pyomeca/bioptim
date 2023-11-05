@@ -301,7 +301,6 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         node_idx_1 = _penalty.all_nodes_index[1]
 
         if is_unscaled:
-
             _x_0 = get_padded_array(
                 nlp=all_nlp[phase_node0],
                 attribute="X",
@@ -330,7 +329,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
 
             if is_shared_dynamics_0 or is_node0_within_control_limit:
                 should_apply_fake_padding_on_u0 = len_u_1 > len_u_0 and (
-                        is_node1_within_control_limit or is_shared_dynamics_1
+                    is_node1_within_control_limit or is_shared_dynamics_1
                 )
                 _u_0 = all_nlp[phase_node0].U_scaled[node_idx_0 - u0_mode]
 
@@ -342,7 +341,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                 _u_1 = all_nlp[phase_node1].U_scaled[node_idx_1 - u1_mode]
 
                 should_apply_fake_padding_on_u1 = len_u_0 > len_u_1 and (
-                        is_node0_within_control_limit or is_shared_dynamics_0
+                    is_node0_within_control_limit or is_shared_dynamics_0
                 )
                 if should_apply_fake_padding_on_u1:
                     fake_padding = interface.ocp.cx(len_u_0 - len_u_1, 1)
@@ -646,7 +645,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
     return _x, _u, _s
 
 
-def get_padded_array(nlp, attribute:str, node_idx:int, target_length:int, casadi_constructor: Callable) -> SX | MX:
+def get_padded_array(nlp, attribute: str, node_idx: int, target_length: int, casadi_constructor: Callable) -> SX | MX:
     """
     Get a padded array of the correct length
 
