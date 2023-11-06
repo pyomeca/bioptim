@@ -22,8 +22,6 @@ from bioptim import (
     BiMappingList,
     ParameterList,
     InterpolationType,
-    Bounds,
-    InitialGuess,
     BiorbdModel,
     PenaltyController,
     ParameterObjectiveList,
