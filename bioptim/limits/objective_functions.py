@@ -398,6 +398,7 @@ class ObjectiveFcn:
         TRACK_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)
         TRACK_MARKERS_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_markers_acceleration,)
         TRACK_MARKERS_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_markers_velocity,)
+        TRACK_CONTACT_FORCES = (PenaltyFunctionAbstract.Functions.minimize_contact_forces,)
         TRACK_POWER = (PenaltyFunctionAbstract.Functions.minimize_power,)
         TRACK_SEGMENT_WITH_CUSTOM_RT = (PenaltyFunctionAbstract.Functions.track_segment_with_custom_rt,)
         TRACK_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
