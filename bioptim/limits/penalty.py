@@ -1170,7 +1170,7 @@ class PenaltyFunctionAbstract:
         def first_collocation_point_equals_state(penalty: PenaltyOption, controller: PenaltyController | list):
             """
             Insures that the first collocation helper is equal to the states at the shooting node.
-            This is a necessary constraint for COLLOCATION with include_starting_collocation_point.
+            This is a necessary constraint for COLLOCATION with duplicate_collocation_starting_point.
             """
             collocation_helper = controller.states.cx_intermediates_list[0]
             states = controller.states.cx_start

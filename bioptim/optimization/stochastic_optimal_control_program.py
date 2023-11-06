@@ -321,7 +321,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             return OdeSolver.COLLOCATION(
                 method=self.problem_type.method,
                 polynomial_degree=self.problem_type.polynomial_degree,
-                include_starting_collocation_point=True,
+                duplicate_collocation_starting_point=True,
             )
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
@@ -372,7 +372,7 @@ def _check_has_no_ode_solver_defined(**kwargs):
             "OdeSolver.COLLOCATION("
             "method=problem_type.method, "
             "polynomial_degree=problem_type.polynomial_degree, "
-            "include_starting_collocation_point=True"
+            "duplicate_collocation_starting_point=True"
             ")"
         )
 
