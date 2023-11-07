@@ -3,6 +3,8 @@ Test for file IO.
 """
 
 from typing import Callable
+
+import matplotlib.pyplot as plt
 from casadi import vertcat, SX, MX
 import numpy as np
 import pytest
@@ -14,6 +16,7 @@ from bioptim import (
     ControlType,
     DynamicsEvaluation,
     DynamicsList,
+    InitialGuessList,
     ObjectiveFcn,
     ObjectiveList,
     OdeSolver,
@@ -21,6 +24,9 @@ from bioptim import (
     OptimalControlProgram,
     Node,
     NonLinearProgram,
+    Shooting,
+    Solution,
+    SolutionIntegrator,
     Solver,
     PhaseDynamics,
 )
@@ -37,6 +43,14 @@ class NonControlledMethod:
         self.b = 0
         self.c = 0
         self._name = name
+
+    def initial_values(self) -> np.array:
+        """
+        Returns
+        -------
+        The initial values of a, b, c
+        """
+        return np.array([[self.a], [self.b], [self.c]])
 
     def serialize(self) -> tuple[Callable, dict]:
         # This is where you can serialize your model
@@ -150,10 +164,10 @@ def prepare_ocp(
         The minimal time for each phase
     time_max: list
         The maximal time for each phase
-    ode_solver: OdeSolverBase
-        The ode solver to use
     use_sx: bool
         Callable Mx or Sx used for ocp
+    ode_solver: OdeSolverBase
+        The ode solver to use
     phase_dynamics: PhaseDynamics
         If the dynamics equation within a phase is unique or changes at each node.
         PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
@@ -198,6 +212,7 @@ def prepare_ocp(
             ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[i], max_bound=time_max[i], phase=i
         )
 
+    # Creates the objective for my last phases
     objective_functions = ObjectiveList()
     objective_functions.add(
         ObjectiveFcn.Mayer.MINIMIZE_STATE, target=5, key="c", node=Node.END, quadratic=True, weight=1, phase=9
@@ -316,3 +331,55 @@ def test_main_control_type_none(use_sx, phase_dynamics):
         np.array([4.83559727, 4.88198772, 4.92871034, 4.97576671, 5.02315844, 5.07088713]),
         decimal=8,
     )
+
+
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_integration_control_type_none(use_sx):
+    """
+    Prepare and integrate the ocp
+    """
+
+    # number of stimulation corresponding to phases
+    n = 10
+    # minimum time between two phase
+    time_min = [0.01 for _ in range(n)]
+    # maximum time between two phase
+    time_max = [0.1 for _ in range(n)]
+    ocp = prepare_ocp(
+        n_phase=n,
+        time_min=time_min,
+        time_max=time_max,
+        use_sx=use_sx,
+    )
+
+    x = InitialGuessList()
+    u = InitialGuessList()
+    p = InitialGuessList()
+    s = InitialGuessList()
+
+    phase_time = [0.01*_ for _ in range(1, n+1)]
+
+    for i in range(len(ocp.nlp)):
+        for j in range(len(ocp.nlp[i].states.keys())):
+            x.add(ocp.nlp[i].states.keys()[j], ocp.nlp[i].model.initial_values()[j], phase=i)
+        if len(ocp.parameters) != 0:
+            for k in range(len(ocp.parameters)):
+                p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]), phase=i)
+                # np.append(p[i][ocp.parameters.keys()[k]], ocp.parameters[k].mx * len(ocp.nlp))
+        else:
+            p.add("", phase=i)
+        u.add("", phase=i)
+        s.add("", phase=i)
+
+    sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
+    # result = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)  # sol_ivp_bioptim
+    result = sol_from_initial_guess.integrate()  # sol_ivp  gives the same discontinuity as sol_ivp_bioptim
+    plt.plot(result.time[0], result.states[0]["a"][0])
+    plt.plot(result.time[1], result.states[1]["a"][0])
+    plt.plot(result.time[2], result.states[2]["a"][0])
+    plt.plot(result.time[3], result.states[3]["a"][0])
+    plt.plot(result.time[4], result.states[4]["a"][0])
+    plt.plot(result.time[5], result.states[5]["a"][0])
+    plt.show()
+
+    result.merge_phases()

@@ -319,9 +319,10 @@ class Solution:
         if sum([len(s) != len(all_ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
             raise ValueError("The InitialGuessList len must match the number of phases")
         if n_param != 0:
-            if len(_sol) != 3 and len(_sol[3]) != 1 and _sol[3][0].shape != (n_param, 1):
+            # if len(_sol) != 3 and len(_sol[3]) != 1 and _sol[3][0].shape != (n_param, 1):  # TODO : Check if it's a mistake _sol[3] as parameter
+            if len(_sol) != 3 and len(_sol[2]) != 1 and len(_sol[2][0]) != n_param:
                 raise ValueError(
-                    "The 3rd element is the InitialGuess of the parameter and "
+                    "The 2rd element is the InitialGuess of the parameter and "
                     "should be a unique vector of size equal to n_param"
                 )
 
@@ -344,7 +345,7 @@ class Solution:
         # For controls
         for p, ss in enumerate(sol_controls):
             control_type = ocp.nlp[p].control_type
-            if control_type == ControlType.CONSTANT:
+            if control_type == ControlType.CONSTANT or control_type == ControlType.NONE:
                 off = 0
             elif control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 off = 1
@@ -352,8 +353,12 @@ class Solution:
                 raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
 
             for key in ss.keys():
-                ocp.nlp[p].controls[key].node_index = 0
-                ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].controls[key]), all_ns[p], "controls")
+                if control_type == ControlType.NONE:
+                    ocp.nlp[p].controls.node_index = 0
+                    ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].controls), all_ns[p], "controls")
+                else:
+                    ocp.nlp[p].controls[key].node_index = 0
+                    ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].controls[key]), all_ns[p], "controls")
 
             for i in range(all_ns[p] + off):
                 for key in ss.keys():
@@ -362,15 +367,27 @@ class Solution:
         # For parameters
         if n_param:
             for p, ss in enumerate(sol_params):
-                vector = np.concatenate((vector, np.repeat(ss.init, all_ns[p] + 1)[:, np.newaxis]))
+                control_type = ocp.nlp[p].control_type
+                if control_type == ControlType.NONE:
+                    for key in ss.keys():
+                        vector = np.concatenate((vector, np.repeat(ss[key].init, all_ns[p] + 1)[:, np.newaxis]))
+                else:
+                    vector = np.concatenate((vector, np.repeat(ss.init, all_ns[p] + 1)[:, np.newaxis]))
 
         # For stochastic variables
         for p, ss in enumerate(sol_stochastic_variables):
+            control_type = ocp.nlp[p].control_type
             for key in ss.keys():
-                ocp.nlp[p].stochastic_variables[key].node_index = 0
-                ss[key].init.check_and_adjust_dimensions(
-                    len(ocp.nlp[p].stochastic_variables[key]), all_ns[p], "stochastic_variables"
-                )
+                if control_type == ControlType.NONE:
+                    ocp.nlp[p].stochastic_variables.node_index = 0
+                    ss[key].init.check_and_adjust_dimensions(
+                        len(ocp.nlp[p].stochastic_variables), all_ns[p], "stochastic_variables"
+                    )
+                else:
+                    ocp.nlp[p].stochastic_variables[key].node_index = 0
+                    ss[key].init.check_and_adjust_dimensions(
+                        len(ocp.nlp[p].stochastic_variables[key]), all_ns[p], "stochastic_variables"
+                    )
 
             for i in range(all_ns[p] + 1):
                 for key in ss.keys():
@@ -544,6 +561,8 @@ class Solution:
         """
 
         new = Solution.from_ocp(self.ocp)
+        # TODO : ask why we go through this therefore loosing vector value ? As from_ocp method sets vector value to None by default
+        #  This will later result in a loss of empty 'scaled' _stochastic_variables and crash when merge is wanted
 
         new.vector = deepcopy(self.vector)
         new._cost = deepcopy(self._cost)
@@ -1009,14 +1028,17 @@ class Solution:
             x0 = np.concatenate(
                 [self._states["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].states]
             )
-            u0 = np.concatenate(
-                [self._controls["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].controls]
-            )
-            if (
-                self.ocp.nlp[phase - 1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                or not np.isnan(u0).any()
-            ):
-                u0 = vertcat(u0, u0)
+            if self.ocp.nlp[phase].control_type == ControlType.NONE:
+                u0 = []
+            else:
+                u0 = np.concatenate(
+                    [self._controls["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].controls]
+                )
+                if (
+                    self.ocp.nlp[phase - 1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                    or not np.isnan(u0).any()
+                ):
+                    u0 = vertcat(u0, u0)
             params = []
             s0 = []
             if len(self.ocp.nlp[phase - 1].stochastic_variables) > 0:
@@ -1449,11 +1471,14 @@ class Solution:
                 if not skip_controls and self._controls["scaled"]
                 else None
             )
-            out_controls = _merge(self._controls["unscaled"], is_control=True) if not skip_controls else None
+            if self.ocp.nlp[0].control_type.name == 'NONE' or skip_controls:
+                out_controls = None
+            else:
+                out_controls = _merge(self._controls["unscaled"], is_control=True)
         phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
-        if len(self._stochastic_variables["scaled"]) == 1:
+        if len(self._stochastic_variables["scaled"]) == 1:  # TODO correct this when stochastic variables doesn't have a 'scaled' key or it should never happen
             out_stochastic_variables_scaled = deepcopy(self._stochastic_variables["scaled"])
             out_stochastic_variables = deepcopy(self._stochastic_variables["unscaled"])
         else:

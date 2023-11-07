@@ -109,6 +109,8 @@ def solve_ivp_interface(
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)
                 ui = f(np.array(t_eval_step, dtype=np.float64))  # prevent error with dtype=object
+            elif control_type == ControlType.NONE:
+                ui = np.array([])
             else:
                 raise NotImplementedError("Control type not implemented")
 
@@ -235,6 +237,8 @@ def define_control_function(
             # interpolate linearly the values of u at each time step to match the size of t_eval
             t_u = t_u[::n_step]  # get the actual time steps of u
             return interp1d(t_u, controls, kind="linear", axis=1)
+        elif control_type == ControlType.NONE:
+            return lambda t: np.array([])
     else:
         if control_type == ControlType.CONSTANT:
             return lambda t: piecewise_constant_u(t, t_u, controls)
@@ -243,6 +247,8 @@ def define_control_function(
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             # interpolate linearly the values of u at each time step to match the size of t_eval
             return interp1d(t_u, controls, kind="linear", axis=1)
+        elif control_type == ControlType.NONE:
+            return lambda t: np.array([])
 
 
 def piecewise_constant_u(t: float, t_eval: np.ndarray | List[float], u: np.ndarray) -> float:
@@ -360,7 +366,9 @@ def solve_ivp_bioptim_interface(
     """
     dynamics_output = "xall" if keep_intermediate_points else "xf"
 
-    if len(x0.shape) != len(u.shape) and len(x0.shape) < 2:  # NOT SURE OF THIS FIX
+    # NOT SURE OF THIS FIX                                 # NOT SURE OF THIS FIX n°2
+    if len(x0.shape) != len(u.shape) and len(x0.shape) < 2 or shooting_type.name == 'SINGLE' and len(x0.shape) != (
+    x0.shape, 1):
         x0 = x0[:, np.newaxis]
     # if multiple shooting, we need to set the first x0
     x0i = x0[:, 0] if x0.shape[1] > 1 else x0
