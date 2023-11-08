@@ -134,10 +134,10 @@ class Solution:
         real_time_to_optimize: float,
         iterations: int,
         status: int,
-        _states: dict = {},
-        _controls: dict = {},
-        parameters: dict = {},
-        _stochastic_variables: dict = {},
+        _states: dict = None,
+        _controls: dict = None,
+        parameters: dict = None,
+        _stochastic_variables: dict = None,
     ):
         """
         Parameters
@@ -181,6 +181,10 @@ class Solution:
         _stochastic_variables: dict
             The stochastic variables of the solution
         """
+        _states = _states if _states is not None else {}
+        _controls = _controls if _controls is not None else {}
+        parameters = parameters if parameters is not None else {}
+        _stochastic_variables = _stochastic_variables if _stochastic_variables is not None else {}
 
         self.ocp = SimplifiedOCP(ocp) if ocp else None
         self.ns = ns
@@ -205,21 +209,23 @@ class Solution:
         self.iterations = iterations
         self.status = status
 
-        # Extract the data now for further use
-        if vector is None:
-            self._states = {}
-            self._controls = {}
-            self.parameters = {}
-            self._stochastic_variables = {}
+        self.vector = vector
+        self._states = {}
+        self._controls = {}
+        self.parameters = {}
+        self._stochastic_variables = {}
+        self.phase_time = None
+        self._time_vector = None
+        self._integrated_values = None
 
-        else:
+        # Extract the data now for further use
+        if vector is not None:
             (
                 _states["unscaled"],
                 _controls["unscaled"],
                 _stochastic_variables["unscaled"],
             ) = self._to_unscaled_values(_states["scaled"], _controls["scaled"], _stochastic_variables["scaled"])
 
-            self.vector = vector
             self._states = _states
             self._controls = self.ocp._complete_controls(_controls)
             self.parameters = parameters
@@ -479,7 +485,7 @@ class Solution:
 
         Parameters
         ----------
-        _ocp: OptimalControlProgram
+        ocp: OptimalControlProgram
             A reference to the OptimalControlProgram
         """
 
@@ -561,8 +567,6 @@ class Solution:
         """
 
         new = Solution.from_ocp(self.ocp)
-        # TODO : ask why we go through this therefore loosing vector value ? As from_ocp method sets vector value to None by default
-        #  This will later result in a loss of empty 'scaled' _stochastic_variables and crash when merge is wanted
 
         new.vector = deepcopy(self.vector)
         new._cost = deepcopy(self._cost)
