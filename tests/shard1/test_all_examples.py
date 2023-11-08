@@ -1479,3 +1479,15 @@ def test__contact_and_muscle_forces_example_excitation():
         min_bound=50,
         expand_dynamics=False,
     )
+
+
+def test_min_max_example():
+    from bioptim.examples.torque_driven_ocp import (
+        minimize_maximum_torque_by_extra_parameter as ocp_module,
+    )
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        bio_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
+    )

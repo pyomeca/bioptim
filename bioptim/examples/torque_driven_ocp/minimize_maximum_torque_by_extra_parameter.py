@@ -22,8 +22,6 @@ from bioptim import (
     BiMappingList,
     ParameterList,
     InterpolationType,
-    Bounds,
-    InitialGuess,
     BiorbdModel,
     PenaltyController,
     ParameterObjectiveList,
@@ -55,22 +53,23 @@ def prepare_ocp(
 
     # Mapping
     tau_mappings = BiMappingList()
-    tau_mappings.add("tau", [None, 0], [1], phase=0)
-    tau_mappings.add("tau", [None, 0], [1], phase=1)
+    tau_mappings.add("tau", to_second=[None, 0], to_first=[1], phase=0)
+    tau_mappings.add("tau", to_second=[None, 0], to_first=[1], phase=1)
 
     # Define the parameter to optimize
     parameters = ParameterList()
 
-    parameter_initial_guess = InitialGuess(0)
-    parameter_bounds = Bounds(0, tau_max, interpolation=InterpolationType.CONSTANT)
-
     parameters.add(
         "max_tau",  # The name of the parameter
         my_parameter_function,  # The function that modifies the biorbd model
-        parameter_initial_guess,  # The initial guess
-        parameter_bounds,  # The bounds
         size=1,
     )
+
+    parameter_bounds = BoundsList()
+    parameter_init = InitialGuessList()
+
+    parameter_init["max_tau"] = 0
+    parameter_bounds.add("max_tau", min_bound=0, max_bound=tau_max, interpolation=InterpolationType.CONSTANT)
 
     # Add phase independant objective functions
     parameter_objectives = ParameterObjectiveList()
@@ -98,38 +97,43 @@ def prepare_ocp(
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
-    x_bounds.add(bounds=bio_model[0].bounds_from_ranges(["q", "qdot"]))
+    x_bounds.add(key="q", bounds=bio_model[0].bounds_from_ranges("q"), phase=0)
+    x_bounds.add(key="qdot", bounds=bio_model[0].bounds_from_ranges("qdot"), phase=0)
+    x_bounds.add(key="q", bounds=bio_model[1].bounds_from_ranges("q"), phase=1)
+    x_bounds.add(key="qdot", bounds=bio_model[1].bounds_from_ranges("qdot"), phase=1)
 
     # change model bound for -pi, pi
     for i in range(len(bio_model)):
-        x_bounds[i].min[1, :] = -np.pi
-        x_bounds[i].max[1, :] = np.pi
+        x_bounds[i]["q"].min[1, :] = -np.pi
+        x_bounds[i]["q"].max[1, :] = np.pi
 
     # Phase 0
-    x_bounds[0][0, 0] = np.pi
-    x_bounds[0][1, 0] = 0
-    x_bounds[0].min[1, -1] = 6 * np.pi / 8 - 0.1
-    x_bounds[0].max[1, -1] = 6 * np.pi / 8 + 0.1
+    x_bounds[0]["q"][0, 0] = np.pi
+    x_bounds[0]["q"][1, 0] = 0
+    x_bounds[0]["q"].min[1, -1] = 6 * np.pi / 8 - 0.1
+    x_bounds[0]["q"].max[1, -1] = 6 * np.pi / 8 + 0.1
 
     # Phase 1
-    x_bounds[1][0, -1] = 3 * np.pi
-    x_bounds[1][1, -1] = 0
+    x_bounds[1]["q"][0, -1] = 3 * np.pi
+    x_bounds[1]["q"][1, -1] = 0
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add([0] * (bio_model[0].nb_q + bio_model[0].nb_qdot))
-    x_init.add([1] * (bio_model[1].nb_q + bio_model[1].nb_qdot))
+    x_init.add(key="q", initial_guess=[0] * bio_model[0].nb_q, phase=0)
+    x_init.add(key="qdot", initial_guess=[0] * bio_model[0].nb_qdot, phase=0)
+    x_init.add(key="q", initial_guess=[1] * bio_model[1].nb_q, phase=1)
+    x_init.add(key="qdot", initial_guess=[1] * bio_model[1].nb_qdot, phase=1)
 
     # Define control path constraint
+    n_tau = len(tau_mappings[0]["tau"].to_first)
     u_bounds = BoundsList()
-    u_bounds.add([tau_min] * len(tau_mappings[0]["tau"].to_first), [tau_max] * len(tau_mappings[0]["tau"].to_first))
-    u_bounds.add([tau_min] * len(tau_mappings[1]["tau"].to_first), [tau_max] * len(tau_mappings[1]["tau"].to_first))
+    u_bounds.add(key="tau", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau, phase=0)
+    u_bounds.add(key="tau", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau, phase=1)
 
     # Control initial guess
     u_init = InitialGuessList()
-    u_init.add([tau_init] * len(tau_mappings[0]["tau"].to_first))
-    u_init.add([tau_init] * len(tau_mappings[1]["tau"].to_first))
+    u_init.add(key="tau", initial_guess=[tau_init] * n_tau, phase=0)
+    u_init.add(key="tau", initial_guess=[tau_init] * n_tau, phase=1)
 
     return OptimalControlProgram(
         bio_model,
@@ -143,6 +147,8 @@ def prepare_ocp(
         objective_functions=objective_functions,
         parameter_objectives=parameter_objectives,
         parameter_constraints=parameter_constraints,
+        parameter_bounds=parameter_bounds,
+        parameter_init=parameter_init,
         constraints=constraints,
         variable_mappings=tau_mappings,
         parameters=parameters,
