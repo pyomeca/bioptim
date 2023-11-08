@@ -19,7 +19,7 @@ from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..models.protocols.biomodel import BioModel
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
-from ..interfaces.solver_options import Solver
+from ..interfaces import Solver
 from ..interfaces.abstract_options import GenericSolver
 from ..limits.constraints import (
     ConstraintFunction,

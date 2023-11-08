@@ -13,7 +13,7 @@ from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
 from ..limits.path_conditions import InitialGuessList, BoundsList
 from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions, ControlType
 from ..optimization.parameters import ParameterList
-from ..interfaces.solver_options import Solver
+from ..interfaces import Solver
 from ..interfaces.abstract_options import GenericSolver
 from ..models.protocols.biomodel import BioModel
 

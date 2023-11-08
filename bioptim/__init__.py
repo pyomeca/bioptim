@@ -171,7 +171,7 @@ from .dynamics.fatigue.xia_fatigue import XiaFatigue, XiaTauFatigue, XiaFatigueS
 from .dynamics.fatigue.michaud_fatigue import MichaudFatigue, MichaudTauFatigue
 from .dynamics.fatigue.effort_perception import EffortPerception, TauEffortPerception
 from .dynamics.ode_solver import OdeSolver, OdeSolverBase
-from .interfaces.solver_options import Solver
+from .interfaces import Solver
 from .models.biorbd.biorbd_model import BiorbdModel
 from .models.biorbd.multi_biorbd_model import MultiBiorbdModel
 from .models.biorbd.holonomic_biorbd_model import HolonomicBiorbdModel
