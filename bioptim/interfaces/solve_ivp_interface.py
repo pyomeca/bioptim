@@ -366,9 +366,7 @@ def solve_ivp_bioptim_interface(
     """
     dynamics_output = "xall" if keep_intermediate_points else "xf"
 
-    # NOT SURE OF THIS FIX                                 # NOT SURE OF THIS FIX n°2
-    if len(x0.shape) != len(u.shape) and len(x0.shape) < 2 or shooting_type.name == 'SINGLE' and len(x0.shape) != (
-    x0.shape, 1):
+    if len(x0.shape) < 2:
         x0 = x0[:, np.newaxis]
     # if multiple shooting, we need to set the first x0
     x0i = x0[:, 0] if x0.shape[1] > 1 else x0

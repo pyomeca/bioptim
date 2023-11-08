@@ -365,21 +365,15 @@ def test_integration_control_type_none(use_sx):
         if len(ocp.parameters) != 0:
             for k in range(len(ocp.parameters)):
                 p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]), phase=i)
-                # np.append(p[i][ocp.parameters.keys()[k]], ocp.parameters[k].mx * len(ocp.nlp))
-        else:
-            p.add("", phase=i)
-        u.add("", phase=i)
-        s.add("", phase=i)
+        # else:
+        #     p.add(key="", phase=i)
+        # u.add(key="", phase=i)
+        # s.add(key="", phase=i)
 
     sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
-    # result = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)  # sol_ivp_bioptim
-    result = sol_from_initial_guess.integrate()  # sol_ivp  gives the same discontinuity as sol_ivp_bioptim
-    plt.plot(result.time[0], result.states[0]["a"][0])
-    plt.plot(result.time[1], result.states[1]["a"][0])
-    plt.plot(result.time[2], result.states[2]["a"][0])
-    plt.plot(result.time[3], result.states[3]["a"][0])
-    plt.plot(result.time[4], result.states[4]["a"][0])
-    plt.plot(result.time[5], result.states[5]["a"][0])
+    result1 = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, merge_phases=True)  # sol_ivp_bioptim
+    # result2 = sol_from_initial_guess.integrate(merge_phases=True)  # sol_ivp  gives the same discontinuity as sol_ivp_bioptim
+    plt.plot(result1.time, result1.states["a"][0])
     plt.show()
-
-    result.merge_phases()
+    result3 = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, merge_phases=False)
+    result3.merge_phases()
