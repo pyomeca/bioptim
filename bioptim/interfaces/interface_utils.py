@@ -300,15 +300,18 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         u0_mode = get_control_modificator(ocp, _penalty, 0)
         u1_mode = get_control_modificator(ocp, _penalty, 1)
 
+        nlp_0 = all_nlp[phase_node0]
+        nlp_1 = all_nlp[phase_node1]
+
         _x_0 = get_padded_array(
-            nlp=all_nlp[phase_node0],
+            nlp=nlp_0,
             attribute="X" if is_unscaled else "X_scaled",
             node_idx=node_idx_0,
             target_length=all_nlp[phase_node1].X_scaled[node_idx_1].shape[0],
             casadi_constructor=cx,
         )
         _x_1 = get_padded_array(
-            nlp=all_nlp[phase_node1],
+            nlp=nlp_1,
             attribute="X" if is_unscaled else "X_scaled",
             node_idx=node_idx_1,
             target_length=all_nlp[phase_node0].X_scaled[node_idx_0].shape[0],
@@ -316,14 +319,14 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         )
 
         _s_0 = get_padded_array(
-            nlp=all_nlp[phase_node0],
+            nlp=nlp_0,
             attribute="S" if is_unscaled else "S_scaled",
             node_idx=node_idx_0,
             target_length=all_nlp[phase_node1].S[node_idx_1].shape[0],
             casadi_constructor=cx,
         )
         _s_1 = get_padded_array(
-            nlp=all_nlp[phase_node1],
+            nlp=nlp_1,
             attribute="S" if is_unscaled else "S_scaled",
             node_idx=node_idx_1,
             target_length=all_nlp[phase_node0].S[node_idx_0].shape[0],
@@ -331,14 +334,14 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         )
 
         is_shared_dynamics_0, is_node0_within_control_limit, len_u_0 = get_node_control_info(
-            all_nlp[phase_node0], node_idx_0, attribute="U" if is_unscaled else "U_scaled"
+            nlp_0, node_idx_0, attribute="U" if is_unscaled else "U_scaled"
         )
         is_shared_dynamics_1, is_node1_within_control_limit, len_u_1 = get_node_control_info(
-            all_nlp[phase_node1], node_idx_1, attribute="U" if is_unscaled else "U_scaled"
+            nlp_1, node_idx_1, attribute="U" if is_unscaled else "U_scaled"
         )
 
         _u_0 = get_padded_control_array(
-            all_nlp[phase_node0],
+            nlp_0,
             node_idx_0,
             attribute="U" if is_unscaled else "U_scaled",
             u_mode=u0_mode,
@@ -349,7 +352,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
         )
 
         _u_1 = get_padded_control_array(
-            all_nlp[phase_node1],
+            nlp_1,
             node_idx_1,
             attribute="U" if is_unscaled else "U_scaled",
             u_mode=u1_mode,
