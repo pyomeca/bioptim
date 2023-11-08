@@ -7,7 +7,7 @@ from casadi import SX, vertcat
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from .solver_interface import SolverInterface
-from ..interfaces.solver_options import Solver
+from ..interfaces import Solver
 from ..misc.enums import Node, SolverType, PhaseDynamics
 from ..limits.objective_functions import ObjectiveFunction, ObjectiveFcn
 from ..limits.path_conditions import Bounds

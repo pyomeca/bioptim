@@ -5,7 +5,7 @@ import biorbd_casadi as biorbd
 from casadi import SX, MX, vertcat, jacobian, transpose
 
 from .holonomic_biorbd_model import HolonomicBiorbdModel
-from ..misc.enums import ControlType, QuadratureRule
+from ...misc.enums import ControlType, QuadratureRule
 
 
 class VariationalBiorbdModel(HolonomicBiorbdModel):

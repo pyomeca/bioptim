@@ -1,14 +1,10 @@
 from typing import Callable
 
-import biorbd_casadi as biorbd
-from casadi import MX, DM, inv
+from casadi import MX, DM
 import numpy as np
 
-from ..misc.utils import check_version
-from ..misc.mapping import BiMappingList
+from ...misc.mapping import BiMappingList
 from .biorbd_model import BiorbdModel
-
-check_version(biorbd, "1.10.0", "1.11.0")
 
 
 class StochasticBiorbdModel(BiorbdModel):
