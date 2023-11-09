@@ -87,12 +87,12 @@ class PenaltyFunctionAbstract:
             """
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-            if key in controller.get_nlp.variable_mappings:
-                target_mapping = controller.get_nlp.variable_mappings[key]
+            if key in controller.nlp.variable_mappings:
+                target_mapping = controller.nlp.variable_mappings[key]
             else:
                 target_mapping = BiMapping(
-                    to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
-                    to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
+                    to_first=list(range(controller.nlp.controls[key].cx_start.shape[0])),
+                    to_second=list(range(controller.nlp.controls[key].cx_start.shape[0])),
                 )  # TODO: why if condition, target_mapping not used (Pariterre?)
 
             if penalty.integration_rule == QuadratureRule.RECTANGLE_LEFT:
@@ -159,12 +159,12 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            if key in controller.get_nlp.variable_mappings:
-                target_mapping = controller.get_nlp.variable_mappings[key]
+            if key in controller.nlp.variable_mappings:
+                target_mapping = controller.nlp.variable_mappings[key]
             else:
                 target_mapping = BiMapping(
-                    to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
-                    to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
+                    to_first=list(range(controller.nlp.controls[key].cx_start.shape[0])),
+                    to_second=list(range(controller.nlp.controls[key].cx_start.shape[0])),
                 )
 
             return controller.stochastic_variables[key].cx_start
@@ -223,7 +223,7 @@ class PenaltyFunctionAbstract:
                 controls=controller.controls.cx_start,
                 parameters=controller.parameters.cx_start,
                 stochastic_variables=controller.stochastic_variables.cx_start,
-                nlp=controller.get_nlp,
+                nlp=controller.nlp,
             )
 
             e_fb = k_matrix @ ((ee - ref) + controller.model.sensory_noise_magnitude)
@@ -805,13 +805,13 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            if controller.get_nlp.contact_forces_func is None:
+            if controller.nlp.contact_forces_func is None:
                 raise RuntimeError("minimize_contact_forces requires a contact dynamics")
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            contact_force = controller.get_nlp.contact_forces_func(
+            contact_force = controller.nlp.contact_forces_func(
                 controller.time.cx,
                 controller.states.cx_start,
                 controller.controls.cx_start,
@@ -840,7 +840,7 @@ class PenaltyFunctionAbstract:
                 penalty.cols should not be defined if contact_index is defined
             """
 
-            if controller.get_nlp.soft_contact_forces_func is None:
+            if controller.nlp.soft_contact_forces_func is None:
                 raise RuntimeError("minimize_contact_forces requires a soft contact dynamics")
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
@@ -851,7 +851,7 @@ class PenaltyFunctionAbstract:
                 force_idx.append(3 + (6 * i_sc))
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
-            soft_contact_force = controller.get_nlp.soft_contact_forces_func(
+            soft_contact_force = controller.nlp.soft_contact_forces_func(
                 controller.time.cx, controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx
             )
             return soft_contact_force[force_idx]
@@ -1127,11 +1127,11 @@ class PenaltyFunctionAbstract:
             if isinstance(penalty.node, (list, tuple)) and len(penalty.node) != 1:
                 raise RuntimeError("continuity should be called one node at a time")
 
-            penalty.expand = controller.get_nlp.dynamics_type.expand_continuity
+            penalty.expand = controller.nlp.dynamics_type.expand_continuity
 
             if (
                 len(penalty.node_idx) > 1
-                and not controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                and not controller.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             ):
                 raise NotImplementedError(
                     f"Length of node index superior to 1 is not implemented yet,"
@@ -1139,7 +1139,7 @@ class PenaltyFunctionAbstract:
                 )
 
             continuity = controller.states.cx_end
-            if controller.get_nlp.ode_solver.is_direct_collocation:
+            if controller.nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
                 continuity -= controller.integrate(
                     x0=cx, u=u, p=controller.parameters.cx, s=controller.stochastic_variables.cx_start

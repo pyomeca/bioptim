@@ -299,7 +299,7 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
         controllers[0].controls.cx_start,
         controllers[0].parameters.cx_start,
         controllers[0].stochastic_variables.cx_start,
-        controllers[0].get_nlp,
+        controllers[0].nlp,
     )
     e_fb = k_matrix @ ((estimated_ref - ref) + controllers[0].model.sensory_noise_magnitude)
     jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx_start)

@@ -123,18 +123,18 @@ class Constraint(PenaltyOption):
 
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = (
-                controller.get_nlp.g_internal
-                if controller is not None and controller.get_nlp
+                controller.nlp.g_internal
+                if controller is not None and controller.nlp
                 else controller.ocp.g_internal
             )
         elif self.penalty_type == ConstraintType.IMPLICIT:
             pool = (
-                controller.get_nlp.g_implicit
-                if controller is not None and controller.get_nlp
+                controller.nlp.g_implicit
+                if controller is not None and controller.nlp
                 else controller.ocp.g_implicit
             )
         elif self.penalty_type == PenaltyType.USER:
-            pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
+            pool = controller.nlp.g if controller is not None and controller.nlp else controller.ocp.g
         else:
             raise ValueError(f"Invalid constraint type {self.penalty_type}.")
         pool[self.list_index] = self
@@ -267,7 +267,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             constraint.min_bound = np.array([0, 0])
             constraint.max_bound = np.array([np.inf, np.inf])
 
-            contact = controller.get_nlp.contact_forces_func(
+            contact = controller.nlp.contact_forces_func(
                 controller.time.cx,
                 controller.states.cx_start,
                 controller.controls.cx_start,
@@ -338,7 +338,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 n_rows = value.shape[0] // 2
             else:
                 if (
-                    controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE
+                    controller.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE
                     and not isinstance(constraint.rows, int)
                     and len(constraint.rows) == value.shape[0]
                 ):
@@ -461,7 +461,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = tau + passive_torque if with_passive_torque else tau
             tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
-            if controller.get_nlp.external_forces:
+            if controller.nlp.external_forces:
                 raise NotImplementedError(
                     "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
                 )
@@ -554,7 +554,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             muscle_tau = muscle_tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else muscle_tau
             qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
 
-            if controller.get_nlp.external_forces:
+            if controller.nlp.external_forces:
                 raise NotImplementedError(
                     "This implicit constraint tau_from_muscle_equal_inverse_dynamics is not implemented yet with external forces"
                 )
@@ -591,7 +591,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
 
-            soft_contact_all = controller.get_nlp.soft_contact_forces_func(
+            soft_contact_all = controller.nlp.soft_contact_forces_func(
                 controller.states.mx, controller.controls.mx, controller.parameters.mx
             )
             soft_contact_force = soft_contact_all[force_idx]
@@ -615,7 +615,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
-            if not controller.get_nlp.is_stochastic:
+            if not controller.nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             if "cholesky_cov" in controller.stochastic_variables.keys():
@@ -650,7 +650,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             cov_implicit_deffect = cov_next - cov_matrix
 
             penalty.expand = (
-                controller.get_nlp.dynamics_type.expand_dynamics
+                controller.nlp.dynamics_type.expand_dynamics
             )  # TODO: Charbie -> should this be always true?
             penalty.explicit_derivative = True
             penalty.multi_thread = True
@@ -667,7 +667,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             This function constrains the stochastic matrix A to its actual value which is
             A = df/dx
             """
-            if not controller.get_nlp.is_stochastic:
+            if not controller.nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             dt = controller.tf / controller.ns
@@ -746,10 +746,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             and G = collocation slope constraints (defects).
             """
 
-            if not controller.get_nlp.is_stochastic:
+            if not controller.nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
+            polynomial_degree = controller.nlp.ode_solver.polynomial_degree
             Mc, _ = ConstraintFunction.Functions.collocation_jacobians(
                 penalty,
                 controller,
@@ -790,10 +790,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
-            if not controller.get_nlp.is_stochastic:
+            if not controller.nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
+            polynomial_degree = controller.nlp.ode_solver.polynomial_degree
             _, Pf = ConstraintFunction.Functions.collocation_jacobians(
                 penalty,
                 controller,
@@ -847,7 +847,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controls=controller.controls.cx_start,
                 parameters=controller.parameters.cx_start,
                 stochastic_variables=controller.stochastic_variables.cx_start,
-                nlp=controller.get_nlp,
+                nlp=controller.nlp,
             )
             return sensory_input - ref
 
@@ -1176,18 +1176,18 @@ class ParameterConstraint(PenaltyOption):
 
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = (
-                controller.get_nlp.g_internal
-                if controller is not None and controller.get_nlp
+                controller.nlp.g_internal
+                if controller is not None and controller.nlp
                 else controller.ocp.g_internal
             )
         elif self.penalty_type == ConstraintType.IMPLICIT:
             pool = (
-                controller.get_nlp.g_implicit
-                if controller is not None and controller.get_nlp
+                controller.nlp.g_implicit
+                if controller is not None and controller.nlp
                 else controller.ocp.g_implicit
             )
         elif self.penalty_type == PenaltyType.USER:
-            pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
+            pool = controller.nlp.g if controller is not None and controller.nlp else controller.ocp.g
         else:
             raise ValueError(f"Invalid constraint type {self.penalty_type}.")
         pool[self.list_index] = self

@@ -307,7 +307,7 @@ class PenaltyOption(OptionGeneric):
             )
             if self.target[0].shape != shape:
                 # A second chance the shape is correct is if the targets are declared but phase_dynamics is ONE_PER_NODE
-                if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and self.target[0].shape[-1] == len(
+                if controller.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and self.target[0].shape[-1] == len(
                     self.node_idx
                 ):
                     pass
@@ -355,7 +355,7 @@ class PenaltyOption(OptionGeneric):
             for target in self.target:
                 if target.shape != shape:
                     # A second chance the shape is correct if phase_dynamics is ONE_PER_NODE
-                    if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and target.shape[-1] == len(
+                    if controller.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and target.shape[-1] == len(
                         self.node_idx
                     ):
                         pass
@@ -466,9 +466,9 @@ class PenaltyOption(OptionGeneric):
             else:
                 state_cx_scaled = controllers[1].states_scaled.cx
             if (
-                controllers[1].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                controllers[1].nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                 or controllers[1].node_index < controllers[1].ns
-                or controllers[1].get_nlp.control_type != ControlType.CONSTANT
+                or controllers[1].nlp.control_type != ControlType.CONSTANT
             ):
                 if controllers[0].controls_scaled.cx.shape[0] > controllers[1].controls_scaled.cx.shape[0]:
                     fake = controllers[0].cx(
@@ -502,7 +502,7 @@ class PenaltyOption(OptionGeneric):
                 else:
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx)
                 if (
-                    controllers[0].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                    controllers[0].nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     or controllers[0].node_index < controllers[0].ns
                 ):
                     if controllers[1].controls_scaled.cx.shape[0] > controllers[0].controls_scaled.cx.shape[0]:
@@ -536,9 +536,9 @@ class PenaltyOption(OptionGeneric):
                 else:
                     state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
                 if (
-                    controllers[0].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                    controllers[0].nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     or controllers[0].node_index < controllers[0].ns
-                    or controllers[1].get_nlp.control_type != ControlType.CONSTANT
+                    or controllers[1].nlp.control_type != ControlType.CONSTANT
                 ):
                     if (
                         controllers[1].controls_scaled.cx_start.shape[0]
@@ -598,7 +598,7 @@ class PenaltyOption(OptionGeneric):
             control_cx_scaled = ocp.cx()
             stochastic_cx_scaled = ocp.cx()
             for ctrl in controllers:
-                if ctrl.node_index == controller.get_nlp.ns:
+                if ctrl.node_index == controller.nlp.ns:
                     state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
                     control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
                     stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
@@ -621,7 +621,7 @@ class PenaltyOption(OptionGeneric):
             name = self.name
             state_cx_scaled = controller.states_scaled.cx_start
             if (
-                controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                controller.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                 or controller.node_index < controller.ns
             ):
                 if self.integrate or controller.ode_solver.is_direct_collocation:
@@ -679,7 +679,7 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded[node] = self.function[node]
 
         if self.derivative:
-            if controller.get_nlp.ode_solver.is_direct_collocation and node != ocp.nlp[self.phase].ns:
+            if controller.nlp.ode_solver.is_direct_collocation and node != ocp.nlp[self.phase].ns:
                 state_cx_scaled = vertcat(
                     *(
                         [controller.states_scaled.cx_end]
@@ -890,7 +890,7 @@ class PenaltyOption(OptionGeneric):
 
     @staticmethod
     def define_target_mapping(controller: PenaltyController, key: str):
-        target_mapping = controller.get_nlp.variable_mappings[key]
+        target_mapping = controller.nlp.variable_mappings[key]
         return target_mapping
 
     def add_target_to_plot(self, controller: PenaltyController, combine_to: str):
@@ -947,7 +947,7 @@ class PenaltyOption(OptionGeneric):
                 penalty=self if plot_type == PlotType.POINT else None,
                 color="tab:red",
                 plot_type=plot_type,
-                phase=controller.get_nlp.phase_idx,
+                phase=controller.nlp.phase_idx,
                 axes_idx=target_mapping,  # TODO verify if not all elements has target
                 node_idx=controller.t,
             )
@@ -992,7 +992,7 @@ class PenaltyOption(OptionGeneric):
             self.node = current_node_type
 
             # Finalize
-            self.ensure_penalty_sanity(ocp, controllers[0].get_nlp)
+            self.ensure_penalty_sanity(ocp, controllers[0].nlp)
 
         else:
             controllers = [self._get_penalty_controller(ocp, nlp)]
@@ -1019,9 +1019,9 @@ class PenaltyOption(OptionGeneric):
 
             # Define much more function than needed, but we don't mind since they are reference copy of each other
             ns = (
-                max(controllers[0].get_nlp.ns, controllers[1].get_nlp.ns)
+                max(controllers[0].nlp.ns, controllers[1].nlp.ns)
                 if len(controllers) > 1
-                else controllers[0].get_nlp.ns
+                else controllers[0].nlp.ns
             ) + 1
             self.function = self.function * ns
             self.weighted_function = self.weighted_function * ns

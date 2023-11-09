@@ -81,7 +81,7 @@ class PenaltyController:
         return self._ocp
 
     @property
-    def get_nlp(self):
+    def nlp(self):
         """
         This method returns the underlying nlp. Please note that acting directly with the nlp is not want you should do.
         Unless you see no way to access what you need otherwise, we strongly suggest that you use the normal path

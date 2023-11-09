@@ -84,7 +84,7 @@ class MultinodePenalty(PenaltyOption):
             )
 
         ocp = controller[0].ocp
-        nlp = controller[0].get_nlp
+        nlp = controller[0].nlp
         pool = self._get_pool_to_add_penalty(ocp, nlp)
         pool[self.list_index] = self
 
@@ -378,7 +378,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             controllers: list[PenaltyController, PenaltyController]
             """
 
-            if not controllers[0].get_nlp.is_stochastic:
+            if not controllers[0].nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
             if controllers[0].phase_idx != controllers[1].phase_idx:
                 raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
@@ -447,7 +447,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             controllers: list[PenaltyController, PenaltyController]
                     The penalty node elements
             """
-            if not controllers[0].get_nlp.is_stochastic:
+            if not controllers[0].nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
             if controllers[0].phase_idx != controllers[1].phase_idx:
                 raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
@@ -481,7 +481,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             """
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
-            if not controllers[0].get_nlp.is_stochastic:
+            if not controllers[0].nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             cov_matrix = StochasticBioModel.reshape_to_matrix(
@@ -522,7 +522,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             """
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
-            if not controllers[0].get_nlp.is_stochastic:
+            if not controllers[0].nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
             dt = controllers[0].tf / controllers[0].ns

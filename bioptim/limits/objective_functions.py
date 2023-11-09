@@ -83,12 +83,12 @@ class Objective(PenaltyOption):
 
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = (
-                controller.get_nlp.J_internal
-                if controller is not None and controller.get_nlp
+                controller.nlp.J_internal
+                if controller is not None and controller.nlp
                 else controller.ocp.J_internal
             )
         elif self.penalty_type == PenaltyType.USER:
-            pool = controller.get_nlp.J if controller is not None and controller.get_nlp else controller.ocp.J
+            pool = controller.nlp.J if controller is not None and controller.nlp else controller.ocp.J
         else:
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
         pool[self.list_index] = self
@@ -492,12 +492,12 @@ class ParameterObjective(PenaltyOption):
 
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = (
-                controller.get_nlp.J_internal
-                if controller is not None and controller.get_nlp
+                controller.nlp.J_internal
+                if controller is not None and controller.nlp
                 else controller.ocp.J_internal
             )
         elif self.penalty_type == PenaltyType.USER:
-            pool = controller.get_nlp.J if controller is not None and controller.get_nlp else controller.ocp.J
+            pool = controller.nlp.J if controller is not None and controller.nlp else controller.ocp.J
         else:
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
         pool[self.list_index] = self

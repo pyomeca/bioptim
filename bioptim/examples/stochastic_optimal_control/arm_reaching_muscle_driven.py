@@ -298,7 +298,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
         controllers[0].controls.cx_start,
         controllers[0].parameters.cx_start,
         controllers[0].stochastic_variables.cx_start,
-        controllers[0].get_nlp,
+        controllers[0].nlp,
     )
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
     e_fb = k_matrix @ ((hand_pos_velo - ref) + sensory_noise_magnitude)
@@ -329,7 +329,7 @@ def zero_acceleration(controller: PenaltyController, force_field_magnitude: floa
         controller.controls.cx_start,
         controller.parameters.cx_start,
         controller.stochastic_variables.cx_start,
-        controller.get_nlp,
+        controller.nlp,
         force_field_magnitude=force_field_magnitude,
         with_noise=False,
     )
