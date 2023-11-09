@@ -485,7 +485,7 @@ def test_parameter_position_in_solution():
         sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
 
     # Adding parameter initial guess to correct previous mistake
-    # but inverting the order of the parameters to be sure that parameters is
+    # but inverting the order of the parameters with the controls to be sure that parameters is at its right place
     p.add("length", initial_guess=np.array([5]), phase=0)
     with pytest.raises(
             ValueError,
