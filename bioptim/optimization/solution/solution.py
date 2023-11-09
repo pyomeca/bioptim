@@ -1467,7 +1467,7 @@ class Solution:
         phase_time = [0] + [sum([self.phase_time[i + 1] for i in range(len(self.phase_time) - 1)])]
         ns = [sum(self.ns)]
 
-        if len(self._stochastic_variables["scaled"]) == 1:  # TODO correct this when stochastic variables doesn't have a 'scaled' key or it should never happen
+        if len(self._stochastic_variables["scaled"]) == 1:
             out_stochastic_variables_scaled = deepcopy(self._stochastic_variables["scaled"])
             out_stochastic_variables = deepcopy(self._stochastic_variables["unscaled"])
         else:
@@ -1477,7 +1477,9 @@ class Solution:
                 else None
             )
             out_stochastic_variables = (
-                None if skip_stochastic or len(self._stochastic_variables["unscaled"]) == 0 else _merge(self._stochastic_variables["unscaled"], is_control=False)
+                _merge(self._stochastic_variables["unscaled"], is_control=False)
+                if not skip_stochastic and self._stochastic_variables["unscaled"]
+                else None
             )
 
         return (
