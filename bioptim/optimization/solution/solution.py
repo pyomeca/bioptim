@@ -210,10 +210,10 @@ class Solution:
         self.status = status
 
         self.vector = vector
-        self._states = {}
-        self._controls = {}
-        self.parameters = {}
-        self._stochastic_variables = {}
+        self._states = {"scaled": {}, "unscaled": {}}
+        self._controls = {"scaled": {}, "unscaled": {}}
+        self.parameters = {"scaled": {}, "unscaled": {}}
+        self._stochastic_variables = {"scaled": {}, "unscaled": {}}
         self.phase_time = None
         self._time_vector = None
         self._integrated_values = None
@@ -325,9 +325,10 @@ class Solution:
         # if sum([len(s) != len(all_ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:  # This line prevents to have empty dictionaries
         #     raise ValueError("The InitialGuessList len must match the number of phases")
         if n_param != 0:
-            if len(_sol) != 3 and len(_sol[2]) != 1 and len(_sol[2][0]) != n_param:
+            # if len(_sol) != 3 and len(_sol[2]) != 1 and len(_sol[2][0]) != n_param:  # Here why is it asked to check if len(_sol) != 3 as it have to be len(_sol) == 4 above
+            if len(_sol[2].keys()) != n_param:
                 raise ValueError(
-                    "The 2rd element is the InitialGuess of the parameter and "
+                    "The 2nd element is the InitialGuess for the parameter and "
                     "should be a unique vector of size equal to n_param"
                 )
 
@@ -1459,7 +1460,7 @@ class Solution:
                 if not skip_controls and self._controls["scaled"]
                 else None
             )
-            if self.ocp.nlp[0].control_type.name == 'NONE' or skip_controls:
+            if self.ocp.nlp[0].control_type == ControlType.NONE or skip_controls:
                 out_controls = None
             else:
                 out_controls = _merge(self._controls["unscaled"], is_control=True)
@@ -1476,7 +1477,7 @@ class Solution:
                 else None
             )
             out_stochastic_variables = (
-                _merge(self._stochastic_variables["unscaled"], is_control=False) if not skip_stochastic else None
+                None if skip_stochastic or len(self._stochastic_variables["unscaled"]) == 0 else _merge(self._stochastic_variables["unscaled"], is_control=False)
             )
 
         return (
