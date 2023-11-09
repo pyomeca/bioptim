@@ -410,51 +410,59 @@ def test_integration_control_type_none(integrator, use_sx):
     time_min = [0.01 for _ in range(n)]
     # maximum time between two phase
     time_max = [0.1 for _ in range(n)]
-    result = []
-    for m in range(n):
-        ocp = prepare_single_phase_ocp(
-            use_sx=use_sx,
-        )
+    # result = []
+    # for m in range(n):
+    #     ocp = prepare_single_phase_ocp(
+    #         use_sx=use_sx,
+    #     )
+    ocp = prepare_ocp(
+        n_phase=n,
+        time_min=time_min,
+        time_max=time_max,
+        use_sx=use_sx,
+    )
 
-        x = InitialGuessList()
-        u = InitialGuessList()
-        p = InitialGuessList()
-        s = InitialGuessList()
+    x = InitialGuessList()
+    u = InitialGuessList()
+    p = InitialGuessList()
+    s = InitialGuessList()
 
-        phase_time = [0.01]  # [0.01*_ for _ in range(1, n+1)]
+    # phase_time = [0.01]  # [0.01*_ for _ in range(1, n+1)]
+    phase_time = [0.01*_ for _ in range(1, n+1)]
+        # for j in range(len(ocp.nlp[0].states.keys())):
+        #     key = ocp.nlp[0].states.keys()[j]
+        #     if m != 0:
+        #         initial_guess = result[-1].states[key][0][-1]
+        #     else:
+        #         initial_guess = 0
+        #     x.add(key, initial_guess)  # ocp.nlp[i].model.initial_values()[j]
+        # if len(ocp.parameters) != 0:
+        #     for k in range(len(ocp.parameters)):
+        #         p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]))
 
+    for i in range(len(ocp.nlp)):
         for j in range(len(ocp.nlp[0].states.keys())):
-            key = ocp.nlp[0].states.keys()[j]
-            if m != 0:
-                initial_guess = result[-1].states[key][0][-1]
-            else:
-                initial_guess = 0
-            x.add(key, initial_guess)  # ocp.nlp[i].model.initial_values()[j]
+            x.add(ocp.nlp[0].states.keys()[j], ocp.nlp[0].model.initial_values()[j], phase=i)
         if len(ocp.parameters) != 0:
             for k in range(len(ocp.parameters)):
-                p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]))
-
-    # for j in range(len(ocp.nlp[0].states.keys())):
-    #     x.add(ocp.nlp[0].states.keys()[j], ocp.nlp[0].model.initial_values()[j], phase=0)
-    # if len(ocp.parameters) != 0:
-    #     for k in range(len(ocp.parameters)):
-    #         p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]), phase=0)
-
-        # else:
-        #     p.add(key="", phase=i)
+                p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]), phase=i)
+        else:
+            p.add(key="", phase=i)
         # u.add(key="", phase=i)
         # s.add(key="", phase=i)
 
-        sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
-        result1 = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, merge_phases=True)  # sol_ivp_bioptim
-        result.append(result1)
+        # sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
+        # result1 = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, merge_phases=True)  # sol_ivp_bioptim
+        # result.append(result1)
 
-    result2 = sol_from_initial_guess.integrate(merge_phases=True)  # sol_ivp  gives the same discontinuity as sol_ivp_bioptim
-    result3 = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP, merge_phases=False)
+    sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
+    result2 = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, merge_phases=True)  # sol_ivp  gives the same discontinuity as sol_ivp_bioptim
+    # result3 = sol_from_initial_guess.integrate(shooting_type=Shooting.MULTIPLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP, merge_phases=True)
     # result3.merge_phases()
     # result3 = result3.merge_phases()
-    plt.plot(result[0].time, result[0].states["c"][0])
-    plt.plot(result[1].time + result[0].time[-1], result[1].states["c"][0])
-    plt.plot(result[2].time + result[0].time[-1] + result[1].time[-1], result[2].states["c"][0])
-    plt.plot(result[3].time + result[0].time[-1] + result[1].time[-1] + result[2].time[-1], result[3].states["c"][0])
+    # plt.plot(result[0].time, result[0].states["c"][0])
+    # plt.plot(result[1].time + result[0].time[-1], result[1].states["c"][0])
+    # plt.plot(result[2].time + result[0].time[-1] + result[1].time[-1], result[2].states["c"][0])
+    # plt.plot(result[3].time + result[0].time[-1] + result[1].time[-1] + result[2].time[-1], result[3].states["c"][0])
+    plt.plot(result2.time, result2.states["a"][0])
     plt.show()
