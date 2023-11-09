@@ -241,6 +241,70 @@ def prepare_ocp(
         use_sx=use_sx,
     )
 
+def prepare_single_phase_ocp(
+    use_sx: bool,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+) -> OptimalControlProgram:
+    """
+    Prepare the ocp
+
+    Parameters
+    ----------
+    use_sx: bool
+        Callable Mx or Sx used for ocp
+    ode_solver: OdeSolverBase
+        The ode solver to use
+    phase_dynamics: PhaseDynamics
+        If the dynamics equation within a phase is unique or changes at each node.
+        PhaseDynamics.SHARED_DURING_THE_PHASE is much faster, but lacks the capability to have changing dynamics within
+        a phase. A good example of when PhaseDynamics.ONE_PER_NODE should be used is when different external forces
+        are applied at each node
+
+    Returns
+    -------
+    The OptimalControlProgram ready to be solved
+    """
+    custom_model = NonControlledMethod()
+    models = (
+        NonControlledMethod(),
+    )
+    n_shooting = [5]  # Gives m node shooting for my n phases problem
+    final_time = [0.01]  # Set the final time for all my n phases
+
+    # Creates the system's dynamic for my n phases
+    dynamics = DynamicsList()
+    dynamics.add(
+        custom_model.declare_variables,
+        dynamic_function=custom_model.custom_dynamics,
+        expand_dynamics=True,
+        phase_dynamics=phase_dynamics,
+    )
+
+    constraints = ConstraintList()
+    constraints.add(
+        ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=0.01, max_bound=0.1
+    )
+
+    # Creates the objective for my last phases
+    objective_functions = ObjectiveList()
+
+    # Sets the bound for all the phases
+    x_bounds = BoundsList()
+
+    return OptimalControlProgram(
+        models,
+        dynamics,
+        n_shooting,
+        final_time,
+        x_bounds=x_bounds,
+        objective_functions=objective_functions,
+        constraints=constraints,
+        ode_solver=ode_solver,
+        control_type=ControlType.NONE,
+        use_sx=use_sx,
+    )
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("use_sx", [False, True])
@@ -333,8 +397,9 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     )
 
 
+@pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
 @pytest.mark.parametrize("use_sx", [False, True])
-def test_integration_control_type_none(use_sx):
+def test_integration_control_type_none(integrator, use_sx):
     """
     Prepare and integrate the ocp
     """
@@ -345,35 +410,51 @@ def test_integration_control_type_none(use_sx):
     time_min = [0.01 for _ in range(n)]
     # maximum time between two phase
     time_max = [0.1 for _ in range(n)]
-    ocp = prepare_ocp(
-        n_phase=n,
-        time_min=time_min,
-        time_max=time_max,
-        use_sx=use_sx,
-    )
+    result = []
+    for m in range(n):
+        ocp = prepare_single_phase_ocp(
+            use_sx=use_sx,
+        )
 
-    x = InitialGuessList()
-    u = InitialGuessList()
-    p = InitialGuessList()
-    s = InitialGuessList()
+        x = InitialGuessList()
+        u = InitialGuessList()
+        p = InitialGuessList()
+        s = InitialGuessList()
 
-    phase_time = [0.01*_ for _ in range(1, n+1)]
+        phase_time = [0.01]  # [0.01*_ for _ in range(1, n+1)]
 
-    for i in range(len(ocp.nlp)):
-        for j in range(len(ocp.nlp[i].states.keys())):
-            x.add(ocp.nlp[i].states.keys()[j], ocp.nlp[i].model.initial_values()[j], phase=i)
+        for j in range(len(ocp.nlp[0].states.keys())):
+            key = ocp.nlp[0].states.keys()[j]
+            if m != 0:
+                initial_guess = result[-1].states[key][0][-1]
+            else:
+                initial_guess = 0
+            x.add(key, initial_guess)  # ocp.nlp[i].model.initial_values()[j]
         if len(ocp.parameters) != 0:
             for k in range(len(ocp.parameters)):
-                p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]), phase=i)
+                p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]))
+
+    # for j in range(len(ocp.nlp[0].states.keys())):
+    #     x.add(ocp.nlp[0].states.keys()[j], ocp.nlp[0].model.initial_values()[j], phase=0)
+    # if len(ocp.parameters) != 0:
+    #     for k in range(len(ocp.parameters)):
+    #         p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]), phase=0)
+
         # else:
         #     p.add(key="", phase=i)
         # u.add(key="", phase=i)
         # s.add(key="", phase=i)
 
-    sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
-    result1 = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, merge_phases=True)  # sol_ivp_bioptim
-    # result2 = sol_from_initial_guess.integrate(merge_phases=True)  # sol_ivp  gives the same discontinuity as sol_ivp_bioptim
-    plt.plot(result1.time, result1.states["a"][0])
+        sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
+        result1 = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, merge_phases=True)  # sol_ivp_bioptim
+        result.append(result1)
+
+    result2 = sol_from_initial_guess.integrate(merge_phases=True)  # sol_ivp  gives the same discontinuity as sol_ivp_bioptim
+    result3 = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP, merge_phases=False)
+    # result3.merge_phases()
+    # result3 = result3.merge_phases()
+    plt.plot(result[0].time, result[0].states["c"][0])
+    plt.plot(result[1].time + result[0].time[-1], result[1].states["c"][0])
+    plt.plot(result[2].time + result[0].time[-1] + result[1].time[-1], result[2].states["c"][0])
+    plt.plot(result[3].time + result[0].time[-1] + result[1].time[-1] + result[2].time[-1], result[3].states["c"][0])
     plt.show()
-    result3 = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, merge_phases=False)
-    result3.merge_phases()
