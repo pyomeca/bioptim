@@ -1004,7 +1004,7 @@ class Solution:
         Returns
         -------
         np.ndarray
-            Shape is n_states x 1 if Shooting.SINGLE_CONTINUOUS or Shooting.SINGLE
+            Shape is n_states x 1 if Shooting.SINGLE_DISCONTINUOUS_PHASE or Shooting.SINGLE
             Shape is n_states x n_shooting if Shooting.MULTIPLE
         """
         # Get the first frame of the phase
@@ -1013,9 +1013,9 @@ class Solution:
                 return np.hstack([self._states["unscaled"][0][key][:, 0] for key in self.ocp.nlp[phase].states])
 
             t0 = []
-
+            # TODO : Ask if not putting sol. instead of self. for other control/parameter/stochastic won't make continuity false on those inputs. Test won't work if we do that.
             x0 = np.concatenate(
-                [self._states["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].states]
+                [sol._states["unscaled"][phase - 1][key][:, -1] for key in sol.ocp.nlp[phase - 1].states]
             )
             if self.ocp.nlp[phase].control_type == ControlType.NONE:
                 u0 = []
@@ -1043,8 +1043,8 @@ class Solution:
             if val.shape[0] != x0.shape[0]:
                 raise RuntimeError(
                     f"Phase transition must have the same number of states ({val.shape[0]}) "
-                    f"when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
-                    f"please integrate with Shooting.SINGLE"
+                    f"when integrating with Shooting.SINGLE. If it is not possible, "
+                    f"please integrate with Shooting.SINGLE_DISCONTINUOUS_PHASE"
                 )
             x0 += np.array(val)[:, 0]
             return x0
@@ -1079,7 +1079,7 @@ class Solution:
         Parameters
         ----------
         shooting_type: Shooting
-            Which type of integration (SINGLE_CONTINUOUS, MULTIPLE, SINGLE)
+            Which type of integration (SINGLE_DISCONTINUOUS_PHASE, MULTIPLE, SINGLE)
         keep_intermediate_points: bool
             If the integration should return the intermediate values of the integration
         integrator
@@ -1182,7 +1182,7 @@ class Solution:
         Parameters
         ----------
         shooting_type: Shooting
-            Which type of integration (SINGLE_CONTINUOUS, MULTIPLE, SINGLE)
+            Which type of integration (SINGLE_DISCONTINUOUS_PHASE, MULTIPLE, SINGLE)
         keep_intermediate_points: bool
             If the integration should return the intermediate values of the integration
         integrator
