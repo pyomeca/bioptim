@@ -716,8 +716,8 @@ def test_phase_transitions(ode_solver, phase_dynamics):
         RuntimeError,
         match=re.escape(
             "Phase transition must have the same number of states (3) "
-            "when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
-            "please integrate with Shooting.SINGLE"
+            "when integrating with Shooting.SINGLE. If it is not possible, "
+            "please integrate with Shooting.SINGLE_DISCONTINUOUS_PHASE"
         ),
     ):
         TestUtils.simulate(sol)

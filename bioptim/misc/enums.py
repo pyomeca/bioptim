@@ -63,8 +63,8 @@ class Shooting(Enum):
     """
     The type of integration
     MULTIPLE resets the state at each node
-    SINGLE resets the state at each phase
-    SINGLE_CONTINUOUS never resets the state
+    SINGLE never resets the state
+    SINGLE_DISCONTINUOUS_PHASE resets the state at each phase
     """
 
     MULTIPLE = "Multiple"

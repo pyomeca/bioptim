@@ -305,7 +305,7 @@ class SimplifiedNLP:
             If the integration should return the intermediate values of the integration [False]
             or only keep the node [True] effective keeping the initial size of the states
         shooting_type: Shooting
-            Which type of integration such as Shooting.SINGLE_CONTINUOUS or Shooting.MULTIPLE,
+            Which type of integration such as Shooting.SINGLE_DISCONTINUOUS_PHASE or Shooting.MULTIPLE,
             default is None but behaves as Shooting.SINGLE.
 
         Returns
@@ -553,7 +553,7 @@ class SimplifiedOCP:
         merge_phases: bool
             If the phase should be merged in a unique phase
         shooting_type: Shooting
-            Which type of integration such as Shooting.SINGLE_CONTINUOUS or Shooting.MULTIPLE,
+            Which type of integration such as Shooting.SINGLE_DISCONTINUOUS_PHASE or Shooting.MULTIPLE,
             default is None but behaves as Shooting.SINGLE.
 
         Returns

@@ -354,7 +354,7 @@ def solve_ivp_bioptim_interface(
     s : np.ndarray
         array of the stochastic variables of the system
     shooting_type : Shooting
-        The way we integrate the solution such as SINGLE, SINGLE_CONTINUOUS, MULTIPLE
+        The way we integrate the solution such as SINGLE, SINGLE_DISCONTINUOUS_PHASE, MULTIPLE
     control_type : ControlType
         The type of control such as ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS or ControlType.NONE
 
