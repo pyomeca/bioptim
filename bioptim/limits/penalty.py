@@ -9,7 +9,7 @@ from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, Axis, ControlType, QuadratureRule, PhaseDynamics
 from ..misc.mapping import BiMapping
-from ..interfaces.stochastic_bio_model import StochasticBioModel
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
 class PenaltyFunctionAbstract:
@@ -875,7 +875,7 @@ class PenaltyFunctionAbstract:
             rt: int
                 The index of the RT in the bioMod
             """
-            from ..interfaces.biorbd_model import BiorbdModel
+            from ..models.biorbd.biorbd_model import BiorbdModel
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
@@ -962,7 +962,7 @@ class PenaltyFunctionAbstract:
             axes: list | tuple
                 The axis that the JCS rotation should be tracked
             """
-            from ..interfaces.biorbd_model import BiorbdModel
+            from ..models.biorbd.biorbd_model import BiorbdModel
 
             if penalty.derivative == True:
                 raise RuntimeWarning(
@@ -1014,7 +1014,7 @@ class PenaltyFunctionAbstract:
             axes: list | tuple
                 The axis that the JCS rotation should be tracked
             """
-            from ..interfaces.biorbd_model import BiorbdModel
+            from ..models.biorbd.biorbd_model import BiorbdModel
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
