@@ -2,7 +2,7 @@ import os
 
 import pytest
 import numpy as np
-from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, ControlType, PhaseDynamics
+from bioptim import ControlType, InitialGuessList, OdeSolver, ParameterList, PhaseDynamics, Shooting, Solution, SolutionIntegrator, Solver
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -438,3 +438,58 @@ def test_generate_integrate_linear_continuous(
         # plt.rcParams['axes.titley'] = 1.0  # y is in axes-relative coordinates.
         # plt.rcParams['axes.titlepad'] = -20
         # plt.show()
+        # TODO : Ask why there are comments ?
+
+
+def test_parameter_position_in_solution():
+    # Load pendulum
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        final_time=2,
+        n_shooting=10,
+        ode_solver=OdeSolver.RK4(),
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+        expand_dynamics=True,
+    )
+
+    # Adding parameters to the ocp for testing purpose
+    parameters = ParameterList()
+    parameters.add(
+        parameter_name="weight",
+        function=None,
+        size=1,
+    )
+    parameters.add(
+        parameter_name="length",
+        function=None,
+        size=1,
+    )
+
+    ocp.parameters = parameters
+    p = InitialGuessList()
+    p.add("weight", initial_guess=np.array([5]), phase=0)
+
+    x = ocp.nlp[0].x_init
+    u = ocp.nlp[0].u_init
+    s = ocp.nlp[0].s_init
+
+    with pytest.raises(
+            ValueError,
+            match="The 2nd element is the InitialGuess for the parameter and "
+                  "should be a unique vector of size equal to n_param",
+    ):
+        sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
+
+    # Adding parameter initial guess to correct previous mistake
+    # but inverting the order of the parameters to be sure that parameters is
+    p.add("length", initial_guess=np.array([5]), phase=0)
+    with pytest.raises(
+            ValueError,
+            match="The 2nd element is the InitialGuess for the parameter and "
+                  "should be a unique vector of size equal to n_param",
+    ):
+        sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, p, u, s])
