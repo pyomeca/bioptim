@@ -484,7 +484,7 @@ class Solver:
             return self._lbfgs_memory
 
         @property
-        def maximum_iterations(self):
+        def max_iter(self):
             return self._max_iter
 
         @property
@@ -638,7 +638,7 @@ class Solver:
             QP solver to be used in the NLP solver. String in (‘PARTIAL_CONDENSING_HPIPM’, ‘FULL_CONDENSING_QPOASES’,
             ‘FULL_CONDENSING_HPIPM’, ‘PARTIAL_CONDENSING_QPDUNES’, ‘PARTIAL_CONDENSING_OSQP’).
             Default: ‘PARTIAL_CONDENSING_HPIPM’
-        _hessian_approx: str
+        _hessian_approximation: str
             Hessian approximation.
         _integrator_type: str
             Integrator type.
@@ -682,7 +682,7 @@ class Solver:
 
         type: SolverType = SolverType.ACADOS
         _qp_solver: str = "PARTIAL_CONDENSING_HPIPM"  # FULL_CONDENSING_QPOASES
-        _hessian_approx: str = "GAUSS_NEWTON"
+        _hessian_approximation: str = "GAUSS_NEWTON"
         _integrator_type: str = "IRK"
         _nlp_solver_type: str = "SQP"
         _nlp_solver_tol_comp: float = 1e-06
@@ -722,11 +722,11 @@ class Solver:
                 self.set_only_first_options_has_changed(True)
 
         @property
-        def hessian_approx(self):
-            return self._hessian_approx
+        def hessian_approximation(self):
+            return self._hessian_approximation
 
         def set_hessian_approx(self, val: str):
-            self._hessian_approx = val
+            self._hessian_approximation = val
             self.set_only_first_options_has_changed(True)
 
         @property
