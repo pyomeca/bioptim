@@ -2,7 +2,17 @@ import os
 
 import pytest
 import numpy as np
-from bioptim import ControlType, InitialGuessList, OdeSolver, ParameterList, PhaseDynamics, Shooting, Solution, SolutionIntegrator, Solver
+from bioptim import (
+    ControlType,
+    InitialGuessList,
+    OdeSolver,
+    ParameterList,
+    PhaseDynamics,
+    Shooting,
+    Solution,
+    SolutionIntegrator,
+    Solver,
+)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -478,9 +488,9 @@ def test_parameter_position_in_solution():
     s = ocp.nlp[0].s_init
 
     with pytest.raises(
-            ValueError,
-            match="The 2nd element is the InitialGuess for the parameter and "
-                  "should be a unique vector of size equal to n_param",
+        ValueError,
+        match="The 2nd element is the InitialGuess for the parameter and "
+        "should be a unique vector of size equal to n_param",
     ):
         sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
 
@@ -488,8 +498,8 @@ def test_parameter_position_in_solution():
     # but inverting the order of the parameters with the controls to be sure that parameters is at its right place
     p.add("length", initial_guess=np.array([5]), phase=0)
     with pytest.raises(
-            ValueError,
-            match="The 2nd element is the InitialGuess for the parameter and "
-                  "should be a unique vector of size equal to n_param",
+        ValueError,
+        match="The 2nd element is the InitialGuess for the parameter and "
+        "should be a unique vector of size equal to n_param",
     ):
         sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, p, u, s])

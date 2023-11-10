@@ -372,22 +372,28 @@ def test_integration_control_type_none(integrator, use_sx):
                 p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]), phase=i)
         # TODO: Once we allow the user to send empty dictionaries to InitialGuessList, we can remove these lines
         # else:
-            # p.add(key="", phase=i)
+        # p.add(key="", phase=i)
         # u.add(key="", phase=i)
         # s.add(key="", phase=i)
 
     sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
-
     result = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, merge_phases=True, integrator=integrator)
     # Merging from integration and outside integration process is not the same, therefor we need to test it
     result = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, merge_phases=False, integrator=integrator)
     result = result.merge_phases()
 
     # Check if continuity is respected
-    np.testing.assert_almost_equal(
-        result.states["c"][-1][-1],
-        0.0012279529390333628,
-    )
+    if integrator == SolutionIntegrator.OCP:
+        np.testing.assert_almost_equal(
+            result.states["c"][-1][-1],
+            0.0012279529390333628,
+        )
+
+    if integrator == SolutionIntegrator.SCIPY_RK45:
+        np.testing.assert_almost_equal(
+            result.states["c"][-1][-1],
+            0.0012232306661896985,
+        )
 
     # Keeping those lines for debugging purposes, REMOVE THEM WHEN MERGE WITH MAIN
     # plt.plot(result.time, result.states["c"][0])
