@@ -392,7 +392,7 @@ class PenaltyOption(OptionGeneric):
 
         # TODO: Charbie -> This is just a first implementation (x=[q, qdot]), it should then be generalized
 
-        nx = controller.states["q"].cx_start.shape[0]
+        nx = controller.q.cx_start.shape[0]
         n_root = controller.model.nb_root
         n_joints = nx - n_root
 

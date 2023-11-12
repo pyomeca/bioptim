@@ -313,18 +313,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
 
-            bound = controller.model.tau_max(controller.states["q"].mx, controller.states["qdot"].mx)
+            bound = controller.model.tau_max(controller.q.mx, controller.qdot.mx)
             min_bound = controller.mx_to_cx(
                 "min_bound",
                 controller.controls["tau"].mapping.to_first.map(bound[1]),
-                controller.states["q"],
-                controller.states["qdot"],
+                controller.q,
+                controller.qdot,
             )
             max_bound = controller.mx_to_cx(
                 "max_bound",
                 controller.controls["tau"].mapping.to_first.map(bound[0]),
-                controller.states["q"],
-                controller.states["qdot"],
+                controller.q,
+                controller.qdot,
             )
             if min_torque:
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
@@ -404,8 +404,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            q = controller.states["q"].mx
-            qdot = controller.states["qdot"].mx
+            q = controller.q.mx
+            qdot = controller.qdot.mx
             passive_torque = controller.model.passive_joint_torque(q, qdot)
             tau = controller.states["tau"].mx if "tau" in controller.states else controller.controls["tau"].mx
             tau = tau + passive_torque if with_passive_torque else tau
@@ -453,8 +453,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            q = controller.states["q"].mx
-            qdot = controller.states["qdot"].mx
+            q = controller.q.mx
+            qdot = controller.qdot.mx
             tau = controller.states["tau"].mx if "tau" in controller.states else controller.controls["tau"].mx
             qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
             passive_torque = controller.model.passive_joint_torque(q, qdot)
@@ -504,8 +504,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            q = controller.states["q"].mx
-            qdot = controller.states["qdot"].mx
+            q = controller.q.mx
+            qdot = controller.qdot.mx
             qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
 
             # TODO get the index of the marker
@@ -542,8 +542,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            q = controller.states["q"].mx
-            qdot = controller.states["qdot"].mx
+            q = controller.q.mx
+            qdot = controller.qdot.mx
             muscle_activations = controller.controls["muscles"].mx
             muscles_states = controller.model.state_set()
             passive_torque = controller.model.passive_joint_torque(q, qdot)
@@ -718,10 +718,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             DF_DX = DF_DX_fun(
                 controller.time.cx,
-                controller.states["q"].cx_start[:nb_root],
-                controller.states["q"].cx_start[nb_root:],
-                controller.states["qdot"].cx_start[:nb_root],
-                controller.states["qdot"].cx_start[nb_root:],
+                controller.q.cx_start[:nb_root],
+                controller.q.cx_start[nb_root:],
+                controller.qdot.cx_start[:nb_root],
+                controller.qdot.cx_start[nb_root:],
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,

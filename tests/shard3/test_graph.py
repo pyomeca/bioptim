@@ -48,7 +48,7 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
 
     # noinspection PyTypeChecker
     model: BiorbdModel = controller.model
-    markers = controller.mx_to_cx("markers", model.model.markers, controller.states["q"])
+    markers = controller.mx_to_cx("markers", model.model.markers, controller.q)
     return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
 

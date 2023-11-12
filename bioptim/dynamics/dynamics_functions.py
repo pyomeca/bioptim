@@ -6,6 +6,7 @@ from ..optimization.optimization_variable import OptimizationVariable
 from ..optimization.non_linear_program import NonLinearProgram
 from .dynamics_evaluation import DynamicsEvaluation
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
+from ..misc.mapping import BiMapping
 
 
 class DynamicsFunctions:
@@ -186,6 +187,80 @@ class DynamicsFunctions:
                 defects[: dq.shape[0], :] = horzcat(*dq_defects)
                 # We modified on purpose the size of the tau to keep the zero in the defects in order to respect the dynamics
                 defects[dq.shape[0] :, :] = tau - tau_id
+
+        return DynamicsEvaluation(dxdt, defects)
+
+
+    @staticmethod
+    def torque_driven_free_floating_base(
+        time: MX.sym,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        stochastic_variables: MX.sym,
+        nlp,
+        with_contact: bool,
+        with_passive_torque: bool,
+        with_ligament: bool,
+        with_friction: bool,
+        external_forces: list = None,
+    ) -> DynamicsEvaluation:
+        """
+        Forward dynamics driven by joint torques without actuation of the free floating base, optional external forces can be declared.
+
+        Parameters
+        ----------
+        time: MX.sym
+            The time of the system
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic_variables of the system
+        nlp: NonLinearProgram
+            The definition of the system
+        with_contact: bool
+            If the dynamic with contact should be used
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
+        with_friction: bool
+            If the dynamic with friction should be used
+        external_forces: list[Any]
+            The external forces
+
+        Returns
+        ----------
+        DynamicsEvaluation
+            The derivative of the states and the defects of the implicit dynamics
+        """
+
+        q_roots = DynamicsFunctions.get(nlp.states["q_roots"], states)
+        q_joints = DynamicsFunctions.get(nlp.states["q_joints"], states)
+        qdot_roots = DynamicsFunctions.get(nlp.states["qdot_roots"], states)
+        qdot_joints = DynamicsFunctions.get(nlp.states["qdot_joints"], states)
+        tau_joints = DynamicsFunctions.get(nlp.controls["tau_joints"], controls)
+
+        q_full = vertcat(q_roots, q_joints)
+        qdot_full = vertcat(qdot_roots, qdot_joints)
+        n_q = q_full.shape[0]
+
+        tau_joints = tau_joints + nlp.model.passive_joint_torque(q_full, qdot_full) if with_passive_torque else tau_joints
+        tau_joints = tau_joints + nlp.model.ligament_joint_torque(q_full, qdot_full) if with_ligament else tau_joints
+        tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_full if with_friction else tau_joints
+
+        tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
+
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full,tau_full, with_contact, external_forces)
+        dxdt = MX(nlp.states.shape, ddq.shape[1])
+        dxdt[:n_q, :] = horzcat(*[qdot_full for _ in range(ddq.shape[1])])
+        dxdt[n_q:, :] = ddq
+
+        defects = None
 
         return DynamicsEvaluation(dxdt, defects)
 
@@ -936,7 +1011,13 @@ class DynamicsFunctions:
         -------
         The derivative of qdot
         """
-        qdot_var = nlp.states["qdot"] if "qdot" in nlp.states else nlp.controls["qdot"]
+        if "qdot" in nlp.states:
+            qdot_var_mapping = nlp.states["qdot"].mapping.to_first
+        elif "qdot" in nlp.controls:
+            qdot_var_mapping = nlp.controls["qdot"].mapping.to_first
+        else:
+            qdot_var_mapping = BiMapping([i for i in range(qdot.shape[0])], [i for i in range(qdot.shape[0])]).to_first
+
 
         if external_forces is None:
             if with_contact:
@@ -944,9 +1025,9 @@ class DynamicsFunctions:
             else:
                 qddot = nlp.model.forward_dynamics(q, qdot, tau)
 
-            return qdot_var.mapping.to_first.map(qddot)
+            return qdot_var_mapping.map(qddot)
         else:
-            dxdt = MX(len(qdot_var.mapping.to_first), nlp.ns)
+            dxdt = MX(len(qdot_var_mapping), nlp.ns)
             # Todo: Should be added to pass f_ext in controls (as a symoblic value)
             #  this would avoid to create multiple equations of motions per node
             for i, f_ext in enumerate(external_forces):
@@ -954,7 +1035,7 @@ class DynamicsFunctions:
                     qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, f_ext)
                 else:
                     qddot = nlp.model.forward_dynamics(q, qdot, tau, f_ext)
-                dxdt[:, i] = qdot_var.mapping.to_first.map(qddot)
+                dxdt[:, i] = qdot_var_mapping.map(qddot)
             return dxdt
 
     @staticmethod

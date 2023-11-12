@@ -299,6 +299,143 @@ class ConfigureProblem:
             )
 
     @staticmethod
+    def torque_driven_free_floating_base(ocp,
+        nlp,
+        with_contact: bool = False,
+        with_passive_torque: bool = False,
+        with_ligament: bool = False,
+        with_friction: bool = False,
+        external_forces: list = None,
+    ):
+        """
+        Configure the dynamics for a torque driven program with a free floating base.
+        This version of the torque driven dynamics avoids defining a mapping to force the root to generate null forces and torques.
+        (states are q_root, q_joints, qdot_root, and qdot_joints, controls are tau_joints)
+        Please note that it was not meant to be used with quaternions yet.
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        with_contact: bool
+            If the dynamic with contact should be used
+        with_passive_torque: bool
+            If the dynamic with passive torque should be used
+        with_ligament: bool
+            If the dynamic with ligament should be used
+        with_friction: bool
+            If the dynamic with joint friction should be used (friction = coefficients * qdot)
+        external_forces: list[Any]
+            A list of external forces
+        """
+
+        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
+        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
+        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
+
+        nb_q = nlp.model.nb_q
+        nb_root = nlp.model.nb_root
+
+        # Declared rigidbody states and controls
+        name_q_roots = [str(i) for i in range(nb_root)]
+        ConfigureProblem.configure_new_variable(
+            "q_roots",
+            name_q_roots,
+            ocp,
+            nlp,
+            as_states=True,
+            as_controls=False,
+            as_states_dot=False,
+        )
+
+        name_q_joints = [str(i) for i in range(nb_root, nb_q)]
+        ConfigureProblem.configure_new_variable(
+            "q_joints",
+            name_q_joints,
+            ocp,
+            nlp,
+            as_states=True,
+            as_controls=False,
+            as_states_dot=False,
+        )
+
+        ConfigureProblem.configure_new_variable(
+            "qdot_roots",
+            name_q_roots,
+            ocp,
+            nlp,
+            as_states=True,
+            as_controls=False,
+            as_states_dot=True,
+        )
+
+        ConfigureProblem.configure_new_variable(
+            "qdot_joints",
+            name_q_joints,
+            ocp,
+            nlp,
+            as_states=True,
+            as_controls=False,
+            as_states_dot=True,
+        )
+
+        ConfigureProblem.configure_new_variable(
+            "qddot_roots",
+            name_q_roots,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=True,
+        )
+
+        ConfigureProblem.configure_new_variable(
+            "qddot_joints",
+            name_q_joints,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=False,
+            as_states_dot=True,
+        )
+
+        ConfigureProblem.configure_new_variable(
+            "tau_joints",
+            name_q_joints,
+            ocp,
+            nlp,
+            as_states=False,
+            as_controls=True,
+            as_states_dot=False,
+        )
+
+        # TODO: add implicit constraints + soft contacts + fatigue
+
+        # Configure the actual ODE of the dynamics
+        if nlp.dynamics_type.dynamic_function:
+            ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.custom)
+        else:
+            ConfigureProblem.configure_dynamics_function(
+                ocp,
+                nlp,
+                DynamicsFunctions.torque_driven_free_floating_base,
+                with_contact=with_contact,
+                with_passive_torque=with_passive_torque,
+                with_ligament=with_ligament,
+                with_friction=with_friction,
+                external_forces=external_forces,
+            )
+
+        # Configure the contact forces
+        if with_contact:
+            ConfigureProblem.configure_contact_function(
+                ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces
+            )
+
+
+    @staticmethod
     def stochastic_torque_driven(
         ocp,
         nlp,
@@ -1576,6 +1713,7 @@ class DynamicsFcn(FcnEnum):
     """
 
     TORQUE_DRIVEN = (ConfigureProblem.torque_driven,)
+    TORQUE_DRIVEN_FREE_FLOATING_BASE = (ConfigureProblem.torque_driven_free_floating_base,)
     STOCHASTIC_TORQUE_DRIVEN = (ConfigureProblem.stochastic_torque_driven,)
     TORQUE_DERIVATIVE_DRIVEN = (ConfigureProblem.torque_derivative_driven,)
     TORQUE_ACTIVATIONS_DRIVEN = (ConfigureProblem.torque_activations_driven,)
