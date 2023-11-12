@@ -299,7 +299,8 @@ class ConfigureProblem:
             )
 
     @staticmethod
-    def torque_driven_free_floating_base(ocp,
+    def torque_driven_free_floating_base(
+        ocp,
         nlp,
         with_contact: bool = False,
         with_passive_torque: bool = False,
@@ -433,7 +434,6 @@ class ConfigureProblem:
             ConfigureProblem.configure_contact_function(
                 ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces
             )
-
 
     @staticmethod
     def stochastic_torque_driven(

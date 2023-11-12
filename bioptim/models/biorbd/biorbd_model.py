@@ -567,7 +567,11 @@ class BiorbdModel:
             biorbd_model: BiorbdModel = nlp.model
 
             all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
-            all_bioviz[-1].load_movement(solution.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
+            if "q" in solution.ocp.nlp[idx_phase].variable_mappings:
+                q = solution.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"])
+            else:
+                q = vertcat(data["q_roots"], data["q_joints"]).T
+            all_bioviz[-1].load_movement(q)
 
             if tracked_markers[idx_phase] is not None:
                 all_bioviz[-1].load_experimental_markers(tracked_markers[idx_phase])

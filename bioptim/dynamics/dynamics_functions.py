@@ -190,7 +190,6 @@ class DynamicsFunctions:
 
         return DynamicsEvaluation(dxdt, defects)
 
-
     @staticmethod
     def torque_driven_free_floating_base(
         time: MX.sym,
@@ -249,13 +248,15 @@ class DynamicsFunctions:
         qdot_full = vertcat(qdot_roots, qdot_joints)
         n_q = q_full.shape[0]
 
-        tau_joints = tau_joints + nlp.model.passive_joint_torque(q_full, qdot_full) if with_passive_torque else tau_joints
+        tau_joints = (
+            tau_joints + nlp.model.passive_joint_torque(q_full, qdot_full) if with_passive_torque else tau_joints
+        )
         tau_joints = tau_joints + nlp.model.ligament_joint_torque(q_full, qdot_full) if with_ligament else tau_joints
         tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_full if with_friction else tau_joints
 
         tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
 
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full,tau_full, with_contact, external_forces)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full, tau_full, with_contact, external_forces)
         dxdt = MX(nlp.states.shape, ddq.shape[1])
         dxdt[:n_q, :] = horzcat(*[qdot_full for _ in range(ddq.shape[1])])
         dxdt[n_q:, :] = ddq
@@ -1017,7 +1018,6 @@ class DynamicsFunctions:
             qdot_var_mapping = nlp.controls["qdot"].mapping.to_first
         else:
             qdot_var_mapping = BiMapping([i for i in range(qdot.shape[0])], [i for i in range(qdot.shape[0])]).to_first
-
 
         if external_forces is None:
             if with_contact:

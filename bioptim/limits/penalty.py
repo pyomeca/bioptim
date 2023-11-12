@@ -134,9 +134,7 @@ class PenaltyFunctionAbstract:
                 q_mx = controller.q.mx
                 qdot_mx = controller.qdot.mx
                 muscles_dot = controller.model.muscle_velocity(q_mx, qdot_mx)
-                objective = controller.mx_to_cx(
-                    "muscle_velocity", muscles_dot, controller.q, controller.qdot
-                )
+                objective = controller.mx_to_cx("muscle_velocity", muscles_dot, controller.q, controller.qdot)
 
                 return controls * objective
 
@@ -367,9 +365,7 @@ class PenaltyFunctionAbstract:
 
             markers = horzcat(*controller.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs))
 
-            markers_objective = controller.mx_to_cx(
-                "markers_velocity", markers, controller.q, controller.qdot
-            )
+            markers_objective = controller.mx_to_cx("markers_velocity", markers, controller.q, controller.qdot)
             return markers_objective
 
         @staticmethod
@@ -453,9 +449,9 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            diff_markers = controller.model.marker(
-                controller.q.mx, second_marker_idx
-            ) - controller.model.marker(controller.q.mx, first_marker_idx)
+            diff_markers = controller.model.marker(controller.q.mx, second_marker_idx) - controller.model.marker(
+                controller.q.mx, first_marker_idx
+            )
 
             return controller.mx_to_cx(
                 f"diff_markers",
@@ -501,9 +497,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            marker_velocity = controller.model.marker_velocities(
-                controller.q.mx, controller.qdot.mx
-            )
+            marker_velocity = controller.model.marker_velocities(controller.q.mx, controller.qdot.mx)
             marker_1 = marker_velocity[first_marker_idx][:]
             marker_2 = marker_velocity[second_marker_idx][:]
 
@@ -640,9 +634,7 @@ class PenaltyFunctionAbstract:
             com = controller.model.center_of_mass(controller.q.mx)
             com_dot = controller.model.center_of_mass_velocity(controller.q.mx, controller.qdot.mx)
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
-            com_height_cx = controller.mx_to_cx(
-                "com_height", com_height, controller.q, controller.qdot
-            )
+            com_height_cx = controller.mx_to_cx("com_height", com_height, controller.q, controller.qdot)
             return com_height_cx
 
         @staticmethod
@@ -986,9 +978,7 @@ class PenaltyFunctionAbstract:
                     if not isinstance(ax, Axis):
                         raise RuntimeError("axes must be a list of bioptim.Axis")
 
-            segment_rotation_objective = controller.mx_to_cx(
-                "segment_rotation", angles_segment[axes], controller.q
-            )
+            segment_rotation_objective = controller.mx_to_cx("segment_rotation", angles_segment[axes], controller.q)
 
             return segment_rotation_objective
 
@@ -1025,9 +1015,7 @@ class PenaltyFunctionAbstract:
                     "The minimize_segments_velocity penalty can only be called with a BiorbdModel"
                 )
             model: BiorbdModel = controller.model
-            segment_angular_velocity = model.segment_angular_velocity(
-                controller.q.mx, controller.qdot.mx, segment_idx
-            )
+            segment_angular_velocity = model.segment_angular_velocity(controller.q.mx, controller.qdot.mx, segment_idx)
 
             if axes is None:
                 axes = [Axis.X, Axis.Y, Axis.Z]
