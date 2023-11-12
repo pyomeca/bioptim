@@ -570,7 +570,7 @@ class BiorbdModel:
             if "q" in solution.ocp.nlp[idx_phase].variable_mappings:
                 q = solution.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"])
             else:
-                q = vertcat(data["q_roots"], data["q_joints"]).T
+                q = np.vstack((data["q_roots"], data["q_joints"]))
             all_bioviz[-1].load_movement(q)
 
             if tracked_markers[idx_phase] is not None:
