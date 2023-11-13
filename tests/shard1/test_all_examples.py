@@ -1347,7 +1347,7 @@ def test__torque_driven_ocp__trampo_quaternions():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/TruncAnd2Arm_Quaternion.bioMod",
+        biorbd_model_path=bioptim_folder + "/models/trunk_and_2arm_quaternion.bioMod",
         n_shooting=5,
         final_time=0.25,
         expand_dynamics=False,

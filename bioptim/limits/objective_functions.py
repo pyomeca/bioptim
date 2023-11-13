@@ -387,6 +387,7 @@ class ObjectiveFcn:
         MINIMIZE_SEGMENT_ROTATION = (PenaltyFunctionAbstract.Functions.minimize_segment_rotation,)
         MINIMIZE_SEGMENT_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_segment_velocity,)
         MINIMIZE_STATE = (PenaltyFunctionAbstract.Functions.minimize_states,)
+        MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
         MINIMIZE_TIME = (ObjectiveFunction.MayerFunction.Functions.minimize_time,)
         PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
         STOCHASTIC_MINIMIZE_VARIABLE = (PenaltyFunctionAbstract.Functions.stochastic_minimize_variables,)

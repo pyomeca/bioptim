@@ -433,7 +433,7 @@ def test_trampo_quaternions(phase_dynamics):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     # Define the problem
-    model_path = bioptim_folder + "/models/TruncAnd2Arm_Quaternion.bioMod"
+    model_path = bioptim_folder + "/models/trunk_and_2arm_quaternion.bioMod"
     final_time = 0.25
     n_shooting = 5
 
