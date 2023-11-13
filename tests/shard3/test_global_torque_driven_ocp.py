@@ -778,3 +778,64 @@ def test_example_minimize_segment_velocity():
     # initial and final controls
     np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-2.4613488, 3.70379261, -0.99483388]), decimal=6)
     np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([0.80156395, 0.82773623, 0.35042046]), decimal=6)
+
+def test_example_torque_driven_free_floating_base():
+    from bioptim.examples.torque_driven_ocp import torque_driven_free_floating_base as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    # Define the problem
+
+    biorbd_model_path = bioptim_folder + "/models/trunk_and_2arm.bioMod"
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=biorbd_model_path,
+    )
+    sol = ocp.solve()
+
+    # Check objective function value
+    f = np.array(sol.cost)
+    np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 26.66459868546184)
+
+    # Check constraints
+    g = np.array(sol.constraints)
+    np.testing.assert_equal(g.shape, (160, 1))
+    np.testing.assert_almost_equal(g, np.zeros((160, 1)), decimal=6)
+
+    # Check some of the results
+    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
+
+    # initial and final position
+    np.testing.assert_almost_equal(states["q_roots"][:, 0], np.array([0., 0., 0., 0., 0., 0.]), decimal=6)
+    np.testing.assert_almost_equal(states["q_joints"][:, 0], np.array([2.9, -2.9]), decimal=6)
+    np.testing.assert_almost_equal(states["q_roots"][:, -1], np.array([0.0, -8.45907948e-02,  8.56794397e-03,  6.18318525e+00,
+        1.53988148e-07,  1.14973439e-06]), decimal=6)
+    np.testing.assert_almost_equal(states["q_joints"][:, -1], np.array([0.92150718, -0.92150642]), decimal=6)
+
+    # initial and final velocities
+    np.testing.assert_almost_equal(
+        states["qdot_roots"][:, 0],
+        np.array([7.02764378e-09, 4.89043157e-01, 7.33236211e+00, 3.54144048e+00,
+       0.00000000e+00, 0.00000000e+00]),
+        decimal=6,
+    )
+    np.testing.assert_almost_equal(
+        states["qdot_joints"][:, 0],
+        np.array([0.00000000e+00, 0.00000000e+00]),
+        decimal=6,
+    )
+    np.testing.assert_almost_equal(
+        states["qdot_roots"][:, -1],
+        np.array([3.36277249e-08,  4.50804849e-01, -7.45745834e+00,  4.32699546e+00,
+        3.67718230e-07,  2.13535805e-06]),
+        decimal=6,
+    )
+    np.testing.assert_almost_equal(
+        states["qdot_joints"][:, -1],
+        np.array([1.29726402, -1.29725251]),
+        decimal=6,
+    )
+    # initial and final controls
+    np.testing.assert_almost_equal(controls["tau_joints"][:, 0], np.array([-5.31377608,  5.31377698]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau_joints"][:, -2], np.array([-0.009675  ,  0.00967505]), decimal=6)
