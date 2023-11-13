@@ -576,13 +576,29 @@ class DynamicsFunctions:
             The contact forces that ensure no acceleration at these contact points
         """
 
-        q_nlp, q_var = (nlp.states["q"], states) if "q" in nlp.states else (nlp.controls["q"], controls)
-        qdot_nlp, qdot_var = (nlp.states["qdot"], states) if "qdot" in nlp.states else (nlp.controls["qdot"], controls)
-        tau_nlp, tau_var = (nlp.states["tau"], states) if "tau" in nlp.states else (nlp.controls["tau"], controls)
+        def get_var_from_states_or_controls(key: str, nlp: NonLinearProgram, states: MX.sym, controls: MX.sym):
+            if key in nlp.states:
+                out_nlp, out_var = (nlp.states[key], states)
+                out = DynamicsFunctions.get(out_nlp, out_var)
+            elif key in nlp.controls:
+                out_nlp, out_var = (nlp.controls[key], controls)
+                out = DynamicsFunctions.get(out_nlp, out_var)
+            elif f"{key}_roots" in nlp.states and f"{key}_joints" in nlp.states:
+                out_roots_nlp, out_roots_var = (nlp.states[f"{key}_roots"], states)
+                out_roots = DynamicsFunctions.get(out_roots_nlp, out_roots_var)
+                out_joints_nlp, out_joints_var = (nlp.states[f"{key}_joints"], states)
+                out_joints = DynamicsFunctions.get(out_joints_nlp, out_joints_var)
+                out = vertcat(out_roots, out_joints)
+            elif f"{key}_joints" in nlp.controls:
+                out_joints_nlp, out_joints_var = (nlp.controls[f"{key}_joints"], controls)
+                out = DynamicsFunctions.get(out_joints_nlp, out_joints_var)
+            else:
+                raise RuntimeError(f"{key} not found in states or controls")
+            return out
 
-        q = DynamicsFunctions.get(q_nlp, q_var)
-        qdot = DynamicsFunctions.get(qdot_nlp, qdot_var)
-        tau = DynamicsFunctions.get(tau_nlp, tau_var)
+        q = get_var_from_states_or_controls("q", nlp, states, controls)
+        qdot = get_var_from_states_or_controls("qdot", nlp, states, controls)
+        tau = get_var_from_states_or_controls("tau", nlp, states, controls)
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 

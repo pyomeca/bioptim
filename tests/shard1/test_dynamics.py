@@ -1350,6 +1350,187 @@ def test_torque_activation_driven_with_residual_torque(
 @pytest.mark.parametrize("cx", [MX, SX])
 @pytest.mark.parametrize("with_external_force", [False, True])
 @pytest.mark.parametrize("with_contact", [False, True])
+def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
+    # Prepare the program
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp.model = BiorbdModel(
+        TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
+    )
+    nlp.ns = 5
+    nlp.cx = cx
+    nlp.initialize(cx)
+
+    nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
+    nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
+    nlp.x_scaling = VariableScalingList()
+    nlp.xdot_scaling = VariableScalingList()
+    nlp.u_scaling = VariableScalingList()
+    nlp.s_scaling = VariableScalingList()
+
+    external_forces = (
+        [
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.374540118847362,
+                            0.950714306409916,
+                            0.731993941811405,
+                            0.598658484197037,
+                            0.156018640442437,
+                            0.155994520336203,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.058083612168199,
+                            0.866176145774935,
+                            0.601115011743209,
+                            0.708072577796045,
+                            0.020584494295802,
+                            0.969909852161994,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.832442640800422,
+                            0.212339110678276,
+                            0.181824967207101,
+                            0.183404509853434,
+                            0.304242242959538,
+                            0.524756431632238,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.431945018642116,
+                            0.291229140198042,
+                            0.611852894722379,
+                            0.139493860652042,
+                            0.292144648535218,
+                            0.366361843293692,
+                        ]
+                    ),
+                ]
+            ],
+            [
+                [
+                    "Seg0",
+                    np.array(
+                        [
+                            0.456069984217036,
+                            0.785175961393014,
+                            0.19967378215836,
+                            0.514234438413612,
+                            0.592414568862042,
+                            0.046450412719998,
+                        ]
+                    ),
+                ]
+            ],
+        ]
+        if with_external_force
+        else None
+    )
+
+    ocp = OptimalControlProgram(nlp)
+    nlp.control_type = ControlType.CONSTANT
+    NonLinearProgram.add(
+        ocp,
+        "dynamics_type",
+        Dynamics(
+            DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE,
+            with_contact=with_contact,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+            external_forces=external_forces,
+        ),
+        False,
+    )
+    phase_index = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "phase_idx", phase_index, False)
+    use_states_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_states_dot_from_phase_idx = [i for i in range(ocp.n_phases)]
+    use_controls_from_phase_idx = [i for i in range(ocp.n_phases)]
+    NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
+    NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+
+    np.random.seed(42)
+    if with_external_force:
+        np.random.rand(nlp.ns, 6)  # just not to change the values of the next random values
+
+    # Prepare the dynamics
+    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and with_external_force:
+        with pytest.raises(
+            RuntimeError,
+            match="Phase 0 has external_forces but the phase_dynamics is PhaseDynamics.SHARED_DURING_THE_PHASE.Please set phase_dynamics=PhaseDynamics.ONE_PER_NODE",
+        ):
+            ConfigureProblem.initialize(ocp, nlp)
+        return
+    else:
+        ConfigureProblem.initialize(ocp, nlp)
+
+    # Test the results
+    states = np.random.rand(nlp.states.shape, nlp.ns)
+    controls = np.random.rand(nlp.controls.shape, nlp.ns)
+    params = np.random.rand(nlp.parameters.shape, nlp.ns)
+    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    time = np.random.rand(1, nlp.ns)
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+
+    if with_contact:
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+        if with_external_force:
+            np.testing.assert_almost_equal(
+                x_out[:, 0],
+                [0.96958463,  0.92187424,  0.38867729,  0.54269608, -1.71642952, -0.28661718,  3.47711038, -2.61110605],
+            )
+            np.testing.assert_almost_equal(contact_out[:, 0], [-12.59366904, 128.27098855,   2.35829492])
+
+        else:
+            np.testing.assert_almost_equal(
+                x_out[:, 0],
+                [ 0.61185289,  0.78517596,  0.60754485,  0.80839735, -0.26487805, -0.19004763,  0.53746739, -0.12272266],
+            )
+            np.testing.assert_almost_equal(contact_out[:, 0], [-2.30360748, 127.09143179,   5.05814294])
+
+    else:
+        if with_external_force:
+            np.testing.assert_almost_equal(
+                x_out[:, 0],
+                [0.96958463,   0.92187424,   0.38867729,   0.54269608, -0.21234549, -10.23941443,   2.07066831,  31.68033189],
+            )
+        else:
+            np.testing.assert_almost_equal(
+                x_out[:, 0],
+                [
+                    0.61185289, 0.78517596, 0.60754485, 0.80839735, 0.04791036,
+                    -9.96778948, -0.01986505, 4.39786051
+                ],
+            )
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("cx", [MX, SX])
+@pytest.mark.parametrize("with_external_force", [False, True])
+@pytest.mark.parametrize("with_contact", [False, True])
 @pytest.mark.parametrize("with_residual_torque", [False, True])
 @pytest.mark.parametrize("with_excitations", [False, True])
 @pytest.mark.parametrize("rigidbody_dynamics", [RigidBodyDynamics.ODE, RigidBodyDynamics.DAE_INVERSE_DYNAMICS])
