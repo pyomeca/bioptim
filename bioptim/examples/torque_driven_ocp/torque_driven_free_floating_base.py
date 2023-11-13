@@ -71,30 +71,30 @@ def prepare_ocp(biorbd_model_path: str):
 
     x_bounds.add(
         "q_roots",
-        min_bound= [
+        min_bound=[
             [0.0, -1.0, -0.1],
             [0.0, -1.0, -0.1],
             [0.0, -0.1, -0.1],
-            [0.0, -0.1, 2*np.pi-0.1],
-            [0.0, -np.pi/4, -np.pi/4],
+            [0.0, -0.1, 2 * np.pi - 0.1],
+            [0.0, -np.pi / 4, -np.pi / 4],
             [0.0, -0.1, -0.1],
         ],
-        max_bound= [
+        max_bound=[
             [0.0, 1.0, 0.1],
             [0.0, 1.0, 0.1],
             [0.0, 10.0, 0.1],
-            [0.0, 2*np.pi+0.1, 2*np.pi+0.1],
-            [0.0, np.pi/4, np.pi/4],
-            [0.0, np.pi+0.1, np.pi+0.1],
+            [0.0, 2 * np.pi + 0.1, 2 * np.pi + 0.1],
+            [0.0, np.pi / 4, np.pi / 4],
+            [0.0, np.pi + 0.1, np.pi + 0.1],
         ],
     )
     x_bounds.add(
         "q_joints",
-        min_bound= [
+        min_bound=[
             [2.9, -0.05, -0.05],
             [-2.9, -3.0, -3.0],
         ],
-        max_bound= [
+        max_bound=[
             [2.9, 3.0, 3.0],
             [-2.9, 0.05, 0.05],
         ],
@@ -102,7 +102,7 @@ def prepare_ocp(biorbd_model_path: str):
 
     x_bounds.add(
         "qdot_roots",
-        min_bound= [
+        min_bound=[
             [-0.5, -10.0, -10.0],
             [-0.5, -10.0, -10.0],
             [5.0, -100.0, -100.0],
@@ -110,7 +110,7 @@ def prepare_ocp(biorbd_model_path: str):
             [0.0, -100.0, -100.0],
             [0.0, -100.0, -100.0],
         ],
-        max_bound= [
+        max_bound=[
             [0.5, 10.0, 10.0],
             [0.5, 10.0, 10.0],
             [10.0, 100.0, 100.0],
@@ -121,11 +121,11 @@ def prepare_ocp(biorbd_model_path: str):
     )
     x_bounds.add(
         "qdot_joints",
-        min_bound= [
+        min_bound=[
             [0.0, -100.0, -100.0],
             [0.0, -100.0, -100.0],
         ],
-        max_bound= [
+        max_bound=[
             [-0.0, 100.0, 100.0],
             [-0.0, 100.0, 100.0],
         ],
@@ -133,11 +133,11 @@ def prepare_ocp(biorbd_model_path: str):
 
     x_initial_guesses.add(
         "q_roots",
-        initial_guess= [
+        initial_guess=[
             [0.0, 0.0],
             [0.0, 0.0],
             [0.0, 0.0],
-            [0.0, 2*np.pi],
+            [0.0, 2 * np.pi],
             [0.0, 0.0],
             [0.0, np.pi],
         ],
@@ -145,7 +145,7 @@ def prepare_ocp(biorbd_model_path: str):
     )
     x_initial_guesses.add(
         "q_joints",
-        initial_guess= [
+        initial_guess=[
             [2.9, 0.0],
             [-2.9, 0.0],
         ],
@@ -163,11 +163,7 @@ def prepare_ocp(biorbd_model_path: str):
         interpolation=InterpolationType.CONSTANT,
     )
 
-    u_bounds.add(
-        "tau_joints",
-        min_bound=[-100, -100],
-        max_bound=[100, 100],
-        interpolation=InterpolationType.CONSTANT)
+    u_bounds.add("tau_joints", min_bound=[-100, -100], max_bound=[100, 100], interpolation=InterpolationType.CONSTANT)
 
     return OptimalControlProgram(
         bio_model=bio_model,
@@ -184,7 +180,6 @@ def prepare_ocp(biorbd_model_path: str):
 
 
 if __name__ == "__main__":
-
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(biorbd_model_path="models/trunk_and_2arm.bioMod")
 
@@ -195,4 +190,3 @@ if __name__ == "__main__":
     # --- Show results --- #
     # sol.graphs()
     sol.animate()
-
