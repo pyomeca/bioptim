@@ -276,7 +276,7 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     # Check constraints
     g = np.array(sol.constraints)
     for i in range(n):
-        np.testing.assert_almost_equal(g[i * 19 + 0: i * 19 + 15], np.zeros((15, 1)))
+        np.testing.assert_almost_equal(g[i * 19 + 0 : i * 19 + 15], np.zeros((15, 1)))
     np.testing.assert_almost_equal(
         g[18:-1:19, 0],
         [0.09848005, 0.0974753, 0.09652673, 0.09540809, 0.0939693, 0.09197322, 0.08894771, 0.08377719, 0.07337567],
