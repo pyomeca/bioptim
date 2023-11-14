@@ -74,7 +74,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             n_shooting=window_len,
             phase_time=window_duration,
             use_sx=use_sx,
-            objective_functions=self.common_objective_functions,
+            objective_functions=common_objective_functions,
             **kwargs,
         )
         self.total_optimization_run = 0
