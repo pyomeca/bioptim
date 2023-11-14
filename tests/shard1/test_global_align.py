@@ -50,9 +50,6 @@ def test_track_segment_on_rt(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(tau[:, 0], np.array([0, 9.81, 66.98666900582079, 66.98666424580644]))
     np.testing.assert_almost_equal(tau[:, -2], np.array([-0, 9.81, -66.98666900582079, -66.98666424580644]))
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -97,9 +94,6 @@ def test_track_marker_on_segment(ode_solver, phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([23.6216587, 12.2590703, 31.520697, 12.9472294]))
     np.testing.assert_almost_equal(tau[:, -2], np.array([-16.659525, 14.5872277, -36.1009998, 4.417834]))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)

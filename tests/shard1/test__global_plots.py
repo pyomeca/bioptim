@@ -8,7 +8,7 @@ import pytest
 
 from casadi import Function, MX
 import numpy as np
-from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel, PhaseDynamics
+from bioptim import CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel, PhaseDynamics
 from bioptim.limits.penalty import PenaltyOption
 
 import matplotlib
@@ -124,37 +124,13 @@ def test_add_new_plot(phase_dynamics):
     solver.set_maximum_iterations(1)
     sol = ocp.solve(solver)
 
-    # Saving/loading files reset the plot settings to normal
-    save_name = "test_plot.bo"
-    ocp.save(sol, save_name)
-
     # Test 1 - Working plot
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
-    sol.graphs(automatically_organize=False)
-
-    # Test 2 - Combine using combine_to is not allowed
-    ocp, sol = OptimalControlProgram.load(save_name)
-    with pytest.raises(RuntimeError):
-        ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :], combine_to="NotAllowed")
-
-    # Test 3 - Create a completely new plot
-    ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
-    ocp.add_plot("My Second New Plot", lambda t, x, p, u, s: x[0:2, :])
-    sol.graphs(automatically_organize=False)
-
-    # Test 4 - Combine to the first using fig_name
-    ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
     ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Add the plot of objectives and constraints to this mess
     ocp.add_plot_penalty(CostType.ALL)
     sol.graphs(automatically_organize=False)
-
-    # Delete the saved file
-    os.remove(save_name)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

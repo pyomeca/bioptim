@@ -139,8 +139,5 @@ def test_muscle_driven_ocp(ode_solver, phase_dynamics):
     else:
         raise ValueError("Test not ready")
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol, decimal_value=5)

@@ -58,9 +58,6 @@ def test_track_markers(ode_solver, actuator_type, phase_dynamics):
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -118,9 +115,6 @@ def test_track_markers_changing_constraints(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(tau[:, 0], np.array((4.2641129, 9.81, 2.27903226)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((1.36088709, 9.81, -2.27903226)))
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -157,9 +151,6 @@ def test_track_markers_changing_constraints(ode_solver, phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-5.625, 21.06, 2.2790323)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((-5.625, 21.06, -2.27903226)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -210,9 +201,6 @@ def test_track_markers_with_actuators(ode_solver, phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.2140175, 0.981, 0.3360075)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((-0.2196496, 0.981, -0.3448498)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -307,9 +295,6 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.93890241, -12.76433504)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((0.13156876, 0.93749913)))
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -403,9 +388,6 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.8532419, -12.1810791)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((0.1290981, 0.9345706)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -528,9 +510,6 @@ def test_trampo_quaternions(phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.zeros((12,)), decimal=6)
     np.testing.assert_almost_equal(tau[:, -2], np.zeros((12,)), decimal=6)
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
@@ -667,9 +646,6 @@ def test_torque_activation_driven(ode_solver, phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.2256539, 0.0681475)), decimal=3)
     np.testing.assert_almost_equal(tau[:, -2], np.array((-0.0019898, -0.0238914)), decimal=3)
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=4)

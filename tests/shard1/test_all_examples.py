@@ -263,44 +263,6 @@ def test__getting_started__example_optimal_time():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module
 
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-def test__getting_started__example_save_and_load(phase_dynamics):
-    from bioptim.examples.getting_started import example_save_and_load as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-        with pytest.raises(
-            RuntimeError, match="Multiprocessing is not supported with phase_dynamics=PhaseDynamics.ONE_PER_NODE"
-        ):
-            ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-                final_time=3,
-                n_shooting=100,
-                n_threads=4,
-                phase_dynamics=phase_dynamics,
-                expand_dynamics=False,
-            )
-    else:
-        ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-            final_time=3,
-            n_shooting=100,
-            n_threads=4,
-            phase_dynamics=phase_dynamics,
-            expand_dynamics=False,
-        )
-
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=3,
-        n_shooting=100,
-        n_threads=1,
-        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
-        expand_dynamics=False,
-    )
-
-
 def test__getting_started__example_simulation():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module
 

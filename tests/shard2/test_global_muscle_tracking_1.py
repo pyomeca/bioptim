@@ -128,8 +128,5 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
     else:
         raise ValueError("Test not ready")
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol, decimal_value=6)

@@ -1,7 +1,4 @@
 from typing import Callable, Any
-import os
-import sys
-import pickle
 from copy import deepcopy
 from math import inf
 
@@ -92,8 +89,6 @@ class OptimalControlProgram:
         The number of thread to use if using multithreading
     original_phase_time: list[float]
         The time vector as sent by the user
-    original_values: dict
-        A copy of the ocp as it is after defining everything
     phase_transitions: list[PhaseTransition]
         The list of transition constraint between phases
     ocp_solver: SolverInterface
@@ -128,30 +123,19 @@ class OptimalControlProgram:
         Create all the plots associated with the OCP
     solve(self, solver: Solver, show_online_optim: bool, solver_options: dict) -> Solution
         Call the solver to actually solve the ocp
-    save(self, sol: Solution, file_path: str, stand_alone: bool = False)
-        Save the ocp and solution structure to the hard drive. It automatically create the required
-        folder if it does not exists. Please note that biorbd is required to load back this structure.
-    @staticmethod
-    load(file_path: str) -> list
-        Reload a previous optimization (*.bo) saved using save
     _define_time(self, phase_time: float | tuple, objective_functions: ObjectiveList, constraints: ConstraintList)
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
     __modify_penalty(self, new_penalty: PenaltyOption | Parameter)
-        The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
-        overrides an objective only the latter is preserved when saved
+        The internal function to modify a penalty.
     __set_nlp_is_stochastic(self)
         Set the nlp as stochastic if any of the phases is stochastic
     __set_stochastic_internal_stochastic_variables(self)
         Set the internal stochastic variables (s_init, s_bounds, s_scaling) if any of the phases is stochastic
-    _set_stochastic_variables_to_original_values(self, s_init, s_bounds, s_scaling)
-        Set the original_values with the stochastic variables (s_init, s_bounds, s_scaling) if any of the phases is
-        stochastic
     _check_quaternions_hasattr(self, bio_model)
         Check if the bio_model has quaternions and set the flag accordingly
     _check_and_prepare_dynamics(self, dynamics)
         Check if the dynamics is a Dynamics or a DynamicsList and set the flag accordingly
-    _set_original_values(
     """
 
     def __init__(
@@ -253,37 +237,7 @@ class OptimalControlProgram:
 
         # Placed here because of MHE
         self._check_and_prepare_dynamics(dynamics)
-
-        self._set_original_values(
-            bio_model,
-            n_shooting,
-            phase_time,
-            x_init,
-            u_init,
-            x_bounds,
-            u_bounds,
-            x_scaling,
-            xdot_scaling,
-            u_scaling,
-            ode_solver,
-            control_type,
-            variable_mappings,
-            time_phase_mapping,
-            node_mappings,
-            plot_mappings,
-            phase_transitions,
-            multinode_constraints,
-            multinode_objectives,
-            parameter_bounds,
-            parameter_init,
-            parameter_constraints,
-            parameter_objectives,
-            n_threads,
-            use_sx,
-            integrated_value_functions,
-        )
         s_init, s_bounds, s_scaling = self._set_stochastic_internal_stochastic_variables()
-        self._set_stochastic_variables_to_original_values(s_init, s_bounds, s_scaling)
 
         self._check_and_set_threads(n_threads)
         self._check_and_set_shooting_points(n_shooting)
@@ -393,69 +347,6 @@ class OptimalControlProgram:
             self.dynamics = dynamics
         elif not isinstance(dynamics, DynamicsList):
             raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
-
-    def _set_original_values(
-        self,
-        bio_model,
-        n_shooting,
-        phase_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
-        x_scaling,
-        xdot_scaling,
-        u_scaling,
-        ode_solver,
-        control_type,
-        variable_mappings,
-        time_phase_mapping,
-        node_mappings,
-        plot_mappings,
-        phase_transitions,
-        multinode_constraints,
-        multinode_objectives,
-        parameter_bounds,
-        parameter_init,
-        parameter_constraints,
-        parameter_objectives,
-        n_threads,
-        use_sx,
-        integrated_value_functions,
-    ):
-        self.original_values = {
-            "bio_model": [m.serialize() for m in bio_model],
-            "dynamics": self.dynamics,
-            "n_shooting": n_shooting,
-            "phase_time": phase_time,
-            "x_init": x_init,
-            "u_init": u_init,
-            "x_bounds": x_bounds,
-            "u_bounds": u_bounds,
-            "x_scaling": x_scaling,
-            "xdot_scaling": xdot_scaling,
-            "u_scaling": u_scaling,
-            "objective_functions": ObjectiveList(),
-            "constraints": ConstraintList(),
-            "parameters": ParameterList(),
-            "ode_solver": ode_solver,
-            "control_type": control_type,
-            "variable_mappings": variable_mappings,
-            "time_phase_mapping": time_phase_mapping,
-            "node_mappings": node_mappings,
-            "plot_mappings": plot_mappings,
-            "phase_transitions": phase_transitions,
-            "multinode_constraints": multinode_constraints,
-            "multinode_objectives": multinode_objectives,
-            "parameter_bounds": parameter_bounds,
-            "parameter_init": parameter_init,
-            "parameter_objectives": parameter_objectives,
-            "parameter_constraints": parameter_constraints,
-            "n_threads": n_threads,
-            "use_sx": use_sx,
-            "integrated_value_functions": integrated_value_functions,
-        }
-        return
 
     def _check_and_set_threads(self, n_threads):
         if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
@@ -1636,90 +1527,6 @@ class OptimalControlProgram:
 
         self.is_warm_starting = True
 
-    def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
-        """
-        Save the ocp and solution structure to the hard drive. It automatically creates the required
-        folder if it does not exist. Please note that biorbd is required to load back this structure.
-
-        IMPORTANT NOTICE: Please note that this is dependent on the bioptim version used to create the .bo file
-        and retrocompatibility is NOT enforced. This means that an optimized solution from a previous version will
-        probably NOT load on a newer bioptim version. To save the solution in a way which is independent of the
-        version of bioptim, one may use the stand_alone flag to True.
-
-        Parameters
-        ----------
-        sol: Solution
-            The solution structure to save
-        file_path: str
-            The path to solve the structure. It creates a .bo (BiOptim file)
-        stand_alone: bool
-            If set to True, the variable dictionaries (states, controls and parameters) are saved instead of the full
-            Solution class itself. This allows to load the saved file into a setting where bioptim is not installed
-            using the pickle package, but prevents from using the class methods Solution offers after loading the file
-        """
-
-        _, ext = os.path.splitext(file_path)
-        if ext == "":
-            file_path = file_path + ".bo"
-        elif ext != ".bo":
-            raise RuntimeError(f"Incorrect extension({ext}), it should be (.bo) or (.bob) if you use save_get_data.")
-
-        if stand_alone:
-            # TODO check if this file is loaded when load is used, and raise an error
-            data_to_save = sol.states, sol.controls, sol.parameters
-        else:
-            sol_copy = sol.copy()
-            sol_copy.ocp = None  # Ocp is not pickable
-            data_to_save = {"ocp_initializer": self.original_values, "sol": sol_copy, "versions": self.version}
-
-        # Create folder if necessary
-        directory, _ = os.path.split(file_path)
-        if directory != "" and not os.path.isdir(directory):
-            os.makedirs(directory)
-
-        with open(file_path, "wb") as file:
-            pickle.dump(data_to_save, file)
-
-    @staticmethod
-    def load(file_path: str) -> list:
-        """
-        Reload a previous optimization (*.bo) saved using save
-
-        Parameters
-        ----------
-        file_path: str
-            The path to the *.bo file
-
-        Returns
-        -------
-        The ocp and sol structure. If it was saved, the iterations are also loaded
-        """
-
-        with open(file_path, "rb") as file:
-            try:
-                data = pickle.load(file)
-            except BaseException as error_message:
-                raise ValueError(
-                    f"The file '{file_path}' cannot be loaded, maybe the version of bioptim (version {__version__})\n"
-                    f"is not the same as the one that created the file (version unknown). For more information\n"
-                    "please refer to the original error message below\n\n"
-                    f"{type(error_message).__name__}: {error_message}"
-                )
-            ocp = OptimalControlProgram.from_loaded_data(data["ocp_initializer"])
-            for key in data["versions"].keys():
-                key_module = "biorbd_casadi" if key == "biorbd" else key
-                try:
-                    check_version(sys.modules[key_module], data["versions"][key], ocp.version[key], exclude_max=False)
-                except ImportError:
-                    raise ImportError(
-                        f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
-                        f"installed version ({ocp.version[key]})"
-                    )
-            sol = data["sol"]
-            sol.ocp = SimplifiedOCP(ocp)
-            out = [ocp, sol]
-        return out
-
     def print(
         self,
         to_console: bool = True,
@@ -1866,8 +1673,7 @@ class OptimalControlProgram:
 
     def __modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """
-        The internal function to modify a penalty. It is also stored in the original_values, meaning that if one
-        overrides an objective only the latter is preserved when saved
+        The internal function to modify a penalty.
 
         Parameters
         ----------
@@ -1878,18 +1684,13 @@ class OptimalControlProgram:
         if not new_penalty:
             return
         phase_idx = new_penalty.phase
-
-        # Copy to self.original_values so it can be save/load
-        pen = new_penalty.type.get_type()
-        self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
         new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[phase_idx])
 
         self.program_changed = True
 
     def __modify_parameter_penalty(self, new_penalty: PenaltyOption | Parameter):
         """
-        The internal function to modify a parameter penalty. It is also stored in the original_values, meaning that if one
-        overrides an objective only the latter is preserved when saved
+        The internal function to modify a parameter penalty.
 
         Parameters
         ----------
@@ -1900,11 +1701,7 @@ class OptimalControlProgram:
         if not new_penalty:
             return
 
-        # Copy to self.original_values so it can be save/load
-        pen = new_penalty.type.get_type()
-        self.original_values[pen.penalty_nature()].add(deepcopy(new_penalty))
         self.parameters[0].add_or_replace_to_penalty_pool(self, new_penalty)
-
         self.program_changed = True
 
     def node_time(self, phase_idx: int, node_idx: int):
@@ -1938,21 +1735,6 @@ class OptimalControlProgram:
         This method is overrided in StochasticOptimalControlProgram
         """
         return OdeSolver.RK4()
-
-    def _set_stochastic_variables_to_original_values(
-        self,
-        s_init: InitialGuessList,
-        s_bounds: BoundsList,
-        s_scaling: VariableScalingList,
-    ):
-        """
-        Set the stochastic variables to their original values
-
-        Note
-        ----
-        This method is overrided in StochasticOptimalControlProgram
-        """
-        pass
 
     def _set_stochastic_internal_stochastic_variables(self):
         """

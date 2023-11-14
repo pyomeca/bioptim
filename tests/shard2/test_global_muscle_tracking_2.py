@@ -145,9 +145,6 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
     else:
         raise ValueError("Test not ready")
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
 
@@ -279,9 +276,6 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
 
     else:
         raise ValueError("Test not implemented")
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)

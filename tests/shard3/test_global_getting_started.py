@@ -222,193 +222,9 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.01549798, 0.0)))
         np.testing.assert_almost_equal(tau[:, -2], np.array((-13.68877181, 0.0)))
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
     return
-
-
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("n_threads", [1, 2])
-@pytest.mark.parametrize("use_sx", [False, True])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
-def test_pendulum_save_and_load_no_rk8(n_threads, use_sx, ode_solver, phase_dynamics):
-    from bioptim.examples.getting_started import example_save_and_load as ocp_module
-
-    if platform.system() == "Windows":
-        # This is a long test and CI is already long for Windows
-        return
-
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if n_threads > 1 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-        return
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    ode_solver_orig = ode_solver
-    if ode_solver == OdeSolver.IRK:
-        ode_solver = ode_solver()
-        if use_sx:
-            with pytest.raises(RuntimeError, match="use_sx=True and OdeSolver.IRK are not yet compatible"):
-                ocp_module.prepare_ocp(
-                    biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-                    final_time=1,
-                    n_shooting=30,
-                    n_threads=n_threads,
-                    use_sx=use_sx,
-                    ode_solver=ode_solver,
-                    phase_dynamics=phase_dynamics,
-                    expand_dynamics=ode_solver_orig != OdeSolver.IRK,
-                )
-        else:
-            ocp = ocp_module.prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-                final_time=1,
-                n_shooting=30,
-                n_threads=n_threads,
-                use_sx=use_sx,
-                ode_solver=ode_solver,
-                phase_dynamics=phase_dynamics,
-                expand_dynamics=ode_solver_orig != OdeSolver.IRK,
-            )
-            sol = ocp.solve()
-
-            # Check objective function value
-            f = np.array(sol.cost)
-            np.testing.assert_equal(f.shape, (1, 1))
-
-            # Check constraints
-            g = np.array(sol.constraints)
-            np.testing.assert_equal(g.shape, (120, 1))
-            np.testing.assert_almost_equal(g, np.zeros((120, 1)))
-
-            # Check some of the results
-            q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
-
-            # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-            np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-            # initial and final velocities
-            np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
-            # save and load
-            TestUtils.save_and_load(sol, ocp, False)
-
-            # simulate
-            TestUtils.simulate(sol)
-    else:
-        ode_solver = ode_solver()
-        ocp = ocp_module.prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-            final_time=1,
-            n_shooting=30,
-            n_threads=n_threads,
-            use_sx=use_sx,
-            ode_solver=ode_solver,
-            phase_dynamics=phase_dynamics,
-            expand_dynamics=ode_solver_orig != OdeSolver.IRK,
-        )
-        sol = ocp.solve()
-
-        # Check objective function value
-        is_collocation = isinstance(ode_solver, OdeSolver.COLLOCATION) and not isinstance(ode_solver, OdeSolver.IRK)
-        f = np.array(sol.cost)
-        np.testing.assert_equal(f.shape, (1, 1))
-        if isinstance(ode_solver, OdeSolver.RK8):
-            np.testing.assert_almost_equal(f[0, 0], 9.821989132327003)
-        elif is_collocation:
-            pass
-        else:
-            np.testing.assert_almost_equal(f[0, 0], 9.834017207589055)
-
-        # Check constraints
-        g = np.array(sol.constraints)
-        if is_collocation:
-            np.testing.assert_equal(g.shape, (600, 1))
-            np.testing.assert_almost_equal(g, np.zeros((600, 1)))
-        else:
-            np.testing.assert_equal(g.shape, (120, 1))
-            np.testing.assert_almost_equal(g, np.zeros((120, 1)))
-
-        # Check some of the results
-        q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
-
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
-        # initial and final controls
-        if isinstance(ode_solver, OdeSolver.RK8):
-            np.testing.assert_almost_equal(tau[:, 0], np.array((5.67291529, 0)))
-            np.testing.assert_almost_equal(tau[:, -2], np.array((-11.71262836, 0)))
-        elif is_collocation:
-            pass
-        else:
-            np.testing.assert_almost_equal(tau[:, 0], np.array((5.72227268, 0)))
-            np.testing.assert_almost_equal(tau[:, -2], np.array((-11.62799294, 0)))
-
-        # save and load
-        TestUtils.save_and_load(sol, ocp, False)
-
-        # simulate
-        TestUtils.simulate(sol)
-
-
-@pytest.mark.parametrize("use_sx", [False, True])
-def test_pendulum_save_and_load_rk8(use_sx):
-    from bioptim.examples.getting_started import example_save_and_load as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    ocp = ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=1,
-        n_shooting=10,
-        n_threads=1,
-        use_sx=use_sx,
-        ode_solver=OdeSolver.RK8(),
-        expand_dynamics=True,
-    )
-    sol = ocp.solve()
-
-    # Check objective function value
-    f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 1134.4262872942047)
-
-    # Check constraints
-    g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
-
-    # Check some of the results
-    q, qdot, tau = (sol.states["q"], sol.states["qdot"], sol.controls["tau"])
-
-    # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
-
-    # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((4.18966502, 0)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-17.59767942, 0)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
-    # simulate
-    TestUtils.simulate(sol)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -536,13 +352,6 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
     np.testing.assert_almost_equal(tau[:, 0], np.array([5.0, 9.81, 7.85]))
     np.testing.assert_almost_equal(tau[:, -2], np.array([-5.0, 9.81, -7.85]))
 
-    # save and load
-    if interpolation == InterpolationType.CUSTOM and not random_init:
-        with pytest.raises(AttributeError, match="'PathCondition' object has no attribute 'custom_function'"):
-            TestUtils.save_and_load(sol, ocp, False)
-    else:
-        TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -593,9 +402,6 @@ def test_cyclic_objective(ode_solver, phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([9.89210954, 9.39362112, -15.53061197]))
     np.testing.assert_almost_equal(tau[:, -2], np.array([17.16370432, 9.78643138, -26.94701577]))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -648,9 +454,6 @@ def test_cyclic_constraint(ode_solver, phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([20.0, 9.81, -31.4]))
     np.testing.assert_almost_equal(tau[:, -2], np.array([20.0, 9.81, -31.4]))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -707,9 +510,6 @@ def test_phase_transitions(ode_solver, phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.73170732, 12.71705188, -0.0928732)))
     np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array((0.11614402, 8.70686126, 1.05599166)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     with pytest.raises(
@@ -833,10 +633,6 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
         cost_values_all = np.sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
         np.testing.assert_almost_equal(cost_values_all, f[0, 0])
 
-    # TODO: fix save and load
-    # # save and load
-    # TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
 
@@ -955,9 +751,6 @@ def test_example_external_forces(ode_solver):
         # detailed cost values
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -1026,9 +819,6 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
     np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array((0.2957136, 9.81, 0.285805)))
     np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.3078264, 9.81, 0.34001243)))
     np.testing.assert_almost_equal(controls[2]["tau"][:, -2], np.array((-0.36233407, 9.81, -0.58394606)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -1151,9 +941,6 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
     np.testing.assert_almost_equal(tau[:, 0], np.array((-33.50557304)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((-29.43209257)))
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -1203,9 +990,6 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-24.36593641)))
     np.testing.assert_almost_equal(tau[:, -2], np.array((-24.36125297)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -1432,9 +1216,6 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.32977862, 9.81, 0.0]))
     np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-1.2, 9.81, -1.884]))
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
 
 def test_multistart():
     from bioptim.examples.getting_started import example_multistart as ocp_module
@@ -1660,6 +1441,3 @@ def test_example_variable_scaling(phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-1000.00000999, 0.0]))
     np.testing.assert_almost_equal(tau[:, -2], np.array([-1000.00000999, 0.0]))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)

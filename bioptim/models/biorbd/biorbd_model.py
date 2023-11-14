@@ -30,6 +30,11 @@ class BiorbdModel:
         self._friction_coefficients = friction_coefficients
 
     @property
+    def name(self) -> str:
+        # parse the path and split to get the .bioMod name
+        return self.model.path().absolutePath().to_string().split("/")[-1]
+
+    @property
     def path(self) -> str:
         return self.model.path().relativePath().to_string()
 

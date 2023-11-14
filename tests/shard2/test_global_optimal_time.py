@@ -109,9 +109,6 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     # optimized time
     np.testing.assert_almost_equal(tf, max_ft)
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
 
@@ -215,9 +212,6 @@ def test_pendulum_min_time_lagrange(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(tf, 0.28519514602152585)
     else:
         raise ValueError("Test not implemented")
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
@@ -385,9 +379,6 @@ def test_time_constraint(ode_solver, phase_dynamics):
     else:
         raise ValueError("Test not ready")
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
 
@@ -448,9 +439,6 @@ def test_monophase_time_constraint(ode_solver, phase_dynamics):
 
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0)
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -520,9 +508,6 @@ def test_multiphase_time_constraint(ode_solver, phase_dynamics):
     # optimized time
     np.testing.assert_almost_equal(tf_all.T, [[1.0, 3, 0.8]])
     np.testing.assert_almost_equal(tf, np.sum(tf_all))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -599,9 +584,6 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
     # optimized time
     np.testing.assert_almost_equal(tf_all.T, [[0.95655144, 3]])
     np.testing.assert_almost_equal(tf, np.sum(tf_all) + tf_all[0, 0])
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
