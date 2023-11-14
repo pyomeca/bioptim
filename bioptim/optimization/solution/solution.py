@@ -322,10 +322,8 @@ class Solution:
                 "an InitialGuess[List] of len 4 (states, controls, parameters, stochastic_variables), "
                 "or a None"
             )
-        # if sum([len(s) != len(all_ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:  # This line prevents to have empty dictionaries
-        #     raise ValueError("The InitialGuessList len must match the number of phases")
+
         if n_param != 0:
-            # if len(_sol) != 3 and len(_sol[2]) != 1 and len(_sol[2][0]) != n_param:  # Here why is it asked to check if len(_sol) != 3 as it have to be len(_sol) == 4 above
             if len(_sol[2].keys()) != n_param:
                 raise ValueError(
                     "The 2nd element is the InitialGuess for the parameter and "

@@ -4,7 +4,6 @@ Test for file IO.
 
 from typing import Callable
 
-import matplotlib.pyplot as plt
 from casadi import vertcat, SX, MX
 import numpy as np
 import pytest
@@ -277,7 +276,7 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     # Check constraints
     g = np.array(sol.constraints)
     for i in range(n):
-        np.testing.assert_almost_equal(g[i * 19 + 0 : i * 19 + 15], np.zeros((15, 1)))
+        np.testing.assert_almost_equal(g[i * 19 + 0: i * 19 + 15], np.zeros((15, 1)))
     np.testing.assert_almost_equal(
         g[18:-1:19, 0],
         [0.09848005, 0.0974753, 0.09652673, 0.09540809, 0.0939693, 0.09197322, 0.08894771, 0.08377719, 0.07337567],
@@ -370,11 +369,6 @@ def test_integration_control_type_none(integrator, use_sx):
         if len(ocp.parameters) != 0:
             for k in range(len(ocp.parameters)):
                 p.add(ocp.parameters.keys()[k], initial_guess=np.array([phase_time[k]]), phase=i)
-        # TODO: Once we allow the user to send empty dictionaries to InitialGuessList, we can remove these lines
-        # else:
-        # p.add(key="", phase=i)
-        # u.add(key="", phase=i)
-        # s.add(key="", phase=i)
 
     sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
     result = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, merge_phases=True, integrator=integrator)
@@ -394,7 +388,3 @@ def test_integration_control_type_none(integrator, use_sx):
             result.states["c"][-1][-1],
             0.0012232306661896985,
         )
-
-    # Keeping those lines for debugging purposes, REMOVE THEM WHEN MERGE WITH MAIN
-    # plt.plot(result.time, result.states["c"][0])
-    # plt.show()

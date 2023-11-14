@@ -436,20 +436,6 @@ def test_generate_integrate_linear_continuous(
             for t, state in zip(integrated_sol.time, integrated_sol.states):
                 plt.plot(t[:, np.newaxis], state["q"].T, label="integrated by bioptim", marker=".")
 
-        # plt.legend()
-        # plt.vlines(0.2, -1, 1, color="black", linestyle="--")
-        # plt.vlines(0.5, -1, 1, color="black", linestyle="--")
-        #
-        # plt.title(f"keep_intermediate={keep_intermediate_points},\n"
-        #           f" merged={merge_phase},\n"
-        #           f" ode_solver={ode_solver},\n"
-        #           f" integrator={integrator},\n"
-        #           )
-        # plt.rcParams['axes.titley'] = 1.0  # y is in axes-relative coordinates.
-        # plt.rcParams['axes.titlepad'] = -20
-        # plt.show()
-        # TODO : Ask why there are comments ?
-
 
 def test_parameter_position_in_solution():
     # Load pendulum
