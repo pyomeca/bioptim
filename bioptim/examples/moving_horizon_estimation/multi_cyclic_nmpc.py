@@ -88,7 +88,7 @@ def prepare_nmpc(
         cycle_duration=cycle_duration,
         n_cycles_simultaneous=n_cycles_simultaneous,
         n_cycles_to_advance=n_cycles_to_advance,
-        objective_functions=new_objectives,
+        common_objective_functions=new_objectives,
         constraints=constraints,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
