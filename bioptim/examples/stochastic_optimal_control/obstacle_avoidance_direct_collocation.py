@@ -184,10 +184,9 @@ def prepare_socp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_CONTROL,
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
         key="u",
         weight=1e-2 / (2 * n_shooting),
-        node=Node.ALL_SHOOTING,
         quadratic=True,
     )
 
