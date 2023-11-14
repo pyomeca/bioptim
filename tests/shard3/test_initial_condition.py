@@ -198,7 +198,7 @@ def test_initial_guess_custom():
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_simulate_from_initial_multiple_shoot(phase_dynamics):
-    from bioptim.examples.getting_started import example_save_and_load as ocp_module
+    from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -244,7 +244,7 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_simulate_from_initial_single_shoot(phase_dynamics):
     # Load pendulum
-    from bioptim.examples.getting_started import example_save_and_load as ocp_module
+    from bioptim.examples.getting_started import pendulum as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
