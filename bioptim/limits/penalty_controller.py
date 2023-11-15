@@ -384,3 +384,10 @@ class PenaltyController:
                 parent_list=qdot_parent_list,
             )
             return qdot
+
+    @property
+    def tau(self) -> OptimizationVariable:
+        if "tau" in self.controls:
+            return self.controls["tau"]
+        elif "tau_joints" in self.controls:
+            return self.controls["tau_joints"]

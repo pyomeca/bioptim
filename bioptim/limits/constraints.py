@@ -316,13 +316,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             bound = controller.model.tau_max(controller.q.mx, controller.qdot.mx)
             min_bound = controller.mx_to_cx(
                 "min_bound",
-                controller.controls["tau"].mapping.to_first.map(bound[1]),
+                controller.tau.mapping.to_first.map(bound[1]),
                 controller.q,
                 controller.qdot,
             )
             max_bound = controller.mx_to_cx(
                 "max_bound",
-                controller.controls["tau"].mapping.to_first.map(bound[0]),
+                controller.tau.mapping.to_first.map(bound[0]),
                 controller.q,
                 controller.qdot,
             )
@@ -331,7 +331,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)
 
             value = vertcat(
-                controller.controls["tau"].cx_start + min_bound, controller.controls["tau"].cx_start - max_bound
+                controller.tau.cx_start + min_bound, controller.tau.cx_start - max_bound
             )
 
             if constraint.rows is None:
@@ -407,7 +407,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             q = controller.q.mx
             qdot = controller.qdot.mx
             passive_torque = controller.model.passive_joint_torque(q, qdot)
-            tau = controller.states["tau"].mx if "tau" in controller.states else controller.controls["tau"].mx
+            tau = controller.states["tau"].mx if "tau" in controller.states else controller.tau.mx
             tau = tau + passive_torque if with_passive_torque else tau
             tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
@@ -455,7 +455,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             q = controller.q.mx
             qdot = controller.qdot.mx
-            tau = controller.states["tau"].mx if "tau" in controller.states else controller.controls["tau"].mx
+            tau = controller.states["tau"].mx if "tau" in controller.states else controller.tau.mx
             qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
             passive_torque = controller.model.passive_joint_torque(q, qdot)
             tau = tau + passive_torque if with_passive_torque else tau
