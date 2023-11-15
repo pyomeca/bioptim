@@ -245,12 +245,13 @@ class Solution:
         tag = repo.git.describe("--tags")
         bioptim_version = repo.git.version_info
         date = repo.git.log("-1", "--format=%cd")
-        version_dic = {"commit_id": commit_id,
-                       "date": date,
-                       "branch": branch,
-                       "tag": tag,
-                       "bioptim_version": bioptim_version,
-                       }
+        version_dic = {
+            "commit_id": commit_id,
+            "date": date,
+            "branch": branch,
+            "tag": tag,
+            "bioptim_version": bioptim_version,
+        }
         return version_dic
 
     @classmethod
