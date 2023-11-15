@@ -277,7 +277,7 @@ class DynamicsFunctions:
         with_friction: bool,
     ) -> DynamicsEvaluation:
         """
-        Forward dynamics subject to motor and sensory noise driven by joint torques, optional external forces can be declared.
+        Forward dynamics subject to motor and sensory noise driven by torques, optional external forces can be declared.
 
         Parameters
         ----------
@@ -329,6 +329,82 @@ class DynamicsFunctions:
         dxdt = MX(nlp.states.shape, ddq.shape[1])
         dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[nlp.states["qdot"].index, :] = ddq
+
+        return DynamicsEvaluation(dxdt=dxdt, defects=None)
+
+
+    @staticmethod
+    def stochastic_torque_driven_free_floating_base(
+        time: MX.sym,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        stochastic_variables: MX.sym,
+        nlp,
+        with_contact: bool,
+        with_friction: bool,
+    ) -> DynamicsEvaluation:
+        """
+        Forward dynamics subject to motor and sensory noise driven by joint torques, optional external forces can be declared.
+
+        Parameters
+        ----------
+        time: MX.sym
+            The time
+        states: MX.sym
+            The state of the system
+        controls: MX.sym
+            The controls of the system
+        parameters: MX.sym
+            The parameters of the system
+        stochastic_variables: MX.sym
+            The stochastic variables of the system
+        nlp: NonLinearProgram
+            The definition of the system
+        with_contact: bool
+            If the dynamic with contact should be used
+        with_friction: bool
+            If the dynamic with friction should be used
+
+        Returns
+        ----------
+        DynamicsEvaluation
+            The derivative of the states and the defects of the implicit dynamics
+        """
+
+        q_roots = DynamicsFunctions.get(nlp.states["q_roots"], states)
+        q_joints = DynamicsFunctions.get(nlp.states["q_joints"], states)
+        qdot_roots = DynamicsFunctions.get(nlp.states["qdot_roots"], states)
+        qdot_joints = DynamicsFunctions.get(nlp.states["qdot_joints"], states)
+        tau_joints = DynamicsFunctions.get(nlp.controls["tau_joints"], controls)
+
+        q_full = vertcat(q_roots, q_joints)
+        qdot_full = vertcat(qdot_roots, qdot_joints)
+        n_q = q_full.shape[0]
+
+        ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
+        k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
+        k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
+
+        sensory_input = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
+
+        mapped_motor_noise = nlp.model.motor_noise_sym
+        mapped_sensory_feedback_torque = nlp.model.compute_torques_from_noise_and_feedback(k_matrix, sensory_input, ref)
+        if "tau_joints" in nlp.model.motor_noise_mapping.keys():
+            mapped_motor_noise = nlp.model.motor_noise_mapping["tau_joints"].to_second.map(nlp.model.motor_noise_sym)
+            mapped_sensory_feedback_torque = nlp.model.motor_noise_mapping["tau_joints"].to_second.map(
+                mapped_sensory_feedback_torque
+            )
+        tau_joints += mapped_motor_noise + mapped_sensory_feedback_torque
+        tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_full if with_friction else tau_joints
+
+        tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
+
+        dq = DynamicsFunctions.compute_qdot(nlp, q_full, qdot_full)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full, tau_full, with_contact)
+        dxdt = MX(nlp.states.shape, ddq.shape[1])
+        dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
+        dxdt[n_q:, :] = ddq
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
