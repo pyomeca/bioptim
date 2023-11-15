@@ -53,6 +53,7 @@ def _var_mapping(key, range_for_mapping, mapping: BiMapping = None) -> dict:
         mapping[key] = BiMapping(range_for_mapping, range_for_mapping)
     return mapping
 
+
 def bounds_from_ranges(model, key: str, mapping: BiMapping | BiMappingList = None) -> Bounds:
     """
     Generate bounds from the ranges of the model
