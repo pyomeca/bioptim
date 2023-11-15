@@ -330,9 +330,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)
 
-            value = vertcat(
-                controller.tau.cx_start + min_bound, controller.tau.cx_start - max_bound
-            )
+            value = vertcat(controller.tau.cx_start + min_bound, controller.tau.cx_start - max_bound)
 
             if constraint.rows is None:
                 n_rows = value.shape[0] // 2
