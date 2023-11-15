@@ -371,10 +371,10 @@ def test_biorbd_model():
         np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]),
     )
 
-    q_mapping = models._q_mapping(variable_mappings)
-    qdot_mapping = models._q_mapping(variable_mappings)
-    qddot_mapping = models._q_mapping(variable_mappings)
-    tau_mapping = models._q_mapping(variable_mappings)
+    q_mapping = models._var_mapping("q", None, variable_mappings)
+    qdot_mapping = models._var_mapping("qdot", None, variable_mappings)
+    qddot_mapping = models._var_mapping("qddot", None, variable_mappings)
+    tau_mapping = models._var_mapping("tau", None, variable_mappings)
 
     np.testing.assert_equal(q_mapping["q"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
     np.testing.assert_equal(qdot_mapping["qdot"].to_first.map_idx, [0, 1, 2, 3, 4, 5])

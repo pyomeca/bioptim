@@ -723,8 +723,8 @@ class MultiBiorbdModel:
     def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
 
-    def _var_mapping(self, mapping: BiMapping = None) -> dict:
-        return _var_mapping(self, mapping)
+    def _var_mapping(self, key: str, range_for_mapping: int | list | tuple | range, mapping: BiMapping = None) -> dict:
+        return _var_mapping(key, range_for_mapping, mapping)
 
     def lagrangian(self):
         raise NotImplementedError("lagrangian is not implemented yet for MultiBiorbdModel")
