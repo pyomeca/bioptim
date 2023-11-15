@@ -7,3 +7,4 @@ dependencies:
 - bioviz
 - python-graphviz
 - pyqtgraph
+- gitpython
