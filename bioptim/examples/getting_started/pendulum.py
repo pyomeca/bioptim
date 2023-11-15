@@ -146,6 +146,11 @@ def main():
     sol.print_cost()
     sol.animate(n_frames=100)
 
+    # --- Save the solution --- #
+    import pickle
+    with open("pendulum.pkl", 'wb') as file:
+        del sol.ocp
+        pickle.dump(sol, file)
 
 if __name__ == "__main__":
     main()
