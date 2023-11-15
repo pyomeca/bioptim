@@ -3,7 +3,6 @@ from casadi import horzcat, vertcat, MX, SX
 from ..misc.enums import RigidBodyDynamics, DefectType
 from .fatigue.fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
-from ..optimization.non_linear_program import NonLinearProgram
 from .dynamics_evaluation import DynamicsEvaluation
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..misc.mapping import BiMapping
@@ -333,7 +332,7 @@ class DynamicsFunctions:
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
     @staticmethod
-    def __get_fatigable_tau(nlp: NonLinearProgram, states: MX, controls: MX, fatigue: FatigueList) -> MX:
+    def __get_fatigable_tau(nlp, states: MX, controls: MX, fatigue: FatigueList) -> MX:
         """
         Apply the forward dynamics including (or not) the torque fatigue
 
@@ -948,7 +947,7 @@ class DynamicsFunctions:
                 param.function[0](nlp.model, parameters[param.index], **param.params)
 
     @staticmethod
-    def compute_qdot(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX):
+    def compute_qdot(nlp, q: MX | SX, qdot: MX | SX):
         """
         Easy accessor to derivative of q
 
@@ -971,7 +970,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def forward_dynamics(
-        nlp: NonLinearProgram,
+        nlp,
         q: MX | SX,
         qdot: MX | SX,
         tau: MX | SX,
@@ -1027,7 +1026,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def inverse_dynamics(
-        nlp: NonLinearProgram,
+        nlp,
         q: MX | SX,
         qdot: MX | SX,
         qddot: MX | SX,
@@ -1074,7 +1073,7 @@ class DynamicsFunctions:
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod
-    def compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: MX | SX):
+    def compute_muscle_dot(nlp, muscle_excitations: MX | SX):
         """
         Easy accessor to derivative of muscle activations
 
@@ -1094,7 +1093,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def compute_tau_from_muscle(
-        nlp: NonLinearProgram,
+        nlp,
         q: MX | SX,
         qdot: MX | SX,
         muscle_activations: MX | SX,
@@ -1136,7 +1135,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         stochastic_variables: MX.sym,
-        nlp: NonLinearProgram,
+        nlp,
         external_forces: list = None,
     ) -> DynamicsEvaluation:
         """
