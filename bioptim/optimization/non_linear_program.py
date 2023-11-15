@@ -185,6 +185,7 @@ class NonLinearProgram:
         self.S_scaled = None
         self.s_scaling = None
         self.phase_dynamics = phase_dynamics
+        self.time_index = None
         self.time_cx = None
         self.time_mx = None
         self.dt = None

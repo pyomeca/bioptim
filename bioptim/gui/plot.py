@@ -166,8 +166,6 @@ class PlotOcp:
         The times at the end of each phase
     t_integrated: list[float]
         The time vector integrated
-    t_idx_to_optimize: list[int]
-        The index of the phases where time is a variable to optimize (non constant)
     top_margin: float
         The space between the top of the screen and the figure when automatically rearrange
     variable_sizes: list[int]
@@ -249,10 +247,6 @@ class PlotOcp:
         self.integrator = integrator
 
         self.tf = list(self.ocp.phase_time)
-        self.t_idx_to_optimize = []
-        for i, nlp in enumerate(self.ocp.nlp):
-            if isinstance(nlp.tf, self.ocp.cx):
-                self.t_idx_to_optimize.append(i)
         self.__update_time_vector()
 
         self.axes = {}
@@ -689,7 +683,6 @@ class PlotOcp:
         if all([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]):
             # no need to integrate when using direct collocation
             data_states = sol.states
-            data_time = sol._generate_time()
         elif all([nlp.ode_solver.is_direct_shooting for nlp in self.ocp.nlp]):
             integrated = sol.integrate(
                 shooting_type=self.shooting_type,
@@ -697,7 +690,6 @@ class PlotOcp:
                 integrator=self.integrator,
             )
             data_states = integrated.states
-            data_time = integrated._time_vector
         else:
             raise NotImplementedError("Graphs are not implemented when mixing direct collocation and direct shooting")
 
@@ -706,12 +698,9 @@ class PlotOcp:
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
         data_stochastic = sol.stochastic_variables
 
+        dt_phases = np.array(self.ocp.time_phase_mapping.to_second.map(sol.vector[self.ocp.time_parameter.index])).tolist()[0]
+        self.tf = [dt * nlp.ns for dt, nlp in zip(dt_phases, self.ocp.nlp)]
         for _ in self.ocp.nlp:
-            if self.t_idx_to_optimize:
-                data_params["time"] = self.ocp.time_phase_mapping.to_second.map(data_params["time"])
-                for i_in_time, i_in_tf in enumerate(self.t_idx_to_optimize):
-                    self.tf[i_in_tf] = float(data_params["time"][i_in_time, 0])
-
             self.__update_xdata()
 
         for i, nlp in enumerate(self.ocp.nlp):

@@ -109,9 +109,6 @@ class Integrator:
     def tf(self):
         raise NotImplementedError("This method should be implemented for a given integrator")
 
-    def get_t(self, t0: float | SX | MX) -> np.ndarray | SX | MX:
-        return vertcat(t0, self.dt_sym)
-
     def get_u(self, u: np.ndarray, t: float) -> np.ndarray:
         """
         Get the control at a given time
@@ -230,6 +227,7 @@ class RK(Integrator):
         """
         super(RK, self).__init__(ode, ode_opt)
         self.n_step = ode_opt["number_of_finite_elements"]
+        self.step_time = self.t_span_sym[1] / self.n_step
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
         """
@@ -272,7 +270,7 @@ class RK(Integrator):
         s = stochastic_variables
 
         for i in range(1, self.n_step + 1):
-            t = self.t_span_sym[0] + self.t_span_sym[1] / self.n_step * (i - 1)
+            t = self.t_span_sym[0] + self.step_time * (i - 1)
             x[:, i] = self.next_x(t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -344,7 +342,6 @@ class RK4(RK):
         self._finish_init()
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
-        t0 = self.t_span_sym[0]
         h = self.t_span_sym[1] / self.n_step
 
         k1 = self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]

@@ -247,7 +247,7 @@ class Solution:
         """
 
         if not isinstance(_sol, dict):
-            raise ValueError("The _sol entry should be a dictionnary")
+            raise ValueError("The _sol entry should be a dictionary")
 
         is_ipopt = _sol["solver"] == SolverType.IPOPT.value
 

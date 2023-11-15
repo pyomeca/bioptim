@@ -136,7 +136,7 @@ class OptimizationVectorHelper:
             u_scaled += nlp.U_scaled
             s_scaled += nlp.S_scaled
             t_scaled += [nlp.dt]
-        vector = vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled, *t_scaled)
+        vector = vertcat(*t_scaled, *x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled)
         return vector
 
     @staticmethod
@@ -150,6 +150,14 @@ class OptimizationVectorHelper:
         """
         v_bounds_min = np.ndarray((0, 1))
         v_bounds_max = np.ndarray((0, 1))
+
+        # For time
+        for i, nlp in enumerate(ocp.nlp):
+            key = f"dt_phase_{i}"
+            if key not in nlp.dt_bound.keys():
+                continue
+            v_bounds_min = np.concatenate((v_bounds_min, nlp.dt_bound[key].min))
+            v_bounds_max = np.concatenate((v_bounds_max, nlp.dt_bound[key].max))
 
         # For states
         for i_phase in range(ocp.n_phases):
@@ -272,14 +280,6 @@ class OptimizationVectorHelper:
                 v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
                 v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
-        # For time
-        for i, nlp in enumerate(ocp.nlp):
-            key = f"dt_phase_{i}"
-            if key not in nlp.dt_bound.keys():
-                continue
-            v_bounds_min = np.concatenate((v_bounds_min, nlp.dt_bound[key].min))
-            v_bounds_max = np.concatenate((v_bounds_max, nlp.dt_bound[key].max))
-
         return v_bounds_min, v_bounds_max
 
     @staticmethod
@@ -292,6 +292,13 @@ class OptimizationVectorHelper:
         The vector of all bounds (min, max)
         """
         v_init = np.ndarray((0, 1))
+
+        # For time
+        for i, nlp in enumerate(ocp.nlp):
+            key = f"dt_phase_{i}"
+            if key not in nlp.dt_initial_guess.keys():
+                continue
+            v_init = np.concatenate((v_init, nlp.dt_initial_guess[key].init))
 
         # For states
         for i_phase in range(len(ocp.nlp)):
@@ -395,13 +402,6 @@ class OptimizationVectorHelper:
 
                 v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
 
-        # For time
-        for i, nlp in enumerate(ocp.nlp):
-            key = f"dt_phase_{i}"
-            if key not in nlp.dt_initial_guess.keys():
-                continue
-            v_init = np.concatenate((v_init, nlp.dt_initial_guess[key].init))
-
         return v_init
 
     @staticmethod
@@ -419,23 +419,10 @@ class OptimizationVectorHelper:
         The phase time
         """
 
-        data_time_optimized = []
-        if "time" in ocp.parameters.names:
-            offset = data.shape[0] - ocp.parameters.shape
-            for param in ocp.parameters:
-                if param.name == "time":
-                    data_time_optimized = list(np.array(data[[offset + i for i in param.index], :])[:, 0])
-                    break
+        data_time_optimized = np.array(data[ocp.time_parameter.index]).tolist()[0]
 
         # Starts at zero
-        phase_time = [0] + [nlp.tf for nlp in ocp.nlp]
-        if data_time_optimized:
-            cmp = 0
-            for i in range(len(phase_time)):
-                if not isinstance(phase_time[i], (int, float)):
-                    phase_time[i] = data_time_optimized[ocp.time_phase_mapping.to_second.map_idx[cmp]]
-                    cmp += 1
-        return phase_time
+        return [0] + [data_time_optimized[i] * nlp.ns for i, nlp in enumerate(ocp.nlp)]
 
     @staticmethod
     def to_dictionaries(ocp, data: np.ndarray | DM) -> tuple:
@@ -488,7 +475,7 @@ class OptimizationVectorHelper:
         data_parameters = {key: np.ndarray((0, 1)) for key in ocp.parameters.keys()}
 
         # For states
-        offset = 0
+        offset = len(ocp.time_parameter.index)
         p_idx = 0
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]

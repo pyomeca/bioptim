@@ -1798,6 +1798,10 @@ class OptimalControlProgram:
                 _has_penalty = [False] * ocp.n_phases
 
             for i, penalty_functions_phase in enumerate(penalty_functions):
+                key = f"dt_phase_{i}"
+                if key not in dt_bounds.keys():
+                    # This means there is a mapping on this value
+                    continue
                 for pen_fun in penalty_functions_phase:
                     if not pen_fun:
                         continue
@@ -1810,15 +1814,14 @@ class OptimalControlProgram:
                             raise RuntimeError("Time constraint/objective cannot be declared more than once per phase")
                         _has_penalty[i] = True
 
-                        if i in self.time_phase_mapping.to_first.map_idx:
-                            if pen_fun.type.get_type() == ConstraintFunction:
-                                _min = pen_fun.min_bound if pen_fun.min_bound else 0
-                                _max = pen_fun.max_bound if pen_fun.max_bound else inf
-                            else:
-                                _min = pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0
-                                _max = pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf
-                            dt_bounds[i].min = _min
-                            dt_bounds[i].max = _max
+                        if pen_fun.type.get_type() == ConstraintFunction:
+                            _min = pen_fun.min_bound if pen_fun.min_bound else 0
+                            _max = pen_fun.max_bound if pen_fun.max_bound else inf
+                        else:
+                            _min = pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0
+                            _max = pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf
+                        dt_bounds[key].min[0][0] = _min / self.nlp[i].ns
+                        dt_bounds[key].max[0][0] = _max / self.nlp[i].ns
 
             return _has_penalty
 
@@ -1843,20 +1846,20 @@ class OptimalControlProgram:
         define_parameters_phase_time(self, constraints, initial_time_guess, time_min, time_max, _has_penalty=has_penalty)
 
         # Add to the nlp
+        NLP.add(self, "time_index", self.time_phase_mapping.to_first.map_idx, True)
         NLP.add(self, "time_cx", self.cx.sym("time", 1, 1), True)
         NLP.add(self, "time_mx", MX.sym("time", 1, 1), True)
         NLP.add(self, "dt", dt_cx, False)
-        NLP.add(self, "tf", [nlp.dt * nlp.ns for nlp in self.nlp], False)
+        NLP.add(self, "tf", [nlp.dt * max(nlp.ns, 1) for nlp in self.nlp], False)
         NLP.add(self, "dt_mx", dt_mx, False)
         NLP.add(self, "dt_bound", dt_bounds, True)
         NLP.add(self, "dt_initial_guess", dt_init, True)
-        # NLP.add(self, "tf", [self.nlp[i].dt * max(self.nlp[i].ns, 1) for i in range(self.n_phases)], False)
-        # NLP.add(self, "t0", [0] + [nlp.tf for i, nlp in enumerate(self.nlp) if i != len(self.nlp) - 1], False)
 
         # Otherwise, add the time to the Parameters
         params = vertcat(*set(dt_cx))
         self.time_parameter = Parameter(function=lambda model, values: None, name="dt", size=params.shape[0], allow_reserved_name=True, cx=self.cx)
         self.time_parameter.cx = params
+        self.time_parameter.index = [nlp.time_index for nlp in self.nlp]
 
         self.time_initial_guess = InitialGuess("time", [i / nlp.ns for i, nlp in zip(initial_time_guess, self.nlp)], phase=0)
         self.time_bounds = Bounds(

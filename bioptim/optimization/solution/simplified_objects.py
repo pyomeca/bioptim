@@ -102,8 +102,6 @@ class SimplifiedNLP:
 
     Attributes
     ----------
-    tf: float
-        The time of the phase
     phase_idx: int
         The index of the phase
     use_states_from_phase_idx: int
@@ -162,7 +160,7 @@ class SimplifiedNLP:
             A reference to the NonLinearProgram to strip
         """
 
-        self.tf = nlp.tf
+        self.time_index = nlp.time_index
         self.phase_idx = nlp.phase_idx
         self.use_states_from_phase_idx = nlp.use_states_from_phase_idx
         self.use_controls_from_phase_idx = nlp.use_controls_from_phase_idx
@@ -290,6 +288,7 @@ class SimplifiedNLP:
 
     def _generate_time(
         self,
+        dt: float,
         time_phase: np.ndarray,
         keep_intermediate_points: bool = None,
         shooting_type: Shooting = None,
@@ -318,7 +317,7 @@ class SimplifiedNLP:
             duplicate_collocation_starting_point = self.ode_solver.duplicate_collocation_starting_point
 
         step_times = self._define_step_times(
-            dynamics_step_time=self.dynamics[0].step_time,
+            dynamics_step_time=dt,
             ode_solver_steps=self.ode_solver.steps,
             is_direct_collocation=is_direct_collocation,
             duplicate_collocation_starting_point=duplicate_collocation_starting_point,
@@ -331,7 +330,7 @@ class SimplifiedNLP:
             # and not the end of each interval
             step_times = step_times[:-1]
 
-        dt_ns = time_phase[self.phase_idx + 1] / self.ns
+        dt_ns = float(time_phase[self.phase_idx + 1] / self.ns)
         time = [(step_times * dt_ns + i * dt_ns).tolist() for i in range(self.ns)]
 
         if shooting_type == Shooting.MULTIPLE:
@@ -351,7 +350,7 @@ class SimplifiedNLP:
 
     @staticmethod
     def _define_step_times(
-        dynamics_step_time: list,
+        dynamics_step_time: float | list,
         ode_solver_steps: int,
         keep_intermediate_points: bool = None,
         continuous: bool = True,
@@ -566,7 +565,7 @@ class SimplifiedOCP:
 
         time_vector = []
         for p, nlp in enumerate(self.nlp):
-            phase_time_vector = nlp._generate_time(time_phase, keep_intermediate_points, shooting_type)
+            phase_time_vector = nlp._generate_time(time_phase[p] / nlp.ns, time_phase, keep_intermediate_points, shooting_type)
             time_vector.append(phase_time_vector)
 
         if merge_phases:
