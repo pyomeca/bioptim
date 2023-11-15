@@ -651,7 +651,7 @@ class PenaltyOption(OptionGeneric):
         node = controller.node_index
         param_cx = controller.parameters.cx
 
-        time_cx = controller.time.cx
+        time_cx = vertcat(controller.time.cx, controller.get_nlp.dt)
 
         # Sanity check on outputs
         if len(self.function) <= node:

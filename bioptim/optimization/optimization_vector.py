@@ -127,6 +127,7 @@ class OptimizationVectorHelper:
         x_scaled = []
         u_scaled = []
         s_scaled = []
+        t_scaled = []
         for nlp in ocp.nlp:
             if nlp.ode_solver.is_direct_collocation:
                 x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
@@ -134,7 +135,8 @@ class OptimizationVectorHelper:
                 x_scaled += nlp.X_scaled
             u_scaled += nlp.U_scaled
             s_scaled += nlp.S_scaled
-        vector = vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled)
+            t_scaled += [nlp.dt]
+        vector = vertcat(*x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled, *t_scaled)
         return vector
 
     @staticmethod
@@ -270,6 +272,14 @@ class OptimizationVectorHelper:
                 v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
                 v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
+        # For time
+        for i, nlp in enumerate(ocp.nlp):
+            key = f"dt_phase_{i}"
+            if key not in nlp.dt_bound.keys():
+                continue
+            v_bounds_min = np.concatenate((v_bounds_min, nlp.dt_bound[key].min))
+            v_bounds_max = np.concatenate((v_bounds_max, nlp.dt_bound[key].max))
+
         return v_bounds_min, v_bounds_max
 
     @staticmethod
@@ -384,6 +394,13 @@ class OptimizationVectorHelper:
                     collapsed_values[nlp.stochastic_variables[key].index, 0] = value
 
                 v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
+
+        # For time
+        for i, nlp in enumerate(ocp.nlp):
+            key = f"dt_phase_{i}"
+            if key not in nlp.dt_initial_guess.keys():
+                continue
+            v_init = np.concatenate((v_init, nlp.dt_initial_guess[key].init))
 
         return v_init
 

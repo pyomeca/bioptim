@@ -277,13 +277,13 @@ class ParameterList(UniquePerProblemOptionList):
             Any argument that should be passed to the user defined functions
         """
 
-        if not allow_reserved_name and parameter_name == "time":
-            raise KeyError("It is not possible to declare a parameter with the key 'time' as it is a reserved name")
+        if not allow_reserved_name and parameter_name == "dt":
+            raise KeyError("It is not possible to declare a parameter with the key 'dt' as it is a reserved name")
 
         if isinstance(parameter_name, Parameter):
             # case it is not a parameter name but trying to copy another parameter
             self.copy(parameter_name)
-            if parameter_name.name != "time":
+            if parameter_name.name != "dt":
                 self[parameter_name.name].declare_symbolic(self.cx_type)
         else:
             if "phase" in extra_arguments:

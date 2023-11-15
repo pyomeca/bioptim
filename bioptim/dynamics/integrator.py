@@ -7,7 +7,6 @@ from casadi import (
     rootfinder,
     MX,
     SX,
-    symvar,
 )
 import numpy as np
 
@@ -45,10 +44,6 @@ class Integrator:
         The implicit dynamic function which provides the defects of the dynamics
     control_type: ControlType
         The type of the controls
-    step_time: float
-        The time of the full integration
-    h: float
-        The time of the integration step
     function = casadi.Function
         The CasADi graph of the integration
 
@@ -78,10 +73,9 @@ class Integrator:
         """
 
         self.model = ode_opt["model"]
-        self.time_integration_grid = ode_opt["time_integration_grid"]
-        self.tf = ode_opt["tf"]
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
+        self.t_span_sym = ode["t_span"]
         self.x_sym = ode["x_scaled"]
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
@@ -91,8 +85,6 @@ class Integrator:
         self.implicit_fun = ode["implicit_ode"]
         self.defects_type = ode_opt["defects_type"]
         self.control_type = ode_opt["control_type"]
-        self.step_time = ode_opt["tf"] - ode_opt["t0"]
-        self.h = self.step_time
         self.function = None
         self.allow_free_variables = ode_opt["allow_free_variables"]
 
@@ -112,6 +104,13 @@ class Integrator:
         The multithreaded CasADi graph of the integration
         """
         return self.function.map(*args, **kwargs)
+
+    @property
+    def tf(self):
+        raise NotImplementedError("This method should be implemented for a given integrator")
+
+    def get_t(self, t0: float | SX | MX) -> np.ndarray | SX | MX:
+        return vertcat(t0, self.dt_sym)
 
     def get_u(self, u: np.ndarray, t: float) -> np.ndarray:
         """
@@ -141,8 +140,7 @@ class Integrator:
 
     def dxdt(
         self,
-        h: float,
-        time: float | MX | SX,
+        t_span: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -154,9 +152,7 @@ class Integrator:
 
         Parameters
         ----------
-        h: float
-            The time step
-        time: float | MX | SX
+        t_span: float | MX | SX
             The time of the system
         states: MX | SX
             The states of the system
@@ -184,21 +180,21 @@ class Integrator:
         self.function = Function(
             "integrator",
             [
+                self.t_span_sym,
                 self.x_sym,
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
             ],
             self.dxdt(
-                h=self.h,
-                time=self.time_integration_grid[0],
+                t_span=self.t_span_sym,
                 states=self.x_sym,
                 controls=self.u_sym,
                 params=self.param_sym,
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "u", "p", "s"],
+            ["t_span", "x0", "u", "p", "s"],
             ["xf", "xall"],
             {"allow_free": self.allow_free_variables},
         )
@@ -212,8 +208,6 @@ class RK(Integrator):
     ----------
     n_step: int
         Number of finite element during the integration
-    h_norm: float
-        Normalized time step
     h: float
         Length of steps
 
@@ -236,17 +230,13 @@ class RK(Integrator):
         """
         super(RK, self).__init__(ode, ode_opt)
         self.n_step = ode_opt["number_of_finite_elements"]
-        self.h_norm = 1 / self.n_step
-        self.h = self.step_time * self.h_norm
 
-    def next_x(self, h: float, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
         """
         Compute the next integrated state (abstract)
 
         Parameters
         ----------
-        h: float
-            The time step
         t0: float | MX | SX
             The initial time of the integration
         x_prev: MX | SX
@@ -267,38 +257,14 @@ class RK(Integrator):
 
     def dxdt(
         self,
-        h: float,
-        time: float | MX | SX,
+        t_span: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
     ) -> tuple:
-        """
-        The dynamics of the system
 
-        Parameters
-        ----------
-        h: float
-            The time step
-        time: float | MX | SX
-            The time of the system
-        states: MX | SX
-            The states of the system
-        controls: MX | SX
-            The controls of the system
-        params: MX | SX
-            The parameters of the system
-        param_scaling
-            The parameters scaling factor
-        stochastic_variables: MX | SX
-            The stochastic variables of the system
-
-        Returns
-        -------
-        The derivative of the states
-        """
         u = controls
         x = self.cx(states.shape[0], self.n_step + 1)
         p = params * param_scaling
@@ -306,8 +272,8 @@ class RK(Integrator):
         s = stochastic_variables
 
         for i in range(1, self.n_step + 1):
-            t = self.time_integration_grid[i - 1]
-            x[:, i] = self.next_x(h, t, x[:, i - 1], u, p, s)
+            t = self.t_span_sym[0] + self.t_span_sym[1] / self.n_step * (i - 1)
+            x[:, i] = self.next_x(t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
 
@@ -317,11 +283,6 @@ class RK(Integrator):
 class RK1(RK):
     """
     Numerical integration using first order Runge-Kutta 1 Method (Forward Euler Method).
-
-    Methods
-    -------
-    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
-        Compute the next integrated state (abstract)
     """
 
     def __init__(self, ode: dict, ode_opt: dict):
@@ -337,18 +298,13 @@ class RK1(RK):
         super(RK1, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
         return x_prev + h * self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
 
 
 class RK2(RK):
     """
     Numerical integration using second order Runge-Kutta Method (Midpoint Method).
-
-    Methods
-    -------
-    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
-        Compute the next integrated state (abstract)
     """
 
     def __init__(self, ode: dict, ode_opt: dict):
@@ -364,7 +320,7 @@ class RK2(RK):
         super(RK2, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         k1 = self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
         return x_prev + h * self.fun(t0, x_prev + h / 2 * k1, self.get_u(u, t0 + self.h / 2), p, s)[:, self.idx]
 
@@ -372,11 +328,6 @@ class RK2(RK):
 class RK4(RK):
     """
     Numerical integration using fourth order Runge-Kutta method.
-
-    Methods
-    -------
-    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
-        Compute the next integrated state (abstract)
     """
 
     def __init__(self, ode: dict, ode_opt: dict):
@@ -392,22 +343,20 @@ class RK4(RK):
         super(RK4, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
+        t0 = self.t_span_sym[0]
+        h = self.t_span_sym[1] / self.n_step
+
         k1 = self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
-        k2 = self.fun(t0 + self.h / 2, x_prev + h / 2 * k1, self.get_u(u, t0 + self.h / 2), p, s)[:, self.idx]
-        k3 = self.fun(t0 + self.h / 2, x_prev + h / 2 * k2, self.get_u(u, t0 + self.h / 2), p, s)[:, self.idx]
-        k4 = self.fun(t0 + self.h, x_prev + h * k3, self.get_u(u, t0 + self.h), p, s)[:, self.idx]
+        k2 = self.fun(t0 + h / 2, x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, s)[:, self.idx]
+        k3 = self.fun(t0 + h / 2, x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, s)[:, self.idx]
+        k4 = self.fun(t0 + h, x_prev + h * k3, self.get_u(u, t0 + h), p, s)[:, self.idx]
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
 class RK8(RK4):
     """
     Numerical integration using eighth order Runge-Kutta method.
-
-    Methods
-    -------
-    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
-        Compute the next integrated state (abstract)
     """
 
     def __init__(self, ode: dict, ode_opt: dict):
@@ -423,7 +372,7 @@ class RK8(RK4):
         super(RK8, self).__init__(ode, ode_opt)
         self._finish_init()
 
-    def next_x(self, h: float, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         k1 = self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
         k2 = self.fun(t0, x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + self.h * (4 / 27)), p, s)[:, self.idx]
         k3 = self.fun(t0, x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + self.h * (2 / 9)), p, s)[:, self.idx]
@@ -470,13 +419,6 @@ class TRAPEZOIDAL(Integrator):
     Not that it is only possible to have one step using trapezoidal.
     It behaves like an order 1 collocation method meaning that the integration is implicit (but since the polynomial is
     of order 1, it is not possible to put a constraint on the slopes).
-
-    Methods
-    -------
-    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, x_next: MX | SX, u: MX | SX, u_next: MX | SX, p: MX | SX, s: MX | SX)
-        Compute the next integrated state
-    dxdt(self, h: float, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
-        The dynamics of the system
     """
 
     def __init__(self, ode: dict, ode_opt: dict):
@@ -494,7 +436,6 @@ class TRAPEZOIDAL(Integrator):
 
     def next_x(
         self,
-        h: float,
         t0: float | MX | SX,
         x_prev: MX | SX,
         x_next: MX | SX,
@@ -504,72 +445,19 @@ class TRAPEZOIDAL(Integrator):
         s_prev: MX | SX,
         s_next: MX | SX,
     ):
-        """
-        Compute the next integrated state
-
-        Parameters
-        ----------
-        h: float
-            The time step
-        t0: float | MX | SX
-            The initial time of the integration
-        x_prev: MX | SX
-            The current state of the system
-        x_next: MX | SX
-            The state of the system at the next shooting node
-        u_prev: MX | SX
-            The current control of the system
-        u_next: MX | SX
-            The control of the system at the next shooting node
-        p: MX | SX
-            The parameters of the system
-        s_prev: MX | SX
-            The current stochastic variables of the system
-        s_next: MX | SX
-            The stochastic variables of the system at the next shooting node
-
-        Returns
-        -------
-        The next integrate states
-        """
         dx = self.fun(t0, x_prev, u_prev, p, s_prev)[:, self.idx]
         dx_next = self.fun(t0, x_next, u_next, p, s_next)[:, self.idx]
         return x_prev + (dx + dx_next) * h / 2
 
     def dxdt(
         self,
-        h: float,
-        time: float | MX | SX,
+        t_span: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
     ) -> tuple:
-        """
-        The dynamics of the system
-
-        Parameters
-        ----------
-        h: float
-            The time step
-        time: float | MX | SX
-            The time of the system
-        states: MX | SX
-            The states of the system
-        controls: MX | SX
-            The controls of the system
-        params: MX | SX
-            The parameters of the system
-        param_scaling
-            The parameters scaling factor
-        stochastic_variables: MX | SX
-            The stochastic variables of the system
-
-        Returns
-        -------
-        The derivative of the states
-        """
 
         x_prev = self.cx(states.shape[0], 2)
         p = params * param_scaling
@@ -587,7 +475,6 @@ class TRAPEZOIDAL(Integrator):
         x_prev[:, 0] = states[:, 0]
 
         x_prev[:, 1] = self.next_x(
-            h,
             time,
             x_prev[:, 0],
             states_next,
@@ -611,6 +498,7 @@ class TRAPEZOIDAL(Integrator):
         self.function = Function(
             "integrator",
             [
+                self.time_sym,
                 self.x_sym,
                 self.u_sym,
                 self.param_sym,
@@ -625,7 +513,7 @@ class TRAPEZOIDAL(Integrator):
                 self.param_scaling,
                 self.s_sym,
             ),
-            ["x0", "u", "p", "s"],
+            ["t", "x0", "u", "p", "s"],
             ["xf", "xall"],
             {"allow_free": self.allow_free_variables},
         )
@@ -644,8 +532,6 @@ class COLLOCATION(Integrator):
     -------
     get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
-        The dynamics of the system
     """
 
     def __init__(self, ode: dict, ode_opt: dict):
@@ -729,45 +615,13 @@ class COLLOCATION(Integrator):
 
     def dxdt(
         self,
-        h: float,
-        time: float | MX | SX,
+        t_span: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
     ) -> tuple:
-        """
-        The dynamics of the system
-
-        Parameters
-        ----------
-        h: float
-            The time step
-        time: float | MX | SX
-            The time of the system
-        states: MX | SX
-            The states of the system in the following format
-            add_initial_collocation_point = True -> [cx_start, cx_start, cx_intermediate_list(polynomial_degree+1)]
-            add_initial_collocation_point = True -> [cx_start, cx_intermediate_list(polynomial_degree+2)]
-        controls: MX | SX
-            The controls of the system
-        params: MX | SX
-            The parameters of the system
-        param_scaling: MX | SX
-            The parameters scaling of the system
-        stochastic_variables: MX | SX
-            The stochastic variables of the system
-
-        Returns
-        -------
-        states_end: MX | SX
-            The evaluation of the polynomial at the end of the interval (states integrated)
-        horzcat(states[0], states_end): MX | SX
-            The states at each collocation point
-        defects: list[MX | SX] (shape = degree)
-            The constraints insuring that the polynomial has the right derivative at each collocation point
-        """
 
         # Total number of variables for one finite element
         states_end = self._d[0] * states[1]
@@ -819,6 +673,7 @@ class COLLOCATION(Integrator):
         self.function = Function(
             "integrator",
             [
+                self.time_sym,
                 horzcat(*self.x_sym) if self.duplicate_collocation_starting_point else horzcat(*self.x_sym[1:]),
                 self.u_sym,
                 self.param_sym,
@@ -833,7 +688,7 @@ class COLLOCATION(Integrator):
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "u", "p", "s"],
+            ["t", "x0", "u", "p", "s"],
             ["xf", "xall", "defects"],
             {"allow_free": self.allow_free_variables},
         )
@@ -847,8 +702,6 @@ class IRK(COLLOCATION):
     -------
     get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, t: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
-        The dynamics of the system
     """
 
     def __init__(self, ode: dict, ode_opt: dict):
@@ -865,43 +718,17 @@ class IRK(COLLOCATION):
 
     def dxdt(
         self,
-        h: float,
-        time: float | MX | SX,
+        t_span: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
         param_scaling,
         stochastic_variables: MX | SX,
     ) -> tuple:
-        """
-        The dynamics of the system
-
-        Parameters
-        ----------
-        h: float
-            The time step
-        time: float | MX | SX
-            The time of the system
-        states: MX | SX
-            The states of the system
-        controls: MX | SX
-            The controls of the system
-        params: MX | SX
-            The parameters of the system
-        param_scaling
-            The parameters scaling of the system
-        stochastic_variables: MX | SX
-            The stochastic variables of the system
-
-        Returns
-        -------
-        The derivative of the states
-        """
 
         nx = states[0].shape[0]
         _, _, defect = super(IRK, self).dxdt(
-            h=h,
-            time=time,
+            t_span=t_span,
             states=states,
             controls=controls,
             params=params,
@@ -938,21 +765,21 @@ class IRK(COLLOCATION):
         self.function = Function(
             "integrator",
             [
+                self.time_sym,
                 self.x_sym[0],
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
             ],
             self.dxdt(
-                h=self.h,
-                time=self.time_integration_grid[0],
+                t_span=t_span,
                 states=self.x_sym,
                 controls=self.u_sym,
                 params=self.param_sym,
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["x0", "u", "p", "s"],
+            ["t", "x0", "u", "p", "s"],
             ["xf", "xall"],
             {"allow_free": self.allow_free_variables},
         )

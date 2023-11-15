@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from casadi import vertcat, Function, DM
+from casadi import vertcat, Function, DM, MX
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
@@ -743,18 +743,19 @@ class ConfigureProblem:
             if isinstance(dynamics_dxdt, (list, tuple)):
                 dynamics_dxdt = vertcat(*dynamics_dxdt)
 
+            time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
             nlp.dynamics_func.append(
                 Function(
                     "ForwardDyn",
                     [
-                        nlp.time_mx,
+                        time_span_sym,
                         nlp.states.scaled.mx_reduced,
                         nlp.controls.scaled.mx_reduced,
                         nlp.parameters.mx,
                         nlp.stochastic_variables.scaled.mx,
                     ],
                     [dynamics_dxdt],
-                    ["t", "x", "u", "p", "s"],
+                    ["t_span", "x", "u", "p", "s"],
                     ["xdot"],
                     {"allow_free": allow_free_variables},
                 ),

@@ -165,8 +165,6 @@ class NonLinearProgram:
         self.plot = {}
         self.plot_mapping = {}
         self.T = None
-        self.t0 = None
-        self.tf = None
         self.variable_mappings = {}
         self.u_bounds = BoundsList()
         self.u_init = InitialGuessList()
@@ -189,6 +187,11 @@ class NonLinearProgram:
         self.phase_dynamics = phase_dynamics
         self.time_cx = None
         self.time_mx = None
+        self.dt = None
+        self.dt_mx = None
+        self.dt_bound = None
+        self.dt_initial_guess = None
+        self.tf = None
         self.states = OptimizationVariableContainer(self.phase_dynamics)
         self.states_dot = OptimizationVariableContainer(self.phase_dynamics)
         self.controls = OptimizationVariableContainer(self.phase_dynamics)
@@ -212,8 +215,6 @@ class NonLinearProgram:
         self.g = []
         self.g_internal = []
         self.casadi_func = {}
-        self.time_cx = self.cx.sym(f"time_cx_{self.phase_idx}", 1, 1)
-        self.time_mx = MX.sym(f"time_mx_{self.phase_idx}", 1, 1)
         self.states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
@@ -402,20 +403,3 @@ class NonLinearProgram:
                 )
 
         return func.expand() if expand else func
-
-    def node_time(self, node_idx: int):
-        """
-        Gives the time for a specific index
-
-        Parameters
-        ----------
-        node_idx: int
-          Index of the node
-
-        Returns
-        -------
-        The time for a specific index
-        """
-        if node_idx < 0 or node_idx > self.ns:
-            return ValueError(f"node_index out of range [0:{self.ns}]")
-        return self.tf / self.ns * node_idx

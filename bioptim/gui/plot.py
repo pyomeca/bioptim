@@ -248,10 +248,7 @@ class PlotOcp:
         self.t_integrated = []
         self.integrator = integrator
 
-        if isinstance(self.ocp.original_phase_time, (int, float)):
-            self.tf = [self.ocp.original_phase_time]
-        else:
-            self.tf = list(self.ocp.original_phase_time)
+        self.tf = list(self.ocp.phase_time)
         self.t_idx_to_optimize = []
         for i, nlp in enumerate(self.ocp.nlp):
             if isinstance(nlp.tf, self.ocp.cx):

@@ -1,7 +1,7 @@
 import re
 from typing import Callable
 
-from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, collocation_points
+from casadi import MX, SX, integrator as casadi_integrator, horzcat, Function, collocation_points, vertcat
 
 from .integrator import RK1, RK2, RK4, RK8, IRK, COLLOCATION, CVODES, TRAPEZOIDAL
 from ..misc.enums import ControlType, DefectType, PhaseDynamics
@@ -128,14 +128,7 @@ class RK(OdeSolverBase):
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
         nlp.stochastic_variables.node_index = node_index
-        t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
-        tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
-        dt = (tf - t0) / self.steps
-        time_integration_grid = [t0 + dt * i for i in range(0, self.steps)]
         ode_opt = {
-            "t0": t0,
-            "tf": tf,
-            "time_integration_grid": time_integration_grid,
             "model": nlp.model,
             "param": nlp.parameters,
             "cx": nlp.cx,
@@ -147,6 +140,8 @@ class RK(OdeSolverBase):
         }
 
         ode = {
+            "t_span": vertcat(nlp.time_cx, nlp.dt),
+            "dt_unscaled": nlp.dt,
             "x_unscaled": nlp.states.cx_start,
             "x_scaled": nlp.states.scaled.cx_start,
             "p_unscaled": nlp.controls.cx_start

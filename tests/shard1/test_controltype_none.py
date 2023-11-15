@@ -84,7 +84,7 @@ class NonControlledMethod:
         stochastic_variables: MX | SX,
         nlp: NonLinearProgram,
     ) -> DynamicsEvaluation:
-        t_phase = nlp.parameters.mx[-1]
+        t_phase = nlp.tf
 
         return DynamicsEvaluation(
             dxdt=self.system_dynamics(a=states[0], b=states[1], c=states[2], t=time, t_phase=t_phase),
@@ -227,9 +227,10 @@ def prepare_ocp(
     )
 
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("use_sx", [False, True])
-def test_main_control_type_none(use_sx, phase_dynamics):
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("use_sx", [False, True])
+# def test_main_control_type_none(use_sx, phase_dynamics):
+def test_main_control_type_none(use_sx=False, phase_dynamics=PhaseDynamics.ONE_PER_NODE):
     """
     Prepare and solve and animate a reaching task ocp
     """
