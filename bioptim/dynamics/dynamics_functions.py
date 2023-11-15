@@ -245,7 +245,9 @@ class DynamicsFunctions:
 
         q_full = vertcat(q_roots, q_joints)
         qdot_full = vertcat(qdot_roots, qdot_joints)
-        n_q = q_full.shape[0]
+        dq = DynamicsFunctions.compute_qdot(nlp, q_full, qdot_full)
+        n_q = nlp.model.nb_q
+        n_qdot = nlp.model.nb_qdot
 
         tau_joints = (
             tau_joints + nlp.model.passive_joint_torque(q_full, qdot_full) if with_passive_torque else tau_joints
@@ -256,8 +258,8 @@ class DynamicsFunctions:
         tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
 
         ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full, tau_full, with_contact, external_forces)
-        dxdt = MX(nlp.states.shape, ddq.shape[1])
-        dxdt[:n_q, :] = horzcat(*[qdot_full for _ in range(ddq.shape[1])])
+        dxdt = MX(n_q+n_qdot, ddq.shape[1])
+        dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[n_q:, :] = ddq
 
         defects = None
@@ -965,8 +967,18 @@ class DynamicsFunctions:
         The derivative of q
         """
 
-        q_nlp = nlp.states["q"] if "q" in nlp.states else nlp.controls["q"]
-        return q_nlp.mapping.to_first.map(nlp.model.reshape_qdot(q, qdot))
+        if "q" in nlp.states:
+            mapping = nlp.states["q"].mapping
+        elif "q_roots" and "q_joints" in nlp.states:
+            mapping = BiMapping(
+                to_first=list(nlp.states["q_roots"].mapping.to_first.map_idx) + [i+nlp.model.nb_root for i in nlp.states["q_joints"].mapping.to_first.map_idx],
+                to_second=list(nlp.states["q_roots"].mapping.to_second.map_idx) + [i+nlp.model.nb_root for i in nlp.states["q_joints"].mapping.to_second.map_idx],
+            )
+        elif q in nlp.controls:
+            mapping = nlp.controls["q"].mapping
+        else:
+            raise RuntimeError("Your q key combination was not found in states or controls")
+        return mapping.to_first.map(nlp.model.reshape_qdot(q, qdot))
 
     @staticmethod
     def forward_dynamics(

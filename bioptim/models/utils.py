@@ -4,61 +4,54 @@ from ..misc.mapping import BiMapping, BiMappingList
 
 def _dof_mapping(key, model, mapping: BiMapping = None) -> dict:
     if key == "q":
-        return _q_mapping(model, mapping)
+        if model.nb_quaternions > 0 and mapping is not None:
+            if "q" in mapping and "qdot" not in mapping:
+                raise RuntimeError(
+                    "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
+                )
+        return _var_mapping(key, range(model.nb_q), mapping)
+    elif key == "q_joints":
+        if model.nb_quaternions > 0 and mapping is not None:
+            if "q_joints" in mapping and "qdot_joints" not in mapping:
+                raise RuntimeError(
+                    "It is not possible to provide a q_joints_mapping but not a qdot_joints_mapping if the model have quaternion"
+                )
+        return _var_mapping(key, range(model.nb_q - model.nb_root), mapping)
+    elif key == "q_roots":
+        return _var_mapping(key, range(model.nb_root), mapping)
     elif key == "qdot":
-        return _qdot_mapping(model, mapping)
+        if model.nb_quaternions > 0 and mapping is not None:
+            if "qdot" in mapping and "q" not in mapping:
+                raise RuntimeError(
+                    "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
+                )
+        return _var_mapping(key, range(model.nb_qdot), mapping)
+    elif key == "qdot_joints":
+        if model.nb_quaternions > 0 and mapping is not None:
+            if "qdot_joints" in mapping and "q_joints" not in mapping:
+                raise RuntimeError(
+                    "It is not possible to provide a qdot_joints_mapping but not a q_joints_mapping if the model have quaternion"
+                )
+        return _var_mapping(key, range(model.nb_qdot - model.nb_root), mapping)
+    elif key == "qdot_roots":
+        return _var_mapping(key, range(model.nb_root), mapping)
     elif key == "qddot":
-        return _qddot_mapping(model, mapping)
+        return _var_mapping(key, range(model.nb_qdot), mapping)
+    elif key == "qddot_joints":
+        return _var_mapping(key, range(model.nb_qdot - model.nb_root), mapping)
     else:
         raise NotImplementedError("Wrong dof mapping")
 
 
-def _q_mapping(model, mapping: BiMapping = None) -> dict:
+def _var_mapping(key, range_for_mapping, mapping: BiMapping = None) -> dict:
     """
-    This function returns a standard mapping for the q states if None
-    and checks if the model has quaternions
-    """
-    if mapping is None:
-        mapping = {}
-    if model.nb_quaternions > 0:
-        if "q" in mapping and "qdot" not in mapping:
-            raise RuntimeError(
-                "It is not possible to provide a q_mapping but not a qdot_mapping if the model have quaternion"
-            )
-        elif "q" not in mapping and "qdot" in mapping:
-            raise RuntimeError(
-                "It is not possible to provide a qdot_mapping but not a q_mapping if the model have quaternion"
-            )
-    if "q" not in mapping:
-        mapping["q"] = BiMapping(range(model.nb_q), range(model.nb_q))
-    return mapping
-
-
-def _qdot_mapping(model, mapping: BiMapping = None) -> dict:
-    """
-    This function returns a standard mapping for the qdot states if None
-    and checks if the model has quaternions
+    This function returns a standard mapping for the variable key if None.
     """
     if mapping is None:
         mapping = {}
-    if "qdot" not in mapping:
-        mapping["qdot"] = BiMapping(range(model.nb_qdot), range(model.nb_qdot))
-
+    if key not in mapping:
+        mapping[key] = BiMapping(range_for_mapping, range_for_mapping)
     return mapping
-
-
-def _qddot_mapping(model, mapping: BiMapping = None) -> dict:
-    """
-    This function returns a standard mapping for the qddot states if None
-    and checks if the model has quaternions
-    """
-    if mapping is None:
-        mapping = {}
-    if "qddot" not in mapping:
-        mapping["qddot"] = BiMapping(range(model.nb_qddot), range(model.nb_qddot))
-
-    return mapping
-
 
 def bounds_from_ranges(model, key: str, mapping: BiMapping | BiMappingList = None) -> Bounds:
     """

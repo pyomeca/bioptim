@@ -337,6 +337,7 @@ class ConfigureProblem:
         _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
         nb_q = nlp.model.nb_q
+        nb_qdot = nlp.model.nb_qdot
         nb_root = nlp.model.nb_root
 
         # Declared rigidbody states and controls
@@ -372,9 +373,10 @@ class ConfigureProblem:
             as_states_dot=True,
         )
 
+        name_qdot_joints = [str(i) for i in range(nb_root, nb_qdot)]
         ConfigureProblem.configure_new_variable(
             "qdot_joints",
-            name_q_joints,
+            name_qdot_joints,
             ocp,
             nlp,
             as_states=True,
@@ -394,7 +396,7 @@ class ConfigureProblem:
 
         ConfigureProblem.configure_new_variable(
             "qddot_joints",
-            name_q_joints,
+            name_qdot_joints,
             ocp,
             nlp,
             as_states=False,
@@ -404,7 +406,7 @@ class ConfigureProblem:
 
         ConfigureProblem.configure_new_variable(
             "tau_joints",
-            name_q_joints,
+            name_qdot_joints,
             ocp,
             nlp,
             as_states=False,

@@ -12,7 +12,7 @@ import numpy as np
 from ...limits.path_conditions import Bounds
 from ...misc.utils import check_version
 from ...misc.mapping import BiMapping, BiMappingList
-from ..utils import _q_mapping, _qdot_mapping, _qddot_mapping, bounds_from_ranges
+from ..utils import _var_mapping, bounds_from_ranges
 
 check_version(biorbd, "1.10.0", "1.11.0")
 
@@ -500,31 +500,40 @@ class BiorbdModel:
         qdot_ranges = []
         qddot_ranges = []
 
-        for segment in self.segments:
+        for i_segment, segment in enumerate(self.segments):
             if variable == "q":
                 q_ranges += [q_range for q_range in segment.QRanges()]
+            elif variable == "q_roots":
+                if segment.parent().to_string().lower() == "root":
+                    q_ranges += [q_range for q_range in segment.QRanges()]
+            elif variable == "q_joints":
+                if segment.parent().to_string().lower() != "root":
+                    q_ranges += [q_range for q_range in segment.QRanges()]
             elif variable == "qdot":
                 qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+            elif variable == "qdot_roots":
+                if segment.parent().to_string().lower() == "root":
+                    qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+            elif variable == "qdot_joints":
+                if segment.parent().to_string().lower() != "root":
+                    qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
             elif variable == "qddot":
                 qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
+            elif variable == "qddot_joints":
+                if segment.parent().to_string().lower() != "root":
+                    qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
 
-        if variable == "q":
+        if variable == "q" or variable == "q_roots" or variable == "q_joints":
             return q_ranges
-        elif variable == "qdot":
+        elif variable == "qdot" or variable == "qdot_roots" or variable == "qdot_joints":
             return qdot_ranges
-        elif variable == "qddot":
+        elif variable == "qddot" or variable == "qddot_joints":
             return qddot_ranges
         else:
             raise RuntimeError("Wrong variable name")
 
-    def _q_mapping(self, mapping: BiMapping = None) -> dict:
-        return _q_mapping(self, mapping)
-
-    def _qdot_mapping(self, mapping: BiMapping = None) -> dict:
-        return _qdot_mapping(self, mapping)
-
-    def _qddot_mapping(self, mapping: BiMapping = None) -> dict:
-        return _qddot_mapping(self, mapping)
+    def _var_mapping(self, mapping: BiMapping = None) -> dict:
+        return _var_mapping(self, mapping)
 
     def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
