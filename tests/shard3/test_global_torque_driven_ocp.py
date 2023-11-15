@@ -426,16 +426,15 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
-def test_trampo_quaternions(phase_dynamics):
-    # Load trampo_quaternion
-    from bioptim.examples.torque_driven_ocp import trampo_quaternions as ocp_module
+def test_example_quaternions(phase_dynamics):
+    from bioptim.examples.torque_driven_ocp import example_quaternions as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     # Define the problem
     model_path = bioptim_folder + "/models/trunk_and_2arm_quaternion.bioMod"
     final_time = 0.25
-    n_shooting = 5
+    n_shooting = 6
 
     ocp = ocp_module.prepare_ocp(
         model_path,
@@ -449,85 +448,73 @@ def test_trampo_quaternions(phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], -41.491609816961535)
+    np.testing.assert_almost_equal(f[0, 0], 0.02226699773500572)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (130, 1))
-    np.testing.assert_almost_equal(g, np.zeros((130, 1)), decimal=6)
+    np.testing.assert_equal(g.shape, (162, 1))
+    np.testing.assert_almost_equal(g[:-3], np.zeros((159, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    q_roots, q_joints, qdot_roots, qdot_joints, tau_joints = sol.states["q_roots"], sol.states["q_joints"], sol.states["qdot_roots"], sol.states["qdot_joints"], sol.controls["tau_joints"]
 
     # initial and final position
     np.testing.assert_almost_equal(
-        q[:, 0], np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 1.0])
+        q_roots[:, 0], np.array([0., 0., 0., 0., 0., 0.])
     )
     np.testing.assert_almost_equal(
-        q[:, -1],
-        np.array(
-            [
-                3.14159267,
-                3.14159267,
-                3.14159267,
-                -0.78539816,
-                0.6154797,
-                -0.07516336,
-                0.23662774,
-                -0.69787559,
-                0.23311438,
-                0.22930573,
-                0.62348603,
-                0.38590688,
-                0.63453499,
-                0.64012494,
-            ]
-        ),
+        q_joints[:, 0], np.array([0.        , -0.9999875 ,  0.        ,  0.        ,  0.9999875 ,
+        0.        ,  0.00499998,  0.00499998])
     )
-
-    # initial and final velocities
     np.testing.assert_almost_equal(
-        qdot[:, 0],
+        qdot_roots[:, 0], np.array([0., 0., 0., 0., 0., 0.])
+    )
+    np.testing.assert_almost_equal(
+        qdot_joints[:, 0], np.array([31.30040911,  31.41537798,   0.94255464,  31.29952186,
+       -31.41465155,  -0.94503525])
+    )
+    np.testing.assert_almost_equal(
+        q_roots[:, -1],
         np.array(
             [
-                12.56193009,
-                12.5198592,
-                13.67105918,
-                -2.66942572,
-                2.64460582,
-                -2.16473217,
-                2.89069185,
-                -4.74193932,
-                4.88561749,
-                4.18495164,
-                5.12235989,
-                1.65628252,
+                2.72972986e-08, 1.86452825e-03, 1.00129443e-02, -5.07535877e-03,
+                5.21104305e-07, -1.77063203e-06,
             ]
         ),
     )
     np.testing.assert_almost_equal(
-        qdot[:, -1],
+        q_joints[:, -1],
         np.array(
             [
-                12.59374119,
-                12.65603932,
-                11.46119531,
-                -4.11706327,
-                1.84777845,
-                1.92003246,
-                -1.99624566,
-                -7.67384307,
-                0.97705102,
-                -0.0532827,
-                7.28333747,
-                2.68097813,
+                -0.00887292, -0.8793977, 0.33365588, -0.00889809, 0.87940287,
+                -0.33365605, 0.33949185, 0.33947763,
+            ]
+        ),
+    )
+    np.testing.assert_almost_equal(
+        qdot_roots[:, -1],
+        np.array(
+            [
+                4.83276297e-06, 2.35280615e-01, 8.25226798e-01, -7.30710676e-01,
+                4.68018854e-05, -2.18287000e-04,
+            ]
+        ),
+    )
+    np.testing.assert_almost_equal(
+        qdot_joints[:, -1],
+        np.array(
+            [
+                30.70175053, 31.41461346, 0.7275156, 30.70243035,
+                -31.41270624, -0.7300771,
             ]
         ),
     )
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.zeros((12,)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -2], np.zeros((12,)), decimal=6)
+    np.testing.assert_almost_equal(tau_joints[:, 0], np.array([-7.03765313e-07, -9.01506831e-07,  1.46539042e-05, -6.88098155e-07,
+       -4.91907144e-06, -8.05644694e-06]), decimal=6)
+    np.testing.assert_almost_equal(tau_joints[:, -2], np.array([4.02291001e-07, -1.40162420e-06,  6.91397053e-06,  2.32072671e-07,
+        1.87435099e-07, -3.71240487e-06]), decimal=6)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

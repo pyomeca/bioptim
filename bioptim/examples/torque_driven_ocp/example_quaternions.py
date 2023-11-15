@@ -54,11 +54,11 @@ def define_x_init(bio_model) -> np.ndarray:
     """
     x = np.vstack((np.zeros((bio_model.nb_q, 2)), np.ones((bio_model.nb_qdot, 2))))
     right_arm_init = np.zeros((3, 2))
-    right_arm_init[1, 0] = 0
-    right_arm_init[1, 1] = -np.pi + 0.01
+    right_arm_init[1, 0] = -np.pi + 0.01
+    right_arm_init[1, 1] = 0
     left_arm_init = np.zeros((3, 2))
-    left_arm_init[1, 0] = 0
-    left_arm_init[1, 1] = np.pi - 0.01
+    left_arm_init[1, 0] = np.pi - 0.01
+    left_arm_init[1, 1] = 0
     for i in range(2):
         right_arm_quaterion = eul2quat(right_arm_init[:, i])
         left_arm_quaterion = eul2quat(left_arm_init[:, i])
@@ -109,10 +109,12 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_joints", node=Node.ALL_SHOOTING, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=1)
 
     # Add constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.START, first_marker="Target_START", second_marker="Neck")
+    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="Target_END", second_marker="Neck", min_bound=0, max_bound=np.inf)
 
     # Dynamics
     dynamics = DynamicsList()
@@ -142,6 +144,9 @@ def prepare_ocp(
     x_bounds["q_joints"] = bio_model.bounds_from_ranges("q_joints")
     x_bounds["qdot_roots"] = bio_model.bounds_from_ranges("qdot_roots")
     x_bounds["qdot_joints"] = bio_model.bounds_from_ranges("qdot_joints")
+    x_bounds["q_roots"][:, 0] = 0
+    x_bounds["qdot_roots"][:, 0] = 0
+    x_bounds["q_joints"][:, 0] = x_init["q_joints"].init[:, 0]
 
     return OptimalControlProgram(
         bio_model,
@@ -152,6 +157,7 @@ def prepare_ocp(
         u_bounds=u_bounds,
         x_init=x_init,
         objective_functions=objective_functions,
+        constraints=constraints,
         ode_solver=ode_solver,
     )
 
@@ -161,11 +167,15 @@ def main():
     Prepares and solves an ocp that has quaternion in it. Animates the results
     """
 
-    ocp = prepare_ocp("models/trunk_and_2arm_quaternion.bioMod", n_shooting=25, final_time=0.25)
+    n_shooting = 6
+    ocp = prepare_ocp("models/trunk_and_2arm_quaternion.bioMod", n_shooting=n_shooting, final_time=0.25)
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
-    # Print the last solution
-    sol.animate(n_frames=-1)
+    # --- Show results --- #
+    # sol.graphs()
+    # If you get an error message in animate with quaternions, it is due to the interpolation of quaternions in bioviz.
+    # To avoid problems, specify the number of frames to be the same as the number of shooting points
+    sol.animate(n_frames=n_shooting+1, show_gravity_vector=False)
 
 
 if __name__ == "__main__":

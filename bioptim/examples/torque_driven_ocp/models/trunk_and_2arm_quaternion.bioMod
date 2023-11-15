@@ -7,9 +7,14 @@ gravity 0 0 0
 segment Global
 endsegment
 
-marker Neck
+marker Target_START
         parent Global
-        position	0	0   1.1
+        position	0	0   1.0
+    endmarker
+    
+marker Target_END
+        parent Global
+        position	0	0   1.01
     endmarker
     
 segment	Pelvis
