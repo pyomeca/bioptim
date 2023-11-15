@@ -1,6 +1,7 @@
 """
-TODO: Create a more meaningful example (make sure to translate all the variables [they should correspond to the model])
-This example uses a representation of a human body by a trunk_leg segment and two arms and has the objective to...
+This example uses a representation of a human body by a trunk-leg segment and two arms which orientation is represented
+using quaternions.
+The goal of the OCP is to elevate the position of the trunk in a environment without gravity with minimal efforts.
 It is designed to show how to use a model that has quaternions in their degrees of freedom.
 """
 
@@ -24,6 +25,8 @@ from bioptim import (
     Node,
     Solver,
     PhaseDynamics,
+    ConstraintList,
+    ConstraintFcn,
 )
 
 
@@ -44,7 +47,27 @@ def eul2quat(eul: np.ndarray) -> np.ndarray:
     Quat = Function("Quaternion_fromEulerAngles", [eul_sym], [biorbd.Quaternion.fromXYZAngles(eul_sym).to_mx()])(eul)
     return Quat
 
-
+def define_x_init(bio_model) -> np.ndarray:
+    """
+    Defines the initial guess for the states.
+    The intial guess for the quaternion of the arms are based on the positions of the arms in Euler angles.
+    """
+    x = np.vstack((np.zeros((bio_model.nb_q, 2)), np.ones((bio_model.nb_qdot, 2))))
+    right_arm_init = np.zeros((3, 2))
+    right_arm_init[1, 0] = 0
+    right_arm_init[1, 1] = -np.pi + 0.01
+    left_arm_init = np.zeros((3, 2))
+    left_arm_init[1, 0] = 0
+    left_arm_init[1, 1] = np.pi - 0.01
+    for i in range(2):
+        right_arm_quaterion = eul2quat(right_arm_init[:, i])
+        left_arm_quaterion = eul2quat(left_arm_init[:, i])
+        x[6:9, i] = np.reshape(right_arm_quaterion[1:], 3)
+        x[12, i] = right_arm_quaterion[0]
+        x[9:12, i] = np.reshape(left_arm_quaterion[1:], 3)
+        x[13, i] = left_arm_quaterion[0]
+    return x
+    
 def prepare_ocp(
     biorbd_model_path: str,
     n_shooting: int,
@@ -85,45 +108,40 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_MARKERS, marker_index=1, weight=-1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", node=Node.ALL_SHOOTING, weight=100)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_joints", node=Node.ALL_SHOOTING, weight=100)
+
+    # Add constraints
+    constraints = ConstraintList()
+    constraints.add(ConstraintFcn.TRACK_MARKERS, node=Node.END, first_marker_idx=0, second_marker_idx=2)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE,
+                 expand_dynamics=expand_dynamics,
+                 phase_dynamics=phase_dynamics)
 
     # Define control path constraint
-    n_tau = bio_model.nb_tau  # bio_model.nb_tau
+    n_root = bio_model.nb_root
+    n_q = bio_model.nb_q
+    n_tau = bio_model.nb_tau - n_root
     tau_min, tau_max = -100, 100
     u_bounds = BoundsList()
-    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau_joints"] = [tau_min] * n_tau, [tau_max] * n_tau
 
     # Initial guesses
-    # TODO put this in a function defined before and explain what it does, and what are the variables
-    x = np.vstack((np.zeros((bio_model.nb_q, 2)), np.ones((bio_model.nb_qdot, 2))))
-    Arm_init_D = np.zeros((3, 2))
-    Arm_init_D[1, 0] = 0
-    Arm_init_D[1, 1] = -np.pi + 0.01
-    Arm_init_G = np.zeros((3, 2))
-    Arm_init_G[1, 0] = 0
-    Arm_init_G[1, 1] = np.pi - 0.01
-    for i in range(2):
-        Arm_Quat_D = eul2quat(Arm_init_D[:, i])
-        Arm_Quat_G = eul2quat(Arm_init_G[:, i])
-        x[6:9, i] = np.reshape(Arm_Quat_D[1:], 3)
-        x[12, i] = Arm_Quat_D[0]
-        x[9:12, i] = np.reshape(Arm_Quat_G[1:], 3)
-        x[13, i] = Arm_Quat_G[0]
     x_init = InitialGuessList()
-    x_init.add("q", x[: bio_model.nb_q, :], interpolation=InterpolationType.LINEAR)
-    x_init.add("qdot", x[bio_model.nb_q :, :], interpolation=InterpolationType.LINEAR)
+    x = define_x_init(bio_model)
+    x_init.add("q_roots", x[: n_root, :], interpolation=InterpolationType.LINEAR)
+    x_init.add("q_joints", x[n_root: n_q, :], interpolation=InterpolationType.LINEAR)
+    x_init.add("qdot_roots", x[n_q: n_q + n_root, :], interpolation=InterpolationType.LINEAR)
+    x_init.add("qdot_joints", x[n_q + n_root:, :], interpolation=InterpolationType.LINEAR)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["q"].min[: bio_model.nb_q, 0] = x[: bio_model.nb_q, 0]
-    x_bounds["q"].max[: bio_model.nb_q, 0] = x[: bio_model.nb_q, 0]
-    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["q_roots"] = bio_model.bounds_from_ranges("q_roots")
+    x_bounds["q_joints"] = bio_model.bounds_from_ranges("q_joints")
+    x_bounds["qdot_roots"] = bio_model.bounds_from_ranges("qdot_roots")
+    x_bounds["qdot_joints"] = bio_model.bounds_from_ranges("qdot_joints")
 
     return OptimalControlProgram(
         bio_model,
