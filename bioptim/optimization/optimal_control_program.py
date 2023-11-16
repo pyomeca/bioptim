@@ -1748,23 +1748,11 @@ class OptimalControlProgram:
             All the objective functions. It is used to scan if any time optimization was defined
         constraints: ConstraintList
             All the constraint functions. It is used to scan if any free time was defined
-
-        Returns
-        -------
-        time_parameter: Parameter
-            The parameters list
-        time_initial_guess: InitialGuess
-            The initial guesses list
-        time_bounds: Bounds
-            The bounds list
         """
 
         def define_parameters_phase_time(
             ocp: OptimalControlProgram,
             penalty_functions: ObjectiveList | ConstraintList,
-            _initial_time_guess: list,
-            _time_min: list,
-            _time_max: list,
             _has_penalty: list = None,
         ) -> list:
             """
@@ -1777,12 +1765,6 @@ class OptimalControlProgram:
                 A reference to the ocp
             penalty_functions: ObjectiveList | ConstraintList
                 The list to parse to ensure no double free times are declared
-            _initial_time_guess: list
-                The list of all initial guesses for the free time optimization
-            _time_min: list
-                Minimal bounds for the time parameter
-            _time_max: list
-                Maximal bounds for the time parameter
             _has_penalty: list[bool]
                 If a penalty was previously found. This should be None on the first call to ensure proper initialization
 
@@ -1799,6 +1781,7 @@ class OptimalControlProgram:
                 if key not in dt_bounds.keys():
                     # This means there is a mapping on this value
                     continue
+
                 for pen_fun in penalty_functions_phase:
                     if not pen_fun:
                         continue
@@ -1817,55 +1800,48 @@ class OptimalControlProgram:
                         else:
                             _min = pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0
                             _max = pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf
-                        dt_bounds[key].min[0][0] = _min / self.nlp[i].ns
-                        dt_bounds[key].max[0][0] = _max / self.nlp[i].ns
+                        dt_bounds[key]["min"] = _min / self.nlp[i].ns
+                        dt_bounds[key]["max"] = _max / self.nlp[i].ns
 
             return _has_penalty
 
         self.phase_time = phase_time if isinstance(phase_time, (tuple, list)) else [phase_time]
 
-        dt_bounds = BoundsList()
-        dt_init = InitialGuessList()
+        dt_bounds = {}
+        dt_initial_guess = {}
         dt_cx = []
         dt_mx = []
         for i in range(self.n_phases):
             if i in self.time_phase_mapping.to_first.map_idx:
                 dt_cx.append(self.cx.sym(f"dt_phase_{i}", 1, 1))
                 dt_mx.append(MX.sym(f"dt_phase_{i}", 1, 1))
-                dt_bounds.add(f"dt_phase_{i}", min_bound=self.phase_time[i] / self.nlp[i].ns, max_bound=self.phase_time[i] / self.nlp[i].ns, interpolation=InterpolationType.CONSTANT)
-                dt_init.add(f"dt_phase_{i}", initial_guess=self.phase_time[i] / self.nlp[i].ns)
+
+                dt = self.phase_time[i] / self.nlp[i].ns
+                dt_bounds[f"dt_phase_{i}"] = {"min": dt, "max": dt}
+                dt_initial_guess[f"dt_phase_{i}"] = dt
             else:
                 dt_cx.append(dt_cx[self.time_phase_mapping.to_second.map_idx[i]])
                 dt_mx.append(dt_mx[self.time_phase_mapping.to_second.map_idx[i]])
 
-        initial_time_guess, time_min, time_max = [], [], []
-        has_penalty = define_parameters_phase_time(self, objective_functions, initial_time_guess, time_min, time_max)
-        define_parameters_phase_time(self, constraints, initial_time_guess, time_min, time_max, _has_penalty=has_penalty)
+        has_penalty = define_parameters_phase_time(self, objective_functions)
+        define_parameters_phase_time(self, constraints, has_penalty)
 
         # Add to the nlp
-        NLP.add(self, "time_index", self.time_phase_mapping.to_first.map_idx, True)
+        NLP.add(self, "time_index", self.time_phase_mapping.to_second.map_idx, True)
         NLP.add(self, "time_cx", self.cx.sym("time", 1, 1), True)
         NLP.add(self, "time_mx", MX.sym("time", 1, 1), True)
         NLP.add(self, "dt", dt_cx, False)
         NLP.add(self, "tf", [nlp.dt * max(nlp.ns, 1) for nlp in self.nlp], False)
         NLP.add(self, "dt_mx", dt_mx, False)
-        NLP.add(self, "dt_bound", dt_bounds, True)
-        NLP.add(self, "dt_initial_guess", dt_init, True)
 
         # Otherwise, add the time to the Parameters
         params = vertcat(*set(dt_cx))
-        self.time_parameter = Parameter(function=lambda model, values: None, name="dt", size=params.shape[0], allow_reserved_name=True, cx=self.cx)
-        self.time_parameter.cx = params
-        self.time_parameter.index = [nlp.time_index for nlp in self.nlp]
+        self.dt_parameter = Parameter(function=lambda model, values: None, name="dt", size=params.shape[0], allow_reserved_name=True, cx=self.cx)
+        self.dt_parameter.cx = params
+        self.dt_parameter.index = [nlp.time_index for nlp in self.nlp]
 
-        self.time_initial_guess = InitialGuess("time", [i / nlp.ns for i, nlp in zip(initial_time_guess, self.nlp)], phase=0)
-        self.time_bounds = Bounds(
-            "time",
-            min_bound=[i / nlp.ns for i, nlp in zip(time_min, self.nlp)],
-            max_bound=[i / nlp.ns for i, nlp in zip(time_max, self.nlp)],
-            phase=0,
-            interpolation=InterpolationType.CONSTANT
-        )
+        self.dt_parameter_bounds = Bounds("dt_bounds", min_bound=[v["min"] for v in dt_bounds.values()], max_bound=[v["max"] for v in dt_bounds.values()], interpolation=InterpolationType.CONSTANT)
+        self.dt_parameter_initial_guess = InitialGuess("dt_initial_guess", initial_guess=[v for v in dt_initial_guess.values()])
 
     def __modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """
@@ -1931,9 +1907,7 @@ class OptimalControlProgram:
             return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
         previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
 
-        start = previous_phase_time + self.nlp[phase_idx].dt * node_idx
-        end = start + self.nlp[phase_idx].dt
-        return vertcat(start, end)
+        return previous_phase_time + self.nlp[phase_idx].dt * node_idx
 
     def _set_default_ode_solver(self):
         """

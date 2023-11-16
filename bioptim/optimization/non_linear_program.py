@@ -190,8 +190,6 @@ class NonLinearProgram:
         self.time_mx = None
         self.dt = None
         self.dt_mx = None
-        self.dt_bound = None
-        self.dt_initial_guess = None
         self.tf = None
         self.states = OptimizationVariableContainer(self.phase_dynamics)
         self.states_dot = OptimizationVariableContainer(self.phase_dynamics)

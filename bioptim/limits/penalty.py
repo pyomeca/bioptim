@@ -1154,8 +1154,9 @@ class PenaltyFunctionAbstract:
                 penalty.integrate = True
 
             else:
+                t0 = controller.ocp.node_time(controller.phase_idx, controller.node_index)
                 continuity -= controller.integrate(
-                    t_span=controller.ocp.node_time(controller.phase_idx, controller.node_index),
+                    t_span=vertcat(t0, t0 + controller.get_nlp.dt),
                     x0=controller.states.cx_start,
                     u=u,
                     p=controller.parameters.cx_start,

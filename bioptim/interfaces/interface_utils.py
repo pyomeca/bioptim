@@ -190,6 +190,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
     param = interface.ocp.cx(interface.ocp.parameters.cx)
     out = interface.ocp.cx()
+    phases_dt = interface.ocp.dt_parameter.cx
+
     for penalty in penalties:
         if not penalty:
             continue
@@ -209,8 +211,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 s = horzcat(s, s_tp)
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            time = interface.ocp.node_time(phase_idx=nlp.phase_idx, node_idx=penalty.node_idx[-1])
-            p = reshape(penalty.weighted_function[0](time[0], time[1] - time[0], x, u, param, s, penalty.weight, target, penalty.dt), -1, 1)
+            t0 = interface.ocp.node_time(phase_idx=nlp.phase_idx, node_idx=penalty.node_idx[-1])
+            p = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, param, s, penalty.weight, target, penalty.dt), -1, 1)
 
         else:
             p = interface.ocp.cx()
@@ -236,9 +238,9 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     s = []
                 else:
                     x, u, s = get_x_u_s_at_idx(interface, nlp, penalty, idx, is_unscaled)
-                    time = interface.ocp.node_time(phase_idx=0 if nlp == [] else nlp.phase_idx, node_idx=idx)
+                    t0 = interface.ocp.node_time(phase_idx=0 if nlp == [] else nlp.phase_idx, node_idx=idx)
                     p = vertcat(
-                        p, penalty.weighted_function[idx](time[0], time[1] - time[0], x, u, param, s, penalty.weight, target, penalty.dt)
+                        p, penalty.weighted_function[idx](t0, phases_dt, x, u, param, s, penalty.weight, target, penalty.dt)
                     )
 
         out = vertcat(out, sum2(p))

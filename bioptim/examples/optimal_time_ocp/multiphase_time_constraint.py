@@ -115,9 +115,6 @@ def prepare_ocp(
         constraints.add(
             ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2
         )
-        constraints.add(
-            ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[2], max_bound=time_max[2], phase=2
-        )
 
     # Path constraint
     x_bounds = BoundsList()
@@ -168,10 +165,12 @@ def main():
     Run a multiphase problem with free time phases and animate the results
     """
 
-    final_time = (2, 5, 4)
-    time_min = (0.7, 3, 0.1)
-    time_max = (2, 4, 1)
+    # Even though three phases are declared (len(ns) = 3), we only need to declare two final times because of the
+    # time phase mapping
     ns = (20, 30, 20)
+    final_time = (2, 5)
+    time_min = (0.7, 3)
+    time_max = (2, 4)
     ocp = prepare_ocp(
         final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns, with_phase_time_equality=True
     )
@@ -180,8 +179,8 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    time = [sol.parameters["time"][i, 0] for i in ocp.time_phase_mapping.to_second.map_idx]
-    print(f"The optimized phase time are: {time[0]}s, {time[1]}s and {time[2]}s.")
+    times = [t[-1] for t in sol.time]
+    print(f"The optimized phase time are: {times[0]}s, {times[1] - times[0]}s and {times[2] - times[1]}s.")
     sol.animate()
 
 

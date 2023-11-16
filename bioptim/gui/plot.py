@@ -246,7 +246,7 @@ class PlotOcp:
         self.t_integrated = []
         self.integrator = integrator
 
-        self.tf = list(self.ocp.phase_time)
+        self.tf = list(self.ocp.time_phase_mapping.to_second.map(self.ocp.phase_time)[:, 0])
         self.__update_time_vector()
 
         self.axes = {}
@@ -701,7 +701,7 @@ class PlotOcp:
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
         data_stochastic = sol.stochastic_variables
 
-        dt_phases = self.ocp.time_phase_mapping.to_second.map(sol.vector[self.ocp.time_parameter.index].toarray()).tolist()[0]
+        dt_phases = sol.vector[self.ocp.dt_parameter.index].toarray()[:, 0]
         self.tf = [dt * nlp.ns for dt, nlp in zip(dt_phases, self.ocp.nlp)]
         for _ in self.ocp.nlp:
             self.__update_xdata()

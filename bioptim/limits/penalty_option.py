@@ -652,7 +652,7 @@ class PenaltyOption(OptionGeneric):
         param_cx = controller.parameters.cx
 
         time_cx = controller.time.cx
-        dt_cx = controller.get_nlp.dt
+        phases_dt_cx = controller.ocp.dt_parameter.cx
 
         # Sanity check on outputs
         if len(self.function) <= node:
@@ -671,7 +671,7 @@ class PenaltyOption(OptionGeneric):
             name,
             sub_fcn,
             time_cx,
-            dt_cx,
+            phases_dt_cx,
             state_cx_scaled,
             control_cx_scaled,
             param_cx,
@@ -704,7 +704,7 @@ class PenaltyOption(OptionGeneric):
                 # TODO: Charbie -> this is False, add stochastic_variables for start, mid AND end
                 self.function[node](
                     time_cx,
-                    dt_cx,
+                    phases_dt_cx,
                     controller.states_scaled.cx_end,
                     controller.controls_scaled.cx_end,
                     param_cx,
@@ -712,7 +712,7 @@ class PenaltyOption(OptionGeneric):
                 )
                 - self.function[node](
                     time_cx,
-                    dt_cx,
+                    phases_dt_cx,
                     controller.states_scaled.cx_start,
                     controller.controls_scaled.cx_start,
                     param_cx,
@@ -778,7 +778,7 @@ class PenaltyOption(OptionGeneric):
                 control_cx_end_scaled = _get_u(
                     controller.control_type,
                     horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end),
-                    dt_cx,
+                    phases_dt_cx,
                 )
                 control_cx_end = _get_u(
                     controller.control_type, horzcat(controller.controls.cx_start, controller.controls.cx_end), dt_cx
@@ -810,7 +810,7 @@ class PenaltyOption(OptionGeneric):
                     (
                         self.function[node](
                             time_cx,
-                            dt_cx,
+                            phases_dt_cx,
                             state_cx_start_scaled,
                             controller.controls_scaled.cx_start,
                             param_cx,
@@ -822,7 +822,7 @@ class PenaltyOption(OptionGeneric):
                     + (
                         self.function[node](
                             time_cx,
-                            dt_cx,
+                            phases_dt_cx,
                             state_cx_end_scaled,
                             control_cx_end_scaled,
                             param_cx,
@@ -855,7 +855,7 @@ class PenaltyOption(OptionGeneric):
             modified_fcn = (
                 self.function[node](
                     time_cx,
-                    dt_cx,
+                    phases_dt_cx,
                     state_cx_scaled,
                     control_cx_scaled,
                     param_cx,
@@ -872,7 +872,7 @@ class PenaltyOption(OptionGeneric):
             name,
             [
                 time_cx,
-                dt_cx,
+                phases_dt_cx,
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,

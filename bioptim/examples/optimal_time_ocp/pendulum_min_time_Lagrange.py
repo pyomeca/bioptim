@@ -119,7 +119,6 @@ def main():
 
     # --- Show results --- #
     print(f"The optimized phase time is: {sol.time[-1]}, good job Lagrange!")
-
     sol.animate()
 
 

@@ -56,6 +56,7 @@ def check_conditioning(ocp):
         hessian_norm_list = []
 
         # JACOBIAN
+        phases_dt = ocp.dt_parameter.cx
         for nlp in ocp.nlp:
             list_constraints = []
 
@@ -70,6 +71,7 @@ def check_conditioning(ocp):
                     0,
                     constraints.function[node_index](
                         time,
+                        phases_dt,
                         nlp.states.cx_start,
                         nlp.controls.cx_start,
                         nlp.parameters.cx,
@@ -86,6 +88,7 @@ def check_conditioning(ocp):
                         jacobian(
                             constraints.function[constraints.node_idx[0]](
                                 [],
+                                phases_dt,
                                 nlp.states.cx_start,
                                 nlp.controls.cx_start,
                                 nlp.parameters.cx,
@@ -171,6 +174,7 @@ def check_conditioning(ocp):
                     0,
                     constraints.function[node_index](
                         nlp.time_cx,
+                        phases_dt,
                         nlp.states.cx_start,
                         nlp.controls.cx_start,
                         nlp.parameters.cx,
@@ -189,6 +193,7 @@ def check_conditioning(ocp):
                         hessian_cas = hessian(
                             constraints.function[node_index](
                                 time,
+                                phases_dt,
                                 nlp.states.cx_start,
                                 nlp.controls.cx_start,
                                 nlp.parameters.cx,
@@ -315,6 +320,7 @@ def check_conditioning(ocp):
         """
 
         hessian_obj_list = []
+        phases_dt = ocp.dt_parameter.cx
         for phase, nlp in enumerate(ocp.nlp):
             for obj in nlp.J:
                 objective = 0
@@ -386,6 +392,7 @@ def check_conditioning(ocp):
                 if obj.target is None:
                     p = obj.weighted_function[node_index](
                         nlp.time_cx,
+                        phases_dt,
                         state_cx,
                         control_cx,
                         nlp.parameters.cx,
@@ -397,6 +404,7 @@ def check_conditioning(ocp):
                 else:
                     p = obj.weighted_function[node_index](
                         nlp.time_cx,
+                        phases_dt,
                         state_cx,
                         control_cx,
                         nlp.parameters.cx,
