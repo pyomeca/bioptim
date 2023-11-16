@@ -1008,7 +1008,12 @@ class Solution:
         # Get the first frame of the phase
         if shooting_type == Shooting.SINGLE:
             if phase == 0:
-                return np.hstack([previous_solution._states["unscaled"][0][key][:, 0] for key in previous_solution.ocp.nlp[phase].states])
+                return np.hstack(
+                    [
+                        previous_solution._states["unscaled"][0][key][:, 0]
+                        for key in previous_solution.ocp.nlp[phase].states
+                    ]
+                )
 
             t0 = []
 
@@ -1019,7 +1024,10 @@ class Solution:
                 u0 = []
             else:
                 u0 = np.concatenate(
-                    [previous_solution._controls["unscaled"][phase - 1][key][:, -1] for key in previous_solution.ocp.nlp[phase - 1].controls]
+                    [
+                        previous_solution._controls["unscaled"][phase - 1][key][:, -1]
+                        for key in previous_solution.ocp.nlp[phase - 1].controls
+                    ]
                 )
                 if (
                     previous_solution.ocp.nlp[phase - 1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
@@ -1048,7 +1056,12 @@ class Solution:
             return x0
 
         elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            return np.vstack([previous_solution._states["unscaled"][phase][key][:, 0:1] for key in previous_solution.ocp.nlp[phase].states])[:, 0]
+            return np.vstack(
+                [
+                    previous_solution._states["unscaled"][phase][key][:, 0:1]
+                    for key in previous_solution.ocp.nlp[phase].states
+                ]
+            )[:, 0]
 
         elif shooting_type == Shooting.MULTIPLE:
             return np.vstack(
