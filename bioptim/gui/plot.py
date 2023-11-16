@@ -7,7 +7,7 @@ from itertools import accumulate
 import numpy as np
 from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import StrMethodFormatter
-from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM, Function
 
 from ..limits.path_conditions import Bounds
 from ..limits.multinode_constraint import MultinodeConstraint
@@ -351,7 +351,9 @@ class PlotOcp:
                         size_p = 0
                         size_s = 0
                         if "penalty" in nlp.plot[key].parameters:
-                            casadi_function = nlp.plot[key].parameters["penalty"].weighted_function_non_threaded[0]
+                            penalty = nlp.plot[key].parameters["penalty"]
+                            casadi_function = penalty.weighted_function_non_threaded[0]
+                            nlp.plot[key].parameters["dt_function"] = Function("dt", [self.ocp.variables_vector[nlp.time_index]], [penalty.dt])
                             if nlp.plot[key].parameters["penalty"].multinode_penalty:
                                 if casadi_function is not None:
                                     # size_t = len(casadi_function.nominal_in(0))
@@ -374,6 +376,7 @@ class PlotOcp:
                             nlp.plot[key]
                             .function(
                                 node_index,
+                                0,
                                 np.zeros((size_x, 1)),
                                 np.zeros((size_u, 1)),
                                 np.zeros((size_p, 1)),
@@ -698,7 +701,7 @@ class PlotOcp:
         data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
         data_stochastic = sol.stochastic_variables
 
-        dt_phases = np.array(self.ocp.time_phase_mapping.to_second.map(sol.vector[self.ocp.time_parameter.index])).tolist()[0]
+        dt_phases = self.ocp.time_phase_mapping.to_second.map(sol.vector[self.ocp.time_parameter.index].toarray()).tolist()[0]
         self.tf = [dt * nlp.ns for dt, nlp in zip(dt_phases, self.ocp.nlp)]
         for _ in self.ocp.nlp:
             self.__update_xdata()
@@ -923,6 +926,7 @@ class PlotOcp:
 
                                     val = self.plot_func[key][i].function(
                                         node_idx,
+                                        dt_phases[nlp.phase_idx],
                                         states,
                                         control_tp,
                                         data_params_in_dyn,

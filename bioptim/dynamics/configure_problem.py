@@ -780,7 +780,7 @@ class ConfigureProblem:
                     Function(
                         "DynamicsDefects",
                         [
-                            nlp.time_mx,
+                            time_span_sym,
                             nlp.states.scaled.mx_reduced,
                             nlp.controls.scaled.mx_reduced,
                             nlp.parameters.mx,

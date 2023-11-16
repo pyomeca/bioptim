@@ -141,7 +141,6 @@ class RK(OdeSolverBase):
 
         ode = {
             "t_span": vertcat(nlp.time_cx, nlp.dt),
-            "dt_unscaled": nlp.dt,
             "x_unscaled": nlp.states.cx_start,
             "x_scaled": nlp.states.scaled.cx_start,
             "p_unscaled": nlp.controls.cx_start

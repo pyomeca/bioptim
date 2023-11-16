@@ -118,7 +118,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}, good job Lagrange!")
+    print(f"The optimized phase time is: {sol.time[-1]}, good job Lagrange!")
 
     sol.animate()
 

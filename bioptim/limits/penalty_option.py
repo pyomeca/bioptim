@@ -651,7 +651,8 @@ class PenaltyOption(OptionGeneric):
         node = controller.node_index
         param_cx = controller.parameters.cx
 
-        time_cx = vertcat(controller.time.cx, controller.get_nlp.dt)
+        time_cx = controller.time.cx
+        dt_cx = controller.get_nlp.dt
 
         # Sanity check on outputs
         if len(self.function) <= node:
@@ -670,6 +671,7 @@ class PenaltyOption(OptionGeneric):
             name,
             sub_fcn,
             time_cx,
+            dt_cx,
             state_cx_scaled,
             control_cx_scaled,
             param_cx,
@@ -702,6 +704,7 @@ class PenaltyOption(OptionGeneric):
                 # TODO: Charbie -> this is False, add stochastic_variables for start, mid AND end
                 self.function[node](
                     time_cx,
+                    dt_cx,
                     controller.states_scaled.cx_end,
                     controller.controls_scaled.cx_end,
                     param_cx,
@@ -709,6 +712,7 @@ class PenaltyOption(OptionGeneric):
                 )
                 - self.function[node](
                     time_cx,
+                    dt_cx,
                     controller.states_scaled.cx_start,
                     controller.controls_scaled.cx_start,
                     param_cx,
@@ -721,7 +725,7 @@ class PenaltyOption(OptionGeneric):
                 stochastic_cx_scaled,
             )
 
-        dt_cx = controller.cx.sym("dt", 1, 1)
+        penalty_dt_cx = controller.cx.sym("dt", 1, 1)
         is_trapezoidal = (
             self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
             or self.integration_rule == QuadratureRule.TRAPEZOIDAL
@@ -806,6 +810,7 @@ class PenaltyOption(OptionGeneric):
                     (
                         self.function[node](
                             time_cx,
+                            dt_cx,
                             state_cx_start_scaled,
                             controller.controls_scaled.cx_start,
                             param_cx,
@@ -817,6 +822,7 @@ class PenaltyOption(OptionGeneric):
                     + (
                         self.function[node](
                             time_cx,
+                            dt_cx,
                             state_cx_end_scaled,
                             control_cx_end_scaled,
                             param_cx,
@@ -833,7 +839,7 @@ class PenaltyOption(OptionGeneric):
                 param_cx,
                 stochastic_cx_scaled,
                 target_cx,
-                dt_cx,
+                penalty_dt_cx,
             )
 
             modified_fcn = modified_function(
@@ -843,12 +849,13 @@ class PenaltyOption(OptionGeneric):
                 param_cx,
                 stochastic_cx_scaled,
                 target_cx,
-                dt_cx,
+                penalty_dt_cx,
             )
         else:
             modified_fcn = (
                 self.function[node](
                     time_cx,
+                    dt_cx,
                     state_cx_scaled,
                     control_cx_scaled,
                     param_cx,
@@ -858,20 +865,21 @@ class PenaltyOption(OptionGeneric):
             ) ** exponent
 
         # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
-        modified_fcn = weight_cx * modified_fcn * dt_cx if self.weight else modified_fcn * dt_cx
+        modified_fcn = weight_cx * modified_fcn * penalty_dt_cx if self.weight else modified_fcn * penalty_dt_cx
 
         # Do not use nlp.add_casadi_func because all of them must be registered
         self.weighted_function[node] = Function(
             name,
             [
                 time_cx,
+                dt_cx,
                 state_cx_scaled,
                 control_cx_scaled,
                 param_cx,
                 stochastic_cx_scaled,
                 weight_cx,
                 target_cx,
-                dt_cx,
+                penalty_dt_cx,
             ],
             [modified_fcn],
         )

@@ -229,6 +229,10 @@ class RK(Integrator):
         self.n_step = ode_opt["number_of_finite_elements"]
         self.step_time = self.t_span_sym[1] / self.n_step
 
+    @property
+    def h(self):
+        return (self.t_span_sym[1] - self.t_span_sym[0]) / self.n_step
+
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
         """
         Compute the next integrated state (abstract)
@@ -297,7 +301,7 @@ class RK1(RK):
         self._finish_init()
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
-        return x_prev + h * self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
+        return x_prev + self.h * self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
 
 
 class RK2(RK):
@@ -319,8 +323,10 @@ class RK2(RK):
         self._finish_init()
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
+        h = self.h
+
         k1 = self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
-        return x_prev + h * self.fun(t0, x_prev + h / 2 * k1, self.get_u(u, t0 + self.h / 2), p, s)[:, self.idx]
+        return x_prev + h * self.fun(t0, x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, s)[:, self.idx]
 
 
 class RK4(RK):
@@ -342,7 +348,7 @@ class RK4(RK):
         self._finish_init()
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
-        h = self.t_span_sym[1] / self.n_step
+        h = self.h
 
         k1 = self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
         k2 = self.fun(t0 + h / 2, x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, s)[:, self.idx]
@@ -370,32 +376,34 @@ class RK8(RK4):
         self._finish_init()
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
+        h = self.h
+
         k1 = self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
-        k2 = self.fun(t0, x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + self.h * (4 / 27)), p, s)[:, self.idx]
-        k3 = self.fun(t0, x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + self.h * (2 / 9)), p, s)[:, self.idx]
-        k4 = self.fun(t0, x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t0 + self.h * (1 / 3)), p, s)[:, self.idx]
-        k5 = self.fun(t0, x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t0 + self.h * (1 / 2)), p, s)[:, self.idx]
+        k2 = self.fun(t0, x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + h * (4 / 27)), p, s)[:, self.idx]
+        k3 = self.fun(t0, x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + h * (2 / 9)), p, s)[:, self.idx]
+        k4 = self.fun(t0, x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t0 + h * (1 / 3)), p, s)[:, self.idx]
+        k5 = self.fun(t0, x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t0 + h * (1 / 2)), p, s)[:, self.idx]
         k6 = self.fun(
-            t0, x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t0 + self.h * (2 / 3)), p, s
+            t0, x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t0 + h * (2 / 3)), p, s
         )[:, self.idx]
         k7 = self.fun(
             t0,
             x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
-            self.get_u(u, t0 + self.h * (1 / 6)),
+            self.get_u(u, t0 + h * (1 / 6)),
             p,
             s,
         )[:, self.idx]
         k8 = self.fun(
             t0,
             x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
-            self.get_u(u, t0 + self.h),
+            self.get_u(u, t0 + h),
             p,
             s,
         )[:, self.idx]
         k9 = self.fun(
             t0,
             x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
-            self.get_u(u, t0 + self.h * (5 / 6)),
+            self.get_u(u, t0 + h * (5 / 6)),
             p,
             s,
         )[:, self.idx]
@@ -403,7 +411,7 @@ class RK8(RK4):
             t0,
             x_prev
             + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
-            self.get_u(u, t0 + self.h),
+            self.get_u(u, t0 + h),
             p,
             s,
         )[:, self.idx]

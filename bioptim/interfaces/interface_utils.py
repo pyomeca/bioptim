@@ -210,7 +210,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
             time = interface.ocp.node_time(phase_idx=nlp.phase_idx, node_idx=penalty.node_idx[-1])
-            p = reshape(penalty.weighted_function[0](time, x, u, param, s, penalty.weight, target, penalty.dt), -1, 1)
+            p = reshape(penalty.weighted_function[0](time[0], time[1] - time[0], x, u, param, s, penalty.weight, target, penalty.dt), -1, 1)
 
         else:
             p = interface.ocp.cx()
@@ -238,7 +238,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     x, u, s = get_x_u_s_at_idx(interface, nlp, penalty, idx, is_unscaled)
                     time = interface.ocp.node_time(phase_idx=0 if nlp == [] else nlp.phase_idx, node_idx=idx)
                     p = vertcat(
-                        p, penalty.weighted_function[idx](time, x, u, param, s, penalty.weight, target, penalty.dt)
+                        p, penalty.weighted_function[idx](time[0], time[1] - time[0], x, u, param, s, penalty.weight, target, penalty.dt)
                     )
 
         out = vertcat(out, sum2(p))
@@ -478,7 +478,7 @@ def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
                 for i in range(1, nlp.X_scaled[_idx - 1].shape[1]):
                     _x = vertcat(_x, nlp.X_scaled[_idx - 1][:, i])
 
-            if sum(_penalty.weighted_function[_idx].size_in(1)) == 0:
+            if sum(_penalty.weighted_function[_idx].size_in(3)) == 0:
                 _u = []
             elif nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx == len(nlp.U_scaled):
                 _u = nlp.U_scaled[_idx - 1][:, 0]

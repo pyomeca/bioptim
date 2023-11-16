@@ -77,6 +77,8 @@ class Solution:
         The data structure that holds the stochastic variables
     _integrated_values: list
         The data structure that holds the update values
+    _dt: list
+        The time step for each phases
     phase_time: list
         The total time for each phases
 
@@ -224,6 +226,7 @@ class Solution:
             self._controls = self.ocp._complete_controls(_controls)
             self.parameters = parameters
             self._stochastic_variables = _stochastic_variables
+            self._dt = OptimizationVectorHelper.extract_dt(ocp, vector)
             self.phase_time = OptimizationVectorHelper.extract_phase_time(ocp, vector)
             self._time_vector = self.ocp._generate_time(self.phase_time)
             self._integrated_values = self.ocp.get_integrated_values(
@@ -562,6 +565,7 @@ class Solution:
         new.is_integrated = deepcopy(self.is_integrated)
         new.is_merged = deepcopy(self.is_merged)
 
+        new._dt = deepcopy(self._dt)
         new.phase_time = deepcopy(self.phase_time)
         new.ns = deepcopy(self.ns)
 
@@ -884,6 +888,7 @@ class Solution:
 
         if merge_phases:
             out.is_merged = True
+            out._dt = None
             out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
             out.ns = sum(out.ns)
 
@@ -953,6 +958,7 @@ class Solution:
 
         if merge_phases:
             out.is_merged = True
+            out._dt = None
             out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
             out.ns = sum(out.ns)
 
@@ -1639,11 +1645,8 @@ class Solution:
         val_weighted = []
         p = vertcat(*[self.parameters[key] / self.ocp.parameters[key].scaling for key in self.parameters.keys()])
 
-        dt = (
-            Function("time", [nlp.parameters.cx], [penalty.dt])(self.parameters["time"])
-            if "time" in self.parameters
-            else penalty.dt
-        )
+        phase_dt = float(self.vector[self.ocp.time_phase_mapping.to_second.map_idx[phase_idx]])
+        dt = Function("time", [nlp.dt], [penalty.dt])(phase_dt)
 
         for idx in penalty.node_idx:
             t = []
@@ -1789,7 +1792,7 @@ class Solution:
                 x_reshaped = x.T.reshape((-1, 1)) if len(x.shape) > 1 and x.shape[1] != 1 else x
                 u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
                 s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
-                val.append(penalty.function[idx](t, x_reshaped, u_reshaped, p, s_reshaped))
+                val.append(penalty.function[idx](t, self._dt[phase_idx], x_reshaped, u_reshaped, p, s_reshaped))
 
                 if (
                     penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
@@ -1847,7 +1850,7 @@ class Solution:
             u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
             s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
             val_weighted.append(
-                penalty.weighted_function[idx](t, x_reshaped, u_reshaped, p, s_reshaped, penalty.weight, target, dt)
+                penalty.weighted_function[idx](t, self._dt[phase_idx], x_reshaped, u_reshaped, p, s_reshaped, penalty.weight, target, dt)
             )
 
         val = np.nansum(val)

@@ -160,6 +160,7 @@ class SimplifiedNLP:
             A reference to the NonLinearProgram to strip
         """
 
+        self.dt = nlp.dt
         self.time_index = nlp.time_index
         self.phase_idx = nlp.phase_idx
         self.use_states_from_phase_idx = nlp.use_states_from_phase_idx
