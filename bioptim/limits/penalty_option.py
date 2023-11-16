@@ -936,7 +936,7 @@ class PenaltyOption(OptionGeneric):
 
         """
 
-        def plot_function(t, x, u, p, s, penalty=None):
+        def plot_function(t, phases_dt, x, u, p, s, penalty=None):
             if isinstance(t, (list, tuple)):
                 return self.target_to_plot[:, [self.node_idx.index(_t) for _t in t]]
             else:

@@ -129,24 +129,24 @@ def test_add_new_plot(phase_dynamics):
     ocp.save(sol, save_name)
 
     # Test 1 - Working plot
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, phases_dt, x, u, p, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 2 - Combine using combine_to is not allowed
     ocp, sol = OptimalControlProgram.load(save_name)
     with pytest.raises(RuntimeError):
-        ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :], combine_to="NotAllowed")
+        ocp.add_plot("My New Plot", lambda t, phases_dt, x, u, p, s: x[0:2, :], combine_to="NotAllowed")
 
     # Test 3 - Create a completely new plot
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
-    ocp.add_plot("My Second New Plot", lambda t, x, p, u, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, phases_dt, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My Second New Plot", lambda t, phases_dt, x, p, u, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 4 - Combine to the first using fig_name
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, phases_dt, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t, phases_dt, x, u, p, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Add the plot of objectives and constraints to this mess
@@ -242,7 +242,7 @@ def test_console_objective_functions(phase_dynamics):
                         .replace("__", "_")
                     )
                     t = MX.sym("t", *p.weighted_function[node_index].sparsity_in("i0").shape)
-                    dt = MX.sym("t", *p.weighted_function[node_index].sparsity_in("i1").shape)
+                    phases_dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i1").shape)
                     x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("i2").shape)
                     u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("i3").shape)
                     if p.weighted_function[node_index].sparsity_in("i3").shape == (0, 0):
@@ -251,15 +251,15 @@ def test_console_objective_functions(phase_dynamics):
                     s = MX.sym("s", *p.weighted_function[node_index].sparsity_in("i5").shape)
                     weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i6").shape)
                     target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i7").shape)
-                    dt_pen = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i8").shape)
+                    dt_pen = MX.sym("penalty_dt", *p.weighted_function[node_index].sparsity_in("i8").shape)
 
                     p.function[node_index] = Function(
-                        name, [t, x, u, param, s], [np.array([range(cmp, len(p.rows) + cmp)]).T]
+                        name, [t, phases_dt, x, u, param, s], [np.array([range(cmp, len(p.rows) + cmp)]).T]
                     )
                     p.function_non_threaded[node_index] = p.function[node_index]
                     p.weighted_function[node_index] = Function(
                         name,
-                        [t, x, u, param, s, weight, target, dt],
+                        [t, phases_dt, x, u, param, s, weight, target, dt_pen],
                         [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T],
                     )
                     p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]

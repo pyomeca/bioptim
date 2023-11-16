@@ -373,8 +373,7 @@ class PlotOcp:
                             size_s = nlp.stochastic_variables.shape
 
                         size = (
-                            nlp.plot[key]
-                            .function(
+                            nlp.plot[key].function(
                                 node_index,
                                 0,
                                 np.zeros((size_x, 1)),
@@ -778,6 +777,7 @@ class PlotOcp:
 
                         val_tempo = self.plot_func[key][i].function(
                             idx,
+                            dt_phases,
                             state[:, step_size * idx : step_size * (idx + 1) + x_mod],
                             control[:, idx : idx + u_mod + 1],
                             data_params_in_dyn,
@@ -869,6 +869,7 @@ class PlotOcp:
 
                             val_tempo = self.plot_func[key][i].function(
                                 self.plot_func[key][i].node_idx[0],
+                                dt_phases,
                                 x_phase,
                                 u_phase,
                                 data_params_in_dyn,
@@ -926,7 +927,7 @@ class PlotOcp:
 
                                     val = self.plot_func[key][i].function(
                                         node_idx,
-                                        dt_phases[nlp.phase_idx],
+                                        dt_phases,
                                         states,
                                         control_tp,
                                         data_params_in_dyn,
@@ -945,6 +946,7 @@ class PlotOcp:
                         for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
                             val_tempo = self.plot_func[key][i].function(
                                 node_idx,
+                                dt_phases,
                                 state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
                                 control[:, node_idx : node_idx + 1 + 1],
                                 data_params_in_dyn,
@@ -972,6 +974,7 @@ class PlotOcp:
 
                         val_tempo = self.plot_func[key][i].function(
                             nodes,
+                            dt_phases,
                             state[:, ::step_size],
                             control,
                             data_params_in_dyn,
