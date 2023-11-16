@@ -47,6 +47,7 @@ def eul2quat(eul: np.ndarray) -> np.ndarray:
     Quat = Function("Quaternion_fromEulerAngles", [eul_sym], [biorbd.Quaternion.fromXYZAngles(eul_sym).to_mx()])(eul)
     return Quat
 
+
 def quat2eul(quat: np.ndarray) -> np.ndarray:
     """
     Converts quaternion to Euler angles. It assumes a sequence angle of XYZ
@@ -62,11 +63,10 @@ def quat2eul(quat: np.ndarray) -> np.ndarray:
     """
     quat_sym = MX.sym("quat", 4)
     quat_biorbd = biorbd.Quaternion(quat_sym[3], quat_sym[0], quat_sym[1], quat_sym[2])
-    eul_mx = biorbd.Rotation.toEulerAngles(biorbd.Quaternion.toMatrix(quat_biorbd), 'xyz').to_mx()
-    eul = Function("EulerAngles_fromQuaternion", [quat_sym], [eul_mx])(
-        quat
-    )
+    eul_mx = biorbd.Rotation.toEulerAngles(biorbd.Quaternion.toMatrix(quat_biorbd), "xyz").to_mx()
+    eul = Function("EulerAngles_fromQuaternion", [quat_sym], [eul_mx])(quat)
     return eul
+
 
 def euler_dot2omega(eul: np.ndarray, eul_dot: np.ndarray, quat: np.ndarray) -> np.ndarray:
     """
@@ -91,10 +91,9 @@ def euler_dot2omega(eul: np.ndarray, eul_dot: np.ndarray, quat: np.ndarray) -> n
     quat_sym = MX.sym("quat", 4)
     quat_biorbd = biorbd.Quaternion(quat_sym[3], quat_sym[0], quat_sym[1], quat_sym[2])
     omega_mx = biorbd.Quaternion.eulerDotToOmega(quat_biorbd, eul_sym, eul_dot_sym, "xyz").to_mx()
-    omega = Function("omega", [quat_sym, eul_sym, eul_dot_sym], [omega_mx])(
-        quat, eul, eul_dot
-    )
+    omega = Function("omega", [quat_sym, eul_sym, eul_dot_sym], [omega_mx])(quat, eul, eul_dot)
     return omega
+
 
 def joint_angles_rate2body_velcities(q: np.ndarray, eul_dot: np.ndarray) -> np.ndarray:
     """
@@ -111,10 +110,17 @@ def joint_angles_rate2body_velcities(q: np.ndarray, eul_dot: np.ndarray) -> np.n
     -------
     The body velocities
     """
-    right_arm_omega = np.array(euler_dot2omega(eul=quat2eul(q[[6, 7, 8, 12]]), eul_dot=eul_dot[6:9], quat=q[[6, 7, 8, 12]])).reshape(-1,)
-    left_arm_omega = np.array(euler_dot2omega(eul=quat2eul(q[[9, 10, 11, 13]]), eul_dot=eul_dot[9:12], quat=q[[9, 10, 11, 13]])).reshape(-1)
+    right_arm_omega = np.array(
+        euler_dot2omega(eul=quat2eul(q[[6, 7, 8, 12]]), eul_dot=eul_dot[6:9], quat=q[[6, 7, 8, 12]])
+    ).reshape(
+        -1,
+    )
+    left_arm_omega = np.array(
+        euler_dot2omega(eul=quat2eul(q[[9, 10, 11, 13]]), eul_dot=eul_dot[9:12], quat=q[[9, 10, 11, 13]])
+    ).reshape(-1)
     qdot = np.hstack((right_arm_omega, left_arm_omega))
     return qdot
+
 
 def define_x_init(bio_model) -> np.ndarray:
     """
@@ -230,11 +236,10 @@ def prepare_ocp(
     x_bounds["qdot_roots"][:, 0] = 0
     x_bounds["q_joints"][:, 0] = x_init["q_joints"].init[:, 0]
     omega_arms = joint_angles_rate2body_velcities(
-        np.hstack((np.zeros((n_root, )), x_init["q_joints"].init[:, 0])),
-        np.zeros((n_qdot, ))
+        np.hstack((np.zeros((n_root,)), x_init["q_joints"].init[:, 0])), np.zeros((n_qdot,))
     )
-    x_bounds["qdot_joints"].min[:, 0] = omega_arms-0.1
-    x_bounds["qdot_joints"].max[:, 0] = omega_arms+0.1
+    x_bounds["qdot_joints"].min[:, 0] = omega_arms - 0.1
+    x_bounds["qdot_joints"].max[:, 0] = omega_arms + 0.1
 
     return OptimalControlProgram(
         bio_model,
