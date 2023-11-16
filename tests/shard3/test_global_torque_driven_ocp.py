@@ -448,7 +448,7 @@ def test_example_quaternions(phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.02226699773500572)
+    np.testing.assert_almost_equal(f[0, 0], 0.04420469332198318)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -467,22 +467,20 @@ def test_example_quaternions(phase_dynamics):
     # initial and final position
     np.testing.assert_almost_equal(q_roots[:, 0], np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
     np.testing.assert_almost_equal(
-        q_joints[:, 0], np.array([0.0, -0.9999875, 0.0, 0.0, 0.9999875, 0.0, 0.00499998, 0.00499998])
+        q_joints[:, 0], np.array([0.        , -0.9999875 ,  0.        ,  0.        ,  0.9999875 ,
+        0.        ,  0.00499998,  0.00499998])
     )
     np.testing.assert_almost_equal(qdot_roots[:, 0], np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
     np.testing.assert_almost_equal(
-        qdot_joints[:, 0], np.array([31.30040911, 31.41537798, 0.94255464, 31.29952186, -31.41465155, -0.94503525])
+        qdot_joints[:, 0], np.array([31.30034114,  31.41568425,   0.94125111,  31.3003698 ,
+       -31.41515089,  -0.940517135])
     )
     np.testing.assert_almost_equal(
         q_roots[:, -1],
         np.array(
             [
-                2.72972986e-08,
-                1.86452825e-03,
-                1.00129443e-02,
-                -5.07535877e-03,
-                5.21104305e-07,
-                -1.77063203e-06,
+                1.38813762e-07, 1.19620076e-02, 3.07792611e-02, -3.94790520e-02,
+                7.88790063e-07, -2.06999538e-06,
             ]
         ),
     )
@@ -490,14 +488,8 @@ def test_example_quaternions(phase_dynamics):
         q_joints[:, -1],
         np.array(
             [
-                -0.00887292,
-                -0.8793977,
-                0.33365588,
-                -0.00889809,
-                0.87940287,
-                -0.33365605,
-                0.33949185,
-                0.33947763,
+                -0.01282996, -0.56407734, 0.57257265, -0.01282031, 0.56408325,
+                -0.57256264, 0.59482158, 0.59482582,
             ]
         ),
     )
@@ -505,12 +497,8 @@ def test_example_quaternions(phase_dynamics):
         qdot_roots[:, -1],
         np.array(
             [
-                4.83276297e-06,
-                2.35280615e-01,
-                8.25226798e-01,
-                -7.30710676e-01,
-                4.68018854e-05,
-                -2.18287000e-04,
+                8.54563827e-06, 6.85647757e-01, 9.18596805e-01, -2.44778216e+00,
+                3.28167568e-05, -1.02973032e-04,
             ]
         ),
     )
@@ -518,12 +506,8 @@ def test_example_quaternions(phase_dynamics):
         qdot_joints[:, -1],
         np.array(
             [
-                30.70175053,
-                31.41461346,
-                0.7275156,
-                30.70243035,
-                -31.41270624,
-                -0.7300771,
+                29.53754362, 30.80180106, -0.28931875, 29.53631897,
+                -30.80255368, 0.29030004,
             ]
         ),
     )
@@ -531,12 +515,14 @@ def test_example_quaternions(phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(
         tau_joints[:, 0],
-        np.array([-7.03765313e-07, -9.01506831e-07, 1.46539042e-05, -6.88098155e-07, -4.91907144e-06, -8.05644694e-06]),
+        np.array([5.72452342e-07,  2.70826607e-06,  5.32567901e-05,  5.21771576e-07,
+       -6.29955380e-06, -3.35553185e-05]),
         decimal=6,
     )
     np.testing.assert_almost_equal(
         tau_joints[:, -2],
-        np.array([4.02291001e-07, -1.40162420e-06, 6.91397053e-06, 2.32072671e-07, 1.87435099e-07, -3.71240487e-06]),
+        np.array([8.27133699e-07,  5.76486395e-07,  1.45805121e-07,  6.59374446e-07,
+       -7.01270877e-07,  1.34904215e-08]),
         decimal=6,
     )
 
