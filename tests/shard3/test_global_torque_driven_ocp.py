@@ -434,7 +434,7 @@ def test_example_quaternions(phase_dynamics):
     # Define the problem
     model_path = bioptim_folder + "/models/trunk_and_2arm_quaternion.bioMod"
     final_time = 0.25
-    n_shooting = 6
+    n_shooting = 12
 
     ocp = ocp_module.prepare_ocp(
         model_path,
@@ -448,12 +448,12 @@ def test_example_quaternions(phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 0.04420469332198318)
+    np.testing.assert_almost_equal(f[0, 0], 0.04420791097477073)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (162, 1))
-    np.testing.assert_almost_equal(g[:-3], np.zeros((159, 1)), decimal=6)
+    np.testing.assert_equal(g.shape, (318, 1))
+    np.testing.assert_almost_equal(g[:-3], np.zeros((318-3, 1)), decimal=6)
 
     # Check some of the results
     q_roots, q_joints, qdot_roots, qdot_joints, tau_joints = (
@@ -471,18 +471,15 @@ def test_example_quaternions(phase_dynamics):
     )
     np.testing.assert_almost_equal(qdot_roots[:, 0], np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0]))
     np.testing.assert_almost_equal(
-        qdot_joints[:, 0], np.array([31.30034114, 31.41568425, 0.94125111, 31.3003698, -31.41515089, -0.940517135])
+        qdot_joints[:, 0], np.array([31.29569404,  31.41568825,   0.96146045,  31.29490579,
+       -31.41544625,  -0.96440271])
     )
     np.testing.assert_almost_equal(
         q_roots[:, -1],
         np.array(
             [
-                1.38813762e-07,
-                1.19620076e-02,
-                3.07792611e-02,
-                -3.94790520e-02,
-                7.88790063e-07,
-                -2.06999538e-06,
+                1.16966022e-07, 1.19610972e-02, 3.07791247e-02, -3.94755879e-02,
+                9.92556593e-07, -7.43714965e-06,
             ]
         ),
     )
@@ -490,14 +487,8 @@ def test_example_quaternions(phase_dynamics):
         q_joints[:, -1],
         np.array(
             [
-                -0.01282996,
-                -0.56407734,
-                0.57257265,
-                -0.01282031,
-                0.56408325,
-                -0.57256264,
-                0.59482158,
-                0.59482582,
+                -0.01308413, -0.56406875, 0.57279562, -0.01312236, 0.56407861,
+                -0.57281698, 0.59460948, 0.59457871,
             ]
         ),
     )
@@ -505,12 +496,8 @@ def test_example_quaternions(phase_dynamics):
         qdot_roots[:, -1],
         np.array(
             [
-                8.54563827e-06,
-                6.85647757e-01,
-                9.18596805e-01,
-                -2.44778216e00,
-                3.28167568e-05,
-                -1.02973032e-04,
+                6.96389746e-06, 6.85544412e-01, 9.18527523e-01, -2.44739887e+00,
+                3.00181607e-05, -4.04391608e-04,
             ]
         ),
     )
@@ -518,12 +505,8 @@ def test_example_quaternions(phase_dynamics):
         qdot_joints[:, -1],
         np.array(
             [
-                29.53754362,
-                30.80180106,
-                -0.28931875,
-                29.53631897,
-                -30.80255368,
-                0.29030004,
+                29.5608884, 30.77562743, -0.26879382, 29.56353213,
+                -30.77235993, 0.26642292,
             ]
         ),
     )
@@ -531,12 +514,14 @@ def test_example_quaternions(phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(
         tau_joints[:, 0],
-        np.array([5.72452342e-07, 2.70826607e-06, 5.32567901e-05, 5.21771576e-07, -6.29955380e-06, -3.35553185e-05]),
+        np.array([1.01532934e-06,  3.46031737e-06,  2.84227901e-05,  8.24786887e-07,
+       -6.60676951e-06, -1.71716039e-05]),
         decimal=6,
     )
     np.testing.assert_almost_equal(
         tau_joints[:, -2],
-        np.array([8.27133699e-07, 5.76486395e-07, 1.45805121e-07, 6.59374446e-07, -7.01270877e-07, 1.34904215e-08]),
+        np.array([4.05291610e-07,  2.91409888e-07,  7.35461459e-08,  3.29156849e-07,
+       -3.47357769e-07,  6.25018260e-09]),
         decimal=6,
     )
 
