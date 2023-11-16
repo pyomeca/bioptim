@@ -109,6 +109,10 @@ class Integrator:
     def tf(self):
         raise NotImplementedError("This method should be implemented for a given integrator")
 
+    @property
+    def step_time(self):
+        raise NotImplementedError("This method should be implemented for a given integrator")
+
     def get_u(self, u: np.ndarray, t: float) -> np.ndarray:
         """
         Get the control at a given time
@@ -205,15 +209,6 @@ class RK(Integrator):
     ----------
     n_step: int
         Number of finite element during the integration
-    h: float
-        Length of steps
-
-    Methods
-    -------
-    next_x(self, h: float, t: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX)
-        Compute the next integrated state (abstract)
-    dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
-        The dynamics of the system
     """
 
     def __init__(self, ode: dict, ode_opt: dict):
@@ -227,7 +222,10 @@ class RK(Integrator):
         """
         super(RK, self).__init__(ode, ode_opt)
         self.n_step = ode_opt["number_of_finite_elements"]
-        self.step_time = self.t_span_sym[1] / self.n_step
+
+    @property
+    def step_time(self):
+        return self.t_span_sym[1] / self.n_step
 
     @property
     def h(self):
@@ -325,7 +323,7 @@ class RK2(RK):
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         h = self.h
 
-        k1 = self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
+        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, s)[:, self.idx]
         return x_prev + h * self.fun(t0, x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, s)[:, self.idx]
 
 
@@ -349,11 +347,12 @@ class RK4(RK):
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         h = self.h
+        t = vertcat(t0, h)
 
-        k1 = self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
-        k2 = self.fun(t0 + h / 2, x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, s)[:, self.idx]
-        k3 = self.fun(t0 + h / 2, x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, s)[:, self.idx]
-        k4 = self.fun(t0 + h, x_prev + h * k3, self.get_u(u, t0 + h), p, s)[:, self.idx]
+        k1 = self.fun(t, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
+        k2 = self.fun(t, x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, s)[:, self.idx]
+        k3 = self.fun(t, x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, s)[:, self.idx]
+        k4 = self.fun(t, x_prev + h * k3, self.get_u(u, t0 + h), p, s)[:, self.idx]
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
@@ -377,38 +376,39 @@ class RK8(RK4):
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         h = self.h
+        t = vertcat(t0, h)
 
-        k1 = self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
-        k2 = self.fun(t0, x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + h * (4 / 27)), p, s)[:, self.idx]
-        k3 = self.fun(t0, x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + h * (2 / 9)), p, s)[:, self.idx]
-        k4 = self.fun(t0, x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t0 + h * (1 / 3)), p, s)[:, self.idx]
-        k5 = self.fun(t0, x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t0 + h * (1 / 2)), p, s)[:, self.idx]
+        k1 = self.fun(t, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
+        k2 = self.fun(t, x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + h * (4 / 27)), p, s)[:, self.idx]
+        k3 = self.fun(t, x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + h * (2 / 9)), p, s)[:, self.idx]
+        k4 = self.fun(t, x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t0 + h * (1 / 3)), p, s)[:, self.idx]
+        k5 = self.fun(t, x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t0 + h * (1 / 2)), p, s)[:, self.idx]
         k6 = self.fun(
-            t0, x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t0 + h * (2 / 3)), p, s
+            t, x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t0 + h * (2 / 3)), p, s
         )[:, self.idx]
         k7 = self.fun(
-            t0,
+            t,
             x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
             self.get_u(u, t0 + h * (1 / 6)),
             p,
             s,
         )[:, self.idx]
         k8 = self.fun(
-            t0,
+            t,
             x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
             self.get_u(u, t0 + h),
             p,
             s,
         )[:, self.idx]
         k9 = self.fun(
-            t0,
+            t,
             x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
             self.get_u(u, t0 + h * (5 / 6)),
             p,
             s,
         )[:, self.idx]
         k10 = self.fun(
-            t0,
+            t,
             x_prev
             + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
             self.get_u(u, t0 + h),
@@ -480,7 +480,7 @@ class TRAPEZOIDAL(Integrator):
         x_prev[:, 0] = states[:, 0]
 
         x_prev[:, 1] = self.next_x(
-            time,
+            t_span[0],
             x_prev[:, 0],
             states_next,
             controls_prev,
@@ -562,9 +562,6 @@ class COLLOCATION(Integrator):
         # Coefficients of the continuity equation
         self._d = self.cx.zeros(self.degree + 1)
 
-        # Choose collocation points
-        self.step_time = [0] + collocation_points(self.degree, self.method)
-
         # Dimensionless time inside one control interval
         time_control_interval = self.cx.sym("time_control_interval")
 
@@ -596,6 +593,14 @@ class COLLOCATION(Integrator):
                 self._c[j, r] = tfcn(self.step_time[r])
 
         self._finish_init()
+
+    @property
+    def h(self):
+        return self.t_span_sym[1]
+
+    @property
+    def step_time(self):
+        return [0] + collocation_points(self.degree, self.method)
 
     def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
         """
@@ -632,6 +637,8 @@ class COLLOCATION(Integrator):
         states_end = self._d[0] * states[1]
         defects = []
         for j in range(1, self.degree + 1):
+            t = vertcat(self.t_span_sym[0] + self.step_time[j-1] * self.h, self.h)
+
             # Expression for the state derivative at the collocation point
             xp_j = 0
             for r in range(self.degree + 2):
@@ -642,22 +649,22 @@ class COLLOCATION(Integrator):
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
-                    time,
+                    t,
                     states[j + 1],
                     self.get_u(controls, self.step_time[j]),
                     params * param_scaling,
                     stochastic_variables,
                 )[:, self.idx]
-                defects.append(xp_j - h * f_j)
+                defects.append(xp_j - self.h * f_j)
             elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(
                     self.implicit_fun(
-                        time,
+                        t,
                         states[j + 1],
-                        self.get_u(controls, time),
+                        self.get_u(controls, self.step_time[j]),
                         params * param_scaling,
                         stochastic_variables,
-                        xp_j / h,
+                        xp_j / self.h,
                     )
                 )
             else:
@@ -742,17 +749,16 @@ class IRK(COLLOCATION):
         )
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
-        time_sym = []
         collocation_states = vertcat(*states[1:]) if self.duplicate_collocation_starting_point else vertcat(*states[2:])
         vfcn = Function(
             "vfcn",
-            [collocation_states, time_sym, states[0], controls, params, stochastic_variables],
-            [defect],
+            [collocation_states, t_span, states[0], controls, params, stochastic_variables],
+            [defect]
         ).expand()
 
-        # Create a implicit function instance to solve the system of equations
-        ifcn = rootfinder("ifcn", "newton", vfcn)
-        x_irk_points = ifcn(self.cx(), time, states[0], controls, params, stochastic_variables)
+        # Create an implicit function instance to solve the system of equations
+        ifcn = rootfinder("ifcn", "newton", vfcn, {"error_on_fail": False})
+        x_irk_points = ifcn(self.cx(), t_span, states[0], controls, params, stochastic_variables)
         x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
@@ -770,21 +776,21 @@ class IRK(COLLOCATION):
         self.function = Function(
             "integrator",
             [
-                self.time_sym,
+                self.t_span_sym,
                 self.x_sym[0],
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
             ],
             self.dxdt(
-                t_span=t_span,
+                t_span=self.t_span_sym,
                 states=self.x_sym,
                 controls=self.u_sym,
                 params=self.param_sym,
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["t", "x0", "u", "p", "s"],
+            ["t_span", "x0", "u", "p", "s"],
             ["xf", "xall"],
             {"allow_free": self.allow_free_variables},
         )

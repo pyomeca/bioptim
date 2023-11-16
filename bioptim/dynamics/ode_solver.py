@@ -275,7 +275,18 @@ class OdeSolver:
             nlp.controls.node_index = node_index
             nlp.stochastic_variables.node_index = node_index
 
+            ode_opt = {
+                "model": nlp.model,
+                "param": nlp.parameters,
+                "cx": nlp.cx,
+                "idx": 0,
+                "control_type": nlp.control_type,
+                "defects_type": DefectType.NOT_APPLICABLE,
+                "allow_free_variables": allow_free_variables,
+            }
+
             ode = {
+                "t_span": vertcat(nlp.time_cx, nlp.dt),
                 "x_unscaled": horzcat(nlp.states.cx_start, nlp.states.cx_end),
                 "x_scaled": horzcat(nlp.states.scaled.cx_start, nlp.states.scaled.cx_end),
                 "p_unscaled": horzcat(nlp.controls.cx_start, nlp.controls.cx_end),
@@ -287,22 +298,6 @@ class OdeSolver:
                 "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
                 if len(nlp.implicit_dynamics_func) > 0
                 else nlp.implicit_dynamics_func,
-            }
-            t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
-            tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
-            dt = (tf - t0) / self.steps
-            time_integration_grid = [t0 + dt * i for i in range(0, self.steps)]
-            ode_opt = {
-                "t0": t0,
-                "tf": tf,
-                "time_integration_grid": time_integration_grid,
-                "model": nlp.model,
-                "param": nlp.parameters,
-                "cx": nlp.cx,
-                "idx": 0,
-                "control_type": nlp.control_type,
-                "defects_type": DefectType.NOT_APPLICABLE,
-                "allow_free_variables": allow_free_variables,
             }
 
             if ode["ode"].size2_out("xdot") != 1:
@@ -389,7 +384,21 @@ class OdeSolver:
                     + nlp.states.scaled.cx_intermediates_list
                 )
 
+            ode_opt = {
+                "model": nlp.model,
+                "param": nlp.parameters,
+                "cx": nlp.cx,
+                "idx": 0,
+                "control_type": nlp.control_type,
+                "irk_polynomial_interpolation_degree": self.polynomial_degree,
+                "method": self.method,
+                "defects_type": self.defects_type,
+                "duplicate_collocation_starting_point": self.duplicate_collocation_starting_point,
+                "allow_free_variables": allow_free_variables,
+            }
+
             ode = {
+                "t_span": vertcat(nlp.time_cx, nlp.dt),
                 "x_unscaled": x_unscaled,
                 "x_scaled": x_scaled,
                 "p_unscaled": nlp.controls.cx_start,
@@ -401,24 +410,6 @@ class OdeSolver:
                 "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
                 if len(nlp.implicit_dynamics_func) > 0
                 else nlp.implicit_dynamics_func,
-            }
-            t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
-            tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
-            time_integration_grid = self.time_grid(t0)
-            ode_opt = {
-                "t0": t0,
-                "tf": tf,
-                "time_integration_grid": time_integration_grid,
-                "model": nlp.model,
-                "param": nlp.parameters,
-                "cx": nlp.cx,
-                "idx": 0,
-                "control_type": nlp.control_type,
-                "irk_polynomial_interpolation_degree": self.polynomial_degree,
-                "method": self.method,
-                "defects_type": self.defects_type,
-                "duplicate_collocation_starting_point": self.duplicate_collocation_starting_point,
-                "allow_free_variables": allow_free_variables,
             }
 
             if ode["ode"].size2_out("xdot") != 1:
