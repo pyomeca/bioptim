@@ -985,15 +985,15 @@ class Solution:
 
         return out
 
-    def _get_first_frame_states(self, sol, shooting_type: Shooting, phase: int) -> np.ndarray:
+    def _get_first_frame_states(self, previous_solution, shooting_type: Shooting, phase: int) -> np.ndarray:
         """
         Get the first frame of the states for a given phase,
         according to the shooting type, the integrator and the phase of the ocp
 
         Parameters
         ----------
-        sol: Solution
-            The initial state of the phase
+        previous_solution: Solution
+            The initial state of the previous phase
         shooting_type: Shooting
             The shooting type to use
         phase: int
@@ -1008,36 +1008,36 @@ class Solution:
         # Get the first frame of the phase
         if shooting_type == Shooting.SINGLE:
             if phase == 0:
-                return np.hstack([self._states["unscaled"][0][key][:, 0] for key in self.ocp.nlp[phase].states])
+                return np.hstack([previous_solution._states["unscaled"][0][key][:, 0] for key in previous_solution.ocp.nlp[phase].states])
 
             t0 = []
-            # TODO : Ask if not putting sol. instead of self. for other control/parameter/stochastic won't make continuity false on those inputs. Test won't work if we do that.
+
             x0 = np.concatenate(
-                [sol._states["unscaled"][phase - 1][key][:, -1] for key in sol.ocp.nlp[phase - 1].states]
+                [self._states["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].states]
             )
-            if self.ocp.nlp[phase].control_type == ControlType.NONE:
+            if previous_solution.ocp.nlp[phase].control_type == ControlType.NONE:
                 u0 = []
             else:
                 u0 = np.concatenate(
-                    [self._controls["unscaled"][phase - 1][key][:, -1] for key in self.ocp.nlp[phase - 1].controls]
+                    [previous_solution._controls["unscaled"][phase - 1][key][:, -1] for key in previous_solution.ocp.nlp[phase - 1].controls]
                 )
                 if (
-                    self.ocp.nlp[phase - 1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                    previous_solution.ocp.nlp[phase - 1].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     or not np.isnan(u0).any()
                 ):
                     u0 = vertcat(u0, u0)
             params = []
             s0 = []
-            if len(self.ocp.nlp[phase - 1].stochastic_variables) > 0:
+            if len(previous_solution.ocp.nlp[phase - 1].stochastic_variables) > 0:
                 s0 = np.concatenate(
                     [
-                        self.stochastic_variables["unscaled"][phase - 1][key][:, -1]
-                        for key in self.ocp.nlp[phase - 1].stochastic_variables["unscaled"]
+                        previous_solution.stochastic_variables["unscaled"][phase - 1][key][:, -1]
+                        for key in previous_solution.ocp.nlp[phase - 1].stochastic_variables["unscaled"]
                     ]
                 )
-            if self.parameters.keys():
-                params = np.vstack([self.parameters[key] for key in self.parameters])
-            val = self.ocp.phase_transitions[phase - 1].function[-1](t0, vertcat(x0, x0), u0, params, s0)
+            if previous_solution.parameters.keys():
+                params = np.vstack([previous_solution.parameters[key] for key in previous_solution.parameters])
+            val = previous_solution.ocp.phase_transitions[phase - 1].function[-1](t0, vertcat(x0, x0), u0, params, s0)
             if val.shape[0] != x0.shape[0]:
                 raise RuntimeError(
                     f"Phase transition must have the same number of states ({val.shape[0]}) "
@@ -1048,17 +1048,17 @@ class Solution:
             return x0
 
         elif shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            return np.vstack([self._states["unscaled"][phase][key][:, 0:1] for key in self.ocp.nlp[phase].states])[:, 0]
+            return np.vstack([previous_solution._states["unscaled"][phase][key][:, 0:1] for key in previous_solution.ocp.nlp[phase].states])[:, 0]
 
         elif shooting_type == Shooting.MULTIPLE:
             return np.vstack(
                 [
                     (
-                        self.states_no_intermediate[phase][key][:, :-1]
-                        if len(self.ocp.nlp) > 1
-                        else self.states_no_intermediate[key][:, :-1]
+                        previous_solution.states_no_intermediate[phase][key][:, :-1]
+                        if len(previous_solution.ocp.nlp) > 1
+                        else previous_solution.states_no_intermediate[key][:, :-1]
                     )
-                    for key in self.ocp.nlp[phase].states
+                    for key in previous_solution.ocp.nlp[phase].states
                 ]
             )
         else:
@@ -1107,7 +1107,7 @@ class Solution:
             states_phase_idx = self.ocp.nlp[p].use_states_from_phase_idx
             controls_phase_idx = self.ocp.nlp[p].use_controls_from_phase_idx
             param_scaling = nlp.parameters.scaling
-            x0 = self._get_first_frame_states(out, shooting_type, phase=p)
+            x0 = out._get_first_frame_states(self, shooting_type, phase=p)
 
             u = (
                 np.array([])
@@ -1210,7 +1210,7 @@ class Solution:
             states_phase_idx = self.ocp.nlp[i_phase].use_states_from_phase_idx
             controls_phase_idx = self.ocp.nlp[i_phase].use_controls_from_phase_idx
             param_scaling = nlp.parameters.scaling
-            x0 = self._get_first_frame_states(out, shooting_type, phase=i_phase)
+            x0 = out._get_first_frame_states(self, shooting_type, phase=i_phase)
             u = (
                 np.array([])
                 if nlp.control_type == ControlType.NONE
