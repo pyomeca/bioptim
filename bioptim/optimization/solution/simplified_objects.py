@@ -90,11 +90,11 @@ class SimplifiedNLP:
         Generate time vector steps for a phase considering all the phase final time
     _define_step_times(self, dynamics_step_time: list, ode_solver_steps: int,
         keep_intermediate_points: bool = None, continuous: bool = True,
-        is_direct_collocation: bool = None, include_starting_collocation_point: bool = False) -> np.ndarray
+        is_direct_collocation: bool = None, duplicate_collocation_starting_point: bool = False) -> np.ndarray
         Define the time steps for the integration of the whole phase
     _define_step_times(self, dynamics_step_time: list, ode_solver_steps: int,
         keep_intermediate_points: bool = None, continuous: bool = True,
-        is_direct_collocation: bool = None, include_starting_collocation_point: bool = False) -> np.ndarray
+        is_direct_collocation: bool = None, duplicate_collocation_starting_point: bool = False) -> np.ndarray
         Define the time steps for the integration of the whole phase
     _complete_controls(self, controls: dict[str, np.ndarray]) -> dict[str, np.ndarray]
         Controls don't necessarily have dimensions that matches the states. This method aligns them
@@ -313,15 +313,15 @@ class SimplifiedNLP:
         np.ndarray
         """
         is_direct_collocation = self.ode_solver.is_direct_collocation
-        include_starting_collocation_point = False
+        duplicate_collocation_starting_point = False
         if is_direct_collocation:
-            include_starting_collocation_point = self.ode_solver.include_starting_collocation_point
+            duplicate_collocation_starting_point = self.ode_solver.duplicate_collocation_starting_point
 
         step_times = self._define_step_times(
             dynamics_step_time=self.dynamics[0].step_time,
             ode_solver_steps=self.ode_solver.steps,
             is_direct_collocation=is_direct_collocation,
-            include_starting_collocation_point=include_starting_collocation_point,
+            duplicate_collocation_starting_point=duplicate_collocation_starting_point,
             keep_intermediate_points=keep_intermediate_points,
             continuous=shooting_type == Shooting.SINGLE,
         )
@@ -356,7 +356,7 @@ class SimplifiedNLP:
         keep_intermediate_points: bool = None,
         continuous: bool = True,
         is_direct_collocation: bool = None,
-        include_starting_collocation_point: bool = False,
+        duplicate_collocation_starting_point: bool = False,
     ) -> np.ndarray:
         """
         Define the time steps for the integration of the whole phase
@@ -375,7 +375,7 @@ class SimplifiedNLP:
             arrival node and the beginning of the next one are expected to be almost equal when the problem converged
         is_direct_collocation: bool
             If the ode solver is direct collocation
-        include_starting_collocation_point
+        duplicate_collocation_starting_point
             If the ode solver is direct collocation and an additional collocation point at the shooting node was used
 
         Returns
@@ -392,7 +392,7 @@ class SimplifiedNLP:
             if keep_intermediate_points:
                 step_times = np.array(dynamics_step_time + [1])
 
-                if include_starting_collocation_point:
+                if duplicate_collocation_starting_point:
                     step_times = np.array([0] + step_times)
             else:
                 step_times = np.array(dynamics_step_time + [1])[[0, -1]]

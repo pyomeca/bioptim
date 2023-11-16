@@ -300,7 +300,7 @@ def prepare_socp(
         ode_solver = OdeSolver.COLLOCATION(
             polynomial_degree=socp_type.polynomial_degree,
             method=socp_type.method,
-            include_starting_collocation_point=True,
+            duplicate_collocation_starting_point=True,
         )
 
         return OptimalControlProgram(

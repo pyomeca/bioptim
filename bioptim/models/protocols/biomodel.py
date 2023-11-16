@@ -2,8 +2,8 @@ import numpy as np
 from typing import Protocol, Callable, Any
 
 from casadi import MX, SX
-from ..misc.mapping import BiMapping, BiMappingList
-from ..interfaces.biorbd_model import Bounds
+from ...misc.mapping import BiMapping, BiMappingList
+from ...limits.path_conditions import Bounds
 
 
 class BioModel(Protocol):

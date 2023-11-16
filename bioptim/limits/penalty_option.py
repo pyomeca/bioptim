@@ -7,7 +7,7 @@ import numpy as np
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.options import OptionGeneric
-from ..interfaces.stochastic_bio_model import StochasticBioModel
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
 class PenaltyOption(OptionGeneric):

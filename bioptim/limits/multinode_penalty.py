@@ -8,7 +8,7 @@ from ..misc.enums import Node, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
 from ..misc.mapping import BiMapping
-from ..interfaces.stochastic_bio_model import StochasticBioModel
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
 class MultinodePenalty(PenaltyOption):

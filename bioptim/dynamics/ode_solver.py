@@ -330,7 +330,7 @@ class OdeSolver:
             The method of interpolation ("legendre" or "radau")
         defects_type: DefectType
             The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
-        include_starting_collocation_point: bool
+        duplicate_collocation_starting_point: bool
             Whether an additional collocation point should be added at the shooting node (this is typically used in SOCPs)
 
         Methods
@@ -344,7 +344,7 @@ class OdeSolver:
             polynomial_degree: int = 4,
             method: str = "legendre",
             defects_type: DefectType = DefectType.EXPLICIT,
-            include_starting_collocation_point: bool = False,
+            duplicate_collocation_starting_point: bool = False,
         ):
             """
             Parameters
@@ -355,8 +355,8 @@ class OdeSolver:
 
             super(OdeSolver.COLLOCATION, self).__init__()
             self.polynomial_degree = polynomial_degree
-            self.include_starting_collocation_point = include_starting_collocation_point
-            self.n_cx = polynomial_degree + 3 if include_starting_collocation_point else polynomial_degree + 2
+            self.duplicate_collocation_starting_point = duplicate_collocation_starting_point
+            self.n_cx = polynomial_degree + 3 if duplicate_collocation_starting_point else polynomial_degree + 2
             self.rk_integrator = COLLOCATION
             self.method = method
             self.defects_type = defects_type
@@ -384,7 +384,7 @@ class OdeSolver:
                     "developers and ping @EveCharbie"
                 )
 
-            if self.include_starting_collocation_point:
+            if self.duplicate_collocation_starting_point:
                 x_unscaled = ([nlp.states.cx_start] + nlp.states.cx_intermediates_list,)
                 x_scaled = [nlp.states.scaled.cx_start] + nlp.states.scaled.cx_intermediates_list
             else:
@@ -423,7 +423,7 @@ class OdeSolver:
                 "irk_polynomial_interpolation_degree": self.polynomial_degree,
                 "method": self.method,
                 "defects_type": self.defects_type,
-                "include_starting_collocation_point": self.include_starting_collocation_point,
+                "duplicate_collocation_starting_point": self.duplicate_collocation_starting_point,
                 "allow_free_variables": allow_free_variables,
             }
 

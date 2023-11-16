@@ -19,7 +19,7 @@ from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
 from ..limits.constraints import ImplicitConstraintFcn
-from ..interfaces.stochastic_bio_model import StochasticBioModel
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..optimization.problem_type import SocpType
 
 

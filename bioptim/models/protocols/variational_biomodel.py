@@ -1,6 +1,6 @@
 from typing import Protocol
 from casadi import MX, SX
-from ..interfaces.holonomic_biomodel import HolonomicBioModel
+from ..protocols.holonomic_biomodel import HolonomicBioModel
 
 
 class VariationalBioModel(HolonomicBioModel, Protocol):

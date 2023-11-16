@@ -6,7 +6,7 @@ import pickle
 from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver
-from ..interfaces.stochastic_bio_model import StochasticBioModel
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
@@ -27,7 +27,7 @@ from ..misc.utils import check_version
 from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
-from bioptim.optimization.solution.solution import Solution
+from ..optimization.solution.solution import Solution
 from ..optimization.variable_scaling import VariableScalingList
 
 
@@ -321,7 +321,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             return OdeSolver.COLLOCATION(
                 method=self.problem_type.method,
                 polynomial_degree=self.problem_type.polynomial_degree,
-                include_starting_collocation_point=True,
+                duplicate_collocation_starting_point=True,
             )
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
@@ -372,7 +372,7 @@ def _check_has_no_ode_solver_defined(**kwargs):
             "OdeSolver.COLLOCATION("
             "method=problem_type.method, "
             "polynomial_degree=problem_type.polynomial_degree, "
-            "include_starting_collocation_point=True"
+            "duplicate_collocation_starting_point=True"
             ")"
         )
 
