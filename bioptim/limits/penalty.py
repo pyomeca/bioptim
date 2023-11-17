@@ -1137,16 +1137,19 @@ class PenaltyFunctionAbstract:
                     f"Length of node index superior to 1 is not implemented yet,"
                     f" actual length {len(penalty.node_idx[0])} "
                 )
-
+            
+            t0 = controller.ocp.node_time(controller.phase_idx, controller.node_index)
+            t_span = vertcat(t0, t0 + controller.get_nlp.dt)
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
                 continuity -= controller.integrate(
+                    t_span=t_span,
                     x0=cx, u=u, p=controller.parameters.cx, s=controller.stochastic_variables.cx_start
                 )["xf"]
                 continuity = vertcat(
                     continuity,
-                    controller.integrate(
+                    controller.integrate(t_span=t_span,
                         x0=cx, u=u, p=controller.parameters.cx, s=controller.stochastic_variables.cx_start
                     )["defects"],
                 )
@@ -1154,9 +1157,9 @@ class PenaltyFunctionAbstract:
                 penalty.integrate = True
 
             else:
-                t0 = controller.ocp.node_time(controller.phase_idx, controller.node_index)
+                
                 continuity -= controller.integrate(
-                    t_span=vertcat(t0, t0 + controller.get_nlp.dt),
+                    t_span=t_span,
                     x0=controller.states.cx_start,
                     u=u,
                     p=controller.parameters.cx_start,
