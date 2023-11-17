@@ -1994,6 +1994,8 @@ def _scale_values(values, scaling_entities, penalty, scaling_data):
         [np.repeat(scaling_data[key].scaling[:, np.newaxis], values.shape[1], axis=1) for key in scaling_entities]
     )
 
+    scaling = np.repeat(scaling, int(values.shape[0] / scaling.shape[0]), axis=0)
+
     if penalty.multinode_penalty:
         len_values = sum(scaling_entities[key].shape for key in scaling_entities)
         complete_scaling = np.array(scaling)

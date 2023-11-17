@@ -1,10 +1,8 @@
 from casadi import vertcat, Function
 import numpy as np
 
-from ...misc.enums import (
-    ControlType,
-    Shooting,
-)
+from ...dynamics.ode_solver import OdeSolver
+from ...misc.enums import ControlType, Shooting
 from ..non_linear_program import NonLinearProgram
 from ..optimization_variable import OptimizationVariableList, OptimizationVariable
 
@@ -289,7 +287,7 @@ class SimplifiedNLP:
 
     def _generate_time(
         self,
-        dt: float,
+        step_time: float,
         time_phase: np.ndarray,
         keep_intermediate_points: bool = None,
         shooting_type: Shooting = None,
@@ -318,7 +316,7 @@ class SimplifiedNLP:
             duplicate_collocation_starting_point = self.ode_solver.duplicate_collocation_starting_point
 
         step_times = self._define_step_times(
-            dynamics_step_time=dt,
+            dynamics_step_time=step_time,
             ode_solver_steps=self.ode_solver.steps,
             is_direct_collocation=is_direct_collocation,
             duplicate_collocation_starting_point=duplicate_collocation_starting_point,
@@ -564,9 +562,14 @@ class SimplifiedOCP:
         if shooting_type is None:
             shooting_type = Shooting.SINGLE_DISCONTINUOUS_PHASE
 
+
         time_vector = []
         for p, nlp in enumerate(self.nlp):
-            phase_time_vector = nlp._generate_time(time_phase[p] / nlp.ns, time_phase, keep_intermediate_points, shooting_type)
+            if isinstance(self.nlp[0].ode_solver, OdeSolver.COLLOCATION):
+                step_time = nlp.dynamics[0].step_time
+            else: 
+                step_time = time_phase[p] / nlp.ns
+            phase_time_vector = nlp._generate_time(step_time, time_phase, keep_intermediate_points, shooting_type)
             time_vector.append(phase_time_vector)
 
         if merge_phases:

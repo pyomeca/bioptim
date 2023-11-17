@@ -77,7 +77,6 @@ class Integrator:
         self.cx = ode_opt["cx"]
         self.t_span_sym = ode["t_span"]
         self.x_sym = ode["x_scaled"]
-        self.x_sym_modified = self.x_sym
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
@@ -95,7 +94,7 @@ class Integrator:
             "integrator",
             [
                 self.t_span_sym,
-                self.x_sym_modified,
+                self._x_sym_modified,
                 self.u_sym,
                 self.param_sym,
                 self.s_sym,
@@ -108,10 +107,22 @@ class Integrator:
                 param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
-            ["t_span", "x0", "u", "p", "s"],
-            ["xf", "xall"],
+            self._input_names,
+            self._output_names,
             {"allow_free": self.allow_free_variables},
         )
+
+    @property
+    def _x_sym_modified(self):
+        return self.x_sym
+    
+    @property
+    def _input_names(self):
+        return ["t_span", "x0", "u", "p", "s"]
+
+    @property
+    def _output_names(self):
+        return ["xf", "xall"]
 
     def _initialize(self, ode: dict, ode_opt: dict):
         """
@@ -225,9 +236,9 @@ class RK(Integrator):
         ode_opt: dict
             The ode options
         """
-        super(RK, self).__init__(ode, ode_opt)
         self.n_step = ode_opt["number_of_finite_elements"]
-
+        super(RK, self).__init__(ode, ode_opt)
+        
     @property
     def step_time(self):
         return self.t_span_sym[1] / self.n_step
@@ -469,9 +480,6 @@ class COLLOCATION(Integrator):
         self.duplicate_collocation_starting_point = ode_opt["duplicate_collocation_starting_point"]
         self.allow_free_variables = ode_opt["allow_free_variables"]
 
-        self.x_sym_modified = horzcat(*self.x_sym) if self.duplicate_collocation_starting_point else horzcat(*self.x_sym[1:])
-
-        
         # Coefficients of the collocation equation
         self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
 
@@ -508,7 +516,14 @@ class COLLOCATION(Integrator):
             for r in range(self.degree + 1):
                 self._c[j, r] = tfcn(self.step_time[r])
 
+    @property
+    def _x_sym_modified(self):
+        return horzcat(*self.x_sym) if self.duplicate_collocation_starting_point else horzcat(*self.x_sym[1:])
 
+    @property
+    def _output_names(self):
+        return ["xf", "xall", "defects"]
+    
     @property
     def h(self):
         return self.t_span_sym[1]
@@ -603,6 +618,14 @@ class IRK(COLLOCATION):
         Get the control at a given time
     """
 
+    @property
+    def _x_sym_modified(self):
+        return self.x_sym[0]
+
+    @property
+    def _output_names(self):
+        return ["xf", "xall"]
+    
     def dxdt(
         self,
         t_span: float | MX | SX,

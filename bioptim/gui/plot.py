@@ -346,31 +346,20 @@ class PlotOcp:
                         nlp.stochastic_variables.node_index = node_index
 
                         # If multi-node penalties = None, stays zero
-                        size_x = 0
-                        size_u = 0
-                        size_p = 0
-                        size_s = 0
+                        size_x = nlp.states.shape
+                        size_u = nlp.controls.shape
+                        size_p = nlp.parameters.shape
+                        size_s = nlp.stochastic_variables.shape
                         if "penalty" in nlp.plot[key].parameters:
                             penalty = nlp.plot[key].parameters["penalty"]
                             casadi_function = penalty.weighted_function_non_threaded[0]
                             nlp.plot[key].parameters["dt_function"] = Function("dt", [self.ocp.variables_vector[nlp.time_index]], [penalty.dt])
-                            if nlp.plot[key].parameters["penalty"].multinode_penalty:
-                                if casadi_function is not None:
-                                    # size_t = len(casadi_function.nominal_in(0))
-                                    size_x = len(casadi_function.nominal_in(1))
-                                    size_u = len(casadi_function.nominal_in(2))
-                                    size_p = len(casadi_function.nominal_in(3))
-                                    size_s = len(casadi_function.nominal_in(4))
-                            else:
-                                size_x = nlp.states.shape
-                                size_u = nlp.controls.shape
-                                size_p = nlp.parameters.shape
-                                size_s = nlp.stochastic_variables.shape
-                        else:
-                            size_x = nlp.states.shape
-                            size_u = nlp.controls.shape
-                            size_p = nlp.parameters.shape
-                            size_s = nlp.stochastic_variables.shape
+                            
+                            if casadi_function is not None:
+                                size_x = casadi_function.nnz_in(2)
+                                size_u = casadi_function.nnz_in(3)
+                                size_p = casadi_function.nnz_in(4)
+                                size_s = casadi_function.nnz_in(5)
 
                         size = (
                             nlp.plot[key].function(
@@ -914,9 +903,10 @@ class PlotOcp:
                                     ):
                                         states = state[:, node_idx * (step_size) : (node_idx + 1) * (step_size) + 1]
                                     else:
-                                        states = state[
-                                            :, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size
-                                        ]
+                                        if nlp.ode_solver.is_direct_collocation:
+                                            states = np.reshape(state[:, node_idx * step_size : (node_idx + 1) * step_size + x_mod], (-1, 1), order="F")
+                                        else:
+                                            states = state[:, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size]
                                     if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                                         control_tp = control[:, node_idx : node_idx + 1 + 1]
                                     else:
