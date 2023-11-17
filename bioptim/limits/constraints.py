@@ -646,9 +646,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             cov_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
             cov_implicit_deffect = cov_next - cov_matrix
 
-            penalty.expand = (
-                controller.get_nlp.dynamics_type.expand_dynamics
-            )
+            penalty.expand = controller.get_nlp.dynamics_type.expand_dynamics
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
@@ -894,7 +892,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             defects = vertcat(initial_defect, defects)
 
             Gdx = jacobian(defects, controller.states.cx_start)
-            Gdz = jacobian(defects, horzcat(controller.states.cx_start, horzcat(*controller.states.cx_intermediates_list)))
+            Gdz = jacobian(
+                defects, horzcat(controller.states.cx_start, horzcat(*controller.states.cx_intermediates_list))
+            )
             Gdw = jacobian(defects, vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
             Fdz = jacobian(xf, horzcat(controller.states.cx_start, horzcat(*controller.states.cx_intermediates_list)))
 

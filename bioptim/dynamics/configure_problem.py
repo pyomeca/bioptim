@@ -515,7 +515,6 @@ class ConfigureProblem:
             allow_free_variables=True,
         )
 
-
     @staticmethod
     def stochastic_torque_driven_free_floating_base(
         ocp,

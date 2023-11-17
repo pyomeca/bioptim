@@ -333,7 +333,6 @@ class DynamicsFunctions:
 
         return DynamicsEvaluation(dxdt=dxdt, defects=None)
 
-
     @staticmethod
     def stochastic_torque_driven_free_floating_base(
         time: MX.sym,
