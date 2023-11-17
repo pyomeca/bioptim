@@ -1792,7 +1792,7 @@ class Solution:
                 x_reshaped = x.T.reshape((-1, 1)) if len(x.shape) > 1 and x.shape[1] != 1 else x
                 u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
                 s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
-                val.append(penalty.function[idx](t, self._dt[phase_idx], x_reshaped, u_reshaped, p, s_reshaped))
+                val.append(penalty.function[idx](t, self._dt, x_reshaped, u_reshaped, p, s_reshaped))
 
                 if (
                     penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
@@ -1850,8 +1850,12 @@ class Solution:
             u_reshaped = u.T.reshape((-1, 1)) if len(u.shape) > 1 and u.shape[1] != 1 else u
             s_reshaped = s.T.reshape((-1, 1)) if len(s.shape) > 1 and s.shape[1] != 1 else s
             val_weighted.append(
-                penalty.weighted_function[idx](t, self._dt[phase_idx], x_reshaped, u_reshaped, p, s_reshaped, penalty.weight, target, dt)
+                penalty.weighted_function[idx](t, self._dt, x_reshaped, u_reshaped, p, s_reshaped, penalty.weight, target, dt)
             )
+
+        if self.ocp.n_threads > 1:
+            val = [v[:, 0] for v in val]
+            val_weighted = [v[:, 0] for v in val_weighted]
 
         val = np.nansum(val)
         val_weighted = np.nansum(val_weighted)
