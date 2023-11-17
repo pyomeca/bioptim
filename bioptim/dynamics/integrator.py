@@ -77,6 +77,7 @@ class Integrator:
         self.cx = ode_opt["cx"]
         self.t_span_sym = ode["t_span"]
         self.x_sym = ode["x_scaled"]
+        self.x_sym_modified = self.x_sym
         self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
         self.param_sym = ode_opt["param"].cx
         self.param_scaling = ode_opt["param"].scaling
@@ -87,6 +88,37 @@ class Integrator:
         self.control_type = ode_opt["control_type"]
         self.function = None
         self.allow_free_variables = ode_opt["allow_free_variables"]
+
+        self._initialize(ode, ode_opt)
+
+        self.function = Function(
+            "integrator",
+            [
+                self.t_span_sym,
+                self.x_sym_modified,
+                self.u_sym,
+                self.param_sym,
+                self.s_sym,
+            ],
+            self.dxdt(
+                t_span=self.t_span_sym,
+                states=self.x_sym,
+                controls=self.u_sym,
+                params=self.param_sym,
+                param_scaling=self.param_scaling,
+                stochastic_variables=self.s_sym,
+            ),
+            ["t_span", "x0", "u", "p", "s"],
+            ["xf", "xall"],
+            {"allow_free": self.allow_free_variables},
+        )
+
+    def _initialize(self, ode: dict, ode_opt: dict):
+        """
+        This method is called by the constructor to initialize the integrator right before 
+        creating the CasADi function from dxdt
+        """
+        pass
 
     def __call__(self, *args, **kwargs):
         """
@@ -173,33 +205,6 @@ class Integrator:
 
         raise RuntimeError("Integrator is abstract, please specify a proper one")
 
-    def _finish_init(self):
-        """
-        Prepare the CasADi function from dxdt
-        """
-
-        self.function = Function(
-            "integrator",
-            [
-                self.t_span_sym,
-                self.x_sym,
-                self.u_sym,
-                self.param_sym,
-                self.s_sym,
-            ],
-            self.dxdt(
-                t_span=self.t_span_sym,
-                states=self.x_sym,
-                controls=self.u_sym,
-                params=self.param_sym,
-                param_scaling=self.param_scaling,
-                stochastic_variables=self.s_sym,
-            ),
-            ["t_span", "x0", "u", "p", "s"],
-            ["xf", "xall"],
-            {"allow_free": self.allow_free_variables},
-        )
-
 
 class RK(Integrator):
     """
@@ -285,19 +290,6 @@ class RK1(RK):
     Numerical integration using first order Runge-Kutta 1 Method (Forward Euler Method).
     """
 
-    def __init__(self, ode: dict, ode_opt: dict):
-        """
-        Parameters
-        ----------
-        ode: dict
-            The ode description
-        ode_opt: dict
-            The ode options
-        """
-
-        super(RK1, self).__init__(ode, ode_opt)
-        self._finish_init()
-
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
         return x_prev + self.h * self.fun(t0, x_prev, self.get_u(u, t0), p, s)[:, self.idx]
 
@@ -306,19 +298,6 @@ class RK2(RK):
     """
     Numerical integration using second order Runge-Kutta Method (Midpoint Method).
     """
-
-    def __init__(self, ode: dict, ode_opt: dict):
-        """
-        Parameters
-        ----------
-        ode: dict
-            The ode description
-        ode_opt: dict
-            The ode options
-        """
-
-        super(RK2, self).__init__(ode, ode_opt)
-        self._finish_init()
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         h = self.h
@@ -331,19 +310,6 @@ class RK4(RK):
     """
     Numerical integration using fourth order Runge-Kutta method.
     """
-
-    def __init__(self, ode: dict, ode_opt: dict):
-        """
-        Parameters
-        ----------
-        ode: dict
-            The ode description
-        ode_opt: dict
-            The ode options
-        """
-
-        super(RK4, self).__init__(ode, ode_opt)
-        self._finish_init()
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         h = self.h
@@ -360,19 +326,6 @@ class RK8(RK4):
     """
     Numerical integration using eighth order Runge-Kutta method.
     """
-
-    def __init__(self, ode: dict, ode_opt: dict):
-        """
-        Parameters
-        ----------
-        ode: dict
-            The ode description
-        ode_opt: dict
-            The ode options
-        """
-
-        super(RK8, self).__init__(ode, ode_opt)
-        self._finish_init()
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX):
         h = self.h
@@ -426,19 +379,6 @@ class TRAPEZOIDAL(Integrator):
     of order 1, it is not possible to put a constraint on the slopes).
     """
 
-    def __init__(self, ode: dict, ode_opt: dict):
-        """
-        Parameters
-        ----------
-        ode: dict
-            The ode description
-        ode_opt: dict
-            The ode options
-        """
-
-        super(TRAPEZOIDAL, self).__init__(ode, ode_opt)
-        self._finish_init()
-
     def next_x(
         self,
         t0: float | MX | SX,
@@ -452,7 +392,11 @@ class TRAPEZOIDAL(Integrator):
     ):
         dx = self.fun(t0, x_prev, u_prev, p, s_prev)[:, self.idx]
         dx_next = self.fun(t0, x_next, u_next, p, s_next)[:, self.idx]
-        return x_prev + (dx + dx_next) * h / 2
+        return x_prev + (dx + dx_next) * self.h / 2
+
+    @property
+    def h(self):
+        return self.t_span_sym[1] - self.t_span_sym[0]
 
     def dxdt(
         self,
@@ -495,34 +439,6 @@ class TRAPEZOIDAL(Integrator):
 
         return x_prev[:, 1], x_prev
 
-    def _finish_init(self):
-        """
-        Prepare the CasADi function from dxdt
-        """
-
-        self.function = Function(
-            "integrator",
-            [
-                self.time_sym,
-                self.x_sym,
-                self.u_sym,
-                self.param_sym,
-                self.s_sym,
-            ],
-            self.dxdt(
-                self.h,
-                self.time_integration_grid[0],
-                self.x_sym,
-                self.u_sym,
-                self.param_sym,
-                self.param_scaling,
-                self.s_sym,
-            ),
-            ["t", "x0", "u", "p", "s"],
-            ["xf", "xall"],
-            {"allow_free": self.allow_free_variables},
-        )
-
 
 class COLLOCATION(Integrator):
     """
@@ -539,7 +455,7 @@ class COLLOCATION(Integrator):
         Get the control at a given time
     """
 
-    def __init__(self, ode: dict, ode_opt: dict):
+    def _initialize(self, ode: dict, ode_opt: dict):
         """
         Parameters
         ----------
@@ -548,14 +464,14 @@ class COLLOCATION(Integrator):
         ode_opt: dict
             The ode options
         """
-
-        super(COLLOCATION, self).__init__(ode, ode_opt)
-
         self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
         self.duplicate_collocation_starting_point = ode_opt["duplicate_collocation_starting_point"]
         self.allow_free_variables = ode_opt["allow_free_variables"]
 
+        self.x_sym_modified = horzcat(*self.x_sym) if self.duplicate_collocation_starting_point else horzcat(*self.x_sym[1:])
+
+        
         # Coefficients of the collocation equation
         self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
 
@@ -592,7 +508,6 @@ class COLLOCATION(Integrator):
             for r in range(self.degree + 1):
                 self._c[j, r] = tfcn(self.step_time[r])
 
-        self._finish_init()
 
     @property
     def h(self):
@@ -677,34 +592,6 @@ class COLLOCATION(Integrator):
         defects = vertcat(*defects)
         return states_end, horzcat(states[1], states_end), defects
 
-    def _finish_init(self):
-        """
-        Prepare the CasADi function from dxdt
-        """
-
-        self.function = Function(
-            "integrator",
-            [
-                self.time_sym,
-                horzcat(*self.x_sym) if self.duplicate_collocation_starting_point else horzcat(*self.x_sym[1:]),
-                self.u_sym,
-                self.param_sym,
-                self.s_sym,
-            ],
-            self.dxdt(
-                h=self.h,
-                time=self.time_integration_grid[0],
-                states=self.x_sym,
-                controls=self.u_sym,
-                params=self.param_sym,
-                param_scaling=self.param_scaling,
-                stochastic_variables=self.s_sym,
-            ),
-            ["t", "x0", "u", "p", "s"],
-            ["xf", "xall", "defects"],
-            {"allow_free": self.allow_free_variables},
-        )
-
 
 class IRK(COLLOCATION):
     """
@@ -715,18 +602,6 @@ class IRK(COLLOCATION):
     get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
     """
-
-    def __init__(self, ode: dict, ode_opt: dict):
-        """
-        Parameters
-        ----------
-        ode: dict
-            The ode description
-        ode_opt: dict
-            The ode options
-        """
-
-        super(IRK, self).__init__(ode, ode_opt)
 
     def dxdt(
         self,
@@ -768,48 +643,8 @@ class IRK(COLLOCATION):
 
         return xf[:, -1], horzcat(states[0], xf[:, -1])
 
-    def _finish_init(self):
-        """
-        Prepare the CasADi function from dxdt
-        """
-
-        self.function = Function(
-            "integrator",
-            [
-                self.t_span_sym,
-                self.x_sym[0],
-                self.u_sym,
-                self.param_sym,
-                self.s_sym,
-            ],
-            self.dxdt(
-                t_span=self.t_span_sym,
-                states=self.x_sym,
-                controls=self.u_sym,
-                params=self.param_sym,
-                param_scaling=self.param_scaling,
-                stochastic_variables=self.s_sym,
-            ),
-            ["t_span", "x0", "u", "p", "s"],
-            ["xf", "xall"],
-            {"allow_free": self.allow_free_variables},
-        )
-
-
 class CVODES(Integrator):
     """
     Class for CVODES integrators
 
     """
-
-    def __init__(self, ode: dict, ode_opt: dict):
-        """
-        Parameters
-        ----------
-        ode: dict
-            The ode description
-        ode_opt: dict
-            The ode options
-        """
-
-        super(CVODES, self).__init__(ode, ode_opt)
