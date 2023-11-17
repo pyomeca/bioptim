@@ -515,6 +515,86 @@ class ConfigureProblem:
             allow_free_variables=True,
         )
 
+
+    @staticmethod
+    def stochastic_torque_driven_free_floating_base(
+        ocp,
+        nlp,
+        problem_type,
+        with_contact: bool = False,
+        with_friction: bool = True,
+        with_cholesky: bool = False,
+        initial_matrix: DM = None,
+    ):
+        """
+        Configure the dynamics for a stochastic torque driven program with a free floating base.
+        (states are q_roots, q_joints, qdot_roots, and qdot_joints, controls are tau_joints)
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        with_contact: bool
+            If the dynamic with contact should be used
+        with_friction: bool
+            If the dynamic with joint friction should be used (friction = coefficient * qdot)
+        """
+
+        if "tau_joints" in nlp.model.motor_noise_mapping:
+            n_noised_tau = len(nlp.model.motor_noise_mapping["tau_joints"].to_first.map_idx)
+        else:
+            n_noised_tau = nlp.model.nb_tau
+        n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
+        n_noised_states = 2 * n_noised_tau
+
+        # Stochastic variables
+        ConfigureProblem.configure_stochastic_k(
+            ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
+        )
+        ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
+        n_collocation_points = 1
+        if isinstance(problem_type, SocpType.COLLOCATION):
+            n_collocation_points += problem_type.polynomial_degree
+        ConfigureProblem.configure_stochastic_m(
+            ocp, nlp, n_noised_states=n_noised_states, n_collocation_points=n_collocation_points
+        )
+
+        if isinstance(problem_type, SocpType.TRAPEZOIDAL_EXPLICIT):
+            if initial_matrix is None:
+                raise RuntimeError(
+                    "The initial value for the covariance matrix must be provided for TRAPEZOIDAL_EXPLICIT"
+                )
+            ConfigureProblem.configure_stochastic_cov_explicit(
+                ocp, nlp, n_noised_states=n_noised_states, initial_matrix=initial_matrix
+            )
+        else:
+            if with_cholesky:
+                ConfigureProblem.configure_stochastic_cholesky_cov(ocp, nlp, n_noised_states=n_noised_states)
+            else:
+                ConfigureProblem.configure_stochastic_cov_implicit(ocp, nlp, n_noised_states=n_noised_states)
+
+        if isinstance(problem_type, SocpType.TRAPEZOIDAL_IMPLICIT):
+            ConfigureProblem.configure_stochastic_a(ocp, nlp, n_noised_states=n_noised_states)
+            ConfigureProblem.configure_stochastic_c(ocp, nlp, n_noised_states=n_noised_states, n_noise=n_noise)
+
+        ConfigureProblem.torque_driven_free_floating_base(
+            ocp=ocp,
+            nlp=nlp,
+            with_contact=with_contact,
+            with_friction=with_friction,
+        )
+
+        ConfigureProblem.configure_dynamics_function(
+            ocp,
+            nlp,
+            DynamicsFunctions.stochastic_torque_driven_free_floating_base,
+            with_contact=with_contact,
+            with_friction=with_friction,
+            allow_free_variables=True,
+        )
+
     @staticmethod
     def stochastic_torque_driven_free_floating_base(
         ocp,
