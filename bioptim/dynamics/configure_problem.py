@@ -541,13 +541,9 @@ class ConfigureProblem:
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
         """
-
-        if "tau_joints" in nlp.model.motor_noise_mapping:
-            n_noised_tau = len(nlp.model.motor_noise_mapping["tau_joints"].to_first.map_idx)
-        else:
-            n_noised_tau = nlp.model.nb_tau
+        n_noised_tau = nlp.model.n_noised_controls
         n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
-        n_noised_states = 2 * n_noised_tau
+        n_noised_states = nlp.model.n_noised_states
 
         # Stochastic variables
         ConfigureProblem.configure_stochastic_k(
@@ -556,7 +552,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=nlp.model.n_references)
         n_collocation_points = 1
         if isinstance(problem_type, SocpType.COLLOCATION):
-            n_collocation_points += problem_type.polynomial_degree
+            n_collocation_points += problem_type.polynomial_degree + 1
         ConfigureProblem.configure_stochastic_m(
             ocp, nlp, n_noised_states=n_noised_states, n_collocation_points=n_collocation_points
         )

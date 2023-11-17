@@ -253,7 +253,7 @@ class DynamicsFunctions:
             tau_joints + nlp.model.passive_joint_torque(q_full, qdot_full) if with_passive_torque else tau_joints
         )
         tau_joints = tau_joints + nlp.model.ligament_joint_torque(q_full, qdot_full) if with_ligament else tau_joints
-        tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_full if with_friction else tau_joints
+        tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
 
         tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
 
@@ -397,7 +397,7 @@ class DynamicsFunctions:
                 mapped_sensory_feedback_torque
             )
         tau_joints += mapped_motor_noise + mapped_sensory_feedback_torque
-        tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_full if with_friction else tau_joints
+        tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
 
         tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
 

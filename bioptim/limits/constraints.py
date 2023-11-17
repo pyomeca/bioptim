@@ -611,7 +611,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
             P_k+1 = M_k @ (dg/dx @ P @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
@@ -649,7 +648,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             penalty.expand = (
                 controller.get_nlp.dynamics_type.expand_dynamics
-            )  # TODO: Charbie -> should this be always true?
+            )
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 
@@ -754,19 +753,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 polynomial_degree,
             )
 
-            nb_root = controller.model.nb_root
-            nu = controller.model.nb_q - nb_root
-            z_joints = horzcat(*(controller.states.cx_intermediates_list))
-
             constraint = Mc(
-                controller.states.cx_start[:nb_root],  # x_q_root
-                controller.states.cx_start[nb_root : nb_root + nu],  # x_q_joints
-                controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],  # x_qdot_root
-                controller.states.cx_start[2 * nb_root + nu : 2 * (nb_root + nu)],  # x_qdot_joints
-                z_joints[:nb_root, :],  # z_q_root
-                z_joints[nb_root : nb_root + nu, :],  # z_q_joints
-                z_joints[nb_root + nu : 2 * nb_root + nu, :],  # z_qdot_root
-                z_joints[2 * nb_root + nu : 2 * (nb_root + nu), :],  # z_qdot_joints
+                controller.states.cx_start,
+                horzcat(*controller.states.cx_intermediates_list),
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
@@ -786,7 +775,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             It is explained in more details here: https://doi.org/10.1109/CDC.2013.6761121
             P_k+1 = M_k @ (dg/dx @ P_k @ dg/dx + dg/dw @ sigma_w @ dg/dw) @ M_k
             """
-            # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
 
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
@@ -802,19 +790,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
             )
 
-            nb_root = controller.model.nb_root
-            nu = controller.model.nb_q - nb_root
-            z_joints = horzcat(*(controller.states.cx_intermediates_list))
-
             cov_next_computed = Pf(
-                controller.states.cx_start[:nb_root],  # x_q_root
-                controller.states.cx_start[nb_root : nb_root + nu],  # x_q_joints
-                controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],  # x_qdot_root
-                controller.states.cx_start[2 * nb_root + nu : 2 * (nb_root + nu)],  # x_qdot_joints
-                z_joints[:nb_root, :],  # z_q_root
-                z_joints[nb_root : nb_root + nu, :],  # z_q_joints
-                z_joints[nb_root + nu : 2 * nb_root + nu, :],  # z_qdot_root
-                z_joints[2 * nb_root + nu : 2 * (nb_root + nu), :],  # z_qdot_joints
+                controller.states.cx_start,
+                horzcat(*controller.states.cx_intermediates_list),
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
@@ -905,55 +883,27 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
             )
 
-            nb_root = controller.model.nb_root
-            nu = controller.model.nb_q - nb_root
-            joints_index = list(range(nb_root, nb_root + nu)) + list(range(2 * nb_root + nu, 2 * (nb_root + nu)))
-
-            x_q_root = controller.cx.sym("x_q_root", nb_root, 1)
-            x_q_joints = controller.cx.sym("x_q_joints", nu, 1)
-            x_qdot_root = controller.cx.sym("x_qdot_root", nb_root, 1)
-            x_qdot_joints = controller.cx.sym("x_qdot_joints", nu, 1)
-            z_q_root = controller.cx.sym("z_q_root", nb_root, polynomial_degree + 1)
-            z_q_joints = controller.cx.sym("z_q_joints", nu, polynomial_degree + 1)
-            z_qdot_root = controller.cx.sym("z_qdot_root", nb_root, polynomial_degree + 1)
-            z_qdot_joints = controller.cx.sym("z_qdot_joints", nu, polynomial_degree + 1)
-
-            x_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-            z_full = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
-
             xf, xall, defects = controller.integrate_extra_dynamics(0).function(
-                horzcat(x_full, z_full),
+                horzcat(controller.states.cx_start, horzcat(*controller.states.cx_intermediates_list)),
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.stochastic_variables.cx_start,
             )
-            G_joints = [x_full - z_full[:, 0]]
-            nx = 2 * (nb_root + nu)
-            for i in range(controller.ode_solver.polynomial_degree):
-                idx = [j + i * nx for j in joints_index]
-                G_joints.append(defects[idx])
-            G_joints = vertcat(*G_joints)
 
-            Gdx = jacobian(G_joints, horzcat(x_q_joints, x_qdot_joints))
-            Gdz = jacobian(G_joints, horzcat(z_q_joints, z_qdot_joints))
-            Gdw = jacobian(
-                G_joints,
-                vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym),
-            )
-            Fdz = jacobian(xf, horzcat(z_q_joints, z_qdot_joints))
+            initial_defect = controller.states.cx_start - controller.states.cx_intermediates_list[0]
+            defects = vertcat(initial_defect, defects)
+
+            Gdx = jacobian(defects, controller.states.cx_start)
+            Gdz = jacobian(defects, horzcat(controller.states.cx_start, horzcat(*controller.states.cx_intermediates_list)))
+            Gdw = jacobian(defects, vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
+            Fdz = jacobian(xf, horzcat(controller.states.cx_start, horzcat(*controller.states.cx_intermediates_list)))
 
             # Constraint Equality defining M
             Mc = Function(
                 "M_cons",
                 [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
+                    controller.states.cx_start,
+                    horzcat(*controller.states.cx_intermediates_list),
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
@@ -969,14 +919,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Pf = Function(
                 "P_next",
                 [
-                    x_q_root,
-                    x_q_joints,
-                    x_qdot_root,
-                    x_qdot_joints,
-                    z_q_root,
-                    z_q_joints,
-                    z_qdot_root,
-                    z_qdot_joints,
+                    controller.states.cx_start,
+                    horzcat(*controller.states.cx_intermediates_list),
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
                     controller.stochastic_variables.cx_start,
