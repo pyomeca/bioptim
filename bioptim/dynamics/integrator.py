@@ -100,7 +100,6 @@ class Integrator:
                 self.s_sym,
             ],
             self.dxdt(
-                t_span=self.t_span_sym,
                 states=self.x_sym,
                 controls=self.u_sym,
                 params=self.param_sym,
@@ -184,7 +183,6 @@ class Integrator:
 
     def dxdt(
         self,
-        t_span: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -273,7 +271,6 @@ class RK(Integrator):
 
     def dxdt(
         self,
-        t_span: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -411,7 +408,6 @@ class TRAPEZOIDAL(Integrator):
 
     def dxdt(
         self,
-        t_span: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -435,7 +431,7 @@ class TRAPEZOIDAL(Integrator):
         x_prev[:, 0] = states[:, 0]
 
         x_prev[:, 1] = self.next_x(
-            t_span[0],
+            self.t_span_sym[0],
             x_prev[:, 0],
             states_next,
             controls_prev,
@@ -555,7 +551,6 @@ class COLLOCATION(Integrator):
 
     def dxdt(
         self,
-        t_span: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -628,7 +623,6 @@ class IRK(COLLOCATION):
     
     def dxdt(
         self,
-        t_span: float | MX | SX,
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
@@ -638,7 +632,6 @@ class IRK(COLLOCATION):
 
         nx = states[0].shape[0]
         _, _, defect = super(IRK, self).dxdt(
-            t_span=t_span,
             states=states,
             controls=controls,
             params=params,
@@ -650,13 +643,14 @@ class IRK(COLLOCATION):
         collocation_states = vertcat(*states[1:]) if self.duplicate_collocation_starting_point else vertcat(*states[2:])
         vfcn = Function(
             "vfcn",
-            [collocation_states, t_span, states[0], controls, params, stochastic_variables],
+            [collocation_states, self.t_span_sym, states[0], controls, params, stochastic_variables],
             [defect]
         ).expand()
 
         # Create an implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn, {"error_on_fail": False})
-        x_irk_points = ifcn(self.cx(), t_span, states[0], controls, params, stochastic_variables)
+        t = vertcat(self.t_span_sym[0], self.t_span_sym[1] - self.t_span_sym[0])
+        x_irk_points = ifcn(self.cx(), t, states[0], controls, params, stochastic_variables)
         x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element

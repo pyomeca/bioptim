@@ -364,7 +364,7 @@ class PlotOcp:
                         size = (
                             nlp.plot[key].function(
                                 node_index,
-                                0,
+                                np.zeros(len(self.ocp.nlp)),
                                 np.zeros((size_x, 1)),
                                 np.zeros((size_u, 1)),
                                 np.zeros((size_p, 1)),

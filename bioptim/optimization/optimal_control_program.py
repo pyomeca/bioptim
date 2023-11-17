@@ -1338,14 +1338,16 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def compute_penalty_values(t, dt, x, u, p, s, penalty, dt_function):
+        def compute_penalty_values(node_idx, phases_dt, x, u, p, s, penalty, dt_function):
             """
             Compute the penalty value for the given time, state, control, parameters, penalty and time step
 
             Parameters
             ----------
-            t: int
+            node_idx: int
                 Time index
+            phases_dt: list[float]
+                List of the time step of each phase
             x: ndarray
                 State vector with intermediate states
             u: ndarray
@@ -1364,25 +1366,25 @@ class OptimalControlProgram:
             x, u, s = map(_reshape_to_column, [x, u, s])
 
             penalty_phase = penalty.nodes_phase[0] if penalty.multinode_penalty else penalty.phase
-            # TODO: Fix the scaling of multi_node_penalty (This is a hack, it should be computed at each phase)
+            nlp = self.nlp[penalty_phase]
 
-            penalty_dt = dt_function(dt)
+            t = phases_dt[penalty_phase] * node_idx
+            penalty_dt = dt_function(phases_dt)
 
             _target = _get_target_values(t, penalty)
 
-            x = _scale_values(x, self.nlp[penalty_phase].states, penalty, self.nlp[penalty_phase].x_scaling)
+            # TODO: Fix the scaling of multi_node_penalty (This is a hack, it should be computed at each phase)
+            x = _scale_values(x, nlp.states, penalty, nlp.x_scaling)
             if u.size != 0:
-                u = _scale_values(u, self.nlp[penalty_phase].controls, penalty, self.nlp[penalty_phase].u_scaling)
+                u = _scale_values(u, nlp.controls, penalty, nlp.u_scaling)
             if s.size != 0:
-                s = _scale_values(
-                    s, self.nlp[penalty_phase].stochastic_variables, penalty, self.nlp[penalty_phase].s_scaling
-                )
+                s = _scale_values(s, nlp.stochastic_variables, penalty, nlp.s_scaling)
 
             out = []
             if penalty.transition or penalty.multinode_penalty:
                 out.append(
-                    penalty.weighted_function_non_threaded[t](
-                        t, dt, x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), penalty.weight, _target, 1
+                    penalty.weighted_function_non_threaded[node_idx](
+                        t, phases_dt, x.reshape((-1, 1)), u.reshape((-1, 1)), p, s.reshape((-1, 1)), penalty.weight, _target, 1
                     )
                 )  # dt=1 because multinode penalties behave like Mayer functions
 
@@ -1398,20 +1400,20 @@ class OptimalControlProgram:
                     stochastic_value = stochastic_value.reshape((-1, 1), order='F')
                 else:
                     state_value = np.zeros(
-                        (x.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(2) / x.shape[0]))
+                        (x.shape[0] * int(penalty.weighted_function_non_threaded[node_idx].nnz_in(2) / x.shape[0]))
                     )
                     if u.size != 0:
                         control_value = np.zeros(
-                            (u.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(3) / u.shape[0]))
+                            (u.shape[0] * int(penalty.weighted_function_non_threaded[node_idx].nnz_in(3) / u.shape[0]))
                         )
                     if s.size != 0:
                         stochastic_value = np.zeros(
-                            (s.shape[0] * int(penalty.weighted_function_non_threaded[t].nnz_in(4) / s.shape[0]))
+                            (s.shape[0] * int(penalty.weighted_function_non_threaded[node_idx].nnz_in(4) / s.shape[0]))
                         )
 
                 out.append(
-                    penalty.weighted_function_non_threaded[t](
-                        t, dt, state_value, control_value, p, stochastic_value, penalty.weight, _target, penalty_dt
+                    penalty.weighted_function_non_threaded[node_idx](
+                        t, phases_dt, state_value, control_value, p, stochastic_value, penalty.weight, _target, penalty_dt
                     )
                 )
             elif (
@@ -1419,13 +1421,13 @@ class OptimalControlProgram:
                 or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
             ):
                 out = [
-                    penalty.weighted_function_non_threaded[t](
-                        t, dt, x[:, [i, i + 1]], u[:, i], p, s, penalty.weight, _target, penalty_dt
+                    penalty.weighted_function_non_threaded[node_idx](
+                        t, phases_dt, x[:, [i, i + 1]], u[:, i], p, s, penalty.weight, _target, penalty_dt
                     )
                     for i in range(x.shape[1] - 1)
                 ]
             else:
-                out.append(penalty.weighted_function_non_threaded[t](t, dt, x, u, p, s, penalty.weight, _target, penalty_dt))
+                out.append(penalty.weighted_function_non_threaded[node_idx](t, phases_dt, x, u, p, s, penalty.weight, _target, penalty_dt))
             return sum1(horzcat(*out))
 
         def add_penalty(_penalties):

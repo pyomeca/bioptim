@@ -411,7 +411,7 @@ class NewVariableConfiguration:
                 )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_states"] = CustomPlot(
-                        lambda t, phases_dt, x, u, p, s: x[self.nlp.states[self.name].index, :],
+                        lambda node_idx, phases_dt, x, u, p, s: x[self.nlp.states[self.name].index, :],
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
@@ -456,7 +456,7 @@ class NewVariableConfiguration:
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_controls"] = CustomPlot(
-                        lambda t, phases_dt, x, u, p, s: u[self.nlp.controls[self.name].index, :],
+                        lambda node_idx, phases_dt, x, u, p, s: u[self.nlp.controls[self.name].index, :],
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
@@ -570,14 +570,14 @@ def _manage_fatigue_to_new_variable(
     legend = [f"{name}_{i}" for i in name_elements]
     fatigue_plot_name = f"fatigue_{name}"
     nlp.plot[fatigue_plot_name] = CustomPlot(
-        lambda t, phases_dt, x, u, p, s: x[:n_elements, :] * np.nan,
+        lambda node_idx, phases_dt, x, u, p, s: x[:n_elements, :] * np.nan,
         plot_type=PlotType.INTEGRATED,
         legend=legend,
         bounds=Bounds(None, -1, 1),
     )
     control_plot_name = f"{name}_controls" if not multi_interface and split_controls else f"{name}"
     nlp.plot[control_plot_name] = CustomPlot(
-        lambda t, phases_dt, x, u, p, s: u[:n_elements, :] * np.nan, plot_type=PlotType.STEP, legend=legend
+        lambda node_idx, phases_dt, x, u, p, s: u[:n_elements, :] * np.nan, plot_type=PlotType.STEP, legend=legend
     )
 
     var_names_with_suffix = []
@@ -592,7 +592,7 @@ def _manage_fatigue_to_new_variable(
                 var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
             )
             nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
-                lambda t, phases_dt, x, u, p, s, key: u[nlp.controls[key].index, :],
+                lambda node_idx, phases_dt, x, u, p, s, key: u[nlp.controls[key].index, :],
                 plot_type=PlotType.STEP,
                 combine_to=control_plot_name,
                 key=var_names_with_suffix[-1],
@@ -601,7 +601,7 @@ def _manage_fatigue_to_new_variable(
         elif i == 0:
             NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True)
             nlp.plot[f"{name}_controls"] = CustomPlot(
-                lambda t, phases_dt, x, u, p, s, key: u[nlp.controls[key].index, :],
+                lambda node_idx, phases_dt, x, u, p, s, key: u[nlp.controls[key].index, :],
                 plot_type=PlotType.STEP,
                 combine_to=control_plot_name,
                 key=f"{name}",
@@ -612,7 +612,7 @@ def _manage_fatigue_to_new_variable(
             name_tp = f"{var_names_with_suffix[-1]}_{params}"
             NewVariableConfiguration(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
             nlp.plot[name_tp] = CustomPlot(
-                lambda t, phases_dt, x, u, p, s, key, mod: mod * x[nlp.states[key].index, :],
+                lambda node_idx, phases_dt, x, u, p, s, key, mod: mod * x[nlp.states[key].index, :],
                 plot_type=PlotType.INTEGRATED,
                 combine_to=fatigue_plot_name,
                 key=name_tp,
