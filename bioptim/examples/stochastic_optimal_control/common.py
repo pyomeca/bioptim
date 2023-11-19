@@ -245,6 +245,10 @@ def reshape_to_matrix(var, shape):
     """
     Restore the matrix form of the variables
     """
+
+    if var.shape[0] != shape[0] * shape[1]:
+        raise RuntimeError(f"Cannot reshape: the variable shape is {var.shape} and the expected shape is {shape}")
+
     shape_0, shape_1 = shape
     if isinstance(var, np.ndarray):
         matrix = np.zeros((shape_0, shape_1))

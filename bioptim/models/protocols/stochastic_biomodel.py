@@ -38,6 +38,10 @@ class StochasticBioModel(BioModel):
         """
         Restore the matrix form of the variables
         """
+
+        if var.shape[0] != shape[0] * shape[1]:
+            raise RuntimeError(f"Cannot reshape: the variable shape is {var.shape} and the expected shape is {shape}")
+
         shape_0, shape_1 = shape
         if isinstance(var, np.ndarray):
             matrix = np.zeros((shape_0, shape_1))
@@ -53,9 +57,18 @@ class StochasticBioModel(BioModel):
         """
         Restore the lower diagonal matrix form of the variables vector
         """
-
         shape_0, _ = shape
         matrix = type(var).zeros(shape_0, shape_0)
+
+        i = 0
+        for s0 in range(shape_0):
+            for s1 in range(s0 + 1):
+                matrix[s1, s0] = var[i]
+                i += 1
+
+        if var.shape[0] != i:
+            raise RuntimeError(f"Cannot reshape: the variable shape is {var.shape} and the expected shape is the number of element in a triangular matrix of size {shape_0}, which means {i} elements")
+
         i = 0
         for s0 in range(shape_0):
             for s1 in range(s0 + 1):
