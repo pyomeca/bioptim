@@ -888,9 +888,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             defects = vertcat(initial_defect, defects)
 
             Gdx = jacobian(defects, controller.states.cx_start)
-            Gdz = jacobian(
-                defects, horzcat(*controller.states.cx_intermediates_list)
-            )
+            Gdz = jacobian(defects, horzcat(*controller.states.cx_intermediates_list))
             Gdw = jacobian(defects, vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
             Fdz = jacobian(xf, horzcat(*controller.states.cx_intermediates_list))
 

@@ -67,7 +67,9 @@ class StochasticBioModel(BioModel):
                 i += 1
 
         if var.shape[0] != i:
-            raise RuntimeError(f"Cannot reshape: the variable shape is {var.shape} and the expected shape is the number of element in a triangular matrix of size {shape_0}, which means {i} elements")
+            raise RuntimeError(
+                f"Cannot reshape: the variable shape is {var.shape} and the expected shape is the number of element in a triangular matrix of size {shape_0}, which means {i} elements"
+            )
 
         i = 0
         for s0 in range(shape_0):
