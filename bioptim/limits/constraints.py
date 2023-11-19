@@ -744,11 +744,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             Mc, _ = ConstraintFunction.Functions.collocation_jacobians(
                 penalty,
                 controller,
-                polynomial_degree,
             )
 
             constraint = Mc(
@@ -777,11 +775,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            polynomial_degree = controller.get_nlp.ode_solver.polynomial_degree
             _, Pf = ConstraintFunction.Functions.collocation_jacobians(
                 penalty,
                 controller,
-                polynomial_degree,
             )
 
             cov_matrix_next = StochasticBioModel.reshape_to_matrix(
@@ -868,7 +864,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             return diagonal_terms
 
         @staticmethod
-        def collocation_jacobians(penalty, controller, polynomial_degree):
+        def collocation_jacobians(penalty, controller):
             """
             This function computes the jacobians of the collocation equation and of the continuity equation with respect to the collocation points and the noise
             """
@@ -893,10 +889,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             Gdx = jacobian(defects, controller.states.cx_start)
             Gdz = jacobian(
-                defects, horzcat(controller.states.cx_start, horzcat(*controller.states.cx_intermediates_list))
+                defects, horzcat(*controller.states.cx_intermediates_list)
             )
             Gdw = jacobian(defects, vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
-            Fdz = jacobian(xf, horzcat(controller.states.cx_start, horzcat(*controller.states.cx_intermediates_list)))
+            Fdz = jacobian(xf, horzcat(*controller.states.cx_intermediates_list))
 
             # Constraint Equality defining M
             Mc = Function(
