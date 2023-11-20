@@ -1157,7 +1157,6 @@ class PenaltyFunctionAbstract:
                 penalty.integrate = True
 
             else:
-                
                 continuity -= controller.integrate(
                     t_span=t_span,
                     x0=controller.states.cx_start,

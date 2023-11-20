@@ -376,7 +376,7 @@ def solve_ivp_bioptim_interface(
                 np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
                 if keep_intermediate_points
                 else x0i,  # x0 or None
-                np.array(func(t_span=t[ss][[0, -1]], x0=x0i, u=u_controls, p=params / param_scaling, s=s)[dynamics_output]),
+                np.array(func(t_span=[t[ss][0], t[ss][-1]], x0=x0i, u=u_controls, p=params / param_scaling, s=s)[dynamics_output]),
             ),  # xf or xall
             axis=1,
         )

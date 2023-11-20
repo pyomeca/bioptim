@@ -1,13 +1,4 @@
-from casadi import (
-    Function,
-    vertcat,
-    horzcat,
-    collocation_points,
-    tangent,
-    rootfinder,
-    MX,
-    SX,
-)
+from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX, linspace
 import numpy as np
 
 from ..misc.enums import ControlType, DefectType
@@ -88,8 +79,10 @@ class Integrator:
         self.function = None
         self.allow_free_variables = ode_opt["allow_free_variables"]
 
+        # Initialize is expected to set step_time
         self._initialize(ode, ode_opt)
 
+        self.step_times_from_dt = self._step_times_from_dt_func
         self.function = Function(
             "integrator",
             [
@@ -110,6 +103,10 @@ class Integrator:
             self._output_names,
             {"allow_free": self.allow_free_variables},
         )
+
+    @property
+    def _step_times_from_dt_func(self) -> Function:
+        raise NotImplementedError("This method should be implemented for a given integrator")
 
     @property
     def _x_sym_modified(self):
@@ -152,7 +149,7 @@ class Integrator:
         raise NotImplementedError("This method should be implemented for a given integrator")
 
     @property
-    def step_time(self):
+    def _step_time(self):
         raise NotImplementedError("This method should be implemented for a given integrator")
 
     def get_u(self, u: np.ndarray, t: float) -> np.ndarray:
@@ -174,7 +171,7 @@ class Integrator:
         if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
-            dt_norm = 1 - (self.tf - t) / self.step_time
+            dt_norm = 1 - (self.tf - t) / self._step_time
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
         elif self.control_type == ControlType.NONE:
             return np.ndarray((0,))
@@ -194,8 +191,6 @@ class Integrator:
 
         Parameters
         ----------
-        t_span: float | MX | SX
-            The time of the system
         states: MX | SX
             The states of the system
         controls: MX | SX
@@ -238,8 +233,12 @@ class RK(Integrator):
         super(RK, self).__init__(ode, ode_opt)
         
     @property
-    def step_time(self):
+    def _step_time(self):
         return self.t_span_sym[1] / self.n_step
+
+    @property
+    def _step_times_from_dt_func(self) -> Function:
+        return Function("step_time", [self.t_span_sym], [linspace(self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1], self.n_step + 1)])
 
     @property
     def h(self):
@@ -285,7 +284,7 @@ class RK(Integrator):
         s = stochastic_variables
 
         for i in range(1, self.n_step + 1):
-            t = self.t_span_sym[0] + self.step_time * (i - 1)
+            t = self.t_span_sym[0] + self._step_time * (i - 1)
             x[:, i] = self.next_x(t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -491,7 +490,7 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
+                    _l *= (time_control_interval - self._step_time[r]) / (self._step_time[j] - self._step_time[r])
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
             if self.method == "radau":
@@ -504,13 +503,13 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - self.step_time[r]) / (self.step_time[j] - self.step_time[r])
+                    _l *= (time_control_interval - self._step_time[r]) / (self._step_time[j] - self._step_time[r])
 
             # Evaluate the time derivative of the polynomial at all collocation points to get
             # the coefficients of the continuity equation
             tfcn = Function("tfcn", [time_control_interval], [tangent(_l, time_control_interval)])
             for r in range(self.degree + 1):
-                self._c[j, r] = tfcn(self.step_time[r])
+                self._c[j, r] = tfcn(self._step_time[r])
 
     @property
     def _x_sym_modified(self):
@@ -525,8 +524,12 @@ class COLLOCATION(Integrator):
         return self.t_span_sym[1]
 
     @property
-    def step_time(self):
+    def _step_time(self):
         return [0] + collocation_points(self.degree, self.method)
+
+    @property
+    def _step_times_from_dt_func(self) -> Function:
+        return Function("step_time", [self.t_span_sym[1]], [self._step_time * self.t_span_sym[1]])
 
     def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
         """
@@ -562,7 +565,7 @@ class COLLOCATION(Integrator):
         states_end = self._d[0] * states[1]
         defects = []
         for j in range(1, self.degree + 1):
-            t = vertcat(self.t_span_sym[0] + self.step_time[j-1] * self.h, self.h)
+            t = vertcat(self.t_span_sym[0] + self._step_time[j-1] * self.h, self.h)
 
             # Expression for the state derivative at the collocation point
             xp_j = 0
@@ -576,7 +579,7 @@ class COLLOCATION(Integrator):
                 f_j = self.fun(
                     t,
                     states[j + 1],
-                    self.get_u(controls, self.step_time[j]),
+                    self.get_u(controls, self._step_time[j]),
                     params * param_scaling,
                     stochastic_variables,
                 )[:, self.idx]
@@ -586,7 +589,7 @@ class COLLOCATION(Integrator):
                     self.implicit_fun(
                         t,
                         states[j + 1],
-                        self.get_u(controls, self.step_time[j]),
+                        self.get_u(controls, self._step_time[j]),
                         params * param_scaling,
                         stochastic_variables,
                         xp_j / self.h,
@@ -659,6 +662,7 @@ class IRK(COLLOCATION):
             xf[:, r] = xf[:, r - 1] + self._d[r] * x[r]
 
         return xf[:, -1], horzcat(states[0], xf[:, -1])
+
 
 class CVODES(Integrator):
     """

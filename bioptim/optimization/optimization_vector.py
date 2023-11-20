@@ -417,7 +417,7 @@ class OptimizationVectorHelper:
         return data[ocp.dt_parameter.index].toarray()[:, 0].tolist()
 
     @staticmethod
-    def extract_phase_time(ocp, data: np.ndarray | DM) -> list:
+    def extract_phase_end_times(ocp, data: np.ndarray | DM) -> list:
         """
         Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
 
@@ -436,7 +436,7 @@ class OptimizationVectorHelper:
         dt = OptimizationVectorHelper.extract_dt(ocp, data)
 
         # Starts at zero
-        return [0] + [dt[i] * nlp.ns for i, nlp in enumerate(ocp.nlp)]
+        return [dt[i] * nlp.ns for i, nlp in enumerate(ocp.nlp)]
 
     @staticmethod
     def to_dictionaries(ocp, data: np.ndarray | DM) -> tuple:

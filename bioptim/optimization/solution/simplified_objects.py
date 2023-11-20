@@ -2,11 +2,9 @@ from casadi import vertcat, Function
 import numpy as np
 
 from ...dynamics.ode_solver import OdeSolver
-from ...misc.enums import ControlType, Shooting
+from ...misc.enums import ControlType, PhaseDynamics
 from ..non_linear_program import NonLinearProgram
 from ..optimization_variable import OptimizationVariableList, OptimizationVariable
-
-from .utils import concatenate_optimization_variables
 
 
 class SimplifiedOptimizationVariable:
@@ -187,7 +185,13 @@ class SimplifiedNLP:
         self.s_scaling = nlp.s_scaling
         self.phase_dynamics = nlp.phase_dynamics
 
-    def get_integrated_values(self, states: dict, controls: dict, parameters: dict, stochastic_variables: dict) -> dict:
+    def get_integrated_values(
+        self,
+        states: dict[str, np.ndarray],
+        controls: dict[str, np.ndarray],
+        parameters: dict[str, np.ndarray],
+        stochastic_variables: dict[str, np.ndarray],
+    ) -> dict:
         """
         TODO :
 
@@ -284,125 +288,6 @@ class SimplifiedNLP:
             integrated_values_num[key] = integrated_values_data
 
         return integrated_values_num
-
-    def _generate_time(
-        self,
-        step_time: float,
-        time_phase: np.ndarray,
-        keep_intermediate_points: bool = None,
-        shooting_type: Shooting = None,
-    ):
-        """
-        Generate time vector steps for a phase considering all the phase final time
-
-        Parameters
-        ----------
-        time_phase: np.ndarray
-            The time of each phase
-        keep_intermediate_points: bool
-            If the integration should return the intermediate values of the integration [False]
-            or only keep the node [True] effective keeping the initial size of the states
-        shooting_type: Shooting
-            Which type of integration such as Shooting.SINGLE_CONTINUOUS or Shooting.MULTIPLE,
-            default is None but behaves as Shooting.SINGLE.
-
-        Returns
-        -------
-        np.ndarray
-        """
-        is_direct_collocation = self.ode_solver.is_direct_collocation
-        duplicate_collocation_starting_point = False
-        if is_direct_collocation:
-            duplicate_collocation_starting_point = self.ode_solver.duplicate_collocation_starting_point
-
-        step_times = self._define_step_times(
-            dynamics_step_time=step_time,
-            ode_solver_steps=self.ode_solver.steps,
-            is_direct_collocation=is_direct_collocation,
-            duplicate_collocation_starting_point=duplicate_collocation_starting_point,
-            keep_intermediate_points=keep_intermediate_points,
-            continuous=shooting_type == Shooting.SINGLE,
-        )
-
-        if shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            # discard the last time step because continuity concerns only the end of the phases
-            # and not the end of each interval
-            step_times = step_times[:-1]
-
-        dt_ns = float(time_phase[self.phase_idx + 1] / self.ns)
-        time = [(step_times * dt_ns + i * dt_ns).tolist() for i in range(self.ns)]
-
-        if shooting_type == Shooting.MULTIPLE:
-            # keep all the intervals in separate lists
-            flat_time = [np.array(sub_time) for sub_time in time]
-        else:
-            # flatten the list of list into a list of floats
-            flat_time = [st for sub_time in time for st in sub_time]
-
-        # add the final time of the phase
-        if shooting_type == Shooting.MULTIPLE:
-            flat_time.append(np.array([self.ns * dt_ns]))
-        if shooting_type == Shooting.SINGLE or shooting_type == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-            flat_time += [self.ns * dt_ns]
-
-        return sum(time_phase[: self.phase_idx + 1]) + np.array(flat_time, dtype=object)
-
-    @staticmethod
-    def _define_step_times(
-        dynamics_step_time: float | list,
-        ode_solver_steps: int,
-        keep_intermediate_points: bool = None,
-        continuous: bool = True,
-        is_direct_collocation: bool = None,
-        duplicate_collocation_starting_point: bool = False,
-    ) -> np.ndarray:
-        """
-        Define the time steps for the integration of the whole phase
-
-        Parameters
-        ----------
-        dynamics_step_time: list
-            The step time of the dynamics function
-        ode_solver_steps: int
-            The number of steps of the ode solver
-        keep_intermediate_points: bool
-            If the integration should return the intermediate values of the integration [False]
-            or only keep the node [True] effective keeping the initial size of the states
-        continuous: bool
-            If the arrival value of a node should be discarded [True] or kept [False]. The value of an integrated
-            arrival node and the beginning of the next one are expected to be almost equal when the problem converged
-        is_direct_collocation: bool
-            If the ode solver is direct collocation
-        duplicate_collocation_starting_point
-            If the ode solver is direct collocation and an additional collocation point at the shooting node was used
-
-        Returns
-        -------
-        step_times: np.ndarray
-            The time steps for each interval of the phase of ocp
-        """
-
-        if keep_intermediate_points is None:
-            keep_intermediate_points = True if is_direct_collocation else False
-
-        if is_direct_collocation:
-            # time is not linear because of the collocation points
-            if keep_intermediate_points:
-                step_times = np.array(dynamics_step_time + [1])
-
-                if duplicate_collocation_starting_point:
-                    step_times = np.array([0] + step_times)
-            else:
-                step_times = np.array(dynamics_step_time + [1])[[0, -1]]
-
-        else:
-            # time is linear in the case of direct multiple shooting
-            step_times = np.linspace(0, 1, ode_solver_steps + 1) if keep_intermediate_points else np.array([0, 1])
-        # it does not take the last nodes of each interval
-        if continuous:
-            step_times = step_times[:-1]
-
-        return step_times
 
     def _complete_controls(self, controls: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
         """
@@ -501,26 +386,30 @@ class SimplifiedOCP:
 
     def get_integrated_values(
         self,
-        states: list[np.ndarray],
-        controls: list[np.ndarray],
-        parameters: np.ndarray,
-        stochastic_variables: list[np.ndarray],
+        states: list[dict[str, np.ndarray], ...],
+        controls: list[[str, np.ndarray], ...],
+        parameters: dict[str, np.ndarray],
+        stochastic_variables: list[[str, np.ndarray], ...],
     ):
         """
         TODO:
 
         Parameters
         ----------
-        states: list[np.ndarray]
-        controls: list[np.ndarray]
-        parameters: np.ndarray
-        stochastic_variables: list[np.ndarray]
+        states: list[dict]
+            The states of the ocp
+        controls: list[dict]
+            The controls of the ocp
+        parameters: dict
+            The parameters of the ocp
+        stochastic_variables: list[dict]
+            The stochastic variables of the ocp
 
         Returns
         -------
         list[dict]
-
         """
+
         integrated_values_num = [{} for _ in self.nlp]
         for i_phase, nlp in enumerate(self.nlp):
             integrated_values_num[i_phase] = nlp.get_integrated_values(
@@ -531,53 +420,39 @@ class SimplifiedOCP:
             )
         return integrated_values_num
 
-    def _generate_time(
+    def generate_node_times(
         self,
-        time_phase: list[float],
-        keep_intermediate_points: bool = None,
-        merge_phases: bool = False,
-        shooting_type: Shooting = None,
-    ) -> np.ndarray | list[np.ndarray]:
+        dt_times: list[float],
+        phase_end_times: list[float],
+    ) -> list[list[np.ndarray, ...], ...]:
         """
         Generate time integration vector
 
         Parameters
         ----------
-        time_phase: list[float]
-            list of time phase for each phase
-        keep_intermediate_points
-            If the integration should return the intermediate values of the integration [False]
-            or only keep the node [True] effective keeping the initial size of the states
-        merge_phases: bool
-            If the phase should be merged in a unique phase
-        shooting_type: Shooting
-            Which type of integration such as Shooting.SINGLE_CONTINUOUS or Shooting.MULTIPLE,
-            default is None but behaves as Shooting.SINGLE.
+        dt_times: list[float]
+            The time step for each phase
+        phase_end_times: list[float]
+            list of end time for each phase
 
         Returns
         -------
         t_integrated: np.ndarray or list of np.ndarray
-        The time vector
+        The time vector for each phase at each shooting node at each steps of the shooting
         """
-        if shooting_type is None:
-            shooting_type = Shooting.SINGLE_DISCONTINUOUS_PHASE
 
-
-        time_vector = []
+        node_times = []
         for p, nlp in enumerate(self.nlp):
-            if isinstance(self.nlp[0].ode_solver, OdeSolver.COLLOCATION):
-                step_time = nlp.dynamics[0].step_time
-            else: 
-                step_time = time_phase[p] / nlp.ns
-            phase_time_vector = nlp._generate_time(step_time, time_phase, keep_intermediate_points, shooting_type)
-            time_vector.append(phase_time_vector)
+            phase_node_times = []
+            for ns in range(nlp.ns):
+                starting_phase_time = 0 if p == 0 else phase_end_times[p - 1]
+                ns = 0 if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else ns
 
-        if merge_phases:
-            return concatenate_optimization_variables(time_vector, continuous_phase=shooting_type == Shooting.SINGLE)
-        else:
-            return time_vector
+                phase_node_times.append(np.array(nlp.dynamics[ns].step_times_from_dt([starting_phase_time, dt_times[p]])))
+            node_times.append(phase_node_times)
+        return node_times
 
-    def _complete_controls(
+    def complete_controls(
         self, controls: dict[str, list[dict[str, np.ndarray]]]
     ) -> dict[str, list[dict[str, np.ndarray]]]:
         """

@@ -25,7 +25,7 @@ from ...interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bio
 
 from ..optimization_vector import OptimizationVectorHelper
 
-from .utils import concatenate_optimization_variables_dict, concatenate_optimization_variables
+from .utils import concatenate_optimization_variables_dict
 from .simplified_objects import SimplifiedOCP
 
 
@@ -79,8 +79,6 @@ class Solution:
         The data structure that holds the update values
     _dt: list
         The time step for each phases
-    phase_time: list
-        The total time for each phases
 
     Methods
     -------
@@ -123,23 +121,23 @@ class Solution:
     def __init__(
         self,
         ocp: "OptimalControlProgram",
-        ns: list[float],
-        vector: np.ndarray | DM,
-        cost: np.ndarray | DM,
-        constraints: np.ndarray | DM,
-        lam_g: np.ndarray | DM,
-        lam_p: np.ndarray | DM,
-        lam_x: np.ndarray | DM,
-        inf_pr: np.ndarray | DM,
-        inf_du: np.ndarray | DM,
-        solver_time_to_optimize: float,
-        real_time_to_optimize: float,
-        iterations: int,
-        status: int,
-        _states: dict = {},
-        _controls: dict = {},
-        parameters: dict = {},
-        _stochastic_variables: dict = {},
+        ns: list[float] = None,
+        vector: np.ndarray | DM = None,
+        cost: np.ndarray | DM = None,
+        constraints: np.ndarray | DM = None,
+        lam_g: np.ndarray | DM = None,
+        lam_p: np.ndarray | DM = None,
+        lam_x: np.ndarray | DM = None,
+        inf_pr: np.ndarray | DM = None,
+        inf_du: np.ndarray | DM = None,
+        solver_time_to_optimize: float = None,
+        real_time_to_optimize: float = None,
+        iterations: int = None,
+        status: int = None,
+        _states: dict = None,
+        _controls: dict = None,
+        parameters: dict = None,
+        _stochastic_variables: dict = None,
     ):
         """
         Parameters
@@ -191,7 +189,6 @@ class Solution:
         self.is_interpolated = False
         self.is_integrated = False
         self.is_merged = False
-        self.recomputed_time_steps = False
 
         self._cost = cost
         self.constraints = constraints
@@ -223,12 +220,14 @@ class Solution:
 
             self.vector = vector
             self._states = _states
-            self._controls = self.ocp._complete_controls(_controls)
+            self._controls = self.ocp.complete_controls(_controls)
             self.parameters = parameters
             self._stochastic_variables = _stochastic_variables
             self._dt = OptimizationVectorHelper.extract_dt(ocp, vector)
-            self.phase_time = OptimizationVectorHelper.extract_phase_time(ocp, vector)
-            self._time_vector = self.ocp._generate_time(self.phase_time)
+
+            phase_end_time = OptimizationVectorHelper.extract_phase_end_times(ocp, vector)
+            self._time_for_integration = self.ocp.generate_node_times(self._dt, phase_end_time)
+
             self._integrated_values = self.ocp.get_integrated_values(
                 self._states["unscaled"],
                 self._controls["unscaled"],
@@ -393,17 +392,6 @@ class Solution:
             ocp=ocp,
             ns=[nlp.ns for nlp in ocp.nlp],
             vector=vector,
-            cost=None,
-            constraints=None,
-            lam_g=None,
-            lam_p=None,
-            lam_x=None,
-            inf_pr=None,
-            inf_du=None,
-            solver_time_to_optimize=None,
-            real_time_to_optimize=None,
-            iterations=None,
-            status=None,
             _states=_states,
             _controls=_controls,
             parameters=parameters,
@@ -441,17 +429,6 @@ class Solution:
             ocp=ocp,
             ns=[nlp.ns for nlp in ocp.nlp],
             vector=vector,
-            cost=None,
-            constraints=None,
-            lam_g=None,
-            lam_p=None,
-            lam_x=None,
-            inf_pr=None,
-            inf_du=None,
-            solver_time_to_optimize=None,
-            real_time_to_optimize=None,
-            iterations=None,
-            status=None,
             _states=_states,
             _controls=_controls,
             parameters=parameters,
@@ -469,26 +446,7 @@ class Solution:
             A reference to the OptimalControlProgram
         """
 
-        return cls(
-            ocp=ocp,
-            ns=None,
-            vector=None,
-            cost=None,
-            constraints=None,
-            lam_g=None,
-            lam_p=None,
-            lam_x=None,
-            inf_pr=None,
-            inf_du=None,
-            solver_time_to_optimize=None,
-            real_time_to_optimize=None,
-            iterations=None,
-            status=None,
-            _states=None,
-            _controls=None,
-            parameters=None,
-            _stochastic_variables=None,
-        )
+        return cls(ocp=ocp)
 
     def _to_unscaled_values(self, states_scaled, controls_scaled, stochastic_variables_scaled) -> tuple:
         """
@@ -532,7 +490,7 @@ class Solution:
             self._cost = DM(self._cost)
         return self._cost
 
-    def copy(self, skip_data: bool = False) -> Any:
+    def copy(self, skip_data: bool = False) -> "Solution":
         """
         Create a deepcopy of the Solution
 
@@ -566,10 +524,9 @@ class Solution:
         new.is_merged = deepcopy(self.is_merged)
 
         new._dt = deepcopy(self._dt)
-        new.phase_time = deepcopy(self.phase_time)
         new.ns = deepcopy(self.ns)
 
-        new._time_vector = deepcopy(self._time_vector)
+        new._time_for_integration = deepcopy(self._time_for_integration)
 
         if skip_data:
             new._states["unscaled"], new._controls["unscaled"], new._stochastic_variables["unscaled"] = [], [], []
@@ -889,96 +846,15 @@ class Solution:
         if merge_phases:
             out.is_merged = True
             out._dt = None
-            out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
             out.ns = sum(out.ns)
 
-            if shooting_type == Shooting.SINGLE:
-                out._states["unscaled"] = concatenate_optimization_variables_dict(out._states["unscaled"])
-                out._time_vector = [concatenate_optimization_variables(out._time_vector)]
+            time_tp = []
+            for t in out._time_for_integration:
+                time_tp.extend(t)
+            out._time_for_integration = time_tp
 
-            else:
-                out._states["unscaled"] = concatenate_optimization_variables_dict(
-                    out._states["unscaled"], continuous=False
-                )
-                out._time_vector = [
-                    concatenate_optimization_variables(
-                        out._time_vector, continuous_phase=False, continuous_interval=False
-                    )
-                ]
-
-        elif shooting_type == Shooting.MULTIPLE:
-            out._time_vector = concatenate_optimization_variables(
-                out._time_vector, continuous_phase=False, continuous_interval=False, merge_phases=merge_phases
-            )
-
-        out.is_integrated = True
-
-        return out
-
-    def noisy_integrate(
-        self,
-        shooting_type: Shooting = Shooting.SINGLE,
-        keep_intermediate_points: bool = False,
-        merge_phases: bool = False,
-        integrator: SolutionIntegrator = SolutionIntegrator.SCIPY_RK45,
-        n_random: int = 30,
-    ) -> Any:
-        """
-        Integrate the states
-
-        Parameters
-        ----------
-        shooting_type: Shooting
-            Which type of integration
-        keep_intermediate_points: bool
-            If the integration should return the intermediate values of the integration [False]
-            or only keep the node [True] effective keeping the initial size of the states
-        merge_phases: bool
-            If the phase should be merged in a unique phase
-        integrator: SolutionIntegrator
-            Use the scipy integrator RK45 by default, you can use any integrator provided by scipy or the OCP integrator
-
-        Returns
-        -------
-        A Solution data structure with the states integrated. The controls are removed from this structure
-        """
-
-        self.__integrate_sanity_checks(
-            shooting_type=shooting_type,
-            keep_intermediate_points=keep_intermediate_points,
-            integrator=integrator,
-        )
-
-        out = self.__perform_noisy_integration(
-            shooting_type=shooting_type,
-            keep_intermediate_points=keep_intermediate_points,
-            integrator=integrator,
-            n_random=n_random,
-        )
-
-        if merge_phases:
-            out.is_merged = True
-            out._dt = None
-            out.phase_time = [out.phase_time[0], sum(out.phase_time[1:])]
-            out.ns = sum(out.ns)
-
-            if shooting_type == Shooting.SINGLE:
-                out._states["unscaled"] = concatenate_optimization_variables_dict(out._states["unscaled"])
-                out._time_vector = [concatenate_optimization_variables(out._time_vector)]
-
-            else:
-                out._states["unscaled"] = concatenate_optimization_variables_dict(
-                    out._states["unscaled"], continuous=False
-                )
-                out._time_vector = [
-                    concatenate_optimization_variables(
-                        out._time_vector, continuous_phase=False, continuous_interval=False
-                    )
-                ]
-
-        elif shooting_type == Shooting.MULTIPLE:
-            out._time_vector = concatenate_optimization_variables(
-                out._time_vector, continuous_phase=False, continuous_interval=False, merge_phases=merge_phases
+            out._states["unscaled"] = concatenate_optimization_variables_dict(
+                out._states["unscaled"], continuous=shooting_type==Shooting.SINGLE
             )
 
         out.is_integrated = True
@@ -1088,18 +964,11 @@ class Solution:
 
         # Copy the data
         out = self.copy(skip_data=True)
-        out.recomputed_time_steps = integrator != SolutionIntegrator.OCP
         out._states["unscaled"] = [dict() for _ in range(len(self._states["unscaled"]))]
-        out._time_vector = self.ocp._generate_time(
-            time_phase=self.phase_time,
-            keep_intermediate_points=keep_intermediate_points,
-            merge_phases=False,
-            shooting_type=shooting_type,
-        )
 
         params = vertcat(*[self.parameters[key] for key in self.parameters])
 
-        for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
+        for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_for_integration)):
             self.ocp.nlp[p].controls.node_index = 0
             states_phase_idx = self.ocp.nlp[p].use_states_from_phase_idx
             controls_phase_idx = self.ocp.nlp[p].use_controls_from_phase_idx
@@ -1163,109 +1032,6 @@ class Solution:
 
         return out
 
-    def __perform_noisy_integration(
-        self,
-        shooting_type: Shooting,
-        keep_intermediate_points: bool,
-        integrator: SolutionIntegrator,
-        n_random: int,
-    ):
-        """
-        This function performs the integration of the system dynamics in a noisy environment
-        with different options using scipy or the default integrator
-
-        Parameters
-        ----------
-        shooting_type: Shooting
-            Which type of integration (SINGLE_CONTINUOUS, MULTIPLE, SINGLE)
-        keep_intermediate_points: bool
-            If the integration should return the intermediate values of the integration
-        integrator
-            Use the ode solver defined by the OCP or use a separate integrator provided by scipy such as RK45 or DOP853
-
-        Returns
-        -------
-        Solution
-            A Solution data structure with the states integrated. The controls are removed from this structure
-        """
-
-        # Copy the data
-        out = self.copy(skip_data=True)
-        out.recomputed_time_steps = integrator != SolutionIntegrator.OCP
-        out._states["unscaled"] = [dict() for _ in range(len(self._states["unscaled"]))]
-        out._time_vector = self._generate_time(
-            keep_intermediate_points=keep_intermediate_points,
-            merge_phases=False,
-            shooting_type=shooting_type,
-        )
-
-        params = vertcat(*[self.parameters[key] for key in self.parameters])
-
-        for i_phase, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_vector)):
-            self.ocp.nlp[i_phase].controls.node_index = 0
-
-            states_phase_idx = self.ocp.nlp[i_phase].use_states_from_phase_idx
-            controls_phase_idx = self.ocp.nlp[i_phase].use_controls_from_phase_idx
-            param_scaling = nlp.parameters.scaling
-            x0 = self._get_first_frame_states(out, shooting_type, phase=i_phase)
-            u = (
-                np.array([])
-                if nlp.control_type == ControlType.NONE
-                else np.concatenate(
-                    [
-                        self._controls["unscaled"][controls_phase_idx][key]
-                        for key in self.ocp.nlp[controls_phase_idx].controls
-                    ]
-                )
-            )
-
-            if self.ocp.nlp[i_phase].stochastic_variables.keys():
-                s = np.concatenate(
-                    [self._stochastic_variables[i_phase][key] for key in self.ocp.nlp[i_phase].stochastic_variables]
-                )
-            else:
-                s = np.array([])
-            if integrator == SolutionIntegrator.OCP:
-                integrated_sol = solve_ivp_bioptim_interface(
-                    dynamics_func=nlp.dynamics,
-                    keep_intermediate_points=keep_intermediate_points,
-                    x0=x0,
-                    u=u,
-                    s=s,
-                    params=params,
-                    param_scaling=param_scaling,
-                    shooting_type=shooting_type,
-                    control_type=nlp.control_type,
-                )
-            else:
-                integrated_sol = solve_ivp_interface(
-                    dynamics_func=nlp.dynamics_func[0],
-                    keep_intermediate_points=keep_intermediate_points,
-                    t_eval=t_eval[:-1] if shooting_type == Shooting.MULTIPLE else t_eval,
-                    t=t_eval,
-                    x0=x0,
-                    u=u,
-                    s=s,
-                    params=params,
-                    method=integrator.value,
-                    control_type=nlp.control_type,
-                )
-
-            for key in nlp.states:
-                out._states["unscaled"][states_phase_idx][key] = integrated_sol[nlp.states[key].index, :]
-
-                if shooting_type == Shooting.MULTIPLE:
-                    # last node of the phase is not integrated but do exist as an independent node
-                    out._states["unscaled"][states_phase_idx][key] = np.concatenate(
-                        (
-                            out._states["unscaled"][states_phase_idx][key],
-                            self._states["unscaled"][states_phase_idx][key][:, -1:],
-                        ),
-                        axis=1,
-                    )
-
-        return out
-
     def interpolate(self, n_frames: int | list | tuple) -> Any:
         """
         Interpolate the states
@@ -1286,7 +1052,7 @@ class Solution:
         t_all = []
         for p, data in enumerate(self._states["unscaled"]):
             nlp = self.ocp.nlp[p]
-            if nlp.ode_solver.is_direct_collocation and not self.recomputed_time_steps:
+            if nlp.ode_solver.is_direct_collocation:
                 time_offset = sum(out.phase_time[: p + 1])
                 step_time = np.array(nlp.dynamics[0].step_time)
                 dt = out.phase_time[p + 1] / nlp.ns
@@ -1349,7 +1115,12 @@ class Solution:
             new.phase_time,
             new.ns,
         ) = self._merge_phases()
-        new._time_vector = [np.array(concatenate_optimization_variables(self._time_vector))]
+
+        time_tp = []
+        for t in new._time_for_integration:
+            time_tp.extend(t)
+        new._time_for_integration = time_tp
+
         new.is_merged = True
         return new
 
@@ -1386,7 +1157,7 @@ class Solution:
                 deepcopy(self._controls["unscaled"]),
                 deepcopy(self._stochastic_variables["scaled"]),
                 deepcopy(self._stochastic_variables["unscaled"]),
-                deepcopy(self.phase_time),
+                deepcopy(self._time_for_integration),
                 deepcopy(self.ns),
             )
 
@@ -1646,7 +1417,7 @@ class Solution:
         p = vertcat(*[self.parameters[key] / self.ocp.parameters[key].scaling for key in self.parameters.keys()])
 
         phase_dt = float(self.vector[self.ocp.time_phase_mapping.to_second.map_idx[phase_idx]])
-        dt = Function("time", [nlp.dt], [penalty.dt])(phase_dt)
+        dt = penalty.dt_to_float(phase_dt)
 
         for idx in penalty.node_idx:
             t = []
@@ -1759,7 +1530,7 @@ class Solution:
                                 col_u_idx += [idx + 1]
                             col_s_idx += [idx + 1]
 
-                    t = self.time[phase_idx][idx] if isinstance(self.time, list) else self.time[idx]
+                    t = self._time_for_integration[phase_idx][idx][0]  # Starting time of the current shooting node
                     x = np.array(()).reshape(0, 0)
                     u = np.array(()).reshape(0, 0)
                     s = np.array(()).reshape(0, 0)

@@ -344,6 +344,7 @@ class OptimalControlProgram:
             variable_mappings,
             integrated_value_functions,
         )
+        self._is_warm_starting = False
 
         # Do not copy singleton since x_scaling was already dealt with before
         NLP.add(self, "x_scaling", x_scaling, True)
@@ -368,6 +369,7 @@ class OptimalControlProgram:
             parameter_objectives,
             phase_transitions,
         )
+
 
     def _check_bioptim_version(self):
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
@@ -668,7 +670,6 @@ class OptimalControlProgram:
 
         NLP.add(self, "n_threads", self.n_threads, True)
         self.ocp_solver = None
-        self.is_warm_starting = False
 
         plot_mappings = plot_mappings if plot_mappings is not None else {}
         reshaped_plot_mappings = []
@@ -1574,14 +1575,14 @@ class OptimalControlProgram:
         if warm_start is not None:
             self.set_warm_start(sol=warm_start)
 
-        if self.is_warm_starting:
+        if self._is_warm_starting:
             if solver.type == SolverType.IPOPT:
                 solver.set_warm_start_options(1e-10)
 
         self.ocp_solver.opts = solver
 
         self.ocp_solver.solve()
-        self.is_warm_starting = False
+        self._is_warm_starting = False
 
         return Solution.from_dict(self, self.ocp_solver.get_optimized_value())
 
@@ -1631,7 +1632,7 @@ class OptimalControlProgram:
         if self.ocp_solver:
             self.ocp_solver.set_lagrange_multiplier(sol)
 
-        self.is_warm_starting = True
+        self._is_warm_starting = True
 
     def save(self, sol: Solution, file_path: str, stand_alone: bool = False):
         """
