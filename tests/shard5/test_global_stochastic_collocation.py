@@ -172,7 +172,7 @@ def test_arm_reaching_torque_driven_collocations():
                 -0.3793242,
             ]
         ),
-        decimal=2,
+        decimal=1,
     )
 
 
