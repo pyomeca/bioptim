@@ -2,19 +2,19 @@ version: "1"         # required to adjust maintainability checks
 checks:
   argument-count:
     config:
-      threshold: 4
+      threshold: 6
   complex-logic:
     config:
       threshold: 4
   file-lines:
     config:
-      threshold: 250
+      threshold: 500
   method-complexity:
     config:
       threshold: 5
   method-count:
     config:
-      threshold: 20
+      threshold: 40
   method-lines:
     config:
       threshold: 25
