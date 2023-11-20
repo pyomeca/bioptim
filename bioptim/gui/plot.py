@@ -297,19 +297,12 @@ class PlotOcp:
         self.t_integrated = []
         last_t = 0
         for phase_idx, nlp in enumerate(self.ocp.nlp):
-            n_int_steps = (
-                nlp.ode_solver.steps_scipy if self.integrator != SolutionIntegrator.OCP else nlp.ode_solver.steps
-            )
             dt_ns = self.tf[phase_idx] / nlp.ns
             time_phase_integrated = []
-            last_t_int = copy(last_t)
-            for _ in range(nlp.ns):
-                if nlp.ode_solver.is_direct_collocation and self.integrator == SolutionIntegrator.OCP:
-                    time_phase_integrated.append(np.array(nlp.dynamics[0].step_time) * dt_ns + last_t_int)
-                else:
-                    time_phase_integrated.append(np.linspace(last_t_int, last_t_int + dt_ns, n_int_steps + 1))
+            for ns in range(nlp.ns):
+                t_modified = ns * dt_ns if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 0
+                time_phase_integrated.append(nlp.dynamics[ns].step_times_from_dt([t_modified + (0 if phase_idx == 0 else self.tf[phase_idx - 1]), dt_ns]))
 
-                last_t_int += dt_ns
             self.t_integrated.append(time_phase_integrated)
 
             self.ns += nlp.ns + 1
@@ -495,18 +488,12 @@ class PlotOcp:
                         )
                     elif plot_type == PlotType.INTEGRATED:
                         plots_integrated = []
-                        n_int_steps = (
-                            nlp.ode_solver.steps_scipy
-                            if self.integrator != SolutionIntegrator.OCP
-                            else nlp.ode_solver.steps
-                        )
-                        zero = np.zeros(n_int_steps + 1)
                         color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
                         for cmp in range(nlp.ns):
                             plots_integrated.append(
                                 ax.plot(
                                     self.t_integrated[i][cmp],
-                                    zero,
+                                    np.zeros((self.t_integrated[i][cmp].shape[0], 1)),
                                     color=color,
                                     label=label,
                                     **self.plot_options["integrated_plots"],
@@ -657,32 +644,25 @@ class PlotOcp:
 
         plt.show()
 
-    def update_data(self, v: dict):
+    def update_data(self, v: np.ndarray):
         """
         Update ydata from the variable a solution structure
 
         Parameters
         ----------
-        v: dict
+        v: np.ndarray
             The data to parse
         """
 
         self.ydata = []
 
         sol = Solution.from_vector(self.ocp, v)
-
-        if all([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]):
-            # no need to integrate when using direct collocation
-            data_states = sol.states
-        elif all([nlp.ode_solver.is_direct_shooting for nlp in self.ocp.nlp]):
-            integrated = sol.integrate(
-                shooting_type=self.shooting_type,
-                keep_intermediate_points=True,
-                integrator=self.integrator,
-            )
-            data_states = integrated.states
-        else:
-            raise NotImplementedError("Graphs are not implemented when mixing direct collocation and direct shooting")
+        integrated = sol.integrate(
+            shooting_type=self.shooting_type,
+            keep_intermediate_points=True,
+            integrator=self.integrator,
+        )
+        data_states = integrated.integrated_states_by_steps
 
         data_controls = sol.controls
         data_params = sol.parameters
@@ -701,19 +681,13 @@ class PlotOcp:
                 else nlp.ode_solver.steps + 1
             )
 
-            if isinstance(data_states, dict):
-                n_elements = data_states[list(data_states.keys())[0]].shape[1]
-            elif isinstance(data_states, list):
-                n_elements = data_states[i][list(data_states[i].keys())[0]].shape[1]
-            else:
-                raise RuntimeError("Invalid data_states type")
-            state = np.ndarray((0, n_elements))
-            for ss in nlp.states:
-                if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                    if isinstance(data_states, (list, tuple)):
-                        state = np.concatenate((state, data_states[i][ss]))
-                    else:
-                        state = np.concatenate((state, data_states[ss]))
+            state = []
+            for ns in range(nlp.ns):
+                state.append(np.ndarray((0, nlp.dynamics[ns].n_step_times)))
+            for state_key in data_states[i].keys():
+                for s, shooting in enumerate(data_states[i][state_key]):
+                    state[s] = np.concatenate((state[s], shooting), axis=0)
+
             control = np.ndarray((0, nlp.ns + 1))
             for ss in nlp.controls:
                 if nlp.use_controls_from_phase_idx == nlp.phase_idx:
@@ -759,15 +733,15 @@ class PlotOcp:
                 if self.plot_func[key][i].type == PlotType.INTEGRATED:
                     all_y = []
                     for idx, t in enumerate(self.t_integrated[i]):
-                        y_tp = np.empty((self.variable_sizes[i][key], len(t)))
+                        y_tp = np.empty((self.variable_sizes[i][key], t.shape[0]))
                         y_tp.fill(np.nan)
-                        val = np.empty((self.variable_sizes[i][key], len(t)))
+                        val = np.empty((self.variable_sizes[i][key], t.shape[0]))
                         val.fill(np.nan)
 
                         val_tempo = self.plot_func[key][i].function(
                             idx,
                             dt_phases,
-                            state[:, step_size * idx : step_size * (idx + 1) + x_mod],
+                            state[idx],
                             control[:, idx : idx + u_mod + 1],
                             data_params_in_dyn,
                             stochastic[:, idx : idx + 1 + 1],
@@ -783,7 +757,7 @@ class PlotOcp:
                             or val_tempo.shape[1] != val.shape[1]
                         ):
                             raise RuntimeError(
-                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y_tp.shape}"
+                                f"Wrong dimensions for plot {key}. Got {val_tempo.shape}, but expected {y_tp.shape}"
                             )
                         for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):
                             val[axe_index, :] = val_tempo[ctr, :]
@@ -965,7 +939,7 @@ class PlotOcp:
                         val_tempo = self.plot_func[key][i].function(
                             nodes,
                             dt_phases,
-                            state[:, ::step_size],
+                            np.concatenate([s[:, 0:1] for s in state], axis=1),
                             control,
                             data_params_in_dyn,
                             stochastic,
@@ -995,7 +969,7 @@ class PlotOcp:
             phase_idx = plot[1]
             if plot[0] == PlotType.INTEGRATED:
                 for cmp, p in enumerate(plot[2]):
-                    p.set_xdata(self.t_integrated[phase_idx][cmp])
+                    p.set_xdata(np.array(self.t_integrated[phase_idx][cmp]))
                 ax = plot[2][-1].axes
             elif plot[0] == PlotType.POINT:
                 plot[2].set_xdata(self.t[phase_idx][np.array(self.plot_func[plot[3]][phase_idx].node_idx)])

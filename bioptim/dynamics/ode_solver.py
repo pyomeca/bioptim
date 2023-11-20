@@ -352,10 +352,6 @@ class OdeSolver:
             self.is_direct_collocation = True
             self.steps = self.polynomial_degree
 
-        def time_grid(self, t0):
-            dt = collocation_points(self.polynomial_degree, self.method)
-            return [t0 + dt[i] for i in range(0, self.steps)]
-
         def integrator(
             self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False
         ) -> list:
@@ -452,7 +448,6 @@ class OdeSolver:
             self.rk_integrator = IRK
             self.is_direct_collocation = False
             self.is_direct_shooting = True
-            self.steps = 1
 
         def integrator(
             self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False

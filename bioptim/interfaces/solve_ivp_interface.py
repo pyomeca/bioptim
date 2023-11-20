@@ -365,34 +365,17 @@ def solve_ivp_bioptim_interface(
     # if multiple shooting, we need to set the first x0
     x0i = x0[:, 0] if x0.shape[1] > 1 else x0
 
-    y_final = np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
-
+    y = []
     for ss, func in enumerate(dynamics_func):
         u_slice = slice(ss, ss + 1) if control_type == ControlType.CONSTANT else slice(ss, ss + 2)
         u_controls = [] if control_type == ControlType.NONE else u[:, u_slice]
         # y always contains [x0, xf] of the interval
-        y = np.concatenate(
-            (
-                np.array([], dtype=np.float64).reshape(x0i.shape[0], 0)
-                if keep_intermediate_points
-                else x0i,  # x0 or None
-                np.array(func(t_span=[t[ss][0], t[ss][-1]], x0=x0i, u=u_controls, p=params / param_scaling, s=s)[dynamics_output]),
-            ),  # xf or xall
-            axis=1,
-        )
+        y.append(func(t_span=[t[ss][0], t[ss][-1]], x0=x0i, u=u_controls, p=params / param_scaling, s=s)[dynamics_output])
 
-        # select the output of the integrated solution
-        # and update x0i for the next step
+        # Update x0i for the next step
         if shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE):
-            concatenated_y = y[:, :-1]
-            x0i = y[:, -1:]
+            x0i = y[-1][:, -1]
         else:  # Shooting.MULTIPLE
-            concatenated_y = y
             x0i = x0[:, ss + 1] if ss < len(dynamics_func) - 1 else None
 
-        y_final = np.concatenate((y_final, concatenated_y), axis=1)
-
-    # add the final states to the solution for Shooting.SINGLE and Shooting.SINGLE_DISCONTINUOUS_PHASE
-    y_final = np.concatenate((y_final, x0i), axis=1) if x0i is not None else y_final
-
-    return y_final
+    return y

@@ -105,6 +105,10 @@ class Integrator:
         )
 
     @property
+    def n_step_times(self):
+        raise NotImplementedError("This method should be implemented for a given integrator")
+
+    @property
     def _step_times_from_dt_func(self) -> Function:
         raise NotImplementedError("This method should be implemented for a given integrator")
 
@@ -235,6 +239,10 @@ class RK(Integrator):
     @property
     def _step_time(self):
         return self.t_span_sym[1] / self.n_step
+
+    @property
+    def n_step_times(self):
+        return self.n_step + 1
 
     @property
     def _step_times_from_dt_func(self) -> Function:
@@ -528,8 +536,12 @@ class COLLOCATION(Integrator):
         return [0] + collocation_points(self.degree, self.method)
 
     @property
+    def n_step_times(self):
+        return len(self._step_time)
+
+    @property
     def _step_times_from_dt_func(self) -> Function:
-        return Function("step_time", [self.t_span_sym[1]], [self._step_time * self.t_span_sym[1]])
+        return Function("step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._step_time + [1]) * self.t_span_sym[1]])
 
     def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
         """
@@ -623,7 +635,15 @@ class IRK(COLLOCATION):
     @property
     def _output_names(self):
         return ["xf", "xall"]
-    
+
+    @property
+    def n_step_times(self):
+        return 2
+
+    @property
+    def _step_times_from_dt_func(self) -> Function:
+        return Function("step_time", [self.t_span_sym], [self.t_span_sym])
+
     def dxdt(
         self,
         states: MX | SX,

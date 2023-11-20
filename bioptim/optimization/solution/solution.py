@@ -205,6 +205,7 @@ class Solution:
         self.status = status
 
         # Extract the data now for further use
+        self._integrated_states = {}
         if vector is None:
             self._states = {}
             self._controls = {}
@@ -223,8 +224,8 @@ class Solution:
             self._controls = self.ocp.complete_controls(_controls)
             self.parameters = parameters
             self._stochastic_variables = _stochastic_variables
-            self._dt = OptimizationVectorHelper.extract_dt(ocp, vector)
 
+            self._dt = OptimizationVectorHelper.extract_dt(ocp, vector)
             phase_end_time = OptimizationVectorHelper.extract_phase_end_times(ocp, vector)
             self._time_for_integration = self.ocp.generate_node_times(self._dt, phase_end_time)
 
@@ -405,7 +406,7 @@ class Solution:
 
         Parameters
         ----------
-        _ocp: OptimalControlProgram
+        ocp: OptimalControlProgram
             A reference to the OptimalControlProgram
         _sol: np.ndarray | DM
             The solution in vector format
@@ -557,6 +558,12 @@ class Solution:
         """
 
         return self._states["unscaled"] if len(self._states["unscaled"]) > 1 else self._states["unscaled"][0]
+
+    @property
+    def integrated_states_by_steps(self):
+        if not self.is_integrated:
+            raise RuntimeError("The solution is not integrated, please call integrate() first")
+        return self._integrated_states["unscaled"]
 
     @property
     def states_scaled(self) -> list | dict:
@@ -968,6 +975,7 @@ class Solution:
 
         params = vertcat(*[self.parameters[key] for key in self.parameters])
 
+        out._integrated_states["unscaled"] = [None] * len(self.ocp.nlp)
         for p, (nlp, t_eval) in enumerate(zip(self.ocp.nlp, out._time_for_integration)):
             self.ocp.nlp[p].controls.node_index = 0
             states_phase_idx = self.ocp.nlp[p].use_states_from_phase_idx
@@ -1017,18 +1025,11 @@ class Solution:
                     control_type=nlp.control_type,
                 )
 
+            out._integrated_states["unscaled"][p] = {}
             for key in nlp.states:
-                out._states["unscaled"][states_phase_idx][key] = integrated_sol[nlp.states[key].index, :]
-
-                if shooting_type == Shooting.MULTIPLE:
-                    # last node of the phase is not integrated but do exist as an independent node
-                    out._states["unscaled"][states_phase_idx][key] = np.concatenate(
-                        (
-                            out._states["unscaled"][states_phase_idx][key],
-                            self._states["unscaled"][states_phase_idx][key][:, -1:],
-                        ),
-                        axis=1,
-                    )
+                out._integrated_states["unscaled"][p][key] = [None] * nlp.ns
+                for ns, sol_ns in enumerate(integrated_sol):
+                    out._integrated_states["unscaled"][p][key][ns] = sol_ns[nlp.states[key].index, :]
 
         return out
 
