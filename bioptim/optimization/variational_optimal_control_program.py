@@ -9,8 +9,8 @@ from .optimal_control_program import OptimalControlProgram
 from ..dynamics.configure_problem import ConfigureProblem, DynamicsList
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..dynamics.dynamics_functions import DynamicsFunctions
-from ..interfaces.variational_biomodel import VariationalBioModel
-from ..interfaces.variational_biorbd_model import VariationalBiorbdModel
+from ..models.protocols.variational_biomodel import VariationalBioModel
+from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..limits.constraints import ParameterConstraintList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ParameterObjectiveList

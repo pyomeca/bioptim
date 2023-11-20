@@ -22,7 +22,7 @@ from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
 from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType, PhaseDynamics
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
-from ..interfaces.stochastic_bio_model import StochasticBioModel
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
 class Constraint(PenaltyOption):

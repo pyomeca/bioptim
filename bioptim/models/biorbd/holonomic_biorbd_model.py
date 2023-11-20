@@ -7,8 +7,8 @@ from biorbd_casadi import (
 )
 from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv
 
+from ..holonomic_constraints import HolonomicConstraintsList
 from .biorbd_model import BiorbdModel
-from .holonomic_constraints import HolonomicConstraintsList
 
 
 class HolonomicBiorbdModel(BiorbdModel):

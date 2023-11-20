@@ -17,9 +17,10 @@ from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProble
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.graph import OcpToConsole, OcpToGraph
-from ..interfaces.biomodel import BioModel
-from ..interfaces.variational_biorbd_model import VariationalBiorbdModel
-from ..interfaces.solver_options import Solver
+from ..models.protocols.biomodel import BioModel
+from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
+from ..interfaces import Solver
+from ..interfaces.abstract_options import GenericSolver
 from ..limits.constraints import (
     ConstraintFunction,
     ConstraintFcn,
@@ -60,8 +61,8 @@ from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
-from bioptim.optimization.solution.solution import Solution
-from bioptim.optimization.solution.simplified_objects import SimplifiedOCP
+from ..optimization.solution.solution import Solution
+from ..optimization.solution.simplified_objects import SimplifiedOCP
 from ..optimization.variable_scaling import VariableScalingList
 from ..gui.check_conditioning import check_conditioning
 
@@ -955,7 +956,7 @@ class OptimalControlProgram:
                         ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
                     )
                     penalty.add_or_replace_to_penalty_pool(self, nlp)
-                    if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.include_starting_collocation_point:
+                    if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_collocation_starting_point:
                         penalty = Constraint(
                             ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
                             node=Node.ALL_SHOOTING,
@@ -968,7 +969,7 @@ class OptimalControlProgram:
                             ConstraintFcn.STATE_CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL
                         )
                         penalty.add_or_replace_to_penalty_pool(self, nlp)
-                        if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.include_starting_collocation_point:
+                        if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_collocation_starting_point:
                             penalty = Constraint(
                                 ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
                                 node=shooting_node,
@@ -1533,7 +1534,7 @@ class OptimalControlProgram:
 
     def solve(
         self,
-        solver: Solver | Solver.Generic = None,
+        solver: GenericSolver = None,
         warm_start: Solution = None,
     ) -> Solution:
         """
@@ -1541,7 +1542,7 @@ class OptimalControlProgram:
 
         Parameters
         ----------
-        solver: Generic
+        solver: GenericSolver
             The solver which will be used to solve the ocp
         warm_start: Solution
             The solution to pass to the warm start method
