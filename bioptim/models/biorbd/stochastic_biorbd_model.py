@@ -20,7 +20,7 @@ class StochasticBiorbdModel(BiorbdModel):
         n_noised_controls: int,
         sensory_noise_magnitude: np.ndarray | DM,
         motor_noise_magnitude: np.ndarray | DM,
-        sensory_reference: Callable,
+        compute_torques_from_noise_and_feedback: Callable,
         motor_noise_mapping: BiMappingList = BiMappingList(),
         n_collocation_points: int = 1,
         **kwargs,
@@ -30,7 +30,7 @@ class StochasticBiorbdModel(BiorbdModel):
         self.motor_noise_magnitude = motor_noise_magnitude
         self.sensory_noise_magnitude = sensory_noise_magnitude
 
-        self.sensory_reference = sensory_reference
+        self.compute_torques_from_noise_and_feedback = compute_torques_from_noise_and_feedback
 
         self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
         self.sensory_noise_sym = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0])
@@ -52,7 +52,12 @@ class StochasticBiorbdModel(BiorbdModel):
         self.matrix_shape_cov_cholesky = (self.n_noised_states, self.n_noised_states)
         self.matrix_shape_m = (self.n_noised_states, self.n_noised_states * self.n_collocation_points)
 
-    def compute_torques_from_noise_and_feedback(self, k_matrix, sensory_input, ref):
-        """Compute the torques from the sensory feedback"""
-        mapped_sensory_feedback_torque = k_matrix @ ((sensory_input - ref) + self.sensory_noise_sym)
-        return mapped_sensory_feedback_torque
+    # def compute_torques_from_noise_and_feedback(self, k_fb_matrix, sensory_input, ref, sensory_feedback_acuity):
+    #     """Compute the torques from the sensory feedback"""
+    #     sensory_feedback_torque = k_fb_matrix @ ((sensory_input - ref) + sensory_feedback_acuity(self.sensory_noise_sym))
+    #     return sensory_feedback_torque
+    #
+    # def compute_torques_from_noise_and_feedforward(self, k_ff_matrix, sensory_input, ref, sensory_feedforward_acuity):
+    #     """Compute the torques from the sensory feedforward"""
+    #     sensory_feedforward_torque = k_ff_matrix @ ((sensory_input - ref) + sensory_feedforward_acuity(self.sensory_noise_sym))
+    #     return sensory_feedforward_torque
