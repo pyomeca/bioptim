@@ -62,7 +62,6 @@ from ..misc.options import OptionDict
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution.solution import Solution
-from ..optimization.solution.simplified_objects import SimplifiedOCP
 from ..optimization.variable_scaling import VariableScalingList
 from ..gui.check_conditioning import check_conditioning
 

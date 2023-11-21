@@ -13,10 +13,6 @@ class OdeSolverBase:
 
     Attributes
     ----------
-    steps: int
-        The number of integration steps
-    steps_scipy: int
-        Number of steps while integrating with scipy
     rk_integrator: RK4 | RK8 | IRK
         The corresponding integrator class
     is_direct_collocation: bool
@@ -32,8 +28,6 @@ class OdeSolverBase:
     """
 
     def __init__(self):
-        self.steps = 1
-        self.steps_scipy = 5
         self.rk_integrator = None
         self.is_direct_collocation = False
         self.is_direct_shooting = False
@@ -119,7 +113,7 @@ class RK(OdeSolverBase):
         """
 
         super(RK, self).__init__()
-        self.steps = n_integration_steps
+        self.n_integration_steps = n_integration_steps
         self.is_direct_shooting = True
         self.defects_type = DefectType.NOT_APPLICABLE
 
@@ -134,7 +128,7 @@ class RK(OdeSolverBase):
             "cx": nlp.cx,
             "idx": 0,
             "control_type": nlp.control_type,
-            "number_of_finite_elements": self.steps,
+            "number_of_finite_elements": self.n_integration_steps,
             "defects_type": DefectType.NOT_APPLICABLE,
             "allow_free_variables": allow_free_variables,
         }
@@ -165,8 +159,8 @@ class RK(OdeSolverBase):
         return [nlp.ode_solver.rk_integrator(ode, ode_opt)]
 
     def __str__(self):
-        ode_solver_string = f"{self.rk_integrator.__name__} {self.steps} step"
-        if self.steps > 1:
+        ode_solver_string = f"{self.rk_integrator.__name__} {self.n_integration_steps} step"
+        if self.n_integration_steps > 1:
             ode_solver_string += "s"
 
         return ode_solver_string
@@ -345,12 +339,10 @@ class OdeSolver:
             super(OdeSolver.COLLOCATION, self).__init__()
             self.polynomial_degree = polynomial_degree
             self.duplicate_collocation_starting_point = duplicate_collocation_starting_point
-            self.n_cx = polynomial_degree + 3 if duplicate_collocation_starting_point else polynomial_degree + 2
             self.rk_integrator = COLLOCATION
             self.method = method
             self.defects_type = defects_type
             self.is_direct_collocation = True
-            self.steps = self.polynomial_degree
 
         def integrator(
             self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False
@@ -469,7 +461,6 @@ class OdeSolver:
             self.rk_integrator = CVODES
             self.is_direct_collocation = False
             self.is_direct_shooting = True
-            self.steps = 1
             self.defects_type = DefectType.NOT_APPLICABLE
 
         def integrator(
@@ -509,10 +500,8 @@ class OdeSolver:
 
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
-            dt = (tf - t0) / self.steps
-            time_integration_grid = [t0 + dt * i for i in range(0, self.steps)]
 
-            ode_opt = {"t0": t0, "tf": tf, "time_integration_grid": time_integration_grid}
+            ode_opt = {"t0": t0, "tf": tf}
             try:
                 integrator_func = casadi_integrator("integrator", "cvodes", ode, ode_opt)
             except RuntimeError as me:

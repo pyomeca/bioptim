@@ -315,16 +315,13 @@ def piecewise_constant_u(t: float, t_eval: np.ndarray | List[float], u: np.ndarr
 
 
 def solve_ivp_bioptim_interface(
-    dynamics_func: list[Callable],
-    keep_intermediate_points: bool,
-    t: np.ndarray,
-    x0: np.ndarray,
-    u: np.ndarray,
-    params: np.ndarray,
-    param_scaling: np.ndarray,
-    s: np.ndarray,
     shooting_type: Shooting,
-    control_type: ControlType,
+    dynamics_func: list[Callable],
+    t: list[np.ndarray],
+    x: list[np.ndarray],
+    u: list[np.ndarray],
+    p: list[np.ndarray],
+    s: list[np.ndarray],
 ):
     """
     This function solves the initial value problem with the dynamics_func built by bioptim
@@ -333,24 +330,18 @@ def solve_ivp_bioptim_interface(
     ----------
     dynamics_func : list[Callable]
         function that computes the dynamics of the system
-    keep_intermediate_points : bool
-        whether to keep the intermediate points or not
     t : np.ndarray
         array of time
-    x0 : np.ndarray
+    x : np.ndarray
         array of initial conditions
     u : np.ndarray
         arrays of controls u evaluated at t_eval
-    params : np.ndarray
+    p : np.ndarray
         array of parameters
-    param_scaling : np.ndarray
-        array of scaling factors for the parameters
     s : np.ndarray
         array of the stochastic variables of the system
     shooting_type : Shooting
         The way we integrate the solution such as SINGLE, SINGLE_CONTINUOUS, MULTIPLE
-    control_type : ControlType
-        The type of control such as ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS or ControlType.NONE
 
     Returns
     -------
@@ -358,24 +349,18 @@ def solve_ivp_bioptim_interface(
         array of the solution of the system at the times t_eval
 
     """
-    dynamics_output = "xall" if keep_intermediate_points else "xf"
 
-    if len(x0.shape) != len(u.shape) and len(x0.shape) < 2:  # NOT SURE OF THIS FIX
-        x0 = x0[:, np.newaxis]
     # if multiple shooting, we need to set the first x0
-    x0i = x0[:, 0] if x0.shape[1] > 1 else x0
+    
 
     y = []
-    for ss, func in enumerate(dynamics_func):
-        u_slice = slice(ss, ss + 1) if control_type == ControlType.CONSTANT else slice(ss, ss + 2)
-        u_controls = [] if control_type == ControlType.NONE else u[:, u_slice]
+    for node in range(len(dynamics_func)):
+        # If multiple shooting, we need to set the first x0, otherwise use the previous answer
+        x0i = x[node] if node == 0 or shooting_type == Shooting.MULTIPLE else y[-1][:, -1]
+            
         # y always contains [x0, xf] of the interval
-        y.append(func(t_span=[t[ss][0], t[ss][-1]], x0=x0i, u=u_controls, p=params / param_scaling, s=s)[dynamics_output])
-
-        # Update x0i for the next step
-        if shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE):
-            x0i = y[-1][:, -1]
-        else:  # Shooting.MULTIPLE
-            x0i = x0[:, ss + 1] if ss < len(dynamics_func) - 1 else None
+        y.append(dynamics_func[node].function(t_span=t[node], x0=x0i, u=u[node], p=p, s=s[node])["xall"])
+    
+    y.append(x[-1] if shooting_type == Shooting.MULTIPLE else y[-1][:, -1])
 
     return y

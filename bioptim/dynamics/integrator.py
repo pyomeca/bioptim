@@ -1,4 +1,4 @@
-from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, MX, SX, linspace
+from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, DM, MX, SX, linspace
 import numpy as np
 
 from ..misc.enums import ControlType, DefectType
@@ -48,8 +48,6 @@ class Integrator:
         Get the control at a given time
     dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, stochastic_variables: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
-    _finish_init(self)
-        Prepare the CasADi function from dxdt
     """
 
     # Todo change ode and ode_opt into class
@@ -82,7 +80,7 @@ class Integrator:
         # Initialize is expected to set step_time
         self._initialize(ode, ode_opt)
 
-        self.step_times_from_dt = self._step_times_from_dt_func
+        self.step_times_from_dt = self._time_xall_from_dt_func
         self.function = Function(
             "integrator",
             [
@@ -105,11 +103,35 @@ class Integrator:
         )
 
     @property
-    def n_step_times(self):
+    def shape_in(self) -> tuple[int, int]:
+        """
+        Returns the expected shape of x0
+        """
+        return self.x_sym.shape
+
+    @property
+    def shape_xf(self) -> tuple[int, int]:
+        """
+        Returns the expected shape of xf
+        """
+        raise NotImplementedError("This method should be implemented for a given integrator")
+    
+    @property
+    def shape_xall(self) -> tuple[int, int]:
+        """
+        Returns the expected shape of xall
+        """
+        raise NotImplementedError("This method should be implemented for a given integrator")
+    
+    @property
+    def time_xall(self) -> DM:
+        """
+        Returns the time vector of xall
+        """
         raise NotImplementedError("This method should be implemented for a given integrator")
 
     @property
-    def _step_times_from_dt_func(self) -> Function:
+    def _time_xall_from_dt_func(self) -> Function:
         raise NotImplementedError("This method should be implemented for a given integrator")
 
     @property
@@ -149,11 +171,7 @@ class Integrator:
         return self.function.map(*args, **kwargs)
 
     @property
-    def tf(self):
-        raise NotImplementedError("This method should be implemented for a given integrator")
-
-    @property
-    def _step_time(self):
+    def _integration_time(self):
         raise NotImplementedError("This method should be implemented for a given integrator")
 
     def get_u(self, u: np.ndarray, t: float) -> np.ndarray:
@@ -175,7 +193,7 @@ class Integrator:
         if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
-            dt_norm = 1 - (self.tf - t) / self._step_time
+            dt_norm = 1 - (self.tf - t) / self._integration_time
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
         elif self.control_type == ControlType.NONE:
             return np.ndarray((0,))
@@ -220,7 +238,7 @@ class RK(Integrator):
 
     Attributes
     ----------
-    n_step: int
+    _n_step: int
         Number of finite element during the integration
     """
 
@@ -233,24 +251,36 @@ class RK(Integrator):
         ode_opt: dict
             The ode options
         """
-        self.n_step = ode_opt["number_of_finite_elements"]
+        self._n_step = ode_opt["number_of_finite_elements"]
         super(RK, self).__init__(ode, ode_opt)
         
     @property
-    def _step_time(self):
-        return self.t_span_sym[1] / self.n_step
+    def _integration_time(self):
+        return self.t_span_sym[1] / self._n_step
 
     @property
-    def n_step_times(self):
-        return self.n_step + 1
+    def shape_in(self):
+        return [self.x_sym.shape, 1]
 
     @property
-    def _step_times_from_dt_func(self) -> Function:
-        return Function("step_time", [self.t_span_sym], [linspace(self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1], self.n_step + 1)])
+    def shape_xf(self) -> tuple[int, int]:
+        return [self.x_sym.shape[0], 1]
+
+    @property
+    def shape_xall(self):
+        return [self.x_sym.shape[0], self._n_step + 1]
+
+    @property
+    def _time_xall_from_dt_func(self) -> Function:
+        return Function(
+            "step_time", 
+            [self.t_span_sym], 
+            [linspace(self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1], self.shape_xall[1])]
+        )
 
     @property
     def h(self):
-        return (self.t_span_sym[1] - self.t_span_sym[0]) / self.n_step
+        return (self.t_span_sym[1] - self.t_span_sym[0]) / self._n_step
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, s: MX | SX) -> MX | SX:
         """
@@ -286,13 +316,13 @@ class RK(Integrator):
     ) -> tuple:
 
         u = controls
-        x = self.cx(states.shape[0], self.n_step + 1)
+        x = self.cx(states.shape[0], self._n_step + 1)
         p = params * param_scaling
         x[:, 0] = states
         s = stochastic_variables
 
-        for i in range(1, self.n_step + 1):
-            t = self.t_span_sym[0] + self._step_time * (i - 1)
+        for i in range(1, self._n_step + 1):
+            t = self.t_span_sym[0] + self._integration_time * (i - 1)
             x[:, i] = self.next_x(t, x[:, i - 1], u, p, s)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
@@ -498,7 +528,7 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - self._step_time[r]) / (self._step_time[j] - self._step_time[r])
+                    _l *= (time_control_interval - self._integration_time[r]) / (self._integration_time[j] - self._integration_time[r])
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
             if self.method == "radau":
@@ -511,13 +541,13 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - self._step_time[r]) / (self._step_time[j] - self._step_time[r])
+                    _l *= (time_control_interval - self._integration_time[r]) / (self._integration_time[j] - self._integration_time[r])
 
             # Evaluate the time derivative of the polynomial at all collocation points to get
             # the coefficients of the continuity equation
             tfcn = Function("tfcn", [time_control_interval], [tangent(_l, time_control_interval)])
             for r in range(self.degree + 1):
-                self._c[j, r] = tfcn(self._step_time[r])
+                self._c[j, r] = tfcn(self._integration_time[r])
 
     @property
     def _x_sym_modified(self):
@@ -532,16 +562,18 @@ class COLLOCATION(Integrator):
         return self.t_span_sym[1]
 
     @property
-    def _step_time(self):
+    def _integration_time(self):
         return [0] + collocation_points(self.degree, self.method)
 
     @property
-    def n_step_times(self):
-        return len(self._step_time)
+    def shape_xall(self):
+        return [self.degree + 2, 1]
 
     @property
-    def _step_times_from_dt_func(self) -> Function:
-        return Function("step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._step_time + [1]) * self.t_span_sym[1]])
+    def _time_xall_from_dt_func(self) -> Function:
+        return Function(
+            "step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._integration_time + [1]) * self.t_span_sym[1]]
+        )
 
     def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
         """
@@ -577,7 +609,7 @@ class COLLOCATION(Integrator):
         states_end = self._d[0] * states[1]
         defects = []
         for j in range(1, self.degree + 1):
-            t = vertcat(self.t_span_sym[0] + self._step_time[j-1] * self.h, self.h)
+            t = vertcat(self.t_span_sym[0] + self._integration_time[j-1] * self.h, self.h)
 
             # Expression for the state derivative at the collocation point
             xp_j = 0
@@ -591,7 +623,7 @@ class COLLOCATION(Integrator):
                 f_j = self.fun(
                     t,
                     states[j + 1],
-                    self.get_u(controls, self._step_time[j]),
+                    self.get_u(controls, self._integration_time[j]),
                     params * param_scaling,
                     stochastic_variables,
                 )[:, self.idx]
@@ -601,7 +633,7 @@ class COLLOCATION(Integrator):
                     self.implicit_fun(
                         t,
                         states[j + 1],
-                        self.get_u(controls, self._step_time[j]),
+                        self.get_u(controls, self._integration_time[j]),
                         params * param_scaling,
                         stochastic_variables,
                         xp_j / self.h,
@@ -637,11 +669,11 @@ class IRK(COLLOCATION):
         return ["xf", "xall"]
 
     @property
-    def n_step_times(self):
+    def shape_xall(self):
         return 2
 
     @property
-    def _step_times_from_dt_func(self) -> Function:
+    def _time_xall_from_dt_func(self) -> Function:
         return Function("step_time", [self.t_span_sym], [self.t_span_sym])
 
     def dxdt(

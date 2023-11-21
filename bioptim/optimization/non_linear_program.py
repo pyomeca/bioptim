@@ -220,6 +220,73 @@ class NonLinearProgram:
         self.stochastic_variables.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
+    @property
+    def n_states_nodes(self) -> int:
+        """
+        Returns
+        -------
+        The number of states
+        """
+        return self.ns + 1
+
+    def n_states_steps(self, node_idx) -> int:
+        """
+        Parameters
+        ----------
+        node_idx: int
+            The index of the node
+
+        Returns
+        -------
+        The number of states
+        """
+        if node_idx >= self.ns:
+            return 1
+        return self.dynamics[node_idx].shape_xf[1]
+
+    @property
+    def n_controls_nodes(self) -> int:
+        """
+        Returns
+        -------
+        The number of controls
+        """
+        mod = 1 if self.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE) else 0
+        return self.ns + mod
+
+
+    def n_controls_steps(self, node_idx) -> int:
+        """
+        Parameters
+        ----------
+        node_idx: int
+            The index of the node
+
+        Returns
+        -------
+        The number of states
+        """
+        
+        if self.control_type == ControlType.NONE:
+            return 0      
+        if self.control_type == ControlType.CONSTANT:
+            return 1
+        elif self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            return 1
+        elif self.control_type == ControlType.LINEAR_CONTINUOUS:
+            return 2
+        else: 
+            raise RuntimeError("Not implemented yet")
+
+    @property
+    def n_stochastic_nodes(self) -> int:
+        """
+        Returns
+        -------
+        The number of stochastic variables
+        """
+        return self.ns + 1
+
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):
         """

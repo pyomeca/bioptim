@@ -539,7 +539,7 @@ class BiorbdModel:
 
     @staticmethod
     def animate(
-        solution: Any, show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
+        solution: "Solution", show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
     ) -> None | list:
         try:
             import bioviz
@@ -548,7 +548,8 @@ class BiorbdModel:
 
         check_version(bioviz, "2.0.0", "2.4.0")
 
-        states = solution.states
+        states = solution.interpolated_states
+
         if not isinstance(states, (list, tuple)):
             states = [states]
 

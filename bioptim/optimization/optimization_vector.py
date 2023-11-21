@@ -417,7 +417,7 @@ class OptimizationVectorHelper:
         return data[ocp.dt_parameter.index].toarray()[:, 0].tolist()
 
     @staticmethod
-    def extract_phase_end_times(ocp, data: np.ndarray | DM) -> list:
+    def extract_step_times(ocp, data: np.ndarray | DM) -> list:
         """
         Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
 
@@ -433,10 +433,17 @@ class OptimizationVectorHelper:
         The phase time
         """
 
-        dt = OptimizationVectorHelper.extract_dt(ocp, data)
+        all_dt = OptimizationVectorHelper.extract_dt(ocp, data)
 
         # Starts at zero
-        return [dt[i] * nlp.ns for i, nlp in enumerate(ocp.nlp)]
+        out = []
+        for dt, nlp in zip(all_dt, ocp.nlp):
+            phase_step_times = []
+            for node in range(nlp.ns):
+                phase_step_times.append(nlp.dynamics[node].step_times_from_dt(vertcat(dt * node, dt)))
+            phase_step_times.append(DM(dt * nlp.ns))
+            out.append(phase_step_times)
+        return out
 
     @staticmethod
     def to_dictionaries(ocp, data: np.ndarray | DM) -> tuple:
@@ -456,104 +463,65 @@ class OptimizationVectorHelper:
         v_array = np.array(data).squeeze()
         data_states = []
         data_controls = []
-        data_stochastic_variables = []
-        for p in range(ocp.n_phases):
-            nlp = ocp.nlp[p]
-            nlp.controls.node_index = 0
-
-            n_points = nlp.ns * (1 if nlp.ode_solver.is_direct_shooting else (nlp.ode_solver.n_cx - 1)) + 1
-            data_states.append({key: np.ndarray((nlp.states[key].shape, n_points)) for key in nlp.states})
-            data_controls.append(
-                {
-                    key: np.ndarray(
-                        (
-                            nlp.controls[key].shape,
-                            nlp.ns
-                            + (
-                                1
-                                if nlp.control_type
-                                in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
-                                else 0
-                            ),
-                        )
-                    )
-                    for key in ocp.nlp[p].controls
-                }
-            )
-            data_stochastic_variables.append(
-                {
-                    key: np.ndarray((nlp.stochastic_variables[key].shape, nlp.ns + 1))
-                    for key in ocp.nlp[p].stochastic_variables
-                }
-            )
-        data_parameters = {key: np.ndarray((0, 1)) for key in ocp.parameters.keys()}
+        data_stochastic = []
+        for nlp in ocp.nlp:
+            # using state nodes ensures for all ensures the dimensions of controls are coherent with states
+            data_states.append({key: [None] * nlp.n_states_nodes for key in nlp.states.keys()})
+            data_controls.append({key: [None] * nlp.n_states_nodes for key in nlp.controls.keys()})
+            data_stochastic.append({key: [None] * nlp.n_states_nodes for key in nlp.stochastic_variables.keys()})
+        data_parameters = {key: None for key in ocp.parameters.keys()}
 
         # For states
         offset = ocp.dt_parameter.size
-        p_idx = 0
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
             nx = nlp.states.shape
 
-            if nlp.use_states_from_phase_idx == nlp.phase_idx:
-                repeat = (nlp.ode_solver.n_cx - 1) if nlp.ode_solver.is_direct_collocation else 1
-                for k in range((nlp.ns * repeat) + 1):
-                    nlp.states.node_index = k // repeat
-                    x_array = v_array[offset : offset + nx].reshape((nlp.states.scaled.shape, -1), order="F")
-                    for key in nlp.states:
-                        data_states[p_idx][key][:, k : k + 1] = x_array[nlp.states[key].index, :]
-                    offset += nx
-                p_idx += 1
+            if nlp.use_states_from_phase_idx != nlp.phase_idx:
+                data_states[p] = data_states[nlp.use_states_from_phase_idx]
+                continue
+            for node in range(nlp.n_states_nodes):
+                nlp.states.node_index = node
+                n_cols = nlp.n_states_steps(node)
+                x_array = v_array[offset : offset + nx * n_cols].reshape((nx, -1), order="F")
+                for key in nlp.states.keys():
+                    data_states[p][key][node] = x_array[nlp.states[key].index, :]
+                offset += nx
 
         # For controls
-        p_idx = 0
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
             nu = nlp.controls.shape
 
-            if nlp.control_type in (ControlType.NONE,):
+            if nlp.use_controls_from_phase_idx != nlp.phase_idx:
+                data_controls[p] = data_controls[nlp.use_controls_from_phase_idx]
                 continue
-
-            if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
-                    ns = nlp.ns
-                elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
-                    ns = nlp.ns + 1
+            for node in range(nlp.n_states_nodes):  # Using n_states_nodes on purpose see higher
+                nlp.controls.node_index = node
+                n_cols = nlp.n_controls_steps(node)
+                
+                if node >= nlp.n_controls_nodes:
+                    u_array = np.ndarray((nu, n_cols)) * np.nan
                 else:
-                    raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
+                    u_array = v_array[offset : offset + nu * n_cols].reshape((nu, -1), order="F")
 
-                for k in range(ns):
-                    nlp.controls.node_index = k
-                    u_array = v_array[offset : offset + nu].reshape((nlp.controls.scaled.shape, -1), order="F")
-                    for key in nlp.controls:
-                        data_controls[p_idx][key][:, k : k + 1] = u_array[nlp.controls[key].index, :]
-                    offset += nu
-                p_idx += 1
+                for key in nlp.controls.keys():
+                    data_controls[p][key][node] = u_array[nlp.controls[key].index, :]
+                offset += nu
 
         # For parameters
         for param in ocp.parameters:
             data_parameters[param.name] = v_array[[offset + i for i in param.index], np.newaxis] * param.scaling
+        data_parameters = [data_parameters]
         offset += len(ocp.parameters)
 
         # For stochastic variables
-        p_idx = 0
-        for p in range(ocp.n_phases):
-            nlp = ocp.nlp[p]
-            nstochastic = nlp.stochastic_variables.shape
-            if nstochastic > 0:
-                for k in range(nlp.ns + 1):
-                    nlp.stochastic_variables.node_index = k
-                    s_array = v_array[offset : offset + nstochastic].reshape(
-                        (nlp.stochastic_variables.shape, -1), order="F"
-                    )
-                    for key in nlp.stochastic_variables:
-                        data_stochastic_variables[p_idx][key][:, k : k + 1] = s_array[
-                            nlp.stochastic_variables[key].index, :
-                        ].reshape(nlp.stochastic_variables[key].shape, 1)
-                    offset += nstochastic
-                p_idx += 1
+        if nlp.stochastic_variables.shape > 0:
+            for p in range(ocp.n_phases):
+                # TODO
+                raise NotImplementedError("Stochastic variables not implemented yet")
 
-        return data_states, data_controls, data_parameters, data_stochastic_variables
+        return data_states, data_controls, data_parameters, data_stochastic
 
     @staticmethod
     def _nb_points(nlp, interpolation_type):
