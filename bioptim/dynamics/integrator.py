@@ -25,8 +25,6 @@ class Integrator:
         The control variables
     param_sym: MX | SX
         The parameters variables
-    param_scaling: MX | SX
-        The parameters variables scaling factor
     s_sym: MX | SX
         The stochastic variables
     fun: Callable
@@ -64,12 +62,11 @@ class Integrator:
         self.model = ode_opt["model"]
         self.idx = ode_opt["idx"]
         self.cx = ode_opt["cx"]
-        self.t_span_sym = ode["t_span"]
-        self.x_sym = ode["x_scaled"]
-        self.u_sym = [] if ode_opt["control_type"] is ControlType.NONE else ode["p_scaled"]
-        self.param_sym = ode_opt["param"].cx
-        self.param_scaling = ode_opt["param"].scaling
-        self.s_sym = ode["s_scaled"]
+        self.t_span_sym = ode["t"]
+        self.x_sym = ode["x"]
+        self.u_sym = ode["p"]
+        self.param_sym = ode["param"]
+        self.s_sym = ode["s"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
         self.defects_type = ode_opt["defects_type"]
@@ -94,7 +91,6 @@ class Integrator:
                 states=self.x_sym,
                 controls=self.u_sym,
                 params=self.param_sym,
-                param_scaling=self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
             self._input_names,
@@ -160,7 +156,7 @@ class Integrator:
 
         return self.function(*args, **kwargs)
 
-    def map(self, *args, **kwargs) -> Function:
+    def map(self, *args) -> Function:
         """
         Get the multithreaded CasADi graph of the integration
 
@@ -168,7 +164,7 @@ class Integrator:
         -------
         The multithreaded CasADi graph of the integration
         """
-        return self.function.map(*args, **kwargs)
+        return self.function.map(*args)
 
     @property
     def _integration_time(self):
@@ -205,7 +201,6 @@ class Integrator:
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
-        param_scaling,
         stochastic_variables: MX | SX,
     ) -> tuple:
         """
@@ -219,8 +214,6 @@ class Integrator:
             The controls of the system
         params: MX | SX
             The parameters of the system
-        param_scaling
-            The parameters scaling factor
         stochastic_variables: MX | SX
             The stochastic variables of the system
 
@@ -264,7 +257,7 @@ class RK(Integrator):
 
     @property
     def shape_xf(self) -> tuple[int, int]:
-        return [self.x_sym.shape[0], 1]
+        return self.x_sym.shape[0], 1
 
     @property
     def shape_xall(self):
@@ -311,13 +304,12 @@ class RK(Integrator):
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
-        param_scaling,
         stochastic_variables: MX | SX,
     ) -> tuple:
 
         u = controls
         x = self.cx(states.shape[0], self._n_step + 1)
-        p = params * param_scaling
+        p = params
         x[:, 0] = states
         s = stochastic_variables
 
@@ -448,12 +440,10 @@ class TRAPEZOIDAL(Integrator):
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
-        param_scaling,
         stochastic_variables: MX | SX,
     ) -> tuple:
 
         x_prev = self.cx(states.shape[0], 2)
-        p = params * param_scaling
 
         states_next = states[:, 1]
         controls_prev = controls[:, 0]
@@ -601,7 +591,6 @@ class COLLOCATION(Integrator):
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
-        param_scaling,
         stochastic_variables: MX | SX,
     ) -> tuple:
 
@@ -624,7 +613,6 @@ class COLLOCATION(Integrator):
                     t,
                     states[j + 1],
                     self.get_u(controls, self._integration_time[j]),
-                    params * param_scaling,
                     stochastic_variables,
                 )[:, self.idx]
                 defects.append(xp_j - self.h * f_j)
@@ -634,7 +622,6 @@ class COLLOCATION(Integrator):
                         t,
                         states[j + 1],
                         self.get_u(controls, self._integration_time[j]),
-                        params * param_scaling,
                         stochastic_variables,
                         xp_j / self.h,
                     )
@@ -681,7 +668,6 @@ class IRK(COLLOCATION):
         states: MX | SX,
         controls: MX | SX,
         params: MX | SX,
-        param_scaling,
         stochastic_variables: MX | SX,
     ) -> tuple:
 
@@ -690,7 +676,6 @@ class IRK(COLLOCATION):
             states=states,
             controls=controls,
             params=params,
-            param_scaling=param_scaling,
             stochastic_variables=stochastic_variables,
         )
 

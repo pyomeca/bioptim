@@ -390,7 +390,7 @@ class NewVariableConfiguration:
             for node_index in range(
                 (0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1
             ):
-                n_cx = self.nlp.ode_solver.n_cx if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION) else 3
+                n_cx = self.nlp.ode_solver.n_required_cx + 2
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[node_index][self.name].original_cx
                     if self.copy_states
