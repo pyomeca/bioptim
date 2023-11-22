@@ -208,15 +208,17 @@ class PenaltyFunctionAbstract:
 
             # Compute the expected effort
             trace_k_sensor_k = trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-            ee = controller.model.sensory_reference(
+
+            e_fb = controller.model.compute_torques_from_noise_and_feedback(
+                nlp=controller.get_nlp,
+                time=controller.time.cx,
                 states=controller.states.cx_start,
                 controls=controller.controls.cx_start,
                 parameters=controller.parameters.cx_start,
                 stochastic_variables=controller.stochastic_variables.cx_start,
-                nlp=controller.get_nlp,
+                sensory_noise=controller.model.sensory_noise_magnitude,
+                motor_noise=controller.model.motor_noise_magnitude,
             )
-
-            e_fb = k_matrix @ ((ee - ref) + controller.model.sensory_noise_magnitude)
             jac_e_fb_x = jacobian(e_fb, controller.states.cx_start)
 
             trace_jac_p_jack = trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)

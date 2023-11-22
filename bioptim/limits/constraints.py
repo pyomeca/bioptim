@@ -813,13 +813,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             ref = controller.stochastic_variables["ref"].cx_start
             sensory_input = controller.model.sensory_reference(
+                time=controller.time.cx,
                 states=controller.states.cx_start,
                 controls=controller.controls.cx_start,
                 parameters=controller.parameters.cx_start,
                 stochastic_variables=controller.stochastic_variables.cx_start,
                 nlp=controller.get_nlp,
             )
-            return sensory_input - ref
+            return sensory_input - ref[:controller.model.n_feedbacks]
 
         @staticmethod
         def symmetric_matrix(
