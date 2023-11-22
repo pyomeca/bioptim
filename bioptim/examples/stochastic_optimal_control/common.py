@@ -259,21 +259,17 @@ def reshape_to_matrix(var, shape):
             matrix[s1, s0] = var[s0 * shape_0 + s1]
     return matrix
 
-def compute_torques_from_noise_and_feedback(nlp, time, states, controls, parameters, stochastic_variables,
-                                                sensory_noise, motor_noise):
 
+def compute_torques_from_noise_and_feedback(
+    nlp, time, states, controls, parameters, stochastic_variables, sensory_noise, motor_noise
+):
     tau_nominal = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
     ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
     k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
     k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
-    sensory_input = nlp.model.sensory_reference(time,
-                                                  states,
-                                                  controls,
-                                                  parameters,
-                                                  stochastic_variables,
-                                                  nlp)
+    sensory_input = nlp.model.sensory_reference(time, states, controls, parameters, stochastic_variables, nlp)
     tau_fb = k_matrix @ ((sensory_input - ref) + sensory_noise)
 
     tau_motor_noise = motor_noise

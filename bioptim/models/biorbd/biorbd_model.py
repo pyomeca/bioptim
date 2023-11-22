@@ -166,9 +166,20 @@ class BiorbdModel:
         """
         q_biorbd = GeneralizedCoordinates(q)
         rotation_matrix = self.homogeneous_matrices_in_global(q_biorbd, idx)[:3, :3]
-        segment_orientation = biorbd.Rotation.toEulerAngles(biorbd.Rotation(rotation_matrix[0, 0], rotation_matrix[0, 1], rotation_matrix[0, 2],
-                                                                         rotation_matrix[1, 0], rotation_matrix[1, 1], rotation_matrix[1, 2],
-                                                                         rotation_matrix[2, 0], rotation_matrix[2, 1], rotation_matrix[2, 2]), 'xyz').to_mx()
+        segment_orientation = biorbd.Rotation.toEulerAngles(
+            biorbd.Rotation(
+                rotation_matrix[0, 0],
+                rotation_matrix[0, 1],
+                rotation_matrix[0, 2],
+                rotation_matrix[1, 0],
+                rotation_matrix[1, 1],
+                rotation_matrix[1, 2],
+                rotation_matrix[2, 0],
+                rotation_matrix[2, 1],
+                rotation_matrix[2, 2],
+            ),
+            "xyz",
+        ).to_mx()
         return segment_orientation
 
     @property

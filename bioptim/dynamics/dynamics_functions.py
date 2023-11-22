@@ -309,14 +309,16 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-        tau += nlp.model.compute_torques_from_noise_and_feedback(nlp=nlp,
-                                                                time=time,
-                                                                states=states,
-                                                                controls=controls,
-                                                                parameters=parameters,
-                                                                stochastic_variables=stochastic_variables,
-                                                                sensory_noise=nlp.model.sensory_noise_sym,
-                                                                motor_noise=nlp.model.motor_noise_sym)
+        tau += nlp.model.compute_torques_from_noise_and_feedback(
+            nlp=nlp,
+            time=time,
+            states=states,
+            controls=controls,
+            parameters=parameters,
+            stochastic_variables=stochastic_variables,
+            sensory_noise=nlp.model.sensory_noise_sym,
+            motor_noise=nlp.model.motor_noise_sym,
+        )
         tau = tau + nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
@@ -376,14 +378,16 @@ class DynamicsFunctions:
         qdot_full = vertcat(qdot_roots, qdot_joints)
         n_q = q_full.shape[0]
 
-        tau_joints += nlp.model.compute_torques_from_noise_and_feedback(nlp=nlp,
-                                                                        time=time,
-                                                                        states=states,
-                                                                        controls=controls,
-                                                                        parameters=parameters,
-                                                                        stochastic_variables=stochastic_variables,
-                                                                        sensory_noise=nlp.model.sensory_noise_sym,
-                                                                        motor_noise=nlp.model.motor_noise_sym)
+        tau_joints += nlp.model.compute_torques_from_noise_and_feedback(
+            nlp=nlp,
+            time=time,
+            states=states,
+            controls=controls,
+            parameters=parameters,
+            stochastic_variables=stochastic_variables,
+            sensory_noise=nlp.model.sensory_noise_sym,
+            motor_noise=nlp.model.motor_noise_sym,
+        )
         tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
 
         tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)

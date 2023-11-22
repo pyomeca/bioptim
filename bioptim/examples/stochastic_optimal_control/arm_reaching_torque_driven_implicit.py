@@ -37,6 +37,7 @@ from bioptim import (
 
 from bioptim.examples.stochastic_optimal_control.common import compute_torques_from_noise_and_feedback
 
+
 class ExampleType(Enum):
     """
     Selection of the type of example to solve

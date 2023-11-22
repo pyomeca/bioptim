@@ -30,7 +30,9 @@ class StochasticBioModel(BioModel):
     def stochastic_dynamics(self, q, qdot, tau, ref, k, with_noise=True):
         """The stochastic dynamics that should be applied to the model"""
 
-    def compute_torques_from_noise_and_feedback(self, nlp, time, states, controls, parameters, stochastic_variables, sensory_noise, motor_noise):
+    def compute_torques_from_noise_and_feedback(
+        self, nlp, time, states, controls, parameters, stochastic_variables, sensory_noise, motor_noise
+    ):
         """Compute the torques from the noises, feedbacks and feedforwards"""
 
     def sensory_reference(self, time, states, controls, parameters, stochastic_variables, nlp):

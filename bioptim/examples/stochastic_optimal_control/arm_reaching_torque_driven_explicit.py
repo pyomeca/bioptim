@@ -38,7 +38,10 @@ from bioptim import (
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
-from bioptim.examples.stochastic_optimal_control.common import dynamics_torque_driven_with_feedbacks, compute_torques_from_noise_and_feedback
+from bioptim.examples.stochastic_optimal_control.common import (
+    dynamics_torque_driven_with_feedbacks,
+    compute_torques_from_noise_and_feedback,
+)
 
 
 def stochastic_forward_dynamics(
