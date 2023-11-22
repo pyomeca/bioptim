@@ -23,6 +23,7 @@ from ..misc.enums import (
 from ..misc.mapping import Mapping, BiMapping
 from ..optimization.solution.solution import Solution
 from ..dynamics.ode_solver import OdeSolver
+from ..optimization.optimization_vector import OptimizationVectorHelper
 
 
 class CustomPlot:
@@ -66,7 +67,7 @@ class CustomPlot:
         linestyle: str = None,
         ylim: tuple | list = None,
         bounds: Bounds = None,
-        node_idx: list = None,
+        node_idx: list | slice | range = None,
         label: list = None,
         compute_derivative: bool = False,
         integration_rule: QuadratureRule = QuadratureRule.RECTANGLE_LEFT,
@@ -117,7 +118,7 @@ class CustomPlot:
         self.linestyle = linestyle
         self.ylim = ylim
         self.bounds = bounds
-        self.node_idx = node_idx
+        self.node_idx = node_idx  # If this is None, it is all nodes and will be initialize when we know the dimension of the problem
         self.label = label
         self.compute_derivative = compute_derivative
         if integration_rule == QuadratureRule.MIDPOINT or integration_rule == QuadratureRule.RECTANGLE_RIGHT:
@@ -142,8 +143,8 @@ class PlotOcp:
         The height of the figure
     n_horizontal_windows: int
         The number of figure columns
-    ns: int
-        The total number of shooting points
+    nodes: int
+        The total number of nodes points
     n_vertical_windows: int
         The number of figure rows
     ocp: OptimalControlProgram
@@ -152,7 +153,7 @@ class PlotOcp:
         The list of handlers to the matplotlib plots for the ydata
     plots_bounds: list
         The list of handlers to the matplotlib plots for the bounds
-    plot_func: dict
+    custom_plots: dict
         The dictionary of all the CustomPlot
     plot_options: dict
         matplotlib options template for specified PlotType
@@ -162,8 +163,6 @@ class PlotOcp:
         The type of integration method
     t: list[float]
         The time vector
-    tf: list[float]
-        The times at the end of each phase
     t_integrated: list[float]
         The time vector integrated
     top_margin: float
@@ -177,7 +176,7 @@ class PlotOcp:
 
     Methods
     -------
-    __update_time_vector(self)
+    _update_time_vector(self)
         Setup the time and time integrated vector, which is the x-axes of the graphs
     __create_plots(self)
         Setup the plots
@@ -193,7 +192,7 @@ class PlotOcp:
         Update ydata from the variable a solution structure
     __update_xdata(self)
         Update of the time axes in plots
-    __append_to_ydata(self, data: list)
+    _append_to_ydata(self, data: list)
         Parse the data list to create a single list of all ydata that will fit the plots vector
     __update_axes(self)
         Update the plotted data from ydata
@@ -240,14 +239,15 @@ class PlotOcp:
         }
 
         self.ydata = []
-        self.ns = 0
+        self.n_nodes = 0
 
         self.t = []
         self.t_integrated = []
         self.integrator = integrator
 
-        self.tf = list(self.ocp.time_phase_mapping.to_second.map(self.ocp.phase_time)[:, 0])
-        self.__update_time_vector()
+        # Emulate the time from Solution.time, this is just to give the size anyway
+        dummy_phase_times = OptimizationVectorHelper.extract_step_times(ocp, DM(np.ones(ocp.n_phases)))
+        self._update_time_vector(dummy_phase_times)
 
         self.axes = {}
         self.plots = []
@@ -263,7 +263,7 @@ class PlotOcp:
         self.width_step: int | None = None
         self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
 
-        self.plot_func = {}
+        self.custom_plots = {}
         self.variable_sizes = []
         self.show_bounds = show_bounds
         self.__create_plots()
@@ -287,27 +287,18 @@ class PlotOcp:
             if self.plot_options["general_options"]["use_tight_layout"]:
                 fig.tight_layout()
 
-    def __update_time_vector(self):
+    def _update_time_vector(self, phase_times):
         """
         Setup the time and time integrated vector, which is the x-axes of the graphs
-
         """
 
         self.t = []
-        self.t_integrated = []
+        self.t_integrated = phase_times
         last_t = 0
-        for phase_idx, nlp in enumerate(self.ocp.nlp):
-            dt_ns = self.tf[phase_idx] / nlp.ns
-            time_phase_integrated = []
-            for ns in range(nlp.ns):
-                t_modified = ns * dt_ns if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 0
-                time_phase_integrated.append(nlp.dynamics[ns].step_times_from_dt([t_modified + (0 if phase_idx == 0 else self.tf[phase_idx - 1]), dt_ns]))
-
-            self.t_integrated.append(time_phase_integrated)
-
-            self.ns += nlp.ns + 1
-            time_phase = np.linspace(last_t, last_t + self.tf[phase_idx], nlp.ns + 1)
-            last_t += self.tf[phase_idx]
+        for nlp, time in zip(self.ocp.nlp, self.t_integrated):
+            self.n_nodes += nlp.n_states_nodes
+            time_phase = np.linspace(last_t, last_t + float(time[-1][-1]), nlp.n_states_nodes)
+            last_t += float(time[-1][-1])
             self.t.append(time_phase)
 
     def __create_plots(self):
@@ -329,10 +320,12 @@ class PlotOcp:
                     if isinstance(nlp.plot[key], tuple):
                         nlp.plot[key] = nlp.plot[key][0]
 
+                    # This is the point where we can safely define node_idx of the plot
+                    if nlp.plot[key].node_idx is None:
+                        nlp.plot[key].node_idx = range(nlp.n_states_nodes)
+
                     if nlp.plot[key].phase_mappings is None:
-                        node_index = 0  # TODO deal with phase_dynamics == ONE_PER_NODE
-                        if nlp.plot[key].node_idx is not None:
-                            node_index = nlp.plot[key].node_idx[0]
+                        node_index = nlp.plot[key].node_idx[0]
                         nlp.states.node_index = node_index
                         nlp.states_dot.node_index = node_index
                         nlp.controls.node_index = node_index
@@ -380,7 +373,7 @@ class PlotOcp:
 
         y_min_all = [None for _ in self.variable_sizes[0]]
         y_max_all = [None for _ in self.variable_sizes[0]]
-        self.plot_func = {}
+        self.custom_plots = {}
         for i, nlp in enumerate(self.ocp.nlp):
             for var_idx, variable in enumerate(self.variable_sizes[i]):
                 if nlp.plot[variable].combine_to:
@@ -407,11 +400,11 @@ class PlotOcp:
                         y_min_all[var_idx] = [np.inf] * nb
                         y_max_all[var_idx] = [-np.inf] * nb
 
-                if variable not in self.plot_func:
-                    self.plot_func[variable] = [
+                if variable not in self.custom_plots:
+                    self.custom_plots[variable] = [
                         nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
                     ]
-                if not self.plot_func[variable][i]:
+                if not self.custom_plots[variable][i]:
                     continue
 
                 mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
@@ -462,16 +455,16 @@ class PlotOcp:
                             )
                             ax.set_ylim(y_range)
 
-                    plot_type = self.plot_func[variable][i].type
+                    plot_type = self.custom_plots[variable][i].type
                     t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
-                    if self.plot_func[variable][i].label:
-                        label = self.plot_func[variable][i].label
+                    if self.custom_plots[variable][i].label:
+                        label = self.custom_plots[variable][i].label
                     else:
                         label = None
 
                     if plot_type == PlotType.PLOT:
                         zero = np.zeros((t.shape[0], 1))
-                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:green"
+                        color = self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else "tab:green"
                         self.plots.append(
                             [
                                 plot_type,
@@ -488,7 +481,7 @@ class PlotOcp:
                         )
                     elif plot_type == PlotType.INTEGRATED:
                         plots_integrated = []
-                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:brown"
+                        color = self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else "tab:brown"
                         for cmp in range(nlp.ns):
                             plots_integrated.append(
                                 ax.plot(
@@ -503,9 +496,9 @@ class PlotOcp:
 
                     elif plot_type == PlotType.STEP:
                         zero = np.zeros((t.shape[0], 1))
-                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:orange"
+                        color = self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else "tab:orange"
                         linestyle = (
-                            self.plot_func[variable][i].linestyle if self.plot_func[variable][i].linestyle else "-"
+                            self.custom_plots[variable][i].linestyle if self.custom_plots[variable][i].linestyle else "-"
                         )
                         self.plots.append(
                             [
@@ -516,7 +509,7 @@ class PlotOcp:
                         )
                     elif plot_type == PlotType.POINT:
                         zero = np.zeros((t.shape[0], 1))
-                        color = self.plot_func[variable][i].color if self.plot_func[variable][i].color else "tab:purple"
+                        color = self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else "tab:purple"
                         self.plots.append(
                             [
                                 plot_type,
@@ -634,7 +627,7 @@ class PlotOcp:
         Finds the intersection between the phases
         """
 
-        return list(accumulate(self.tf))[:-1]
+        return list(accumulate([t[-1][-1] for t in self.t_integrated]))[:-1]
 
     @staticmethod
     def show():
@@ -657,314 +650,118 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution.from_vector(self.ocp, v)
-        integrated = sol.integrate(
-            shooting_type=self.shooting_type,
-            keep_intermediate_points=True,
-            integrator=self.integrator,
-        )
-        data_states = integrated.integrated_states_by_steps
+        data_states_decision = sol.decision_states(scaled=True, concatenate_keys=True)
+        data_states_stepwise = sol.stepwise_states(scaled=True, concatenate_keys=True)
 
-        data_controls = sol.controls
-        data_params = sol.parameters
-        data_params_in_dyn = np.array([data_params[key] for key in data_params if key != "all"]).reshape(-1, 1)
-        data_stochastic = sol.stochastic_variables
+        data_controls = sol.controls(scaled=True, concatenate_keys=True)
+        p = sol.parameters(scaled=True, concatenate_keys=True)
+        data_stochastic = sol.stochastic(scaled=True, concatenate_keys=True)
 
-        dt_phases = sol.vector[self.ocp.dt_parameter.index].toarray()[:, 0]
-        self.tf = [dt * nlp.ns for dt, nlp in zip(dt_phases, self.ocp.nlp)]
-        for _ in self.ocp.nlp:
-            self.__update_xdata()
+        if len(self.ocp.nlp) == 1:
+            # This is automatically removed in the Solution, but to keep things clean we put them back in a list
+            data_states_decision = [data_states_decision]
+            data_states_stepwise = [data_states_stepwise]
+            data_controls = [data_controls]
+            data_stochastic = [data_stochastic]
 
-        for i, nlp in enumerate(self.ocp.nlp):
-            step_size = (
-                nlp.ode_solver.steps_scipy + 1
-                if self.integrator != SolutionIntegrator.OCP
-                else nlp.ode_solver.steps + 1
-            )
+        phases_dt = sol.phases_dt
+        self._update_xdata(sol.time())
 
-            state = []
-            for ns in range(nlp.ns):
-                state.append(np.ndarray((0, nlp.dynamics[ns].n_step_times)))
-            for state_key in data_states[i].keys():
-                for s, shooting in enumerate(data_states[i][state_key]):
-                    state[s] = np.concatenate((state[s], shooting), axis=0)
+        for nlp in self.ocp.nlp:
+            phase_idx = nlp.phase_idx
+            x_decision = data_states_decision[phase_idx]
+            x = data_states_stepwise[phase_idx]
+            u = data_controls[phase_idx]
+            s = data_stochastic[phase_idx]
 
-            control = np.ndarray((0, nlp.ns + 1))
-            for ss in nlp.controls:
-                if nlp.use_controls_from_phase_idx == nlp.phase_idx:
-                    if isinstance(data_controls, (list, tuple)):
-                        control = np.concatenate((control, data_controls[i][ss]))
-                    else:
-                        control = np.concatenate((control, data_controls[ss]))
-
-            stochastic = np.ndarray((0, nlp.ns + 1))
-            for ss in nlp.stochastic_variables:
-                if isinstance(data_stochastic, (list, tuple)):
-                    stochastic = np.concatenate((stochastic, data_stochastic[i][ss]))
-                else:
-                    stochastic = np.concatenate((stochastic, data_stochastic[ss]))
-
-            for key in self.variable_sizes[i]:
-                if not self.plot_func[key][i]:
+            for key in self.variable_sizes[phase_idx]:
+                y_data = self._compute_y_from_plot_func(self.custom_plots[key][phase_idx], phases_dt, x_decision, x, u, s, p)
+                if y_data is None:
                     continue
-                if self.plot_func[key][i].label:
-                    if self.plot_func[key][i].label[:16] == "PHASE_TRANSITION":
-                        self.ydata.append(np.zeros(np.shape(state)[0]))
-                        continue
-                x_mod = (
-                    1
-                    if self.plot_func[key][i].compute_derivative
-                    or self.plot_func[key][i].integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                    or self.plot_func[key][i].integration_rule == QuadratureRule.TRAPEZOIDAL
-                    else 0
-                )
-                u_mod = (
-                    1
-                    if (nlp.control_type == ControlType.LINEAR_CONTINUOUS or self.plot_func[key][i].compute_derivative)
-                    or (
-                        (
-                            self.plot_func[key][i].integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                            or self.plot_func[key][i].integration_rule == QuadratureRule.TRAPEZOIDAL
-                        )
-                        and nlp.control_type == ControlType.LINEAR_CONTINUOUS
-                    )
-                    else 0
-                )
-
-                if self.plot_func[key][i].type == PlotType.INTEGRATED:
-                    all_y = []
-                    for idx, t in enumerate(self.t_integrated[i]):
-                        y_tp = np.empty((self.variable_sizes[i][key], t.shape[0]))
-                        y_tp.fill(np.nan)
-                        val = np.empty((self.variable_sizes[i][key], t.shape[0]))
-                        val.fill(np.nan)
-
-                        val_tempo = self.plot_func[key][i].function(
-                            idx,
-                            dt_phases,
-                            state[idx],
-                            control[:, idx : idx + u_mod + 1],
-                            data_params_in_dyn,
-                            stochastic[:, idx : idx + 1 + 1],
-                            **self.plot_func[key][i].parameters,
-                        )
-
-                        if self.plot_func[key][i].compute_derivative:
-                            # This is a special case since derivative is not properly integrated
-                            val_tempo = np.repeat(val, y_tp.shape[1])[np.newaxis, :]
-
-                        if (
-                            val_tempo.shape[0] != len(self.plot_func[key][i].phase_mappings.to_first.map_idx)
-                            or val_tempo.shape[1] != val.shape[1]
-                        ):
-                            raise RuntimeError(
-                                f"Wrong dimensions for plot {key}. Got {val_tempo.shape}, but expected {y_tp.shape}"
-                            )
-                        for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):
-                            val[axe_index, :] = val_tempo[ctr, :]
-                        y_tp[:, :] = val
-                        all_y.append(y_tp)
-
-                    for idx in range(max(self.plot_func[key][i].phase_mappings.to_second.map_idx) + 1):
-                        y_tp = []
-                        if idx in self.plot_func[key][i].phase_mappings.to_second.map_idx:
-                            for y in all_y:
-                                y_tp.append(y[idx, :])
-                        else:
-                            y_tp = None
-                        self.__append_to_ydata([y_tp])
-
-                elif self.plot_func[key][i].type == PlotType.POINT:
-                    for i_var in range(self.variable_sizes[i][key]):
-                        if self.plot_func[key][i].parameters["penalty"].multinode_penalty:
-                            y = np.array([np.nan])
-                            penalty: MultinodeConstraint = self.plot_func[key][i].parameters["penalty"]
-
-                            x_phase = np.ndarray((0, len(penalty.nodes_phase)))
-                            if sol.ocp.n_phases == 1 and isinstance(data_states, dict):
-                                data_states = [data_states]
-                            for state_key in data_states[i].keys():
-                                x_phase_tp = np.ndarray((data_states[i][state_key].shape[0], 0))
-                                for tp in range(len(penalty.nodes_phase)):
-                                    phase_tp = penalty.nodes_phase[tp]
-                                    node_idx_tp = penalty.all_nodes_index[tp]
-                                    x_phase_tp = np.hstack(
-                                        (
-                                            x_phase_tp,
-                                            data_states[phase_tp][state_key][:, node_idx_tp * step_size][:, np.newaxis],
-                                        )
-                                    )
-                                x_phase = np.vstack((x_phase, x_phase_tp))
-
-                            u_phase = None
-                            if sol.ocp.n_phases == 1 and isinstance(data_controls, dict):
-                                data_controls = [data_controls]
-                            for control_key in data_controls[i].keys():
-                                u_phase_tp = None
-                                for tp in range(len(penalty.nodes_phase)):
-                                    phase_tp = penalty.nodes_phase[tp]
-                                    node_idx_tp = penalty.all_nodes_index[tp]
-                                    if node_idx_tp != nlp.ns or (
-                                        node_idx_tp == nlp.ns and not np.isnan(data_controls[i][control_key][0, -1])
-                                    ):
-                                        new_value = data_controls[phase_tp][control_key][:, node_idx_tp][:, np.newaxis]
-                                        u_phase_tp = (
-                                            np.vstack((u_phase_tp, new_value))
-                                            if isinstance(u_phase_tp, np.ndarray)
-                                            else new_value
-                                        )
-                                u_phase = u_phase_tp if u_phase is None else np.hstack((u_phase, u_phase_tp))
-
-                            s_phase = np.ndarray((0, len(penalty.nodes_phase)))
-                            if sol.ocp.n_phases == 1 and isinstance(data_stochastic, dict):
-                                data_stochastic = [data_stochastic]
-                            for stochastic_key in data_stochastic[i].keys():
-                                s_phase_tp = np.ndarray((data_stochastic[i][stochastic_key].shape[0], 0))
-                                for tp in range(len(penalty.nodes_phase)):
-                                    phase_tp = penalty.nodes_phase[tp]
-                                    node_idx_tp = penalty.all_nodes_index[tp]
-                                    s_phase_tp = np.hstack(
-                                        (
-                                            s_phase_tp,
-                                            data_stochastic[phase_tp][stochastic_key][:, node_idx_tp][:, np.newaxis],
-                                        )
-                                    )
-                                s_phase = np.vstack((s_phase, s_phase_tp))
-
-                            val_tempo = self.plot_func[key][i].function(
-                                self.plot_func[key][i].node_idx[0],
-                                dt_phases,
-                                x_phase,
-                                u_phase,
-                                data_params_in_dyn,
-                                s_phase,
-                                **self.plot_func[key][i].parameters,
-                            )
-                            y[0] = val_tempo[abs(self.plot_func[key][i].phase_mappings.to_second.map_idx[i_var])]
-                        else:
-                            y = np.empty((len(self.plot_func[key][i].node_idx),))
-                            y.fill(np.nan)
-                            for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
-                                if self.plot_func[key][i].parameters["penalty"].transition:
-                                    # TODO "all" is broken and should be replaced by a fol loop on key
-                                    raise NotImplementedError("See todo!")
-                                    val = self.plot_func[key][i].function(
-                                        node_idx,
-                                        np.hstack(
-                                            (
-                                                data_states[node_idx]["all"][:, -1],
-                                                data_states[node_idx + 1]["all"][:, 0],
-                                            )
-                                        ),
-                                        np.hstack(
-                                            (
-                                                data_controls[node_idx]["all"][:, -1],
-                                                data_controls[node_idx + 1]["all"][:, 0],
-                                            )
-                                        ),
-                                        data_params_in_dyn,
-                                        np.hstack(
-                                            (
-                                                data_stochastic[node_idx]["all"][:, -1],
-                                                data_stochastic[node_idx + 1]["all"][:, 0],
-                                            )
-                                        ),
-                                        **self.plot_func[key][i].parameters,
-                                    )
-                                else:
-                                    if (
-                                        self.plot_func[key][i].label == "STATE_CONTINUITY"
-                                        and nlp.ode_solver.is_direct_collocation
-                                    ):
-                                        states = state[:, node_idx * (step_size) : (node_idx + 1) * (step_size) + 1]
-                                    else:
-                                        if nlp.ode_solver.is_direct_collocation:
-                                            states = np.reshape(state[:, node_idx * step_size : (node_idx + 1) * step_size + x_mod], (-1, 1), order="F")
-                                        else:
-                                            states = state[:, node_idx * step_size : (node_idx + 1) * step_size + x_mod : step_size]
-                                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
-                                        control_tp = control[:, node_idx : node_idx + 1 + 1]
-                                    else:
-                                        control_tp = control[:, node_idx : node_idx + 1 + u_mod]
-                                        if np.isnan(control_tp).any():
-                                            control_tp = np.array(())
-                                    stochastic_tp = stochastic[:, node_idx : node_idx + 1 + 1]
-
-                                    val = self.plot_func[key][i].function(
-                                        node_idx,
-                                        dt_phases,
-                                        states,
-                                        control_tp,
-                                        data_params_in_dyn,
-                                        stochastic_tp,
-                                        **self.plot_func[key][i].parameters,
-                                    )
-                                y[i_node] = val[i_var]
-                        self.ydata.append(y)
-
-                else:
-                    y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
-                    y.fill(np.nan)
-                    val = np.empty((self.variable_sizes[i][key],))
-                    val.fill(np.nan)
-                    if self.plot_func[key][i].compute_derivative:
-                        for i_node, node_idx in enumerate(self.plot_func[key][i].node_idx):
-                            val_tempo = self.plot_func[key][i].function(
-                                node_idx,
-                                dt_phases,
-                                state[:, node_idx * step_size : (node_idx + 1) * step_size + 1 : step_size],
-                                control[:, node_idx : node_idx + 1 + 1],
-                                data_params_in_dyn,
-                                stochastic[:, node_idx : node_idx + 1 + 1],
-                                **self.plot_func[key][i].parameters,
-                            )
-                            for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):
-                                val[axe_index] = val_tempo[ctr]
-                            y[:, i_node] = val
-                    else:
-                        y = np.empty((self.variable_sizes[i][key], len(self.t[i])))
-                        y.fill(np.nan)
-                        val = np.empty((self.variable_sizes[i][key], len(self.t[i])))
-                        val.fill(np.nan)
-                        nodes = self.plot_func[key][i].node_idx
-                        if nodes is not None:
-                            if len(nodes) == 1:
-                                y = np.empty((self.variable_sizes[i][key], 1))
-                                y.fill(np.nan)
-
-                            if nodes and len(nodes) > 1 and len(nodes) == round(state.shape[1] / step_size):
-                                # Assume we are integrating but did not specify plot as such.
-                                # Therefore the arrival point is missing
-                                nodes += [nodes[-1] + 1]
-
-                        val_tempo = self.plot_func[key][i].function(
-                            nodes,
-                            dt_phases,
-                            np.concatenate([s[:, 0:1] for s in state], axis=1),
-                            control,
-                            data_params_in_dyn,
-                            stochastic,
-                            **self.plot_func[key][i].parameters,
-                        )
-                        if (
-                            val_tempo.shape[0] != len(self.plot_func[key][i].phase_mappings.to_first.map_idx)
-                            or val_tempo.shape[1] != val.shape[1]
-                        ):
-                            raise RuntimeError(
-                                f"Wrong dimensions for plot {key}. Got {val.shape}, but expected {y.shape}"
-                            )
-                        for ctr, axe_index in enumerate(self.plot_func[key][i].phase_mappings.to_first.map_idx):
-                            val[axe_index, :] = val_tempo[ctr, :]
-                        y[:, :] = val
-                    self.__append_to_ydata(y)
+                self._append_to_ydata(y_data)
 
         self.__update_axes()
 
-    def __update_xdata(self):
+    @staticmethod
+    def _compute_y_from_plot_func(custom_plot: CustomPlot, dt, x_decision, x_stepwise, u, s, p):
+        """
+        Compute the y data from the plot function
+
+        Parameters
+        ----------
+        custom_plot: CustomPlot
+            The custom plot to compute
+        dt
+            The delta times of the current phase
+        x
+            The states of the current phase (stepwise)
+        u
+            The controls of the current phase
+        s
+            The stochastic of the current phase
+        p
+            The parameters of the current phase
+
+        Returns
+        -------
+        The y data
+        """
+
+        if not custom_plot:
+            return None
+        if custom_plot.label:
+            if custom_plot.label[:16] == "PHASE_TRANSITION":
+                return np.zeros(np.shape(x)[0])
+
+        x = x_stepwise if custom_plot.type == PlotType.INTEGRATED else x_decision
+
+        # Compute the values of the plot at each node
+        all_y = []
+        for idx in custom_plot.node_idx:
+            x_node = x[idx]
+            u_node = u[idx]
+            s_node = s[idx]
+            if custom_plot.compute_derivative:
+                next_node = idx + 1
+                x_node = np.concatenate((x_node, x[next_node]))
+                u_node = np.concatenate((u_node, u[next_node]))
+                s_node = np.concatenate((s_node, s[next_node]))
+
+            tp = custom_plot.function(idx, dt, x_node, u_node, p, s_node, **custom_plot.parameters)
+
+            y_tp = np.ndarray((len(custom_plot.phase_mappings.to_first.map_idx), tp.shape[1])) * np.nan
+            for ctr, axe_index in enumerate(custom_plot.phase_mappings.to_first.map_idx):
+                y_tp[axe_index, :] = tp[ctr, :]
+            all_y.append(y_tp)
+
+        # Dispatch the values so they will by properly dispatched to the correct axes later
+        if custom_plot.type == PlotType.INTEGRATED:
+            out = []
+            for idx in range(max(custom_plot.phase_mappings.to_second.map_idx) + 1):
+                y_tp = []
+                if idx in custom_plot.phase_mappings.to_second.map_idx:
+                    for y in all_y:
+                        y_tp.append(y[idx, :])
+                else:
+                    y_tp = None
+                out.append(y_tp)
+            return out
+
+        elif custom_plot.type in (PlotType.PLOT, PlotType.STEP, PlotType.POINT):
+            all_y = np.concatenate(all_y, axis=1)
+            y = []
+            for i in range(all_y.shape[0]):
+                y.append(all_y[i, :])
+            return y
+        else:
+            raise RuntimeError(f"Plot type {custom_plot.type} not implemented yet")
+
+    def _update_xdata(self, phase_times):
         """
         Update of the time axes in plots
         """
 
-        self.__update_time_vector()
+        self._update_time_vector(phase_times)
         for plot in self.plots:
             phase_idx = plot[1]
             if plot[0] == PlotType.INTEGRATED:
@@ -972,7 +769,7 @@ class PlotOcp:
                     p.set_xdata(np.array(self.t_integrated[phase_idx][cmp]))
                 ax = plot[2][-1].axes
             elif plot[0] == PlotType.POINT:
-                plot[2].set_xdata(self.t[phase_idx][np.array(self.plot_func[plot[3]][phase_idx].node_idx)])
+                plot[2].set_xdata(self.t[phase_idx][np.array(self.custom_plots[plot[3]][phase_idx].node_idx)])
                 ax = plot[2].axes
             else:
                 plot[2].set_xdata(self.t[phase_idx])
@@ -992,7 +789,7 @@ class PlotOcp:
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([time, time])
 
-    def __append_to_ydata(self, data: list | np.ndarray):
+    def _append_to_ydata(self, data: list | np.ndarray):
         """
         Parse the data list to create a single list of all ydata that will fit the plots vector
 

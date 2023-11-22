@@ -82,6 +82,44 @@ def _to_scaled_values(unscaled: list, ocp, variable_type: str) -> list:
     return scaled
 
 
+def _merge_keys(data, ocp):
+    """
+    Merge the keys of a SolutionData.unscaled or SolutionData.scaled
+
+    Parameters
+    ----------
+    data
+        The data to merge
+    ocp
+        The ocp
+
+    Returns
+    -------
+    The merged data
+    """
+
+    # This is a bit complex, but it's just to concatenate all the value of the keys together
+    out = []
+    has_empty = False
+    for p in range(len(data)):
+        tp_phases = []
+        for n in range(ocp.nlp[p].n_states_nodes):
+            tp_nodes = []
+            for key in data[0].keys():
+                tp_nodes.append(data[p][key][n])
+
+            if not tp_nodes:
+                has_empty = True
+                tp_phases.append(np.ndarray((0, 1)))
+                continue
+            elif has_empty:
+                raise RuntimeError("Cannot merge empty and non-empty structures")
+            tp_phases.append(np.concatenate(tp_nodes))
+
+        out.append(tp_phases)
+    return out
+
+
 class SolutionData:
     def __init__(self, unscaled, scaled):
         self.unscaled = unscaled
@@ -104,10 +142,10 @@ class SolutionData:
 
     def get_merged_nodes(
         self,
-        scaled: bool = False,
-        phases: int | list[int, ...] = None,
+        phases: int | list[int, ...] | slice = None,
         keys: str | list[str] = None,
-        nodes: int | list[int, ...] = None,
+        nodes: int | list[int, ...] | slice = None,
+        scaled: bool = False,
     ):
         data = self.scaled if scaled else self.unscaled
 
@@ -174,9 +212,13 @@ class Solution:
         The number of iterations that were required to solve the program
     status: int
         Optimization success status (Ipopt: 0=Succeeded, 1=Failed)
+    _decision_times: list
+        The time at each node so the integration can be done (equivalent to t_span)
+    _stepwise_times: list
+        The time corresponding to _stepwise_states
     _decision_states: SolutionData
         A SolutionData based solely on the solution
-    stepwise_states: SolutionData
+    _stepwise_states: SolutionData
         A SolutionData based on the integrated solution directly from the bioptim integrator
     _stepwise_controls: SolutionData
         The data structure that holds the controls
@@ -184,7 +226,7 @@ class Solution:
         The data structure that holds the parameters
     _stochastic: SolutionData
         The data structure that holds the stochastic variables
-    _dt: list
+    phases_dt: list
         The time step for each phases
 
     Methods
@@ -275,15 +317,18 @@ class Solution:
 
         # Extract the data now for further use
         self._decision_states = None
-        self.stepwise_states = None
+        self._stepwise_states = None
         self._stepwise_controls = None
         self._parameters = None
         self._stochastic = None
 
         self.vector = vector
         if self.vector is not None:
-            self._dt = OptimizationVectorHelper.extract_dt(ocp, vector)
+            self.phases_dt = OptimizationVectorHelper.extract_phase_dt(ocp, vector)
             self._stepwise_times = OptimizationVectorHelper.extract_step_times(ocp, vector)
+            self._decision_times = [
+                [vertcat(t[0], t[-1]) for t in self._stepwise_times[p]] for p in range(self.ocp.n_phases)
+            ]
             
             x, u, p, s = OptimizationVectorHelper.to_dictionaries(ocp, vector)
             self._decision_states = SolutionData(x, _to_unscaled_values(x, ocp, "x"))
@@ -450,20 +495,138 @@ class Solution:
 
         return cls(ocp=ocp)
 
-    @property
-    def cost(self):
-        if self._cost is None:
-            self._cost = 0
-            for J in self.ocp.J:
-                _, val_weighted = self._get_penalty_cost(None, J)
-                self._cost += val_weighted
+    def time(self, t_span: bool = False) -> list:
+        """
+        Returns the time vector at each node
 
-            for idx_phase, nlp in enumerate(self.ocp.nlp):
-                for J in nlp.J:
-                    _, val_weighted = self._get_penalty_cost(nlp, J)
-                    self._cost += val_weighted
-            self._cost = DM(self._cost)
-        return self._cost
+        Parameters
+        ----------
+        t_span: bool
+            If the time vector should correspond to stepwise_states (False) or to t_span (True). If you don't know what
+            it means, you probably want the stepwise_states (False) version.
+
+        Returns
+        -------
+        The time vector
+        """
+
+        return self._decision_times if t_span else self._stepwise_times
+
+    def decision_states(self, scaled: bool = False, concatenate_keys: bool = False):
+        """
+        Returns the decision states
+
+        Parameters
+        ----------
+        scaled: bool
+            If the decision states should be scaled or not (note that scaled is as Ipopt received them, while unscaled
+            is as the model needs temps). If you don't know what it means, you probably want the unscaled version.
+        concatenate_keys: bool
+            If the states should be returned individually (False) or concatenated (True). If individual, then the
+            return value does not contain the key dict.
+
+        Returns
+        -------
+        The decision variables
+        """
+
+        data = deepcopy(self._decision_states.scaled if scaled else self._decision_states.unscaled)
+        if concatenate_keys:
+            data = _merge_keys(data, self.ocp)
+
+        return data if len(data) > 1 else data[0]
+
+    def stepwise_states(self, scaled: bool = False, concatenate_keys: bool = False):
+        """
+        Returns the stepwise integrated states
+
+        Parameters
+        ----------
+        scaled: bool
+            If the states should be scaled or not (note that scaled is as Ipopt received them, while unscaled is as the
+            model needs temps). If you don't know what it means, you probably want the unscaled version.
+        concatenate_keys: bool
+            If the states should be returned individually (False) or concatenated (True). If individual, then the
+            return value does not contain the key dict.
+
+        Returns
+        -------
+        The stepwise integrated states
+        """
+
+        if self._stepwise_states is None:
+            self._integrate_stepwise()
+        data = self._stepwise_states.scaled if scaled else self._stepwise_states.unscaled
+        if concatenate_keys:
+            data = _merge_keys(data, self.ocp)
+        return data if len(data) > 1 else data[0]
+
+    def controls(self, scaled: bool = False, concatenate_keys: bool = False):
+        """
+        Returns the controls. Note the final control is always present but set to np.nan if it is not defined
+
+        Parameters
+        ----------
+        scaled: bool
+            If the controls should be scaled or not (note that scaled is as Ipopt received them, while unscaled is as
+            the model needs temps). If you don't know what it means, you probably want the unscaled version.
+        concatenate_keys: bool
+            If the controls should be returned individually (False) or concatenated (True). If individual, then the
+            return value does not contain the key dict.
+
+        Returns
+        -------
+        The controls
+        """
+
+        data = self._stepwise_controls.scaled if scaled else self._stepwise_controls.unscaled
+        if concatenate_keys:
+            data = _merge_keys(data, self.ocp)
+        return data if len(data) > 1 else data[0]
+
+    def parameters(self, scaled: bool = False, concatenate_keys: bool = False):
+        """
+        Returns the parameters
+
+        Parameters
+        ----------
+        scaled: bool
+            If the parameters should be scaled or not (note that scaled is as Ipopt received them, while unscaled is as
+            the model needs temps). If you don't know what it means, you probably want the unscaled version.
+
+        Returns
+        -------
+        The parameters
+        """
+
+        data = self._parameters.scaled[0] if scaled else self._parameters.unscaled[0]
+        if concatenate_keys:
+            data = _merge_keys(data, self.ocp)
+        return data
+
+    def stochastic(self, scaled: bool = False, concatenate_keys: bool = False):
+        """
+        Returns the stochastic variables
+
+        Parameters
+        ----------
+        scaled: bool
+            If the stochastic variables should be scaled or not (note that scaled is as Ipopt received them, while
+            unscaled is as the model needs temps). If you don't know what it means, you probably want the
+            unscaled version.
+        concatenate_keys: bool
+            If the stochastic variables should be returned individually (False) or concatenated (True). If individual,
+            then the return value does not contain the key dict.
+
+        Returns
+        -------
+        The stochastic variables
+        """
+
+        data = self._stochastic.scaled if scaled else self._stochastic.unscaled
+        if concatenate_keys:
+            data = _merge_keys(data, self.ocp)
+        return data if len(data) > 1 else data[0]
 
     def copy(self, skip_data: bool = False) -> "Solution":
         """
@@ -499,7 +662,7 @@ class Solution:
 
         if not skip_data:
             new._decision_states = deepcopy(self._decision_states)
-            new.stepwise_states = deepcopy(self.stepwise_states)
+            new._stepwise_states = deepcopy(self._stepwise_states)
 
             new._stepwise_controls = deepcopy(self._stepwise_controls)
 
@@ -518,40 +681,27 @@ class Solution:
             The integrated data structure similar in structure to the original _decision_states
         """
 
-        # Check if the data is already stepwise integrated
-        if self.stepwise_states is not None:
-            return self.stepwise_states
-
         # Prepare the output
         params = vertcat(*[self._parameters.unscaled[0][key] for key in self._parameters.keys()])
 
         unscaled: list = [None] * len(self.ocp.nlp)
-        for phase_idx, nlp in enumerate(self.ocp.nlp):
-            t = [vertcat(t[0], t[-1]) for t in self._stepwise_times[phase_idx]]
-            x = [
-                _concat_nodes(None, self._decision_states["scaled"], phase_idx, n, nlp.states.keys())
-                for n in range(nlp.n_states_nodes)
-            ]
-            u = [
-                _concat_nodes(None, self._stepwise_controls["scaled"], phase_idx, n, nlp.controls.keys())
-                for n in range(nlp.n_states_nodes)
-            ]
-            s = [
-                _concat_nodes(None, self._stochastic["scaled"], phase_idx, n, nlp.stochastic_variables.keys())
-                for n in range(nlp.n_states_nodes)
-            ]
+        for p, nlp in enumerate(self.ocp.nlp):
+            t = self._decision_times[p]
+            x = [self._decision_states.get_merged_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
+            u = [self._stepwise_controls.get_merged_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
+            s = [self._stochastic.get_merged_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
 
             integrated_sol = solve_ivp_bioptim_interface(
                 shooting_type=Shooting.MULTIPLE, dynamics_func=nlp.dynamics, t=t, x=x, u=u, s=s, p=params
             )
             
-            unscaled[phase_idx] = {}
+            unscaled[p] = {}
             for key in nlp.states.keys():
-                unscaled[phase_idx][key] = [None] * nlp.n_states_nodes
+                unscaled[p][key] = [None] * nlp.n_states_nodes
                 for ns, sol_ns in enumerate(integrated_sol):
-                    unscaled[phase_idx][key][ns] = sol_ns[nlp.states[key].index, :]
+                    unscaled[p][key][ns] = sol_ns[nlp.states[key].index, :]
 
-        self.stepwise_states = SolutionData(unscaled, _to_scaled_values(unscaled, self.ocp, "x"))
+        self._stepwise_states = SolutionData(unscaled, _to_scaled_values(unscaled, self.ocp, "x"))
 
     def interpolate(self, n_frames: int | list | tuple) -> SolutionData:
         """
@@ -568,32 +718,29 @@ class Solution:
         A Solution data structure with the states integrated. The controls are removed from this structure
         """
 
-        self._integrate_stepwise()
-
+        stepwise_states = self.stepwise_states
         t_all = [np.concatenate(self._stepwise_times[p]) for p in range(len(self.ocp.nlp))]
-        if isinstance(n_frames, int):
-            _, _, data_states, _, _ = self._merge_phases(skip_controls=True)
+        if isinstance(n_frames, int):  # So merge phases
+            stepwise_states = stepwise_states.get_merged_phases()
             t_all = [np.concatenate(t_all)]
             n_frames = [n_frames]
-            
-        elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._decision_states.unscaled):
-            data_states = self._decision_states
-        else:
+
+        elif not isinstance(n_frames, (list, tuple)) or len(n_frames) != len(self._stepwise_states.unscaled):
             raise ValueError(
                 "n_frames should either be a int to merge_phases phases "
                 "or a list of int of the number of phases dimension"
             )
 
         unscaled = []
-        for p in range(len(data_states.unscaled)):
+        for p in range(len(stepwise_states.unscaled)):
             unscaled.append({})
 
             nlp = self.ocp.nlp[p]
             # Get the states, but do not bother the duplicates now
             x = None
             for node in range(nlp.n_states_nodes):
-                x = self._decision_states.concatenated_nodes("unscaled", p, node)
-            
+                x = stepwise_states.get_merged_nodes(p, node)
+
             # Now remove the duplicates
             t_round = np.round(t_all[p], decimals=8)  # Otherwise, there are some numerical issues with np.unique
             t, idx = np.unique(t_round, return_index=True)
@@ -728,9 +875,9 @@ class Solution:
             out_states = _merge(self._states["unscaled"], is_control=False) if not skip_states else None
         
         out_stepwise_states = []
-        if len(self.stepwise_states.scaled) == 1:
-            out_stepwise_states = deepcopy(self.stepwise_states)
-        elif len(self.stepwise_states.scaled) > 1:
+        if len(self._stepwise_states.scaled) == 1:
+            out_stepwise_states = deepcopy(self._stepwise_states)
+        elif len(self._stepwise_states.scaled) > 1:
             raise NotImplementedError("Merging phases is not implemented yet")
 
         out_stepwise_controls = []
@@ -923,8 +1070,8 @@ class Solution:
         val_weighted = []
         p = vertcat(*[self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()])
 
-        phase_dt = self._dt[phase_idx]
-        dt = penalty.dt_to_float(phase_dt)
+        phases_dt = self.phases_dt[phase_idx]
+        dt = penalty.dt_to_float(phases_dt)
 
         for node_idx in penalty.node_idx:
             if penalty.transition or penalty.multinode_penalty:
@@ -938,9 +1085,9 @@ class Solution:
             
             t = self._stepwise_times[phases[0]][nodes[0]][0]  # Starting time of the current shooting node
 
-            x = self._decision_states.get_merged_nodes(scaled=True, phases=phases, nodes=nodes)
-            u = self._stepwise_controls.get_merged_nodes(scaled=True, phases=phases, nodes=nodes)
-            s = self._stochastic.get_merged_nodes(scaled=True, phases=phases, nodes=nodes)
+            x = self._decision_states.get_merged_nodes(phases=phases, nodes=nodes, scaled=True)
+            u = self._stepwise_controls.get_merged_nodes(phases=phases, nodes=nodes, scaled=True)
+            s = self._stochastic.get_merged_nodes(phases=phases, nodes=nodes, scaled=True)
 
             if len(phases) > 1:
                 raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
@@ -948,14 +1095,14 @@ class Solution:
             x = x[0].reshape((-1, 1), order="F")
             u = u[0].reshape((-1, 1), order="F")
             s = s[0].reshape((-1, 1), order="F")
-            val.append(penalty.function[node_idx](t, self._dt, x, u, p, s))
+            val.append(penalty.function[node_idx](t, self.phases_dt, x, u, p, s))
 
             target = []
             if penalty.target is not None:
                 target = penalty.target[0][..., penalty.node_idx.index(node_idx)]
 
             val_weighted.append(
-                penalty.weighted_function[node_idx](t, self._dt, x, u, p, s, penalty.weight, target, dt)
+                penalty.weighted_function[node_idx](t, self.phases_dt, x, u, p, s, penalty.weight, target, dt)
             )
 
         if self.ocp.n_threads > 1:
@@ -966,6 +1113,21 @@ class Solution:
         val_weighted = np.nansum(val_weighted)
 
         return val, val_weighted
+
+    @property
+    def cost(self):
+        if self._cost is None:
+            self._cost = 0
+            for J in self.ocp.J:
+                _, val_weighted = self._get_penalty_cost(None, J)
+                self._cost += val_weighted
+
+            for idx_phase, nlp in enumerate(self.ocp.nlp):
+                for J in nlp.J:
+                    _, val_weighted = self._get_penalty_cost(nlp, J)
+                    self._cost += val_weighted
+            self._cost = DM(self._cost)
+        return self._cost
 
     @property
     def detailed_cost(self):

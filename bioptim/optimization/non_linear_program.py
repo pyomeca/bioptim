@@ -229,7 +229,7 @@ class NonLinearProgram:
         """
         return self.ns + 1
 
-    def n_states_steps(self, node_idx) -> int:
+    def n_states_decision_steps(self, node_idx) -> int:
         """
         Parameters
         ----------
@@ -243,6 +243,21 @@ class NonLinearProgram:
         if node_idx >= self.ns:
             return 1
         return self.dynamics[node_idx].shape_xf[1]
+
+    def n_states_stepwise_steps(self, node_idx) -> int:
+        """
+        Parameters
+        ----------
+        node_idx: int
+            The index of the node
+
+        Returns
+        -------
+        The number of states
+        """
+        if node_idx >= self.ns:
+            return 1
+        return self.dynamics[node_idx].shape_xall[1]
 
     @property
     def n_controls_nodes(self) -> int:

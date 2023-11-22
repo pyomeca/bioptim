@@ -398,7 +398,7 @@ class OptimizationVectorHelper:
         return v_init
 
     @staticmethod
-    def extract_dt(ocp, data: np.ndarray | DM) -> list:
+    def extract_phase_dt(ocp, data: np.ndarray | DM) -> list:
         """
         Get the dt values
 
@@ -433,11 +433,11 @@ class OptimizationVectorHelper:
         The phase time
         """
 
-        all_dt = OptimizationVectorHelper.extract_dt(ocp, data)
+        phase_dt = OptimizationVectorHelper.extract_phase_dt(ocp, data)
 
         # Starts at zero
         out = []
-        for dt, nlp in zip(all_dt, ocp.nlp):
+        for dt, nlp in zip(phase_dt, ocp.nlp):
             phase_step_times = []
             for node in range(nlp.ns):
                 phase_step_times.append(nlp.dynamics[node].step_times_from_dt(vertcat(dt * node, dt)))
@@ -482,7 +482,7 @@ class OptimizationVectorHelper:
                 continue
             for node in range(nlp.n_states_nodes):
                 nlp.states.node_index = node
-                n_cols = nlp.n_states_steps(node)
+                n_cols = nlp.n_states_decision_steps(node)
                 x_array = v_array[offset : offset + nx * n_cols].reshape((nx, -1), order="F")
                 for key in nlp.states.keys():
                     data_states[p][key][node] = x_array[nlp.states[key].index, :]

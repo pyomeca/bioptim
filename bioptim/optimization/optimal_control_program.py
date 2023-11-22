@@ -1363,7 +1363,6 @@ class OptimalControlProgram:
             -------
             Values computed for the given time, state, control, parameters, penalty and time step
             """
-            x, u, s = map(_reshape_to_column, [x, u, s])
 
             penalty_phase = penalty.nodes_phase[0] if penalty.multinode_penalty else penalty.phase
             nlp = self.nlp[penalty_phase]
@@ -1393,8 +1392,8 @@ class OptimalControlProgram:
                 stochastic_value = s
                 if not np.all(
                     x == 0
-                ):  # This is a hack to initialize the plots because it x is (N,2) and we need (N, M) in collocation
-                    state_value = x[:, :] if penalty.name == "STATE_CONTINUITY" else x[:, [0, -1]]
+                ):
+                    state_value = x[:, :] if penalty.name == "STATE_CONTINUITY" and nlp.ode_solver.is_direct_collocation else x[:, 0]
                     state_value = state_value.reshape((-1, 1), order='F')
                     control_value = control_value.reshape((-1, 1), order='F')
                     stochastic_value = stochastic_value.reshape((-1, 1), order='F')
@@ -1434,18 +1433,6 @@ class OptimalControlProgram:
             for penalty in _penalties:
                 if not penalty:
                     continue
-
-                dt = penalty.dt
-                if "time" in nlp.parameters:
-                    if isinstance(penalty.type, ObjectiveFcn.Mayer):
-                        dt = 1
-                    elif isinstance(penalty.type, ObjectiveFcn.Lagrange):
-                        if not isinstance(penalty.dt, (float, int)):
-                            dt = Function(
-                                "time",
-                                [nlp.parameters.cx[i_phase]],
-                                [nlp.parameters.cx[i_phase] / nlp.ns],
-                            )
 
                 plot_params = {
                     "fig_name": cost_type.name,
