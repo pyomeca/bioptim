@@ -19,15 +19,18 @@ class LeuvenArmModel:
         sensory_noise_magnitude: np.ndarray | DM,
         motor_noise_magnitude: np.ndarray | DM,
         sensory_reference: callable,
+        compute_torques_from_noise_and_feedback: callable,
     ):
         self.motor_noise_magnitude = motor_noise_magnitude
         self.sensory_noise_magnitude = sensory_noise_magnitude
         self.sensory_reference = sensory_reference
+        self.compute_torques_from_noise_and_feedback = compute_torques_from_noise_and_feedback,
         self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
         self.sensory_noise_sym = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0])
 
         n_noised_controls = 6
         n_references = 4
+        self.n_feedbacks = 4
         n_noised_states = 10
         n_noise = motor_noise_magnitude.shape[0] + sensory_noise_magnitude.shape[0]
         self.matrix_shape_k = (n_noised_controls, n_references)

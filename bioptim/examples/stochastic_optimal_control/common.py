@@ -11,7 +11,7 @@ from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 
 
-def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, with_noise):
+def dynamics_torque_driven_with_feedbacks(time, states, controls, parameters, stochastic_variables, nlp, with_noise):
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
@@ -25,7 +25,7 @@ def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochast
 
         motor_noise = nlp.model.motor_noise_sym
         sensory_noise = nlp.model.sensory_noise_sym
-        end_effector = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
+        end_effector = nlp.model.sensory_reference(time, states, controls, parameters, stochastic_variables, nlp)
         tau_feedback = get_excitation_with_feedback(k_matrix, end_effector, ref, sensory_noise)
 
     tau_force_field = get_force_field(q, nlp.model.force_field_magnitude)
@@ -258,3 +258,26 @@ def reshape_to_matrix(var, shape):
         for s1 in range(shape_0):
             matrix[s1, s0] = var[s0 * shape_0 + s1]
     return matrix
+
+def compute_torques_from_noise_and_feedback(nlp, time, states, controls, parameters, stochastic_variables,
+                                                sensory_noise, motor_noise):
+
+    tau_nominal = DynamicsFunctions.get(nlp.controls["tau"], controls)
+
+    ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
+    k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
+    k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
+
+    sensory_input = nlp.model.sensory_reference(time,
+                                                  states,
+                                                  controls,
+                                                  parameters,
+                                                  stochastic_variables,
+                                                  nlp)
+    tau_fb = k_matrix @ ((sensory_input - ref) + sensory_noise)
+
+    tau_motor_noise = motor_noise
+
+    tau = tau_nominal + tau_fb + tau_motor_noise
+
+    return tau

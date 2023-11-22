@@ -45,9 +45,11 @@ from bioptim import (
 
 from bioptim.examples.stochastic_optimal_control.leuven_arm_model import LeuvenArmModel
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
+from bioptim.examples.stochastic_optimal_control.common import compute_torques_from_noise_and_feedback
 
 
 def sensory_reference(
+    time: cas.MX | cas.SX,
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
@@ -64,6 +66,7 @@ def sensory_reference(
 
 
 def stochastic_forward_dynamics(
+    time: cas.MX | cas.SX,
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
@@ -90,7 +93,7 @@ def stochastic_forward_dynamics(
         k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
         k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
-        hand_pos_velo = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
+        hand_pos_velo = nlp.model.sensory_reference(time, states, controls, parameters, stochastic_variables, nlp)
 
         mus_excitations_fb += nlp.model.get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, sensory_noise)
         noise_torque = motor_noise
@@ -189,6 +192,7 @@ def get_cov_mat(nlp, node_index):
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(
+        nlp.time_cx,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,
@@ -294,6 +298,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
 
     # Compute the expected effort
     hand_pos_velo = controllers[0].model.sensory_reference(
+        controllers[0].time.cx,
         controllers[0].states.cx_start,
         controllers[0].controls.cx_start,
         controllers[0].parameters.cx_start,
@@ -325,6 +330,7 @@ def zero_acceleration(controller: PenaltyController, force_field_magnitude: floa
     No acceleration of the joints at the beginning and end of the movement.
     """
     dx = stochastic_forward_dynamics(
+        controller.time.cx,
         controller.states.cx_start,
         controller.controls.cx_start,
         controller.parameters.cx_start,
@@ -382,6 +388,7 @@ def prepare_socp(
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_reference=sensory_reference,
+        compute_torques_from_noise_and_feedback=compute_torques_from_noise_and_feedback,
     )
     bio_model.force_field_magnitude = force_field_magnitude
 
@@ -462,6 +469,7 @@ def prepare_socp(
     dynamics.add(
         configure_stochastic_optimal_control_problem,
         dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, with_noise: stochastic_forward_dynamics(
+            time,
             states,
             controls,
             parameters,
@@ -706,6 +714,7 @@ def main():
         motor_noise_sym = cas.MX.sym("motor_noise", 2, 1)
         sensory_noise_sym = cas.MX.sym("sensory_noise", 4, 1)
         out = stochastic_forward_dynamics(
+            None,
             states,
             controls,
             parameters,
