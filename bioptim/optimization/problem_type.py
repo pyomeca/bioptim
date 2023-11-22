@@ -43,6 +43,7 @@ class SocpType:
             The method to use during the collocation integration
         """
 
-        def __init__(self, polynomial_degree: int = 4, method: str = "legendre"):
+        def __init__(self, polynomial_degree: int = 4, method: str = "legendre", auto_initialization: bool = False):
             self.polynomial_degree = polynomial_degree
             self.method = method
+            self.auto_initialization = auto_initialization

@@ -1,8 +1,10 @@
 from typing import Callable
 import sys
+import numpy as np
 
 import pickle
 
+from .optimization_vector import OptimizationVectorHelper
 from .non_linear_program import NonLinearProgram as NLP
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver
@@ -18,8 +20,8 @@ from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeCons
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList
 from ..limits.path_conditions import BoundsList
-from ..limits.path_conditions import InitialGuessList
-from ..misc.enums import PhaseDynamics
+from ..limits.path_conditions import InitialGuessList, InitialGuess
+from ..misc.enums import PhaseDynamics, InterpolationType
 from ..misc.__version__ import __version__
 from ..misc.enums import Node, ControlType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
@@ -270,6 +272,78 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         self.original_values["s_init"] = s_init
         self.original_values["s_bounds"] = s_bounds
         self.original_values["s_scaling"] = s_scaling
+
+    def _auto_initialize(self, x_init, u_init, s_init):
+
+        def _replace_initial_guess(key, n_var, var_init, s_init):
+            if n_var != 0:
+                if key in s_init:
+                    s_init[key] = InitialGuess(var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
+                else:
+                    s_init.add(key, initial_guess=var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
+
+
+        if not isinstance(self.phase_time, list):
+            phase_time = [self.phase_time]
+        else:
+            phase_time = self.phase_time
+
+        if x_init.type not in [InterpolationType.EACH_FRAME, InterpolationType.EACH_NODE]:
+            raise RuntimeError("To initialize automatically the stochastic variables, you need to provide an x_init of type InterpolationType.EACH_FRAME or InterpolationType.EACH_NODE")
+        if u_init.type not in [InterpolationType.EACH_FRAME, InterpolationType.EACH_NODE]:
+            raise RuntimeError("To initialize automatically the stochastic variables, you need to provide an u_init of type InterpolationType.EACH_FRAME or InterpolationType.EACH_NODE")
+
+        for i_phase, nlp in enumerate(self.nlp):
+
+            if nlp.parameters.keys() != [] and nlp.parameters.keys() != ['time']:
+                raise RuntimeError("The automatic initialization of stochastic variables is not implemented yet for nlp with parameters other than the time.")
+
+            n_ref = nlp.model.n_references
+            n_k = nlp.model.matrix_shape_k[0] * nlp.model.matrix_shape_k[1]
+            n_m = nlp.model.matrix_shape_m[0] * nlp.model.matrix_shape_m[1]
+            n_cov = nlp.model.matrix_shape_cov[0] * nlp.model.matrix_shape_cov[1]
+            n_stochastic = n_ref + n_k + n_m + n_cov
+
+            # concatenate x_init into a single matrix
+            x_guess = np.zeros((0, nlp.n_shooting + 1))
+            for key in x_init[i_phase].keys():
+                if x_init.type == InterpolationType.EACH_FRAME:
+                    x_guess = np.concatenate((x_guess, x_init[i_phase][key]), axis=0)
+                else:
+                    x_guess = np.concatenate((x_guess, x_init[i_phase][key][:, 0::(self.problem_type.polynomial_degree+2)]), axis=0)
+
+            # concatenate u_init into a single matrix
+            u_guess = np.zeros((0, nlp.n_shooting))
+            for key in u_init[i_phase].keys():
+                u_guess = np.concatenate((u_guess, u_init[i_phase][key]), axis=0)
+
+
+            k_init = np.ones((n_k, nlp.n_shooting + 1)) * 0.01
+
+            time_vector = np.linspace(0, phase_time[i_phase], nlp.n_shooting + 1)
+            ref_init = nlp.model.sensory_references(time_vector,
+                                                    x_guess,
+                                                    u_guess,
+                                                    None,
+    controls: cas.MX | cas.SX,
+    parameters: cas.MX | cas.SX,
+    stochastic_variables: cas.MX | cas.SX,
+    nlp: NonLinearProgram,)
+
+            _replace_initial_guess("k", n_k, k_init, s_init)
+
+    def _prepare_bounds_and_init(
+        self, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
+    ):
+        self.parameter_bounds = BoundsList()
+        self.parameter_init = InitialGuessList()
+
+        if self.problem_type == SocpType.COLLOCATION and self.problem_type.auto_initialization == True:
+            self._auto_initialize(x_init, u_init, s_init)
+        self.update_bounds(x_bounds, u_bounds, parameter_bounds, s_bounds)
+        self.update_initial_guess(x_init, u_init, parameter_init, s_init)
+        # Define the actual NLP problem
+        OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
     @staticmethod
     def load(file_path: str) -> list:
