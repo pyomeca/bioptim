@@ -90,10 +90,19 @@ class BiorbdModel:
     def segments(self) -> tuple[biorbd.Segment]:
         return self.model.segments()
 
-    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> tuple:
-        # Todo: one of the last ouput of BiorbdModel which is not a MX but a biorbd object
-        rt_matrix = self.model.globalJCS(GeneralizedCoordinates(q), segment_id)
+    def biorbd_homogeneous_matrices_in_global(self, q, segment_idx, inverse=False) -> tuple:
+        """
+        Returns a biorbd object containing the roto-translation matrix of the segment in the global reference frame.
+        This is useful if you want to interact with biorbd directly later on.
+        """
+        rt_matrix = self.model.globalJCS(GeneralizedCoordinates(q), segment_idx)
         return rt_matrix.transpose() if inverse else rt_matrix
+
+    def homogeneous_matrices_in_global(self, q, segment_idx, inverse=False) -> MX:
+        """
+        Returns the roto-translation matrix of the segment in the global reference frame.
+        """
+        return self.biorbd_homogeneous_matrices_in_global(q, segment_idx, inverse).to_mx()
 
     def homogeneous_matrices_in_child(self, segment_id) -> MX:
         return self.model.localJCS(segment_id).to_mx()
@@ -363,7 +372,7 @@ class BiorbdModel:
 
         else:
             out = []
-            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
+            homogeneous_matrix_transposed = self.biorbd_homogeneous_matrices_in_global(
                 GeneralizedCoordinates(q),
                 reference_index,
                 inverse=True,
@@ -388,7 +397,7 @@ class BiorbdModel:
 
         else:
             out = []
-            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
+            homogeneous_matrix_transposed = self.biorbd_homogeneous_matrices_in_global(
                 GeneralizedCoordinates(q),
                 reference_index,
                 inverse=True,

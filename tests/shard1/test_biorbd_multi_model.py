@@ -106,7 +106,7 @@ def test_biorbd_model():
 
     TestUtils.assert_equal(
         # one of the last ouput of BiorbdModel which is not a MX but a biorbd object
-        models.homogeneous_matrices_in_global(np.array([1, 2, 3]), 0, 0).to_mx(),
+        models.biorbd_homogeneous_matrices_in_global(np.array([1, 2, 3]), 0, 0).to_mx(),
         np.array(
             [
                 [1.0, 0.0, 0.0, 0.0],

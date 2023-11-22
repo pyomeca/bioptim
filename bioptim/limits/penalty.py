@@ -283,7 +283,7 @@ class PenaltyFunctionAbstract:
             jcs_t = (
                 biorbd.RotoTrans()
                 if reference_jcs is None
-                else model.homogeneous_matrices_in_global(q.mx, reference_jcs, inverse=True)
+                else model.biorbd_homogeneous_matrices_in_global(q.mx, reference_jcs, inverse=True)
             )
 
             markers = []

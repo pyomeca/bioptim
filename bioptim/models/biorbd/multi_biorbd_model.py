@@ -268,10 +268,13 @@ class MultiBiorbdModel:
             out += model.segments
         return out
 
-    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> biorbd.RotoTrans:
-        local_segment_id, model_id = self.local_variable_id("segment", segment_id)
+    def biorbd_homogeneous_matrices_in_global(self, q, segment_idx, inverse=False) -> biorbd.RotoTrans:
+        local_segment_id, model_id = self.local_variable_id("segment", segment_idx)
         q_model = q[self.variable_index("q", model_id)]
         return self.models[model_id].homogeneous_matrices_in_global(q_model, local_segment_id, inverse)
+
+    def homogeneous_matrices_in_global(self, q, segment_idx, inverse=False) -> MX:
+        return self.biorbd_homogeneous_matrices_in_global(q, segment_idx, inverse).to_mx()
 
     def homogeneous_matrices_in_child(self, segment_id) -> MX:
         local_id, model_id = self.local_variable_id("segment", segment_id)
