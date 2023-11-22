@@ -4,28 +4,146 @@ from copy import deepcopy
 import numpy as np
 from scipy import interpolate as sci_interp
 from scipy.interpolate import interp1d
-from casadi import vertcat, DM, Function
+from casadi import vertcat, DM
 from matplotlib import pyplot as plt
 
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
-from ...misc.enums import (
-    ControlType,
-    CostType,
-    Shooting,
-    InterpolationType,
-    SolverType,
-    SolutionIntegrator,
-    Node,
-    QuadratureRule,
-    PhaseDynamics,
-)
+from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
 from ...dynamics.ode_solver import OdeSolver
-from ...interfaces.solve_ivp_interface import solve_ivp_interface, solve_ivp_bioptim_interface
+from ...interfaces.solve_ivp_interface import solve_ivp_bioptim_interface
 
 from ..optimization_vector import OptimizationVectorHelper
 
-from .utils import concatenate_optimization_variables_dict
+
+def _to_unscaled_values(scaled: list, ocp, variable_type: str) -> list:
+    """
+    Convert values of scaled solution to unscaled values
+
+    Parameters
+    ----------
+    scaled: list
+        The scaled values
+    variable_type: str
+        The type of variable to convert (x for states, u for controls, p for parameters, s for stochastic variables)
+    """
+
+    unscaled: list = [None for _ in range(len(scaled))]
+    for phase in range(len(scaled)):
+        unscaled[phase] = {}
+        for key in scaled[phase].keys():
+            scale_factor = getattr(ocp.nlp[phase], f"{variable_type}_scaling")[key]
+            if isinstance(scaled[phase][key], list):  # Nodes are not merged
+                unscaled[phase][key] = []
+                for node in range(len(scaled[phase][key])):
+                    value = scaled[phase][key][node]
+                    unscaled[phase][key].append(value * scale_factor.to_array(value.shape[1]))
+            elif isinstance(scaled[phase][key], np.ndarray):  # Nodes are merged
+                value = scaled[phase][key]
+                unscaled[phase][key] = value * scale_factor.to_array(value.shape[1])
+            else:
+                raise ValueError(f"Unrecognized type {type(scaled[phase][key])} for {key}")
+
+    return unscaled
+
+
+def _to_scaled_values(unscaled: list, ocp, variable_type: str) -> list:
+    """
+    Convert values of unscaled solution to scaled values
+
+    Parameters
+    ----------
+    unscaled: list
+        The unscaled values
+    variable_type: str
+        The type of variable to convert (x for states, u for controls, p for parameters, s for stochastic variables)
+    """
+
+    if not unscaled:
+        return []
+
+    scaled: list = [None for _ in range(len(unscaled))]
+    for phase in range(len(unscaled)):
+        scaled[phase] = {}
+        for key in unscaled[phase].keys():
+            scale_factor = getattr(ocp.nlp[phase], f"{variable_type}_scaling")[key]
+
+            if isinstance(unscaled[phase][key], list):  # Nodes are not merged
+                scaled[phase][key] = []
+                for node in range(len(unscaled[phase][key])):
+                    value = unscaled[phase][key][node]
+                    scaled[phase][key].append(value / scale_factor.to_array(value.shape[1]))
+            elif isinstance(unscaled[phase][key], np.ndarray):  # Nodes are merged
+                value = unscaled[phase][key]
+                scaled[phase][key] = value / scale_factor.to_array(value.shape[1])
+            else:
+                raise ValueError(f"Unrecognized type {type(unscaled[phase][key])} for {key}")
+
+    return scaled
+
+
+class SolutionData:
+    def __init__(self, unscaled, scaled):
+        self.unscaled = unscaled
+        self.scaled = scaled
+
+    def __getitem__(self, **keys):
+        phase = 0
+        if len(self.unscaled) > 1:
+            if "phase" not in keys:
+                raise RuntimeError("You must specify the phase when more than one phase is present in the solution")
+            phase = keys["phase"]
+        key = keys["key"]
+        return self.unscaled[phase][key]
+
+    def keys(self, phase: int = 0):
+        return self.unscaled[phase].keys()
+
+    def merge_phases(self) -> "SolutionData":
+        raise NotImplementedError("This method should be implemented in the child class")
+
+    def get_merged_nodes(
+        self,
+        scaled: bool = False,
+        phases: int | list[int, ...] = None,
+        keys: str | list[str] = None,
+        nodes: int | list[int, ...] = None,
+    ):
+        data = self.scaled if scaled else self.unscaled
+
+        if phases is None:
+            phases = range(len(data))
+        elif isinstance(phases, int):
+            phases = [phases]
+
+        if keys is None:
+            keys = list(self.keys())
+        elif isinstance(keys, str):
+            keys = [keys]
+
+        if nodes is None:
+            nodes = range(len(data[phases[0]][keys[0]]))
+        elif isinstance(nodes, int):
+            nodes = [nodes]
+
+        out = []
+        has_empty = False
+        for p in phases:
+            out_tp = None
+            for n in nodes:
+                # This is to account for empty structures
+                data_list = [data[p][key][n] for key in keys]
+                if not data_list:
+                    has_empty = True
+                    out_tp = np.ndarray((0, 0))
+                    continue
+                if has_empty:
+                    raise(RuntimeError("Cannot merge nodes with different sizes"))
+
+                tp = np.concatenate(data_list, axis=0)
+                out_tp = tp if out_tp is None else np.concatenate([out_tp, tp], axis=1)
+            out.append(out_tp)
+        return out
 
 
 class Solution:
@@ -56,24 +174,16 @@ class Solution:
         The number of iterations that were required to solve the program
     status: int
         Optimization success status (Ipopt: 0=Succeeded, 1=Failed)
-    _decision_states: dict[list[dict[list[np.ndarray], ...], ...], list[dict[list[np.ndarray], ...], ...]]
-        A dict ("unscaled", "scaled") of a list (n_phase) of dict (n_states) of list (n_shooting) of np.ndarray (n_elements), 
-        based solely on the solution
-    _stepwise_states: dict[list[dict[list[np.ndarray], ...], ...], list[dict[list[np.ndarray], ...], ...]]
-        A dict ("unscaled", "scaled") of a list (n_phase) of dict (n_states) of list (n_shooting) of np.ndarray (n_steps),
-        based on the integrated solution directly from the bioptim integrator
-    _whole_interval_states: dict[list[dict[list[np.ndarray], ...], ...], list[dict[list[np.ndarray], ...], ...]]
-        A dict ("unscaled", "scaled") of a list (n_phase) of dict (n_states) of list (n_shooting) of np.ndarray (n_steps + x),
-        based on the integrated solution directly from the bioptim integrator that is 
-        ensure to include the starting point and the final point of the shooting node
-    _controls: list
+    _decision_states: SolutionData
+        A SolutionData based solely on the solution
+    stepwise_states: SolutionData
+        A SolutionData based on the integrated solution directly from the bioptim integrator
+    _stepwise_controls: SolutionData
         The data structure that holds the controls
-    parameters: dict
+    _parameters: SolutionData
         The data structure that holds the parameters
-    _stochastic_variables: list
+    _stochastic: SolutionData
         The data structure that holds the stochastic variables
-    _integrated_values: list
-        The data structure that holds the update values
     _dt: list
         The time step for each phases
 
@@ -106,8 +216,7 @@ class Solution:
 
     def __init__(
         self,
-        ocp: "OptimalControlProgram",
-        ns: list[float] = None,
+        ocp,
         vector: np.ndarray | DM = None,
         cost: np.ndarray | DM = None,
         constraints: np.ndarray | DM = None,
@@ -126,8 +235,6 @@ class Solution:
         ----------
         ocp: OptimalControlProgram
             A reference to the ocp to strip
-        ns: list[float]
-            The number of shooting points for each phase
         vector: np.ndarray | DM
             The solution vector, containing all the states, controls, parameters and stochastic variables
         cost: np.ndarray | DM
@@ -154,18 +261,6 @@ class Solution:
             The number of iterations
         status: int
             The status of the solution
-        _decision_states: list
-            The states of the solution
-        _stepwise_states: list
-            The integrated states of the solution
-        _whole_interval_states: list
-            The fully integrated states of the solution
-        _stepwise_controls: list
-            The controls of the solution
-        parameters: dict
-            The parameters of the solution
-        _stochastic_variables: list
-            The stochastic variables of the solution
         """
 
         self.ocp = ocp
@@ -179,104 +274,100 @@ class Solution:
         self.solver_time_to_optimize, self.real_time_to_optimize = solver_time_to_optimize, real_time_to_optimize
 
         # Extract the data now for further use
-        self._decision_states = {"scaled": [], "unscaled": []}
-        self._stepwise_states = {"scaled": [], "unscaled": []}
-        self._interpolated_states = {"scaled": [], "unscaled": []}
-        self._whole_interval_states = {"scaled": [], "unscaled": []}
-        self._stepwise_controls = {"scaled": [], "unscaled": []}
-        self._parameters = {"scaled": [], "unscaled": []}
-        self._stochastic = {"scaled": [], "unscaled": []}
+        self._decision_states = None
+        self.stepwise_states = None
+        self._stepwise_controls = None
+        self._parameters = None
+        self._stochastic = None
 
         self.vector = vector
         if self.vector is not None:
             self._dt = OptimizationVectorHelper.extract_dt(ocp, vector)
             self._stepwise_times = OptimizationVectorHelper.extract_step_times(ocp, vector)
             
-            x, c, p, s = OptimizationVectorHelper.to_dictionaries(ocp, vector)
-            self._decision_states = {"scaled": x, "unscaled": self._to_unscaled_values(x, "x")}
-            self._stepwise_controls = {"scaled": c, "unscaled": self._to_unscaled_values(c, "u")}
-            self._parameters = {"scaled": p, "unscaled": self._to_unscaled_values(p, "p")}
-            self._stochastic = {"scaled": s, "unscaled": self._to_unscaled_values(s, "s")}
-
+            x, u, p, s = OptimizationVectorHelper.to_dictionaries(ocp, vector)
+            self._decision_states = SolutionData(x, _to_unscaled_values(x, ocp, "x"))
+            self._stepwise_controls = SolutionData(u, _to_unscaled_values(u, ocp, "u"))
+            self._parameters = SolutionData(p, _to_unscaled_values(p, ocp, "p"))
+            self._stochastic = SolutionData(s, _to_unscaled_values(s, ocp, "s"))
 
     @classmethod
-    def from_dict(cls, ocp, _sol: dict):
+    def from_dict(cls, ocp, sol: dict):
         """
         Initialize all the attributes from an Ipopt-like dictionary data structure
 
         Parameters
         ----------
-        _ocp: OptimalControlProgram
+        ocp: OptimalControlProgram
             A reference to the OptimalControlProgram
-        _sol: dict
+        sol: dict
             The solution in a Ipopt-like dictionary
         """
 
-        if not isinstance(_sol, dict):
+        if not isinstance(sol, dict):
             raise ValueError("The _sol entry should be a dictionary")
 
-        is_ipopt = _sol["solver"] == SolverType.IPOPT.value
+        is_ipopt = sol["solver"] == SolverType.IPOPT.value
 
         return cls(
             ocp=ocp,
-            ns=[nlp.ns for nlp in ocp.nlp],
-            vector=_sol["x"],
-            cost=_sol["f"] if is_ipopt else None,
-            constraints=_sol["g"] if is_ipopt else None,
-            lam_g=_sol["lam_g"] if is_ipopt else None,
-            lam_p=_sol["lam_p"] if is_ipopt else None,
-            lam_x=_sol["lam_x"] if is_ipopt else None,
-            inf_pr=_sol["inf_pr"] if is_ipopt else None,
-            inf_du=_sol["inf_du"] if is_ipopt else None,
-            solver_time_to_optimize=_sol["solver_time_to_optimize"],
-            real_time_to_optimize=_sol["real_time_to_optimize"],
-            iterations=_sol["iter"],
-            status=_sol["status"],
+            vector=sol["x"],
+            cost=sol["f"] if is_ipopt else None,
+            constraints=sol["g"] if is_ipopt else None,
+            lam_g=sol["lam_g"] if is_ipopt else None,
+            lam_p=sol["lam_p"] if is_ipopt else None,
+            lam_x=sol["lam_x"] if is_ipopt else None,
+            inf_pr=sol["inf_pr"] if is_ipopt else None,
+            inf_du=sol["inf_du"] if is_ipopt else None,
+            solver_time_to_optimize=sol["solver_time_to_optimize"],
+            real_time_to_optimize=sol["real_time_to_optimize"],
+            iterations=sol["iter"],
+            status=sol["status"],
         )
 
     @classmethod
-    def from_initial_guess(cls, ocp, _sol: list):
+    def from_initial_guess(cls, ocp, sol: list):
         """
         Initialize all the attributes from a list of initial guesses (states, controls)
 
         Parameters
         ----------
-        _ocp: OptimalControlProgram
+        ocp: OptimalControlProgram
             A reference to the OptimalControlProgram
-        _sol: list
+        sol: list
             The list of initial guesses
         """
 
-        if not (isinstance(_sol, (list, tuple)) and len(_sol) == 4):
+        if not (isinstance(sol, (list, tuple)) and len(sol) == 4):
             raise ValueError("_sol should be a list of tuple and the length should be 4")
 
         n_param = len(ocp.parameters)
         all_ns = [nlp.ns for nlp in ocp.nlp]
 
         # Sanity checks
-        for i in range(len(_sol)):  # Convert to list if necessary and copy for as many phases there are
-            if isinstance(_sol[i], InitialGuess):
+        for i in range(len(sol)):  # Convert to list if necessary and copy for as many phases there are
+            if isinstance(sol[i], InitialGuess):
                 tp = InitialGuessList()
                 for _ in range(len(all_ns)):
-                    tp.add(deepcopy(_sol[i].init), interpolation=_sol[i].init.type)
-                _sol[i] = tp
-        if sum([isinstance(s, InitialGuessList) for s in _sol]) != 4:
+                    tp.add(deepcopy(sol[i].init), interpolation=sol[i].init.type)
+                sol[i] = tp
+        if sum([isinstance(s, InitialGuessList) for s in sol]) != 4:
             raise ValueError(
                 "solution must be a solution dict, "
                 "an InitialGuess[List] of len 4 (states, controls, parameters, stochastic_variables), "
                 "or a None"
             )
-        if sum([len(s) != len(all_ns) if p != 3 else False for p, s in enumerate(_sol)]) != 0:
+        if sum([len(s) != len(all_ns) if p != 3 else False for p, s in enumerate(sol)]) != 0:
             raise ValueError("The InitialGuessList len must match the number of phases")
         if n_param != 0:
-            if len(_sol) != 3 and len(_sol[3]) != 1 and _sol[3][0].shape != (n_param, 1):
+            if len(sol) != 3 and len(sol[3]) != 1 and sol[3][0].shape != (n_param, 1):
                 raise ValueError(
                     "The 3rd element is the InitialGuess of the parameter and "
                     "should be a unique vector of size equal to n_param"
                 )
 
         vector = np.ndarray((0, 1))
-        sol_states, sol_controls, sol_params, sol_stochastic_variables = _sol
+        sol_states, sol_controls, sol_params, sol_stochastic_variables = sol
 
         # For states
         for p, ss in enumerate(sol_states):
@@ -326,10 +417,10 @@ class Solution:
                 for key in ss.keys():
                     vector = np.concatenate((vector, ss[key].init.evaluate_at(i)[:, np.newaxis]))
 
-        return cls(ocp=ocp, ns=[nlp.ns for nlp in ocp.nlp], vector=vector)
+        return cls(ocp=ocp, vector=vector)
 
     @classmethod
-    def from_vector(cls, ocp, _sol: np.ndarray | DM):
+    def from_vector(cls, ocp, sol: np.ndarray | DM):
         """
         Initialize all the attributes from a vector of solution
 
@@ -337,14 +428,14 @@ class Solution:
         ----------
         ocp: OptimalControlProgram
             A reference to the OptimalControlProgram
-        _sol: np.ndarray | DM
+        sol: np.ndarray | DM
             The solution in vector format
         """
 
-        if not isinstance(_sol, (np.ndarray, DM)):
+        if not isinstance(sol, (np.ndarray, DM)):
             raise ValueError("The _sol entry should be a np.ndarray or a DM.")
 
-        return cls(ocp=ocp, ns=[nlp.ns for nlp in ocp.nlp], vector=_sol)
+        return cls(ocp=ocp, vector=sol)
 
     @classmethod
     def from_ocp(cls, ocp):
@@ -353,90 +444,11 @@ class Solution:
 
         Parameters
         ----------
-        _ocp: OptimalControlProgram
+        ocp: OptimalControlProgram
             A reference to the OptimalControlProgram
         """
 
         return cls(ocp=ocp)
-
-    @property
-    def interpolated_states(self):
-        data = self._interpolated_states["unscaled"]
-        if data is None:
-            raise RuntimeError("You must call interpolate() before accessing the interpolated states")
-
-        return data[0] if len(data) == 1 else data
-
-    def _to_unscaled_values(self, scaled, variable_type) -> list:
-        """
-        Convert values of scaled solution to unscaled values
-
-        Parameters
-        ----------
-        scaled: list
-            The scaled values
-        variable_type: str
-            The type of variable to convert (x for states, u for controls, p for parameters, s for stochastic variables)
-        """
-        
-        if not scaled: 
-            return []
-
-        unscaled = [None for _ in range(len(scaled))]
-        for phase in range(len(scaled)):
-            unscaled[phase] = {}
-            for key in scaled[phase].keys():
-                scale_factor = getattr(self.ocp.nlp[phase], f"{variable_type}_scaling")[key]
-                if isinstance(scaled[phase][key], list):
-                    # This is if decision variables are sent
-                    unscaled[phase][key] = []
-                    for node in range(len(scaled[phase][key])):
-                        value = scaled[phase][key][node]
-                        unscaled[phase][key].append(value * scale_factor.to_array(value.shape[1]))
-                elif isinstance(scaled[phase][key], np.ndarray):
-                    # This is if interpolated values are sent
-                    value = scaled[phase][key]
-                    unscaled[phase][key] = value * scale_factor.to_array(value.shape[1])
-                else: 
-                    raise ValueError(f"Unrecognized type {type(scaled[phase][key])} for {key}")
-                
-        return unscaled
-    
-    def _to_scaled_values(self, unscaled, variable_type) -> list:
-        """
-        Convert values of unscaled solution to scaled values
-
-        Parameters
-        ----------
-        scaled: list
-            The unscaled values
-        variable_type: str
-            The type of variable to convert (x for states, u for controls, p for parameters, s for stochastic variables)
-        """
-        
-        if not unscaled: 
-            return []
-
-        scaled = [None for _ in range(len(unscaled))]
-        for phase in range(len(unscaled)):
-            scaled[phase] = {}
-            for key in unscaled[phase].keys():
-                scale_factor = getattr(self.ocp.nlp[phase], f"{variable_type}_scaling")[key]
-
-                if isinstance(unscaled[phase][key], list):
-                    # This is if decision variables are sent
-                    scaled[phase][key] = []
-                    for node in range(len(unscaled[phase][key])):
-                        value = unscaled[phase][key][node]
-                        scaled[phase][key].append(value / scale_factor.to_array(value.shape[1]))
-                elif isinstance(unscaled[phase][key], np.ndarray):
-                    # This is if interpolated values are sent
-                    value = unscaled[phase][key]
-                    scaled[phase][key] = value / scale_factor.to_array(value.shape[1])
-                else:
-                    raise ValueError(f"Unrecognized type {type(unscaled[phase][key])} for {key}")
-
-        return scaled
 
     @property
     def cost(self):
@@ -486,63 +498,16 @@ class Solution:
         new._stepwise_times = deepcopy(self._stepwise_times)
 
         if not skip_data:
-            new._decision_states["unscaled"] = deepcopy(self._decision_states["unscaled"])
-            new._decision_states["scaled"] = deepcopy(self._decision_states["scaled"])
+            new._decision_states = deepcopy(self._decision_states)
+            new.stepwise_states = deepcopy(self.stepwise_states)
 
-            new._stepwise_states["unscaled"] = deepcopy(self._stepwise_states["unscaled"])
-            new._stepwise_states["scaled"] = deepcopy(self._stepwise_states["scaled"])
+            new._stepwise_controls = deepcopy(self._stepwise_controls)
 
-            new._interpolated_states["unscaled"] = deepcopy(self._interpolated_states["unscaled"])
-            new._interpolated_states["scaled"] = deepcopy(self._interpolated_states["scaled"])
-
-            new._whole_interval_states["unscaled"] = deepcopy(self._whole_interval_states["unscaled"])
-            new._whole_interval_states["scaled"] = deepcopy(self._whole_interval_states["scaled"])
-            
-            new._stepwise_controls["unscaled"] = deepcopy(self._stepwise_controls["unscaled"])
-            new._stepwise_controls["scaled"] = deepcopy(self._stepwise_controls["scaled"])
-            
-            new._stochastic["unscaled"] = deepcopy(self._stochastic["unscaled"])
-            new._stochastic["scaled"] = deepcopy(self._stochastic["scaled"])
-            
-            new._parameters["unscaled"] = deepcopy(self._parameters["unscaled"])
-            new._parameters["scaled"] = deepcopy(self._parameters["scaled"])
+            new._stochastic = deepcopy(self._stochastic)
+            new._parameters = deepcopy(self._parameters)
         return new
 
-    def integrate(
-        self,
-        shooting_type: Shooting = Shooting.SINGLE,
-        keep_intermediate_points: bool = False,
-        integrator: SolutionIntegrator = SolutionIntegrator.SCIPY_RK45,
-    ) -> "Solution":
-        """
-        Integrate the states
-
-        Parameters
-        ----------
-        shooting_type: Shooting
-            Which type of integration
-        keep_intermediate_points: bool
-            If the integration should return the intermediate values of the integration [False]
-            or only keep the node [True] effective keeping the initial size of the states
-        merge_phases: bool
-            If the phase should be merged in a unique phase
-        integrator: SolutionIntegrator
-            Use the scipy integrator RK45 by default, you can use any integrator provided by scipy or the OCP integrator
-
-        Returns
-        -------
-        A Solution data structure with the states integrated. The controls are removed from this structure
-        """
-
-        out = self._perform_integration(
-            shooting_type=shooting_type,
-            keep_intermediate_points=keep_intermediate_points,
-            integrator=integrator,
-        )
-
-        return out
-
-    def _integrate_stepwise(self) -> dict:
+    def _integrate_stepwise(self) -> None:
         """
         This method integrate to stepwise level the states. That is the states that are used in the dynamics and 
         continuity constraints.
@@ -553,24 +518,26 @@ class Solution:
             The integrated data structure similar in structure to the original _decision_states
         """
 
+        # Check if the data is already stepwise integrated
+        if self.stepwise_states is not None:
+            return self.stepwise_states
+
         # Prepare the output
-        out = {"unscaled": None, "scaled": None}
+        params = vertcat(*[self._parameters.unscaled[0][key] for key in self._parameters.keys()])
 
-        params = vertcat(*[self._parameters[key][0] for key in self._parameters["unscaled"][0].keys()])
-
-        out["unscaled"] = [None] * len(self.ocp.nlp)
+        unscaled: list = [None] * len(self.ocp.nlp)
         for phase_idx, nlp in enumerate(self.ocp.nlp):
             t = [vertcat(t[0], t[-1]) for t in self._stepwise_times[phase_idx]]
             x = [
-                self._add_node(None, self._decision_states["scaled"], phase_idx, n, nlp.states.keys()) 
+                _concat_nodes(None, self._decision_states["scaled"], phase_idx, n, nlp.states.keys())
                 for n in range(nlp.n_states_nodes)
             ]
             u = [
-                self._add_node(None, self._stepwise_controls["scaled"], phase_idx, n, nlp.controls.keys())
+                _concat_nodes(None, self._stepwise_controls["scaled"], phase_idx, n, nlp.controls.keys())
                 for n in range(nlp.n_states_nodes)
             ]
             s = [
-                self._add_node(None, self._stochastic["scaled"], phase_idx, n, nlp.stochastic_variables.keys())
+                _concat_nodes(None, self._stochastic["scaled"], phase_idx, n, nlp.stochastic_variables.keys())
                 for n in range(nlp.n_states_nodes)
             ]
 
@@ -578,16 +545,15 @@ class Solution:
                 shooting_type=Shooting.MULTIPLE, dynamics_func=nlp.dynamics, t=t, x=x, u=u, s=s, p=params
             )
             
-            out["unscaled"][phase_idx] = {}
+            unscaled[phase_idx] = {}
             for key in nlp.states.keys():
-                out["unscaled"][phase_idx][key] = [None] * nlp.n_states_nodes
+                unscaled[phase_idx][key] = [None] * nlp.n_states_nodes
                 for ns, sol_ns in enumerate(integrated_sol):
-                    out["unscaled"][phase_idx][key][ns] = sol_ns[nlp.states[key].index, :]
+                    unscaled[phase_idx][key][ns] = sol_ns[nlp.states[key].index, :]
 
-        out["scaled"] = self._to_scaled_values(out["unscaled"], "x")
-        return out
+        self.stepwise_states = SolutionData(unscaled, _to_scaled_values(unscaled, self.ocp, "x"))
 
-    def interpolate(self, n_frames: int | list | tuple) -> "Solution":
+    def interpolate(self, n_frames: int | list | tuple) -> SolutionData:
         """
         Interpolate the states
 
@@ -602,38 +568,35 @@ class Solution:
         A Solution data structure with the states integrated. The controls are removed from this structure
         """
 
-        out = self.copy(skip_data=True)
-        if not self._stepwise_states["unscaled"]:
-            out._stepwise_states = self._integrate_stepwise()
+        self._integrate_stepwise()
 
-        
         t_all = [np.concatenate(self._stepwise_times[p]) for p in range(len(self.ocp.nlp))]
         if isinstance(n_frames, int):
-            _, _, data_states, _, _ = out._merge_phases(skip_controls=True)
+            _, _, data_states, _, _ = self._merge_phases(skip_controls=True)
             t_all = [np.concatenate(t_all)]
             n_frames = [n_frames]
             
-        elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._states["unscaled"]):
-            data_states = self._states["unscaled"]
+        elif isinstance(n_frames, (list, tuple)) and len(n_frames) == len(self._decision_states.unscaled):
+            data_states = self._decision_states
         else:
             raise ValueError(
                 "n_frames should either be a int to merge_phases phases "
                 "or a list of int of the number of phases dimension"
             )
 
-        out._interpolated_states = {"unscaled": [], "scaled": []}
-        for p in range(len(data_states["unscaled"])):
-            out._interpolated_states["unscaled"].append({})
+        unscaled = []
+        for p in range(len(data_states.unscaled)):
+            unscaled.append({})
 
             nlp = self.ocp.nlp[p]
-            # Get the states, but do not bother the duplicates
+            # Get the states, but do not bother the duplicates now
             x = None
             for node in range(nlp.n_states_nodes):
-                x = self._add_node(x, data_states["scaled"], p, node, nlp.states.keys()) 
+                x = self._decision_states.concatenated_nodes("unscaled", p, node)
             
             # Now remove the duplicates
             t_round = np.round(t_all[p], decimals=8)  # Otherwise, there are some numerical issues with np.unique
-            t, idx = np.unique(t_round, return_index = True)
+            t, idx = np.unique(t_round, return_index=True)
             x = x[:, idx]
             
             x_interpolated = np.ndarray((x.shape[0], n_frames[p]))
@@ -643,10 +606,9 @@ class Solution:
                 x_interpolated[j, :] = sci_interp.splev(t_interpolated, s)[:, 0]
             
             for key in nlp.states.keys():
-                out._interpolated_states["unscaled"][p][key] = x_interpolated[nlp.states[key].index, :]
+                unscaled[p][key] = x_interpolated[nlp.states[key].index, :]
 
-        out._interpolated_states["scaled"] = self._to_scaled_values(out._interpolated_states["unscaled"], "x")
-        return out
+        return SolutionData(unscaled, _to_scaled_values(unscaled, self.ocp, "x"))
 
     def merge_phases(self) -> Any:
         """
@@ -766,9 +728,9 @@ class Solution:
             out_states = _merge(self._states["unscaled"], is_control=False) if not skip_states else None
         
         out_stepwise_states = []
-        if len(self._stepwise_states["scaled"]) == 1:
-            out_stepwise_states = deepcopy(self._stepwise_states)
-        elif len(self._stepwise_states["scaled"]) > 1:
+        if len(self.stepwise_states.scaled) == 1:
+            out_stepwise_states = deepcopy(self.stepwise_states)
+        elif len(self.stepwise_states.scaled) > 1:
             raise NotImplementedError("Merging phases is not implemented yet")
 
         out_stepwise_controls = []
@@ -858,10 +820,11 @@ class Solution:
         -------
             A list of bioviz structures (one for each phase). So one can call exec() by hand
         """
-        
-        data_to_animate = self.integrate(shooting_type=shooting_type) if shooting_type else self.copy()
 
-        for idx_phase in range(len(data_to_animate.ocp.nlp)):
+        if shooting_type:
+            self.integrate(shooting_type=shooting_type)
+
+        for idx_phase in range(len(self.ocp.nlp)):
             for objective in self.ocp.nlp[idx_phase].J:
                 if objective.target is not None:
                     if objective.type in (
@@ -873,11 +836,11 @@ class Solution:
 
         if n_frames == 0:
             try:
-                data_to_animate = data_to_animate.interpolate(sum([nlp.ns for nlp in self.ocp.nlp]) + 1)
+                data_to_animate = self.interpolate(sum([nlp.ns for nlp in self.ocp.nlp]) + 1)
             except RuntimeError:
                 pass
         elif n_frames > 0:
-            data_to_animate = data_to_animate.interpolate(n_frames)
+            data_to_animate = self.interpolate(n_frames)
 
         if show_tracked_markers and len(self.ocp.nlp) == 1:
             tracked_markers = self._prepare_tracked_markers_for_animation(n_shooting=n_frames)
@@ -949,23 +912,16 @@ class Solution:
 
         return all_tracked_markers
 
-    @staticmethod
-    def _add_node(concatenate_with: np.ndarray, data, phase_idx, node_idx, keys) -> np.ndarray:
-        if not keys:
-            return np.array(())
-        out = np.concatenate([data[phase_idx][key][node_idx] for key in keys])
-        if concatenate_with is None:
-            return out
-        else:
-            return np.concatenate((concatenate_with, out), axis=1)
-
     def _get_penalty_cost(self, nlp, penalty):
+        if nlp is None:
+            raise NotImplementedError("penalty cost over the full ocp is not implemented yet")
+
         phase_idx = nlp.phase_idx
         nlp.controls.node_index = 0  # This is so "keys" is not empty
 
         val = []
         val_weighted = []
-        p = vertcat(*[self._parameters["scaled"][0][key] for key in self._parameters["scaled"][0].keys()])
+        p = vertcat(*[self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()])
 
         phase_dt = self._dt[phase_idx]
         dt = penalty.dt_to_float(phase_dt)
@@ -981,19 +937,17 @@ class Solution:
                     nodes.append(node_idx + 1)
             
             t = self._stepwise_times[phases[0]][nodes[0]][0]  # Starting time of the current shooting node
-            
-            x = None
-            u = None
-            s = None
-            for p in phases:
-                for n in nodes:
-                    x = self._add_node(x, self._decision_states["scaled"], p, n, nlp.states.keys()) 
-                    u = self._add_node(u, self._stepwise_controls["scaled"], p, n, nlp.controls.keys())
-                    s = self._add_node(s, self._stochastic["scaled"], p, n, nlp.stochastic_variables.keys())
-                
-            x = x.reshape((-1, 1), order="F")
-            u = u.reshape((-1, 1), order="F")
-            s = s.reshape((-1, 1), order="F")
+
+            x = self._decision_states.get_merged_nodes(scaled=True, phases=phases, nodes=nodes)
+            u = self._stepwise_controls.get_merged_nodes(scaled=True, phases=phases, nodes=nodes)
+            s = self._stochastic.get_merged_nodes(scaled=True, phases=phases, nodes=nodes)
+
+            if len(phases) > 1:
+                raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
+
+            x = x[0].reshape((-1, 1), order="F")
+            u = u[0].reshape((-1, 1), order="F")
+            s = s[0].reshape((-1, 1), order="F")
             val.append(penalty.function[node_idx](t, self._dt, x, u, p, s))
 
             target = []

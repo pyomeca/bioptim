@@ -351,8 +351,6 @@ def solve_ivp_bioptim_interface(
     """
 
     # if multiple shooting, we need to set the first x0
-    
-
     y = []
     for node in range(len(dynamics_func)):
         # If multiple shooting, we need to set the first x0, otherwise use the previous answer
