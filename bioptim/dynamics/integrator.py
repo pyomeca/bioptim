@@ -99,13 +99,6 @@ class Integrator:
         )
 
     @property
-    def shape_in(self) -> tuple[int, int]:
-        """
-        Returns the expected shape of x0
-        """
-        return self.x_sym.shape
-
-    @property
     def shape_xf(self) -> tuple[int, int]:
         """
         Returns the expected shape of xf
@@ -251,13 +244,10 @@ class RK(Integrator):
     def _integration_time(self):
         return self.t_span_sym[1] / self._n_step
 
-    @property
-    def shape_in(self):
-        return [self.x_sym.shape, 1]
 
     @property
-    def shape_xf(self) -> tuple[int, int]:
-        return self.x_sym.shape[0], 1
+    def shape_xf(self):
+        return [self.x_sym.shape[0], 1]
 
     @property
     def shape_xall(self):
@@ -554,7 +544,7 @@ class COLLOCATION(Integrator):
     @property
     def _integration_time(self):
         return [0] + collocation_points(self.degree, self.method)
-
+    
     @property
     def shape_xall(self):
         return [self.degree + 2, 1]
@@ -613,6 +603,7 @@ class COLLOCATION(Integrator):
                     t,
                     states[j + 1],
                     self.get_u(controls, self._integration_time[j]),
+                    params,
                     stochastic_variables,
                 )[:, self.idx]
                 defects.append(xp_j - self.h * f_j)
@@ -622,6 +613,7 @@ class COLLOCATION(Integrator):
                         t,
                         states[j + 1],
                         self.get_u(controls, self._integration_time[j]),
+                        params,
                         stochastic_variables,
                         xp_j / self.h,
                     )
@@ -656,12 +648,16 @@ class IRK(COLLOCATION):
         return ["xf", "xall"]
 
     @property
+    def shape_xf(self):
+        return [self._x_sym_modified.shape[0], 1]
+    
+    @property
     def shape_xall(self):
-        return 2
+        return [self._x_sym_modified.shape[0], 2]
 
     @property
     def _time_xall_from_dt_func(self) -> Function:
-        return Function("step_time", [self.t_span_sym], [self.t_span_sym])
+        return Function("step_time", [self.t_span_sym], [vertcat(*[self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1]])])
 
     def dxdt(
         self,

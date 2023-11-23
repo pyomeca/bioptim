@@ -670,12 +670,12 @@ class PlotOcp:
         for nlp in self.ocp.nlp:
             phase_idx = nlp.phase_idx
             x_decision = data_states_decision[phase_idx]
-            x = data_states_stepwise[phase_idx]
+            x_stepwise = data_states_stepwise[phase_idx]
             u = data_controls[phase_idx]
             s = data_stochastic[phase_idx]
 
             for key in self.variable_sizes[phase_idx]:
-                y_data = self._compute_y_from_plot_func(self.custom_plots[key][phase_idx], phases_dt, x_decision, x, u, s, p)
+                y_data = self._compute_y_from_plot_func(self.custom_plots[key][phase_idx], phases_dt, x_decision, x_stepwise, u, s, p)
                 if y_data is None:
                     continue
                 self._append_to_ydata(y_data)
