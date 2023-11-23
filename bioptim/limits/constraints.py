@@ -744,12 +744,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            Mc, _ = ConstraintFunction.Functions.collocation_jacobians(
+            Mc, _, _, _, _, _ = ConstraintFunction.Functions.collocation_jacobians(
                 penalty,
                 controller,
             )
 
             constraint = Mc(
+                controller.time.cx,
                 controller.states.cx_start,
                 horzcat(*controller.states.cx_intermediates_list),
                 controller.controls.cx_start,
@@ -775,7 +776,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            _, Pf = ConstraintFunction.Functions.collocation_jacobians(
+            _, Pf, _, _, _, _ = ConstraintFunction.Functions.collocation_jacobians(
                 penalty,
                 controller,
             )
@@ -785,6 +786,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             cov_next_computed = Pf(
+                controller.time.cx,
                 controller.states.cx_start,
                 horzcat(*controller.states.cx_intermediates_list),
                 controller.controls.cx_start,
@@ -897,6 +899,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Mc = Function(
                 "M_cons",
                 [
+                    controller.time.cx,
                     controller.states.cx_start,
                     horzcat(*controller.states.cx_intermediates_list),
                     controller.controls.cx_start,
@@ -914,6 +917,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Pf = Function(
                 "P_next",
                 [
+                    controller.time.cx,
                     controller.states.cx_start,
                     horzcat(*controller.states.cx_intermediates_list),
                     controller.controls.cx_start,
@@ -927,7 +931,67 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if penalty.expand:
                 Pf = Pf.expand()
 
-            return Mc, Pf
+            Gdx_fun = Function(
+                "Gdx_fun",
+                [
+                    controller.time.cx,
+                    controller.states.cx_start,
+                    horzcat(*controller.states.cx_intermediates_list),
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ],
+                [Gdx],
+            )
+
+            Gdz_fun = Function(
+                "Gdz_fun",
+                [
+                    controller.time.cx,
+                    controller.states.cx_start,
+                    horzcat(*controller.states.cx_intermediates_list),
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ],
+                [Gdz],
+            )
+
+            Gdw_fun = Function(
+                "Gdw_fun",
+                [
+                    controller.time.cx,
+                    controller.states.cx_start,
+                    horzcat(*controller.states.cx_intermediates_list),
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ],
+                [Gdw],
+            )
+
+            Fdz_fun = Function(
+                "Fdz_fun",
+                [
+                    controller.time.cx,
+                    controller.states.cx_start,
+                    horzcat(*controller.states.cx_intermediates_list),
+                    controller.controls.cx_start,
+                    controller.parameters.cx_start,
+                    controller.stochastic_variables.cx_start,
+                    controller.model.motor_noise_sym,
+                    controller.model.sensory_noise_sym,
+                ],
+                [Fdz],
+            )
+
+            return Mc, Pf, Gdx_fun, Gdz_fun, Gdw_fun, Fdz_fun
 
     @staticmethod
     def get_dt(_):
