@@ -329,14 +329,14 @@ class BioModel(Protocol):
 
     @staticmethod
     def animate(
-        solution: "Solution", show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
+        ocp, solution: "SolutionData", show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
     ) -> None | list:
         """
         Animate a solution
 
         Parameters
         ----------
-        solution: Solution
+        solution: SolutionData
             The solution to animate
         show_now: bool
             If the animation should be shown immediately or not

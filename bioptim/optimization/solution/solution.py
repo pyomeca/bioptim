@@ -137,10 +137,53 @@ class SolutionData:
     def keys(self, phase: int = 0):
         return self.unscaled[phase].keys()
 
-    def merge_phases(self) -> "SolutionData":
-        raise NotImplementedError("This method should be implemented in the child class")
+    def merge_phases(
+        self,
+        scaled: bool = False,
+        phases: int | list[int, ...] | slice = None,
+        keys: str | list[str] = None,
+        nodes: int | list[int, ...] | slice = None,
+    ):
+        """
+        Merge the phases. This method does not remove the redundent nodes when merging the phase nor the nodes
+        """
+        data = self.scaled if scaled else self.unscaled
 
-    def get_merged_nodes(
+        if phases is None:
+            phases = range(len(data))
+        elif isinstance(phases, int):
+            phases = [phases]
+
+        if keys is None:
+            keys = list(self.keys())
+        elif isinstance(keys, str):
+            keys = [keys]
+
+        if nodes is None:
+            nodes = range(len(data[phases[0]][keys[0]]))
+        elif isinstance(nodes, int):
+            nodes = [nodes]
+
+        out = None
+        has_empty = False
+        for p in phases:
+            out_tp = None
+            for n in nodes:
+                # This is to account for empty structures
+                data_list = [data[p][key][n] for key in keys]
+                if not data_list:
+                    has_empty = True
+                    out_tp = np.ndarray((0, 0))
+                    continue
+                if has_empty:
+                    raise(RuntimeError("Cannot merge nodes with different sizes"))
+
+                tp = np.concatenate(data_list, axis=0)
+                out_tp = tp if out_tp is None else np.concatenate([out_tp, tp], axis=1)
+            out = out_tp if out is None else np.concatenate([out, out_tp], axis=1)
+        return out
+
+    def merge_nodes(
         self,
         phases: int | list[int, ...] | slice = None,
         keys: str | list[str] = None,
@@ -687,9 +730,9 @@ class Solution:
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
             t = self._decision_times[p]
-            x = [self._decision_states.get_merged_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
-            u = [self._stepwise_controls.get_merged_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
-            s = [self._stochastic.get_merged_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
+            x = [self._decision_states.merge_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
+            u = [self._stepwise_controls.merge_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
+            s = [self._stochastic.merge_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
 
             integrated_sol = solve_ivp_bioptim_interface(
                 shooting_type=Shooting.MULTIPLE, dynamics_func=nlp.dynamics, t=t, x=x, u=u, s=s, p=params
@@ -703,7 +746,7 @@ class Solution:
 
         self._stepwise_states = SolutionData(unscaled, _to_scaled_values(unscaled, self.ocp, "x"))
 
-    def interpolate(self, n_frames: int | list | tuple) -> SolutionData:
+    def interpolate(self, n_frames: int | list | tuple, scaled: bool = False) -> SolutionData:
         """
         Interpolate the states
 
@@ -712,16 +755,22 @@ class Solution:
         n_frames: int | list | tuple
             If the value is an int, the Solution returns merges the phases,
             otherwise, it interpolates them independently
+        scaled: bool
+            If the states should be scaled or not (note that scaled is as Ipopt received them, while unscaled is as the
+            model needs temps). If you don't know what it means, you probably want the unscaled version.
 
         Returns
         -------
         A Solution data structure with the states integrated. The controls are removed from this structure
         """
 
-        stepwise_states = self.stepwise_states
+        if self._stepwise_states is None:
+            self._integrate_stepwise()
+
+        # Get the states, but do not bother the duplicates now
         t_all = [np.concatenate(self._stepwise_times[p]) for p in range(len(self.ocp.nlp))]
         if isinstance(n_frames, int):  # So merge phases
-            stepwise_states = stepwise_states.get_merged_phases()
+            states = [self._stepwise_states.merge_phases(scaled=scaled)]
             t_all = [np.concatenate(t_all)]
             n_frames = [n_frames]
 
@@ -730,21 +779,19 @@ class Solution:
                 "n_frames should either be a int to merge_phases phases "
                 "or a list of int of the number of phases dimension"
             )
+        else:
+            states = self._stepwise_states.merge_nodes(scaled=scaled)
 
-        unscaled = []
-        for p in range(len(stepwise_states.unscaled)):
-            unscaled.append({})
+        data = []
+        for p in range(len(states)):
+            data.append({})
 
             nlp = self.ocp.nlp[p]
-            # Get the states, but do not bother the duplicates now
-            x = None
-            for node in range(nlp.n_states_nodes):
-                x = stepwise_states.get_merged_nodes(p, node)
 
             # Now remove the duplicates
             t_round = np.round(t_all[p], decimals=8)  # Otherwise, there are some numerical issues with np.unique
             t, idx = np.unique(t_round, return_index=True)
-            x = x[:, idx]
+            x = states[p][:, idx]
             
             x_interpolated = np.ndarray((x.shape[0], n_frames[p]))
             t_interpolated = np.linspace(t_round[0], t_round[-1], n_frames[p])
@@ -753,9 +800,9 @@ class Solution:
                 x_interpolated[j, :] = sci_interp.splev(t_interpolated, s)[:, 0]
             
             for key in nlp.states.keys():
-                unscaled[p][key] = x_interpolated[nlp.states[key].index, :]
+                data[p][key] = x_interpolated[nlp.states[key].index, :]
 
-        return SolutionData(unscaled, _to_scaled_values(unscaled, self.ocp, "x"))
+        return data if len(data) > 1 else data[0]
 
     def merge_phases(self) -> Any:
         """
@@ -1003,6 +1050,7 @@ class Solution:
         self._check_models_comes_from_same_super_class()
 
         all_bioviz = self.ocp.nlp[0].model.animate(
+            self.ocp,
             solution=data_to_animate,
             show_now=show_now,
             tracked_markers=tracked_markers,
@@ -1085,9 +1133,9 @@ class Solution:
             
             t = self._stepwise_times[phases[0]][nodes[0]][0]  # Starting time of the current shooting node
 
-            x = self._decision_states.get_merged_nodes(phases=phases, nodes=nodes, scaled=True)
-            u = self._stepwise_controls.get_merged_nodes(phases=phases, nodes=nodes, scaled=True)
-            s = self._stochastic.get_merged_nodes(phases=phases, nodes=nodes, scaled=True)
+            x = self._decision_states.merge_nodes(phases=phases, nodes=nodes, scaled=True)
+            u = self._stepwise_controls.merge_nodes(phases=phases, nodes=nodes, scaled=True)
+            s = self._stochastic.merge_nodes(phases=phases, nodes=nodes, scaled=True)
 
             if len(phases) > 1:
                 raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
