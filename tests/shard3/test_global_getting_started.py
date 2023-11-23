@@ -19,6 +19,7 @@ from bioptim import (
     Node,
     ControlType,
     PhaseDynamics,
+    __version__,
 )
 
 from tests.utils import TestUtils
@@ -115,6 +116,15 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
         return
 
     sol = ocp.solve()
+
+    # Test the bioptim version feature (this is the only test)
+    version_dic = sol.bioptim_version_used
+    print(version_dic["commit_id"])
+    print(version_dic["date"])
+    print(version_dic["branch"])
+    np.testing.assert_equal(version_dic["tag"].split("-")[0], f"Release_{__version__}")
+    print(version_dic["bioptim_version"])
+    print(sol.bioptim_version_used)
 
     # Check objective function value
     f = np.array(sol.cost)

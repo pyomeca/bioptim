@@ -6,6 +6,7 @@ from scipy import interpolate as sci_interp
 from scipy.interpolate import interp1d
 from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
+import git
 
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
@@ -232,6 +233,26 @@ class Solution:
                 self.parameters,
                 self._stochastic_variables["unscaled"],
             )
+
+    @property
+    def bioptim_version_used(self) -> dict:
+        """
+        Returns info on the bioptim version used to generate the results for future reference.
+        """
+        repo = git.Repo(search_parent_directories=True)
+        commit_id = str(repo.commit())
+        branch = str(repo.active_branch)
+        tag = repo.git.describe("--tags")
+        bioptim_version = repo.git.version_info
+        date = repo.git.log("-1", "--format=%cd")
+        version_dic = {
+            "commit_id": commit_id,
+            "date": date,
+            "branch": branch,
+            "tag": tag,
+            "bioptim_version": bioptim_version,
+        }
+        return version_dic
 
     @classmethod
     def from_dict(cls, ocp, _sol: dict):
