@@ -46,7 +46,13 @@ class SocpType:
             The method to use during the collocation integration
         """
 
-        def __init__(self, polynomial_degree: int = 4, method: str = "legendre", auto_initialization: bool = False, initial_cov: np.ndarray = None):
+        def __init__(
+            self,
+            polynomial_degree: int = 4,
+            method: str = "legendre",
+            auto_initialization: bool = False,
+            initial_cov: np.ndarray = None,
+        ):
             """
             Parameters
             ----------
@@ -63,5 +69,7 @@ class SocpType:
             self.method = method
             self.auto_initialization = auto_initialization
             if auto_initialization and initial_cov is None:
-                raise RuntimeError("To initialize automatically the values of the stochastic variables, you need to provide the value of the covariance matrix at the first node (initial_cov).")
+                raise RuntimeError(
+                    "To initialize automatically the values of the stochastic variables, you need to provide the value of the covariance matrix at the first node (initial_cov)."
+                )
             self.initial_cov = initial_cov

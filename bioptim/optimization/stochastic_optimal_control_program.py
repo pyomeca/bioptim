@@ -277,7 +277,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         self.original_values["s_scaling"] = s_scaling
 
     def _auto_initialize(self, x_init, u_init, parameter_init, s_init):
-
         def replace_initial_guess(key, n_var, var_init, s_init, i_phase):
             if n_var != 0:
                 if key in s_init:
@@ -286,20 +285,25 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     s_init.add(key, initial_guess=var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
 
         def get_ref_init(time_vector, x_guess, u_guess, p_guess, nlp):
-            x_guess = x_guess[:, 0::(self.problem_type.polynomial_degree+2)]
-            ref_init = nlp.model.sensory_reference(time_vector,
-                                                    x_guess,
-                                                    u_guess,
-                                                    p_guess,
-                                                    None,  # Sensory reference should not depend on stochastic variables
-                                                    nlp)
+            x_guess = x_guess[:, 0 :: (self.problem_type.polynomial_degree + 2)]
+            ref_init = nlp.model.sensory_reference(
+                time_vector,
+                x_guess,
+                u_guess,
+                p_guess,
+                None,  # Sensory reference should not depend on stochastic variables
+                nlp,
+            )
             return ref_init
 
-        def get_m_init(time_vector, x_guess, u_guess, p_guess, fake_stochastic_variables, nlp, variable_sizes, Fdz, Gdz):
-
+        def get_m_init(
+            time_vector, x_guess, u_guess, p_guess, fake_stochastic_variables, nlp, variable_sizes, Fdz, Gdz
+        ):
             m_init = np.zeros((variable_sizes["n_m"], nlp.ns + 1))
             for i in range(nlp.ns):
-                index_this_time = [i * self.problem_type.polynomial_degree + j for j in range(self.problem_type.polynomial_degree + 2)]
+                index_this_time = [
+                    i * self.problem_type.polynomial_degree + j for j in range(self.problem_type.polynomial_degree + 2)
+                ]
                 df_dz = Fdz(
                     time_vector[i],
                     x_guess[:, index_this_time[0]],
@@ -309,7 +313,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     fake_stochastic_variables[:, i],
                     nlp.model.motor_noise_magnitude,
                     nlp.model.sensory_noise_magnitude,
-                    )
+                )
                 dg_dz = Gdz(
                     time_vector[i],
                     x_guess[:, index_this_time[0]],
@@ -322,21 +326,34 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 )
 
                 m_this_time = -df_dz @ np.linalg.inv(dg_dz)
-                m_init[:, i] = np.reshape(StochasticBioModel.reshape_to_vector(m_this_time), (-1, ))
+                m_init[:, i] = np.reshape(StochasticBioModel.reshape_to_vector(m_this_time), (-1,))
 
             m_init[:, -1] = m_init[:, -2]
             return m_init
 
-        def get_cov_init(time_vector, x_guess, u_guess, p_guess, fake_stochastic_variables, nlp, variable_sizes, m_init, Gdx, Gdw, initial_covariance):
-
+        def get_cov_init(
+            time_vector,
+            x_guess,
+            u_guess,
+            p_guess,
+            fake_stochastic_variables,
+            nlp,
+            variable_sizes,
+            m_init,
+            Gdx,
+            Gdw,
+            initial_covariance,
+        ):
             sigma_w_dm = vertcat(nlp.model.sensory_noise_magnitude, nlp.model.motor_noise_magnitude) * DM_eye(
-                vertcat(nlp.model.sensory_noise_magnitude, nlp.model.motor_noise_magnitude).shape[0])
+                vertcat(nlp.model.sensory_noise_magnitude, nlp.model.motor_noise_magnitude).shape[0]
+            )
 
             cov_init = np.zeros((variable_sizes["n_cov"], nlp.ns + 1))
-            cov_init[:, 0] = np.reshape(StochasticBioModel.reshape_to_vector(initial_covariance), (-1, ))
+            cov_init[:, 0] = np.reshape(StochasticBioModel.reshape_to_vector(initial_covariance), (-1,))
             for i in range(nlp.ns):
-                index_this_time = [i * self.problem_type.polynomial_degree + j for j in
-                                   range(self.problem_type.polynomial_degree + 2)]
+                index_this_time = [
+                    i * self.problem_type.polynomial_degree + j for j in range(self.problem_type.polynomial_degree + 2)
+                ]
                 dg_dx = Gdx(
                     time_vector[i],
                     x_guess[:, index_this_time[0]],
@@ -364,16 +381,19 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 cov_init[:, i + 1] = np.reshape(StochasticBioModel.reshape_to_vector(cov_this_time), (-1))
             return cov_init
 
-
         if not isinstance(self.phase_time, list):
             phase_time = [self.phase_time]
         else:
             phase_time = self.phase_time
 
         if x_init.type != InterpolationType.ALL_POINTS:
-            raise RuntimeError("To initialize automatically the stochastic variables, you need to provide an x_init of type InterpolationType.ALL_POINTS")
+            raise RuntimeError(
+                "To initialize automatically the stochastic variables, you need to provide an x_init of type InterpolationType.ALL_POINTS"
+            )
         if u_init.type != InterpolationType.EACH_FRAME:
-            raise RuntimeError("To initialize automatically the stochastic variables, you need to provide an u_init of type InterpolationType.EACH_FRAME")
+            raise RuntimeError(
+                "To initialize automatically the stochastic variables, you need to provide an u_init of type InterpolationType.EACH_FRAME"
+            )
 
         # concatenate parameters into a single vector
         p_guess = np.zeros((0, 1))
@@ -381,34 +401,39 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             p_guess = np.concatenate((p_guess, parameter_init[key].init), axis=0)
 
         for i_phase, nlp in enumerate(self.nlp):
-
             time_vector = np.linspace(0, phase_time[i_phase], nlp.ns + 1)
             n_ref = nlp.model.n_references
             n_k = nlp.model.matrix_shape_k[0] * nlp.model.matrix_shape_k[1]
             n_m = nlp.model.matrix_shape_m[0] * nlp.model.matrix_shape_m[1]
             n_cov = nlp.model.matrix_shape_cov[0] * nlp.model.matrix_shape_cov[1]
             n_stochastic = n_ref + n_k + n_m + n_cov
-            variable_sizes = {"n_ref":  n_ref,
-                              "n_k": n_k,
-                              "n_m": n_m,
-                              "n_cov": n_cov,
-                              "n_stochastic": n_stochastic,
-                              }
+            variable_sizes = {
+                "n_ref": n_ref,
+                "n_k": n_k,
+                "n_m": n_m,
+                "n_cov": n_cov,
+                "n_stochastic": n_stochastic,
+            }
 
             # concatenate x_init into a single matrix
-            x_guess = np.zeros((0, (self.problem_type.polynomial_degree+2) * nlp.ns + 1))
+            x_guess = np.zeros((0, (self.problem_type.polynomial_degree + 2) * nlp.ns + 1))
             for key in x_init[i_phase].keys():
                 x_guess = np.concatenate((x_guess, x_init[i_phase][key].init), axis=0)
 
             # concatenate u_init into a single matrix
             if nlp.control_type == ControlType.CONSTANT:
                 u_guess = np.zeros((0, nlp.ns))
-            elif nlp.control_type == ControlType.LINEAR_CONTINUOUS or nlp.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            elif (
+                nlp.control_type == ControlType.LINEAR_CONTINUOUS
+                or nlp.control_type == ControlType.CONSTANT_WITH_LAST_NODE
+            ):
                 u_guess = np.zeros((0, nlp.ns + 1))
             elif nlp.control_type == ControlType.NONE:
                 u_guess = np.zeros((0, 0))
             else:
-                raise RuntimeError("The automatic initialization of stochastic variables is not implemented yet for nlp with control_type other than ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS or ControlType.NONE.")
+                raise RuntimeError(
+                    "The automatic initialization of stochastic variables is not implemented yet for nlp with control_type other than ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS or ControlType.NONE."
+                )
             for key in u_init[i_phase].keys():
                 u_guess = np.concatenate((u_guess, u_init[i_phase][key].init), axis=0)
 
@@ -420,31 +445,48 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
             # Define the casadi functions needed to initialize m and cov
             penalty = Constraint(ConstraintFcn.STOCHASTIC_HELPER_MATRIX_COLLOCATION)
-            fake_stochastic_variables = np.zeros((variable_sizes["n_stochastic"], nlp.ns+1))
-            fake_stochastic_variables[:variable_sizes["n_k"], :] = k_init
-            fake_stochastic_variables[variable_sizes["n_k"]:variable_sizes["n_k"]+variable_sizes["n_ref"], :] = ref_init
-            penalty_controller = PenaltyController(ocp=self,
-                                                   nlp=nlp,
-                                                   t=time_vector,
-                                                   x=x_guess,
-                                                   u=u_guess,
-                                                   x_scaled=[],
-                                                   u_scaled=[],
-                                                   p=p_guess,
-                                                   s=fake_stochastic_variables,
-                                                   s_scaled=[],
-                                                   node_index=0,
-                                                   )
+            fake_stochastic_variables = np.zeros((variable_sizes["n_stochastic"], nlp.ns + 1))
+            fake_stochastic_variables[: variable_sizes["n_k"], :] = k_init
+            fake_stochastic_variables[
+                variable_sizes["n_k"] : variable_sizes["n_k"] + variable_sizes["n_ref"], :
+            ] = ref_init
+            penalty_controller = PenaltyController(
+                ocp=self,
+                nlp=nlp,
+                t=time_vector,
+                x=x_guess,
+                u=u_guess,
+                x_scaled=[],
+                u_scaled=[],
+                p=p_guess,
+                s=fake_stochastic_variables,
+                s_scaled=[],
+                node_index=0,
+            )
             _, _, Gdx, Gdz, Gdw, Fdz = ConstraintFunction.Functions.collocation_jacobians(penalty, penalty_controller)
 
-            m_init = get_m_init(time_vector, x_guess, u_guess, p_guess, fake_stochastic_variables, nlp, variable_sizes, Fdz, Gdz)
+            m_init = get_m_init(
+                time_vector, x_guess, u_guess, p_guess, fake_stochastic_variables, nlp, variable_sizes, Fdz, Gdz
+            )
             replace_initial_guess("m", n_m, m_init, s_init, i_phase)
 
             if i_phase == 0:
                 initial_covariance = self.problem_type.initial_cov
             else:
                 initial_covariance = cov_init[:, -1]
-            cov_init = get_cov_init(time_vector, x_guess, u_guess, p_guess, fake_stochastic_variables, nlp, variable_sizes, m_init, Gdx, Gdw, initial_covariance)
+            cov_init = get_cov_init(
+                time_vector,
+                x_guess,
+                u_guess,
+                p_guess,
+                fake_stochastic_variables,
+                nlp,
+                variable_sizes,
+                m_init,
+                Gdx,
+                Gdw,
+                initial_covariance,
+            )
             replace_initial_guess("cov", n_cov, cov_init, s_init, i_phase)
 
     def _prepare_bounds_and_init(
