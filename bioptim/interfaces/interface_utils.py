@@ -8,6 +8,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
+from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule, PhaseDynamics
 from bioptim.optimization.solution.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
@@ -188,7 +189,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
     TODO
     """
 
-    param = interface.ocp.cx(interface.ocp.parameters.cx)
+    params = interface.ocp.parameters.cx
     out = interface.ocp.cx()
     phases_dt = interface.ocp.dt_parameter.cx
 
@@ -212,7 +213,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
             t0 = interface.ocp.node_time(phase_idx=nlp.phase_idx, node_idx=penalty.node_idx[-1])
-            p = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, param, s, penalty.weight, target, penalty.dt), -1, 1)
+            p = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, params, s, penalty.weight, target, penalty.dt), -1, 1)
 
         else:
             p = interface.ocp.cx()
@@ -232,19 +233,31 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 if np.isnan(np.sum(target)):
                     continue
 
-                if not nlp:
-                    x = []
-                    u = []
-                    s = []
-                else:
-                    x, u, s = get_x_u_s_at_idx(interface, nlp, penalty, idx, is_unscaled)
+                x = []
+                u = []
+                s = []
+                if nlp is not None:
                     t0 = interface.ocp.node_time(phase_idx=0 if nlp == [] else nlp.phase_idx, node_idx=idx)
+                    x = PenaltyHelpers.states(
+                        penalty, idx, lambda phase_idx, node_idx: nlp.X[node_idx] if is_unscaled else nlp.X_scaled[node_idx]
+                    )
+                    
+                    nlp_u = nlp.U if is_unscaled else nlp.U_scaled
+                    u = PenaltyHelpers.controls(
+                        penalty, idx, lambda phase_idx, node_idx: nlp_u[node_idx if node_idx < len(nlp.U) else -1]
+                    )
+                    s = PenaltyHelpers.stochastic(
+                        penalty, idx, lambda phase_idx, node_idx: nlp.S[node_idx] if is_unscaled else nlp.S_scaled[node_idx]
+                    )
+                    x2, u2, s2 = PenaltyHelpers._get_x_u_s_at_idx(interface, nlp, penalty, idx, is_unscaled)
+                    
                     p = vertcat(
-                        p, penalty.weighted_function[idx](t0, phases_dt, x, u, param, s, penalty.weight, target, penalty.dt)
+                        p, penalty.weighted_function[idx](t0, phases_dt, x, u, params, s, penalty.weight, target, penalty.dt)
                     )
 
         out = vertcat(out, sum2(p))
     return out
+
 
 
 def format_target(penalty, target_in: np.ndarray, idx: int) -> np.ndarray:
@@ -282,304 +295,6 @@ def get_control_modificator(ocp, _penalty, index: int):
     is_end_or_shooting_point = current_node == Node.END or current_node == number_of_shooting_points
 
     return 1 if is_shared_dynamics and is_end_or_shooting_point else 0
-
-
-def get_x_u_s_at_idx(interface, nlp, _penalty, _idx, is_unscaled):
-    """ """
-
-    if _penalty.transition:
-        ocp = interface.ocp
-        cx = interface.ocp.cx
-
-        all_nlp = interface.ocp.nlp
-
-        phase_node0 = _penalty.nodes_phase[0]
-        phase_node1 = _penalty.nodes_phase[1]
-
-        node_idx_0 = _penalty.all_nodes_index[0]
-        node_idx_1 = _penalty.all_nodes_index[1]
-
-        u0_mode = get_control_modificator(ocp, _penalty, 0)
-        u1_mode = get_control_modificator(ocp, _penalty, 1)
-
-        _x_0 = get_padded_array(
-            nlp=all_nlp[phase_node0],
-            attribute="X" if is_unscaled else "X_scaled",
-            node_idx=node_idx_0,
-            target_length=all_nlp[phase_node1].X_scaled[node_idx_1].shape[0],
-            casadi_constructor=cx,
-        )
-        _x_1 = get_padded_array(
-            nlp=all_nlp[phase_node1],
-            attribute="X" if is_unscaled else "X_scaled",
-            node_idx=node_idx_1,
-            target_length=all_nlp[phase_node0].X_scaled[node_idx_0].shape[0],
-            casadi_constructor=cx,
-        )
-
-        _s_0 = get_padded_array(
-            nlp=all_nlp[phase_node0],
-            attribute="S" if is_unscaled else "S_scaled",
-            node_idx=node_idx_0,
-            target_length=all_nlp[phase_node1].S[node_idx_1].shape[0],
-            casadi_constructor=cx,
-        )
-        _s_1 = get_padded_array(
-            nlp=all_nlp[phase_node1],
-            attribute="S" if is_unscaled else "S_scaled",
-            node_idx=node_idx_1,
-            target_length=all_nlp[phase_node0].S[node_idx_0].shape[0],
-            casadi_constructor=cx,
-        )
-
-        is_shared_dynamics_0, is_node0_within_control_limit, len_u_0 = get_node_control_info(
-            all_nlp[phase_node0], node_idx_0, attribute="U" if is_unscaled else "U_scaled"
-        )
-        is_shared_dynamics_1, is_node1_within_control_limit, len_u_1 = get_node_control_info(
-            all_nlp[phase_node1], node_idx_1, attribute="U" if is_unscaled else "U_scaled"
-        )
-
-        _u_0 = get_padded_control_array(
-            all_nlp[phase_node0],
-            node_idx_0,
-            attribute="U" if is_unscaled else "U_scaled",
-            u_mode=u0_mode,
-            target_length=len_u_1,
-            is_shared_dynamics_target=is_shared_dynamics_1,
-            is_within_control_limit_target=is_node1_within_control_limit,
-            casadi_constructor=cx,
-        )
-
-        _u_1 = get_padded_control_array(
-            all_nlp[phase_node1],
-            node_idx_1,
-            attribute="U" if is_unscaled else "U_scaled",
-            u_mode=u1_mode,
-            target_length=len_u_0,
-            is_shared_dynamics_target=is_shared_dynamics_0,
-            is_within_control_limit_target=is_node0_within_control_limit,
-            casadi_constructor=cx,
-        )
-
-        _x = vertcat(_x_1, _x_0)
-        _u = vertcat(_u_1, _u_0)
-        _s = vertcat(_s_1, _s_0)
-
-    elif _penalty.multinode_penalty:
-        ocp = interface.ocp
-
-        # Make an exception to the fact that U is not available for the last node
-        _x = ocp.cx()
-        _u = ocp.cx()
-        _s = ocp.cx()
-        for i in range(len(_penalty.nodes_phase)):
-            nlp_i = ocp.nlp[_penalty.nodes_phase[i]]
-            index_i = _penalty.multinode_idx[i]
-            ui_mode = get_control_modificator(ocp, _penalty=_penalty, index=i)
-
-            if is_unscaled:
-                _x_tp = nlp_i.cx()
-                if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                    _x_tp = vertcat(_x_tp, nlp_i.X[index_i][:, 0])
-                else:
-                    for i in range(nlp_i.X[index_i].shape[1]):
-                        _x_tp = vertcat(_x_tp, nlp_i.X[index_i][:, i])
-                _u_tp = (
-                    nlp_i.U[index_i - ui_mode]
-                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or index_i < len(nlp_i.U)
-                    else []
-                )
-                _s_tp = nlp_i.S[index_i]
-            else:
-                _x_tp = nlp_i.cx()
-                if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                    _x_tp = vertcat(_x_tp, nlp_i.X_scaled[index_i][:, 0])
-                else:
-                    for i in range(nlp_i.X_scaled[index_i].shape[1]):
-                        _x_tp = vertcat(_x_tp, nlp_i.X_scaled[index_i][:, i])
-                _u_tp = (
-                    nlp_i.U_scaled[index_i - ui_mode]
-                    if nlp_i.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or index_i < len(nlp_i.U_scaled)
-                    else []
-                )
-                _s_tp = nlp_i.S_scaled[index_i]
-
-            _x = vertcat(_x, _x_tp)
-            _u = vertcat(_u, _u_tp)
-            _s = vertcat(_s, _s_tp)
-
-    elif _penalty.integrate:
-        if is_unscaled:
-            _x = nlp.cx()
-            for i in range(nlp.X[_idx].shape[1]):
-                _x = vertcat(_x, nlp.X[_idx][:, i])
-            _u = (
-                nlp.U[_idx][:, 0]
-                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx < len(nlp.U)
-                else []
-            )
-            _s = nlp.S[_idx]
-        else:
-            _x = nlp.cx()
-            for i in range(nlp.X_scaled[_idx].shape[1]):
-                _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
-            _u = (
-                nlp.U_scaled[_idx][:, 0]
-                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx < len(nlp.U_scaled)
-                else []
-            )
-            _s = nlp.S_scaled[_idx]
-    else:
-        if is_unscaled:
-            _x = nlp.cx()
-            if (
-                _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                or _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
-            ):
-                _x = vertcat(_x, nlp.X[_idx][:, 0])
-            else:
-                for i in range(nlp.X[_idx].shape[1]):
-                    _x = vertcat(_x, nlp.X[_idx][:, i])
-
-            # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
-            if (
-                _idx == nlp.ns
-                and nlp.ode_solver.is_direct_collocation
-                and nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                and _penalty.node[0] != Node.END
-                and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-            ):
-                for i in range(1, nlp.X[_idx - 1].shape[1]):
-                    _x = vertcat(_x, nlp.X[_idx - 1][:, i])
-
-            _u = (
-                nlp.U[_idx][:, 0]
-                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx < len(nlp.U)
-                else []
-            )
-            _s = nlp.S[_idx][:, 0]
-        else:
-            _x = nlp.cx()
-            if (
-                _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                or _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
-            ):
-                _x = vertcat(_x, nlp.X_scaled[_idx][:, 0])
-            else:
-                for i in range(nlp.X_scaled[_idx].shape[1]):
-                    _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
-
-            # Watch out, this is ok for all of our current built-in functions, but it is not generally ok to do that
-            if (
-                _idx == nlp.ns
-                and nlp.ode_solver.is_direct_collocation
-                and nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                and _penalty.node[0] != Node.END
-                and _penalty.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-            ):
-                for i in range(1, nlp.X_scaled[_idx - 1].shape[1]):
-                    _x = vertcat(_x, nlp.X_scaled[_idx - 1][:, i])
-
-            if sum(_penalty.weighted_function[_idx].size_in(3)) == 0:
-                _u = []
-            elif nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx == len(nlp.U_scaled):
-                _u = nlp.U_scaled[_idx - 1][:, 0]
-            elif _idx < len(nlp.U_scaled):
-                _u = nlp.U_scaled[_idx][:, 0]
-            else:
-                _u = []
-            _s = nlp.S_scaled[_idx][:, 0]
-
-    if _penalty.explicit_derivative:
-        if _idx < nlp.ns:
-            if is_unscaled:
-                x = nlp.X[_idx + 1][:, 0]
-                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx + 1 == len(nlp.U):
-                    u = nlp.U[_idx][:, 0]
-                elif _idx + 1 < len(nlp.U):
-                    u = nlp.U[_idx + 1][:, 0]
-                else:
-                    u = []
-                s = nlp.S[_idx + 1][:, 0]
-            else:
-                x = nlp.X_scaled[_idx + 1][:, 0]
-                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx + 1 == len(nlp.U_scaled):
-                    u = nlp.U_scaled[_idx][:, 0]
-                elif _idx + 1 < len(nlp.U_scaled):
-                    u = nlp.U_scaled[_idx + 1][:, 0]
-                else:
-                    u = []
-                s = nlp.S_scaled[_idx + 1][:, 0]
-
-            _x = vertcat(_x, x)
-            _u = vertcat(_u, u)
-            _s = vertcat(_s, s)
-
-    if _penalty.derivative:
-        if _idx < nlp.ns:
-            if is_unscaled:
-                x = nlp.X[_idx + 1][:, 0]
-                if _idx + 1 == len(nlp.U):
-                    u = nlp.U[_idx][:, 0]
-                elif _idx + 1 < len(nlp.U):
-                    u = nlp.U[_idx + 1][:, 0]
-                else:
-                    u = []
-                s = nlp.S[_idx + 1][:, 0]
-            else:
-                x = nlp.X_scaled[_idx + 1][:, 0]
-                if _idx + 1 == len(nlp.U_scaled):
-                    u = nlp.U_scaled[_idx][:, 0]
-                elif _idx + 1 < len(nlp.U_scaled):
-                    u = nlp.U_scaled[_idx + 1][:, 0]
-                else:
-                    u = []
-                s = nlp.S_scaled[_idx + 1][:, 0]
-
-            _x = vertcat(_x, x)
-            _u = vertcat(_u, u)
-            _s = vertcat(_s, s)
-
-    if _penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-        if is_unscaled:
-            x = nlp.X[_idx + 1][:, 0]
-            s = nlp.S[_idx + 1][:, 0]
-        else:
-            x = nlp.X_scaled[_idx + 1][:, 0]
-            s = nlp.S_scaled[_idx + 1][:, 0]
-        _x = vertcat(_x, x)
-        _s = vertcat(_s, s)
-        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-            if is_unscaled:
-                u = (
-                    nlp.U[_idx + 1][:, 0]
-                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U)
-                    else []
-                )
-            else:
-                u = (
-                    nlp.U_scaled[_idx + 1][:, 0]
-                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U_scaled)
-                    else []
-                )
-            _u = vertcat(_u, u)
-
-    elif _penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
-        if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-            if is_unscaled:
-                u = (
-                    nlp.U[_idx + 1][:, 0]
-                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U)
-                    else []
-                )
-            else:
-                u = (
-                    nlp.U_scaled[_idx + 1][:, 0]
-                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U_scaled)
-                    else []
-                )
-            _u = vertcat(_u, u)
-    return _x, _u, _s
 
 
 def get_padded_array(

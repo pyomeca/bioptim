@@ -10,6 +10,7 @@ from matplotlib.ticker import StrMethodFormatter
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM, Function
 
 from ..limits.path_conditions import Bounds
+from ..limits.penalty_helpers import PenaltyHelpers
 from ..limits.multinode_constraint import MultinodeConstraint
 from ..misc.enums import (
     PlotType,
@@ -718,14 +719,16 @@ class PlotOcp:
         # Compute the values of the plot at each node
         all_y = []
         for idx in custom_plot.node_idx:
-            x_node = x[idx]
-            u_node = u[idx]
-            s_node = s[idx]
-            if custom_plot.compute_derivative:
-                next_node = idx + 1
-                x_node = np.concatenate((x_node, x[next_node]))
-                u_node = np.concatenate((u_node, u[next_node]))
-                s_node = np.concatenate((s_node, s[next_node]))
+            if "penalty" in custom_plot.parameters:
+                penalty = custom_plot.parameters["penalty"]
+                x_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx: x[n_idx])
+                u_node = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx: u[n_idx])
+                s_node = PenaltyHelpers.stochastic(penalty, idx, lambda p_idx, n_idx: s[n_idx])
+
+            else:
+                x_node = x[idx]
+                u_node = u[idx]
+                s_node = s[idx]
 
             tp = custom_plot.function(idx, dt, x_node, u_node, p, s_node, **custom_plot.parameters)
 

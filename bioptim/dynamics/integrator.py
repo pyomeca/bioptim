@@ -546,8 +546,12 @@ class COLLOCATION(Integrator):
         return [0] + collocation_points(self.degree, self.method)
     
     @property
+    def shape_xf(self):
+        return [self._x_sym_modified.shape[0], self.degree + 1]
+    
+    @property
     def shape_xall(self):
-        return [self.degree + 2, 1]
+        return [self._x_sym_modified.shape[0], self.degree + 2]
 
     @property
     def _time_xall_from_dt_func(self) -> Function:

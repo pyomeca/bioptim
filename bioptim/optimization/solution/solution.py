@@ -1116,7 +1116,7 @@ class Solution:
 
         val = []
         val_weighted = []
-        p = vertcat(*[self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()])
+        params = vertcat(*[self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()])
 
         phases_dt = self.phases_dt[phase_idx]
         dt = penalty.dt_to_float(phases_dt)
@@ -1133,24 +1133,39 @@ class Solution:
             
             t = self._stepwise_times[phases[0]][nodes[0]][0]  # Starting time of the current shooting node
 
-            x = self._decision_states.merge_nodes(phases=phases, nodes=nodes, scaled=True)
-            u = self._stepwise_controls.merge_nodes(phases=phases, nodes=nodes, scaled=True)
-            s = self._stochastic.merge_nodes(phases=phases, nodes=nodes, scaled=True)
+            raise NotImplementedError("This should now use the PenaltyHelper to dispatch the data")
+            x = [np.ndarray((nlp.states.shape, 0))]
+            u = [np.ndarray((nlp.controls.shape, 0))]
+            s = [np.ndarray((nlp.stochastic_variables.shape, 0))]
+            for n in nodes:
+                if len(phases) > 1:
+                    raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
+                p = 0
+                
+                # Assume that if there is more than one node, then we only need the first step of the second node
+                x_tp = self._decision_states.merge_nodes(phases=p, nodes=n, scaled=True)[p]
+                x[p] = np.concatenate((x[p], x_tp if n == nodes[0] else x_tp[:, 0:1]), axis=1)
+
+                u_tp = self._stepwise_controls.merge_nodes(phases=p, nodes=n, scaled=True)[p]
+                u[p] = np.concatenate((u[p], u_tp if n == nodes[0] else u_tp[:, 0:1]), axis=1)
+
+                s_tp = self._stochastic.merge_nodes(phases=p, nodes=n, scaled=True)[p]
+                s[p] = np.concatenate((s[p], s_tp if n == nodes[0] else s_tp[:, 0:1]), axis=1)
 
             if len(phases) > 1:
                 raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
-
-            x = x[0].reshape((-1, 1), order="F")
-            u = u[0].reshape((-1, 1), order="F")
-            s = s[0].reshape((-1, 1), order="F")
-            val.append(penalty.function[node_idx](t, self.phases_dt, x, u, p, s))
+            p = 0
+            x = x[p].reshape((-1, 1), order="F")
+            u = u[p].reshape((-1, 1), order="F")
+            s = s[p].reshape((-1, 1), order="F")
+            val.append(penalty.function[node_idx](t, self.phases_dt, x, u, params, s))
 
             target = []
             if penalty.target is not None:
                 target = penalty.target[0][..., penalty.node_idx.index(node_idx)]
 
             val_weighted.append(
-                penalty.weighted_function[node_idx](t, self.phases_dt, x, u, p, s, penalty.weight, target, dt)
+                penalty.weighted_function[node_idx](t, self.phases_dt, x, u, params, s, penalty.weight, target, dt)
             )
 
         if self.ocp.n_threads > 1:

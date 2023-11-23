@@ -57,21 +57,14 @@ class OptimizationVectorHelper:
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
                 if nlp.phase_idx == nlp.use_states_from_phase_idx:
-                    if k != nlp.ns and nlp.ode_solver.is_direct_collocation:
-                        x_scaled[nlp.phase_idx].append(
-                            nlp.cx.sym(
-                                "X_scaled_" + str(nlp.phase_idx) + "_" + str(k),
-                                nlp.states.scaled.shape,
-                                nlp.ode_solver.n_cx - 1,  # do not include the cx_end
-                            )
-                        )
-                    else:
-                        x_scaled[nlp.phase_idx].append(
-                            nlp.cx.sym("X_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.states.scaled.shape, 1)
-                        )
+                    
+                    n_col = nlp.n_states_decision_steps(k)
+                    x_scaled[nlp.phase_idx].append(
+                        nlp.cx.sym(f"X_scaled_{nlp.phase_idx}_{k}", nlp.states.scaled.shape, n_col)
+                    )
+                    
                     x[nlp.phase_idx].append(
-                        x_scaled[nlp.phase_idx][k]
-                        * np.concatenate([nlp.x_scaling[key].scaling for key in nlp.states.keys()])
+                        x_scaled[nlp.phase_idx][k] * np.repeat(np.concatenate([nlp.x_scaling[key].scaling for key in nlp.states.keys()])[:, np.newaxis], n_col, axis=1)
                     )
                 else:
                     x_scaled[nlp.phase_idx] = x_scaled[nlp.use_states_from_phase_idx]
@@ -160,11 +153,9 @@ class OptimizationVectorHelper:
         for i_phase in range(ocp.n_phases):
             current_nlp = ocp.nlp[i_phase]
 
-            repeat = 1
-            if current_nlp.ode_solver.is_direct_collocation:
-                repeat += current_nlp.ode_solver.n_cx - 2
-
+            
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
+            repeat = nlp.n_states_decision_steps(0)
             OptimizationVectorHelper._set_node_index(nlp, 0)
             for key in nlp.states:
                 if key in nlp.x_bounds.keys():
@@ -173,8 +164,10 @@ class OptimizationVectorHelper:
                     else:
                         nlp.x_bounds[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
 
-            for k in range(nlp.ns + 1):
+            for k in range(nlp.n_states_nodes):
                 OptimizationVectorHelper._set_node_index(nlp, k)
+                repeat = nlp.n_states_decision_steps(k)
+
                 for p in range(repeat if k != nlp.ns else 1):
                     # This allows CONSTANT_WITH_FIRST_AND_LAST to work in collocations, but is flawed for the other ones
                     # point refers to the column to use in the bounds matrix
@@ -297,19 +290,18 @@ class OptimizationVectorHelper:
         for i_phase in range(len(ocp.nlp)):
             current_nlp = ocp.nlp[i_phase]
 
-            repeat = 1
-            if current_nlp.ode_solver.is_direct_collocation:
-                repeat += current_nlp.ode_solver.n_cx - 2
-
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
             for key in nlp.states:
                 if key in nlp.x_init.keys():
-                    n_points = OptimizationVectorHelper._nb_points(nlp, nlp.x_init[key].type)
-                    nlp.x_init[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], n_points)
+                    nlp.x_init[key].check_and_adjust_dimensions(
+                        nlp.states[key].cx.shape[0], nlp.n_states_decision_steps(0)
+                    )
 
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
+                repeat = nlp.n_states_decision_steps(k)
+
                 for p in range(repeat if k != nlp.ns else 1):
                     point = k if k != 0 else 0 if p == 0 else 1
 
@@ -522,19 +514,6 @@ class OptimizationVectorHelper:
                 raise NotImplementedError("Stochastic variables not implemented yet")
 
         return data_states, data_controls, data_parameters, data_stochastic
-
-    @staticmethod
-    def _nb_points(nlp, interpolation_type):
-        n_points = nlp.ns
-
-        if nlp.ode_solver.is_direct_shooting:
-            if interpolation_type == InterpolationType.ALL_POINTS:
-                raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
-
-        if nlp.ode_solver.is_direct_collocation:
-            if interpolation_type != InterpolationType.EACH_FRAME:
-                n_points *= nlp.ode_solver.n_cx - 1
-        return n_points
 
     @staticmethod
     def _set_node_index(nlp, node):
