@@ -138,94 +138,72 @@ class SolutionData:
     def keys(self, phase: int = 0):
         return self.unscaled[phase].keys()
 
-    def merge_phases(
-        self,
-        scaled: bool = False,
-        phases: int | list[int, ...] | slice = None,
-        keys: str | list[str] = None,
-        nodes: int | list[int, ...] | slice = None,
-    ):
+    def merge_phases(self, scaled: bool = False):
         """
-        Merge the phases. This method does not remove the redundent nodes when merging the phase nor the nodes
+        Merge the phases by merging keys and nodes before. 
+        This method does not remove the redundent nodes when merging the phase nor the nodes
         """
-        data = self.scaled if scaled else self.unscaled
 
-        if phases is None:
-            phases = range(len(data))
-        elif isinstance(phases, int):
-            phases = [phases]
-
-        if keys is None:
-            keys = list(self.keys())
-        elif isinstance(keys, str):
-            keys = [keys]
-
-        if nodes is None:
-            nodes = range(len(data[phases[0]][keys[0]]))
-        elif isinstance(nodes, int):
-            nodes = [nodes]
+        merged_nodes = self.merge_nodes(scaled=scaled)
 
         out = None
-        has_empty = False
-        for p in phases:
+        for p in range(len(merged_nodes)):
             out_tp = None
-            for n in nodes:
-                # This is to account for empty structures
-                data_list = [data[p][key][n] for key in keys]
-                if not data_list:
-                    has_empty = True
-                    out_tp = np.ndarray((0, 0))
-                    continue
-                if has_empty:
-                    raise(RuntimeError("Cannot merge nodes with different sizes"))
-
-                tp = np.concatenate(data_list, axis=0)
+            for n in range(len(merged_nodes[p])):
+                tp = merged_nodes[p][n]
                 out_tp = tp if out_tp is None else np.concatenate([out_tp, tp], axis=1)
             out = out_tp if out is None else np.concatenate([out, out_tp], axis=1)
         return out
 
-    def merge_nodes(
-        self,
-        phases: int | list[int, ...] | slice = None,
-        keys: str | list[str] = None,
-        nodes: int | list[int, ...] | slice = None,
-        scaled: bool = False,
-    ):
+    def merge_nodes(self, phases: int | list[int, ...] = None, scaled: bool = False):
+        """
+        Merge the steps by merging keys before.
+        """
         data = self.scaled if scaled else self.unscaled
 
-        if phases is None:
-            phases = range(len(data))
-        elif isinstance(phases, int):
-            phases = [phases]
-
-        if keys is None:
-            keys = list(self.keys())
-        elif isinstance(keys, str):
-            keys = [keys]
-
-        if nodes is None:
-            nodes = range(len(data[phases[0]][keys[0]]))
-        elif isinstance(nodes, int):
-            nodes = [nodes]
+        merged_keys = self.merge_keys(phases, scaled=scaled)
 
         out = []
         has_empty = False
         for p in phases:
             out_tp = None
             for n in nodes:
-                # This is to account for empty structures
-                data_list = [data[p][key][n] for key in keys]
-                if not data_list:
-                    has_empty = True
-                    out_tp = np.ndarray((0, 0))
-                    continue
-                if has_empty:
-                    raise(RuntimeError("Cannot merge nodes with different sizes"))
-
                 tp = np.concatenate(data_list, axis=0)
                 out_tp = tp if out_tp is None else np.concatenate([out_tp, tp], axis=1)
             out.append(out_tp)
         return out
+    
+    def merge_keys(self, phases, nodes, scaled: bool = False):
+        data = self.scaled if scaled else self.unscaled
+
+        if phases is None:
+            phases = range(len(data))
+        elif isinstance(phases, int):
+            phases = [phases]
+
+        if nodes is None:
+            nodes = range(len(data[phases[0]][self.keys[0]]))
+        elif isinstance(nodes, int):
+            nodes = [nodes]
+        
+        out = []
+        has_empty = False
+        for p in phases:
+            out_tp = []
+            for n in nodes:
+                # This is to account for empty structures
+                data_list = [data[p][key][n] for key in self.keys()]
+                if not data_list:
+                    has_empty = True
+                    out_tp.append(np.ndarray((0, 0)))
+                    continue
+                if has_empty:
+                    raise(RuntimeError("Cannot merge nodes with different sizes"))
+
+                out_tp.append(np.concatenate(data_list, axis=0))
+            out.append(out_tp)
+        return out
+    
 
 
 class Solution:
@@ -729,8 +707,13 @@ class Solution:
         params = vertcat(*[self._parameters.unscaled[0][key] for key in self._parameters.keys()])
 
         unscaled: list = [None] * len(self.ocp.nlp)
+        x_merged = self._decision_states.merge_nodes()
+        u_merged = self._stepwise_controls.merge_nodes()
+        s_merged = self._stochastic.merge_nodes()
+
         for p, nlp in enumerate(self.ocp.nlp):
             t = self._decision_times[p]
+            raise NotImplementedError("Fix this")
             x = [self._decision_states.merge_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
             u = [self._stepwise_controls.merge_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
             s = [self._stochastic.merge_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
@@ -1112,21 +1095,20 @@ class Solution:
         if nlp is None:
             raise NotImplementedError("penalty cost over the full ocp is not implemented yet")
 
-        nlp.controls.node_index = 0  # This is so "keys" is not empty
-
         val = []
         val_weighted = []
         
         phases_dt = PenaltyHelpers.phases_dt(penalty, lambda: np.array(self.phases_dt))
         params = PenaltyHelpers.parameters(penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()]))
-
         for node_idx in penalty.node_idx:
             t0 = PenaltyHelpers.t0(penalty, node_idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
-            x = PenaltyHelpers.states(penalty, node_idx, lambda p_idx, n_idx: self._decision_states.merge_nodes(phases=p_idx, nodes=n_idx, scaled=True)[0])
-            u = PenaltyHelpers.controls(penalty, node_idx, lambda p_idx, n_idx: self._stepwise_controls.merge_nodes(phases=p_idx, nodes=n_idx, scaled=True)[0])
-            s = PenaltyHelpers.stochastic(penalty, node_idx, lambda p_idx, n_idx: self._stochastic.merge_nodes(phases=p_idx, nodes=n_idx, scaled=True)[0])
+            x = PenaltyHelpers.states(penalty, node_idx, lambda p_idx, n_idx: self._decision_states.merge_keys(phases=p_idx, nodes=n_idx, scaled=True)[0][0])
+            u = PenaltyHelpers.controls(penalty, node_idx, lambda p_idx, n_idx: self._stepwise_controls.merge_keys(phases=p_idx, nodes=n_idx, scaled=True)[0][0])
+            s = PenaltyHelpers.stochastic(penalty, node_idx, lambda p_idx, n_idx: self._stochastic.merge_keys(phases=p_idx, nodes=n_idx, scaled=True)[0][0])
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, node_idx)
+
+            # PenaltyHelpers._get_x_u_s_at_idx(penalty, node_idx, x, u, s)
 
             val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, s))
             val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, s, weight, target))

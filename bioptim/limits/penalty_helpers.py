@@ -99,13 +99,14 @@ class PenaltyHelpers:
     @staticmethod
     def target(penalty, penalty_node_idx):
         if penalty.target is None:
-            return np.ndarray([])
+            return np.array([])
         
         target = penalty.target[0][..., penalty.node_idx.index(penalty_node_idx)]
         return _reshape_to_vector(target)
 
 
 def _reshape_to_vector(m):
+
     if isinstance(m, (SX, MX, DM)):
         return m.reshape((-1, 1))
     elif isinstance(m, np.ndarray):

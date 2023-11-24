@@ -189,13 +189,15 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
     TODO
     """
 
-    params = interface.ocp.parameters.cx
-    out = interface.ocp.cx()
-    phases_dt = interface.ocp.dt_parameter.cx
+    ocp = interface.ocp
 
+    out = interface.ocp.cx()
     for penalty in penalties:
         if not penalty:
             continue
+
+        phases_dt = PenaltyHelpers.phases_dt(penalty, lambda: interface.ocp.dt_parameter.cx)
+        p = PenaltyHelpers.parameters(penalty, lambda: interface.ocp.parameters.cx)
 
         if penalty.multi_thread:
             if penalty.target is not None and len(penalty.target[0].shape) != 2:
@@ -213,31 +215,21 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
             t0 = interface.ocp.node_time(phase_idx=nlp.phase_idx, node_idx=penalty.node_idx[-1])
-            p = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, params, s, penalty.weight, target, penalty.dt), -1, 1)
+            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, s, penalty.weight, target, penalty.dt), -1, 1)
 
         else:
-            p = interface.ocp.cx()
+            tp = interface.ocp.cx()
             for idx in penalty.node_idx:
-                if penalty.target is None:
-                    target = []
-                elif (
-                    penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                    or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
-                ):
-                    target0 = format_target(penalty, penalty.target[0], idx)
-                    target1 = format_target(penalty, penalty.target[1], idx)
-                    target = np.vstack((target0, target1)).T
-                else:
-                    target = format_target(penalty, penalty.target[0], idx)
+                t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: [ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx)])
 
-                if np.isnan(np.sum(target)):
-                    continue
+                weight = PenaltyHelpers.weight(penalty)
+                target = PenaltyHelpers.target(penalty, idx)
+
 
                 x = []
                 u = []
                 s = []
                 if nlp is not None:
-                    t0 = interface.ocp.node_time(phase_idx=0 if nlp == [] else nlp.phase_idx, node_idx=idx)
                     x = PenaltyHelpers.states(
                         penalty, idx, lambda phase_idx, node_idx: nlp.X[node_idx] if is_unscaled else nlp.X_scaled[node_idx]
                     )
@@ -249,13 +241,11 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     s = PenaltyHelpers.stochastic(
                         penalty, idx, lambda phase_idx, node_idx: nlp.S[node_idx] if is_unscaled else nlp.S_scaled[node_idx]
                     )
-                    x2, u2, s2 = PenaltyHelpers._get_x_u_s_at_idx(interface, nlp, penalty, idx, is_unscaled)
-                    
-                    p = vertcat(
-                        p, penalty.weighted_function[idx](t0, phases_dt, x, u, params, s, penalty.weight, target)
+                    tp = vertcat(
+                        tp, penalty.weighted_function[idx](t0, phases_dt, x, u, p, s, weight, target)
                     )
 
-        out = vertcat(out, sum2(p))
+        out = vertcat(out, sum2(tp))
     return out
 
 

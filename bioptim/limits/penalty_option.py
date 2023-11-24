@@ -892,8 +892,6 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = self.function[node].expand()
             self.weighted_function[node] = self.weighted_function[node].expand()
 
-        self.dt_to_float = Function("dt", [controller.get_nlp.dt], [self.dt])
-
     @staticmethod
     def define_target_mapping(controller: PenaltyController, key: str):
         target_mapping = controller.get_nlp.variable_mappings[key]

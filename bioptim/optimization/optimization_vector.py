@@ -478,7 +478,7 @@ class OptimizationVectorHelper:
                 x_array = v_array[offset : offset + nx * n_cols].reshape((nx, -1), order="F")
                 for key in nlp.states.keys():
                     data_states[p][key][node] = x_array[nlp.states[key].index, :]
-                offset += nx
+                offset += nx * n_cols
 
         # For controls
         for p in range(ocp.n_phases):

@@ -1339,16 +1339,18 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def compute_penalty_values(node_idx, phases_dt, x, u, p, s, penalty, dt_function):
+        def compute_penalty_values(t0, phases_dt, node_idx, x, u, p, s, penalty):
             """
             Compute the penalty value for the given time, state, control, parameters, penalty and time step
 
             Parameters
             ----------
-            node_idx: int
-                Time index
+            t0: float
+                Time at the beginning of the penalty
             phases_dt: list[float]
                 List of the time step of each phase
+            node_idx: int
+                Time index
             x: ndarray
                 State vector with intermediate states
             u: ndarray
@@ -1365,24 +1367,11 @@ class OptimalControlProgram:
             Values computed for the given time, state, control, parameters, penalty and time step
             """
 
-            penalty_phase = penalty.nodes_phase[0] if penalty.multinode_penalty else penalty.phase
-            nlp = self.nlp[penalty_phase]
+            weight = PenaltyHelpers.weight(penalty)
+            target = PenaltyHelpers.target(penalty, node_idx)
 
-            t = phases_dt[penalty_phase] * node_idx
-            penalty_dt = dt_function(phases_dt)
-
-            _target = _get_target_values(t, penalty)
-
-            # TODO: Fix the scaling of multi_node_penalty (This is a hack, it should be computed at each phase)
-            x = _scale_values(x, nlp.states, penalty, nlp.x_scaling)
-            if u.size != 0:
-                u = _scale_values(u, nlp.controls, penalty, nlp.u_scaling)
-            if s.size != 0:
-                s = _scale_values(s, nlp.stochastic_variables, penalty, nlp.s_scaling)
-            
-            out = []
-            out.append(penalty.weighted_function_non_threaded[node_idx](t, phases_dt, x, u, p, s, penalty.weight, _target))
-            return sum1(horzcat(*out))
+            val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, s, weight, target)
+            return sum1(horzcat(val))
 
         def add_penalty(_penalties):
             for penalty in _penalties:
@@ -1845,10 +1834,10 @@ class OptimalControlProgram:
         -------
         The node time node_idx from the phase phase_idx
         """
-        if phase_idx < 0 or phase_idx > self.n_phases - 1:
-            return ValueError(f"phase_index out of range [0:{self.n_phases}]")
+        if phase_idx > self.n_phases - 1:
+            raise ValueError(f"phase_index out of range [0:{self.n_phases}]")
         if node_idx < 0 or node_idx > self.nlp[phase_idx].ns:
-            return ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
+            raise ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
         previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
 
         return previous_phase_time + self.nlp[phase_idx].dt * node_idx
@@ -1903,32 +1892,6 @@ class OptimalControlProgram:
         This method is thus overriden in StochasticOptimalControlProgram
         """
         NLP.add(self, "is_stochastic", False, True)
-
-
-# helpers
-def _reshape_to_column(array) -> np.ndarray:
-    """Reshape the input array to column if it's not already."""
-    return array.reshape((-1, 1)) if len(array.shape) < 2 else array
-
-
-def _get_time_step(dt, p, x, penalty, penalty_phase) -> np.ndarray:
-    """Compute the time step based on its type and state shape."""
-    # if time is parameter of the ocp, we need to evaluate with current parameters
-    if isinstance(dt, Function):
-        dt = dt(p)
-    # The division is to account for the steps in the integration. The else is for Mayer term
-    if not isinstance(penalty.dt, (float, int)) and dt.shape[0] > 1:
-        dt = dt[penalty_phase]
-    return dt / (x.shape[1] - 1) if x.shape[1] > 1 else dt
-
-
-def _get_target_values(t, penalty) -> np.ndarray:
-    """Retrieve target values based on time and penalty."""
-    return (
-        np.hstack([p[..., penalty.node_idx.index(t)] for p in penalty.target])
-        if penalty.target and isinstance(t, int)
-        else []
-    )
 
 
 def _scale_values(values, scaling_entities, penalty, scaling_data):
