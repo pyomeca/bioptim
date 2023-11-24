@@ -83,7 +83,7 @@ def _to_scaled_values(unscaled: list, ocp, variable_type: str) -> list:
     return scaled
 
 
-def _merge_keys(data, ocp):
+def _merge_dict_keys(data, ocp):
     """
     Merge the keys of a SolutionData.unscaled or SolutionData.scaled
 
@@ -122,9 +122,18 @@ def _merge_keys(data, ocp):
 
 
 class SolutionData:
-    def __init__(self, unscaled, scaled):
+    def __init__(self, unscaled, scaled, n_nodes: list[int, ...]):
+        """
+        Parameters
+        ----------
+        ... # TODO
+        n_nodes: list
+            The number of node at each phase
+        """
         self.unscaled = unscaled
         self.scaled = scaled
+        self.n_phases = len(self.unscaled)
+        self.n_nodes = n_nodes  # This is painfully necessary to get from outside to merge key if no keys are available
 
     def __getitem__(self, **keys):
         phase = 0
@@ -144,65 +153,24 @@ class SolutionData:
         This method does not remove the redundent nodes when merging the phase nor the nodes
         """
 
-        merged_nodes = self.merge_nodes(scaled=scaled)
+        return np.concatenate([self.merge_nodes(phase=phase, scaled=scaled) for phase in range(self.n_phases)], axis=1)
 
-        out = None
-        for p in range(len(merged_nodes)):
-            out_tp = None
-            for n in range(len(merged_nodes[p])):
-                tp = merged_nodes[p][n]
-                out_tp = tp if out_tp is None else np.concatenate([out_tp, tp], axis=1)
-            out = out_tp if out is None else np.concatenate([out, out_tp], axis=1)
-        return out
-
-    def merge_nodes(self, phases: int | list[int, ...] = None, scaled: bool = False):
+    def merge_nodes(self, phase: int, scaled: bool = False):
         """
         Merge the steps by merging keys before.
         """
-        data = self.scaled if scaled else self.unscaled
+        if not self.keys():
+            return np.ndarray((0, 1))
 
-        merged_keys = self.merge_keys(phases, scaled=scaled)
-
-        out = []
-        has_empty = False
-        for p in phases:
-            out_tp = None
-            for n in nodes:
-                tp = np.concatenate(data_list, axis=0)
-                out_tp = tp if out_tp is None else np.concatenate([out_tp, tp], axis=1)
-            out.append(out_tp)
-        return out
+        out = [self.merge_keys(phase=phase, node=node, scaled=scaled) for node in range(self.n_nodes[phase])]
+        return np.concatenate(out, axis=1)
     
-    def merge_keys(self, phases, nodes, scaled: bool = False):
+    def merge_keys(self, phase: int, node: int = None, scaled: bool = False):
+        if not self.keys():
+            return np.ndarray((0, 1))
+
         data = self.scaled if scaled else self.unscaled
-
-        if phases is None:
-            phases = range(len(data))
-        elif isinstance(phases, int):
-            phases = [phases]
-
-        if nodes is None:
-            nodes = range(len(data[phases[0]][self.keys[0]]))
-        elif isinstance(nodes, int):
-            nodes = [nodes]
-        
-        out = []
-        has_empty = False
-        for p in phases:
-            out_tp = []
-            for n in nodes:
-                # This is to account for empty structures
-                data_list = [data[p][key][n] for key in self.keys()]
-                if not data_list:
-                    has_empty = True
-                    out_tp.append(np.ndarray((0, 0)))
-                    continue
-                if has_empty:
-                    raise(RuntimeError("Cannot merge nodes with different sizes"))
-
-                out_tp.append(np.concatenate(data_list, axis=0))
-            out.append(out_tp)
-        return out
+        return np.concatenate([data[phase][key][node] for key in self.keys()], axis=0)
     
 
 
@@ -353,10 +321,11 @@ class Solution:
             ]
             
             x, u, p, s = OptimizationVectorHelper.to_dictionaries(ocp, vector)
-            self._decision_states = SolutionData(x, _to_unscaled_values(x, ocp, "x"))
-            self._stepwise_controls = SolutionData(u, _to_unscaled_values(u, ocp, "u"))
-            self._parameters = SolutionData(p, _to_unscaled_values(p, ocp, "p"))
-            self._stochastic = SolutionData(s, _to_unscaled_values(s, ocp, "s"))
+            n_phases_node = [nlp.n_states_nodes for nlp in self.ocp.nlp]
+            self._decision_states = SolutionData(x, _to_unscaled_values(x, ocp, "x"), n_nodes=n_phases_node)
+            self._stepwise_controls = SolutionData(u, _to_unscaled_values(u, ocp, "u"), n_nodes=n_phases_node)
+            self._parameters = SolutionData(p, _to_unscaled_values(p, ocp, "p"), n_nodes=n_phases_node)
+            self._stochastic = SolutionData(s, _to_unscaled_values(s, ocp, "s"), n_nodes=n_phases_node)
 
     @classmethod
     def from_dict(cls, ocp, sol: dict):
@@ -554,7 +523,7 @@ class Solution:
 
         data = deepcopy(self._decision_states.scaled if scaled else self._decision_states.unscaled)
         if concatenate_keys:
-            data = _merge_keys(data, self.ocp)
+            data = _merge_dict_keys(data, self.ocp)
 
         return data if len(data) > 1 else data[0]
 
@@ -580,7 +549,7 @@ class Solution:
             self._integrate_stepwise()
         data = self._stepwise_states.scaled if scaled else self._stepwise_states.unscaled
         if concatenate_keys:
-            data = _merge_keys(data, self.ocp)
+            data = _merge_dict_keys(data, self.ocp)
         return data if len(data) > 1 else data[0]
 
     def controls(self, scaled: bool = False, concatenate_keys: bool = False):
@@ -603,7 +572,7 @@ class Solution:
 
         data = self._stepwise_controls.scaled if scaled else self._stepwise_controls.unscaled
         if concatenate_keys:
-            data = _merge_keys(data, self.ocp)
+            data = _merge_dict_keys(data, self.ocp)
         return data if len(data) > 1 else data[0]
 
     def parameters(self, scaled: bool = False, concatenate_keys: bool = False):
@@ -623,7 +592,7 @@ class Solution:
 
         data = self._parameters.scaled[0] if scaled else self._parameters.unscaled[0]
         if concatenate_keys:
-            data = _merge_keys(data, self.ocp)
+            data = _merge_dict_keys(data, self.ocp)
         return data
 
     def stochastic(self, scaled: bool = False, concatenate_keys: bool = False):
@@ -647,7 +616,7 @@ class Solution:
 
         data = self._stochastic.scaled if scaled else self._stochastic.unscaled
         if concatenate_keys:
-            data = _merge_keys(data, self.ocp)
+            data = _merge_dict_keys(data, self.ocp)
         return data if len(data) > 1 else data[0]
 
     def copy(self, skip_data: bool = False) -> "Solution":
@@ -707,16 +676,13 @@ class Solution:
         params = vertcat(*[self._parameters.unscaled[0][key] for key in self._parameters.keys()])
 
         unscaled: list = [None] * len(self.ocp.nlp)
-        x_merged = self._decision_states.merge_nodes()
-        u_merged = self._stepwise_controls.merge_nodes()
-        s_merged = self._stochastic.merge_nodes()
-
+        
         for p, nlp in enumerate(self.ocp.nlp):
             t = self._decision_times[p]
-            raise NotImplementedError("Fix this")
-            x = [self._decision_states.merge_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
-            u = [self._stepwise_controls.merge_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
-            s = [self._stochastic.merge_nodes(phases=p, nodes=i)[0] for i in range(nlp.n_states_nodes)]
+
+            x = [self._decision_states.merge_keys(phase=p, node=n) for n in range(nlp.n_states_nodes)]
+            u = [self._stepwise_controls.merge_keys(phase=p, node=n) for n in range(nlp.n_states_nodes)]
+            s = [self._stochastic.merge_keys(phase=p, node=n) for n in range(nlp.n_states_nodes)]
 
             integrated_sol = solve_ivp_bioptim_interface(
                 shooting_type=Shooting.MULTIPLE, dynamics_func=nlp.dynamics, t=t, x=x, u=u, s=s, p=params
@@ -728,7 +694,8 @@ class Solution:
                 for ns, sol_ns in enumerate(integrated_sol):
                     unscaled[p][key][ns] = sol_ns[nlp.states[key].index, :]
 
-        self._stepwise_states = SolutionData(unscaled, _to_scaled_values(unscaled, self.ocp, "x"))
+        n_nodes = self._decision_states.n_nodes
+        self._stepwise_states = SolutionData(unscaled, _to_scaled_values(unscaled, self.ocp, "x"), n_nodes)
 
     def interpolate(self, n_frames: int | list | tuple, scaled: bool = False) -> SolutionData:
         """
@@ -1102,9 +1069,9 @@ class Solution:
         params = PenaltyHelpers.parameters(penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()]))
         for node_idx in penalty.node_idx:
             t0 = PenaltyHelpers.t0(penalty, node_idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
-            x = PenaltyHelpers.states(penalty, node_idx, lambda p_idx, n_idx: self._decision_states.merge_keys(phases=p_idx, nodes=n_idx, scaled=True)[0][0])
-            u = PenaltyHelpers.controls(penalty, node_idx, lambda p_idx, n_idx: self._stepwise_controls.merge_keys(phases=p_idx, nodes=n_idx, scaled=True)[0][0])
-            s = PenaltyHelpers.stochastic(penalty, node_idx, lambda p_idx, n_idx: self._stochastic.merge_keys(phases=p_idx, nodes=n_idx, scaled=True)[0][0])
+            x = PenaltyHelpers.states(penalty, node_idx, lambda p_idx, n_idx: self._decision_states.merge_keys(phase=p_idx, node=n_idx, scaled=True))
+            u = PenaltyHelpers.controls(penalty, node_idx, lambda p_idx, n_idx: self._stepwise_controls.merge_keys(phase=p_idx, node=n_idx, scaled=True))
+            s = PenaltyHelpers.stochastic(penalty, node_idx, lambda p_idx, n_idx: self._stochastic.merge_keys(phase=p_idx, node=n_idx, scaled=True))
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, node_idx)
 
