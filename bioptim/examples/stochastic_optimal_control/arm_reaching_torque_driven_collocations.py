@@ -61,6 +61,9 @@ def prepare_socp(
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
     example_type=ExampleType.CIRCLE,
+    q_opt: np.ndarray = None,
+    qdot_opt: np.ndarray = None,
+    tau_opt: np.ndarray = None,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -88,7 +91,13 @@ def prepare_socp(
     The OptimalControlProgram ready to be solved
     """
 
-    problem_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
+    auto_initialization = True if q_opt is not None else False
+    initial_cov = cas.DM_eye(4) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
+    problem_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree,
+                                        method="legendre",
+                                        auto_initialization=auto_initialization,
+                                        initial_cov=initial_cov,
+                                        )
 
     bio_model = StochasticBiorbdModel(
         biorbd_model_path,
@@ -198,13 +207,20 @@ def prepare_socp(
     states_init[n_states:, :] = 0.01
 
     x_init = InitialGuessList()
-    x_init.add("q", initial_guess=states_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
-    x_init.add("qdot", initial_guess=states_init[n_q : n_q + n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
+    if q_opt is not None:
+        x_init.add("q", initial_guess=q_opt, interpolation=InterpolationType.ALL_POINTS)
+        x_init.add("qdot", initial_guess=qdot_opt, interpolation=InterpolationType.ALL_POINTS)
+    else:
+        x_init.add("q", initial_guess=states_init[:n_q, :], interpolation=InterpolationType.EACH_FRAME)
+        x_init.add("qdot", initial_guess=states_init[n_q : n_q + n_qdot, :], interpolation=InterpolationType.EACH_FRAME)
 
     controls_init = np.ones((n_tau, n_shooting + 1)) * 0.01
 
     u_init = InitialGuessList()
-    u_init.add("tau", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
+    if tau_opt is not None:
+        u_init.add("tau", initial_guess=tau_opt, interpolation=InterpolationType.EACH_FRAME)
+    else:
+        u_init.add("tau", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
 
     s_init = InitialGuessList()
     s_bounds = BoundsList()
@@ -213,17 +229,33 @@ def prepare_socp(
     n_m = 4 * 4 * (3 + 1)
     n_cov = 4 * 4
 
-    s_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
+    if q_opt is None:
+        s_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
+        s_init.add(
+            "ref",
+            initial_guess=[0.01] * n_ref,
+            interpolation=InterpolationType.CONSTANT,
+        )
+        s_init.add(
+            "m",
+            initial_guess=[0.01] * n_m,
+            interpolation=InterpolationType.CONSTANT,
+        )
+        idx = 0
+        cov_init_vector = np.zeros((n_states * n_states, 1))
+        for i in range(n_states):
+            for j in range(n_states):
+                cov_init_vector[idx] = initial_cov[i, j]
+        s_init.add(
+            "cov",
+            initial_guess=cov_init_vector,
+            interpolation=InterpolationType.CONSTANT,
+        )
+
     s_bounds.add(
         "k",
         min_bound=[-cas.inf] * n_k,
         max_bound=[cas.inf] * n_k,
-        interpolation=InterpolationType.CONSTANT,
-    )
-
-    s_init.add(
-        "ref",
-        initial_guess=[0.01] * n_ref,
         interpolation=InterpolationType.CONSTANT,
     )
     s_bounds.add(
@@ -232,28 +264,10 @@ def prepare_socp(
         max_bound=[cas.inf] * n_ref,
         interpolation=InterpolationType.CONSTANT,
     )
-
-    s_init.add(
-        "m",
-        initial_guess=[0.01] * n_m,
-        interpolation=InterpolationType.CONSTANT,
-    )
     s_bounds.add(
         "m",
         min_bound=[-cas.inf] * n_m,
         max_bound=[cas.inf] * n_m,
-        interpolation=InterpolationType.CONSTANT,
-    )
-
-    cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
-    idx = 0
-    cov_init_vector = np.zeros((n_states * n_states, 1))
-    for i in range(n_states):
-        for j in range(n_states):
-            cov_init_vector[idx] = cov_init[i, j]
-    s_init.add(
-        "cov",
-        initial_guess=cov_init_vector,
         interpolation=InterpolationType.CONSTANT,
     )
     s_bounds.add(

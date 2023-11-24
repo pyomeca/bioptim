@@ -1,7 +1,7 @@
 from typing import Callable
 import sys
 import numpy as np
-from casadi import DM_eye, vertcat
+from casadi import DM_eye, vertcat, Function
 
 import pickle
 
@@ -285,15 +285,27 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     s_init.add(key, initial_guess=var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
 
         def get_ref_init(time_vector, x_guess, u_guess, p_guess, nlp):
+
+            casadi_func = Function("sensory_reference", [nlp.time_cx,
+                    nlp.states.cx_start,
+                    nlp.controls.cx_start,
+                    nlp.parameters.cx_start], [nlp.model.sensory_reference(
+                    nlp.time_cx,
+                    nlp.states.cx_start,
+                    nlp.controls.cx_start,
+                    nlp.parameters.cx_start,
+                    None,  # Sensory reference should not depend on stochastic variables
+                    nlp,
+                )])
             x_guess = x_guess[:, 0 :: (self.problem_type.polynomial_degree + 2)]
-            ref_init = nlp.model.sensory_reference(
-                time_vector,
-                x_guess,
-                u_guess,
-                p_guess,
-                None,  # Sensory reference should not depend on stochastic variables
-                nlp,
-            )
+            for i in range(nlp.ns+1):
+                ref_init_this_time = casadi_func(
+                    time_vector[i],
+                    x_guess[:, i],
+                    u_guess[:, i],
+                    p_guess,
+                )
+                ref_init = ref_init_this_time if i == 0 else np.hstack((ref_init, ref_init_this_time))
             return ref_init
 
         def get_m_init(
