@@ -300,6 +300,21 @@ class NonLinearProgram:
         The number of stochastic variables
         """
         return self.ns + 1
+    
+    def n_decision_stochastic_steps(self, node_idx) -> int:
+        """
+        Parameters
+        ----------
+        node_idx: int
+            The index of the node
+
+        Returns
+        -------
+        The number of stochastic variables
+        """
+        if node_idx >= self.ns:
+            return 1
+        return self.stochastic_variables.shape
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):

@@ -325,6 +325,7 @@ class PlotOcp:
                     if nlp.plot[key].node_idx is None:
                         nlp.plot[key].node_idx = range(nlp.n_states_nodes)
 
+                    # If the number of subplots is not known, compute it
                     if nlp.plot[key].phase_mappings is None:
                         node_index = nlp.plot[key].node_idx[0]
                         nlp.states.node_index = node_index
@@ -361,12 +362,14 @@ class PlotOcp:
                             .shape[0]
                         )
                         nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
-                    else:
-                        size = max(nlp.plot[key].phase_mappings.to_second.map_idx) + 1
+                    
+                    n_subplots = max(nlp.plot[key].phase_mappings.to_second.map_idx) + 1
+
                     if key not in variable_sizes[i]:
-                        variable_sizes[i][key] = size
+                        variable_sizes[i][key] = n_subplots
                     else:
-                        variable_sizes[i][key] = max(variable_sizes[i][key], size)
+                        variable_sizes[i][key] = max(variable_sizes[i][key], n_subplots)
+
         self.variable_sizes = variable_sizes
         if not variable_sizes:
             # No graph was setup in problem_type
@@ -383,7 +386,7 @@ class PlotOcp:
                 elif i > 0 and variable in self.axes:
                     axes = self.axes[variable][1]
                 else:
-                    nb = max(
+                    nb_subplots = max(
                         [
                             max(
                                 len(nlp.plot[variable].phase_mappings.to_second.map_idx),
@@ -394,12 +397,12 @@ class PlotOcp:
                             for nlp in self.ocp.nlp
                         ]
                     )
-                    n_cols, n_rows = PlotOcp._generate_windows_size(nb)
-                    axes = self.__add_new_axis(variable, nb, n_rows, n_cols)
+                    n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
+                    axes = self.__add_new_axis(variable, nb_subplots, n_rows, n_cols)
                     self.axes[variable] = [nlp.plot[variable], axes]
                     if not y_min_all[var_idx]:
-                        y_min_all[var_idx] = [np.inf] * nb
-                        y_max_all[var_idx] = [-np.inf] * nb
+                        y_min_all[var_idx] = [np.inf] * nb_subplots
+                        y_max_all[var_idx] = [-np.inf] * nb_subplots
 
                 if variable not in self.custom_plots:
                     self.custom_plots[variable] = [
@@ -417,7 +420,7 @@ class PlotOcp:
                         if len(nlp.plot[variable].legend) > index_legend:
                             ax.set_title(nlp.plot[variable].legend[index_legend])
                     ax.grid(**self.plot_options["grid"])
-                    ax.set_xlim(0, self.t[-1][-1])
+                    ax.set_xlim(self.t[-1][[0, -1]])
                     if ctr in mapping_to_first_index:
                         if nlp.plot[variable].ylim:
                             ax.set_ylim(nlp.plot[variable].ylim)

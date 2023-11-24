@@ -630,7 +630,7 @@ class COLLOCATION(Integrator):
 
         # Concatenate constraints
         defects = vertcat(*defects)
-        return states_end, horzcat(states[1], states_end), defects
+        return states_end, horzcat(*states), defects
 
 
 class IRK(COLLOCATION):
