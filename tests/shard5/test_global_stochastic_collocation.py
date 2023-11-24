@@ -176,7 +176,6 @@ def test_arm_reaching_torque_driven_collocations():
     # )
     # TODO: See the file diff to understand why the values are different (otherwise check with Pariterre)
 
-
     # Test the automatic intialization of the stochastic variables
     socp = ocp_module.prepare_socp(
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
@@ -214,67 +213,97 @@ def test_arm_reaching_torque_driven_collocations():
     x_opt = vertcat(q_sol, qdot_sol)
     x_sol = np.zeros((x_opt.shape[0], polynomial_degree + 2, socp.n_shooting))
     for i_node in range(socp.n_shooting):
-        x_sol[:, :, i_node] = x_opt[:, i_node * (polynomial_degree + 2):(i_node + 1) * (polynomial_degree + 2)]
+        x_sol[:, :, i_node] = x_opt[:, i_node * (polynomial_degree + 2) : (i_node + 1) * (polynomial_degree + 2)]
     s_sol = vertcat(k_sol, ref_sol, m_sol, cov_sol)
 
     # Initial posture
     shoulder_pos_initial = 0.349065850398866
     elbow_pos_initial = 2.245867726451909
-    constraint_value = socp.nlp[0].g[0].function[0](0,
-                                                    x_sol[:, :, 0].flatten(order="F"),
-                                                    tau_sol[:, 0],
-                                                    [],
-                                                    s_sol[:, 0],
-                                                    )
+    constraint_value = (
+        socp.nlp[0]
+        .g[0]
+        .function[0](
+            0,
+            x_sol[:, :, 0].flatten(order="F"),
+            tau_sol[:, 0],
+            [],
+            s_sol[:, 0],
+        )
+    )
     np.testing.assert_almost_equal(constraint_value[0], shoulder_pos_initial, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], elbow_pos_initial, decimal=6)
 
     # Initial and final velocities
-    constraint_value = socp.nlp[0].g[1].function[0](0,
-                                                    x_sol[:, :, 0].flatten(order="F"),
-                                                    tau_sol[:, 0],
-                                                    [],
-                                                    s_sol[:, 0],
-                                                    )
+    constraint_value = (
+        socp.nlp[0]
+        .g[1]
+        .function[0](
+            0,
+            x_sol[:, :, 0].flatten(order="F"),
+            tau_sol[:, 0],
+            [],
+            s_sol[:, 0],
+        )
+    )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], 0, decimal=6)
-    constraint_value = socp.nlp[0].g[2].function[-1](0,
-                                                    x_opt[:, -1],
-                                                    tau_sol[:, -1],
-                                                    [],
-                                                    s_sol[:, -1],
-                                                    )
+    constraint_value = (
+        socp.nlp[0]
+        .g[2]
+        .function[-1](
+            0,
+            x_opt[:, -1],
+            tau_sol[:, -1],
+            [],
+            s_sol[:, -1],
+        )
+    )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], 0, decimal=6)
 
     # Hand final marker position
-    constraint_value = socp.nlp[0].g[4].function[-1](0,
-                                                    x_opt[:, -1],
-                                                    tau_sol[:, -1],
-                                                    [],
-                                                    s_sol[:, -1],
-                                                    )
+    constraint_value = (
+        socp.nlp[0]
+        .g[4]
+        .function[-1](
+            0,
+            x_opt[:, -1],
+            tau_sol[:, -1],
+            [],
+            s_sol[:, -1],
+        )
+    )
     np.testing.assert_almost_equal(constraint_value[0], hand_final_position[0], decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], hand_final_position[1], decimal=6)
 
     # Reference equals mean sensory input
     for i_node in range(socp.n_shooting):
-        constraint_value = socp.nlp[0].g[7].function[i_node](0,
-                                                             x_sol[:, :, i_node].flatten(order="F"),
-                                                             tau_sol[:, i_node],
-                                                             [],
-                                                             s_sol[:, i_node],
-                                                             )
+        constraint_value = (
+            socp.nlp[0]
+            .g[7]
+            .function[i_node](
+                0,
+                x_sol[:, :, i_node].flatten(order="F"),
+                tau_sol[:, i_node],
+                [],
+                s_sol[:, i_node],
+            )
+        )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Constraint on M
     for i_node in range(socp.n_shooting):
-        constraint_value = socp.nlp[0].g[8].function[i_node](0,
-                                                             x_sol[:, :, i_node].flatten(order="F"),
-                                                             tau_sol[:, i_node],
-                                                             [],
-                                                             s_sol[:, i_node],
-                                                             )
+        constraint_value = (
+            socp.nlp[0]
+            .g[8]
+            .function[i_node](
+                0,
+                x_sol[:, :, i_node].flatten(order="F"),
+                tau_sol[:, i_node],
+                [],
+                s_sol[:, i_node],
+            )
+        )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # # Covariance continuity
@@ -304,12 +333,17 @@ def test_arm_reaching_torque_driven_collocations():
 
     # First collocation state is equal to the states at node
     for i_node in range(socp.n_shooting):
-        constraint_value = socp.nlp[0].g_internal[1].function[i_node](0,
-                                  x_sol[:, :, i_node].flatten(order="F"),
-                                  tau_sol[:, i_node],
-                                  [],
-                                  s_sol[:, i_node],
-                                  )
+        constraint_value = (
+            socp.nlp[0]
+            .g_internal[1]
+            .function[i_node](
+                0,
+                x_sol[:, :, i_node].flatten(order="F"),
+                tau_sol[:, i_node],
+                [],
+                s_sol[:, i_node],
+            )
+        )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
 

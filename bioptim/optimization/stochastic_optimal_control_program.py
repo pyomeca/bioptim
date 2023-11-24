@@ -285,20 +285,22 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     s_init.add(key, initial_guess=var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
 
         def get_ref_init(time_vector, x_guess, u_guess, p_guess, nlp):
-
-            casadi_func = Function("sensory_reference", [nlp.time_cx,
-                    nlp.states.cx_start,
-                    nlp.controls.cx_start,
-                    nlp.parameters.cx_start], [nlp.model.sensory_reference(
-                    nlp.time_cx,
-                    nlp.states.cx_start,
-                    nlp.controls.cx_start,
-                    nlp.parameters.cx_start,
-                    None,  # Sensory reference should not depend on stochastic variables
-                    nlp,
-                )])
+            casadi_func = Function(
+                "sensory_reference",
+                [nlp.time_cx, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx_start],
+                [
+                    nlp.model.sensory_reference(
+                        nlp.time_cx,
+                        nlp.states.cx_start,
+                        nlp.controls.cx_start,
+                        nlp.parameters.cx_start,
+                        None,  # Sensory reference should not depend on stochastic variables
+                        nlp,
+                    )
+                ],
+            )
             x_guess = x_guess[:, 0 :: (self.problem_type.polynomial_degree + 2)]
-            for i in range(nlp.ns+1):
+            for i in range(nlp.ns + 1):
                 ref_init_this_time = casadi_func(
                     time_vector[i],
                     x_guess[:, i],
@@ -314,7 +316,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             m_init = np.zeros((variable_sizes["n_m"], nlp.ns + 1))
             for i in range(nlp.ns):
                 index_this_time = [
-                    i * (self.problem_type.polynomial_degree+2) + j for j in range(self.problem_type.polynomial_degree + 2)
+                    i * (self.problem_type.polynomial_degree + 2) + j
+                    for j in range(self.problem_type.polynomial_degree + 2)
                 ]
                 df_dz = Fdz(
                     time_vector[i],
@@ -364,7 +367,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             cov_init[:, 0] = np.reshape(StochasticBioModel.reshape_to_vector(initial_covariance), (-1,))
             for i in range(nlp.ns):
                 index_this_time = [
-                    i * (self.problem_type.polynomial_degree+2) + j for j in range(self.problem_type.polynomial_degree + 2)
+                    i * (self.problem_type.polynomial_degree + 2) + j
+                    for j in range(self.problem_type.polynomial_degree + 2)
                 ]
                 dg_dx = Gdx(
                     time_vector[i],

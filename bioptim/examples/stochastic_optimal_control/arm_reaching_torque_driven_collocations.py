@@ -93,11 +93,12 @@ def prepare_socp(
 
     auto_initialization = True if q_opt is not None else False
     initial_cov = cas.DM_eye(4) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
-    problem_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree,
-                                        method="legendre",
-                                        auto_initialization=auto_initialization,
-                                        initial_cov=initial_cov,
-                                        )
+    problem_type = SocpType.COLLOCATION(
+        polynomial_degree=polynomial_degree,
+        method="legendre",
+        auto_initialization=auto_initialization,
+        initial_cov=initial_cov,
+    )
 
     bio_model = StochasticBiorbdModel(
         biorbd_model_path,
