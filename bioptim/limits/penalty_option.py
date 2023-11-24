@@ -433,18 +433,18 @@ class PenaltyOption(OptionGeneric):
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
-        if self.transition:
-            name = (
-                self.name.replace("->", "_")
-                .replace(" ", "_")
-                .replace("(", "_")
-                .replace(")", "_")
-                .replace(",", "_")
-                .replace(":", "_")
-                .replace(".", "_")
-                .replace("__", "_")
-            )
+        name = (
+            self.name.replace("->", "_")
+            .replace(" ", "_")
+            .replace("(", "_")
+            .replace(")", "_")
+            .replace(",", "_")
+            .replace(":", "_")
+            .replace(".", "_")
+            .replace("__", "_")
+        )
 
+        if self.transition:
             if len(controller) != 2:
                 raise RuntimeError("Transition penalty must be between two nodes")
 
@@ -465,6 +465,7 @@ class PenaltyOption(OptionGeneric):
                 state_cx_scaled = vertcat(controllers[1].states_scaled.cx, fake)
             else:
                 state_cx_scaled = controllers[1].states_scaled.cx
+                
             if (
                 controllers[1].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                 or controllers[1].node_index < controllers[1].ns
@@ -574,17 +575,6 @@ class PenaltyOption(OptionGeneric):
 
             self: MultinodeConstraint
 
-            name = (
-                self.name.replace("->", "_")
-                .replace(" ", "_")
-                .replace("(", "_")
-                .replace(")", "_")
-                .replace(",", "_")
-                .replace(":", "_")
-                .replace(".", "_")
-                .replace("__", "_")
-            )
-
             controllers = controller
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             ocp = controller.ocp
@@ -618,7 +608,7 @@ class PenaltyOption(OptionGeneric):
 
         else:
             ocp = controller.ocp
-            name = self.name
+            
             state_cx_scaled = controller.states_scaled.cx_start
             if (
                 controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
