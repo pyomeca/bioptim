@@ -252,7 +252,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     x2, u2, s2 = PenaltyHelpers._get_x_u_s_at_idx(interface, nlp, penalty, idx, is_unscaled)
                     
                     p = vertcat(
-                        p, penalty.weighted_function[idx](t0, phases_dt, x, u, params, s, penalty.weight, target, penalty.dt)
+                        p, penalty.weighted_function[idx](t0, phases_dt, x, u, params, s, penalty.weight, target)
                     )
 
         out = vertcat(out, sum2(p))

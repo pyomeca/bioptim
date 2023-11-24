@@ -725,7 +725,6 @@ class PenaltyOption(OptionGeneric):
                 stochastic_cx_scaled,
             )
 
-        penalty_dt_cx = controller.cx.sym("dt", 1, 1)
         is_trapezoidal = (
             self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
             or self.integration_rule == QuadratureRule.TRAPEZOIDAL
@@ -839,7 +838,6 @@ class PenaltyOption(OptionGeneric):
                 param_cx,
                 stochastic_cx_scaled,
                 target_cx,
-                penalty_dt_cx,
             )
 
             modified_fcn = modified_function(
@@ -849,7 +847,6 @@ class PenaltyOption(OptionGeneric):
                 param_cx,
                 stochastic_cx_scaled,
                 target_cx,
-                penalty_dt_cx,
             )
         else:
             modified_fcn = (
@@ -865,7 +862,7 @@ class PenaltyOption(OptionGeneric):
             ) ** exponent
 
         # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
-        modified_fcn = weight_cx * modified_fcn * penalty_dt_cx if self.weight else modified_fcn * penalty_dt_cx
+        modified_fcn = weight_cx * modified_fcn * self.dt if self.weight else modified_fcn * self.dt
 
         # Do not use nlp.add_casadi_func because all of them must be registered
         self.weighted_function[node] = Function(
@@ -879,7 +876,6 @@ class PenaltyOption(OptionGeneric):
                 stochastic_cx_scaled,
                 weight_cx,
                 target_cx,
-                penalty_dt_cx,
             ],
             [modified_fcn],
         )

@@ -1,24 +1,58 @@
 from typing import Callable
 
-from casadi import MX, SX, DM, vertcat
+from casadi import MX, SX, DM, vertcat, horzcat
 import numpy as np
 
 from ..misc.enums import Node, QuadratureRule, PhaseDynamics
 
 class PenaltyHelpers:
-    @staticmethod
-    def weight(penalty):
-        return penalty.weight
     
     @staticmethod
-    def dt(penalty):
+    def t0(penalty, penalty_node_idx, get_t0: Callable):
+        """
+        Parameters
+        ----------
+        penalty: PenaltyFunctionAbstract
+            The penalty function
+        penalty_node_idx: int
+            The index of the node in the penalty
+        get_t0: Callable
+            A function that returns the time of the node. It is expected to return stepwise time
+        
+        TODO COMPLETE
+        """
         if penalty.transition or penalty.multinode_penalty:
-            return 1  # That is so multinode penalties behave like Mayer functions
+            phases = penalty.nodes_phase
+            nodes = penalty.multinode_idx
         else:
-            return penalty.dt
+            phases = [penalty.phase]
+            nodes = [penalty.node_idx[penalty_node_idx]]
+
+        if len(phases) > 1:
+            raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
+        
+        return vertcat(*[_reshape_to_vector(get_t0(phases[0], n)[0]) for n in nodes])
+
+    @staticmethod
+    def phases_dt(penalty, get_all_dt: Callable):
+        """
+        Parameters
+        ----------
+        penalty: PenaltyFunctionAbstract
+            The penalty function
+        get_all_dt: Callable
+            A function that returns the dt of the all phases
+
+        TODO COMPLETE
+        """
+
+        return _reshape_to_vector(get_all_dt())
 
     @staticmethod
     def states(penalty, penalty_node_idx, get_state_decision: Callable):
+        if isinstance(penalty.phase, list) and len(penalty.phase) > 1:
+            raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
+
         if penalty.transition or penalty.multinode_penalty:
             x = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
             return _reshape_to_vector(x)
@@ -49,14 +83,26 @@ class PenaltyHelpers:
         return _reshape_to_vector(u)
 
     @staticmethod
-    def parameters(penalty, penalty_node_idx, get_parameter: Callable):
-        p = get_parameter(penalty.phase, penalty.node_idx[penalty_node_idx])
+    def parameters(penalty, get_parameter: Callable):
+        p = get_parameter()
         return _reshape_to_vector(p)
 
     @staticmethod
     def stochastic(penalty, penalty_node_idx, get_stochastic: Callable):
         s = get_stochastic(penalty.phase, penalty.node_idx[penalty_node_idx])
         return _reshape_to_vector(s)
+
+    @staticmethod
+    def weight(penalty):
+        return penalty.weight
+
+    @staticmethod
+    def target(penalty, penalty_node_idx):
+        if penalty.target is None:
+            return np.ndarray([])
+        
+        target = penalty.target[0][..., penalty.node_idx.index(penalty_node_idx)]
+        return _reshape_to_vector(target)
 
 
 def _reshape_to_vector(m):

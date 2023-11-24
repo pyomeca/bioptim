@@ -1381,7 +1381,7 @@ class OptimalControlProgram:
                 s = _scale_values(s, nlp.stochastic_variables, penalty, nlp.s_scaling)
             
             out = []
-            out.append(penalty.weighted_function_non_threaded[node_idx](t, phases_dt, x, u, p, s, penalty.weight, _target, penalty_dt))
+            out.append(penalty.weighted_function_non_threaded[node_idx](t, phases_dt, x, u, p, s, penalty.weight, _target))
             return sum1(horzcat(*out))
 
         def add_penalty(_penalties):

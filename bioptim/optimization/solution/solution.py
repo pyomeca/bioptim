@@ -9,6 +9,7 @@ from matplotlib import pyplot as plt
 
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
+from ...limits.penalty_helpers import PenaltyHelpers
 from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
 from ...dynamics.ode_solver import OdeSolver
 from ...interfaces.solve_ivp_interface import solve_ivp_bioptim_interface
@@ -1111,62 +1112,24 @@ class Solution:
         if nlp is None:
             raise NotImplementedError("penalty cost over the full ocp is not implemented yet")
 
-        phase_idx = nlp.phase_idx
         nlp.controls.node_index = 0  # This is so "keys" is not empty
 
         val = []
         val_weighted = []
-        params = vertcat(*[self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()])
-
-        phases_dt = self.phases_dt[phase_idx]
-        dt = penalty.dt_to_float(phases_dt)
+        
+        phases_dt = PenaltyHelpers.phases_dt(penalty, lambda: np.array(self.phases_dt))
+        params = PenaltyHelpers.parameters(penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()]))
 
         for node_idx in penalty.node_idx:
-            if penalty.transition or penalty.multinode_penalty:
-                phases = penalty.nodes_phase
-                nodes = penalty.multinode_idx
-            else:
-                phases = [phase_idx]
-                nodes = [node_idx]
-                if penalty.explicit_derivative:
-                    nodes.append(node_idx + 1)
-            
-            t = self._stepwise_times[phases[0]][nodes[0]][0]  # Starting time of the current shooting node
+            t0 = PenaltyHelpers.t0(penalty, node_idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
+            x = PenaltyHelpers.states(penalty, node_idx, lambda p_idx, n_idx: self._decision_states.merge_nodes(phases=p_idx, nodes=n_idx, scaled=True)[0])
+            u = PenaltyHelpers.controls(penalty, node_idx, lambda p_idx, n_idx: self._stepwise_controls.merge_nodes(phases=p_idx, nodes=n_idx, scaled=True)[0])
+            s = PenaltyHelpers.stochastic(penalty, node_idx, lambda p_idx, n_idx: self._stochastic.merge_nodes(phases=p_idx, nodes=n_idx, scaled=True)[0])
+            weight = PenaltyHelpers.weight(penalty)
+            target = PenaltyHelpers.target(penalty, node_idx)
 
-            raise NotImplementedError("This should now use the PenaltyHelper to dispatch the data")
-            x = [np.ndarray((nlp.states.shape, 0))]
-            u = [np.ndarray((nlp.controls.shape, 0))]
-            s = [np.ndarray((nlp.stochastic_variables.shape, 0))]
-            for n in nodes:
-                if len(phases) > 1:
-                    raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
-                p = 0
-                
-                # Assume that if there is more than one node, then we only need the first step of the second node
-                x_tp = self._decision_states.merge_nodes(phases=p, nodes=n, scaled=True)[p]
-                x[p] = np.concatenate((x[p], x_tp if n == nodes[0] else x_tp[:, 0:1]), axis=1)
-
-                u_tp = self._stepwise_controls.merge_nodes(phases=p, nodes=n, scaled=True)[p]
-                u[p] = np.concatenate((u[p], u_tp if n == nodes[0] else u_tp[:, 0:1]), axis=1)
-
-                s_tp = self._stochastic.merge_nodes(phases=p, nodes=n, scaled=True)[p]
-                s[p] = np.concatenate((s[p], s_tp if n == nodes[0] else s_tp[:, 0:1]), axis=1)
-
-            if len(phases) > 1:
-                raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
-            p = 0
-            x = x[p].reshape((-1, 1), order="F")
-            u = u[p].reshape((-1, 1), order="F")
-            s = s[p].reshape((-1, 1), order="F")
-            val.append(penalty.function[node_idx](t, self.phases_dt, x, u, params, s))
-
-            target = []
-            if penalty.target is not None:
-                target = penalty.target[0][..., penalty.node_idx.index(node_idx)]
-
-            val_weighted.append(
-                penalty.weighted_function[node_idx](t, self.phases_dt, x, u, params, s, penalty.weight, target, dt)
-            )
+            val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, s))
+            val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, s, weight, target))
 
         if self.ocp.n_threads > 1:
             val = [v[:, 0] for v in val]
