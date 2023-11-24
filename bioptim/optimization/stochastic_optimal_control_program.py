@@ -302,7 +302,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             m_init = np.zeros((variable_sizes["n_m"], nlp.ns + 1))
             for i in range(nlp.ns):
                 index_this_time = [
-                    i * self.problem_type.polynomial_degree + j for j in range(self.problem_type.polynomial_degree + 2)
+                    i * (self.problem_type.polynomial_degree+2) + j for j in range(self.problem_type.polynomial_degree + 2)
                 ]
                 df_dz = Fdz(
                     time_vector[i],
@@ -325,7 +325,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     nlp.model.sensory_noise_magnitude,
                 )
 
-                m_this_time = -df_dz @ np.linalg.inv(dg_dz)
+                m_this_time = df_dz @ np.linalg.inv(dg_dz)
                 m_init[:, i] = np.reshape(StochasticBioModel.reshape_to_vector(m_this_time), (-1,))
 
             m_init[:, -1] = m_init[:, -2]
@@ -344,15 +344,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             Gdw,
             initial_covariance,
         ):
-            sigma_w_dm = vertcat(nlp.model.sensory_noise_magnitude, nlp.model.motor_noise_magnitude) * DM_eye(
-                vertcat(nlp.model.sensory_noise_magnitude, nlp.model.motor_noise_magnitude).shape[0]
+            sigma_w_dm = vertcat(nlp.model.motor_noise_magnitude, nlp.model.sensory_noise_magnitude) * DM_eye(
+                vertcat(nlp.model.motor_noise_magnitude, nlp.model.sensory_noise_magnitude).shape[0]
             )
 
             cov_init = np.zeros((variable_sizes["n_cov"], nlp.ns + 1))
             cov_init[:, 0] = np.reshape(StochasticBioModel.reshape_to_vector(initial_covariance), (-1,))
             for i in range(nlp.ns):
                 index_this_time = [
-                    i * self.problem_type.polynomial_degree + j for j in range(self.problem_type.polynomial_degree + 2)
+                    i * (self.problem_type.polynomial_degree+2) + j for j in range(self.problem_type.polynomial_degree + 2)
                 ]
                 dg_dx = Gdx(
                     time_vector[i],
