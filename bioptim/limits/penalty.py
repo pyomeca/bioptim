@@ -1165,6 +1165,7 @@ class PenaltyFunctionAbstract:
                     s=controller.stochastic_variables.cx_start,
                 )["xf"]
 
+            penalty.phase = controller.phase_idx
             penalty.explicit_derivative = True
             penalty.multi_thread = True
 

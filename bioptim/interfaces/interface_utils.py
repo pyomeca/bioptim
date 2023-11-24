@@ -219,35 +219,43 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
         else:
             tp = interface.ocp.cx()
-            for idx in penalty.node_idx:
-                t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: [ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx)])
+            for idx in range(len(penalty.node_idx)):
+                t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx))
 
                 weight = PenaltyHelpers.weight(penalty)
                 target = PenaltyHelpers.target(penalty, idx)
-
 
                 x = []
                 u = []
                 s = []
                 if nlp is not None:
-                    x = PenaltyHelpers.states(
-                        penalty, idx, lambda phase_idx, node_idx: nlp.X[node_idx] if is_unscaled else nlp.X_scaled[node_idx]
-                    )
-                    
-                    nlp_u = nlp.U if is_unscaled else nlp.U_scaled
-                    u = PenaltyHelpers.controls(
-                        penalty, idx, lambda phase_idx, node_idx: nlp_u[node_idx if node_idx < len(nlp.U) else -1]
-                    )
+                    x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx: _get_x(ocp, p_idx, n_idx, is_unscaled))
+                    u = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled))
+
                     s = PenaltyHelpers.stochastic(
                         penalty, idx, lambda phase_idx, node_idx: nlp.S[node_idx] if is_unscaled else nlp.S_scaled[node_idx]
                     )
-                    tp = vertcat(
-                        tp, penalty.weighted_function[idx](t0, phases_dt, x, u, p, s, weight, target)
-                    )
+                    x2, u2, s2 = PenaltyHelpers._get_x_u_s_at_idx(ocp, nlp, penalty, idx, True )
+
+                tp = vertcat(
+                    tp, penalty.weighted_function[idx](t0, phases_dt, x, u, p, s, weight, target)
+                )
 
         out = vertcat(out, sum2(tp))
     return out
 
+
+def _get_x(ocp, phase_idx, node_idx, is_unscaled):
+    try:
+        ocp.nlp[phase_idx].X[node_idx] if is_unscaled else ocp.nlp[phase_idx].X_scaled[node_idx]
+    except:
+        print("coucou")
+    return ocp.nlp[phase_idx].X[node_idx] if is_unscaled else ocp.nlp[phase_idx].X_scaled[node_idx]
+
+
+def _get_u(ocp, phase_idx, node_idx, is_unscaled):
+    nlp_u = ocp.nlp[phase_idx].U if is_unscaled else ocp.nlp[phase_idx].U_scaled
+    return nlp_u[node_idx if node_idx < len(nlp_u) else -1]
 
 
 def format_target(penalty, target_in: np.ndarray, idx: int) -> np.ndarray:
@@ -273,120 +281,3 @@ def format_target(penalty, target_in: np.ndarray, idx: int) -> np.ndarray:
     target_out = target_in[..., penalty.node_idx.index(idx)]
 
     return target_out
-
-
-def get_control_modificator(ocp, _penalty, index: int):
-    current_phase = ocp.nlp[_penalty.nodes_phase[index]]
-    current_node = _penalty.nodes[index]
-    phase_dynamics = current_phase.phase_dynamics
-    number_of_shooting_points = current_phase.ns
-
-    is_shared_dynamics = phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-    is_end_or_shooting_point = current_node == Node.END or current_node == number_of_shooting_points
-
-    return 1 if is_shared_dynamics and is_end_or_shooting_point else 0
-
-
-def get_padded_array(
-    nlp, attribute: str, node_idx: int, casadi_constructor: Callable, target_length: int = None
-) -> SX | MX:
-    """
-    Get a padded array of the correct length
-
-    Parameters
-    ----------
-    nlp: NonLinearProgram
-        The current phase
-    attribute: str
-        The attribute to get the array from such as "X", "X_scaled", "U", "U_scaled", "S", "S_scaled"
-    node_idx: int
-        The node index in the current phase
-    target_length: int
-        The target length of the array, in some cases, one side can be longer than the other one
-        (e.g. when using uneven transition phase with a different of states between the two phases)
-    casadi_constructor: Callable
-        The casadi constructor to use that either build SX or MX
-
-    Returns
-    -------
-    SX | MX
-        The padded array
-    """
-    padded_array = getattr(nlp, attribute)[node_idx][:, 0]
-    len_x = padded_array.shape[0]
-
-    if target_length is None:
-        target_length = len_x
-
-    if target_length > len_x:
-        fake_padding = casadi_constructor(target_length - len_x, 1)
-        padded_array = vertcat(padded_array, fake_padding)
-
-    return padded_array
-
-
-def get_node_control_info(nlp, node_idx, attribute: str):
-    """This returns the information about the control at a given node to format controls properly"""
-    is_shared_dynamics = nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-    is_within_control_limit = node_idx < len(nlp.U_scaled)
-    len_u = getattr(nlp, attribute)[0].shape[0]
-
-    return is_shared_dynamics, is_within_control_limit, len_u
-
-
-def get_padded_control_array(
-    nlp,
-    node_idx: int,
-    u_mode: int,
-    attribute: str,
-    target_length: int,
-    is_within_control_limit_target: bool,
-    is_shared_dynamics_target: bool,
-    casadi_constructor: Callable,
-):
-    """
-    Get a padded array of the correct length
-
-    Parameters
-    ----------
-    nlp: NonLinearProgram
-        The current phase
-    node_idx: int
-        The node index in the current phase
-    u_mode: int
-        The control mode see get_control_modificator
-    attribute: str
-        The attribute to get the array from such as "X", "X_scaled", "U", "U_scaled", "S", "S_scaled"
-    target_length: int
-        The target length of the array, in some cases, one side can be longer than the other one
-        (e.g. when using uneven transition phase with a different of states between the two phases)
-    is_within_control_limit_target: bool
-        If the target node of a given phase is within the control limit
-        (e.g. when using uneven transition phase with a different of states between the two phases)
-    is_shared_dynamics_target: bool
-        If the target node of a given phase is shared during the phase
-        (e.g. when using uneven transition phase with a different of states between the two phases)
-    casadi_constructor: Callable
-        The casadi constructor to use that either build SX or MX
-
-    Returns
-    -------
-    SX | MX
-        The padded array
-    """
-
-    is_shared_dynamics, is_within_control_limit, len_u = get_node_control_info(nlp, node_idx, attribute=attribute)
-
-    _u_sym = []
-
-    if is_shared_dynamics or is_within_control_limit:
-        should_apply_fake_padding_on_u_sym = target_length > len_u and (
-            is_within_control_limit_target or is_shared_dynamics_target
-        )
-        _u_sym = getattr(nlp, attribute)[node_idx - u_mode]
-
-        if should_apply_fake_padding_on_u_sym:
-            fake_padding = casadi_constructor(target_length - len_u, 1)
-            _u_sym = vertcat(_u_sym, fake_padding)
-
-    return _u_sym

@@ -924,7 +924,7 @@ class Solution:
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, node_idx)
 
-            # PenaltyHelpers._get_x_u_s_at_idx(penalty, node_idx, x, u, s)
+            PenaltyHelpers._get_x_u_s_at_idx(penalty, node_idx, x, u, s)
 
             val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, s))
             val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, s, weight, target))
