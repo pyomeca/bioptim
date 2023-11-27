@@ -294,13 +294,15 @@ class PlotOcp:
         """
 
         self.t = []
-        self.t_integrated = phase_times
+        self.t_integrated = []
         last_t = 0
-        for nlp, time in zip(self.ocp.nlp, self.t_integrated):
+        for nlp, time in zip(self.ocp.nlp, phase_times):
             self.n_nodes += nlp.n_states_nodes
-            time_phase = np.linspace(last_t, last_t + float(time[-1][-1]), nlp.n_states_nodes)
+
+            self.t_integrated.append([t + last_t for t in time])
+            self.t.append(np.linspace(last_t, last_t + float(time[-1][-1]), nlp.n_states_nodes))
+
             last_t += float(time[-1][-1])
-            self.t.append(time_phase)
 
     def __create_plots(self):
         """
@@ -533,7 +535,7 @@ class PlotOcp:
                     if ctr in mapping_to_first_index:
                         intersections_time = self.find_phases_intersections()
                         for time in intersections_time:
-                            self.plots_vertical_lines.append(ax.axvline(time, **self.plot_options["vertical_lines"]))
+                            self.plots_vertical_lines.append(ax.axvline(float(time), **self.plot_options["vertical_lines"]))
 
                         if nlp.plot[variable].bounds and self.show_bounds:
                             if nlp.plot[variable].bounds.type == InterpolationType.EACH_FRAME:
@@ -801,7 +803,7 @@ class PlotOcp:
         if n > 0:
             for p in range(int(len(self.plots_vertical_lines) / n)):
                 for i, time in enumerate(intersections_time):
-                    self.plots_vertical_lines[p * n + i].set_xdata([time, time])
+                    self.plots_vertical_lines[p * n + i].set_xdata([float(time), float(time)])
 
     def _append_to_ydata(self, data: list | np.ndarray):
         """
