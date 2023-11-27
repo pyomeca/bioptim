@@ -496,10 +496,10 @@ class OptimizationVectorHelper:
                     u_array = np.ndarray((nu, n_cols)) * np.nan
                 else:
                     u_array = v_array[offset : offset + nu * n_cols].reshape((nu, -1), order="F")
+                    offset += nu
 
                 for key in nlp.controls.keys():
                     data_controls[p][key][node] = u_array[nlp.controls[key].index, :]
-                offset += nu
 
         # For parameters
         for param in ocp.parameters:
