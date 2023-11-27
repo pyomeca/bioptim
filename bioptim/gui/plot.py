@@ -745,7 +745,7 @@ class PlotOcp:
 
             tp = custom_plot.function(t0, dt, idx, x_node, u_node, p_node, s_node, **custom_plot.parameters)
 
-            y_tp = np.ndarray((len(custom_plot.phase_mappings.to_first.map_idx), tp.shape[1])) * np.nan
+            y_tp = np.ndarray((max(custom_plot.phase_mappings.to_first.map_idx) + 1, tp.shape[1])) * np.nan
             for ctr, axe_index in enumerate(custom_plot.phase_mappings.to_first.map_idx):
                 y_tp[axe_index, :] = tp[ctr, :]
             all_y.append(y_tp)
