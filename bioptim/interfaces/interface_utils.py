@@ -237,8 +237,9 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     )
                     x2, u2, s2 = PenaltyHelpers._get_x_u_s_at_idx(ocp, nlp, penalty, idx, True )
 
+                node_idx = penalty.node_idx[idx]
                 tp = vertcat(
-                    tp, penalty.weighted_function[idx](t0, phases_dt, x, u, p, s, weight, target)
+                    tp, penalty.weighted_function[node_idx](t0, phases_dt, x, u, p, s, weight, target)
                 )
 
         out = vertcat(out, sum2(tp))
@@ -246,10 +247,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
 
 def _get_x(ocp, phase_idx, node_idx, is_unscaled):
-    try:
-        ocp.nlp[phase_idx].X[node_idx] if is_unscaled else ocp.nlp[phase_idx].X_scaled[node_idx]
-    except:
-        print("coucou")
+    ocp.nlp[phase_idx].X[node_idx] if is_unscaled else ocp.nlp[phase_idx].X_scaled[node_idx]
     return ocp.nlp[phase_idx].X[node_idx] if is_unscaled else ocp.nlp[phase_idx].X_scaled[node_idx]
 
 

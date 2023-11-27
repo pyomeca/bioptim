@@ -34,7 +34,7 @@ class PenaltyHelpers:
             except:
                 print("coucou")
 
-        return get_t0(phase, node)
+        return get_t0(phase, node)[0, 0]
 
     @staticmethod
     def phases_dt(penalty, get_all_dt: Callable):

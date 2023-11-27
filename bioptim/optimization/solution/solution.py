@@ -916,16 +916,15 @@ class Solution:
         
         phases_dt = PenaltyHelpers.phases_dt(penalty, lambda: np.array(self.phases_dt))
         params = PenaltyHelpers.parameters(penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()]))
-        for node_idx in penalty.node_idx:
-            t0 = PenaltyHelpers.t0(penalty, node_idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
-            x = PenaltyHelpers.states(penalty, node_idx, lambda p_idx, n_idx: self._decision_states.merge_keys(phase=p_idx, node=n_idx, scaled=True))
-            u = PenaltyHelpers.controls(penalty, node_idx, lambda p_idx, n_idx: self._stepwise_controls.merge_keys(phase=p_idx, node=n_idx, scaled=True))
-            s = PenaltyHelpers.stochastic(penalty, node_idx, lambda p_idx, n_idx: self._stochastic.merge_keys(phase=p_idx, node=n_idx, scaled=True))
+        for idx in range(len(penalty.node_idx)):
+            t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
+            x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx: self._decision_states.merge_keys(phase=p_idx, node=n_idx, scaled=True))
+            u = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx: self._stepwise_controls.merge_keys(phase=p_idx, node=n_idx, scaled=True))
+            s = PenaltyHelpers.stochastic(penalty, idx, lambda p_idx, n_idx: self._stochastic.merge_keys(phase=p_idx, node=n_idx, scaled=True))
             weight = PenaltyHelpers.weight(penalty)
-            target = PenaltyHelpers.target(penalty, node_idx)
+            target = PenaltyHelpers.target(penalty, idx)
 
-            PenaltyHelpers._get_x_u_s_at_idx(penalty, node_idx, x, u, s)
-
+            node_idx = penalty.node_idx[idx]
             val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, s))
             val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, s, weight, target))
 
