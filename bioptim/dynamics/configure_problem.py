@@ -443,7 +443,7 @@ class ConfigureProblem:
         nlp,
         problem_type,
         with_contact: bool = False,
-        with_friction: bool = True,
+        with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
     ):
@@ -521,7 +521,7 @@ class ConfigureProblem:
         nlp,
         problem_type,
         with_contact: bool = False,
-        with_friction: bool = True,
+        with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
     ):
