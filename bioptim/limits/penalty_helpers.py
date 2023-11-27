@@ -57,7 +57,10 @@ class PenaltyHelpers:
             x = []
             phases, nodes = _get_multinode_indices(penalty)
             for phase, node in zip(phases, nodes):
-                x.append(_reshape_to_vector(get_state_decision(phase, node)))
+                tp = get_state_decision(phase, node)
+                if penalty.transition:
+                    tp = tp[:, 0:1]
+                x.append(_reshape_to_vector(tp))
 
             return _vertcat(x)
         
@@ -546,6 +549,7 @@ def get_padded_control_array(
     return _u_sym
 
 # TO KEEP!!!!
+
 
 def _get_multinode_indices(penalty):
     if penalty.transition:
