@@ -153,7 +153,6 @@ class OptimizationVectorHelper:
         for i_phase in range(ocp.n_phases):
             current_nlp = ocp.nlp[i_phase]
 
-            
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
             repeat = nlp.n_states_decision_steps(0)
             OptimizationVectorHelper._set_node_index(nlp, 0)
@@ -489,7 +488,6 @@ class OptimizationVectorHelper:
                 data_controls[p] = data_controls[nlp.use_controls_from_phase_idx]
                 continue
             for node in range(nlp.n_states_nodes):  # Using n_states_nodes on purpose see higher
-                nlp.controls.node_index = node
                 n_cols = nlp.n_controls_steps(node)
                 
                 if node >= nlp.n_controls_nodes:
@@ -499,7 +497,7 @@ class OptimizationVectorHelper:
                     offset += nu
 
                 for key in nlp.controls.keys():
-                    data_controls[p][key][node] = u_array[nlp.controls[key].index, :]
+                    data_controls[p][key][node] = u_array[nlp.controls.key_index(key), :]
 
         # For parameters
         for param in ocp.parameters:

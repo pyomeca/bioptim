@@ -146,9 +146,7 @@ class NonLinearProgram:
         self.dynamics_func: list = []
         self.implicit_dynamics_func: list = []
         self.dynamics_type = None
-        self.external_forces: list[
-            list[Any, ...], ...
-        ] | None = None  # List (each node) of list that are passed to the model as external forces
+        self.external_forces: list[list[Any, ...], ...] | None = None  # nodes x steps that are passed to the model
         self.g = []
         self.g_internal = []
         self.g_implicit = []

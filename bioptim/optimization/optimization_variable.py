@@ -543,11 +543,14 @@ class OptimizationVariableContainer:
         return self._scaled[self.node_index]
 
     def keys(self):
-        return self.unscaled.keys()
+        return self._unscaled[0].keys()
+    
+    def key_index(self, key):
+        return self._unscaled[0][key].index
 
     @property
     def shape(self):
-        return self.unscaled.shape
+        return self._unscaled[0].shape
 
     @property
     def mx(self):

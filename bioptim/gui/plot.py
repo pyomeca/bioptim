@@ -342,13 +342,14 @@ class PlotOcp:
                         size_s = nlp.stochastic_variables.shape
                         if "penalty" in nlp.plot[key].parameters:
                             penalty = nlp.plot[key].parameters["penalty"]
-                            casadi_function = penalty.weighted_function_non_threaded[0]
-                            
+
+                            # As stated in penalty_option, the last controller is always supposed to be the right one
+                            casadi_function = penalty.function[-1]
                             if casadi_function is not None:
-                                size_x = casadi_function.nnz_in(2)
-                                size_u = casadi_function.nnz_in(3)
-                                size_p = casadi_function.nnz_in(4)
-                                size_s = casadi_function.nnz_in(5)
+                                size_x = casadi_function.nnz_in("x")
+                                size_u = casadi_function.nnz_in("u")
+                                size_p = casadi_function.nnz_in("p")
+                                size_s = casadi_function.nnz_in("s")
 
                         size = (
                             nlp.plot[key].function(
@@ -682,15 +683,14 @@ class PlotOcp:
             s = data_stochastic[phase_idx]
 
             for key in self.variable_sizes[phase_idx]:
-                y_data = self._compute_y_from_plot_func(self.custom_plots[key][phase_idx], time_stepwise, phases_dt, x_decision, x_stepwise, u, s, p)
+                y_data = self._compute_y_from_plot_func(self.custom_plots[key][phase_idx], phase_idx, time_stepwise, phases_dt, x_decision, x_stepwise, u, s, p)
                 if y_data is None:
                     continue
                 self._append_to_ydata(y_data)
 
         self.__update_axes()
 
-    @staticmethod
-    def _compute_y_from_plot_func(custom_plot: CustomPlot, time_stepwise, dt, x_decision, x_stepwise, u, s, p):
+    def _compute_y_from_plot_func(self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, s, p):
         """
         Compute the y data from the plot function
 
@@ -698,7 +698,10 @@ class PlotOcp:
         ----------
         custom_plot: CustomPlot
             The custom plot to compute
+        phase_idx: int
+            The index of the current phase
         time_stepwise: list[list[DM], ...]
+            The time vector of each phase
         dt
             The delta times of the current phase
         x
@@ -725,25 +728,26 @@ class PlotOcp:
 
         # Compute the values of the plot at each node
         all_y = []
-        for idx in custom_plot.node_idx:
+        for idx in range(len(custom_plot.node_idx)):
+            node_idx = custom_plot.node_idx[idx]
             if "penalty" in custom_plot.parameters:
                 penalty = custom_plot.parameters["penalty"]
                 t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: time_stepwise[p_idx][n_idx])
                 
                 x_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx: x[n_idx])
-                u_node = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx: u[n_idx])
+                u_node = PenaltyHelpers.controls(penalty, self.ocp, idx, lambda p_idx, n_idx: u[n_idx])
                 p_node = PenaltyHelpers.parameters(penalty, lambda: np.array(p))
                 s_node = PenaltyHelpers.stochastic(penalty, idx, lambda p_idx, n_idx: s[n_idx])
                 
             else:
-                t0 = idx
+                t0 = time_stepwise[phase_idx][node_idx][0]
 
-                x_node = x[idx]
-                u_node = u[idx]
+                x_node = x[node_idx]
+                u_node = u[node_idx]
                 p_node = p
-                s_node = s[idx]
+                s_node = s[node_idx]
 
-            tp = custom_plot.function(t0, dt, idx, x_node, u_node, p_node, s_node, **custom_plot.parameters)
+            tp = custom_plot.function(t0, dt, node_idx, x_node, u_node, p_node, s_node, **custom_plot.parameters)
 
             y_tp = np.ndarray((max(custom_plot.phase_mappings.to_first.map_idx) + 1, tp.shape[1])) * np.nan
             for ctr, axe_index in enumerate(custom_plot.phase_mappings.to_first.map_idx):

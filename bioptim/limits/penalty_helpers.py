@@ -61,25 +61,22 @@ class PenaltyHelpers:
                 if penalty.transition:
                     tp = tp[:, 0:1]
                 x.append(_reshape_to_vector(tp))
-
             return _vertcat(x)
         
-        elif penalty.derivative:
-            x = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
+
+        x = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
+        if penalty.derivative:
             x_next = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx + 1])
             return x.reshape((-1, 1)), x_next[:, 0].reshape((-1, 1))
-
-        else:
-            x = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
 
         if penalty.explicit_derivative:
             x = _reshape_to_vector(x)
             x = vertcat(x, get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx] + 1)[:, 0])
-        
+
         return _reshape_to_vector(x)
 
     @staticmethod
-    def controls(penalty, penalty_node_idx, get_control_decision: Callable):
+    def controls(penalty, ocp, penalty_node_idx, get_control_decision: Callable):
         if penalty.transition or penalty.multinode_penalty:
             u = []
             phases, nodes = _get_multinode_indices(penalty)
@@ -87,13 +84,16 @@ class PenaltyHelpers:
                 u.append(_reshape_to_vector(get_control_decision(phase, node)))
             return _vertcat(u)
 
-        else:
-            u = get_control_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
+        u = get_control_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
 
         if penalty.explicit_derivative:
             u = _reshape_to_vector(u)
-            u = vertcat(u, get_control_decision(penalty.phase, penalty.node_idx[penalty_node_idx] + 1)[:, 0])
-        
+            next_node = penalty.node_idx[penalty_node_idx] + 1
+            if ocp.nlp[penalty.phase].phase_dynamics == PhaseDynamics.ONE_PER_NODE and next_node >= ocp.nlp[penalty.phase].n_controls_nodes:
+                pass
+            else:
+                u = vertcat(u, get_control_decision(penalty.phase, next_node)[:, 0])
+
         return _reshape_to_vector(u)
 
     @staticmethod

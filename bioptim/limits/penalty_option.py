@@ -657,17 +657,15 @@ class PenaltyOption(OptionGeneric):
             sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, state_cx_scaled)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
-        self.function[node] = controller.to_casadi_func(
-            name,
-            sub_fcn,
-            time_cx,
-            phases_dt_cx,
-            state_cx_scaled,
-            control_cx_scaled,
-            param_cx,
-            stochastic_cx_scaled,
-            expand=self.expand,
+        self.function[node] = Function(
+            name, 
+            [time_cx, phases_dt_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled],
+            [sub_fcn],
+            ["t", "dt", "x", "u", "p", "s"],
+            ["val"],
         )
+        if self.expand:
+            self.function[node] = self.function[node].expand()
         self.function_non_threaded[node] = self.function[node]
 
         if self.derivative:
@@ -868,6 +866,8 @@ class PenaltyOption(OptionGeneric):
                 target_cx,
             ],
             [modified_fcn],
+            ["t", "dt", "x", "u", "p", "s", "weight", "target"],
+            ["val"],
         )
 
         self.weighted_function_non_threaded[node] = self.weighted_function[node]

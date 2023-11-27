@@ -429,7 +429,6 @@ class Solution:
                 raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
 
             for key in ss.keys():
-                ocp.nlp[p].controls[key].node_index = 0
                 ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].controls[key]), all_ns[p], "controls")
 
             for i in range(all_ns[p] + off):
@@ -444,7 +443,6 @@ class Solution:
         # For stochastic variables
         for p, ss in enumerate(sol_stochastic_variables):
             for key in ss.keys():
-                ocp.nlp[p].stochastic_variables[key].node_index = 0
                 ss[key].init.check_and_adjust_dimensions(
                     len(ocp.nlp[p].stochastic_variables[key]), all_ns[p], "stochastic_variables"
                 )
@@ -919,7 +917,7 @@ class Solution:
         for idx in range(len(penalty.node_idx)):
             t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
             x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx: self._decision_states.merge_keys(phase=p_idx, node=n_idx, scaled=True))
-            u = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx: self._stepwise_controls.merge_keys(phase=p_idx, node=n_idx, scaled=True))
+            u = PenaltyHelpers.controls(penalty, self.ocp, idx, lambda p_idx, n_idx: self._stepwise_controls.merge_keys(phase=p_idx, node=n_idx, scaled=True))
             s = PenaltyHelpers.stochastic(penalty, idx, lambda p_idx, n_idx: self._stochastic.merge_keys(phase=p_idx, node=n_idx, scaled=True))
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
