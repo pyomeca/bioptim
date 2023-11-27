@@ -29,10 +29,7 @@ class PenaltyHelpers:
             node = nodes[0]
         else:
             phase = penalty.phase
-            try:
-                node = penalty.node_idx[penalty_node_idx]
-            except:
-                print("coucou")
+            node = penalty.node_idx[penalty_node_idx]
 
         return get_t0(phase, node)[0, 0]
 

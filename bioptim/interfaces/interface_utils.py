@@ -247,7 +247,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
 
 def _get_x(ocp, phase_idx, node_idx, is_unscaled):
-    ocp.nlp[phase_idx].X[node_idx] if is_unscaled else ocp.nlp[phase_idx].X_scaled[node_idx]
     return ocp.nlp[phase_idx].X[node_idx] if is_unscaled else ocp.nlp[phase_idx].X_scaled[node_idx]
 
 

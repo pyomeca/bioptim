@@ -1768,7 +1768,7 @@ class OptimalControlProgram:
         NLP.add(self, "dt_mx", dt_mx, False)
 
         # Otherwise, add the time to the Parameters
-        params = vertcat(*set(dt_cx))
+        params = vertcat(*[dt_cx[i] for i in self.time_phase_mapping.to_first.map_idx])
         self.dt_parameter = Parameter(function=lambda model, values: None, name="dt", size=params.shape[0], allow_reserved_name=True, cx=self.cx)
         self.dt_parameter.cx = params
         self.dt_parameter.index = [nlp.time_index for nlp in self.nlp]
