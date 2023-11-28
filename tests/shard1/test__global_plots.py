@@ -241,17 +241,16 @@ def test_console_objective_functions(phase_dynamics):
                         .replace(".", "_")
                         .replace("__", "_")
                     )
-                    t = MX.sym("t", *p.weighted_function[node_index].sparsity_in("i0").shape)
-                    phases_dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i1").shape)
-                    x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("i2").shape)
-                    u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("i3").shape)
-                    if p.weighted_function[node_index].sparsity_in("i3").shape == (0, 0):
+                    t = MX.sym("t", *p.weighted_function[node_index].sparsity_in("t").shape)
+                    phases_dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("dt").shape)
+                    x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("x").shape)
+                    u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("u").shape)
+                    if p.weighted_function[node_index].sparsity_in("u").shape == (0, 0):
                         u = MX.sym("u", 3, 1)
-                    param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("i4").shape)
-                    s = MX.sym("s", *p.weighted_function[node_index].sparsity_in("i5").shape)
-                    weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i6").shape)
-                    target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i7").shape)
-                    dt_pen = MX.sym("penalty_dt", *p.weighted_function[node_index].sparsity_in("i8").shape)
+                    param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("p").shape)
+                    s = MX.sym("s", *p.weighted_function[node_index].sparsity_in("s").shape)
+                    weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("weight").shape)
+                    target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("target").shape)
 
                     p.function[node_index] = Function(
                         name, [t, phases_dt, x, u, param, s], [np.array([range(cmp, len(p.rows) + cmp)]).T]

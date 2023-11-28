@@ -120,6 +120,30 @@ def _merge_dict_keys(data, ocp):
         out.append(tp_phases)
     return out
 
+def _merge_dict_nodes(data):
+    """
+    Merge the nodes of a SolutionData.unscaled or SolutionData.scaled, without merging the keys
+
+    Parameters
+    ----------
+    data
+        The data to merge
+    ocp
+        The ocp
+
+    Returns
+    -------
+    The merged data
+    """
+
+    out = []
+    for phase_idx in range(len(data)):
+        data_tp = {}
+        for key in data[phase_idx].keys():
+            data_tp[key] = np.concatenate(data[phase_idx][key], axis=1)
+        out.append(data_tp)
+    return out
+
 
 class SolutionData:
     def __init__(self, unscaled, scaled, n_nodes: list[int, ...]):
@@ -484,7 +508,7 @@ class Solution:
 
         return cls(ocp=ocp)
 
-    def time(self, t_span: bool = False) -> list:
+    def times(self, t_span: bool = False) -> list:
         """
         Returns the time vector at each node
 
@@ -499,7 +523,48 @@ class Solution:
         The time vector
         """
 
-        return self._decision_times if t_span else self._stepwise_times
+        return deepcopy(self._decision_times if t_span else self._stepwise_times)
+
+    @property
+    def phase_times(self):
+        """
+        Returns the time vector at each phase
+
+        Returns
+        -------
+        The time vector
+        """
+        out = deepcopy(self._stepwise_times)
+        for p in range(len(out)):
+            out[p] = np.concatenate(out[p])[:, 0]
+        return out if len(out) > 1 else out[0]
+
+    @property
+    def t_spans(self):
+        """
+        Returns the time vector at each node
+        """
+        return self.times(t_span=True)
+    
+    @property
+    def stepwise_times(self):
+        """
+        Returns the time vector at each node
+        """
+        return self.times(t_span=False)
+
+    @property
+    def states(self):
+        if self._stepwise_states is None:
+            self._integrate_stepwise()
+        
+        out = _merge_dict_nodes(self._stepwise_states.unscaled)
+        return out if len(out) > 1 else out[0]
+    
+    @property
+    def controls(self):
+        out = _merge_dict_nodes(self._stepwise_controls.unscaled)
+        return out if len(out) > 1 else out[0]
 
     def decision_states(self, scaled: bool = False, concatenate_keys: bool = False):
         """
@@ -550,7 +615,7 @@ class Solution:
             data = _merge_dict_keys(data, self.ocp)
         return data if len(data) > 1 else data[0]
 
-    def controls(self, scaled: bool = False, concatenate_keys: bool = False):
+    def stepwise_controls(self, scaled: bool = False, concatenate_keys: bool = False):
         """
         Returns the controls. Note the final control is always present but set to np.nan if it is not defined
 

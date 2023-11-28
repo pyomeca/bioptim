@@ -660,7 +660,7 @@ class PlotOcp:
         data_states_decision = sol.decision_states(scaled=True, concatenate_keys=True)
         data_states_stepwise = sol.stepwise_states(scaled=True, concatenate_keys=True)
 
-        data_controls = sol.controls(scaled=True, concatenate_keys=True)
+        data_controls = sol.stepwise_controls(scaled=True, concatenate_keys=True)
         p = sol.parameters(scaled=True, concatenate_keys=True)
         data_stochastic = sol.stochastic(scaled=True, concatenate_keys=True)
 
@@ -671,7 +671,7 @@ class PlotOcp:
             data_controls = [data_controls]
             data_stochastic = [data_stochastic]
 
-        time_stepwise = sol.time()
+        time_stepwise = sol.stepwise_times
         phases_dt = sol.phases_dt
         self._update_xdata(time_stepwise)
 

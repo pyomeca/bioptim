@@ -29,7 +29,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
     weight: float = 1,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
@@ -118,7 +118,8 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    print(f"The optimized phase time is: {sol.time()[-1][-1]}, good job Lagrange!")
+    times = sol.phase_times
+    print(f"The optimized phase time is: {times[-1]}, good job Lagrange!")
     sol.animate()
 
 
