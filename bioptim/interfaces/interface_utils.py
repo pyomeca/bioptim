@@ -204,38 +204,29 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 raise NotImplementedError("multi_thread penalty with target shape != [n x m] is not implemented yet")
             target = penalty.target[0] if penalty.target is not None else []
 
+            t0 = nlp.cx()
             x = nlp.cx()
             u = nlp.cx()
             s = nlp.cx()
-            for idx in penalty.node_idx:
-                x_tp, u_tp, s_tp = get_x_u_s_at_idx(interface, nlp, penalty, idx, is_unscaled)
+            weight = np.ndarray((0,))
+            target = nlp.cx()
+            for idx in range(len(penalty.node_idx)):
+                t0_tp, x_tp, u_tp, s_tp, weight_tp, target_tp = _get_weighted_function_inputs(penalty, idx, ocp, nlp, is_unscaled)
+                
+                t0 = horzcat(t0, t0_tp)
                 x = horzcat(x, x_tp)
                 u = horzcat(u, u_tp)
                 s = horzcat(s, s_tp)
+                weight = np.concatenate((weight, [weight_tp]))
+                target = horzcat(target, target_tp)
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            t0 = interface.ocp.node_time(phase_idx=nlp.phase_idx, node_idx=penalty.node_idx[-1])
-            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, s, penalty.weight, target, penalty.dt), -1, 1)
+            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, s, penalty.weight, target), -1, 1)
 
         else:
             tp = interface.ocp.cx()
             for idx in range(len(penalty.node_idx)):
-                t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx))
-
-                weight = PenaltyHelpers.weight(penalty)
-                target = PenaltyHelpers.target(penalty, idx)
-
-                x = []
-                u = []
-                s = []
-                if nlp is not None:
-                    x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx: _get_x(ocp, p_idx, n_idx, is_unscaled))
-                    u = PenaltyHelpers.controls(penalty, ocp, idx, lambda p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled))
-
-                    s = PenaltyHelpers.stochastic(
-                        penalty, idx, lambda phase_idx, node_idx: nlp.S[node_idx] if is_unscaled else nlp.S_scaled[node_idx]
-                    )
-                    # x2, u2, s2 = PenaltyHelpers._get_x_u_s_at_idx(ocp, nlp, penalty, penalty.node_idx[idx], True )
+                t0, x, u, s, weight, target = _get_weighted_function_inputs(penalty, idx, ocp, nlp, is_unscaled)
 
                 node_idx = penalty.node_idx[idx]
                 tp = vertcat(
@@ -244,6 +235,21 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
         out = vertcat(out, sum2(tp))
     return out
+
+def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, is_unscaled):
+    t0 = PenaltyHelpers.t0(penalty, penalty_idx, lambda p_idx, n_idx: ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx))
+
+    weight = PenaltyHelpers.weight(penalty)
+    target = PenaltyHelpers.target(penalty, penalty_idx)
+
+    if nlp is not None:
+        x = PenaltyHelpers.states(penalty, penalty_idx, lambda p_idx, n_idx: _get_x(ocp, p_idx, n_idx, is_unscaled))
+        u = PenaltyHelpers.controls(penalty, ocp, penalty_idx, lambda p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled))
+
+        s = PenaltyHelpers.stochastic(
+            penalty, penalty_idx, lambda phase_idx, node_idx: nlp.S[node_idx] if is_unscaled else nlp.S_scaled[node_idx]
+        )
+    return t0, x, u, s, weight, target,
 
 
 def _get_x(ocp, phase_idx, node_idx, is_unscaled):

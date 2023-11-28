@@ -689,7 +689,7 @@ class IRK(COLLOCATION):
 
         # Create an implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn, {"error_on_fail": False})
-        t = vertcat(self.t_span_sym[0], self.t_span_sym[1] - self.t_span_sym[0])
+        t = vertcat(self.t_span_sym)  # We should not subtract here as it is already formally done in COLLOCATION
         x_irk_points = ifcn(self.cx(), t, states[0], controls, params, stochastic_variables)
         x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
