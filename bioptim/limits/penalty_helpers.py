@@ -77,19 +77,22 @@ class PenaltyHelpers:
 
     @staticmethod
     def controls(penalty, ocp, penalty_node_idx, get_control_decision: Callable):
+        nlp = ocp.nlp[penalty.phase]
+
         if penalty.transition or penalty.multinode_penalty:
             u = []
             phases, nodes = _get_multinode_indices(penalty)
             for phase, node in zip(phases, nodes):
                 u.append(_reshape_to_vector(get_control_decision(phase, node)))
             return _vertcat(u)
-
         u = get_control_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
 
-        if penalty.explicit_derivative:
+        if penalty.integrate or penalty.explicit_derivative:
             u = _reshape_to_vector(u)
+            
             next_node = penalty.node_idx[penalty_node_idx] + 1
-            if ocp.nlp[penalty.phase].phase_dynamics == PhaseDynamics.ONE_PER_NODE and next_node >= ocp.nlp[penalty.phase].n_controls_nodes:
+            step = 0  # TODO: This should be 1 for integrate if TRAPEZOIDAL
+            if nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and next_node >= nlp.n_controls_nodes:
                 pass
             else:
                 u = vertcat(u, get_control_decision(penalty.phase, next_node)[:, 0])
@@ -255,27 +258,27 @@ class PenaltyHelpers:
                 _u = vertcat(_u, _u_tp)
                 _s = vertcat(_s, _s_tp)
 
-        # elif penalty.integrate:
-        #     if is_unscaled:
-        #         _x = nlp.cx()
-        #         for i in range(nlp.X[_idx].shape[1]):
-        #             _x = vertcat(_x, nlp.X[_idx][:, i])
-        #         _u = (
-        #             nlp.U[_idx][:, 0]
-        #             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx < len(nlp.U)
-        #             else []
-        #         )
-        #         _s = nlp.S[_idx]
-        #     else:
-        #         _x = nlp.cx()
-        #         for i in range(nlp.X_scaled[_idx].shape[1]):
-        #             _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
-        #         _u = (
-        #             nlp.U_scaled[_idx][:, 0]
-        #             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx < len(nlp.U_scaled)
-        #             else []
-        #         )
-        #         _s = nlp.S_scaled[_idx]
+        elif penalty.integrate:
+            if is_unscaled:
+                _x = nlp.cx()
+                for i in range(nlp.X[_idx].shape[1]):
+                    _x = vertcat(_x, nlp.X[_idx][:, i])
+                _u = (
+                    nlp.U[_idx][:, 0]
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U)
+                    else []
+                )
+                _s = nlp.S[_idx]
+            else:
+                _x = nlp.cx()
+                for i in range(nlp.X_scaled[_idx].shape[1]):
+                    _x = vertcat(_x, nlp.X_scaled[_idx][:, i])
+                _u = (
+                    nlp.U_scaled[_idx][:, 0]
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U_scaled)
+                    else []
+                )
+                _s = nlp.S_scaled[_idx]
         
         else:
             if is_unscaled:
@@ -342,7 +345,7 @@ class PenaltyHelpers:
             if _idx < nlp.ns:
                 if is_unscaled:
                     x = nlp.X[_idx + 1][:, 0]
-                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx + 1 == len(nlp.U):
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx  == len(nlp.U):
                         u = nlp.U[_idx][:, 0]
                     elif _idx + 1 < len(nlp.U):
                         u = nlp.U[_idx + 1][:, 0]
@@ -351,7 +354,7 @@ class PenaltyHelpers:
                     s = nlp.S[_idx + 1][:, 0]
                 else:
                     x = nlp.X_scaled[_idx + 1][:, 0]
-                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx + 1 == len(nlp.U_scaled):
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and _idx == len(nlp.U_scaled):
                         u = nlp.U_scaled[_idx][:, 0]
                     elif _idx + 1 < len(nlp.U_scaled):
                         u = nlp.U_scaled[_idx + 1][:, 0]
