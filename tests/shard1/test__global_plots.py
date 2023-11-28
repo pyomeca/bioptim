@@ -241,16 +241,16 @@ def test_console_objective_functions(phase_dynamics):
                         .replace(".", "_")
                         .replace("__", "_")
                     )
-                    t = MX.sym("t", *p.weighted_function[node_index].sparsity_in("t").shape)
-                    phases_dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("dt").shape)
-                    x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("x").shape)
-                    u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("u").shape)
-                    if p.weighted_function[node_index].sparsity_in("u").shape == (0, 0):
+                    t = MX.sym("t", *p.weighted_function[node_index].size_in("t"))
+                    phases_dt = MX.sym("dt", *p.weighted_function[node_index].size_in("dt"))
+                    x = MX.sym("x", *p.weighted_function[node_index].size_in("x"))
+                    u = MX.sym("u", *p.weighted_function[node_index].size_in("u"))
+                    if p.weighted_function[node_index].size_in("u") == (0, 0):
                         u = MX.sym("u", 3, 1)
-                    param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("p").shape)
-                    s = MX.sym("s", *p.weighted_function[node_index].sparsity_in("s").shape)
-                    weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("weight").shape)
-                    target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("target").shape)
+                    param = MX.sym("param", *p.weighted_function[node_index].size_in("p"))
+                    s = MX.sym("s", *p.weighted_function[node_index].size_in("s"))
+                    weight = MX.sym("weight", *p.weighted_function[node_index].size_in("weight"))
+                    target = MX.sym("target", *p.weighted_function[node_index].size_in("target"))
 
                     p.function[node_index] = Function(
                         name, [t, phases_dt, x, u, param, s], [np.array([range(cmp, len(p.rows) + cmp)]).T]

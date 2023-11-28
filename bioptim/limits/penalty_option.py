@@ -687,10 +687,11 @@ class PenaltyOption(OptionGeneric):
             stochastic_cx_scaled = vertcat(
                 controller.stochastic_variables_scaled.cx_end, controller.stochastic_variables_scaled.cx_start
             )
-            self.function[node] = biorbd.to_casadi_func(
+            self.function[node] = Function(
                 f"{name}",
+                [time_cx, phases_dt_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled],
                 # TODO: Charbie -> this is False, add stochastic_variables for start, mid AND end
-                self.function[node](
+                [self.function[node](
                     time_cx,
                     phases_dt_cx,
                     controller.states_scaled.cx_end,
@@ -705,12 +706,9 @@ class PenaltyOption(OptionGeneric):
                     controller.controls_scaled.cx_start,
                     param_cx,
                     controller.stochastic_variables_scaled.cx_start,
-                ),
-                time_cx,
-                state_cx_scaled,
-                control_cx_scaled,
-                param_cx,
-                stochastic_cx_scaled,
+                )],
+                ["t", "dt", "x", "u", "p", "s"],
+                ["val"], 
             )
 
         is_trapezoidal = (

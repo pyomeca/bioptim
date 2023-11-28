@@ -346,10 +346,10 @@ class PlotOcp:
                             # As stated in penalty_option, the last controller is always supposed to be the right one
                             casadi_function = penalty.function[-1]
                             if casadi_function is not None:
-                                size_x = casadi_function.sparsity_in("x").shape[0]
-                                size_u = casadi_function.sparsity_in("u").shape[0]
-                                size_p = casadi_function.sparsity_in("p").shape[0]
-                                size_s = casadi_function.sparsity_in("s").shape[0]
+                                size_x = casadi_function.size_in("x")[0]
+                                size_u = casadi_function.size_in("u")[0]
+                                size_p = casadi_function.size_in("p")[0]
+                                size_s = casadi_function.size_in("s")[0]
 
                         size = (
                             nlp.plot[key].function(

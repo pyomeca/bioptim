@@ -66,13 +66,10 @@ class PenaltyHelpers:
 
         x = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
         
-        if penalty.derivative:
-            x_next = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx + 1])
-            return x.reshape((-1, 1)), x_next[:, 0].reshape((-1, 1))
-
-        if penalty.explicit_derivative:
+        if penalty.derivative or penalty.explicit_derivative:
             x = _reshape_to_vector(x)
-            x = vertcat(x, get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx] + 1)[:, 0])
+            x_next = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx] + 1)[:, 0]
+            x = vertcat(x_next, x) if penalty.derivative else vertcat(x, x_next) 
 
         return _reshape_to_vector(x)
 
@@ -82,7 +79,7 @@ class PenaltyHelpers:
             _u = get_control_decision(_phase, _node)
             if nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and _node >= nlp.n_controls_nodes:
                 if isinstance(_u, (MX, SX, DM)):
-                    return type(u)()
+                    return type(_u)()
                 elif isinstance(_u, np.ndarray):
                     return np.ndarray((0, 1))
                 else:
@@ -97,19 +94,17 @@ class PenaltyHelpers:
             for phase, node in zip(phases, nodes):
                 u.append(_reshape_to_vector(_get_control_internal(phase, node)))
             return _vertcat(u)
+
         u = _get_control_internal(penalty.phase, penalty.node_idx[penalty_node_idx])
 
-        if penalty.derivative:
-            raise NotImplementedError("Derivative is not implemented yet")
-
-        if penalty.integrate or penalty.explicit_derivative:
+        if penalty.integrate or penalty.derivative or penalty.explicit_derivative:
             u = _reshape_to_vector(u)
             
             next_node = penalty.node_idx[penalty_node_idx] + 1
             step = 0  # TODO: This should be 1 for integrate if TRAPEZOIDAL
             next_u = _get_control_internal(penalty.phase, next_node)
             if np.sum(next_u.shape) > 0:
-                u = vertcat(u, next_u[:, 0])
+                u = vertcat(next_u[:, 0], u) if penalty.derivative else vertcat(u, next_u[:, 0])
 
         return _reshape_to_vector(u)
 

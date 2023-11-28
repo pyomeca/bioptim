@@ -488,8 +488,8 @@ class AcadosInterface(SolverInterface):
                 acados.W_0 = linalg.block_diag(
                     acados.W_0, np.diag([objectives.weight] * objectives.function[0].numel_out())
                 )
-                x = x if objectives.function[0].sparsity_in("x").shape != (0, 0) else []
-                u = u if objectives.function[0].sparsity_in("u").shape != (0, 0) else []
+                x = x if objectives.function[0].size_in("x") != (0, 0) else []
+                u = u if objectives.function[0].size_in("u") != (0, 0) else []
                 acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function[0](t, x, u, p, s).reshape((-1, 1)))
 
                 if objectives.target is not None:
@@ -501,8 +501,8 @@ class AcadosInterface(SolverInterface):
                 acados.W_e = linalg.block_diag(
                     acados.W_e, np.diag([objectives.weight] * objectives.function[0].numel_out())
                 )
-                x = x if objectives.function[0].sparsity_in("x").shape != (0, 0) else []
-                u = u if objectives.function[0].sparsity_in("u").shape != (0, 0) else []
+                x = x if objectives.function[0].size_in("x") != (0, 0) else []
+                u = u if objectives.function[0].size_in("u") != (0, 0) else []
                 acados.mayer_costs_e = vertcat(
                     acados.mayer_costs_e, objectives.function[0](t, x, u, p, s).reshape((-1, 1))
                 )
