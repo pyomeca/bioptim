@@ -367,8 +367,9 @@ class Solution:
         # For parameters
         if n_param:
             for p, ss in enumerate(sol_params):
-                for key in ss.keys():
-                    vector = np.concatenate((vector, np.repeat(ss[key].init, all_ns[p] + 1)[:, np.newaxis]))
+                for i in range(all_ns[p] + 1):
+                    for key in ss.keys():
+                        vector = np.concatenate((vector, ss[key].init))
 
         # For stochastic variables
         for p, ss in enumerate(sol_stochastic_variables):
