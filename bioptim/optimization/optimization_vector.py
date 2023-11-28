@@ -303,7 +303,7 @@ class OptimizationVectorHelper:
                 for p in range(repeat if k != nlp.ns else 1):
                     point = k if k != 0 else 0 if p == 0 else 1
 
-                    collapsed_values = np.ndarray((nlp.states.shape, 1))
+                    collapsed_values = np.zeros((nlp.states.shape, 1))
                     for key in nlp.states:
                         if key in nlp.x_init.keys():
                             point_to_eval = point

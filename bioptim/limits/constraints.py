@@ -802,6 +802,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             penalty.explicit_derivative = True
             penalty.multi_thread = True
+            penalty.integrate = True
 
             return out_vector
 

@@ -343,7 +343,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 m_this_time = df_dz @ np.linalg.inv(dg_dz)
                 m_init[:, i] = np.reshape(StochasticBioModel.reshape_to_vector(m_this_time), (-1,))
 
-            m_init[:, -1] = m_init[:, -2]
+            m_init[:, -1] = m_init[:, -2]  # Wrong, but necessary since we do not have the collocation points at the last node
             return m_init
 
         def get_cov_init(
@@ -452,6 +452,8 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 )
             for key in u_init[i_phase].keys():
                 u_guess = np.concatenate((u_guess, u_init[i_phase][key].init), axis=0)
+            if u_guess.shape[1] == nlp.ns:
+                u_guess = np.concatenate((u_guess, u_init[i_phase][key].init[:, -1].reshape(-1, 1)), axis=1)
 
             k_init = np.ones((n_k, nlp.ns + 1)) * 0.01
             replace_initial_guess("k", n_k, k_init, s_init, i_phase)
