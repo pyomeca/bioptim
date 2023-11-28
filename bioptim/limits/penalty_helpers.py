@@ -75,8 +75,10 @@ class PenaltyHelpers:
 
     @staticmethod
     def controls(penalty, ocp, penalty_node_idx, get_control_decision: Callable):
+        
         def _get_control_internal(_phase, _node):
             _u = get_control_decision(_phase, _node)
+            nlp = ocp.nlp[_phase]
             if nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and _node >= nlp.n_controls_nodes:
                 if isinstance(_u, (MX, SX, DM)):
                     return type(_u)()
@@ -85,8 +87,6 @@ class PenaltyHelpers:
                 else:
                     raise RuntimeError("Invalid type for control")
             return _u
-
-        nlp = ocp.nlp[penalty.phase]
 
         if penalty.transition or penalty.multinode_penalty:
             u = []

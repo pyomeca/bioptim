@@ -508,7 +508,22 @@ class Solution:
 
         return cls(ocp=ocp)
 
-    def times(self, t_span: bool = False) -> list:
+    @property
+    def times(self):
+        """
+        Returns the time vector at each phase
+
+        Returns
+        -------
+        The time vector
+        """
+
+        out = deepcopy(self._stepwise_times)
+        for p in range(len(out)):
+            out[p] = np.concatenate(out[p])[:, 0]
+        return out if len(out) > 1 else out[0]
+
+    def phase_times(self, t_span: bool = False) -> list:
         """
         Returns the time vector at each node
 
@@ -526,32 +541,18 @@ class Solution:
         return deepcopy(self._decision_times if t_span else self._stepwise_times)
 
     @property
-    def phase_times(self):
-        """
-        Returns the time vector at each phase
-
-        Returns
-        -------
-        The time vector
-        """
-        out = deepcopy(self._stepwise_times)
-        for p in range(len(out)):
-            out[p] = np.concatenate(out[p])[:, 0]
-        return out if len(out) > 1 else out[0]
-
-    @property
     def t_spans(self):
         """
         Returns the time vector at each node
         """
-        return self.times(t_span=True)
+        return self.phase_times(t_span=True)
     
     @property
     def stepwise_times(self):
         """
         Returns the time vector at each node
         """
-        return self.times(t_span=False)
+        return self.phase_times(t_span=False)
 
     @property
     def states(self):
@@ -711,8 +712,9 @@ class Solution:
         new.real_time_to_optimize = deepcopy(self.real_time_to_optimize)
         new.iterations = deepcopy(self.iterations)
 
-        new._dt = deepcopy(self._dt)
+        new.phases_dt = deepcopy(self.phases_dt)
         new._stepwise_times = deepcopy(self._stepwise_times)
+        new._decision_times = deepcopy(self._decision_times)
 
         if not skip_data:
             new._decision_states = deepcopy(self._decision_states)

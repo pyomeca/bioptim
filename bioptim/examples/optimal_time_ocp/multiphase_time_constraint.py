@@ -180,7 +180,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    times = [t[-1] for t in sol.phase_times]
+    times = [t[-1] for t in sol.times]
     print(f"The optimized phase time are: {times[0]}s, {np.cumsum(times[:2])[-1]}s and {np.cumsum(times)[-1]}s.")
     sol.animate()
 

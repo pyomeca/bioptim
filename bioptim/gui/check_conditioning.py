@@ -129,6 +129,8 @@ def check_conditioning(ocp):
                     nlp.states.node_index = node_index
                     x_init[node_index, nlp.states[key].index] = np.array(nlp.x_init[key].init.evaluate_at(node_index))
             for key in nlp.controls.keys():
+                if not key in nlp.controls:
+                    continue
                 nlp.u_init[key].check_and_adjust_dimensions(len(nlp.controls[key]), nlp.ns)
                 for node_index in range(nlp.ns):
                     nlp.controls.node_index = node_index
@@ -399,7 +401,6 @@ def check_conditioning(ocp):
                         stochastic_cx,
                         obj.weight,
                         [],
-                        obj.dt,
                     )
                 else:
                     p = obj.weighted_function[node_index](
@@ -411,7 +412,6 @@ def check_conditioning(ocp):
                         stochastic_cx,
                         obj.weight,
                         obj.target,
-                        obj.dt,
                     )
 
                 for i in range(p.shape[0]):

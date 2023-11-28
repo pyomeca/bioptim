@@ -131,7 +131,7 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    times = sol.phase_times
+    times = sol.times
     print(f"The optimized phase time is: {times[-1]}, good job Mayer!")
     sol.animate()
 

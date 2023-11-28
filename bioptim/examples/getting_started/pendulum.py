@@ -143,8 +143,8 @@ def main():
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
-    sol.graphs(show_bounds=True)
-    # sol.animate(n_frames=100)
+    # sol.graphs(show_bounds=True)
+    sol.animate(n_frames=100)
 
 
 if __name__ == "__main__":

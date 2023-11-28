@@ -129,24 +129,24 @@ def test_add_new_plot(phase_dynamics):
     ocp.save(sol, save_name)
 
     # Test 1 - Working plot
-    ocp.add_plot("My New Plot", lambda t, phases_dt, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t0, phases_dt, node_idx, x, u, p, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 2 - Combine using combine_to is not allowed
     ocp, sol = OptimalControlProgram.load(save_name)
     with pytest.raises(RuntimeError):
-        ocp.add_plot("My New Plot", lambda t, phases_dt, x, u, p, s: x[0:2, :], combine_to="NotAllowed")
+        ocp.add_plot("My New Plot", lambda t0, phases_dt, node_idx, x, u, p, s: x[0:2, :], combine_to="NotAllowed")
 
     # Test 3 - Create a completely new plot
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, phases_dt, x, u, p, s: x[0:2, :])
-    ocp.add_plot("My Second New Plot", lambda t, phases_dt, x, p, u, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t0, phases_dt, node_idx, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My Second New Plot", lambda t0, phases_dt, node_idx, x, p, u, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Test 4 - Combine to the first using fig_name
     ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, phases_dt, x, u, p, s: x[0:2, :])
-    ocp.add_plot("My New Plot", lambda t, phases_dt, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t0, phases_dt, node_idx, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t0, phases_dt, node_idx, x, u, p, s: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Add the plot of objectives and constraints to this mess
@@ -258,7 +258,7 @@ def test_console_objective_functions(phase_dynamics):
                     p.function_non_threaded[node_index] = p.function[node_index]
                     p.weighted_function[node_index] = Function(
                         name,
-                        [t, phases_dt, x, u, param, s, weight, target, dt_pen],
+                        [t, phases_dt, x, u, param, s, weight, target],
                         [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T],
                     )
                     p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]

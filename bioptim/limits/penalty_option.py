@@ -918,11 +918,11 @@ class PenaltyOption(OptionGeneric):
 
         """
 
-        def plot_function(t, phases_dt, x, u, p, s, penalty=None):
-            if isinstance(t, (list, tuple)):
-                return self.target_to_plot[:, [self.node_idx.index(_t) for _t in t]]
+        def plot_function(t0, phases_dt, node_idx, x, u, p, s, penalty=None):
+            if isinstance(node_idx, (list, tuple)):
+                return self.target_to_plot[:, [self.node_idx.index(idx) for idx in node_idx]]
             else:
-                return self.target_to_plot[:, self.node_idx.index(t)]
+                return self.target_to_plot[:, self.node_idx.index(node_idx)]
 
         if self.target_to_plot is not None:
             if len(self.node_idx) == self.target_to_plot.shape[1]:

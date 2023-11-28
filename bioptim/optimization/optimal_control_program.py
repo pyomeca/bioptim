@@ -1644,7 +1644,7 @@ class OptimalControlProgram:
                         f"installed version ({ocp.version[key]})"
                     )
             sol = data["sol"]
-            sol.ocp = SimplifiedOCP(ocp)
+            sol.ocp = ocp
             out = [ocp, sol]
         return out
 
