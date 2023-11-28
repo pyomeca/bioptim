@@ -179,8 +179,8 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    times = [t[-1] for t in sol.time]
-    print(f"The optimized phase time are: {times[0]}s, {times[1] - times[0]}s and {times[2] - times[1]}s.")
+    times = [t[-1][-1] for t in sol.time()]
+    print(f"The optimized phase time are: {times[0]}s, {times[1] + times[0]}s and {times[2] + times[0] + times[1]}s.")
     sol.animate()
 
 

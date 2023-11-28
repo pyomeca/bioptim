@@ -235,7 +235,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                     s = PenaltyHelpers.stochastic(
                         penalty, idx, lambda phase_idx, node_idx: nlp.S[node_idx] if is_unscaled else nlp.S_scaled[node_idx]
                     )
-                    x2, u2, s2 = PenaltyHelpers._get_x_u_s_at_idx(ocp, nlp, penalty, penalty.node_idx[idx], True )
+                    # x2, u2, s2 = PenaltyHelpers._get_x_u_s_at_idx(ocp, nlp, penalty, penalty.node_idx[idx], True )
 
                 node_idx = penalty.node_idx[idx]
                 tp = vertcat(

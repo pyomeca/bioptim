@@ -411,7 +411,7 @@ class NewVariableConfiguration:
                 )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_states"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, s: x[self.nlp.states[self.name].index, :],
+                        lambda t0, phases_dt, node_idx, x, u, p, s: x[self.nlp.states.key_index(self.name), :],
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
@@ -456,7 +456,7 @@ class NewVariableConfiguration:
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_controls"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, s: u[self.nlp.controls[self.name].index, :],
+                        lambda t0, phases_dt, node_idx, x, u, p, s: u[self.nlp.controls.key_index(self.name), :],
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
@@ -592,7 +592,7 @@ def _manage_fatigue_to_new_variable(
                 var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
             )
             nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, s, key: u[nlp.controls[key].index, :],
+                lambda t0, phases_dt, node_idx, x, u, p, s, key: u[nlp.controls.key_index(key), :],
                 plot_type=PlotType.STEP,
                 combine_to=control_plot_name,
                 key=var_names_with_suffix[-1],
@@ -601,7 +601,7 @@ def _manage_fatigue_to_new_variable(
         elif i == 0:
             NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True)
             nlp.plot[f"{name}_controls"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, s, key: u[nlp.controls[key].index, :],
+                lambda t0, phases_dt, node_idx, x, u, p, s, key: u[nlp.controls.key_index(key), :],
                 plot_type=PlotType.STEP,
                 combine_to=control_plot_name,
                 key=f"{name}",
@@ -612,7 +612,7 @@ def _manage_fatigue_to_new_variable(
             name_tp = f"{var_names_with_suffix[-1]}_{params}"
             NewVariableConfiguration(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
             nlp.plot[name_tp] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, s, key, mod: mod * x[nlp.states[key].index, :],
+                lambda t0, phases_dt, node_idx, x, u, p, s, key, mod: mod * x[nlp.states.key_index(key), :],
                 plot_type=PlotType.INTEGRATED,
                 combine_to=fatigue_plot_name,
                 key=name_tp,
@@ -655,7 +655,7 @@ def append_faked_optim_var(name: str, optim_var, keys: list):
     to_second = []
     to_first = []
     for key in keys:
-        index.extend(list(optim_var[key].index))
+        index.extend(list(optim_var.key_index(key)))
         mx = vertcat(mx, optim_var[key].mx)
         to_second.extend(list(np.array(optim_var[key].mapping.to_second.map_idx) + len(to_second)))
         to_first.extend(list(np.array(optim_var[key].mapping.to_first.map_idx) + len(to_first)))

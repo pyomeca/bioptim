@@ -77,25 +77,37 @@ class PenaltyHelpers:
 
     @staticmethod
     def controls(penalty, ocp, penalty_node_idx, get_control_decision: Callable):
+        def _get_control(_phase, _node):
+            _u = get_control_decision(_phase, _node)
+            if nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and _node >= nlp.n_controls_nodes:
+                if isinstance(_u, (MX, SX)):
+                    return ocp.cx()
+                elif isinstance(_u, DM):
+                    return DM()
+                elif isinstance(_u, np.ndarray):
+                    return np.array([])
+                else:
+                    raise RuntimeError("Invalid type for control")
+            return _u
+
         nlp = ocp.nlp[penalty.phase]
 
         if penalty.transition or penalty.multinode_penalty:
             u = []
             phases, nodes = _get_multinode_indices(penalty)
             for phase, node in zip(phases, nodes):
-                u.append(_reshape_to_vector(get_control_decision(phase, node)))
+                u.append(_reshape_to_vector(_get_control(phase, node)))
             return _vertcat(u)
-        u = get_control_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
+        u = _get_control(penalty.phase, penalty.node_idx[penalty_node_idx])
 
         if penalty.integrate or penalty.explicit_derivative:
             u = _reshape_to_vector(u)
             
             next_node = penalty.node_idx[penalty_node_idx] + 1
             step = 0  # TODO: This should be 1 for integrate if TRAPEZOIDAL
-            if nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and next_node >= nlp.n_controls_nodes:
-                pass
-            else:
-                u = vertcat(u, get_control_decision(penalty.phase, next_node)[:, 0])
+            next_u = _get_control(penalty.phase, next_node)
+            if np.sum(next_u.shape) > 0:
+                u = vertcat(u, next_u[:, 0])
 
         return _reshape_to_vector(u)
 
