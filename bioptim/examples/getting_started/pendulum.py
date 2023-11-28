@@ -138,13 +138,13 @@ def main():
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
-    # --- Solve the ocp --- #
+    # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
-    # sol.graphs(show_bounds=True)
-
-    # --- Show the results in a bioviz animation --- #
     sol.print_cost()
-    sol.animate(n_frames=100)
+
+    # --- Show the results (graph or animation) --- #
+    sol.graphs(show_bounds=True)
+    # sol.animate(n_frames=100)
 
 
 if __name__ == "__main__":
