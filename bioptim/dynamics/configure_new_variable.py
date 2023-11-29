@@ -655,7 +655,7 @@ def append_faked_optim_var(name: str, optim_var, keys: list):
     to_second = []
     to_first = []
     for key in keys:
-        index.extend(list(optim_var.key_index(key)))
+        index.extend(list(optim_var[key].index))
         mx = vertcat(mx, optim_var[key].mx)
         to_second.extend(list(np.array(optim_var[key].mapping.to_second.map_idx) + len(to_second)))
         to_first.extend(list(np.array(optim_var[key].mapping.to_first.map_idx) + len(to_first)))

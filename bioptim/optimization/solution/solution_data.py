@@ -115,10 +115,12 @@ class SolutionData:
         This method does not remove the redundent nodes when merging the phase nor the nodes
         """
         
-        if SolutionMerge.KEYS not in to_merge:
-            raise RuntimeError("to_merge must contain SolutionMerge.KEYS when merging phases")
         if SolutionMerge.NODES not in to_merge:
             raise RuntimeError("to_merge must contain SolutionMerge.NODES when merging phases")
+        if SolutionMerge.KEYS not in to_merge:
+            return {
+                key: np.concatenate([data[phase][key] for phase in range(len(data))], axis=1) for key in data[0].keys()
+            }
 
         return np.concatenate(data, axis=1)
 

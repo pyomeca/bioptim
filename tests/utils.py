@@ -19,6 +19,7 @@ from bioptim import (
     Solver,
     SolutionIntegrator,
     Solution,
+    SolutionMerge,
 )
 
 
@@ -119,7 +120,6 @@ class TestUtils:
 
     @staticmethod
     def simulate(sol: Solution, decimal_value=7):
-        sol_merged = sol.merge_phases()
         if sum([nlp.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
             with pytest.raises(
                 ValueError,
@@ -129,9 +129,7 @@ class TestUtils:
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             ):
                 sol.integrate(
-                    merge_phases=True,
                     shooting_type=Shooting.SINGLE,
-                    keep_intermediate_points=True,
                     integrator=SolutionIntegrator.OCP,
                 )
             return
@@ -145,25 +143,23 @@ class TestUtils:
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             ):
                 sol.integrate(
-                    merge_phases=True,
                     shooting_type=Shooting.SINGLE,
-                    keep_intermediate_points=True,
                     integrator=SolutionIntegrator.OCP,
                 )
             return
 
         sol_single = sol.integrate(
-            merge_phases=True,
             shooting_type=Shooting.SINGLE,
-            keep_intermediate_points=True,
             integrator=SolutionIntegrator.OCP,
+            to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES],
         )
 
-        # Evaluate the final error of the single shooting integration versus the finale node
-        for key in sol_merged.states.keys():
+        # Evaluate the final error of the single shooting integration versus the final node
+        sol_merged = sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
+        for key in sol.states.keys():
             np.testing.assert_almost_equal(
-                sol_merged.states[key][:, -1],
-                sol_single.states[key][:, -1],
+                sol_merged[key][:, -1],
+                sol_single[key][:, -1],
                 decimal=decimal_value,
             )
 

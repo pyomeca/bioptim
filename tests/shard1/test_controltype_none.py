@@ -84,7 +84,7 @@ class NonControlledMethod:
         stochastic_variables: MX | SX,
         nlp: NonLinearProgram,
     ) -> DynamicsEvaluation:
-        t_phase = nlp.tf
+        t_phase = nlp.tf_mx
 
         return DynamicsEvaluation(
             dxdt=self.system_dynamics(a=states[0], b=states[1], c=states[2], t=time, t_phase=t_phase),
@@ -258,7 +258,7 @@ def test_main_control_type_none(use_sx=False, phase_dynamics=PhaseDynamics.ONE_P
     np.testing.assert_almost_equal(f[0, 0], 0.2919065990591678)
 
     # Check finishing time
-    np.testing.assert_almost_equal(sol.time[-1][-1], 0.8299336018055604)
+    np.testing.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.8299336018055604)
 
     # Check constraints
     g = np.array(sol.constraints)

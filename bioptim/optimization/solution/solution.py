@@ -217,8 +217,8 @@ class Solution:
             The list of initial guesses
         """
 
-        if not (isinstance(sol, (list, tuple)) and len(sol) == 4):
-            raise ValueError("_sol should be a list of tuple and the length should be 4")
+        if not (isinstance(sol, (list, tuple)) and len(sol) == 5):
+            raise ValueError("_sol should be a list of tuple and the length should be 5")
 
         n_param = len(ocp.parameters)
         all_ns = [nlp.ns for nlp in ocp.nlp]
@@ -245,8 +245,14 @@ class Solution:
                     "should be a unique vector of size equal to n_param"
                 )
 
+        dt, sol_states, sol_controls, sol_params, sol_stochastic_variables = sol
+
         vector = np.ndarray((0, 1))
-        sol_states, sol_controls, sol_params, sol_stochastic_variables = sol
+
+        # For time
+        if len(dt.shape) == 1:
+            dt = dt[:, np.newaxis]
+        vector = np.concatenate((vector, dt))
 
         # For states
         for p, ss in enumerate(sol_states):
@@ -429,6 +435,9 @@ class Solution:
         data = self._stepwise_states.to_dict(to_merge=to_merge, scaled=scaled)
         return data if len(data) > 1 else data[0]
 
+    def decision_controls(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
+        return self.stepwise_controls(scaled=scaled, to_merge=to_merge)
+
     def stepwise_controls(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
         """
         Returns the controls. Note the final control is always present but set to np.nan if it is not defined
@@ -558,6 +567,48 @@ class Solution:
             new._parameters = deepcopy(self._parameters)
         return new
 
+    def integrate(
+            self, 
+            shooting_type: Shooting = Shooting.SINGLE, 
+            integrator: SolutionIntegrator = SolutionIntegrator.OCP, 
+            to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
+        ):
+
+        n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
+        if n_direct_collocation > 0 and integrator == SolutionIntegrator.OCP:
+            raise ValueError(
+                "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                "we cannot use the SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
+            )
+
+        params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
+        x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
+        u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
+        s = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
+
+        out: list = [None] * len(self.ocp.nlp)
+        for p, nlp in enumerate(self.ocp.nlp):
+            t = self._decision_times[p]
+
+            if integrator == SolutionIntegrator.OCP:
+                integrated_sol = solve_ivp_bioptim_interface(
+                    shooting_type=shooting_type, dynamics_func=nlp.dynamics, t=t, x=x[p], u=u[p], s=s[p], p=params
+                )
+            else:
+                raise NotImplementedError(f"{integrator} is not implemented yet")
+            
+            out[p] = {}
+            for key in nlp.states.keys():
+                out[p][key] = [None] * nlp.n_states_nodes
+                for ns, sol_ns in enumerate(integrated_sol):
+                    out[p][key][ns] = sol_ns[nlp.states[key].index, :]
+
+        if not to_merge:
+            return out
+        return SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
+
     def _integrate_stepwise(self) -> None:
         """
         This method integrate to stepwise level the states. That is the states that are used in the dynamics and 
@@ -569,15 +620,12 @@ class Solution:
             The integrated data structure similar in structure to the original _decision_states
         """
 
-        # Prepare the output
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
-
-        unscaled: list = [None] * len(self.ocp.nlp)
-        
         x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         s = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
 
+        unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
             t = self._decision_times[p]
 

@@ -76,6 +76,8 @@ class NonLinearProgram:
         The time stamp of the beginning of the phase
     tf: float
         The time stamp of the end of the phase
+    tf_mx:
+        The time stamp of the end of the phase
     variable_mappings: BiMappingList
         The list of mapping for all the variables
     u_bounds = Bounds()
@@ -189,6 +191,7 @@ class NonLinearProgram:
         self.dt = None
         self.dt_mx = None
         self.tf = None
+        self.tf_mx = None
         self.states = OptimizationVariableContainer(self.phase_dynamics)
         self.states_dot = OptimizationVariableContainer(self.phase_dynamics)
         self.controls = OptimizationVariableContainer(self.phase_dynamics)

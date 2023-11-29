@@ -691,7 +691,7 @@ class OptimalControlProgram:
         self.time_phase_mapping = time_phase_mapping
 
         # Add any time related parameters to the parameters list before declaring it
-        self._define_time(self.phase_time, objective_functions, constraints, parameters, parameter_init)
+        self._define_time(self.phase_time, objective_functions, constraints)
 
         # Declare and fill the parameters
         self.parameters = ParameterList()
@@ -1662,12 +1662,7 @@ class OptimalControlProgram:
             display_graph.print()
 
     def _define_time(
-        self,
-        phase_time: int | float | list | tuple,
-        objective_functions: ObjectiveList,
-        constraints: ConstraintList,
-        parameters_init: InitialGuessList,
-        parameters_bounds: BoundsList,
+        self, phase_time: int | float | list | tuple, objective_functions: ObjectiveList, constraints: ConstraintList
     ):
         """
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
@@ -1766,6 +1761,7 @@ class OptimalControlProgram:
         NLP.add(self, "dt", dt_cx, False)
         NLP.add(self, "tf", [nlp.dt * max(nlp.ns, 1) for nlp in self.nlp], False)
         NLP.add(self, "dt_mx", dt_mx, False)
+        NLP.add(self, "tf_mx", [nlp.dt_mx * max(nlp.ns, 1) for nlp in self.nlp], False)
 
         # Otherwise, add the time to the Parameters
         params = vertcat(*[dt_cx[i] for i in self.time_phase_mapping.to_first.map_idx])

@@ -137,7 +137,7 @@ class PenaltyHelpers:
         if penalty.target is None:
             return np.array([])
         
-        return penalty.target[0][..., penalty.node_idx.index(penalty_node_idx)]
+        return penalty.target[0][..., penalty_node_idx]
 
         # if penalty.target is None:
         #     target = []

@@ -1,5 +1,5 @@
 import numpy as np
-from casadi import vertcat, DM
+from casadi import vertcat, DM, SX, MX
 
 from ..misc.enums import ControlType, InterpolationType
 
@@ -413,8 +413,10 @@ class OptimizationVectorHelper:
         -------
         The dt values
         """
-
-        return data[ocp.dt_parameter.index].toarray()[:, 0].tolist()
+        out = data[ocp.dt_parameter.index]
+        if isinstance(out, (DM, SX, MX)):
+            return out.toarray()[:, 0].tolist()
+        return list(out[:, 0])
 
     @staticmethod
     def extract_step_times(ocp, data: np.ndarray | DM) -> list:
@@ -499,7 +501,7 @@ class OptimizationVectorHelper:
             for node in range(nlp.n_states_nodes):  # Using n_states_nodes on purpose see higher
                 n_cols = nlp.n_controls_steps(node)
                 
-                if node >= nlp.n_controls_nodes:
+                if n_cols == 0 or node >= nlp.n_controls_nodes:
                     u_array = np.ndarray((nu, n_cols)) * np.nan
                 else:
                     u_array = v_array[offset : offset + nu * n_cols].reshape((nu, -1), order="F")

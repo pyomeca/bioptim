@@ -16,6 +16,7 @@ from ..optimization.parameters import ParameterList
 from ..interfaces import Solver
 from ..interfaces.abstract_options import GenericSolver
 from ..models.protocols.biomodel import BioModel
+from ..optimization.solution.solution_data import SolutionMerge
 
 
 class RecedingHorizonOptimization(OptimalControlProgram):
@@ -183,7 +184,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         real_time = perf_counter() - real_time
 
         # Prepare the modified ocp that fits the solution dimension
-        final_sol = self._initialize_solution(states, controls)
+        dt = sol.t_spans[0][0][-1]
+        final_sol = self._initialize_solution(float(dt), states, controls)
         final_sol.solver_time_to_optimize = total_time
         final_sol.real_time_to_optimize = real_time
 
@@ -203,7 +205,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         self.frame_to_export = export_options["frame_to_export"]
 
-    def _initialize_solution(self, states: list, controls: list):
+    def _initialize_solution(self, dt: float, states: list, controls: list):
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
             x_init.add(
@@ -228,7 +230,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             dynamics=self.original_values["dynamics"][0],
             ode_solver=self.nlp[0].ode_solver,
             n_shooting=self.total_optimization_run - 1,
-            phase_time=self.total_optimization_run * self.nlp[0].dt,
+            phase_time=self.total_optimization_run * dt,
             x_bounds=self.nlp[0].x_bounds,
             u_bounds=self.nlp[0].u_bounds,
             x_init=x_init,
@@ -237,7 +239,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         )
         s_init = InitialGuessList()
         p_init = InitialGuessList()
-        return Solution.from_initial_guess(solution_ocp, [x_init, u_init_for_solution, p_init, s_init])
+        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init_for_solution, p_init, s_init])
 
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
         state_bounds_have_changed = self.advance_window_bounds_states(sol, **advance_options)
@@ -280,21 +282,25 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         return False
 
     def advance_window_initial_guess_states(self, sol, **advance_options):
-        for key in self.nlp[0].x_init.keys():
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+
+        for key in states.keys():
             if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
                 # Override the previous x_init
                 self.nlp[0].x_init.add(
-                    key, np.ndarray(sol.states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
+                    key, np.ndarray(states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
                 )
                 self.nlp[0].x_init[key].check_and_adjust_dimensions(len(self.nlp[0].states[key]), self.nlp[0].ns)
 
             self.nlp[0].x_init[key].init[:, :] = np.concatenate(
-                (sol.states[key][:, 1:], sol.states[key][:, -1][:, np.newaxis]), axis=1
+                (states[key][:, 1:], states[key][:, -1][:, np.newaxis]), axis=1
             )
         return True
 
     def advance_window_initial_guess_controls(self, sol, **advance_options):
         for key in self.nlp[0].u_init.keys():
+            self.nlp[0].controls.node_index = 0
+
             if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
                 # Override the previous u_init
                 self.nlp[0].u_init.add(
@@ -310,22 +316,19 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         return True
 
     def export_data(self, sol) -> tuple:
+        merged_states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        merged_controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+
         states = {}
         controls = {}
         for key in sol.states:
-            states[key] = sol.states[key][:, self.frame_to_export]
+            states[key] = merged_states[key][:, self.frame_to_export]
         for key in sol.controls:
-            controls[key] = sol.controls[key][:, self.frame_to_export]
+            controls[key] = merged_controls[key][:, self.frame_to_export]
         return states, controls
 
     def _define_time(
-        self,
-        phase_time: int | float | list | tuple,
-        objective_functions: ObjectiveList,
-        constraints: ConstraintList,
-        parameters: ParameterList,
-        parameters_init: InitialGuessList,
-        parameters_bounds: BoundsList,
+        self, phase_time: int | float | list | tuple, objective_functions: ObjectiveList, constraints: ConstraintList
     ):
         """
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
@@ -339,12 +342,6 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             All the objective functions. It is used to scan if any time optimization was defined
         constraints: ConstraintList
             All the constraint functions. It is used to scan if any free time was defined
-        parameters: ParameterList
-            (OUTPUT) The parameters list to add the time parameters to
-        parameters_init: InitialGuessList
-            (OUTPUT) The initial guesses list to add the time initial guess to
-        parameters_bounds: BoundsList
-            (OUTPUT) The bounds list to add the time bouds to
         """
 
         def check_for_time_optimization(penalty_functions):
@@ -372,9 +369,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         check_for_time_optimization(objective_functions)
         check_for_time_optimization(constraints)
 
-        super(RecedingHorizonOptimization, self)._define_time(
-            phase_time, objective_functions, constraints, parameters, parameters_init, parameters_bounds
-        )
+        super(RecedingHorizonOptimization, self)._define_time(phase_time, objective_functions, constraints)
 
 
 class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
@@ -425,7 +420,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             **extra_options,
         )
 
-    def _initialize_solution(self, states: list, controls: list):
+    def _initialize_solution(self, dt: float, states: list, controls: list):
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
             x_init.add(
@@ -444,11 +439,13 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
         model_class = self.original_values["bio_model"][0][0]
         model_initializer = self.original_values["bio_model"][0][1]
+
+        
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
             dynamics=self.original_values["dynamics"][0],
             n_shooting=self.total_optimization_run * self.nlp[0].ns - 1,
-            phase_time=self.total_optimization_run * self.nlp[0].ns * self.nlp[0].dt,
+            phase_time=self.total_optimization_run * self.nlp[0].ns * dt,
             x_bounds=self.nlp[0].x_bounds,
             u_bounds=self.nlp[0].u_bounds,
             x_init=x_init,
@@ -457,7 +454,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         )
         s_init = InitialGuessList()
         p_init = InitialGuessList()
-        return Solution.from_initial_guess(solution_ocp, [x_init, u_init_for_solution, p_init, s_init])
+        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init_for_solution, p_init, s_init])
 
     def _initialize_state_idx_to_cycle(self, options):
         if "states" not in options:
@@ -507,18 +504,22 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         return True
 
     def advance_window_initial_guess_states(self, sol, **advance_options):
-        for key in sol.states.keys():
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+
+        for key in states.keys():
             if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
                 self.nlp[0].x_init.add(
-                    key, np.ndarray(sol.states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
+                    key, np.ndarray(states[key].shape), interpolation=InterpolationType.EACH_FRAME, phase=0
                 )
                 self.nlp[0].x_init[key].check_and_adjust_dimensions(len(self.nlp[0].states[key]), self.nlp[0].ns)
 
-            self.nlp[0].x_init[key].init[:, :] = sol.states[key]
+            self.nlp[0].x_init[key].init[:, :] = states[key]
         return True
 
     def advance_window_initial_guess_controls(self, sol, **advance_options):
         for key in sol.controls.keys():
+            self.nlp[0].controls.node_index = 0
+
             if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
                 self.nlp[0].u_init.add(
                     key,
@@ -580,19 +581,23 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         self.time_idx_to_cycle = self.n_cycles_to_advance * self.cycle_len
 
     def advance_window_initial_guess_states(self, sol, **advance_options):
-        for key in sol.states.keys():
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+
+        for key in states.keys():
             if self.nlp[0].x_init[key].type != InterpolationType.EACH_FRAME:
                 self.nlp[0].x_init.add(
                     key,
-                    np.ndarray((sol.states[key].shape[0], self.nlp[0].ns + 1)),
+                    np.ndarray((states[key].shape[0], self.nlp[0].ns + 1)),
                     interpolation=InterpolationType.EACH_FRAME,
                     phase=0,
                 )
                 self.nlp[0].x_init[key].check_and_adjust_dimensions(self.nlp[0].states[key].shape, self.nlp[0].ns)
-            self.nlp[0].x_init[key].init[:, :] = sol.states[key][:, self.initial_guess_frames]
+            self.nlp[0].x_init[key].init[:, :] = states[key][:, self.initial_guess_frames]
 
     def advance_window_initial_guess_controls(self, sol, **advance_options):
         for key in sol.controls.keys():
+            self.nlp[0].controls.node_index = 0
+            
             if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
                 self.nlp[0].u_init.add(
                     key,
@@ -635,12 +640,14 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
             for sol in solution[1]:
                 _states, _controls = self.export_cycles(sol)
-                cycle_solutions_output.append(self._initialize_one_cycle(_states, _controls))
+                dt = sol.t_spans[0][0][-1]
+                cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls))
 
         if cycle_solutions == MultiCyclicCycleSolutions.ALL_CYCLES:
             for cycle_number in range(1, self.n_cycles):
                 _states, _controls = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
-                cycle_solutions_output.append(self._initialize_one_cycle(_states, _controls))
+                dt = sol.t_spans[0][0][-1]
+                cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls))
 
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
             final_solution.append(cycle_solutions_output)
@@ -658,7 +665,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             controls[key] = sol.controls[key][:, window_slice]
         return states, controls
 
-    def _initialize_solution(self, states: list, controls: list):
+    def _initialize_solution(self, dt: float, states: list, controls: list):
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
             x_init.add(
@@ -685,16 +692,16 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             ode_solver=self.nlp[0].ode_solver,
             objective_functions=deepcopy(self.original_values["objective_functions"]),
             n_shooting=self.cycle_len * self.total_optimization_run - 1,
-            phase_time=(self.cycle_len * self.total_optimization_run - 1) * self.nlp[0].dt,
+            phase_time=(self.cycle_len * self.total_optimization_run - 1) * dt,
             x_init=x_init,
             u_init=u_init,
             use_sx=self.original_values["use_sx"],
         )
         s_init = InitialGuessList()
         p_init = InitialGuessList()
-        return Solution.from_initial_guess(solution_ocp, [x_init, u_init_for_solution, p_init, s_init])
+        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init_for_solution, p_init, s_init])
 
-    def _initialize_one_cycle(self, states: np.ndarray, controls: np.ndarray):
+    def _initialize_one_cycle(self, dt: float, states: np.ndarray, controls: np.ndarray):
         """return a solution for a single window kept of the MHE"""
         x_init = InitialGuessList()
         for key in self.nlp[0].states.keys():
@@ -725,14 +732,14 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             objective_functions=deepcopy(original_values["objective_functions"]),
             ode_solver=self.nlp[0].ode_solver,
             n_shooting=self.cycle_len,
-            phase_time=self.cycle_len * self.nlp[0].dt,
+            phase_time=self.cycle_len * dt,
             x_init=x_init,
             u_init=u_init,
             use_sx=original_values["use_sx"],
         )
         s_init = InitialGuessList()
         p_init = InitialGuessList()
-        return Solution.from_initial_guess(solution_ocp, [x_init, u_init_for_solution, p_init, s_init])
+        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init_for_solution, p_init, s_init])
 
 
 class NonlinearModelPredictiveControl(RecedingHorizonOptimization):
