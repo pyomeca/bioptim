@@ -8,7 +8,7 @@ minimized.
 
 import numpy as np
 import biorbd_casadi as biorbd
-from casadi import MX
+from casadi import MX, fabs
 from bioptim import (
     OptimalControlProgram,
     DynamicsList,
@@ -19,7 +19,6 @@ from bioptim import (
     InitialGuessList,
     Node,
     ObjectiveFcn,
-    BiMappingList,
     ParameterList,
     InterpolationType,
     BiorbdModel,
@@ -27,13 +26,14 @@ from bioptim import (
     ParameterObjectiveList,
     ParameterConstraintList,
     ConstraintFcn,
+    PhaseDynamics,
 )
 
 
 def custom_constraint_parameters(controller: PenaltyController) -> MX:
     tau = controller.controls["tau_joints"].cx_start
     max_param = controller.parameters["max_tau"].cx
-    val = max_param - tau
+    val = max_param - fabs(tau)
     return val
 
 
@@ -66,12 +66,12 @@ def prepare_ocp(
     parameter_bounds = BoundsList()
     parameter_init = InitialGuessList()
 
-    parameter_init["max_tau"] = 0
-    parameter_bounds.add("max_tau", min_bound=0, max_bound=tau_max, interpolation=InterpolationType.CONSTANT)
+    parameter_init["max_tau"] = 100
+    parameter_bounds.add("max_tau", min_bound=0, max_bound=100, interpolation=InterpolationType.CONSTANT)
 
     # Add phase independant objective functions
     parameter_objectives = ParameterObjectiveList()
-    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=1000, quadratic=True)
+    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=1, quadratic=True)
 
     # Add phase independant constraint functions
     parameter_constraints = ParameterConstraintList()
@@ -86,12 +86,16 @@ def prepare_ocp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(custom_constraint_parameters, node=Node.ALL, min_bound=0, max_bound=tau_max)
+    constraints.add(custom_constraint_parameters, node=Node.ALL_SHOOTING, min_bound=0, max_bound=tau_max)
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, with_contact=False)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, with_contact=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE,
+                 phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+                 with_contact=False, )
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE,
+                 phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+                 with_contact=False)
 
     # Path constraint
     x_bounds = BoundsList()
