@@ -175,6 +175,7 @@ def _to_unscaled_values(scaled: list, ocp, variable_type: str) -> list:
                 scale_factor = ocp.parameters[key].scaling
             else:
                 scale_factor = getattr(ocp.nlp[phase], f"{variable_type}_scaling")[key]
+
             if isinstance(scaled[phase][key], list):  # Nodes are not merged
                 unscaled[phase][key] = []
                 for node in range(len(scaled[phase][key])):
@@ -208,7 +209,10 @@ def _to_scaled_values(unscaled: list, ocp, variable_type: str) -> list:
     for phase in range(len(unscaled)):
         scaled[phase] = {}
         for key in unscaled[phase].keys():
-            scale_factor = getattr(ocp.nlp[phase], f"{variable_type}_scaling")[key]
+            if variable_type == "p":
+                scale_factor = ocp.parameters[key].scaling
+            else:
+                scale_factor = getattr(ocp.nlp[phase], f"{variable_type}_scaling")[key]
 
             if isinstance(unscaled[phase][key], list):  # Nodes are not merged
                 scaled[phase][key] = []

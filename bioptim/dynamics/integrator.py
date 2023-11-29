@@ -66,6 +66,7 @@ class Integrator:
         self.x_sym = ode["x"]
         self.u_sym = ode["p"]
         self.param_sym = ode["param"]
+        self.param_scaling = ode_opt["param_scaling"]
         self.s_sym = ode["s"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
@@ -90,7 +91,7 @@ class Integrator:
             self.dxdt(
                 states=self.x_sym,
                 controls=self.u_sym,
-                params=self.param_sym,
+                params=self.param_sym * self.param_scaling,
                 stochastic_variables=self.s_sym,
             ),
             self._input_names,

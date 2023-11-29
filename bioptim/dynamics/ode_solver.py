@@ -147,7 +147,7 @@ class OdeSolverBase:
         -------
         The symbolic parameters
         """
-        return nlp.parameters.cx * nlp.parameters.scaling
+        return nlp.parameters.cx
 
     def initialize_integrator(
         self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False, **extra_opt
@@ -186,6 +186,7 @@ class OdeSolverBase:
             "control_type": nlp.control_type,
             "defects_type": self.defects_type,
             "allow_free_variables": allow_free_variables,
+            "param_scaling": vertcat(*[nlp.parameters[key].scaling.scaling for key in nlp.parameters.keys()]),
             **extra_opt,
         }
 

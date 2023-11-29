@@ -28,6 +28,7 @@ from bioptim import (
     PenaltyController,
     ObjectiveList,
     PhaseDynamics,
+    VariableScaling,
 )
 
 
@@ -180,7 +181,8 @@ def prepare_ocp(
     parameter_init = InitialGuessList()
 
     if optim_gravity:
-        g_scaling = np.array([1, 1, 10.0])
+        # WATCH OUT, it seems parameters scaling are broken
+        g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 10.0]))
         parameters.add(
             "gravity_xyz",  # The name of the parameter
             my_parameter_function,  # The function that modifies the biorbd model
@@ -201,12 +203,12 @@ def prepare_ocp(
             weight=1000,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_g / g_scaling,  # Make sure your target fits the scaling
+            target=target_g / g_scaling.scaling.T,  # Make sure your target fits the scaling
             key="gravity_xyz",
         )
 
     if optim_mass:
-        m_scaling = np.array([10.0])
+        m_scaling = VariableScaling("mass", np.array([10.0]))
         parameters.add(
             "mass",  # The name of the parameter
             set_mass,  # The function that modifies the biorbd model
@@ -223,7 +225,7 @@ def prepare_ocp(
             weight=10000,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_m / m_scaling,  # Make sure your target fits the scaling
+            target=target_m / m_scaling.scaling.T,  # Make sure your target fits the scaling
             key="mass",
         )
 
@@ -269,15 +271,15 @@ def main():
 
     # --- Get the results --- #
     if optim_gravity:
-        print(sol.parameters["gravity_xyz"])
         gravity = sol.parameters["gravity_xyz"]
-        print(f"Optimized gravity: {gravity[:, 0]}")
+        print(f"Optimized gravity: {gravity}")
 
     if optim_mass:
         mass = sol.parameters["mass"]
-        print(f"Optimized mass: {mass[0, 0]}")
+        print(f"Optimized mass: {mass}")
 
     # --- Show results --- #
+    # sol.graphs()
     sol.animate(n_frames=200)
 
 
