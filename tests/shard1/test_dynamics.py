@@ -50,6 +50,8 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
@@ -185,7 +187,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_contact:
@@ -289,6 +291,8 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
@@ -331,7 +335,7 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if with_contact:
@@ -361,6 +365,8 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
@@ -404,7 +410,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if with_contact:
@@ -434,6 +440,8 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -569,7 +577,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if with_contact:
@@ -663,6 +671,8 @@ def test_torque_derivative_driven_implicit(with_contact, cx, phase_dynamics):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.phase_idx = 0
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 4, 1))
@@ -704,7 +714,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx, phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if with_contact:
@@ -767,6 +777,8 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * (2 + 3), 1))
@@ -809,7 +821,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if with_contact:
@@ -951,6 +963,8 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
@@ -1085,7 +1099,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if with_contact:
@@ -1153,6 +1167,8 @@ def test_torque_activation_driven_with_residual_torque(
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -1286,7 +1302,7 @@ def test_torque_activation_driven_with_residual_torque(
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if with_residual_torque:
@@ -1361,6 +1377,8 @@ def test_muscle_driven(
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
@@ -1501,7 +1519,7 @@ def test_muscle_driven(
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
@@ -1952,6 +1970,8 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
 
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(nlp.cx)
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
@@ -1997,7 +2017,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
         controls = np.random.rand(nlp.controls.shape, nlp.ns)
         params = np.random.rand(nlp.parameters.shape, nlp.ns)
         stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-        time = np.random.rand(1, nlp.ns)
+        time = np.random.rand(2)
         x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
         # obtained using Ipuch reference implementation. [https://github.com/Ipuch/OnDynamicsForSomersaults]
@@ -2035,6 +2055,8 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     )
     nlp.ns = 5
     nlp.cx = MX
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(nlp.cx)
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -2076,7 +2098,7 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if with_contact:

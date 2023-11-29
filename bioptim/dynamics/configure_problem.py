@@ -788,7 +788,7 @@ class ConfigureProblem:
                             nlp.states_dot.scaled.mx_reduced,
                         ],
                         [dynamics_eval.defects],
-                        ["t", "x", "u", "p", "s", "xdot"],
+                        ["t_span", "x", "u", "p", "s", "xdot"],
                         ["defects"],
                         {"allow_free": allow_free_variables},
                     )
@@ -821,10 +821,11 @@ class ConfigureProblem:
             The function to get the values of contact forces from the dynamics
         """
 
+        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
         nlp.contact_forces_func = Function(
             "contact_forces_func",
             [
-                nlp.time_mx,
+                time_span_sym,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
@@ -832,7 +833,7 @@ class ConfigureProblem:
             ],
             [
                 dyn_func(
-                    nlp.time_mx,
+                    time_span_sym,
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
@@ -841,7 +842,7 @@ class ConfigureProblem:
                     **extra_params,
                 )
             ],
-            ["t", "x", "u", "p", "s"],
+            ["t_span", "x", "u", "p", "s"],
             ["contact_forces"],
         ).expand()
 
@@ -863,7 +864,7 @@ class ConfigureProblem:
             )
 
         nlp.plot["contact_forces"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, s: nlp.contact_forces_func(t, x, u, p, s),
+            lambda t0, phases_dt, node_idx, x, u, p, s: nlp.contact_forces_func([t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, s),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
             legend=all_contact_names,
