@@ -293,11 +293,13 @@ class OptimizationVectorHelper:
 
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
+            repeat = nlp.n_states_decision_steps(0)
             for key in nlp.states:
                 if key in nlp.x_init.keys():
-                    nlp.x_init[key].check_and_adjust_dimensions(
-                        nlp.states[key].cx.shape[0], nlp.n_states_decision_steps(0)
-                    )
+                    if nlp.x_init[key].type == InterpolationType.ALL_POINTS:
+                        nlp.x_init[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns * repeat)
+                    else:
+                        nlp.x_init[key].check_and_adjust_dimensions(nlp.states[key].cx.shape[0], nlp.ns)
 
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
@@ -338,7 +340,7 @@ class OptimizationVectorHelper:
 
             for key in nlp.controls.keys():
                 if key in nlp.u_init.keys():
-                    nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns - 1)
+                    nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], nlp.ns - 1)
 
             for k in range(ns):
                 OptimizationVectorHelper._set_node_index(nlp, k)
@@ -371,9 +373,13 @@ class OptimizationVectorHelper:
             nlp = ocp.nlp[i_phase]
             OptimizationVectorHelper._set_node_index(nlp, 0)
 
+            repeat = nlp.n_states_decision_steps(0)
             for key in nlp.stochastic_variables.keys():
                 if key in nlp.s_init.keys():
-                    nlp.s_init[key].check_and_adjust_dimensions(nlp.stochastic_variables[key].cx.shape[0], nlp.ns)
+                    if nlp.s_init[key].type == InterpolationType.ALL_POINTS:
+                        nlp.s_init[key].check_and_adjust_dimensions(nlp.stochastic_variables[key].cx.shape[0], nlp.ns * repeat)
+                    else:
+                        nlp.x_init[key].check_and_adjust_dimensions(nlp.stochastic_variables[key].cx.shape[0], nlp.ns)
 
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)

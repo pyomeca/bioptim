@@ -922,7 +922,7 @@ class PenaltyOption(OptionGeneric):
             if isinstance(node_idx, (list, tuple)):
                 return self.target_to_plot[:, [self.node_idx.index(idx) for idx in node_idx]]
             else:
-                return self.target_to_plot[:, self.node_idx.index(node_idx)]
+                return self.target_to_plot[:, [self.node_idx.index(node_idx)]]
 
         if self.target_to_plot is not None:
             if len(self.node_idx) == self.target_to_plot.shape[1]:

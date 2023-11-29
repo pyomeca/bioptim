@@ -245,7 +245,7 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, is_unscaled):
     if nlp:
         x = PenaltyHelpers.states(penalty, penalty_idx, lambda p_idx, n_idx: _get_x(ocp, p_idx, n_idx, is_unscaled))
         u = PenaltyHelpers.controls(penalty, ocp, penalty_idx, lambda p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled))
-        s = PenaltyHelpers.stochastic(penalty, penalty_idx, lambda phase_idx, node_idx: _get_s(ocp, phase_idx, node_idx, is_unscaled))
+        s = PenaltyHelpers.stochastic(penalty, penalty_idx, lambda p_idx, n_idx: _get_s(ocp, p_idx, n_idx, is_unscaled))
     else:
         x = []
         u = []

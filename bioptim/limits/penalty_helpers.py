@@ -115,6 +115,16 @@ class PenaltyHelpers:
 
     @staticmethod
     def stochastic(penalty, penalty_node_idx, get_stochastic: Callable):
+        if penalty.transition or penalty.multinode_penalty:
+            x = []
+            phases, nodes = _get_multinode_indices(penalty)
+            for phase, node in zip(phases, nodes):
+                tp = get_stochastic(phase, node)
+                if penalty.transition:
+                    tp = tp[:, 0:1]
+                x.append(_reshape_to_vector(tp))
+            return _vertcat(x)
+        
         s = get_stochastic(penalty.phase, penalty.node_idx[penalty_node_idx])
         return _reshape_to_vector(s)
 
@@ -127,8 +137,7 @@ class PenaltyHelpers:
         if penalty.target is None:
             return np.array([])
         
-        target = penalty.target[0][..., penalty.node_idx.index(penalty_node_idx)]
-        return _reshape_to_vector(target)
+        return penalty.target[0][..., penalty.node_idx.index(penalty_node_idx)]
 
         # if penalty.target is None:
         #     target = []

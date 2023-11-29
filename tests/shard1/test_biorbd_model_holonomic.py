@@ -166,7 +166,7 @@ def test_example_two_pendulums():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     np.testing.assert_almost_equal(
-        sol.states["q_u"],
+        sol.states["q_u"][:, ::6],
         [
             [1.54, 1.433706, 1.185046, 0.891157, 0.561607, 0.191792, -0.206511, -0.614976, -1.018383, -1.356253, -1.54],
             [1.54, 1.669722, 1.924726, 2.127746, 2.226937, 2.184007, 1.972105, 1.593534, 1.06751, 0.507334, 0.0],
