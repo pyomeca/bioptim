@@ -87,7 +87,7 @@ class SolutionData:
             to_merge = [SolutionMerge.KEYS, SolutionMerge.NODES, SolutionMerge.PHASES]
 
         if not to_merge:
-            return self.scaled if scaled else self.unscaled
+            return data
 
         # Before merging phases, we must go inside the phases
         out = []
@@ -171,7 +171,10 @@ def _to_unscaled_values(scaled: list, ocp, variable_type: str) -> list:
     for phase in range(len(scaled)):
         unscaled[phase] = {}
         for key in scaled[phase].keys():
-            scale_factor = getattr(ocp.nlp[phase], f"{variable_type}_scaling")[key]
+            if variable_type == "p":
+                scale_factor = ocp.parameters[key].scaling
+            else:
+                scale_factor = getattr(ocp.nlp[phase], f"{variable_type}_scaling")[key]
             if isinstance(scaled[phase][key], list):  # Nodes are not merged
                 unscaled[phase][key] = []
                 for node in range(len(scaled[phase][key])):

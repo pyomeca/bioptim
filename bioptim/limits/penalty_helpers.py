@@ -560,6 +560,31 @@ def get_padded_control_array(
 
     return _u_sym
 
+def format_target(penalty, target_in: np.ndarray, idx: int) -> np.ndarray:
+    """
+    Format the target of a penalty to a numpy array
+
+    Parameters
+    ----------
+    penalty:
+        The penalty with a target
+    target_in: np.ndarray
+        The target of the penalty
+    idx: int
+        The index of the node
+    Returns
+    -------
+        np.ndarray
+            The target of the penalty formatted to a numpy ndarray
+    """
+    if len(target_in.shape) not in [2, 3]:
+        raise NotImplementedError("penalty target with dimension != 2 or 3 is not implemented yet")
+
+    target_out = target_in[..., penalty.node_idx.index(idx)]
+
+    return target_out
+
+
 # TO KEEP!!!!
 
 

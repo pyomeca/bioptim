@@ -449,9 +449,17 @@ class Solution:
         data = self._stepwise_controls.to_dict(to_merge=to_merge, scaled=scaled)
         return data if len(data) > 1 else data[0]
 
-    def parameters(self, scaled: bool = False, concatenate_keys: bool = False):
+    @property
+    def parameters(self):
         """
         Returns the parameters
+        """
+
+        return self.decision_parameters(scaled=False)
+
+    def decision_parameters(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
+        """
+        Returns the decision parameters
 
         Parameters
         ----------
@@ -461,11 +469,29 @@ class Solution:
 
         Returns
         -------
-        The parameters
+        The decision parameters
         """
+        if to_merge is None:
+            to_merge = []
 
-        data = self._parameters.to_dict(to_merge=SolutionMerge.KEYS if concatenate_keys else None, scaled=scaled)
-        return data[0]
+        if isinstance(to_merge, SolutionMerge):
+            to_merge = [to_merge]
+
+        if SolutionMerge.PHASES in to_merge:
+            raise ValueError("Cannot merge phases for parameters as it is not bound to phases")
+        if SolutionMerge.NODES in to_merge:
+            raise ValueError("Cannot merge nodes for parameters as it is not bound to nodes")
+
+        out = self._parameters.to_dict(scaled=scaled, to_merge=to_merge)
+
+        # Remove the residual phases and nodes 
+        if to_merge:
+            out = out[0][0][:, 0]
+        else:
+            out = out[0]
+            out = {key: out[key][0][:, 0] for key in out.keys()}
+        
+        return out
 
     def stochastic(self, scaled: bool = False, concatenate_keys: bool = False):
         """
@@ -544,7 +570,7 @@ class Solution:
         """
 
         # Prepare the output
-        params = vertcat(*[self._parameters.unscaled[0][key] for key in self._parameters.keys()])
+        params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
 
         unscaled: list = [None] * len(self.ocp.nlp)
         

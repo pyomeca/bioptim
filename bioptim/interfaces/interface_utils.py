@@ -242,13 +242,15 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, is_unscaled):
     weight = PenaltyHelpers.weight(penalty)
     target = PenaltyHelpers.target(penalty, penalty_idx)
 
-    if nlp is not None:
+    if nlp:
         x = PenaltyHelpers.states(penalty, penalty_idx, lambda p_idx, n_idx: _get_x(ocp, p_idx, n_idx, is_unscaled))
         u = PenaltyHelpers.controls(penalty, ocp, penalty_idx, lambda p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled))
+        s = PenaltyHelpers.stochastic(penalty, penalty_idx, lambda phase_idx, node_idx: _get_s(ocp, phase_idx, node_idx, is_unscaled))
+    else:
+        x = []
+        u = []
+        s = []
 
-        s = PenaltyHelpers.stochastic(
-            penalty, penalty_idx, lambda phase_idx, node_idx: nlp.S[node_idx] if is_unscaled else nlp.S_scaled[node_idx]
-        )
     return t0, x, u, s, weight, target,
 
 
@@ -260,27 +262,6 @@ def _get_u(ocp, phase_idx, node_idx, is_unscaled):
     nlp_u = ocp.nlp[phase_idx].U if is_unscaled else ocp.nlp[phase_idx].U_scaled
     return nlp_u[node_idx if node_idx < len(nlp_u) else -1]
 
-
-def format_target(penalty, target_in: np.ndarray, idx: int) -> np.ndarray:
-    """
-    Format the target of a penalty to a numpy array
-
-    Parameters
-    ----------
-    penalty:
-        The penalty with a target
-    target_in: np.ndarray
-        The target of the penalty
-    idx: int
-        The index of the node
-    Returns
-    -------
-        np.ndarray
-            The target of the penalty formatted to a numpy ndarray
-    """
-    if len(target_in.shape) not in [2, 3]:
-        raise NotImplementedError("penalty target with dimension != 2 or 3 is not implemented yet")
-
-    target_out = target_in[..., penalty.node_idx.index(idx)]
-
-    return target_out
+def _get_s(ocp, phase_idx, node_idx, is_unscaled):
+    s = ocp.nlp[phase_idx].S if is_unscaled else ocp.nlp[phase_idx].S_scaled
+    return [] if not s else s[node_idx]

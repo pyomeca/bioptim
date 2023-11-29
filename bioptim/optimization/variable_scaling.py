@@ -18,6 +18,9 @@ class VariableScaling(OptionGeneric):
             scaling = np.array(scaling)
         elif not (isinstance(scaling, np.ndarray) or isinstance(scaling, VariableScaling)):
             raise RuntimeError(f"Scaling must be a list or a numpy array, not {type(scaling)}")
+        
+        if len(scaling.shape) == 1:
+            scaling = scaling[:, np.newaxis]
 
         self.key = key
         self.scaling = scaling
@@ -35,14 +38,14 @@ class VariableScaling(OptionGeneric):
         Repeat the scaling to match the variables vector format
         """
 
-        return self.scaling[np.newaxis, :].repeat(repeats, axis=0).reshape((-1, 1))
+        return self.scaling.repeat(repeats, axis=0).reshape((-1, 1))
 
     def to_array(self, repeats: int = 1):
         """
         Repeat the scaling to match the variables array format
         """
 
-        return np.repeat(self.scaling[:, np.newaxis], repeats=repeats, axis=1)
+        return np.repeat(self.scaling, repeats=repeats, axis=1)
 
 
 class VariableScalingList(OptionDict):

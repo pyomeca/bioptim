@@ -25,6 +25,7 @@ from ..misc.mapping import Mapping, BiMapping
 from ..optimization.solution.solution import Solution
 from ..dynamics.ode_solver import OdeSolver
 from ..optimization.optimization_vector import OptimizationVectorHelper
+from ..optimization.solution.solution_data import SolutionMerge
 
 
 class CustomPlot:
@@ -657,11 +658,11 @@ class PlotOcp:
         self.ydata = []
 
         sol = Solution.from_vector(self.ocp, v)
-        data_states_decision = sol.decision_states(scaled=True, concatenate_keys=True)
-        data_states_stepwise = sol.stepwise_states(scaled=True, concatenate_keys=True)
+        data_states_decision = sol.decision_states(scaled=True, to_merge=SolutionMerge.KEYS)
+        data_states_stepwise = sol.stepwise_states(scaled=True, to_merge=SolutionMerge.KEYS)
 
-        data_controls = sol.stepwise_controls(scaled=True, concatenate_keys=True)
-        p = sol.parameters(scaled=True, concatenate_keys=True)
+        data_controls = sol.stepwise_controls(scaled=True, to_merge=SolutionMerge.KEYS)
+        p = sol.decision_parameters(scaled=True, to_merge=SolutionMerge.KEYS)
         data_stochastic = sol.stochastic(scaled=True, concatenate_keys=True)
 
         if len(self.ocp.nlp) == 1:
