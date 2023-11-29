@@ -615,10 +615,15 @@ class Solution:
             self._integrate_stepwise()
 
         # Get the states, but do not bother the duplicates now
-        t_all = [np.concatenate(self._stepwise_times[p]) for p in range(len(self.ocp.nlp))]
         if isinstance(n_frames, int):  # So merge phases
-            states = [self._stepwise_states.to_dict(scaled=scaled, to_merge=SolutionMerge.ALL)]
+            t_all = []
+            last_t = 0
+            for p in range(len(self.ocp.nlp)):
+                t_all.append(np.concatenate(self._stepwise_times[p]) + last_t)
+                last_t = t_all[-1][-1]
             t_all = [np.concatenate(t_all)]
+
+            states = [self._stepwise_states.to_dict(scaled=scaled, to_merge=SolutionMerge.ALL)]
             n_frames = [n_frames]
 
         elif not isinstance(n_frames, (list, tuple)) or len(n_frames) != len(self._stepwise_states.unscaled):
@@ -627,6 +632,7 @@ class Solution:
                 "or a list of int of the number of phases dimension"
             )
         else:
+            t_all = [np.concatenate(self._stepwise_times[p]) for p in range(len(self.ocp.nlp))]
             states = self._stepwise_states._merge_nodes(scaled=scaled)
 
         data = []
