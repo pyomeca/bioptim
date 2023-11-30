@@ -77,8 +77,9 @@ class PenaltyHelpers:
     def controls(penalty, ocp, penalty_node_idx, get_control_decision: Callable):
         
         def _get_control_internal(_phase, _node):
-            _u = get_control_decision(_phase, _node)
             nlp = ocp.nlp[_phase]
+
+            _u = get_control_decision(_phase, _node)
             if nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and _node >= nlp.n_controls_nodes:
                 if isinstance(_u, (MX, SX, DM)):
                     return type(_u)()
@@ -86,6 +87,7 @@ class PenaltyHelpers:
                     return np.ndarray((0, 1))
                 else:
                     raise RuntimeError("Invalid type for control")
+                
             return _u
 
         if penalty.transition or penalty.multinode_penalty:
@@ -100,7 +102,7 @@ class PenaltyHelpers:
         if penalty.integrate or penalty.derivative or penalty.explicit_derivative:
             u = _reshape_to_vector(u)
             
-            next_node = penalty.node_idx[penalty_node_idx] + 1
+            next_node = penalty.node_idx[penalty_node_idx] + (0 if penalty.derivative else 1)
             step = 0  # TODO: This should be 1 for integrate if TRAPEZOIDAL
             next_u = _get_control_internal(penalty.phase, next_node)
             if np.sum(next_u.shape) > 0:
@@ -411,45 +413,45 @@ class PenaltyHelpers:
                 _u = vertcat(_u, u)
                 _s = vertcat(_s, s)
 
-        # if penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-        #     if is_unscaled:
-        #         x = nlp.X[_idx + 1][:, 0]
-        #         s = nlp.S[_idx + 1][:, 0]
-        #     else:
-        #         x = nlp.X_scaled[_idx + 1][:, 0]
-        #         s = nlp.S_scaled[_idx + 1][:, 0]
-        #     _x = vertcat(_x, x)
-        #     _s = vertcat(_s, s)
-        #     if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-        #         if is_unscaled:
-        #             u = (
-        #                 nlp.U[_idx + 1][:, 0]
-        #                 if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U)
-        #                 else []
-        #             )
-        #         else:
-        #             u = (
-        #                 nlp.U_scaled[_idx + 1][:, 0]
-        #                 if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U_scaled)
-        #                 else []
-        #             )
-        #         _u = vertcat(_u, u)
+        if penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+            if is_unscaled:
+                x = nlp.X[_idx + 1][:, 0]
+                s = nlp.S[_idx + 1][:, 0]
+            else:
+                x = nlp.X_scaled[_idx + 1][:, 0]
+                s = nlp.S_scaled[_idx + 1][:, 0]
+            _x = vertcat(_x, x)
+            _s = vertcat(_s, s)
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                if is_unscaled:
+                    u = (
+                        nlp.U[_idx + 1][:, 0]
+                        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U)
+                        else []
+                    )
+                else:
+                    u = (
+                        nlp.U_scaled[_idx + 1][:, 0]
+                        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U_scaled)
+                        else []
+                    )
+                _u = vertcat(_u, u)
 
-        # elif penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
-        #     if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-        #         if is_unscaled:
-        #             u = (
-        #                 nlp.U[_idx + 1][:, 0]
-        #                 if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U)
-        #                 else []
-        #             )
-        #         else:
-        #             u = (
-        #                 nlp.U_scaled[_idx + 1][:, 0]
-        #                 if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U_scaled)
-        #                 else []
-        #             )
-        #         _u = vertcat(_u, u)
+        elif penalty.integration_rule == QuadratureRule.TRAPEZOIDAL:
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                if is_unscaled:
+                    u = (
+                        nlp.U[_idx + 1][:, 0]
+                        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U)
+                        else []
+                    )
+                else:
+                    u = (
+                        nlp.U_scaled[_idx + 1][:, 0]
+                        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or _idx + 1 < len(nlp.U_scaled)
+                        else []
+                    )
+                _u = vertcat(_u, u)
         return _x, _u, _s
 
 

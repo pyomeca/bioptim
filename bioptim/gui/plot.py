@@ -769,7 +769,7 @@ class PlotOcp:
             return out
 
         elif custom_plot.type in (PlotType.PLOT, PlotType.STEP, PlotType.POINT):
-            all_y = np.concatenate(all_y, axis=1)
+            all_y = np.concatenate([tp[:, 0:1] for tp in all_y], axis=1)
             y = []
             for i in range(all_y.shape[0]):
                 y.append(all_y[i, :])
