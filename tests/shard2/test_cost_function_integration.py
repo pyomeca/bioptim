@@ -164,6 +164,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     sol = ocp.solve(solver)
     j_printed = sum_cost_function_output(sol)
     tau = sol.controls["tau"]
+    dt = sol.t_spans[0][0][-1]
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -189,14 +190,14 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                 out = 0
                 for i, fcn in enumerate(ocp.nlp[0].J[0].weighted_function):
                     out += fcn(
-                        [],
+                        0, 
+                        dt,
                         states[:, i],  # States
                         controls_faking_constant[:, i],  # Controls
                         [],  # Parameters
                         [],  # Stochastic variables
                         ocp.nlp[0].J[0].weight,  # Weight
                         [],  # Target
-                        ocp.nlp[0].J[0].dt,  # dt
                     )
                 np.testing.assert_almost_equal(np.array([out])[0][0][0], 36.077211633874185)
             else:

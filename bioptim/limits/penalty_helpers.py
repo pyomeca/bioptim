@@ -88,7 +88,7 @@ class PenaltyHelpers:
                 else:
                     raise RuntimeError("Invalid type for control")
                 
-            return _u
+            return _u[:, 0:1]  # This prevent bug for Control.LINEAR when penalty integration is rectangle
 
         if penalty.transition or penalty.multinode_penalty:
             u = []
