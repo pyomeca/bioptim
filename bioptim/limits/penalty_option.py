@@ -622,6 +622,9 @@ class PenaltyOption(OptionGeneric):
                             )
             control_cx_scaled = controller.controls_scaled.cx_start
             stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
+            if ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
+                control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
+
             if self.explicit_derivative:
                 if self.derivative:
                     raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
@@ -634,7 +637,9 @@ class PenaltyOption(OptionGeneric):
                         )
                         or ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     ):
-                        control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
+                        if not ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
+                            # Already done if linear continuous
+                            control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
                     stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
 
         # Alias some variables

@@ -3,7 +3,7 @@ from typing import Callable
 from casadi import MX, SX, DM, vertcat, horzcat
 import numpy as np
 
-from ..misc.enums import Node, QuadratureRule, PhaseDynamics
+from ..misc.enums import Node, QuadratureRule, PhaseDynamics, ControlType
 
 
 class PenaltyHelpers:
@@ -77,10 +77,10 @@ class PenaltyHelpers:
     def controls(penalty, ocp, penalty_node_idx, get_control_decision: Callable):
         
         def _get_control_internal(_phase, _node):
-            nlp = ocp.nlp[_phase]
+            _nlp = ocp.nlp[_phase]
 
             _u = get_control_decision(_phase, _node)
-            if nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and _node >= nlp.n_controls_nodes:
+            if _nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and _node >= _nlp.n_controls_nodes:
                 if isinstance(_u, (MX, SX, DM)):
                     return type(_u)()
                 elif isinstance(_u, np.ndarray):
@@ -88,7 +88,7 @@ class PenaltyHelpers:
                 else:
                     raise RuntimeError("Invalid type for control")
                 
-            return _u[:, 0:1]  # This prevent bug for Control.LINEAR when penalty integration is rectangle
+            return _u[:, 0]  # That is so Linear controls don't return two columns, it will be dealty with later
 
         if penalty.transition or penalty.multinode_penalty:
             u = []
@@ -99,14 +99,15 @@ class PenaltyHelpers:
 
         u = _get_control_internal(penalty.phase, penalty.node_idx[penalty_node_idx])
 
-        if penalty.integrate or penalty.derivative or penalty.explicit_derivative:
+        is_linear = ocp.nlp[penalty.phase].control_type == ControlType.LINEAR_CONTINUOUS
+        if is_linear or penalty.integrate or penalty.derivative or penalty.explicit_derivative:
             u = _reshape_to_vector(u)
             
             next_node = penalty.node_idx[penalty_node_idx] + (0 if penalty.derivative else 1)
             step = 0  # TODO: This should be 1 for integrate if TRAPEZOIDAL
             next_u = _get_control_internal(penalty.phase, next_node)
             if np.sum(next_u.shape) > 0:
-                u = vertcat(next_u[:, 0], u) if penalty.derivative else vertcat(u, next_u[:, 0])
+                u = vertcat(next_u, u) if penalty.derivative else vertcat(u, next_u)
 
         return _reshape_to_vector(u)
 
