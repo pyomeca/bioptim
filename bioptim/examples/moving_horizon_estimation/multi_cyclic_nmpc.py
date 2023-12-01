@@ -23,6 +23,7 @@ from bioptim import (
     Node,
     Axis,
     Solution,
+    SolutionMerge,
 )
 
 
@@ -37,7 +38,8 @@ class MyCyclicNMPC(MultiCyclicNonlinearModelPredictiveControl):
     def advance_window_initial_guess_states(self, sol, n_cycles_simultaneous=None):
         # Reimplementation of the advance_window method so the rotation of the wheel restart at -pi
         super(MyCyclicNMPC, self).advance_window_initial_guess_states(sol)
-        self.nlp[0].x_init["q"].init[0, :] = sol.states["q"][0, :]  # Keep the previously found value for the wheel
+        q = sol.decision_states(to_merge=SolutionMerge.NODES)["q"]
+        self.nlp[0].x_init["q"].init[0, :] = q[0, :]  # Keep the previously found value for the wheel
         return True
 
 

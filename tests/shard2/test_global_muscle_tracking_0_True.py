@@ -114,12 +114,12 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.43553183, -6.90717365]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([2.13121740e-06, -5.61544104e-06]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([-8.44568436e-07, 2.61276733e-06]))
+        np.testing.assert_almost_equal(tau[:, -3], np.array([-8.44568436e-07, 2.61276733e-06]))
         np.testing.assert_almost_equal(
             mus[:, 0], np.array([0.77133409, 0.02085475, 0.63363328, 0.74881837, 0.49851642, 0.22482234])
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -3],
             np.array([0.44190465, 0.43398513, 0.61774549, 0.51315869, 0.65040699, 0.60099517]),
         )
 
@@ -134,13 +134,13 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.43557883, -6.90723878]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([3.13930953e-06, -8.18582928e-06]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([-9.49304938e-07, 3.10696405e-06]))
+        np.testing.assert_almost_equal(tau[:, -3], np.array([-9.49304938e-07, 3.10696405e-06]))
         np.testing.assert_almost_equal(
             mus[:, 0],
             np.array([0.7713425, 0.02085421, 0.63362772, 0.74882775, 0.49852071, 0.22483082]),
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -3],
             np.array([0.44191641, 0.43397987, 0.61774176, 0.5131626, 0.65040941, 0.60098726]),
         )
 

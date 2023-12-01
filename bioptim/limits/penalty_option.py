@@ -610,6 +610,13 @@ class PenaltyOption(OptionGeneric):
             ocp = controller.ocp
             
             state_cx_scaled = controller.states_scaled.cx_start
+            if controller.get_nlp.ode_solver.is_direct_collocation and (
+                controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and controller.ns in self.node_idx):
+                raise ValueError(
+                    "Direct collocation with shared dynamics cannot have a penalty on the last node for Lagrange. If "
+                    "you want to use Lagrange, you must use Node.ALL_SHOOTING"
+                )
+
             if (
                 controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                 or controller.node_index < controller.ns
@@ -620,6 +627,7 @@ class PenaltyOption(OptionGeneric):
                             state_cx_scaled = vertcat(
                                 *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
                             )
+
             control_cx_scaled = controller.controls_scaled.cx_start
             stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
             if ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
