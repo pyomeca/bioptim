@@ -260,6 +260,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             )
 
     def advance_window_bounds_states(self, sol, **advance_options):
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+
         for key in self.nlp[0].x_bounds.keys():
             if self.nlp[0].x_bounds[key].type == InterpolationType.CONSTANT:
                 self.nlp[0].x_bounds.add(
@@ -275,7 +277,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                     "CONSTANT or CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT"
                 )
 
-            self.nlp[0].x_bounds[key][:, 0] = sol.states[key][:, 1]
+            self.nlp[0].x_bounds[key][:, 0] = states[key][:, 1]
         return True
 
     def advance_window_bounds_controls(self, sol, **advance_options):
@@ -483,8 +485,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
                 self.nlp[0].x_bounds[key].max[s, 2] = self.nlp[0].x_bounds[key].max[s, 0] + range_of_motion * 0.01
             else:
                 t = self.time_idx_to_cycle
-                self.nlp[0].x_bounds[key].min[s, 2] = sol.states[key][s, t] - range_of_motion * 0.01
-                self.nlp[0].x_bounds[key].max[s, 2] = sol.states[key][s, t] + range_of_motion * 0.01
+                states = sol.decision_states(to_merge=SolutionMerge.NODES)
+                self.nlp[0].x_bounds[key].min[s, 2] = states[key][s, t] - range_of_motion * 0.01
+                self.nlp[0].x_bounds[key].max[s, 2] = states[key][s, t] + range_of_motion * 0.01
 
     @staticmethod
     def _append_current_solution(sol: Solution, states: list, controls: list):
@@ -497,9 +500,11 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             self.ocp_solver.set_lagrange_multiplier(sol)
 
     def advance_window_bounds_states(self, sol, **advance_options):
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+
         # Update the initial frame bounds
-        for key in sol.states.keys():
-            self.nlp[0].x_bounds[key][:, 0] = sol.states[key][:, self.time_idx_to_cycle]
+        for key in states.keys():
+            self.nlp[0].x_bounds[key][:, 0] = states[key][:, self.time_idx_to_cycle]
         self._set_cyclic_bound(sol)
         return True
 
@@ -640,13 +645,13 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
             for sol in solution[1]:
                 _states, _controls = self.export_cycles(sol)
-                dt = sol.t_spans[0][0][-1]
+                dt = float(sol.t_spans[0][0][-1])
                 cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls))
 
         if cycle_solutions == MultiCyclicCycleSolutions.ALL_CYCLES:
             for cycle_number in range(1, self.n_cycles):
                 _states, _controls = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
-                dt = sol.t_spans[0][0][-1]
+                dt = float(sol.t_spans[0][0][-1])
                 cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls))
 
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):

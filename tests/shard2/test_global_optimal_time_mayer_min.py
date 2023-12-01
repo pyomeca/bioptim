@@ -60,7 +60,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
 
     # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    tf = sol.parameters["time"][0, 0]
+    tf = sol.times
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
