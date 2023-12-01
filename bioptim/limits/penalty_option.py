@@ -728,9 +728,9 @@ class PenaltyOption(OptionGeneric):
             # Hypothesis for APPROXIMATE_TRAPEZOIDAL: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
 
-            state_cx = controller.states_scaled.cx_start
             state_cx_start = controller.states_scaled.cx_start
-            state_cx_end = controller.states_scaled.cx_end
+            if controller.ode_solver.is_direct_collocation:
+                state_cx_start = vertcat(state_cx_start, *controller.states_scaled.cx_intermediates_list)
             stochastic_cx = controller.stochastic_variables_scaled.cx_start
             stochastic_start_cx = controller.stochastic_variables_scaled.cx_start
             stochastic_end_cx = controller.stochastic_variables_scaled.cx_end
@@ -752,12 +752,8 @@ class PenaltyOption(OptionGeneric):
                 controller.control_type, horzcat(controller.controls.cx_start, control_end), phases_dt_cx[self.phase],
             )
 
-            if controller.ode_solver.is_direct_collocation:
-                state_cx_start = vertcat(state_cx_start, *controller.states_scaled.cx_intermediates_list)
-                state_cx_end = vertcat(state_cx_end, *controller.states.cx_intermediates_list)
-
             if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                state_cx =  vertcat(state_cx, controller.states_scaled.cx_end)
+                state_cx_scaled =  vertcat(state_cx_scaled, controller.states_scaled.cx_end)
                 state_cx_end = controller.states_scaled.cx_end
                 stochastic_cx = vertcat(stochastic_cx, controller.stochastic_variables_scaled.cx_end)
             else: 
@@ -773,7 +769,9 @@ class PenaltyOption(OptionGeneric):
                     p=controller.parameters.cx, 
                     s=controller.stochastic_variables.cx_start
                 )["xf"]
-                
+            if controller.ode_solver.is_direct_collocation:
+                state_cx_end = vertcat(state_cx_end, *controller.states.cx_intermediates_list)
+
             func_at_start = self.function[node](
                 time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, stochastic_start_cx
             )
@@ -786,12 +784,11 @@ class PenaltyOption(OptionGeneric):
             # for non weighted functions
             self.function[node] = Function(
                 f"{name}",
-                [time_cx, phases_dt_cx, state_cx, control_cx, param_cx, stochastic_cx],
+                [time_cx, phases_dt_cx, state_cx_scaled, control_cx, param_cx, stochastic_cx],
                 [(func_at_start + func_at_end) / 2],
                 ["t", "dt", "x", "u", "p", "s"],
                 ["val"], 
             )
-            state_cx_scaled = state_cx
             control_cx_scaled = control_cx
             stochastic_cx_scaled = stochastic_cx
 
