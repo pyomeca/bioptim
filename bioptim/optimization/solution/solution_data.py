@@ -99,7 +99,7 @@ class SolutionData:
             elif SolutionMerge.NODES in to_merge:
                 phase_data = self._merge_nodes(data, phase=phase_idx)
             else:
-                raise RuntimeError("This should not happen")
+                raise ValueError("Merging phases must contain at least SolutionMerge.KEYS or SolutionMerge.NODES")
 
             out.append(phase_data)
 

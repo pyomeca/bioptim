@@ -798,8 +798,6 @@ class PenaltyOption(OptionGeneric):
                 ["t", "dt", "x", "u", "p", "s"],
                 ["val"], 
             )
-            control_cx_scaled = control_cx
-            stochastic_cx_scaled = stochastic_cx
 
         else:
             modified_fcn = (

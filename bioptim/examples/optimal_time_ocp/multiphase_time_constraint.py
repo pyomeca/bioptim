@@ -116,6 +116,9 @@ def prepare_ocp(
         constraints.add(
             ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2
         )
+        constraints.add(
+            ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[2], max_bound=time_max[2], phase=2
+        )
 
     # Path constraint
     x_bounds = BoundsList()

@@ -156,7 +156,7 @@ class TestUtils:
 
         # Evaluate the final error of the single shooting integration versus the final node
         sol_merged = sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
-        for key in sol.states.keys():
+        for key in sol_merged.keys():
             np.testing.assert_almost_equal(
                 sol_merged[key][:, -1],
                 sol_single[key][:, -1],

@@ -410,6 +410,8 @@ class Solution:
         """
 
         data = self._decision_states.to_dict(to_merge=to_merge, scaled=scaled)
+        if not isinstance(data, list):
+            return data
         return data if len(data) > 1 else data[0]
 
     def stepwise_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
@@ -433,6 +435,8 @@ class Solution:
             self._integrate_stepwise()
 
         data = self._stepwise_states.to_dict(to_merge=to_merge, scaled=scaled)
+        if not isinstance(data, list):
+            return data
         return data if len(data) > 1 else data[0]
 
     def decision_controls(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
@@ -456,6 +460,8 @@ class Solution:
         """
 
         data = self._stepwise_controls.to_dict(to_merge=to_merge, scaled=scaled)
+        if not isinstance(data, list):
+            return data
         return data if len(data) > 1 else data[0]
 
     @property
@@ -522,6 +528,8 @@ class Solution:
         """
 
         data = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS if concatenate_keys else None, scaled=scaled)
+        if not isinstance(data, list):
+            return data
         return data if len(data) > 1 else data[0]
 
     def copy(self, skip_data: bool = False) -> "Solution":
