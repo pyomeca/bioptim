@@ -623,7 +623,9 @@ class PenaltyOption(OptionGeneric):
             control_cx_scaled = controller.controls_scaled.cx_start
             stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
             if ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
-                control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
+                if ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or self.node_idx[0] + 1 < controller.get_nlp.n_controls_nodes:
+                    control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
+                
 
             if self.explicit_derivative:
                 if self.derivative:
@@ -731,23 +733,19 @@ class PenaltyOption(OptionGeneric):
             state_cx_start = controller.states_scaled.cx_start
             if controller.ode_solver.is_direct_collocation:
                 state_cx_start = vertcat(state_cx_start, *controller.states_scaled.cx_intermediates_list)
-            stochastic_cx = controller.stochastic_variables_scaled.cx_start
             stochastic_start_cx = controller.stochastic_variables_scaled.cx_start
             stochastic_end_cx = controller.stochastic_variables_scaled.cx_end
             
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
-            control_cx = controller.controls_scaled.cx_start
             control_cx_start = controller.controls_scaled.cx_start
-            if controller.control_type in (ControlType.LINEAR_CONTINUOUS, ):
-                control_cx = vertcat(control_cx, controller.controls_scaled.cx_end)
-            
             if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 control_end = controller.controls.cx_start 
                 control_end_unscaled = controller.controls.cx_start 
             else:
                 control_end = controller.controls.cx_end
                 control_end_unscaled = controller.controls.cx_end
+                
             control_cx_end = _get_u(
                 controller.control_type, horzcat(controller.controls.cx_start, control_end), phases_dt_cx[self.phase],
             )
@@ -755,7 +753,6 @@ class PenaltyOption(OptionGeneric):
             if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
                 state_cx_scaled =  vertcat(state_cx_scaled, controller.states_scaled.cx_end)
                 state_cx_end = controller.states_scaled.cx_end
-                stochastic_cx = vertcat(stochastic_cx, controller.stochastic_variables_scaled.cx_end)
             else: 
                 control_cx_end_unscaled = _get_u(
                     controller.control_type, 
@@ -784,7 +781,7 @@ class PenaltyOption(OptionGeneric):
             # for non weighted functions
             self.function[node] = Function(
                 f"{name}",
-                [time_cx, phases_dt_cx, state_cx_scaled, control_cx, param_cx, stochastic_cx],
+                [time_cx, phases_dt_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled],
                 [(func_at_start + func_at_end) / 2],
                 ["t", "dt", "x", "u", "p", "s"],
                 ["val"], 

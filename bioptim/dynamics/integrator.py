@@ -406,6 +406,10 @@ class TRAPEZOIDAL(Integrator):
     of order 1, it is not possible to put a constraint on the slopes).
     """
 
+    def __init__(self, ode: dict, ode_opt: dict):
+        self._n_step = 1
+        super().__init__(ode, ode_opt)
+
     def next_x(
         self,
         t0: float | MX | SX,
@@ -420,6 +424,22 @@ class TRAPEZOIDAL(Integrator):
         dx = self.fun(t0, x_prev, u_prev, p, s_prev)[:, self.idx]
         dx_next = self.fun(t0, x_next, u_next, p, s_next)[:, self.idx]
         return x_prev + (dx + dx_next) * self.h / 2
+
+    @property
+    def _time_xall_from_dt_func(self) -> Function:
+        return Function(
+            "step_time", 
+            [self.t_span_sym], 
+            [linspace(self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1], self.shape_xall[1])]
+        )
+    
+    @property
+    def shape_xf(self):
+        return [self.x_sym.shape[0], 1]
+    
+    @property
+    def shape_xall(self):
+        return [self.x_sym.shape[0], self._n_step + 1]
 
     @property
     def h(self):
@@ -453,7 +473,7 @@ class TRAPEZOIDAL(Integrator):
             states_next,
             controls_prev,
             controls_next,
-            p,
+            params,
             stochastic_variables_prev,
             stochastic_variables_next,
         )

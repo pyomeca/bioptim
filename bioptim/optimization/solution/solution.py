@@ -574,13 +574,21 @@ class Solution:
             to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
         ):
 
-        n_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp])
-        if n_direct_collocation > 0 and integrator == SolutionIntegrator.OCP:
+        has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
+        if has_direct_collocation and integrator == SolutionIntegrator.OCP:
             raise ValueError(
                 "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
                 "we cannot use the SolutionIntegrator.OCP.\n"
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
+            )
+        has_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
+        if has_trapezoidal:
+            raise ValueError(
+                "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
+                "we cannot use the SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             )
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]

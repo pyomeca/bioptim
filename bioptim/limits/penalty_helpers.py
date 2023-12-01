@@ -141,19 +141,15 @@ class PenaltyHelpers:
         if penalty.target is None:
             return np.array([])
         
-        return penalty.target[0][..., penalty_node_idx]
+        if (
+            penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+            or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
+        ):
+            target0 = penalty.target[0][..., penalty_node_idx]
+            target1 = penalty.target[1][..., penalty_node_idx]
+            return np.vstack((target0, target1)).T
 
-        # if penalty.target is None:
-        #     target = []
-        # elif (
-        #     penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-        #     or penalty.integration_rule == QuadratureRule.TRAPEZOIDAL
-        # ):
-        #     target0 = format_target(penalty, penalty.target[0], idx)
-        #     target1 = format_target(penalty, penalty.target[1], idx)
-        #     target = np.vstack((target0, target1)).T
-        # else:
-        #     target = format_target(penalty, penalty.target[0], idx)
+        return penalty.target[0][..., penalty_node_idx]
 
 
 

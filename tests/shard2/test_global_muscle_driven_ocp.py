@@ -127,13 +127,13 @@ def test_muscle_driven_ocp(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.37135239, 16.36179822]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([0.00236075, 0.01175397]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([0.00096139, 0.00296023]))
+        np.testing.assert_almost_equal(tau[:, -3], np.array([0.00096139, 0.00296023]))
         np.testing.assert_almost_equal(
             mus[:, 0],
             np.array([1.64993088e-05, 3.49179013e-01, 2.05274808e-01, 2.00177858e-05, 2.12125215e-05, 2.17492272e-01]),
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -3],
             np.array([0.00015523, 0.05732295, 0.02321138, 0.00036435, 0.00039923, 0.04455363]),
         )
     else:

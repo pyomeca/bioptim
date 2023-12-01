@@ -359,6 +359,10 @@ class OdeSolver:
         @property
         def is_direct_shooting(self) -> bool:
             return True
+        
+        @property
+        def defects_type(self) -> DefectType:
+            return DefectType.NOT_APPLICABLE
 
         @property
         def defect_type(self) -> DefectType:
