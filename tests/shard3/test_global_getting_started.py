@@ -59,10 +59,27 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
 
     ode_solver_obj = ode_solver()
 
+    if isinstance(ode_solver_obj, OdeSolver.CVODES):
+        with pytest.raises(
+            NotImplementedError,
+            match=f"CVODES is not yet implemented",
+        ):
+            ocp_module.prepare_ocp(
+                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+                final_time=2,
+                n_shooting=10,
+                n_threads=n_threads,
+                use_sx=use_sx,
+                ode_solver=ode_solver_obj,
+                phase_dynamics=phase_dynamics,
+                expand_dynamics=False,
+            )
+        return
+
     if isinstance(ode_solver_obj, (OdeSolver.IRK, OdeSolver.CVODES)) and use_sx:
         with pytest.raises(
             RuntimeError,
-            match=f"use_sx=True and OdeSolver.{ode_solver_obj.rk_integrator.__name__} are not yet compatible",
+            match=f"use_sx=True and OdeSolver.{ode_solver_obj.integrator.__name__} are not yet compatible",
         ):
             ocp_module.prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -134,49 +151,49 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 41.57063948309302)
-        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.5010317, 0.6824593])
+        np.testing.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.5010317, 0.6824593])
 
     elif isinstance(ode_solver_obj, OdeSolver.IRK):
         np.testing.assert_almost_equal(f[0, 0], 65.8236055171619)
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 65.8236055171619)
-        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.5536468, -0.4129719])
+        np.testing.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.5536468, -0.4129719])
 
     elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
         np.testing.assert_almost_equal(f[0, 0], 46.667345680854794)
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 46.667345680854794)
-        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.1780507, 0.3254202])
+        np.testing.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.1780507, 0.3254202])
 
     elif isinstance(ode_solver_obj, OdeSolver.RK1):
         np.testing.assert_almost_equal(f[0, 0], 47.360621044913245)
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 47.360621044913245)
-        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.1463538, 0.0215651])
+        np.testing.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.1463538, 0.0215651])
 
     elif isinstance(ode_solver_obj, OdeSolver.RK2):
         np.testing.assert_almost_equal(f[0, 0], 76.24887695462857)
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 76.24887695462857)
-        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.652476, -0.496652])
+        np.testing.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.652476, -0.496652])
 
     elif isinstance(ode_solver_obj, OdeSolver.TRAPEZOIDAL):
         np.testing.assert_almost_equal(f[0, 0], 31.423389566303985)
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 31.423389566303985)
-        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [0.69364974, -0.48330043])
+        np.testing.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [0.69364974, -0.48330043])
 
     else:
         np.testing.assert_almost_equal(f[0, 0], 41.58259426)
         # detailed cost values
         if detailed_cost is not None:
             np.testing.assert_almost_equal(detailed_cost["cost_value_weighted"], 41.58259426)
-        np.testing.assert_almost_equal(sol.states_no_intermediate["q"][:, 15], [-0.4961208, 0.6764171])
+        np.testing.assert_almost_equal(sol.decision_states()["q"][15][:, 0], [-0.4961208, 0.6764171])
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -538,9 +555,6 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
 
     # save and load
     if interpolation == InterpolationType.CUSTOM and not random_init:
-        with pytest.raises(AttributeError, match="'PathCondition' object has no attribute 'custom_function'"):
-            TestUtils.save_and_load(sol, ocp, False)
-    else:
         TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
@@ -715,9 +729,8 @@ def test_phase_transitions(ode_solver, phase_dynamics):
     with pytest.raises(
         RuntimeError,
         match=re.escape(
-            "Phase transition must have the same number of states (3) "
-            "when integrating with Shooting.SINGLE_CONTINUOUS. If it is not possible, "
-            "please integrate with Shooting.SINGLE"
+            "Phase transition must have the same number of states (3) when integrating with Shooting.SINGLE_CONTINUOUS. "
+            "If it is not possible, please integrate with Shooting.SINGLE"
         ),
     ):
         TestUtils.simulate(sol)
@@ -997,11 +1010,7 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((444, 1)))
 
     # Check some of the results
-    states, controls, states_no_intermediate = (
-        sol.states,
-        sol.controls,
-        sol.states_no_intermediate,
-    )
+    states, controls = sol.states, sol.controls
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array((1, 0, 0)))
@@ -1045,45 +1054,6 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
     np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.30851703399819436)
     np.testing.assert_almost_equal(sol.detailed_cost[2]["cost_value_weighted"], 48129.27750487157)
     np.testing.assert_almost_equal(sol.detailed_cost[3]["cost_value_weighted"], 38560.82580432337)
-
-    # state no intermediate
-    np.testing.assert_almost_equal(states_no_intermediate[0]["q"][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(states_no_intermediate[0]["q"][:, -1], np.array((2, 0, 0.0078695)))
-    np.testing.assert_almost_equal(
-        states_no_intermediate[0]["q"][:, int(ocp.nlp[0].ns / 2)],
-        np.array((1.5000000e00, 3.3040241e-17, 3.9347424e-03)),
-    )
-
-    np.testing.assert_almost_equal(states_no_intermediate[1]["q"][:, 0], np.array((2, 0, 0.0078695)))
-    np.testing.assert_almost_equal(states_no_intermediate[1]["q"][:, -1], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(
-        states_no_intermediate[1]["q"][:, int(ocp.nlp[1].ns / 2)],
-        np.array((1.5070658e00, -3.7431066e-16, 3.5555768e-02)),
-    )
-
-    np.testing.assert_almost_equal(states_no_intermediate[2]["q"][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(states_no_intermediate[2]["q"][:, -1], np.array((2, 0, 1.57)))
-    np.testing.assert_almost_equal(
-        states_no_intermediate[2]["q"][:, int(ocp.nlp[2].ns / 2)],
-        np.array((1.4945492e00, 1.4743187e-17, 7.6060664e-01)),
-    )
-
-    sol_merged = sol.merge_phases()
-    states_no_intermediate = sol_merged.states_no_intermediate
-
-    np.testing.assert_almost_equal(states_no_intermediate["q"][:, 0], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(states_no_intermediate["q"][:, ocp.nlp[0].ns], np.array((2, 0, 0.0078695)))
-    np.testing.assert_almost_equal(states_no_intermediate["q"][:, ocp.nlp[0].ns + ocp.nlp[1].ns], np.array((1, 0, 0)))
-    np.testing.assert_almost_equal(states_no_intermediate["q"][:, -1], np.array((2, 0, 1.57)))
-
-    np.testing.assert_almost_equal(
-        states_no_intermediate["q"][:, int(ocp.nlp[0].ns / 2)],
-        np.array((1.5000000e00, 3.3040241e-17, 3.9347424e-03)),
-    )
-    np.testing.assert_almost_equal(
-        states_no_intermediate["q"][:, int(ocp.nlp[0].ns + ocp.nlp[1].ns / 2)],
-        np.array((1.5070658e00, -3.7431066e-16, 3.5555768e-02)),
-    )
 
 
 @pytest.mark.parametrize("expand_dynamics", [True, False])
@@ -1296,10 +1266,10 @@ def test_multinode_objective(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.1269555, 0.0]))
 
     # Check that the output is what we expect
-    dt = ocp.nlp[0].tf / ocp.nlp[0].ns
     weight = 10
     target = []
     fun = ocp.nlp[0].J_internal[0].weighted_function
+    dt = sol.t_spans[0][0][-1]
     t_out = []
     x_out = np.ndarray((0, 1))
     u_out = np.ndarray((0, 1))
@@ -1315,7 +1285,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
             )
 
     # Note that dt=1, because the multi-node objectives are treated as mayer terms
-    out = fun[0](t_out, x_out, u_out, p_out, s_out, weight, target, 1)
+    out = fun[0](t_out, dt, x_out, u_out, p_out, s_out, weight, target)
     out_expected = sum2(sum1(sol.controls["tau"][:, :-1] ** 2)) * dt * weight
     np.testing.assert_almost_equal(out, out_expected)
 

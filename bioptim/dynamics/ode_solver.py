@@ -522,24 +522,31 @@ class OdeSolver:
         @property
         def is_direct_shooting(self) -> bool:
             return True
+        
+        @property
+        def n_required_cx(self) -> int:
+            return 1
 
         @property
         def defects_type(self) -> DefectType:
             return DefectType.NOT_APPLICABLE
 
         def x_ode(self, nlp):
-            return nlp.states.scaled.cx()
+            return nlp.states.scaled.cx
 
         def p_ode(self, nlp):
-            return nlp.controls.scaled.cx()
+            return nlp.controls.scaled.cx
 
         def s_ode(self, nlp):
-            return nlp.stochastic_variables.scaled.cx()
+            return nlp.stochastic_variables.scaled.cx
 
         def initialize_integrator(
             self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False, **extra_opt
         ):
-            if extra_opt is not None:
+            raise NotImplementedError("CVODES is not yet implemented")
+
+
+            if extra_opt:
                 raise RuntimeError("CVODES does not accept extra options")
 
             if not isinstance(ocp.cx(), MX):

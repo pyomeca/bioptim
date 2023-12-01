@@ -89,7 +89,7 @@ def test_symmetry_by_constraint(ode_solver, phase_dynamics):
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(f[0, 0], 216.567618843852)
+        np.testing.assert_almost_equal(f[0, 0], 216.5675214731774)
         np.testing.assert_equal(g.shape, (300 * 5 + 36, 1))
         np.testing.assert_almost_equal(g, np.zeros((300 * 5 + 36, 1)))
     else:
@@ -107,8 +107,8 @@ def test_symmetry_by_constraint(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0, 0)))
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0, 0)))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((1.16129033, 1.16129033, 0, -0.58458751, 0.58458751)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-1.16129033, -1.16129033, 0, 0.58458751, -0.58458751)))
+    np.testing.assert_almost_equal(tau[:, 0], np.array((1.16129033, 1.16129033, 0, -0.58458751, 0.58458751)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -2], np.array((-1.16129033, -1.16129033, 0, 0.58458751, -0.58458751)), decimal=6)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

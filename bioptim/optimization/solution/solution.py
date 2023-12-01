@@ -848,6 +848,7 @@ class Solution:
         all_tracked_markers = []
 
         for phase, nlp in enumerate(self.ocp.nlp):
+            n_states_nodes = self.ocp.nlp[phase].n_states_nodes
             tracked_markers = None
             for objective in nlp.J:
                 if objective.target is not None:
@@ -855,7 +856,7 @@ class Solution:
                         ObjectiveFcn.Mayer.TRACK_MARKERS,
                         ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        tracked_markers = np.full((3, nlp.model.nb_markers, self.ns[phase] + 1), np.nan)
+                        tracked_markers = np.full((3, nlp.model.nb_markers, n_states_nodes), np.nan)
                         for i in range(len(objective.rows)):
                             tracked_markers[objective.rows[i], objective.cols, :] = objective.target[0][i, :, :]
                         missing_row = np.where(np.isnan(tracked_markers))[0]
@@ -864,8 +865,8 @@ class Solution:
 
             # interpolation
             if n_frames > 0 and tracked_markers is not None:
-                x = np.linspace(0, self.ns[phase], self.ns[phase] + 1)
-                xnew = np.linspace(0, self.ns[phase], n_frames)
+                x = np.linspace(0, n_states_nodes - 1, n_states_nodes)
+                xnew = np.linspace(0, n_states_nodes - 1, n_frames)
                 f = interp1d(x, tracked_markers, kind="cubic")
                 tracked_markers = f(xnew)
 

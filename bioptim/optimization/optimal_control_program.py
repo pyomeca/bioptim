@@ -63,6 +63,7 @@ from ..misc.options import OptionDict
 from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution.solution import Solution
+from ..optimization.solution.solution_data import SolutionMerge
 from ..optimization.variable_scaling import VariableScalingList
 from ..gui.check_conditioning import check_conditioning
 
@@ -1526,7 +1527,10 @@ class OptimalControlProgram:
             The solution to initiate the OCP from
         """
 
-        state, ctrl, param = sol.states, sol.controls, sol.parameters
+        state = sol.decision_states(to_merge=SolutionMerge.NODES) 
+        ctrl = sol.decision_controls(to_merge=SolutionMerge.NODES)
+        param = sol.parameters
+        
         u_init_guess = InitialGuessList()
         x_init_guess = InitialGuessList()
         param_init_guess = InitialGuessList()
