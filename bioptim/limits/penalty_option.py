@@ -647,7 +647,7 @@ class PenaltyOption(OptionGeneric):
         param_cx = controller.parameters.cx
 
         time_cx = controller.time.cx
-        phases_dt_cx = controller.ocp.dt_parameter.cx
+        phases_dt_cx = controller.phases_time_cx
 
         # Sanity check on outputs
         if len(self.function) <= node:
@@ -692,10 +692,12 @@ class PenaltyOption(OptionGeneric):
             stochastic_cx_scaled = vertcat(
                 controller.stochastic_variables_scaled.cx_end, controller.stochastic_variables_scaled.cx_start
             )
+
+            # This reimplementation is required because input sizes change. It will however produce wrong result
+            # for non weighted functions 
             self.function[node] = Function(
                 f"{name}",
                 [time_cx, phases_dt_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled],
-                # TODO: Charbie -> this is False, add stochastic_variables for start, mid AND end
                 [self.function[node](
                     time_cx,
                     phases_dt_cx,
@@ -716,129 +718,83 @@ class PenaltyOption(OptionGeneric):
                 ["val"], 
             )
 
-        is_trapezoidal = (
-            self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-            or self.integration_rule == QuadratureRule.TRAPEZOIDAL
-        )
-        target_shape = tuple(
-            [
-                len(self.rows),
-                len(self.cols) + 1 if is_trapezoidal else len(self.cols),
-            ]
-        )
+        is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
+        target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
         weight_cx = controller.cx.sym("weight", 1, 1)
         exponent = 2 if self.quadratic and self.weight else 1
 
         if is_trapezoidal:
-            # Hypothesis: the function is continuous on states
+            # Hypothesis for APPROXIMATE_TRAPEZOIDAL: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
-            state_cx_scaled = (
-                vertcat(controller.states_scaled.cx_start, controller.states_scaled.cx_end)
-                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                else controller.states_scaled.cx_start
-            )
-            state_cx = (
-                vertcat(controller.states.cx_start, controller.states.cx_end)
-                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                else controller.states.cx_start
-            )
+
+            state_cx = controller.states_scaled.cx_start
+            state_cx_start = controller.states_scaled.cx_start
+            state_cx_end = controller.states_scaled.cx_end
+            stochastic_cx = controller.stochastic_variables_scaled.cx_start
+            stochastic_start_cx = controller.stochastic_variables_scaled.cx_start
+            stochastic_end_cx = controller.stochastic_variables_scaled.cx_end
+            
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
-            control_cx_scaled = (
-                controller.controls_scaled.cx_start
-                if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE)
-                else vertcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end)
-            )
-            stochastic_cx_scaled = (
-                vertcat(controller.stochastic_variables_scaled.cx_start, controller.stochastic_variables_scaled.cx_end)
-                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                else controller.stochastic_variables_scaled.cx_start
-            )
-            stochastic_cx = (
-                vertcat(controller.stochastic_variables.cx_start, controller.controls.cx_end)
-                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                else controller.stochastic_variables.cx_start
-            )
-
+            control_cx = controller.controls_scaled.cx_start
+            control_cx_start = controller.controls_scaled.cx_start
+            if controller.control_type in (ControlType.LINEAR_CONTINUOUS, ):
+                control_cx = vertcat(control_cx, controller.controls_scaled.cx_end)
+            
             if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
-                control_cx_end_scaled = _get_u(controller.control_type, controller.controls_scaled.cx_start, dt_cx)
-                control_cx_end = _get_u(controller.control_type, controller.controls.cx_start, dt_cx)
+                control_end = controller.controls.cx_start 
+                control_end_unscaled = controller.controls.cx_start 
             else:
-                control_cx_end_scaled = _get_u(
-                    controller.control_type,
-                    horzcat(controller.controls_scaled.cx_start, controller.controls_scaled.cx_end),
-                    phases_dt_cx,
-                )
-                control_cx_end = _get_u(
-                    controller.control_type, horzcat(controller.controls.cx_start, controller.controls.cx_end), dt_cx
-                )
-            state_cx_end_scaled = (
-                controller.states_scaled.cx_end
-                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                else controller.integrate(
-                    x0=state_cx,
-                    u=control_cx_end,
-                    p=controller.parameters.cx,
-                    s=stochastic_cx,
-                )["xf"]
+                control_end = controller.controls.cx_end
+                control_end_unscaled = controller.controls.cx_end
+            control_cx_end = _get_u(
+                controller.control_type, horzcat(controller.controls.cx_start, control_end), phases_dt_cx[self.phase],
             )
+
             if controller.ode_solver.is_direct_collocation:
-                state_cx_start_scaled = vertcat(
-                    controller.states_scaled.cx_start, *controller.states_scaled.cx_intermediates_list
-                )
-                state_cx_end_scaled = vertcat(
-                    state_cx_end_scaled,
-                    *controller.states_scaled.cx_intermediates_list,
-                )
-            else:
-                state_cx_start_scaled = controller.states_scaled.cx_start
+                state_cx_start = vertcat(state_cx_start, *controller.states_scaled.cx_intermediates_list)
+                state_cx_end = vertcat(state_cx_end, *controller.states.cx_intermediates_list)
 
-            modified_function = controller.to_casadi_func(
+            if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                state_cx =  vertcat(state_cx, controller.states_scaled.cx_end)
+                state_cx_end = controller.states_scaled.cx_end
+                stochastic_cx = vertcat(stochastic_cx, controller.stochastic_variables_scaled.cx_end)
+            else: 
+                control_cx_end_unscaled = _get_u(
+                    controller.control_type, 
+                    horzcat(controller.controls.cx_start, control_end_unscaled), 
+                    phases_dt_cx[self.phase],
+                )
+                state_cx_end = controller.integrate(
+                    t_span=controller.t_span,
+                    x0=controller.states.cx_start, 
+                    u=control_cx_end_unscaled, 
+                    p=controller.parameters.cx, 
+                    s=controller.stochastic_variables.cx_start
+                )["xf"]
+                
+            func_at_start = self.function[node](
+                time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, stochastic_start_cx
+            )
+            func_at_end = self.function[node](
+                time_cx, phases_dt_cx, state_cx_end, control_cx_end, param_cx, stochastic_end_cx
+            )
+            modified_fcn = ((func_at_start - target_cx[:, 0]) ** exponent + (func_at_end - target_cx[:, 1]) ** exponent) / 2
+
+            # This reimplementation is required because input sizes change. It will however produce wrong result
+            # for non weighted functions
+            self.function[node] = Function(
                 f"{name}",
-                (
-                    (
-                        self.function[node](
-                            time_cx,
-                            phases_dt_cx,
-                            state_cx_start_scaled,
-                            controller.controls_scaled.cx_start,
-                            param_cx,
-                            controller.stochastic_variables_scaled.cx_start,
-                        )
-                        - target_cx[:, 0]
-                    )
-                    ** exponent
-                    + (
-                        self.function[node](
-                            time_cx,
-                            phases_dt_cx,
-                            state_cx_end_scaled,
-                            control_cx_end_scaled,
-                            param_cx,
-                            controller.stochastic_variables_scaled.cx_end,
-                        )
-                        - target_cx[:, 1]
-                    )
-                    ** exponent
-                )
-                / 2,
-                time_cx,
-                state_cx_scaled,
-                control_cx_scaled,
-                param_cx,
-                stochastic_cx_scaled,
-                target_cx,
+                [time_cx, phases_dt_cx, state_cx, control_cx, param_cx, stochastic_cx],
+                [(func_at_start + func_at_end) / 2],
+                ["t", "dt", "x", "u", "p", "s"],
+                ["val"], 
             )
+            state_cx_scaled = state_cx
+            control_cx_scaled = control_cx
+            stochastic_cx_scaled = stochastic_cx
 
-            modified_fcn = modified_function(
-                time_cx,
-                state_cx_scaled,
-                control_cx_scaled,
-                param_cx,
-                stochastic_cx_scaled,
-                target_cx,
-            )
         else:
             modified_fcn = (
                 self.function[node](
@@ -1136,7 +1092,7 @@ def _get_u(control_type: ControlType, u: MX | SX, dt: MX | SX):
     """
 
     if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-        return u
+        return u[:, 0]
     elif control_type == ControlType.LINEAR_CONTINUOUS:
         return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
     else:

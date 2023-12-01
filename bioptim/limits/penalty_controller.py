@@ -89,6 +89,19 @@ class PenaltyController:
         return self._nlp
 
     @property
+    def t_span(self) -> list:
+        dt = self.phases_time_cx[self.phase_idx]
+        return vertcat(self.time_cx, self.time_cx + dt) + self.node_index * dt
+
+    @property
+    def phases_time_cx(self) -> list:
+        return self.ocp.dt_parameter.cx
+
+    @property
+    def time_cx(self) -> MX | SX | Callable:
+        return self._nlp.time_cx
+
+    @property
     def cx(self) -> MX | SX | Callable:
         return self._nlp.cx
 
@@ -113,10 +126,6 @@ class PenaltyController:
         return self._nlp.ns
 
     @property
-    def tf(self) -> int:
-        return self._nlp.tf
-
-    @property
     def mx_to_cx(self):
         return self._nlp.mx_to_cx
 
@@ -124,6 +133,10 @@ class PenaltyController:
     def model(self):
         return self._nlp.model
 
+    @property
+    def tf(self) -> int:
+        return self._nlp.tf
+    
     @property
     def time(self) -> OptimizationVariable:
         """

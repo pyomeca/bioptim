@@ -66,7 +66,8 @@ class PenaltyHelpers:
 
         x = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
         
-        if penalty.derivative or penalty.explicit_derivative:
+        need_end_point = penalty.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+        if need_end_point or penalty.derivative or penalty.explicit_derivative:
             x = _reshape_to_vector(x)
             x_next = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx] + 1)[:, 0]
             x = vertcat(x_next, x) if penalty.derivative else vertcat(x, x_next) 
