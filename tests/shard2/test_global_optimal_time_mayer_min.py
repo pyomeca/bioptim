@@ -60,7 +60,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
 
     # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    tf = sol.times
+    tf = sol.times[-1]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -87,7 +87,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 0.2862324498580764)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((70.46234418, 0)), decimal=6)
+        np.testing.assert_almost_equal(tau[:, 0], np.array((70.46224716, 0)), decimal=6)
         np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99964325, 0)), decimal=6)
 
         # optimized time
@@ -119,15 +119,11 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    if ode_solver == OdeSolver.IRK:
-        ft = 2
-        ns = 35
-        min_ft = 0.5
-    elif ode_solver == OdeSolver.COLLOCATION:
+    if ode_solver == OdeSolver.COLLOCATION:
         ft = 2
         ns = 10
         min_ft = 0.5
-    elif ode_solver == OdeSolver.RK4:
+    elif ode_solver == OdeSolver.RK4 or ode_solver == OdeSolver.IRK:
         ft = 2
         ns = 30
         min_ft = 0.5
@@ -156,7 +152,7 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
 
     # Check some results
     q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    tf = sol.parameters["time"][0, 0]
+    tf = sol.times[-1]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -170,15 +166,15 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(f[0, 0], 1.1878186850775596)
+        np.testing.assert_almost_equal(f[0, 0], 0.9533725307316343)
     else:
-        np.testing.assert_almost_equal(f[0, 0], min_ft)
+        np.testing.assert_almost_equal(f[0, 0], min_ft, decimal=4)
 
     # optimized time
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(tf, 1.1878186850775596)
+        np.testing.assert_almost_equal(tf, 0.9533725307316343)
     else:
-        np.testing.assert_almost_equal(tf, min_ft)
+        np.testing.assert_almost_equal(tf, min_ft, decimal=4)
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)

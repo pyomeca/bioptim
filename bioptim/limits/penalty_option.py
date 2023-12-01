@@ -611,10 +611,14 @@ class PenaltyOption(OptionGeneric):
             
             state_cx_scaled = controller.states_scaled.cx_start
             if controller.get_nlp.ode_solver.is_direct_collocation and (
-                controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and controller.ns in self.node_idx):
+                controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and 
+                len(self.node_idx) > 1 and 
+                controller.ns in self.node_idx
+            ):
                 raise ValueError(
-                    "Direct collocation with shared dynamics cannot have a penalty on the last node for Lagrange. If "
-                    "you want to use Lagrange, you must use Node.ALL_SHOOTING"
+                    "Direct collocation with shared dynamics cannot have a more than one penalty defined at the same "
+                    "time on multiple node. If you arrive to this error using Node.ALL, you should consider using " 
+                    "Node.ALL_SHOOTING."
                 )
 
             if (
