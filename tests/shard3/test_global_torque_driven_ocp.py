@@ -4,7 +4,7 @@ Test for file IO
 import os
 import pytest
 import numpy as np
-from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver, BiorbdModel, PhaseDynamics
+from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver, BiorbdModel, PhaseDynamics, SolutionMerge
 from tests.utils import TestUtils
 
 
@@ -360,7 +360,9 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
     g = np.array(sol.constraints)
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     if isinstance(ode_solver, OdeSolver.IRK):
         np.testing.assert_equal(g.shape, (n_shooting * 4, 1))

@@ -29,6 +29,7 @@ from bioptim import (
     Node,
     Solver,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 # Load track_segment_on_rt
@@ -162,7 +163,9 @@ def main():
         biorbd_model_path=biorbd_path, final_time=final_time, n_shooting=n_shooting
     )
     sol = ocp_to_track.solve()
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     n_q = bio_model.nb_q
     n_marker = bio_model.nb_markers
     x = np.concatenate((q, qdot))
