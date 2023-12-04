@@ -227,10 +227,9 @@ def prepare_ocp(
     )
 
 
-# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
-# @pytest.mark.parametrize("use_sx", [False, True])
-# def test_main_control_type_none(use_sx, phase_dynamics):
-def test_main_control_type_none(use_sx=False, phase_dynamics=PhaseDynamics.ONE_PER_NODE):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_main_control_type_none(use_sx, phase_dynamics):
     """
     Prepare and solve and animate a reaching task ocp
     """

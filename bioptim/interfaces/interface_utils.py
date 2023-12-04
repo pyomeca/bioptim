@@ -2,7 +2,7 @@ from time import perf_counter
 from typing import Callable
 from sys import platform
 
-from casadi import Importer
+from casadi import Importer, Function
 import numpy as np
 from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
@@ -12,6 +12,7 @@ from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule, PhaseDynamics
 from bioptim.optimization.solution.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
+from ..dynamics.ode_solver import OdeSolver
 
 
 def generic_online_optim(interface, ocp, show_options: dict = None):
@@ -39,6 +40,10 @@ def generic_solve(interface) -> dict:
     -------
     A reference to the solution
     """
+    v = interface.ocp.variables_vector
+
+    v_bounds = interface.ocp.bounds_vectors
+    v_init = interface.ocp.init_vector
 
     all_objectives = interface.dispatch_obj_func()
     all_g, all_g_bounds = interface.dispatch_bounds()
@@ -47,7 +52,11 @@ def generic_solve(interface) -> dict:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
     # Thread here on (f and all_g) instead of individually for each function?
-    interface.sqp_nlp = {"x": interface.ocp.variables_vector, "f": sum1(all_objectives), "g": all_g}
+    all_objectives = _shake_tree_for_penalties(interface.ocp, all_objectives, v, v_bounds, expand=True)
+    all_g = _shake_tree_for_penalties(
+        interface.ocp, all_g, v, v_bounds, expand=OdeSolver.IRK not in [type(nlp.ode_solver) for nlp in interface.ocp.nlp]
+    )
+    interface.sqp_nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
 
@@ -59,8 +68,6 @@ def generic_solve(interface) -> dict:
     else:
         interface.ocp_solver = nlpsol("solver", interface.solver_name.lower(), interface.sqp_nlp, options)
 
-    v_bounds = interface.ocp.bounds_vectors
-    v_init = interface.ocp.init_vector
     interface.sqp_limits = {
         "lbx": v_bounds[0],
         "ubx": v_bounds[1],
@@ -91,6 +98,36 @@ def generic_solve(interface) -> dict:
     interface.out["sol"]["solver"] = interface.solver_name
 
     return interface.out
+
+
+def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
+    """
+    Remove the dt in the objectives and constraints if they are constant
+
+    Parameters
+    ----------
+    ocp
+    penalties_cx
+    v
+    v_bounds
+
+    Returns
+    -------
+
+    """
+    dt = []
+    for i in range(ocp.n_phases):
+        # If min == max, then it's a constant
+        if v_bounds[0][i] == v_bounds[1][i]:
+            dt.append(v_bounds[0][i])
+        else:
+            dt.append(v[i])
+
+    # Shake the tree
+    penalty = Function("penalty", [v], [penalties_cx])
+    if expand:
+        penalty.expand()
+    return penalty(vertcat(*dt, v[len(dt):]))
 
 
 def generic_set_lagrange_multiplier(interface, sol: Solution):
