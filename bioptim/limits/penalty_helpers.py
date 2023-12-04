@@ -155,7 +155,6 @@ class PenaltyHelpers:
         return penalty.target[0][..., penalty_node_idx]
 
 
-
     def _get_x_u_s_at_idx(ocp, nlp, penalty, _idx, is_unscaled):
         """ """
 

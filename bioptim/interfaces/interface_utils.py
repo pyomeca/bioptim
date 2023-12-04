@@ -236,6 +236,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         out = vertcat(out, sum2(tp))
     return out
 
+
 def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, is_unscaled):
     t0 = PenaltyHelpers.t0(penalty, penalty_idx, lambda p_idx, n_idx: ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx))
 

@@ -620,7 +620,6 @@ class PenaltyOption(OptionGeneric):
                     "time on multiple node. If you arrive to this error using Node.ALL, you should consider using " 
                     "Node.ALL_SHOOTING."
                 )
-
             if (
                 controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                 or controller.node_index < controller.ns
@@ -637,7 +636,6 @@ class PenaltyOption(OptionGeneric):
             if ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
                 if ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or self.node_idx[0] + 1 < controller.get_nlp.n_controls_nodes:
                     control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
-                
 
             if self.explicit_derivative:
                 if self.derivative:
