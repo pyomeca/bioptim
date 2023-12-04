@@ -613,7 +613,7 @@ class PenaltyOption(OptionGeneric):
             if controller.get_nlp.ode_solver.is_direct_collocation and (
                 controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and 
                 len(self.node_idx) > 1 and 
-                controller.ns in self.node_idx
+                controller.ns + 1 in self.node_idx
             ):
                 raise ValueError(
                     "Direct collocation with shared dynamics cannot have a more than one penalty defined at the same "
