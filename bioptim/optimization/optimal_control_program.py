@@ -1465,6 +1465,7 @@ class OptimalControlProgram:
         self,
         solver: GenericSolver = None,
         warm_start: Solution = None,
+        expand_during_shake_tree=False
     ) -> Solution:
         """
         Call the solver to actually solve the ocp
@@ -1475,6 +1476,8 @@ class OptimalControlProgram:
             The solver which will be used to solve the ocp
         warm_start: Solution
             The solution to pass to the warm start method
+        expand_during_shake_tree: bool
+            If the tree should be expanded during the shake phase
 
         Returns
         -------
@@ -1512,7 +1515,7 @@ class OptimalControlProgram:
 
         self.ocp_solver.opts = solver
 
-        self.ocp_solver.solve()
+        self.ocp_solver.solve(expand_during_shake_tree=expand_during_shake_tree)
         self._is_warm_starting = False
 
         return Solution.from_dict(self, self.ocp_solver.get_optimized_value())

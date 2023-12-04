@@ -769,7 +769,8 @@ def test_example_minimize_segment_velocity():
     np.testing.assert_almost_equal(g, np.zeros((30, 1)), decimal=6)
 
     # Check some of the results
-    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 
     # initial and final position
     np.testing.assert_almost_equal(states["q"][:, 0], np.array([0.0, 0.0, 0.0]), decimal=6)

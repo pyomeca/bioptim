@@ -806,9 +806,14 @@ class AcadosInterface(SolverInterface):
             out.append(self.out[key])
         return out[0] if len(out) == 1 else out
 
-    def solve(self) -> list | dict:
+    def solve(self, expand_during_shake_tree=False) -> list | dict:
         """
         Solve the prepared ocp
+
+        Parameters
+        ----------
+        expand_during_shake_tree: bool
+            If the casadi graph should be expanded during the shake tree phase. This value is ignored for ACADOS
 
         Returns
         -------

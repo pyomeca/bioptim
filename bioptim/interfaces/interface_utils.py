@@ -32,9 +32,16 @@ def generic_online_optim(interface, ocp, show_options: dict = None):
     interface.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
 
 
-def generic_solve(interface) -> dict:
+def generic_solve(interface, expand_during_shake_tree=False) -> dict:
     """
     Solve the prepared ocp
+
+    Parameters
+    ----------
+    interface: GenericInterface
+        A reference to the current interface
+    expand_during_shake_tree: bool
+        If the tree should be expanded during the shake tree
 
     Returns
     -------
@@ -45,10 +52,10 @@ def generic_solve(interface) -> dict:
     v_init = interface.ocp.init_vector
 
     all_objectives = interface.dispatch_obj_func()
-    all_objectives = _shake_tree_for_penalties(interface.ocp, all_objectives, v, v_bounds)
+    all_objectives = _shake_tree_for_penalties(interface.ocp, all_objectives, v, v_bounds, expand_during_shake_tree)
 
     all_g, all_g_bounds = interface.dispatch_bounds()
-    all_g = _shake_tree_for_penalties(interface.ocp, all_g, v, v_bounds)
+    all_g = _shake_tree_for_penalties(interface.ocp, all_g, v, v_bounds, expand_during_shake_tree)
 
     if interface.opts.show_online_optim:
         interface.online_optim(interface.ocp, interface.opts.show_options)
@@ -98,7 +105,7 @@ def generic_solve(interface) -> dict:
     return interface.out
 
 
-def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds):
+def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
     """
     Remove the dt in the objectives and constraints if they are constant
 
@@ -123,11 +130,12 @@ def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds):
 
     # Shake the tree
     penalty = Function("penalty", [v], [penalties_cx])
-    try:
-        penalty = penalty.expand()
-    except RuntimeError:
-        # This happens mostly when there is a Newton decent in the penalty
-        pass
+    if expand:
+        try:
+            penalty = penalty.expand()
+        except RuntimeError:
+            # This happens mostly when there is a Newton decent in the penalty
+            pass
     return penalty(vertcat(*dt, v[len(dt):]))
 
 
@@ -240,7 +248,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         if penalty.multi_thread:
             if penalty.target is not None and len(penalty.target[0].shape) != 2:
                 raise NotImplementedError("multi_thread penalty with target shape != [n x m] is not implemented yet")
-            target = penalty.target[0] if penalty.target is not None else []
 
             t0 = nlp.cx()
             x = nlp.cx()
@@ -300,6 +307,7 @@ def _get_x(ocp, phase_idx, node_idx, is_unscaled):
 def _get_u(ocp, phase_idx, node_idx, is_unscaled):
     nlp_u = ocp.nlp[phase_idx].U if is_unscaled else ocp.nlp[phase_idx].U_scaled
     return nlp_u[node_idx if node_idx < len(nlp_u) else -1]
+
 
 def _get_s(ocp, phase_idx, node_idx, is_unscaled):
     s = ocp.nlp[phase_idx].S if is_unscaled else ocp.nlp[phase_idx].S_scaled
