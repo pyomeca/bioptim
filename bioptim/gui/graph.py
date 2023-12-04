@@ -231,7 +231,7 @@ class GraphAbstract:
         min_bound_str = f"{self._vector_layout(self.ocp.parameter_bounds[key].min)}"
         max_bound_str = f"{self._vector_layout(self.ocp.parameter_bounds[key].max)}"
 
-        scaling = [parameter.scaling[i][0] for i in range(parameter.size)]
+        scaling = parameter.scaling.scaling
         scaling_str = f"{self._vector_layout(scaling)}"
 
         return parameter, initial_guess_str, min_bound_str, max_bound_str, scaling_str
@@ -528,7 +528,7 @@ class OcpToGraph(GraphAbstract):
                 global_objectives += f"<b>Type:</b> {objective.type} <br/>"
                 global_objectives_names += name
                 global_objectives += (
-                    f"{f'<b>Target</b>: {self._vector_layout(objective.target)} <br/>'}"
+                    f"{f'<b>Target</b>: {self._vector_layout(objective.target[0])} <br/>'}"
                     if objective.target is not None
                     else ""
                 )
@@ -581,7 +581,7 @@ class OcpToGraph(GraphAbstract):
             node_str += f"<b>Phase duration</b>: optimized<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
         node_str += f"<b>Dynamics</b>: {self.ocp.nlp[phase_idx].dynamics_type.type.name}<br/>"
-        node_str += f"<b>ODE</b>: {self.ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}<br/>"
+        node_str += f"<b>ODE</b>: {self.ocp.nlp[phase_idx].ode_solver.integrator.__name__}<br/>"
         node_str += f"<b>Control type</b>: {self.ocp.nlp[phase_idx].control_type.name}"
         g.node(f"nlp_node_{phase_idx}", f"""<{node_str}>""")
 
