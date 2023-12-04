@@ -62,6 +62,12 @@ class Parameter(PenaltyOption):
             scaling = VariableScaling(self.name, np.ones((self.size, 1)))
         if not isinstance(scaling, VariableScaling):
             raise ValueError("Parameter scaling must be a VariableScaling")
+
+        if scaling.shape[0] != self.size:
+            raise ValueError(f"Parameter scaling must be of size {self.size}, not {scaling.shape[0]}.")
+        if scaling.shape[1] != 1:
+            raise ValueError(f"Parameter scaling must have exactly one column, not {scaling.shape[1]}.")
+
         self.scaling = scaling
 
         self.quadratic = quadratic
@@ -270,7 +276,6 @@ class ParameterList(UniquePerProblemOptionList):
                 cx=self.cx_type,
                 **extra_arguments,
         )
-        a = self.scaling
     
     @property
     def scaling(self) -> VariableScalingList:

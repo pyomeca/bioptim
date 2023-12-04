@@ -18,9 +18,14 @@ class VariableScaling(OptionGeneric):
             scaling = np.array(scaling)
         elif not (isinstance(scaling, np.ndarray) or isinstance(scaling, VariableScaling)):
             raise RuntimeError(f"Scaling must be a list or a numpy array, not {type(scaling)}")
-        
+
         if len(scaling.shape) == 1:
             scaling = scaling[:, np.newaxis]
+        elif len(scaling.shape) > 2:
+            raise ValueError(f"Scaling must be a 1- or 2- dimensional numpy array")
+
+        if (scaling < 0).any():
+            raise ValueError(f"Scaling factors must be strictly greater than zero.")
 
         self.key = key
         self.scaling = scaling

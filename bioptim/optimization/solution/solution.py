@@ -363,7 +363,8 @@ class Solution:
         The time vector
         """
 
-        return deepcopy(self._decision_times if t_span else self._stepwise_times)
+        out = deepcopy(self._decision_times if t_span else self._stepwise_times)
+        return out if len(out) > 1 else out[0]
 
     @property
     def t_spans(self):

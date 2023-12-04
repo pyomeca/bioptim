@@ -42,6 +42,8 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -82,7 +84,7 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_passive_torque:
@@ -125,6 +127,8 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -166,7 +170,7 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
     if with_passive_torque:
         np.testing.assert_almost_equal(
@@ -218,6 +222,8 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -256,7 +262,7 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
     if with_residual_torque:
         if with_passive_torque:
@@ -333,6 +339,8 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -375,7 +383,7 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
+    time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
