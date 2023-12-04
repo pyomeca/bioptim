@@ -392,19 +392,19 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 281.8462122624288)
+        np.testing.assert_almost_equal(f[0, 0], 266.8758641863113)
 
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(q[:, -1], np.array((0.8390514, 3.3819348)))
+        np.testing.assert_almost_equal(q[:, -1], np.array((0.14206685, 2.05102505)))
 
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((3.2598235, 3.8800289)))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array((-1.11315544, -3.0543407)))
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((6.8532419, -12.1810791)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((0.1290981, 0.9345706)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((6.80295612, -13.21566569)))
+        np.testing.assert_almost_equal(tau[:, -2], np.array((0.23724909, 0.92831857)))
 
     # save and load
     TestUtils.save_and_load(sol, ocp, False)
@@ -419,12 +419,20 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
     np.testing.assert_almost_equal(
         tracked_markers[0][1:, :, 0], np.array([[0.82873751, 0.5612772], [0.22793516, 0.24205527]])
     )
-    np.testing.assert_almost_equal(
-        tracked_markers[0][1:, :, 5], np.array([[0.80219698, 0.02541913], [0.5107473, 0.36778313]])
-    )
-    np.testing.assert_almost_equal(
-        tracked_markers[0][1:, :, -1], np.array([[0.76078505, 0.11005192], [0.98565045, 0.65998405]])
-    )
+    if type(ode_solver) == OdeSolver.COLLOCATION:
+        np.testing.assert_almost_equal(
+            tracked_markers[0][1:, :, 5], np.array([[0.77390897, 0.06282121], [0.41871545, 0.41634836]])
+        )
+        np.testing.assert_almost_equal(
+            tracked_markers[0][1:, :, -1], np.array([[0.71324479, 0.31800347], [0.48945276, 0.25794163]])
+        )
+    else:
+        np.testing.assert_almost_equal(
+            tracked_markers[0][1:, :, 5], np.array([[0.80219698, 0.02541913], [0.5107473, 0.36778313]])
+        )
+        np.testing.assert_almost_equal(
+            tracked_markers[0][1:, :, -1], np.array([[0.76078505, 0.11005192], [0.98565045, 0.65998405]])
+        )
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])

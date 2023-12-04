@@ -111,9 +111,9 @@ def prepare_ocp(
     objective_functions.add(
         ObjectiveFcn.Lagrange.TRACK_MARKERS,
         axes=[Axis.Y, Axis.Z],
-        node=Node.ALL,
+        node=Node.ALL_SHOOTING if ode_solver.is_direct_collocation else Node.ALL,
         weight=100,
-        target=markers_ref[1:, :, :],
+        target=markers_ref[1:, :, :-1] if ode_solver.is_direct_collocation else markers_ref[1:, :, :],
     )
     objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", target=tau_ref)
 

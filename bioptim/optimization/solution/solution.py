@@ -918,6 +918,9 @@ class Solution:
 
         for phase, nlp in enumerate(self.ocp.nlp):
             n_states_nodes = self.ocp.nlp[phase].n_states_nodes
+            if type(nlp.ode_solver) == OdeSolver.COLLOCATION:
+                n_states_nodes -= 1
+
             tracked_markers = None
             for objective in nlp.J:
                 if objective.target is not None:
@@ -926,8 +929,10 @@ class Solution:
                         ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
                         tracked_markers = np.full((3, nlp.model.nb_markers, n_states_nodes), np.nan)
+
                         for i in range(len(objective.rows)):
                             tracked_markers[objective.rows[i], objective.cols, :] = objective.target[0][i, :, :]
+
                         missing_row = np.where(np.isnan(tracked_markers))[0]
                         if missing_row.size > 0:
                             tracked_markers[missing_row, :, :] = 0
