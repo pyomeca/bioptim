@@ -624,9 +624,10 @@ class Solution:
                 for ns, sol_ns in enumerate(integrated_sol):
                     out[p][key][ns] = sol_ns[nlp.states[key].index, :]
 
-        if not to_merge:
-            return out
-        return SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
+        if to_merge:
+            out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
+
+        return out if len(out) > 1 else out[0]
 
     def _states_for_phase_integration(
         self,

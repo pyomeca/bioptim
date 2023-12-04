@@ -15,6 +15,7 @@ from bioptim import (
     OptimalControlProgram,
     InitialGuessList,
     PhaseDynamics,
+    SolutionMerge,
 )
 from bioptim.limits.path_conditions import InitialGuess
 
@@ -153,24 +154,21 @@ def test_initial_guess_update(phase_dynamics):
     np.testing.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.zeros((2, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.zeros((2, 1)))
 
-    np.testing.assert_almost_equal(ocp.parameter_init["time"].init[0, 0], 2)
-    np.testing.assert_almost_equal(ocp.init_vector, np.concatenate((np.zeros((4 * 11 + 2 * 10, 1)), [[2]])))
+    np.testing.assert_almost_equal(ocp.phase_time[0], 2)
+    np.testing.assert_almost_equal(ocp.init_vector, np.concatenate(([[0.2]], np.zeros((4 * 11 + 2 * 10, 1)), )))
 
     new_x_init = InitialGuessList()
     new_x_init["q"] = [1] * 2
     new_x_init["qdot"] = [1] * 2
     new_u_init = InitialGuessList()
     new_u_init["tau"] = [3] * 2
-    new_time_init = InitialGuessList()
-    new_time_init["time"] = [4]
 
-    ocp.update_initial_guess(x_init=new_x_init, u_init=new_u_init, parameter_init=new_time_init)
+    ocp.update_initial_guess(x_init=new_x_init, u_init=new_u_init)
 
     np.testing.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.ones((2, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.ones((2, 1)))
     np.testing.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.ones((2, 1)) * 3)
-    np.testing.assert_almost_equal(ocp.parameter_init["time"].init[0, 0], 4)
-    np.testing.assert_almost_equal(ocp.init_vector, np.array([[1, 1, 1, 1] * 11 + [3, 3] * 10 + [4]]).T)
+    np.testing.assert_almost_equal(ocp.init_vector, np.array([[0.2] + [1, 1, 1, 1] * 11 + [3, 3] * 10]).T)
 
 
 def test_initial_guess_custom():
@@ -201,15 +199,18 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
+    final_time = 2
+    n_shooting = 10
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=2,
-        n_shooting=10,
+        final_time=final_time,
+        n_shooting=n_shooting,
         n_threads=4 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
+    phases_dt = np.array([final_time / n_shooting])
     X = InitialGuessList()
     X["q"] = [-1, -2]
     X["qdot"] = [1, 0.5]
@@ -218,12 +219,9 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
     P = InitialGuessList()
     S = InitialGuessList()
 
-    sol = Solution.from_initial_guess(ocp, [X, U, P, S])
+    sol = Solution.from_initial_guess(ocp, [phases_dt, X, U, P, S])
     controls = sol.controls
-    sol = sol.integrate(
-        shooting_type=Shooting.MULTIPLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP
-    )
-    states = sol.states
+    states = sol.integrate(shooting_type=Shooting.MULTIPLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES)
 
     # Check some of the results
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
@@ -247,15 +245,18 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
     from bioptim.examples.getting_started import example_save_and_load as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
+    final_time = 2
+    n_shooting = 10
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=2,
-        n_shooting=10,
+        final_time=final_time,
+        n_shooting=n_shooting,
         n_threads=4 if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else 1,
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
+    phases_dt = np.array([final_time / n_shooting])
     X = InitialGuessList()
     X["q"] = [-1, -2]
     X["qdot"] = [0.1, 0.2]
@@ -264,13 +265,10 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
     P = InitialGuessList()
     S = InitialGuessList()
 
-    sol = Solution.from_initial_guess(ocp, [X, U, P, S])
-    sol_integrated = sol.integrate(
-        shooting_type=Shooting.SINGLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP
-    )
+    sol = Solution.from_initial_guess(ocp, [phases_dt, X, U, P, S])
+    states = sol.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES)
 
     # Check some of the results
-    states = sol_integrated.states
     controls = sol.controls
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
