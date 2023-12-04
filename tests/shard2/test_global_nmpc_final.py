@@ -68,7 +68,7 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics):
     assert sol[0].times[0] == 0
     np.testing.assert_almost_equal(sol[0].times[-1], 2.95, decimal=4)
     # full mhe cost
-    np.testing.assert_almost_equal(sol[0].cost.toarray().squeeze(), 296.3711994)
+    np.testing.assert_almost_equal(sol[0].cost.toarray().squeeze(), 296.37125635)
 
     # check some results of the second structure
     for s in sol[1]:

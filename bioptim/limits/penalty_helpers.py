@@ -34,7 +34,7 @@ class PenaltyHelpers:
         return get_t0(phase, node)[0, 0]
 
     @staticmethod
-    def phases_dt(penalty, get_all_dt: Callable):
+    def phases_dt(penalty, ocp, get_all_dt: Callable):
         """
         Parameters
         ----------
@@ -46,7 +46,7 @@ class PenaltyHelpers:
         TODO COMPLETE
         """
 
-        return _reshape_to_vector(get_all_dt())
+        return _reshape_to_vector(_reshape_to_vector(get_all_dt(ocp.time_phase_mapping.to_first.map_idx)))
 
     @staticmethod
     def states(penalty, penalty_node_idx, get_state_decision: Callable):

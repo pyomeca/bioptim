@@ -234,7 +234,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         if not penalty:
             continue
 
-        phases_dt = PenaltyHelpers.phases_dt(penalty, lambda: interface.ocp.dt_parameter.cx)
+        phases_dt = PenaltyHelpers.phases_dt(penalty, interface.ocp, lambda _: interface.ocp.dt_parameter.cx)
         p = PenaltyHelpers.parameters(penalty, lambda: interface.ocp.parameters.cx)
 
         if penalty.multi_thread:

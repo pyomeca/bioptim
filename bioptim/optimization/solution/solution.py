@@ -676,9 +676,9 @@ class Solution:
 
         penalty = self.ocp.phase_transitions[phase_idx - 1]
 
-        times = DM([t[-1] for t in self.times])
+        times = DM([t[-1] for t in self._stepwise_times])
         t0 = PenaltyHelpers.t0(penalty, 0, lambda p, n: times[p])
-        dt = PenaltyHelpers.phases_dt(penalty, lambda: DM(self.phases_dt))
+        dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
         # Compute the error between the last state of the previous phase and the first state of the next phase
         # based on the phase transition objective or constraint function. That is why we need to concatenate
         # twice the last state
@@ -957,7 +957,7 @@ class Solution:
         val = []
         val_weighted = []
         
-        phases_dt = PenaltyHelpers.phases_dt(penalty, lambda: np.array(self.phases_dt))
+        phases_dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
         params = PenaltyHelpers.parameters(penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()]))
 
         merged_x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)

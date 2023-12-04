@@ -4,9 +4,9 @@ import pytest
 
 
 from bioptim.optimization.optimal_control_program import (
-    _reshape_to_column,
-    _get_time_step,
-    _get_target_values,
+    # _reshape_to_column,
+    # _get_time_step,
+    # _get_target_values,
     _scale_values,
 )
 

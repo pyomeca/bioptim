@@ -184,7 +184,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         real_time = perf_counter() - real_time
 
         # Prepare the modified ocp that fits the solution dimension
-        dt = sol.t_spans[0][0][-1]
+        dt = sol.t_spans[0][-1]
         final_sol = self._initialize_solution(float(dt), states, controls)
         final_sol.solver_time_to_optimize = total_time
         final_sol.real_time_to_optimize = real_time
@@ -441,7 +441,6 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME)
         model_class = self.original_values["bio_model"][0][0]
         model_initializer = self.original_values["bio_model"][0][1]
-
         
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
@@ -645,13 +644,13 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
             for sol in solution[1]:
                 _states, _controls = self.export_cycles(sol)
-                dt = float(sol.t_spans[0][0][-1])
+                dt = float(sol.t_spans[0][-1])
                 cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls))
 
         if cycle_solutions == MultiCyclicCycleSolutions.ALL_CYCLES:
             for cycle_number in range(1, self.n_cycles):
                 _states, _controls = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
-                dt = float(sol.t_spans[0][0][-1])
+                dt = float(sol.t_spans[0][-1])
                 cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls))
 
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):

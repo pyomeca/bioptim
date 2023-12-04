@@ -93,19 +93,21 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
     elif ode_solver == OdeSolver.COLLOCATION:
         np.testing.assert_almost_equal(f[0, 0], 4.145731569100745e-09)
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-4.33718022e-06, 3.93914750e-06]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.20478893, -0.95071153]))
+        np.testing.assert_almost_equal(q[:, 0], np.array([-3.74337403e-06,  4.00697373e-06]))
+        np.testing.assert_almost_equal(q[:, -1], np.array([0.20480488, -0.95076061]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.34857046e-04, -9.01607090e-05]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.43553087, -6.90717431]))
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([1.17026419e-04, -9.75179756e-05]))
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.43456688, -6.90997413]))
         # initial and final controls
         np.testing.assert_almost_equal(
             mus[:, 0],
-            np.array([0.77133446, 0.02085468, 0.63363308, 0.74881868, 0.49851656, 0.22482263]),
+            np.array([0.77133458, 0.02085464, 0.63363333, 0.74881816, 0.49851632,
+       0.22482216]),
         )
         np.testing.assert_almost_equal(
             mus[:, -2],
-            np.array([0.44190474, 0.43398509, 0.61774548, 0.51315871, 0.650407, 0.60099513]),
+            np.array([0.4418359 , 0.4340145 , 0.61776425, 0.5131385 , 0.65039449,
+       0.60103605]),
         )
 
     elif ode_solver == OdeSolver.RK4:

@@ -171,7 +171,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     sol = ocp.solve(solver)
     j_printed = sum_cost_function_output(sol)
     tau = sol.controls["tau"]
-    dt = sol.t_spans[0][0][-1]
+    dt = sol.t_spans[0][-1]
 
     # Check objective function value
     f = np.array(sol.cost)

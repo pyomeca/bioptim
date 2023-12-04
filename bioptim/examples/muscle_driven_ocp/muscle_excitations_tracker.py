@@ -269,7 +269,9 @@ def prepare_ocp(
     if use_residual_torque:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
     if kin_data_to_track == "markers":
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, node=Node.ALL, weight=100, target=markers_ref)
+        node = Node.ALL_SHOOTING if type(ode_solver) == OdeSolver.COLLOCATION else Node.ALL
+        ref = markers_ref[:, :, :-1] if type(ode_solver) == OdeSolver.COLLOCATION else markers_ref
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, node=node, weight=100, target=ref)
     elif kin_data_to_track == "q":
         objective_functions.add(
             ObjectiveFcn.Lagrange.TRACK_STATE,
