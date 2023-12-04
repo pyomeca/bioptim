@@ -605,12 +605,15 @@ class Solution:
         s = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
 
         out: list = [None] * len(self.ocp.nlp)
+        integrated_sol = None
         for p, nlp in enumerate(self.ocp.nlp):
             t = self._decision_times[p]
 
+            next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, s)
+
             if integrator == SolutionIntegrator.OCP:
                 integrated_sol = solve_ivp_bioptim_interface(
-                    shooting_type=shooting_type, dynamics_func=nlp.dynamics, t=t, x=x[p], u=u[p], s=s[p], p=params
+                    shooting_type=shooting_type, dynamics_func=nlp.dynamics, t=t, x=next_x, u=u[p], s=s[p], p=params
                 )
             else:
                 raise NotImplementedError(f"{integrator} is not implemented yet")
@@ -624,6 +627,72 @@ class Solution:
         if not to_merge:
             return out
         return SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
+
+    def _states_for_phase_integration(
+        self,
+        shooting_type: Shooting,
+        phase_idx: int,
+        integrated_states: np.ndarray,
+        decision_states,
+        decision_controls,
+        params,
+        decision_stochastic,
+    ):
+        """
+        Returns the states to integrate for the phase_idx phase. If there was a phase transition, the last state of the
+        previous phase is transformed into the first state of the next phase
+
+        Parameters
+        ----------
+        shooting_type
+            The shooting type to use
+        phase_idx
+            The phase index of the next phase to integrate
+        integrated_states
+            The states integrated from the previous phase
+        decision_states
+            The decision states merged with SolutionMerge.KEYS
+        decision_controls
+            The decision controls merged with SolutionMerge.KEYS
+        params
+            The parameters merged with SolutionMerge.KEYS
+        decision_stochastic
+            The stochastic merged with SolutionMerge.KEYS
+
+        Returns
+        -------
+        The states to integrate
+        """
+
+        # In the case of multiple shootings, we don't need to do anything special
+        if shooting_type == Shooting.MULTIPLE:
+            return decision_states[phase_idx]
+
+        # At first phase, return the normal decision states.
+        if phase_idx == 0:
+            return [decision_states[phase_idx][0]]
+
+        penalty = self.ocp.phase_transitions[phase_idx - 1]
+
+        times = DM([t[-1] for t in self.times])
+        t0 = PenaltyHelpers.t0(penalty, 0, lambda p, n: times[p])
+        dt = PenaltyHelpers.phases_dt(penalty, lambda: DM(self.phases_dt))
+        # Compute the error between the last state of the previous phase and the first state of the next phase
+        # based on the phase transition objective or constraint function. That is why we need to concatenate
+        # twice the last state
+        x = PenaltyHelpers.states(penalty, 0, lambda p, n: integrated_states[-1])
+        u = PenaltyHelpers.controls(penalty, self.ocp, 0, lambda p, n: decision_controls[p][n])
+        s = PenaltyHelpers.stochastic(penalty, 0, lambda p, n: decision_stochastic[p][n])
+
+        dx = penalty.function[-1](t0, dt, x, u, params, s)
+        if dx.shape[0] != decision_states[phase_idx][0].shape[0]:
+            raise RuntimeError(
+                f"Phase transition must have the same number of states ({dx.shape[0]}) "
+                f"when integrating with Shooting.SINGLE. If it is not possible, "
+                f"please integrate with Shooting.SINGLE_DISCONTINUOUS_PHASE."
+            )
+
+        return [decision_states[phase_idx][0] + dx]
 
     def _integrate_stepwise(self) -> None:
         """
