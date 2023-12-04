@@ -673,6 +673,8 @@ class PlotOcp:
             data_stochastic = [data_stochastic]
 
         time_stepwise = sol.stepwise_times
+        if self.ocp.n_phases == 1:
+            time_stepwise = [time_stepwise]
         phases_dt = sol.phases_dt
         self._update_xdata(time_stepwise)
 

@@ -132,18 +132,25 @@ def sum_cost_function_output(sol):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize(
     "objective",
-    ["torque", "qdot"],
+    [
+        "torque",
+        "qdot"
+    ],
 )
 @pytest.mark.parametrize(
     "control_type",
-    [ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS],
+    [
+        ControlType.CONSTANT,
+        ControlType.CONSTANT_WITH_LAST_NODE,
+        ControlType.LINEAR_CONTINUOUS
+    ],
 )
 @pytest.mark.parametrize(
     "integration_rule",
     [
         QuadratureRule.RECTANGLE_LEFT,
         QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
-        QuadratureRule.TRAPEZOIDAL,
+        QuadratureRule.TRAPEZOIDAL
     ],
 )
 def test_pendulum(control_type, integration_rule, objective, phase_dynamics):

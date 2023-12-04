@@ -41,21 +41,19 @@ def generic_solve(interface) -> dict:
     A reference to the solution
     """
     v = interface.ocp.variables_vector
-
     v_bounds = interface.ocp.bounds_vectors
     v_init = interface.ocp.init_vector
 
     all_objectives = interface.dispatch_obj_func()
+    all_objectives = _shake_tree_for_penalties(interface.ocp, all_objectives, v, v_bounds)
+
     all_g, all_g_bounds = interface.dispatch_bounds()
+    all_g = _shake_tree_for_penalties(interface.ocp, all_g, v, v_bounds)
 
     if interface.opts.show_online_optim:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
     # Thread here on (f and all_g) instead of individually for each function?
-    all_objectives = _shake_tree_for_penalties(interface.ocp, all_objectives, v, v_bounds, expand=True)
-    all_g = _shake_tree_for_penalties(
-        interface.ocp, all_g, v, v_bounds, expand=OdeSolver.IRK not in [type(nlp.ode_solver) for nlp in interface.ocp.nlp]
-    )
     interface.sqp_nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
@@ -100,7 +98,7 @@ def generic_solve(interface) -> dict:
     return interface.out
 
 
-def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
+def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds):
     """
     Remove the dt in the objectives and constraints if they are constant
 
@@ -125,8 +123,11 @@ def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
 
     # Shake the tree
     penalty = Function("penalty", [v], [penalties_cx])
-    if expand:
-        penalty.expand()
+    try:
+        penalty = penalty.expand()
+    except RuntimeError:
+        # This happens mostly when there is a Newton decent in the penalty
+        pass
     return penalty(vertcat(*dt, v[len(dt):]))
 
 

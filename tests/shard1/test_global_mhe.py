@@ -38,9 +38,9 @@ def test_cyclic_nmpc(phase_dynamics):
     np.testing.assert_almost_equal(q[:, -1], np.array((2.82743339, 0.63193395, 2.68235056)))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((6.28268908, -11.63289399,   0.37215021)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array(( 6.28368395, -7.73180401,  3.56900861)))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array((6.28268908, -11.63289399, 0.37215021)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array((6.28368154, -7.73180135, 3.56900657)))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.01984925, 17.53758229, -1.92204945)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array(( 0.01989756, -3.09893246,  0.23160499)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -2], np.array((0.01984925, -3.09892348, 0.23160067)), decimal=6)
