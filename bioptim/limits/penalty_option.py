@@ -684,7 +684,7 @@ class PenaltyOption(OptionGeneric):
             )
 
             if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                state_cx_scaled =  vertcat(state_cx_scaled, controller.states_scaled.cx_end)
+                state_cx_scaled = vertcat(state_cx_scaled, controller.states_scaled.cx_end)
                 state_cx_end = controller.states_scaled.cx_end
             else: 
                 control_cx_end_unscaled = _get_u(
