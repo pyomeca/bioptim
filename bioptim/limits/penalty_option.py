@@ -8,6 +8,7 @@ from .penalty_controller import PenaltyController
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.options import OptionGeneric
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
+from ..limits.penalty_helpers import PenaltyHelpers, get_multinode_indices
 
 
 class PenaltyOption(OptionGeneric):
@@ -425,157 +426,161 @@ class PenaltyOption(OptionGeneric):
             The value of the penalty function
         """
 
-        # Sanity checks
-        if self.transition and self.explicit_derivative:
-            raise ValueError("transition and explicit_derivative cannot be true simultaneously")
-        if self.transition and self.derivative:
-            raise ValueError("transition and derivative cannot be true simultaneously")
-        if self.derivative and self.explicit_derivative:
-            raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
+        # Pariterre: is this really the node_idx or the index of the current penalty ?
+        self._get_weighted_function_inputs_from_controller(self, self.node_idx, controller)
 
-        name = (
-            self.name.replace("->", "_")
-            .replace(" ", "_")
-            .replace("(", "_")
-            .replace(")", "_")
-            .replace(",", "_")
-            .replace(":", "_")
-            .replace(".", "_")
-            .replace("__", "_")
-        )
 
-        if self.transition:
-            if len(controller) != 2:
-                raise RuntimeError("Transition penalty must be between two nodes")
+        # # Sanity checks
+        # if self.transition and self.explicit_derivative:
+        #     raise ValueError("transition and explicit_derivative cannot be true simultaneously")
+        # if self.transition and self.derivative:
+        #     raise ValueError("transition and derivative cannot be true simultaneously")
+        # if self.derivative and self.explicit_derivative:
+        #     raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
-            controllers = controller
-            controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
-            ocp = controller.ocp
-            self.node_idx[0] = controller.node_index
-
-            self.all_nodes_index = []
-            for ctrl in controllers:
-                self.all_nodes_index.extend(ctrl.t)
-
-            state_cx_scaled = controllers[1].states_scaled.cx
-                
-            if (
-                controllers[1].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                or controllers[1].node_index < controllers[1].ns
-                or controllers[1].get_nlp.control_type != ControlType.CONSTANT
-            ):
-                control_cx_scaled = controllers[1].controls_scaled.cx
-            else:
-                control_cx_scaled = controllers[0].cx()
-
-            stochastic_cx_scaled = controllers[1].stochastic_variables_scaled.cx
-
-            # To deal with cyclic phase transition in assume phase dynamics
-            if controllers[0].cx_index_to_get == 1:
-                state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx)
-                if (
-                    controllers[0].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                    or controllers[0].node_index < controllers[0].ns
-                ):
-                    control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx)
-
-                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx)
-
-            else:
-                state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
-
-                if (
-                    controllers[0].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                    or controllers[0].node_index < controllers[0].ns
-                    or controllers[1].get_nlp.control_type != ControlType.CONSTANT
-                ):
-                    control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx_start)
-
-                stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx_start)
-
-        elif self.multinode_penalty:
-            from ..limits.multinode_constraint import MultinodeConstraint
-
-            self: MultinodeConstraint
-
-            controllers = controller
-            controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
-            ocp = controller.ocp
-            self.node_idx[0] = controller.node_index
-
-            self.all_nodes_index = []
-            for ctrl in controllers:
-                self.all_nodes_index.extend(ctrl.t)
-
-            state_cx_scaled = ocp.cx()
-            control_cx_scaled = ocp.cx()
-            stochastic_cx_scaled = ocp.cx()
-            for ctrl in controllers:
-                if ctrl.node_index == controller.get_nlp.ns:
-                    state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
-                    control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
-                    stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
-                else:
-                    if (
-                        controller.ode_solver.is_direct_collocation
-                        and not self.derivative
-                        and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                    ):
-                        state_cx_scaled = vertcat(
-                            state_cx_scaled, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
-                        )
-                    else:
-                        state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
-                    control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
-                    stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx)
-
-        else:
-            ocp = controller.ocp
-            
-            state_cx_scaled = controller.states_scaled.cx_start
-            if controller.get_nlp.ode_solver.is_direct_collocation and (
-                controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and 
-                len(self.node_idx) > 1 and 
-                controller.ns + 1 in self.node_idx
-            ):
-                raise ValueError(
-                    "Direct collocation with shared dynamics cannot have a more than one penalty defined at the same "
-                    "time on multiple node. If you arrive to this error using Node.ALL, you should consider using " 
-                    "Node.ALL_SHOOTING."
-                )
-            if (
-                controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                or controller.node_index < controller.ns
-            ):
-                if self.integrate or controller.ode_solver.is_direct_collocation:
-                    if not (len(self.node_idx) == 1 and self.node_idx[0] == controller.ns):
-                        if not self.derivative or self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                            state_cx_scaled = vertcat(
-                                *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
-                            )
-
-            control_cx_scaled = controller.controls_scaled.cx_start
-            stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
-            if ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
-                if ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or self.node_idx[0] + 1 < controller.get_nlp.n_controls_nodes:
-                    control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
-
-            if self.explicit_derivative:
-                if self.derivative:
-                    raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
-                if controller.node_index < controller.ns:
-                    state_cx_scaled = vertcat(state_cx_scaled, controller.states_scaled.cx_end)
-                    if (
-                        not (
-                            self.node[0] == controller.ns - 1
-                            and ocp.nlp[self.phase].control_type == ControlType.CONSTANT
-                        )
-                        or ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                    ):
-                        if not ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
-                            # Already done if linear continuous
-                            control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
-                    stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
+        # name = (
+        #     self.name.replace("->", "_")
+        #     .replace(" ", "_")
+        #     .replace("(", "_")
+        #     .replace(")", "_")
+        #     .replace(",", "_")
+        #     .replace(":", "_")
+        #     .replace(".", "_")
+        #     .replace("__", "_")
+        # )
+        #
+        # if self.transition:
+        #     if len(controller) != 2:
+        #         raise RuntimeError("Transition penalty must be between two nodes")
+        #
+        #     controllers = controller
+        #     controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
+        #     ocp = controller.ocp
+        #     self.node_idx[0] = controller.node_index
+        #
+        #     self.all_nodes_index = []
+        #     for ctrl in controllers:
+        #         self.all_nodes_index.extend(ctrl.t)
+        #
+        #     state_cx_scaled = controllers[1].states_scaled.cx
+        #
+        #     if (
+        #         controllers[1].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+        #         or controllers[1].node_index < controllers[1].ns
+        #         or controllers[1].get_nlp.control_type != ControlType.CONSTANT
+        #     ):
+        #         control_cx_scaled = controllers[1].controls_scaled.cx
+        #     else:
+        #         control_cx_scaled = controllers[0].cx()
+        #
+        #     stochastic_cx_scaled = controllers[1].stochastic_variables_scaled.cx
+        #
+        #     # To deal with cyclic phase transition in assume phase dynamics
+        #     if controllers[0].cx_index_to_get == 1:
+        #         state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx)
+        #         if (
+        #             controllers[0].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+        #             or controllers[0].node_index < controllers[0].ns
+        #         ):
+        #             control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx)
+        #
+        #         stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx)
+        #
+        #     else:
+        #         state_cx_scaled = vertcat(state_cx_scaled, controllers[0].states_scaled.cx_start)
+        #
+        #         if (
+        #             controllers[0].get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+        #             or controllers[0].node_index < controllers[0].ns
+        #             or controllers[1].get_nlp.control_type != ControlType.CONSTANT
+        #         ):
+        #             control_cx_scaled = vertcat(control_cx_scaled, controllers[0].controls_scaled.cx_start)
+        #
+        #         stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controllers[0].stochastic_variables_scaled.cx_start)
+        #
+        # elif self.multinode_penalty:
+        #     from ..limits.multinode_constraint import MultinodeConstraint
+        #
+        #     self: MultinodeConstraint
+        #
+        #     controllers = controller
+        #     controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
+        #     ocp = controller.ocp
+        #     self.node_idx[0] = controller.node_index
+        #
+        #     self.all_nodes_index = []
+        #     for ctrl in controllers:
+        #         self.all_nodes_index.extend(ctrl.t)
+        #
+        #     state_cx_scaled = ocp.cx()
+        #     control_cx_scaled = ocp.cx()
+        #     stochastic_cx_scaled = ocp.cx()
+        #     for ctrl in controllers:
+        #         if ctrl.node_index == controller.get_nlp.ns:
+        #             state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx_start)
+        #             control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx_start)
+        #             stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx_start)
+        #         else:
+        #             if (
+        #                 controller.ode_solver.is_direct_collocation
+        #                 and not self.derivative
+        #                 and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+        #             ):
+        #                 state_cx_scaled = vertcat(
+        #                     state_cx_scaled, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
+        #                 )
+        #             else:
+        #                 state_cx_scaled = vertcat(state_cx_scaled, ctrl.states_scaled.cx)
+        #             control_cx_scaled = vertcat(control_cx_scaled, ctrl.controls_scaled.cx)
+        #             stochastic_cx_scaled = vertcat(stochastic_cx_scaled, ctrl.stochastic_variables_scaled.cx)
+        #
+        # else:
+        #     ocp = controller.ocp
+        #
+        #     state_cx_scaled = controller.states_scaled.cx_start
+        #     if controller.get_nlp.ode_solver.is_direct_collocation and (
+        #         controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and
+        #         len(self.node_idx) > 1 and
+        #         controller.ns + 1 in self.node_idx
+        #     ):
+        #         raise ValueError(
+        #             "Direct collocation with shared dynamics cannot have a more than one penalty defined at the same "
+        #             "time on multiple node. If you arrive to this error using Node.ALL, you should consider using "
+        #             "Node.ALL_SHOOTING."
+        #         )
+        #     if (
+        #         controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+        #         or controller.node_index < controller.ns
+        #     ):
+        #         if self.integrate or controller.ode_solver.is_direct_collocation:
+        #             if not (len(self.node_idx) == 1 and self.node_idx[0] == controller.ns):
+        #                 if not self.derivative or self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+        #                     state_cx_scaled = vertcat(
+        #                         *([controller.states_scaled.cx_start] + controller.states_scaled.cx_intermediates_list)
+        #                     )
+        #
+        #     control_cx_scaled = controller.controls_scaled.cx_start
+        #     stochastic_cx_scaled = controller.stochastic_variables_scaled.cx_start
+        #     if ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
+        #         if ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or self.node_idx[0] + 1 < controller.get_nlp.n_controls_nodes:
+        #             control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
+        #
+        #     if self.explicit_derivative:
+        #         if self.derivative:
+        #             raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
+        #         if controller.node_index < controller.ns:
+        #             state_cx_scaled = vertcat(state_cx_scaled, controller.states_scaled.cx_end)
+        #             if (
+        #                 not (
+        #                     self.node[0] == controller.ns - 1
+        #                     and ocp.nlp[self.phase].control_type == ControlType.CONSTANT
+        #                 )
+        #                 or ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+        #             ):
+        #                 if not ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
+        #                     # Already done if linear continuous
+        #                     control_cx_scaled = vertcat(control_cx_scaled, controller.controls_scaled.cx_end)
+        #             stochastic_cx_scaled = vertcat(stochastic_cx_scaled, controller.stochastic_variables_scaled.cx_end)
 
         # Alias some variables
         node = controller.node_index
@@ -765,6 +770,103 @@ class PenaltyOption(OptionGeneric):
         if self.expand:
             self.function[node] = self.function[node].expand()
             self.weighted_function[node] = self.weighted_function[node].expand()
+
+    def _check_sanity_of_penalty_interactions(self, controller):
+
+        if self.transition and self.explicit_derivative:
+            raise ValueError("transition and explicit_derivative cannot be true simultaneously")
+        if self.transition and self.derivative:
+            raise ValueError("transition and derivative cannot be true simultaneously")
+        if self.derivative and self.explicit_derivative:
+            raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
+
+        if controller.get_nlp.ode_solver.is_direct_collocation and (
+                controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and
+                len(self.node_idx) > 1 and
+                controller.ns + 1 in self.node_idx
+        ):
+            raise ValueError(
+                "Direct collocation with shared dynamics cannot have a more than one penalty defined at the same "
+                "time on multiple node. If you arrive to this error using Node.ALL, you should consider using "
+                "Node.ALL_SHOOTING."
+            )
+
+    def _get_weighted_function_inputs_from_controller(self, penalty, penalty_idx, controller):
+
+        self._check_sanity_of_penalty_interactions(controller)
+
+        if penalty.transition or penalty.multinode_penalty:
+            if penalty.transition:
+                controllers = [controller[1], controller[0]]  # Pariterre could we put them in order?
+                controller = controllers[1]  # Recast controller as a normal variable (instead of a list)
+            else:
+                controllers = controller
+                controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
+
+            ocp = controller.ocp
+            self.node_idx[0] = controller.node_index
+
+            self.all_nodes_index = []
+            for ctrl in controllers:
+                self.all_nodes_index.extend(ctrl.t)
+        else:
+            controllers = [controller]
+
+        t0 = controller.time_cx
+
+        weight = PenaltyHelpers.weight(penalty)
+        target = PenaltyHelpers.target(penalty, penalty_idx)
+
+        x = self.states(penalty, controller, controllers)
+                                  # lambda p_idx, n_idx: self._get_x_from_controller(controller, p_idx, n_idx))
+        # u = PenaltyHelpers.controls(penalty, penalty_idx,
+        #                             lambda p_idx, n_idx: self._get_u_from_controller(controller, p_idx, n_idx))
+        # s = PenaltyHelpers.stochastic(penalty, penalty_idx, lambda p_idx, n_idx: self._get_s_from_controller(controller, p_idx, n_idx))
+
+        return t0, x, u, s, weight, target,
+
+    def states(self, penalty, controller, controllers):
+
+        x = self.ocp.cx()
+        for i_ctrl, ctrl in enumerate(controllers):
+            if penalty.transition and i_ctrl == 1:
+                x = (
+                    vertcat(x, controllers[0].states_scaled.cx) if controllers[0].cx_index_to_get == 1 else vertcat(
+                        x, controllers[0].states_scaled.cx_start))
+            else:
+                if ctrl.node_index == controller.get_nlp.ns:
+                    x = vertcat(x, ctrl.states_scaled.cx_start)
+                else:  # TODO: probably false, but matches what is was originally there
+                    if (  # missing if self.integrate
+                        controller.ode_solver.is_direct_collocation
+                        and not self.derivative
+                        and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                        and not (len(self.node_idx) == 1 and self.node_idx[0] == controller.ns)
+                    ):
+                        x = vertcat(
+                            x, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
+                        )
+                    else:
+                        x = vertcat(x, ctrl.states_scaled.cx)
+
+            need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,) or penalty.derivative or penalty.explicit_derivative
+            if need_end_point and controller.node_index < controller.ns:
+                x = vertcat(controller.states_scaled.cx_end, x) if penalty.derivative else vertcat(x, controller.states_scaled.cx_end)
+
+        return x
+
+
+    @staticmethod
+    def _get_x_from_controller(controller):
+        return controller.states.cx_start
+
+    @staticmethod
+    def _get_u_from_controller(controller):
+        return controller.controls.cx_start
+
+    @staticmethod
+    def _get_s_from_controller(controller):
+        return controller.stochastic_variables.cx_start
 
     @staticmethod
     def define_target_mapping(controller: PenaltyController, key: str):
