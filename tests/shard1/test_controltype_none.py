@@ -1,6 +1,7 @@
 """
 Test for file IO.
 """
+import matplotlib.pyplot as plt
 
 from typing import Callable
 from casadi import vertcat, SX, MX
@@ -249,7 +250,14 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False),)
+
+    plt.plot(sol.times[0], sol.states[0]["a"][0], label="a")
+    plt.plot(sol.times[0], sol.states[0]["b"][0], label="b")
+    plt.plot(sol.times[0], sol.states[0]["c"][0], label="c")
+    plt.legend()
+    plt.show()
+
 
     # Check objective function value
     f = np.array(sol.cost)
