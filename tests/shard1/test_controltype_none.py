@@ -86,7 +86,7 @@ class NonControlledMethod:
         nlp: NonLinearProgram,
         t_phase: MX | SX,
     ) -> DynamicsEvaluation:
-        # t_phase = nlp.tf_mx
+
         return DynamicsEvaluation(
             dxdt=self.system_dynamics(a=states[0], b=states[1], c=states[2], t=time, t_phase=t_phase),
             defects=None,
@@ -128,7 +128,11 @@ class NonControlledMethod:
             as_controls=False,
             as_states_dot=False,
         )
-        t_phase = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=0)
+
+        t_phase = 0
+        for i in range(nlp.phase_idx):
+            t_phase += ocp.nlp[i].tf_mx
+
         ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, t_phase=t_phase)
 
 
@@ -137,7 +141,7 @@ def prepare_ocp(
     time_min: list,
     time_max: list,
     use_sx: bool,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5, allow_free_variables=True),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
