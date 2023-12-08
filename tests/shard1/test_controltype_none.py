@@ -84,9 +84,9 @@ class NonControlledMethod:
         parameters: MX | SX,
         stochastic_variables: MX | SX,
         nlp: NonLinearProgram,
+        t_phase: MX | SX,
     ) -> DynamicsEvaluation:
-        t_phase = nlp.tf_mx
-
+        # t_phase = nlp.tf_mx
         return DynamicsEvaluation(
             dxdt=self.system_dynamics(a=states[0], b=states[1], c=states[2], t=time, t_phase=t_phase),
             defects=None,
@@ -128,8 +128,8 @@ class NonControlledMethod:
             as_controls=False,
             as_states_dot=False,
         )
-
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics)
+        t_phase = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=0)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, t_phase=t_phase)
 
 
 def prepare_ocp(
