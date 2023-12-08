@@ -18,6 +18,17 @@ class OdeSolverBase:
         Properly set the integration in an nlp
     """
 
+    def __init__(self, allow_free_variables: bool = False):
+        """
+        Parameters
+        ----------
+        n_integration_steps: int
+            The number of steps for the integration
+        allow_free_variables: bool
+            If the free variables are allowed in the integrator's casadi function
+        """
+        self.allow_free_variables = allow_free_variables
+
     @property
     def integrator(self):
         """
@@ -210,8 +221,7 @@ class OdeSolverBase:
 
         return nlp.ode_solver.integrator(ode, ode_opt)
 
-    @staticmethod
-    def prepare_dynamic_integrator(ocp, nlp):
+    def prepare_dynamic_integrator(self, ocp, nlp):
         """
         Properly set the integration in a nlp
 
@@ -224,7 +234,7 @@ class OdeSolverBase:
         """
 
         # Primary dynamics
-        dynamics = [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=0, allow_free_variables=False)]
+        dynamics = [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=0, allow_free_variables=self.allow_free_variables)]
         if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
             dynamics = dynamics * nlp.ns
         else:
@@ -254,7 +264,7 @@ class RK(OdeSolverBase):
     The base class for Runge-Kutta
     """
 
-    def __init__(self, n_integration_steps: int = 5):
+    def __init__(self, n_integration_steps: int = 5, **kwargs):
         """
         Parameters
         ----------
@@ -262,7 +272,7 @@ class RK(OdeSolverBase):
             The number of steps for the integration
         """
 
-        super(RK, self).__init__()
+        super(RK, self).__init__(**kwargs)
         self.n_integration_steps = n_integration_steps
 
     @property
@@ -414,6 +424,7 @@ class OdeSolver:
             method: str = "legendre",
             defects_type: DefectType = DefectType.EXPLICIT,
             duplicate_collocation_starting_point: bool = False,
+            **kwargs,
         ):
             """
             Parameters
@@ -422,7 +433,7 @@ class OdeSolver:
                 The degree of the implicit RK
             """
 
-            super(OdeSolver.COLLOCATION, self).__init__()
+            super(OdeSolver.COLLOCATION, self).__init__(**kwargs)
             self.polynomial_degree = polynomial_degree
             self.duplicate_collocation_starting_point = duplicate_collocation_starting_point
             self.method = method
