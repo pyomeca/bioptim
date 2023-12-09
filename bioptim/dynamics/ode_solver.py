@@ -239,7 +239,7 @@ class OdeSolverBase:
             dynamics = dynamics * nlp.ns
         else:
             for node_index in range(1, nlp.ns):
-                dynamics.append(nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=node_index))
+                dynamics.append(nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=node_index, allow_free_variables=self.allow_free_variables))
         nlp.dynamics = dynamics
 
         # Extra dynamics

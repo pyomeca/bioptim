@@ -1,7 +1,6 @@
 """
 Test for file IO.
 """
-import matplotlib.pyplot as plt
 
 from typing import Callable
 from casadi import vertcat, SX, MX
@@ -74,6 +73,7 @@ class NonControlledMethod:
         a_dot = 100 + b
         b_dot = a / (((t - t_phase) + 1) * 100)
         c_dot = a * b + c
+
         return vertcat(a_dot, b_dot, c_dot)
 
     def custom_dynamics(
@@ -131,9 +131,9 @@ class NonControlledMethod:
 
         t_phase = 0
         for i in range(nlp.phase_idx):
-            t_phase += ocp.nlp[i].tf_mx
+            t_phase += ocp.nlp[i].tf
 
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, t_phase=t_phase)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, t_phase=t_phase, allow_free_variables=True)
 
 
 def prepare_ocp(
@@ -256,12 +256,33 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False),)
 
-    plt.plot(sol.times[0], sol.states[0]["a"][0], label="a")
-    plt.plot(sol.times[0], sol.states[0]["b"][0], label="b")
-    plt.plot(sol.times[0], sol.states[0]["c"][0], label="c")
-    plt.legend()
-    plt.show()
+    a, b, c = [0], [0], [0]
 
+    for phase_idx in range(len(ocp.nlp)):
+        for i in range(ocp.nlp[phase_idx].ns):
+            for j in range(5):
+                t_span = sol.t_spans[phase_idx][i]
+                temp_a = float(ocp.nlp[0].dynamics_func[0]([0, 1], [a[-1], b[-1], c[-1]], [], [], [])[0] * (
+                            sol.times[phase_idx][1] - sol.times[phase_idx][0]))
+                temp_b = float(ocp.nlp[0].dynamics_func[0]([0, 1], [a[-1], b[-1], c[-1]], [], [], [])[1] * (
+                            sol.times[phase_idx][1] - sol.times[phase_idx][0]))
+                temp_c = float(ocp.nlp[0].dynamics_func[0]([0, 1], [a[-1], b[-1], c[-1]], [], [], [])[2] * (
+                            sol.times[phase_idx][1] - sol.times[phase_idx][0]))
+                a.append(a[-1] + temp_a)
+                b.append(b[-1] + temp_b)
+                c.append(c[-1] + temp_c)
+
+    import matplotlib.pyplot as plt
+    time = []
+    for i in range(len(sol.times)):
+        time.append(sol.times[i][:-1])
+    time = [j for sub in sol.times for j in sub]
+    time = list(set(time))
+    time = [sum(time[0:x:1]) for x in range(0, len(time))]
+    plt.plot(time, a)
+    plt.plot(time, b)
+    plt.plot(time, c)
+    plt.show()
 
     # Check objective function value
     f = np.array(sol.cost)
