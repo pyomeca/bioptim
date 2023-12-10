@@ -182,7 +182,6 @@ class OdeSolverBase:
         ode_opt = {
             "model": nlp.model,
             "cx": nlp.cx,
-            "idx": 0,  # dynamics_index ?
             "control_type": nlp.control_type,
             "defects_type": self.defects_type,
             "allow_free_variables": allow_free_variables,
@@ -202,11 +201,6 @@ class OdeSolverBase:
             if len(nlp.implicit_dynamics_func) > 0
             else nlp.implicit_dynamics_func,
         }
-
-        if ode["ode"].size2_out("xdot") != 1:
-            # If the ode is designed for each node, use the proper node, otherwise use the first one
-            # Please note this is unrelated to nlp.phase_dynamics
-            ode_opt["idx"] = node_index
 
         return nlp.ode_solver.integrator(ode, ode_opt)
 
