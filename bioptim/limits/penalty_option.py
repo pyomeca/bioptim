@@ -8,7 +8,7 @@ from .penalty_controller import PenaltyController
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.options import OptionGeneric
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
-from ..limits.penalty_helpers import PenaltyHelpers, get_multinode_indices
+from ..limits.penalty_helpers import PenaltyHelpers
 
 
 class PenaltyOption(OptionGeneric):
@@ -673,11 +673,11 @@ class PenaltyOption(OptionGeneric):
         weight = PenaltyHelpers.weight(penalty)
         target = PenaltyHelpers.target(penalty, penalty_idx)
 
-        x = self.states(penalty, controller, controllers)
-        u = self.controls(penalty, controller, controllers)
-        s = self.stochastic(penalty, controller, controllers)
+        # x = self.states(penalty, controller, controllers)
+        # u = self.controls(penalty, controller, controllers)
+        # s = self.stochastic(penalty, controller, controllers)
 
-        # x = PenaltyHelpers.states(penalty, penalty_idx, lambda p_idx, n_idx: self._get_x_from_controller(p_idx, n_idx, penalty, controller, controllers))
+        x = PenaltyHelpers.states(penalty, None, lambda p_idx, n_idx: self._get_x_from_controller(None, None, penalty, controller, controllers))
         # u = PenaltyHelpers.controls(penalty, ocp, penalty_idx,
         #                             lambda p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled))
         # s = PenaltyHelpers.stochastic(penalty, penalty_idx,
@@ -688,7 +688,7 @@ class PenaltyOption(OptionGeneric):
 
     def _get_x_from_controller(self, penalty, controller, controllers, p_idx, n_idx):
 
-        x = self.ocp.cx()
+        x = controller.ocp.cx()
         for i_ctrl, ctrl in enumerate(controllers):
             if penalty.transition and i_ctrl == 0:
                 x = (
@@ -718,7 +718,7 @@ class PenaltyOption(OptionGeneric):
 
     def _get_u_from_controller(self, penalty, controller, controllers):
 
-        u = self.ocp.cx()
+        u = controller.ocp.cx()
         for i_ctrl, ctrl in enumerate(controllers):
             if penalty.transition and i_ctrl == 0:
                 if controllers[0].cx_index_to_get == 1:
@@ -732,8 +732,8 @@ class PenaltyOption(OptionGeneric):
                 else:
                     u = vertcat(u, ctrl.controls_scaled.cx)
 
-            if self.ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
-                if self.ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or self.node_idx[0] + 1 < controller.get_nlp.n_controls_nodes:
+            if controller.ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
+                if controller.ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or self.node_idx[0] + 1 < controller.get_nlp.n_controls_nodes:
                     u = vertcat(u, controller.controls_scaled.cx_end)
 
             need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,) or penalty.derivative or penalty.explicit_derivative
@@ -741,17 +741,17 @@ class PenaltyOption(OptionGeneric):
                 if (
                     not (
                         self.node[0] == controller.ns - 1
-                        and self.ocp.nlp[self.phase].control_type == ControlType.CONSTANT
+                        and controller.ocp.nlp[self.phase].control_type == ControlType.CONSTANT
                     )
-                    or self.ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                    or controller.ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                 ):
-                    if not self.ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
+                    if not controller.ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
                         u = vertcat(u, controller.controls_scaled.cx_end)
         return u
 
     def _get_s_from_controller(self, penalty, controller, controllers):
 
-        s = self.ocp.cx()
+        s = controller.ocp.cx()
         for i_ctrl, ctrl in enumerate(controllers):
             if penalty.transition and i_ctrl == 0:
                 s = (

@@ -63,7 +63,8 @@ class PenaltyHelpers:
                 x.append(_reshape_to_vector(tp))
             return _vertcat(x)
 
-        x = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx])
+        penalty_node_index = 0 if penalty_node_idx is None else penalty.node_idx[penalty_node_idx]
+        x = get_state_decision(penalty.phase, penalty_node_index)
         
         need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,)
         if need_end_point or penalty.derivative or penalty.explicit_derivative:
@@ -97,7 +98,8 @@ class PenaltyHelpers:
                 u.append(_reshape_to_vector(_get_control_internal(phase, node)))
             return _vertcat(u)
 
-        u = _get_control_internal(penalty.phase, penalty.node_idx[penalty_node_idx])
+        penalty_node_index = 0 if penalty_node_idx is None else penalty.node_idx[penalty_node_idx]
+        u = _get_control_internal(penalty.phase, penalty_node_index)
 
         nlp = ocp.nlp[penalty.phase]
         is_linear = nlp.control_type == ControlType.LINEAR_CONTINUOUS
@@ -120,18 +122,26 @@ class PenaltyHelpers:
         return _reshape_to_vector(p)
 
     @staticmethod
-    def stochastic(penalty, penalty_node_idx, get_stochastic: Callable):
+    def stochastic_variables(penalty, penalty_node_idx, get_stochastic_decision: Callable):
         if penalty.transition or penalty.multinode_penalty:
-            x = []
+            s = []
             phases, nodes = _get_multinode_indices(penalty)
             for phase, node in zip(phases, nodes):
-                tp = get_stochastic(phase, node)
+                tp = get_stochastic_decision(phase, node)
                 if penalty.transition:
                     tp = tp[:, 0:1]
-                x.append(_reshape_to_vector(tp))
-            return _vertcat(x)
-        
-        s = get_stochastic(penalty.phase, penalty.node_idx[penalty_node_idx])
+                s.append(_reshape_to_vector(tp))
+            return _vertcat(s)
+
+        penalty_node_index = 0 if penalty_node_idx is None else penalty.node_idx[penalty_node_idx]
+        s = get_stochastic_decision(penalty.phase, penalty_node_index)
+
+        need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,)
+        if need_end_point or penalty.derivative or penalty.explicit_derivative:
+            s = _reshape_to_vector(s)
+            s_next = get_stochastic_decision(penalty.phase, penalty.node_idx[penalty_node_idx] + 1)[:, 0]
+            s = vertcat(s_next, s) if penalty.derivative else vertcat(s, s_next)
+
         return _reshape_to_vector(s)
 
     @staticmethod
