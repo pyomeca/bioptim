@@ -437,7 +437,7 @@ class PenaltyOption(OptionGeneric):
             .replace("__", "_")
         )
 
-        t0, x, u, s, weight, target = self._get_weighted_function_inputs_from_controller(self, None, controller)
+        t0, x, u, s, weight, target, controller = self._get_weighted_function_inputs_from_controller(self, None, controller)
 
         # Alias some variables
         node = controller.node_index
@@ -631,12 +631,10 @@ class PenaltyOption(OptionGeneric):
 
     def _get_weighted_function_inputs_from_controller(self, penalty, penalty_idx, controller):
 
-        self._check_sanity_of_penalty_interactions(controller)
-
         if penalty.transition or penalty.multinode_penalty:
             if penalty.transition:
-                controllers = [controller[1], controller[0]]  # Pariterre could we put them in order?
-                controller = controllers[1]  # Recast controller as a normal variable (instead of a list)
+                controllers = [controller[1], controller[0]]  # TODO put them in order?
+                controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             else:
                 controllers = controller
                 controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
@@ -649,101 +647,88 @@ class PenaltyOption(OptionGeneric):
         else:
             controllers = [controller]
 
+        self._check_sanity_of_penalty_interactions(controller)
+
         t0 = controller.time_cx
 
         weight = PenaltyHelpers.weight(penalty)
         target = PenaltyHelpers.target(penalty, penalty_idx)
 
-        # x = self.states(penalty, controller, controllers)
-        # u = self.controls(penalty, controller, controllers)
-        # s = self.stochastic(penalty, controller, controllers)
+        x = PenaltyHelpers.states(penalty, controller.ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: self._get_x_from_controller(penalty, controllers, controller_idx, p_idx, n_idx))
+        u = (PenaltyHelpers.controls(penalty, controller.ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: self._get_u_from_controller(penalty, controllers, controller_idx, p_idx, n_idx)) if len(controller.controls) != 0 else [])
+        s = (PenaltyHelpers.stochastic_variables(penalty, controller.ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: self._get_s_from_controller(penalty, controllers, controller_idx, p_idx, n_idx)) if len(controller.stochastic_variables) != 0 else [])
 
-        x = PenaltyHelpers.states(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_x_from_controller(penalty, controller, controllers, p_idx, n_idx))
-        u = (PenaltyHelpers.controls(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_u_from_controller(penalty, controller, controllers, p_idx, n_idx)) if len(controller.controls) != 0 else [])
-        s = (PenaltyHelpers.stochastic_variables(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_s_from_controller(penalty, controller, controllers, p_idx, n_idx)) if len(controller.stochastic_variables) != 0 else [])
-
-        return t0, x, u, s, weight, target,
+        return t0, x, u, s, weight, target, controller
 
 
-    def _get_x_from_controller(self, penalty, controller, controllers, p_idx, n_idx):
+    def _get_x_from_controller(self, penalty, controllers, controller_idx, p_idx, n_idx):
 
-        x = controller.ocp.cx()
-        for i_ctrl, ctrl in enumerate(controllers):
-            if n_idx == 0:
-                if penalty.transition and i_ctrl == 0:
-                    x = (
-                        vertcat(x, controllers[0].states_scaled.cx) if controllers[0].cx_index_to_get == 1 else vertcat(
-                            x, controllers[0].states_scaled.cx_start))
+        x = controllers[controller_idx].ocp.cx()
+        if n_idx == 0:
+            if penalty.transition or controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
+                x = vertcat(x, controllers[controller_idx].states_scaled.cx_start)
+            else:  # TODO: probably false, but matches what is was originally there
+                if (  # missing if self.integrate
+                    controllers[controller_idx].ode_solver.is_direct_collocation
+                    and not self.derivative
+                    and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                    and not (len(self.node_idx) == 1 and self.node_idx[0] == controllers[controller_idx].ns)
+                ):
+                    x = vertcat(
+                        x, controllers[controller_idx].states_scaled.cx_start, *controllers[controller_idx].states_scaled.cx_intermediates_list
+                    )
                 else:
-                    if ctrl.node_index == controller.get_nlp.ns:
-                        x = vertcat(x, ctrl.states_scaled.cx_start)
-                    else:  # TODO: probably false, but matches what is was originally there
-                        if (  # missing if self.integrate
-                            controller.ode_solver.is_direct_collocation
-                            and not self.derivative
-                            and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                            and not (len(self.node_idx) == 1 and self.node_idx[0] == controller.ns)
-                        ):
-                            x = vertcat(
-                                x, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
-                            )
-                        else:
-                            x = vertcat(x, ctrl.states_scaled.cx)
+                    x = vertcat(x, controllers[controller_idx].states_scaled.cx)
 
-            elif n_idx == 1:
-                x = ctrl.states_scaled.cx_end
+        elif n_idx == 1:
+            if penalty.transition:  #TODO: Would like to remove this if possible
+                x = vertcat(x, controllers[0].states_scaled.cx_intermediates_list[0])
             else:
-                raise RuntimeError("Please choose between 0 (cx_start + cx_intermedites if collocations) and 1 (cx_end) for n_idx")
+                x = vertcat(x, controllers[controller_idx].states_scaled.cx_end)
+        else:
+            raise RuntimeError("Please choose between 0 (cx_start + cx_intermedites if collocations) and 1 (cx_end) for n_idx")
 
         return x
 
-    def _get_u_from_controller(self, penalty, controller, controllers, p_idx, n_idx):
+    def _get_u_from_controller(self, penalty, controllers, controller_idx, p_idx, n_idx):
 
-        u = controller.ocp.cx()
-        for i_ctrl, ctrl in enumerate(controllers):
-            if n_idx == 0:
-                if penalty.transition and i_ctrl == 0:
-                    if controllers[0].cx_index_to_get == 1:
-                        u = vertcat(u, controllers[0].controls_scaled.cx) if controllers[0].get_nlp.control_type != ControlType.CONSTANT else vertcat(
-                            u, controllers[1].cx())
-                    else:
-                        u = vertcat(u, controllers[0].controls_scaled.cx_start)
-                else:
-                    if ctrl.node_index == controller.get_nlp.ns:
-                        u = vertcat(u, ctrl.controls_scaled.cx_start)
-                    else:
-                        u = vertcat(u, ctrl.controls_scaled.cx)
-
-                if controller.ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
-                    if controller.ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or self.node_idx[0] + 1 < controller.get_nlp.n_controls_nodes:
-                        u = vertcat(u, controller.controls_scaled.cx_end)
-
-            elif n_idx == 1:
-                u = controller.controls_scaled.cx_end
+        u = controllers[controller_idx].ocp.cx()
+        if n_idx == 0:
+            if penalty.transition or controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
+                u = vertcat(u, controllers[controller_idx].controls_scaled.cx_start)
             else:
-                raise RuntimeError("Please choose between 0 (cx_start) and 1 (cx_end) for n_idx")
+                u = vertcat(u, controllers[controller_idx].controls_scaled.cx)
+
+            if controllers[controller_idx].ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
+                if controllers[controller_idx].ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or self.node_idx[0] + 1 < controllers[controller_idx].get_nlp.n_controls_nodes:
+                    u = vertcat(u, controllers[controller_idx].controls_scaled.cx_end)
+
+        elif n_idx == 1:
+            if penalty.transition:
+                u = vertcat(u, controllers[0].controls_scaled.cx_intermediates_list[0])
+            else:
+                u = controllers[controller_idx].controls_scaled.cx_end
+        else:
+            raise RuntimeError("Please choose between 0 (cx_start) and 1 (cx_end) for n_idx")
 
         return u
 
-    def _get_s_from_controller(self, penalty, controller, controllers, p_idx, n_idx):
+    def _get_s_from_controller(self, penalty, controllers, controller_idx, p_idx, n_idx):
 
-        s = controller.ocp.cx()
-        for i_ctrl, ctrl in enumerate(controllers):
-            if n_idx == 0:
-                if penalty.transition and i_ctrl == 0:
-                    s = (
-                        vertcat(s, controllers[0].stochastic_variables_scaled.cx) if controllers[0].cx_index_to_get == 1 else vertcat(
-                            s, controllers[0].stochastic_variables_scaled.cx_start))
-                else:
-                    if ctrl.node_index == controller.get_nlp.ns:
-                        s = vertcat(s, ctrl.stochastic_variables_scaled.cx_start)
-                    else:
-                        s = vertcat(s, ctrl.stochastic_variables_scaled.cx)
-
-            elif n_idx == 1:
-                s = controller.stochastic_variables_scaled.cx_end
+        s = controllers[controller_idx].ocp.cx()
+        if n_idx == 0:
+            if penalty.transition or controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
+                s = vertcat(s, controllers[controller_idx].stochastic_variables_scaled.cx_start)
             else:
-                raise RuntimeError("Please choose between 0 (cx_start) and 1 (cx_end) for n_idx")
+                s = vertcat(s, controllers[controller_idx].stochastic_variables_scaled.cx)
+
+        elif n_idx == 1:
+            if penalty.transition:
+                s = vertcat(s, controllers[0].stochastic_variables_scaled.cx_intermediates_list[0])
+            else:
+                s = controllers[controller_idx].stochastic_variables_scaled.cx_end
+        else:
+            raise RuntimeError("Please choose between 0 (cx_start) and 1 (cx_end) for n_idx")
         return s
 
     @staticmethod

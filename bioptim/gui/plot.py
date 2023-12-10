@@ -737,10 +737,10 @@ class PlotOcp:
                 penalty = custom_plot.parameters["penalty"]
                 t0 = PenaltyHelpers.t0(penalty, self.ocp, idx, lambda p_idx, n_idx: time_stepwise[p_idx][n_idx])
                 
-                x_node = PenaltyHelpers.states(penalty, self.ocp, idx, lambda p_idx, n_idx: x[n_idx])
-                u_node = PenaltyHelpers.controls(penalty, self.ocp, idx, lambda p_idx, n_idx: u[n_idx])
+                x_node = PenaltyHelpers.states(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: x[n_idx])
+                u_node = PenaltyHelpers.controls(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: u[n_idx])
                 p_node = PenaltyHelpers.parameters(penalty, self.ocp, lambda: np.array(p))
-                s_node = PenaltyHelpers.stochastic_variables(penalty, self.ocp, idx, lambda p_idx, n_idx: s[n_idx])
+                s_node = PenaltyHelpers.stochastic_variables(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: s[n_idx])
                 
             else:
                 t0 = time_stepwise[phase_idx][node_idx][0]

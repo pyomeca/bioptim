@@ -294,9 +294,9 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, is_unscaled):
     target = PenaltyHelpers.target(penalty, penalty_idx)
 
     if nlp:
-        x = PenaltyHelpers.states(penalty, ocp, penalty_idx, lambda p_idx, n_idx: _get_x(ocp, p_idx, n_idx, is_unscaled))
-        u = (PenaltyHelpers.controls(penalty, ocp, penalty_idx, lambda p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled)) if len(nlp.controls) != 0 else [])
-        s = (PenaltyHelpers.stochastic_variables(penalty, ocp, penalty_idx, lambda p_idx, n_idx: _get_s(ocp, p_idx, n_idx, is_unscaled)) if len(nlp.stochastic_variables) != 0 else [])
+        x = PenaltyHelpers.states(penalty, ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: _get_x(ocp, p_idx, n_idx, is_unscaled))
+        u = (PenaltyHelpers.controls(penalty, ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled)) if len(nlp.controls) != 0 else [])
+        s = (PenaltyHelpers.stochastic_variables(penalty, ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: _get_s(ocp, p_idx, n_idx, is_unscaled)) if len(nlp.stochastic_variables) != 0 else [])
     else:
         x = []
         u = []
