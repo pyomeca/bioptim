@@ -9,7 +9,7 @@ from ..misc.enums import QuadratureRule, PhaseDynamics, ControlType
 class PenaltyHelpers:
     
     @staticmethod
-    def t0(penalty, penalty_node_idx, get_t0: Callable):
+    def t0(penalty, ocp, penalty_node_idx, get_t0: Callable):
         """
         Parameters
         ----------
@@ -107,7 +107,7 @@ class PenaltyHelpers:
             u = _reshape_to_vector(u)
             
             next_node = penalty_node_index + 1  # (0 if penalty.derivative else 1)
-            if penalty.derivative and nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and next_node >= nlp.n_controls_nodes:
+            if (penalty.derivative or penalty.explicit_derivative) and nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and next_node >= nlp.n_controls_nodes:
                 next_node -= 1
             step = 0  # TODO: This should be 1 for integrate if TRAPEZOIDAL
             next_u = _get_control_internal(penalty.phase, next_node)

@@ -342,7 +342,7 @@ class OptimizationVectorHelper:
                 if key in nlp.u_init.keys():
                     nlp.u_init[key].check_and_adjust_dimensions(nlp.controls[key].cx.shape[0], ns)
 
-            for k in range(ns):
+            for k in range(ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
                 collapsed_values = np.ndarray((nlp.controls.shape, 1))
                 for key in nlp.controls:

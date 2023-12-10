@@ -426,8 +426,6 @@ class PenaltyOption(OptionGeneric):
             The value of the penalty function
         """
 
-        t0, x, u, s, weight, target = self._get_weighted_function_inputs_from_controller(self, None, controller)
-
         name = (
             self.name.replace("->", "_")
             .replace(" ", "_")
@@ -438,6 +436,8 @@ class PenaltyOption(OptionGeneric):
             .replace(".", "_")
             .replace("__", "_")
         )
+
+        t0, x, u, s, weight, target = self._get_weighted_function_inputs_from_controller(self, None, controller)
 
         # Alias some variables
         node = controller.node_index
@@ -471,30 +471,11 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded[node] = self.function[node]
 
         if self.derivative:
-            if controller.get_nlp.ode_solver.is_direct_collocation and node != ocp.nlp[self.phase].ns:
-                state_cx_scaled = vertcat(
-                    *(
-                        [controller.states_scaled.cx_end]
-                        + [controller.states_scaled.cx_start]
-                        + controller.states_scaled.cx_intermediates_list
-                    )
-                )
-            else:
-                state_cx_scaled = vertcat(controller.states_scaled.cx_end, controller.states_scaled.cx_start)
-            if (
-                not (node == controller.ocp.nlp[self.phase].ns and controller.ocp.nlp[self.phase].control_type == ControlType.CONSTANT)
-                or controller.ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-            ):
-                control_cx_scaled = vertcat(controller.controls_scaled.cx_end, controller.controls_scaled.cx_start)
-            stochastic_cx_scaled = vertcat(
-                controller.stochastic_variables_scaled.cx_end, controller.stochastic_variables_scaled.cx_start
-            )
-
             # This reimplementation is required because input sizes change. It will however produce wrong result
             # for non weighted functions 
             self.function[node] = Function(
                 f"{name}",
-                [time_cx, phases_dt_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled],
+                [time_cx, phases_dt_cx, x, u, param_cx, s],
                 [self.function[node](
                     time_cx,
                     phases_dt_cx,
@@ -530,23 +511,23 @@ class PenaltyOption(OptionGeneric):
                 state_cx_start = vertcat(state_cx_start, *controller.states_scaled.cx_intermediates_list)
             stochastic_start_cx = controller.stochastic_variables_scaled.cx_start
             stochastic_end_cx = controller.stochastic_variables_scaled.cx_end
-            
+
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx_start = controller.controls_scaled.cx_start
             if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
-                control_end = controller.controls.cx_start 
-                control_end_unscaled = controller.controls.cx_start 
+                control_end = controller.controls.cx_start
+                control_end_unscaled = controller.controls.cx_start
             else:
                 control_end = controller.controls.cx_end
                 control_end_unscaled = controller.controls.cx_end
-                
+
             control_cx_end = _get_u(
                 controller.control_type, horzcat(controller.controls.cx_start, control_end), phases_dt_cx[self.phase],
             )
 
             if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                state_cx_scaled = vertcat(state_cx_scaled, controller.states_scaled.cx_end)
+                state_cx_scaled = x
                 state_cx_end = controller.states_scaled.cx_end
             else: 
                 control_cx_end_unscaled = _get_u(
@@ -576,7 +557,7 @@ class PenaltyOption(OptionGeneric):
             # for non weighted functions
             self.function[node] = Function(
                 f"{name}",
-                [time_cx, phases_dt_cx, state_cx_scaled, control_cx_scaled, param_cx, stochastic_cx_scaled],
+                [time_cx, phases_dt_cx, x, u, param_cx, s],
                 [(func_at_start + func_at_end) / 2],
                 ["t", "dt", "x", "u", "p", "s"],
                 ["val"], 
@@ -587,10 +568,10 @@ class PenaltyOption(OptionGeneric):
                 self.function[node](
                     time_cx,
                     phases_dt_cx,
-                    state_cx_scaled,
-                    control_cx_scaled,
+                    x,
+                    u,
                     param_cx,
-                    stochastic_cx_scaled,
+                    s,
                 )
                 - target_cx
             ) ** exponent
@@ -604,10 +585,10 @@ class PenaltyOption(OptionGeneric):
             [
                 time_cx,
                 phases_dt_cx,
-                state_cx_scaled,
-                control_cx_scaled,
+                x,
+                u,
                 param_cx,
-                stochastic_cx_scaled,
+                s,
                 weight_cx,
                 target_cx,
             ],
@@ -619,8 +600,8 @@ class PenaltyOption(OptionGeneric):
         self.weighted_function_non_threaded[node] = self.weighted_function[node]
 
         if controller.ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
-            self.function[node] = self.function[node].map(len(self.node_idx), "thread", ocp.n_threads)
-            self.weighted_function[node] = self.weighted_function[node].map(len(self.node_idx), "thread", ocp.n_threads)
+            self.function[node] = self.function[node].map(len(self.node_idx), "thread", controller.ocp.n_threads)
+            self.weighted_function[node] = self.weighted_function[node].map(len(self.node_idx), "thread", controller.ocp.n_threads)
         else:
             self.multi_thread = False  # Override the multi_threading, since only one node is optimized
 
@@ -678,8 +659,8 @@ class PenaltyOption(OptionGeneric):
         # s = self.stochastic(penalty, controller, controllers)
 
         x = PenaltyHelpers.states(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_x_from_controller(penalty, controller, controllers, p_idx, n_idx))
-        u = PenaltyHelpers.controls(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_u_from_controller(penalty, controller, controllers, p_idx, n_idx))
-        s = PenaltyHelpers.stochastic_variables(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_s_from_controller(penalty, controller, controllers, p_idx, n_idx))
+        u = (PenaltyHelpers.controls(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_u_from_controller(penalty, controller, controllers, p_idx, n_idx)) if len(controller.controls) != 0 else [])
+        s = (PenaltyHelpers.stochastic_variables(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_s_from_controller(penalty, controller, controllers, p_idx, n_idx)) if len(controller.stochastic_variables) != 0 else [])
 
         return t0, x, u, s, weight, target,
 
