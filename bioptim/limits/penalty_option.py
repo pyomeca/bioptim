@@ -682,7 +682,7 @@ class PenaltyOption(OptionGeneric):
 
         elif n_idx == 1:
             if penalty.transition:  #TODO: Would like to remove this if possible
-                x = vertcat(x, controllers[0].states_scaled.cx_intermediates_list[0])
+                x = vertcat(x, controllers[controller_idx].states_scaled.cx)
             else:
                 x = vertcat(x, controllers[controller_idx].states_scaled.cx_end)
         else:
@@ -704,8 +704,10 @@ class PenaltyOption(OptionGeneric):
                     u = vertcat(u, controllers[controller_idx].controls_scaled.cx_end)
 
         elif n_idx == 1:
-            if penalty.transition:
-                u = vertcat(u, controllers[0].controls_scaled.cx_intermediates_list[0])
+            if controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
+                u = vertcat(u, controllers[0].controls_scaled.cx_intermediates_list[0])  # This is technically really wrong but it should not be used it is just to get the right shape
+            elif penalty.transition:
+                u = vertcat(u, controllers[controller_idx].controls_scaled.cx_intermediates_list[0])
             else:
                 u = controllers[controller_idx].controls_scaled.cx_end
         else:
@@ -724,7 +726,7 @@ class PenaltyOption(OptionGeneric):
 
         elif n_idx == 1:
             if penalty.transition:
-                s = vertcat(s, controllers[0].stochastic_variables_scaled.cx_intermediates_list[0])
+                s = vertcat(s, controllers[controller_idx].stochastic_variables_scaled.cx_intermediates_list[0])
             else:
                 s = controllers[controller_idx].stochastic_variables_scaled.cx_end
         else:

@@ -56,9 +56,9 @@ class PenaltyHelpers:
         if penalty.transition:
             x = []
             phases, nodes = _get_multinode_indices(penalty)
-            tp = get_state_decision(1, phases[0], 1)
+            tp = get_state_decision(0, phases[0], 0)
             x.append(_reshape_to_vector(tp))
-            tp = get_state_decision(0, phases[1], 0)
+            tp = get_state_decision(1, phases[1], 1)
             x.append(_reshape_to_vector(tp))
             return _vertcat(x)
         elif penalty.multinode_penalty:
@@ -96,15 +96,15 @@ class PenaltyHelpers:
                     return np.ndarray((0, 1))
                 else:
                     raise RuntimeError("Invalid type for control")
-                
-            return _u[:, 0]  # That is so Linear controls don't return two columns, it will be dealty with later
+
+            return _u if _u.shape == (0, 0) else _u[:, 0]  # That is so Linear controls don't return two columns, it will be dealty with later
 
         if penalty.transition:
             u = []
             phases, nodes = _get_multinode_indices(penalty)
-            tp = _get_control_internal(1, phases[0], 1)
+            tp = _get_control_internal(0, phases[0], 0)
             u.append(_reshape_to_vector(tp))
-            tp = _get_control_internal(0, phases[1], 0)
+            tp = _get_control_internal(1, phases[1], 1)
             u.append(_reshape_to_vector(tp))
             return _vertcat(u)
         elif penalty.multinode_penalty:
@@ -146,9 +146,9 @@ class PenaltyHelpers:
         if penalty.transition:
             s = []
             phases, nodes = _get_multinode_indices(penalty)
-            tp = get_stochastic_decision(1, phases[0], 1)
+            tp = get_stochastic_decision(0, phases[0], 0)
             s.append(_reshape_to_vector(tp))
-            tp = get_stochastic_decision(0, phases[1], 0)
+            tp = get_stochastic_decision(1, phases[1], 1)
             s.append(_reshape_to_vector(tp))
             return _vertcat(s)
         elif penalty.multinode_penalty:
