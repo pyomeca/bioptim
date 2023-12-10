@@ -426,7 +426,7 @@ class PenaltyOption(OptionGeneric):
             The value of the penalty function
         """
 
-        t0, x, u, s, weight, target = self._get_weighted_function_inputs_from_controller(self, self.node_idx, controller)
+        t0, x, u, s, weight, target = self._get_weighted_function_inputs_from_controller(self, None, controller)
 
         name = (
             self.name.replace("->", "_")
@@ -456,7 +456,7 @@ class PenaltyOption(OptionGeneric):
 
         sub_fcn = fcn[self.rows, self.cols]
         if self.is_stochastic:
-            sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, state_cx_scaled)
+            sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, x)
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         self.function[node] = Function(
@@ -677,11 +677,9 @@ class PenaltyOption(OptionGeneric):
         # u = self.controls(penalty, controller, controllers)
         # s = self.stochastic(penalty, controller, controllers)
 
-        x = PenaltyHelpers.states(penalty, None, lambda p_idx, n_idx: self._get_x_from_controller(None, None, penalty, controller, controllers))
-        # u = PenaltyHelpers.controls(penalty, ocp, penalty_idx,
-        #                             lambda p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled))
-        # s = PenaltyHelpers.stochastic(penalty, penalty_idx,
-        #                               lambda p_idx, n_idx: _get_s(ocp, p_idx, n_idx, is_unscaled))
+        x = PenaltyHelpers.states(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_x_from_controller(penalty, controller, controllers, p_idx, n_idx))
+        u = PenaltyHelpers.controls(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_u_from_controller(penalty, controller, controllers, p_idx, n_idx))
+        s = PenaltyHelpers.stochastic_variables(penalty, controller.ocp, penalty_idx, lambda p_idx, n_idx: self._get_s_from_controller(penalty, controller, controllers, p_idx, n_idx))
 
         return t0, x, u, s, weight, target,
 
@@ -690,82 +688,81 @@ class PenaltyOption(OptionGeneric):
 
         x = controller.ocp.cx()
         for i_ctrl, ctrl in enumerate(controllers):
-            if penalty.transition and i_ctrl == 0:
-                x = (
-                    vertcat(x, controllers[0].states_scaled.cx) if controllers[0].cx_index_to_get == 1 else vertcat(
-                        x, controllers[0].states_scaled.cx_start))
-            else:
-                if ctrl.node_index == controller.get_nlp.ns:
-                    x = vertcat(x, ctrl.states_scaled.cx_start)
-                else:  # TODO: probably false, but matches what is was originally there
-                    if (  # missing if self.integrate
-                        controller.ode_solver.is_direct_collocation
-                        and not self.derivative
-                        and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                        and not (len(self.node_idx) == 1 and self.node_idx[0] == controller.ns)
-                    ):
-                        x = vertcat(
-                            x, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
-                        )
-                    else:
-                        x = vertcat(x, ctrl.states_scaled.cx)
+            if n_idx == 0:
+                if penalty.transition and i_ctrl == 0:
+                    x = (
+                        vertcat(x, controllers[0].states_scaled.cx) if controllers[0].cx_index_to_get == 1 else vertcat(
+                            x, controllers[0].states_scaled.cx_start))
+                else:
+                    if ctrl.node_index == controller.get_nlp.ns:
+                        x = vertcat(x, ctrl.states_scaled.cx_start)
+                    else:  # TODO: probably false, but matches what is was originally there
+                        if (  # missing if self.integrate
+                            controller.ode_solver.is_direct_collocation
+                            and not self.derivative
+                            and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
+                            and not (len(self.node_idx) == 1 and self.node_idx[0] == controller.ns)
+                        ):
+                            x = vertcat(
+                                x, ctrl.states_scaled.cx_start, *ctrl.states_scaled.cx_intermediates_list
+                            )
+                        else:
+                            x = vertcat(x, ctrl.states_scaled.cx)
 
-            need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,) or penalty.derivative or penalty.explicit_derivative
-            if need_end_point and controller.node_index < controller.ns:
-                x = vertcat(controller.states_scaled.cx_end, x) if penalty.derivative else vertcat(x, controller.states_scaled.cx_end)
+            elif n_idx == 1:
+                x = ctrl.states_scaled.cx_end
+            else:
+                raise RuntimeError("Please choose between 0 (cx_start + cx_intermedites if collocations) and 1 (cx_end) for n_idx")
 
         return x
 
-    def _get_u_from_controller(self, penalty, controller, controllers):
+    def _get_u_from_controller(self, penalty, controller, controllers, p_idx, n_idx):
 
         u = controller.ocp.cx()
         for i_ctrl, ctrl in enumerate(controllers):
-            if penalty.transition and i_ctrl == 0:
-                if controllers[0].cx_index_to_get == 1:
-                    u = vertcat(u, controllers[0].controls_scaled.cx) if controllers[0].get_nlp.control_type != ControlType.CONSTANT else vertcat(
-                        u, controllers[1].cx())
+            if n_idx == 0:
+                if penalty.transition and i_ctrl == 0:
+                    if controllers[0].cx_index_to_get == 1:
+                        u = vertcat(u, controllers[0].controls_scaled.cx) if controllers[0].get_nlp.control_type != ControlType.CONSTANT else vertcat(
+                            u, controllers[1].cx())
+                    else:
+                        u = vertcat(u, controllers[0].controls_scaled.cx_start)
                 else:
-                    u = vertcat(u, controllers[0].controls_scaled.cx_start)
-            else:
-                if ctrl.node_index == controller.get_nlp.ns:
-                    u = vertcat(u, ctrl.controls_scaled.cx_start)
-                else:
-                    u = vertcat(u, ctrl.controls_scaled.cx)
+                    if ctrl.node_index == controller.get_nlp.ns:
+                        u = vertcat(u, ctrl.controls_scaled.cx_start)
+                    else:
+                        u = vertcat(u, ctrl.controls_scaled.cx)
 
-            if controller.ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
-                if controller.ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or self.node_idx[0] + 1 < controller.get_nlp.n_controls_nodes:
-                    u = vertcat(u, controller.controls_scaled.cx_end)
-
-            need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,) or penalty.derivative or penalty.explicit_derivative
-            if need_end_point and controller.node_index < controller.ns:
-                if (
-                    not (
-                        self.node[0] == controller.ns - 1
-                        and controller.ocp.nlp[self.phase].control_type == ControlType.CONSTANT
-                    )
-                    or controller.ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                ):
-                    if not controller.ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
+                if controller.ocp.nlp[self.phase].control_type == ControlType.LINEAR_CONTINUOUS:
+                    if controller.ocp.nlp[self.phase].phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE or self.node_idx[0] + 1 < controller.get_nlp.n_controls_nodes:
                         u = vertcat(u, controller.controls_scaled.cx_end)
+
+            elif n_idx == 1:
+                u = controller.controls_scaled.cx_end
+            else:
+                raise RuntimeError("Please choose between 0 (cx_start) and 1 (cx_end) for n_idx")
+
         return u
 
-    def _get_s_from_controller(self, penalty, controller, controllers):
+    def _get_s_from_controller(self, penalty, controller, controllers, p_idx, n_idx):
 
         s = controller.ocp.cx()
         for i_ctrl, ctrl in enumerate(controllers):
-            if penalty.transition and i_ctrl == 0:
-                s = (
-                    vertcat(s, controllers[0].stochastic_variables_scaled.cx) if controllers[0].cx_index_to_get == 1 else vertcat(
-                        s, controllers[0].stochastic_variables_scaled.cx_start))
-            else:
-                if ctrl.node_index == controller.get_nlp.ns:
-                    s = vertcat(s, ctrl.stochastic_variables_scaled.cx_start)
+            if n_idx == 0:
+                if penalty.transition and i_ctrl == 0:
+                    s = (
+                        vertcat(s, controllers[0].stochastic_variables_scaled.cx) if controllers[0].cx_index_to_get == 1 else vertcat(
+                            s, controllers[0].stochastic_variables_scaled.cx_start))
                 else:
-                    s = vertcat(s, ctrl.stochastic_variables_scaled.cx)
+                    if ctrl.node_index == controller.get_nlp.ns:
+                        s = vertcat(s, ctrl.stochastic_variables_scaled.cx_start)
+                    else:
+                        s = vertcat(s, ctrl.stochastic_variables_scaled.cx)
 
-            need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,) or penalty.derivative or penalty.explicit_derivative
-            if need_end_point and controller.node_index < controller.ns:
-                s = vertcat(s, controller.stochastic_variables_scaled.cx_end)
+            elif n_idx == 1:
+                s = controller.stochastic_variables_scaled.cx_end
+            else:
+                raise RuntimeError("Please choose between 0 (cx_start) and 1 (cx_end) for n_idx")
         return s
 
     @staticmethod

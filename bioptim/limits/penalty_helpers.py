@@ -49,7 +49,7 @@ class PenaltyHelpers:
         return _reshape_to_vector(_reshape_to_vector(get_all_dt(ocp.time_phase_mapping.to_first.map_idx)))
 
     @staticmethod
-    def states(penalty, penalty_node_idx, get_state_decision: Callable):
+    def states(penalty, ocp, penalty_node_idx, get_state_decision: Callable):
         if isinstance(penalty.phase, list) and len(penalty.phase) > 1:
             raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
 
@@ -65,12 +65,12 @@ class PenaltyHelpers:
 
         penalty_node_index = 0 if penalty_node_idx is None else penalty.node_idx[penalty_node_idx]
         x = get_state_decision(penalty.phase, penalty_node_index)
-        
+
         need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,)
         if need_end_point or penalty.derivative or penalty.explicit_derivative:
             x = _reshape_to_vector(x)
-            x_next = get_state_decision(penalty.phase, penalty.node_idx[penalty_node_idx] + 1)[:, 0]
-            x = vertcat(x_next, x) if penalty.derivative else vertcat(x, x_next) 
+            x_next = get_state_decision(penalty.phase, penalty_node_index + 1)[:, 0]
+            x = vertcat(x_next, x) if penalty.derivative else vertcat(x, x_next)  #TODO: change order ?
 
         return _reshape_to_vector(x)
 
@@ -106,7 +106,7 @@ class PenaltyHelpers:
         if is_linear or penalty.integrate or penalty.derivative or penalty.explicit_derivative:
             u = _reshape_to_vector(u)
             
-            next_node = penalty.node_idx[penalty_node_idx] + 1  # (0 if penalty.derivative else 1)
+            next_node = penalty_node_index + 1  # (0 if penalty.derivative else 1)
             if penalty.derivative and nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and next_node >= nlp.n_controls_nodes:
                 next_node -= 1
             step = 0  # TODO: This should be 1 for integrate if TRAPEZOIDAL
@@ -117,12 +117,12 @@ class PenaltyHelpers:
         return _reshape_to_vector(u)
 
     @staticmethod
-    def parameters(penalty, get_parameter: Callable):
+    def parameters(penalty, ocp, get_parameter: Callable):
         p = get_parameter()
         return _reshape_to_vector(p)
 
     @staticmethod
-    def stochastic_variables(penalty, penalty_node_idx, get_stochastic_decision: Callable):
+    def stochastic_variables(penalty, ocp, penalty_node_idx, get_stochastic_decision: Callable):
         if penalty.transition or penalty.multinode_penalty:
             s = []
             phases, nodes = _get_multinode_indices(penalty)
@@ -139,7 +139,7 @@ class PenaltyHelpers:
         need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,)
         if need_end_point or penalty.derivative or penalty.explicit_derivative:
             s = _reshape_to_vector(s)
-            s_next = get_stochastic_decision(penalty.phase, penalty.node_idx[penalty_node_idx] + 1)[:, 0]
+            s_next = get_stochastic_decision(penalty.phase, penalty_node_index + 1)[:, 0]
             s = vertcat(s_next, s) if penalty.derivative else vertcat(s, s_next)
 
         return _reshape_to_vector(s)
