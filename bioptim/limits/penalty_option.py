@@ -437,7 +437,7 @@ class PenaltyOption(OptionGeneric):
             .replace("__", "_")
         )
 
-        t0, x, u, s, weight, target, controller = self._get_weighted_function_inputs_from_controller(self, None, controller)
+        t0, x, u, s, weight, target, controller = self._get_weighted_function_inputs_from_controller(None, controller)
 
         # Alias some variables
         node = controller.node_index
@@ -458,43 +458,79 @@ class PenaltyOption(OptionGeneric):
         if self.is_stochastic:
             sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, x)
 
-        # Do not use nlp.add_casadi_func because all functions must be registered
-        self.function[node] = Function(
-            name, 
-            [time_cx, phases_dt_cx, x, u, param_cx, s],
-            [sub_fcn],
-            ["t", "dt", "x", "u", "p", "s"],
-            ["val"],
-        )
-        if self.expand:
-            self.function[node] = self.function[node].expand()
-        self.function_non_threaded[node] = self.function[node]
+        if not self.derivative:
+            # Do not use nlp.add_casadi_func because all functions must be registered
+            self.function[node] = Function(
+                name,
+                [time_cx, phases_dt_cx, x, u, param_cx, s],
+                [sub_fcn],
+                ["t", "dt", "x", "u", "p", "s"],
+                ["val"],
+            )
+            if self.expand:
+                self.function[node] = self.function[node].expand()
+            self.function_non_threaded[node] = self.function[node]
 
-        if self.derivative:
+        else:
             # This reimplementation is required because input sizes change. It will however produce wrong result
-            # for non weighted functions 
+            # for non weighted functions
+            fake_penalty = PenaltyOption(
+                penalty=self.type,
+                phase=self.phase,
+                node=self.node,
+                target=self.target,
+                quadratic=self.quadratic,
+                weight=self.weight,
+                derivative=False,
+                explicit_derivative=self.explicit_derivative,
+                integrate=self.integrate,
+                integration_rule=self.integration_rule,
+                rows=self.rows,
+                cols=self.cols,
+                custom_function=self.custom_function,
+                penalty_type=self.penalty_type,
+                is_stochastic=self.is_stochastic,
+                multi_thread=self.multi_thread,
+                expand=self.expand)
+
+            is_direct_collocation = controller.ode_solver.is_direct_collocation
+            fake_controller = controller.copy()
+            fake_controller.ode_solver.is_direct_collocation = False
+
+            _, x_for_original_fcn, u_for_original_fcn, s_for_original_fcn, _, _, _ = fake_penalty._get_weighted_function_inputs_from_controller(
+                None, fake_controller)
+            original_fcn = Function(
+                name,
+                [time_cx, phases_dt_cx, x_for_original_fcn, u_for_original_fcn, param_cx, s_for_original_fcn],
+                [sub_fcn],
+                ["t", "dt", "x", "u", "p", "s"],
+                ["val"],
+            )
+
             self.function[node] = Function(
                 f"{name}",
                 [time_cx, phases_dt_cx, x, u, param_cx, s],
-                [self.function[node](
+                [original_fcn(
                     time_cx,
                     phases_dt_cx,
-                    controller.states_scaled.cx_end,
-                    controller.controls_scaled.cx_end,
+                    controller.states.cx_end,
+                    controller.controls.cx_end,
                     param_cx,
                     controller.stochastic_variables_scaled.cx_end,
                 )
-                - self.function[node](
+                - original_fcn(
                     time_cx,
                     phases_dt_cx,
-                    controller.states_scaled.cx_start,
-                    controller.controls_scaled.cx_start,
+                    controller.states.cx_start,
+                    controller.controls.cx_start,
                     param_cx,
                     controller.stochastic_variables_scaled.cx_start,
                 )],
                 ["t", "dt", "x", "u", "p", "s"],
                 ["val"], 
             )
+
+            fake_controller.ode_solver.is_direct_collocation = is_direct_collocation  # Pariterre: don't know how to do cleaner
 
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
@@ -629,10 +665,10 @@ class PenaltyOption(OptionGeneric):
                 "Node.ALL_SHOOTING."
             )
 
-    def _get_weighted_function_inputs_from_controller(self, penalty, penalty_idx, controller):
+    def _get_weighted_function_inputs_from_controller(self, penalty_idx, controller):
 
-        if penalty.transition or penalty.multinode_penalty:
-            if penalty.transition:
+        if self.transition or self.multinode_penalty:
+            if self.transition:
                 controllers = [controller[1], controller[0]]  # TODO put them in order?
                 controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             else:
@@ -651,26 +687,25 @@ class PenaltyOption(OptionGeneric):
 
         t0 = controller.time_cx
 
-        weight = PenaltyHelpers.weight(penalty)
-        target = PenaltyHelpers.target(penalty, penalty_idx)
+        weight = PenaltyHelpers.weight(self)
+        target = PenaltyHelpers.target(self, penalty_idx)
 
-        x = PenaltyHelpers.states(penalty, controller.ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: self._get_x_from_controller(penalty, controllers, controller_idx, p_idx, n_idx))
-        u = (PenaltyHelpers.controls(penalty, controller.ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: self._get_u_from_controller(penalty, controllers, controller_idx, p_idx, n_idx)) if len(controller.controls) != 0 else [])
-        s = (PenaltyHelpers.stochastic_variables(penalty, controller.ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: self._get_s_from_controller(penalty, controllers, controller_idx, p_idx, n_idx)) if len(controller.stochastic_variables) != 0 else [])
+        x = PenaltyHelpers.states(self, controller.ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: self._get_x_from_controller(controllers, controller_idx, p_idx, n_idx))
+        u = (PenaltyHelpers.controls(self, controller.ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: self._get_u_from_controller(controllers, controller_idx, p_idx, n_idx)) if len(controller.controls) != 0 else [])
+        s = (PenaltyHelpers.stochastic_variables(self, controller.ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: self._get_s_from_controller(controllers, controller_idx, p_idx, n_idx)) if len(controller.stochastic_variables) != 0 else [])
 
         return t0, x, u, s, weight, target, controller
 
 
-    def _get_x_from_controller(self, penalty, controllers, controller_idx, p_idx, n_idx):
+    def _get_x_from_controller(self, controllers, controller_idx, p_idx, n_idx):
 
         x = controllers[controller_idx].ocp.cx()
         if n_idx == 0:
-            if penalty.transition or controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
+            if self.transition or controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
                 x = vertcat(x, controllers[controller_idx].states_scaled.cx_start)
             else:  # TODO: probably false, but matches what is was originally there
                 if (  # missing if self.integrate
                     controllers[controller_idx].ode_solver.is_direct_collocation
-                    and not self.derivative
                     and self.integration_rule != QuadratureRule.APPROXIMATE_TRAPEZOIDAL
                     and not (len(self.node_idx) == 1 and self.node_idx[0] == controllers[controller_idx].ns)
                 ):
@@ -681,7 +716,7 @@ class PenaltyOption(OptionGeneric):
                     x = vertcat(x, controllers[controller_idx].states_scaled.cx)
 
         elif n_idx == 1:
-            if penalty.transition:  #TODO: Would like to remove this if possible
+            if self.transition:  #TODO: Would like to remove this if possible
                 x = vertcat(x, controllers[controller_idx].states_scaled.cx)
             else:
                 x = vertcat(x, controllers[controller_idx].states_scaled.cx_end)
@@ -690,11 +725,11 @@ class PenaltyOption(OptionGeneric):
 
         return x
 
-    def _get_u_from_controller(self, penalty, controllers, controller_idx, p_idx, n_idx):
+    def _get_u_from_controller(self, controllers, controller_idx, p_idx, n_idx):
 
         u = controllers[controller_idx].ocp.cx()
         if n_idx == 0:
-            if penalty.transition or controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
+            if self.transition or controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
                 u = vertcat(u, controllers[controller_idx].controls_scaled.cx_start)
             else:
                 u = vertcat(u, controllers[controller_idx].controls_scaled.cx)
@@ -706,7 +741,7 @@ class PenaltyOption(OptionGeneric):
         elif n_idx == 1:
             if controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
                 u = vertcat(u, controllers[0].controls_scaled.cx_intermediates_list[0])  # This is technically really wrong but it should not be used it is just to get the right shape
-            elif penalty.transition:
+            elif self.transition:
                 u = vertcat(u, controllers[controller_idx].controls_scaled.cx_intermediates_list[0])
             else:
                 u = controllers[controller_idx].controls_scaled.cx_end
@@ -715,17 +750,17 @@ class PenaltyOption(OptionGeneric):
 
         return u
 
-    def _get_s_from_controller(self, penalty, controllers, controller_idx, p_idx, n_idx):
+    def _get_s_from_controller(self, controllers, controller_idx, p_idx, n_idx):
 
         s = controllers[controller_idx].ocp.cx()
         if n_idx == 0:
-            if penalty.transition or controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
+            if self.transition or controllers[controller_idx].node_index == controllers[controller_idx].get_nlp.ns:
                 s = vertcat(s, controllers[controller_idx].stochastic_variables_scaled.cx_start)
             else:
                 s = vertcat(s, controllers[controller_idx].stochastic_variables_scaled.cx)
 
         elif n_idx == 1:
-            if penalty.transition:
+            if self.transition:
                 s = vertcat(s, controllers[controller_idx].stochastic_variables_scaled.cx_intermediates_list[0])
             else:
                 s = controllers[controller_idx].stochastic_variables_scaled.cx_end

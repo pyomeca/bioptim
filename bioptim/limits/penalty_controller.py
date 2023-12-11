@@ -349,3 +349,18 @@ class PenaltyController:
                 f"\nwith constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
             )
         return time_idx
+
+    def copy(self):
+        return PenaltyController(
+            self.ocp,
+            self._nlp,
+            self.t,
+            self.x,
+            self.u,
+            self.x_scaled,
+            self.u_scaled,
+            self.p,
+            self.s,
+            self.s_scaled,
+            self.node_index,
+        )
