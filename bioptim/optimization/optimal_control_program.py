@@ -1843,7 +1843,8 @@ class OptimalControlProgram:
             raise ValueError(f"node_index out of range [0:{self.nlp[phase_idx].ns}]")
         previous_phase_time = sum([nlp.tf for nlp in self.nlp[:phase_idx]])
 
-        return previous_phase_time + self.nlp[phase_idx].dt * node_idx
+        # return previous_phase_time + self.nlp[phase_idx].dt * node_idx
+        return previous_phase_time + self.nlp[phase_idx].tf * node_idx / self.nlp[phase_idx].ns
 
     def _set_default_ode_solver(self):
         """

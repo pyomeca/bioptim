@@ -129,19 +129,21 @@ class NonControlledMethod:
             as_states_dot=False,
         )
 
-        t_phase = 0
-        for i in range(nlp.phase_idx):
-            t_phase += ocp.nlp[i].tf
+        # t_phase = 0
+        # for i in range(nlp.phase_idx):
+        #     t_phase += ocp.nlp[i].states["dt"].mx
+        t_phase = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=0)
 
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, t_phase=t_phase, allow_free_variables=True)
-
+        # ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, t_phase=t_phase, allow_free_variables=True)
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, t_phase=t_phase)
 
 def prepare_ocp(
     n_phase: int,
     time_min: list,
     time_max: list,
     use_sx: bool,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5, allow_free_variables=True),
+    # ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5,allow_free_variables=True),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
