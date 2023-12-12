@@ -186,6 +186,7 @@ class OdeSolverBase:
             "defects_type": self.defects_type,
             "allow_free_variables": allow_free_variables,
             "param_scaling": vertcat(*[nlp.parameters[key].scaling.scaling for key in nlp.parameters.keys()]),
+            "ode_index": node_index if nlp.dynamics_func[dynamics_index].size2_out("xdot") > 1 else 0,
             **extra_opt,
         }
 
