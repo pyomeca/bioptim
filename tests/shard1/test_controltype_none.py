@@ -129,21 +129,15 @@ class NonControlledMethod:
             as_states_dot=False,
         )
 
-        # t_phase = 0
-        # for i in range(nlp.phase_idx):
-        #     t_phase = nlp.dt
         t_phase = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=0)
-        # t_phase = ocp.nlp[nlp.phase_idx].dt
         ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, t_phase=t_phase, allow_free_variables=True)
-        # ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, t_phase=t_phase)
 
 def prepare_ocp(
     n_phase: int,
     time_min: list,
     time_max: list,
     use_sx: bool,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5,allow_free_variables=True),
-    # ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5, allow_free_variables=True),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
@@ -235,7 +229,7 @@ def prepare_ocp(
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("use_sx", [False])  #, True
+@pytest.mark.parametrize("use_sx", [False, True])
 def test_main_control_type_none(use_sx, phase_dynamics):
     """
     Prepare and solve and animate a reaching task ocp
@@ -257,36 +251,6 @@ def test_main_control_type_none(use_sx, phase_dynamics):
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False),)
-
-    # a = []
-    # b = []
-    # c = []
-    # import matplotlib.pyplot as plt
-    # time = []
-    # for i in range(len(sol.times)):
-    #     time.append(sol.times[i][:-1])
-    #
-    #     flatten_a = [item for sublist in sol.decision_states()[i]["a"] for item in sublist]
-    #     flatten_b = [item for sublist in sol.decision_states()[i]["b"] for item in sublist]
-    #     flatten_c = [item for sublist in sol.decision_states()[i]["c"] for item in sublist]
-    #
-    #     flatten_a1 = [item for sublist in flatten_a for item in sublist]
-    #     flatten_b1 = [item for sublist in flatten_b for item in sublist]
-    #     flatten_c1 = [item for sublist in flatten_c for item in sublist]
-    #
-    #     a.append(flatten_a1)
-    #     b.append(flatten_b1)
-    #     c.append(flatten_c1)
-    # time = [j for sub in sol.times for j in sub]
-    # time = list(set(time))
-    # time = [sum(time[0:x:1]) for x in range(0, len(time))]
-    # a = [j for sub in a for j in sub]
-    # b = [j for sub in b for j in sub]
-    # c = [j for sub in c for j in sub]
-    # plt.plot(time, a)
-    # plt.plot(time, b)
-    # plt.plot(time, c)
-    # plt.show()
 
     # Check objective function value
     f = np.array(sol.cost)
