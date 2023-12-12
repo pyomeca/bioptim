@@ -113,11 +113,11 @@ def prepare_socp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL, key="tau", weight=1e3 / 2, quadratic=True
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, node=Node.ALL_SHOOTING, key="tau", weight=1e3 / 2, quadratic=True
     )
     objective_functions.add(
         ObjectiveFcn.Lagrange.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS,
-        node=Node.ALL,
+        node=Node.ALL_SHOOTING,
         weight=1e3 / 2,
         quadratic=True,
     )

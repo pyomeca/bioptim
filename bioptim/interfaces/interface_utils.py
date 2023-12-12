@@ -243,7 +243,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             continue
 
         phases_dt = PenaltyHelpers.phases_dt(penalty, interface.ocp, lambda _: interface.ocp.dt_parameter.cx)
-        p = PenaltyHelpers.parameters(penalty, lambda: interface.ocp.parameters.cx)
+        p = PenaltyHelpers.parameters(penalty, ocp, lambda: interface.ocp.parameters.cx)
 
         if penalty.multi_thread:
             if penalty.target is not None and len(penalty.target[0].shape) != 2:
@@ -271,6 +271,11 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         else:
             tp = interface.ocp.cx()
             for idx in range(len(penalty.node_idx)):
+                nlp.states.node_index = penalty.node_idx[idx]
+                nlp.controls.node_index = penalty.node_idx[idx]
+                nlp.parameters.node_index = penalty.node_idx[idx]
+                nlp.stochastic_variables.node_index = penalty.node_idx[idx]
+
                 t0, x, u, s, weight, target = _get_weighted_function_inputs(penalty, idx, ocp, nlp, is_unscaled)
 
                 node_idx = penalty.node_idx[idx]
@@ -283,15 +288,15 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
 
 
 def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, is_unscaled):
-    t0 = PenaltyHelpers.t0(penalty, penalty_idx, lambda p_idx, n_idx: ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx))
+    t0 = PenaltyHelpers.t0(penalty, ocp, penalty_idx, lambda p_idx, n_idx: ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx))
 
     weight = PenaltyHelpers.weight(penalty)
     target = PenaltyHelpers.target(penalty, penalty_idx)
 
     if nlp:
-        x = PenaltyHelpers.states(penalty, penalty_idx, lambda p_idx, n_idx: _get_x(ocp, p_idx, n_idx, is_unscaled))
-        u = PenaltyHelpers.controls(penalty, ocp, penalty_idx, lambda p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled))
-        s = PenaltyHelpers.stochastic(penalty, penalty_idx, lambda p_idx, n_idx: _get_s(ocp, p_idx, n_idx, is_unscaled))
+        x = PenaltyHelpers.states(penalty, ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: _get_x(ocp, p_idx, n_idx, is_unscaled))
+        u = (PenaltyHelpers.controls(penalty, ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled)) if len(nlp.controls) != 0 else [])
+        s = (PenaltyHelpers.stochastic_variables(penalty, ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: _get_s(ocp, p_idx, n_idx, is_unscaled)) if len(nlp.stochastic_variables) != 0 else [])
     else:
         x = []
         u = []

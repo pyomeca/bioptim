@@ -41,28 +41,6 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     @property
-    def is_direct_collocation(self) -> bool:
-        """
-        indicating if the ode solver is direct collocation method
-
-        Returns
-        -------
-        True if the ode solver is direct collocation method
-        """
-        raise RuntimeError("This method should be implemented in the child class")
-
-    @property
-    def is_direct_shooting(self) -> bool:
-        """
-        indicating if the ode solver is direct shooting method
-
-        Returns
-        -------
-        True if the ode solver is direct shooting method
-        """
-        raise RuntimeError("This method should be implemented in the child class")
-
-    @property
     def n_required_cx(self) -> int:
         """
         The required number of column required in the casadi CX matrix for the state variables
@@ -193,7 +171,6 @@ class OdeSolverBase:
         ode_opt = {
             "model": nlp.model,
             "cx": nlp.cx,
-            "idx": 0,
             "control_type": nlp.control_type,
             "defects_type": self.defects_type,
             "allow_free_variables": allow_free_variables,
@@ -213,11 +190,6 @@ class OdeSolverBase:
             if len(nlp.implicit_dynamics_func) > 0
             else nlp.implicit_dynamics_func,
         }
-
-        if ode["ode"].size2_out("xdot") != 1:
-            # If the ode is designed for each node, use the proper node, otherwise use the first one
-            # Please note this is unrelated to nlp.phase_dynamics
-            ode_opt["idx"] = node_index
 
         return nlp.ode_solver.integrator(ode, ode_opt)
 
@@ -245,16 +217,12 @@ class OdeSolverBase:
         # Extra dynamics
         extra_dynamics = []
         for i in range(1, len(nlp.dynamics_func)):
-            extra_dynamics += nlp.ode_solver.integrator(
-                ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True
-            )
+            extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True)]
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 extra_dynamics = extra_dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
-                    extra_dynamics += nlp.ode_solver.integrator(
-                        ocp, nlp, dynamics_index=i, node_index=node_index, allow_free_variables=True
-                    )
+                    extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True)]
             # TODO include this in nlp.dynamics so the index of nlp.dynamics_func and nlp.dynamics match
             nlp.extra_dynamics.append(extra_dynamics)
 
@@ -274,14 +242,8 @@ class RK(OdeSolverBase):
 
         super(RK, self).__init__(**kwargs)
         self.n_integration_steps = n_integration_steps
-
-    @property
-    def is_direct_collocation(self) -> bool:
-        return False
-
-    @property
-    def is_direct_shooting(self) -> bool:
-        return True
+        self.is_direct_collocation = False
+        self.is_direct_shooting = True
 
     @property
     def n_required_cx(self) -> int:
@@ -358,17 +320,14 @@ class OdeSolver:
         A trapezoidal ode solver
         """
 
+        def __init__(self):
+            super(OdeSolver.TRAPEZOIDAL, self).__init__()
+            self.is_direct_collocation = False
+            self.is_direct_shooting = True
+
         @property
         def integrator(self):
             return integrator.TRAPEZOIDAL
-
-        @property
-        def is_direct_collocation(self) -> bool:
-            return False
-
-        @property
-        def is_direct_shooting(self) -> bool:
-            return True
         
         @property
         def defects_type(self) -> DefectType:
@@ -438,18 +397,12 @@ class OdeSolver:
             self.duplicate_collocation_starting_point = duplicate_collocation_starting_point
             self.method = method
             self._defects_type = defects_type
+            self.is_direct_collocation = True
+            self.is_direct_shooting = False
 
         @property
         def integrator(self):
             return integrator.COLLOCATION
-
-        @property
-        def is_direct_shooting(self) -> bool:
-            return False
-
-        @property
-        def is_direct_collocation(self) -> bool:
-            return True
 
         @property
         def n_required_cx(self) -> int:
@@ -499,6 +452,11 @@ class OdeSolver:
         An implicit Runge-Kutta solver
         """
 
+        def __init__(self):
+            super(OdeSolver.IRK, self).__init__()
+            self.is_direct_collocation = False
+            self.is_direct_shooting = True
+
         def initialize_integrator(self, ocp, nlp, **kwargs):
             if ocp.cx is SX:
                 raise NotImplementedError("use_sx=True and OdeSolver.IRK are not yet compatible")
@@ -509,30 +467,19 @@ class OdeSolver:
         def integrator(self):
             return integrator.IRK
 
-        @property
-        def is_direct_collocation(self) -> bool:
-            return False
-
-        @property
-        def is_direct_shooting(self) -> bool:
-            return True
-
     class CVODES(OdeSolverBase):
         """
         An interface to CVODES
         """
 
+        def __init__(self):
+            super(OdeSolver.CVODES, self).__init__()
+            self.is_direct_collocation = False
+            self.is_direct_shooting = True
+
         @property
         def integrator(self):
             return integrator.CVODES
-
-        @property
-        def is_direct_collocation(self) -> bool:
-            return False
-
-        @property
-        def is_direct_shooting(self) -> bool:
-            return True
         
         @property
         def n_required_cx(self) -> int:

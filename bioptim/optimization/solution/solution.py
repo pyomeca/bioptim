@@ -677,14 +677,14 @@ class Solution:
         penalty = self.ocp.phase_transitions[phase_idx - 1]
 
         times = DM([t[-1] for t in self._stepwise_times])
-        t0 = PenaltyHelpers.t0(penalty, 0, lambda p, n: times[p])
+        t0 = PenaltyHelpers.t0(penalty, self.ocp, 0, lambda p, n: times[p])
         dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
         # Compute the error between the last state of the previous phase and the first state of the next phase
         # based on the phase transition objective or constraint function. That is why we need to concatenate
         # twice the last state
-        x = PenaltyHelpers.states(penalty, 0, lambda p, n: integrated_states[-1])
-        u = PenaltyHelpers.controls(penalty, self.ocp, 0, lambda p, n: decision_controls[p][n])
-        s = PenaltyHelpers.stochastic(penalty, 0, lambda p, n: decision_stochastic[p][n])
+        x = PenaltyHelpers.states(penalty, self.ocp, 0, lambda controller_idx, p, n: integrated_states[-1])
+        u = PenaltyHelpers.controls(penalty, self.ocp, 0, lambda controller_idx, p, n: decision_controls[p][n])
+        s = PenaltyHelpers.stochastic_variables(penalty, self.ocp, 0, lambda controller_idx, p, n: decision_stochastic[p][n])
 
         dx = penalty.function[-1](t0, dt, x, u, params, s)
         if dx.shape[0] != decision_states[phase_idx][0].shape[0]:
@@ -958,16 +958,16 @@ class Solution:
         val_weighted = []
         
         phases_dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
-        params = PenaltyHelpers.parameters(penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()]))
+        params = PenaltyHelpers.parameters(penalty, self.ocp, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()]))
 
         merged_x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_s = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         for idx in range(len(penalty.node_idx)):
-            t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
-            x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx: merged_x[p_idx][n_idx])
-            u = PenaltyHelpers.controls(penalty, self.ocp, idx, lambda p_idx, n_idx: merged_u[p_idx][n_idx])
-            s = PenaltyHelpers.stochastic(penalty, idx, lambda p_idx, n_idx: merged_s[p_idx][n_idx])
+            t0 = PenaltyHelpers.t0(penalty, self.ocp, idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
+            x = PenaltyHelpers.states(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: merged_x[p_idx][n_idx])
+            u = PenaltyHelpers.controls(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: merged_u[p_idx][n_idx])
+            s = PenaltyHelpers.stochastic_variables(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: merged_s[p_idx][n_idx])
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
 

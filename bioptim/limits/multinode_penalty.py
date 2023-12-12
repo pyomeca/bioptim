@@ -629,7 +629,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         @staticmethod
         def _prepare_controller_cx(controllers: list[PenaltyController, ...]):
             """
-            Prepare the current_cx_to_get for each of the controller. Basically it finds if this penalty as more than
+            Prepare the current_cx_to_get for each of the controller. Basically it finds if this penalty has more than
             one usage. If it does, it increments a counter of the cx used, up to the maximum. On phase_dynamics
             being PhaseDynamics.ONE_PER_NODE, this is useless, as all the penalties uses cx_start.
             """

@@ -761,6 +761,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_joints = horzcat(*(controller.states.cx_intermediates_list))
 
             constraint = Mc(
+                controller.time_cx,
                 controller.states.cx_start[:nb_root],  # x_q_root
                 controller.states.cx_start[nb_root : nb_root + nu],  # x_q_joints
                 controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],  # x_qdot_root
@@ -809,6 +810,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_joints = horzcat(*(controller.states.cx_intermediates_list))
 
             cov_next_computed = Pf(
+                controller.time_cx,
                 controller.states.cx_start[:nb_root],  # x_q_root
                 controller.states.cx_start[nb_root : nb_root + nu],  # x_q_joints
                 controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],  # x_qdot_root
@@ -924,6 +926,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_full = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
 
             xf, xall, defects = controller.integrate_extra_dynamics(0).function(
+                controller.time.cx,
                 horzcat(x_full, z_full),
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
@@ -948,6 +951,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Mc = Function(
                 "M_cons",
                 [
+                    controller.time_cx,
                     x_q_root,
                     x_q_joints,
                     x_qdot_root,
@@ -971,6 +975,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Pf = Function(
                 "P_next",
                 [
+                    controller.time_cx,
                     x_q_root,
                     x_q_joints,
                     x_qdot_root,
