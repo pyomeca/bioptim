@@ -49,29 +49,47 @@ class PenaltyHelpers:
         return _reshape_to_vector(_reshape_to_vector(get_all_dt(ocp.time_phase_mapping.to_first.map_idx)))
 
     @staticmethod
-    def states(penalty, index, get_state_decision: Callable):
+    def states(penalty, index, get_state_decision: Callable, is_constructing_penalty: bool = False):
+        """
+        get_state_decision: Callable[int, int, slice]
+            A function that returns the state decision of a given phase, node and subnodes (or steps)
+            If the subnode requests slice(0, None), it actually does not expect the very last node (equal to starting 
+            of the next node), if it needs so, it will actively asks for slice(-1, None) to get the last node.
+            When slice(-1, None) is requested, if it is in constructing phase of the penalty, it expects cx_end. 
+            The slice(-1, None) will not be requested when the penalty is not being constructed (it will request
+            slice(0, 1) of the following node instead)
+        """
         if isinstance(penalty.phase, list) and len(penalty.phase) > 1:
             raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
                 
         index = 0 if index is None else penalty.node_idx[index]
 
         if penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,) or penalty.integrate:
-            return _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, -1)))
+            x = _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, None)))
+            
+            if is_constructing_penalty:
+                x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, index, slice(-1, None))))
+            else:
+                x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, index + 1, slice(0, 1))))
+            return x
         
         elif penalty.derivative or penalty.explicit_derivative:
-            x0 = _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, 0)))
-            x1 = _reshape_to_vector(get_state_decision(penalty.phase, index, slice(-1, -1)))
+            x0 = _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, 1)))
+            if is_constructing_penalty:
+                x1 = _reshape_to_vector(get_state_decision(penalty.phase, index, slice(-1, None)))
+            else: 
+                x1 = _reshape_to_vector(get_state_decision(penalty.phase, index + 1, slice(0, 1)))
             return vertcat(x1, x0) if penalty.derivative else vertcat(x0, x1)
 
         elif penalty.transition or penalty.multinode_penalty:
             x = []
             phases, nodes = _get_multinode_indices(penalty)
             for phase, node in zip(phases, nodes):
-                x.append(_reshape_to_vector(get_state_decision(phase, node, slice(0, 0))))
+                x.append(_reshape_to_vector(get_state_decision(phase, node, slice(0, 1))))
             return _vertcat(x)
         
         else:
-            return _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, 0)))
+            return _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, 1)))
 
 
 
@@ -83,17 +101,17 @@ class PenaltyHelpers:
             u = []
             phases, nodes = _get_multinode_indices(penalty)
             for phase, node in zip(phases, nodes):
-                u.append(_reshape_to_vector(get_control_decision(phase, node, slice(0, 0))))
+                u.append(_reshape_to_vector(get_control_decision(phase, node, slice(0, 1))))
             return _vertcat(u)
 
         elif penalty.integrate or penalty.derivative or penalty.explicit_derivative:
-            return _reshape_to_vector(get_control_decision(penalty.phase, index, slice(0, -1)))
+            return _reshape_to_vector(get_control_decision(penalty.phase, index, slice(0, None)))
             
         else:
-            return _reshape_to_vector(get_control_decision(penalty.phase, index, slice(0, 0)))
+            return _reshape_to_vector(get_control_decision(penalty.phase, index, slice(0, 1)))
 
     @staticmethod
-    def parameters(penalty, ocp, get_parameter: Callable):
+    def parameters(penalty, get_parameter: Callable):
         p = get_parameter()
         return _reshape_to_vector(p)
 

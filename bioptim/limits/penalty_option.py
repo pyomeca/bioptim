@@ -668,35 +668,33 @@ class PenaltyOption(OptionGeneric):
         self._check_sanity_of_penalty_interactions(controller)
 
         ocp = controller.ocp
-        x = PenaltyHelpers.states(self, None, lambda p_idx, n_idx, sn_idx: self._get_x(ocp, p_idx, n_idx, sn_idx))
+        x = PenaltyHelpers.states(self, None, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
         u = PenaltyHelpers.controls(self, None, lambda p_idx, n_idx, sn_idx: self._get_u(ocp, p_idx, n_idx, sn_idx))
-        s = PenaltyHelpers.states(self, None, lambda p_idx, n_idx, sn_idx: self._get_s(ocp, p_idx, n_idx, sn_idx))
+        s = PenaltyHelpers.states(self, None, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].stochastic_variables, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
 
         return controller, x, u, s
 
-    def _get_x(self, ocp, p_idx, n_idx, sn_idx):
-        nlp = ocp.nlp[p_idx]
-        states = nlp.states
+    def _get_states(self, ocp, states, p_idx, n_idx, sn_idx):
         states.node_idx = n_idx
         sn_idx = self._adjust_subnodes_for_multinodes(n_idx, sn_idx)
 
         x = ocp.cx()
         if sn_idx.start == 0:
             x = vertcat(x, states.cx_start)
-            if sn_idx.stop == 0:
+            if sn_idx.stop == 1:
                 pass
-            elif sn_idx.stop == -1:
+            elif sn_idx.stop is None:
                 x = vertcat(x, vertcat(*states.cx_intermediates_list))
             else:
-                raise ValueError("Wrong value for sn_idx.stop")
+                raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
             
         elif sn_idx.start == -1:
             x = vertcat(x, vertcat(states.cx_end))
-            if sn_idx.stop != -1:
-                raise ValueError("Wrong value for sn_idx.stop")
+            if sn_idx.stop is not None:
+                raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
         
         else: 
-            raise ValueError("Wrong value for sn_idx.start")
+            raise ValueError("The sn_idx.start should be 0 or -1")
         
         return x
 
@@ -709,7 +707,9 @@ class PenaltyOption(OptionGeneric):
         u = ocp.cx()
         if sn_idx.start == 0:
             u = vertcat(u, controls.cx_start)
-            if sn_idx.stop == -1:
+            if sn_idx.stop == 1:
+                pass
+            elif sn_idx.stop is None:
                 if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                     u = vertcat(u, vertcat(controls.cx_end))
                 elif nlp.control_type in (ControlType.CONSTANT,):
@@ -717,43 +717,19 @@ class PenaltyOption(OptionGeneric):
                     pass
                 else:
                     raise NotImplementedError(f"Control type {nlp.control_type} not implemented yet")
-        
+            else:
+                raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
+            
         elif sn_idx.start == -1:
             u = vertcat(u, controls.cx_end)
-            if sn_idx.stop != -1:
-                raise ValueError("Wrong value for sn_idx.stop")
+            if sn_idx.stop != None:
+                raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
 
         else: 
-            raise ValueError("Wrong value for sn_idx.start")
+            raise ValueError("The sn_idx.start should be 0 or -1")
         
         return u
 
-    def _get_s(self, ocp, p_idx, n_idx, sn_idx):
-        nlp = ocp.nlp[p_idx]
-        stochastics = nlp.stochastic_variables
-        stochastics.node_idx = n_idx
-        sn_idx = self._adjust_subnodes_for_multinodes(n_idx, sn_idx)
-
-        s = ocp.cx()
-        if sn_idx.start == 0:
-            s = vertcat(s, stochastics.cx_start)
-            if sn_idx.stop == 0:
-                pass
-            elif sn_idx.stop == -1:
-                s = vertcat(s, vertcat(*stochastics.cx_intermediates_list))
-            else:
-                raise ValueError("Wrong value for sn_idx.stop")
-            
-        elif sn_idx.start == -1:
-            s = vertcat(s, vertcat(stochastics.cx_end))
-            if sn_idx.stop != -1:
-                raise ValueError("Wrong value for sn_idx.stop")
-        
-        else: 
-            raise ValueError("Wrong value for sn_idx.start")
-        
-        return s
-    
     def _adjust_subnodes_for_multinodes(self, node_index, subnodes_index):
         if (self.transition or self.multinode_penalty) and self.multinode_idx[1] == node_index:
             # This is a patch mostly for SHARED_DURING_THE_PHASE because they must use different states even though
