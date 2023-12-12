@@ -98,6 +98,13 @@ class Integrator:
             {"allow_free": self.allow_free_variables},
         )
 
+        self.symbolic_dxdt = self.dxdt(
+                states=self.x_sym,
+                controls=self.u_sym,
+                params=self.param_sym * self.param_scaling,
+                stochastic_variables=self.s_sym,
+            )
+
     @property
     def shape_xf(self) -> tuple[int, int]:
         """
