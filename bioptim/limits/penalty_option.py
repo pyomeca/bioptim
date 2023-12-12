@@ -732,12 +732,14 @@ class PenaltyOption(OptionGeneric):
 
     def _adjust_subnodes_for_multinodes(self, node_index, subnodes_index):
         if (self.transition or self.multinode_penalty) and self.multinode_idx[1] == node_index:
+            # HERE!!!!!!
             # This is a patch mostly for SHARED_DURING_THE_PHASE because they must use different states even though
             # we are supposed to return the first state. Also, it does not cause any harm if ONE_PER_NODE is used
-            if subnodes_index.start == 0 and subnodes_index.stop == 0:
-                subnodes_index = slice(-1, -1)
-            else:
-                raise ValueError("Slice is expected to be slice(0, 0) when using transition or multinode_penalty")
+            # if subnodes_index.start == 0 and subnodes_index.stop == 1:
+            #     subnodes_index = slice(-1, -1)
+            # else:
+            #     raise ValueError("Slice is expected to be slice(0, 0) when using transition or multinode_penalty")
+            pass
         return subnodes_index
 
     @staticmethod

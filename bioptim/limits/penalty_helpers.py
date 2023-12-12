@@ -24,7 +24,7 @@ class PenaltyHelpers:
         """
 
         if penalty.transition or penalty.multinode_penalty:
-            phases, nodes = _get_multinode_indices(penalty)
+            phases, nodes, _ = _get_multinode_indices(penalty)
             phase = phases[0]
             node = nodes[0]
         else:
@@ -83,9 +83,9 @@ class PenaltyHelpers:
 
         elif penalty.transition or penalty.multinode_penalty:
             x = []
-            phases, nodes = _get_multinode_indices(penalty)
-            for phase, node in zip(phases, nodes):
-                x.append(_reshape_to_vector(get_state_decision(phase, node, slice(0, 1))))
+            phases, nodes, subnodes = _get_multinode_indices(penalty)
+            for phase, node, sub in zip(phases, nodes, subnodes):
+                x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
             return _vertcat(x)
         
         else:
@@ -99,9 +99,9 @@ class PenaltyHelpers:
 
         if penalty.transition or penalty.multinode_penalty:
             u = []
-            phases, nodes = _get_multinode_indices(penalty)
-            for phase, node in zip(phases, nodes):
-                u.append(_reshape_to_vector(get_control_decision(phase, node, slice(0, 1))))
+            phases, nodes, subnodes = _get_multinode_indices(penalty)
+            for phase, node, sub in zip(phases, nodes, subnodes):
+                u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
             return _vertcat(u)
 
         elif penalty.integrate or penalty.derivative or penalty.explicit_derivative:
@@ -138,10 +138,12 @@ def _get_multinode_indices(penalty):
             raise RuntimeError("Transition must have exactly 2 nodes and 2 phases")
         phases = [penalty.nodes_phase[1], penalty.nodes_phase[0]]
         nodes = [penalty.multinode_idx[1], penalty.multinode_idx[0]]
+        subnodes = [slice(-1, None), slice(0, 1)]
     else:
         phases = penalty.nodes_phase
         nodes = penalty.multinode_idx
-    return phases, nodes
+        subnodes = [slice(0, 1)] * len(nodes)
+    return phases, nodes, subnodes
 
 
 def _reshape_to_vector(m):
