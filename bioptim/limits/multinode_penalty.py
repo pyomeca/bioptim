@@ -634,9 +634,14 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             being PhaseDynamics.ONE_PER_NODE, this is useless, as all the penalties uses cx_start.
             """
             existing_phases = []
-            for controller in controllers:
-                controller.cx_index_to_get = sum([i == controller.phase_idx for i in existing_phases])
-                existing_phases.append(controller.phase_idx)
+            if len(controllers) == 1:
+                # This does not make much sense in the context of multinode, but there is no reason to forbid it as it works
+                controllers[0].cx_index_to_get = 0
+            elif len(controllers) == 2:
+                controllers[0].cx_index_to_get = 0  # cx_start
+                controllers[1].cx_index_to_get = 2  # cx_end
+            else:
+                raise NotImplementedError("Multinode penalties for more than 2 nodes are not implemented yet")
 
         @staticmethod
         def _prepare_states_mapping(controllers: list[PenaltyController, ...], states_mapping: list[BiMapping, ...]):

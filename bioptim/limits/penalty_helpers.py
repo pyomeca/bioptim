@@ -9,7 +9,7 @@ from ..misc.enums import QuadratureRule, PhaseDynamics, ControlType
 class PenaltyHelpers:
     
     @staticmethod
-    def t0(penalty, ocp, penalty_node_idx, get_t0: Callable):
+    def t0(penalty, penalty_node_idx, get_t0: Callable):
         """
         Parameters
         ----------
@@ -49,128 +49,53 @@ class PenaltyHelpers:
         return _reshape_to_vector(_reshape_to_vector(get_all_dt(ocp.time_phase_mapping.to_first.map_idx)))
 
     @staticmethod
-    def states(penalty, ocp, penalty_node_idx, get_state_decision: Callable):
+    def states(penalty, index, get_state_decision: Callable):
         if isinstance(penalty.phase, list) and len(penalty.phase) > 1:
             raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
+                
+        index = 0 if index is None else penalty.node_idx[index]
 
-        if penalty.transition:
+        if penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,) or penalty.integrate:
+            return _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, -1)))
+        
+        elif penalty.derivative or penalty.explicit_derivative:
+            x0 = _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, 0)))
+            x1 = _reshape_to_vector(get_state_decision(penalty.phase, index, slice(-1, -1)))
+            return vertcat(x1, x0) if penalty.derivative else vertcat(x0, x1)
+
+        elif penalty.transition or penalty.multinode_penalty:
             x = []
             phases, nodes = _get_multinode_indices(penalty)
-            tp = get_state_decision(0, phases[0], 0)
-            x.append(_reshape_to_vector(tp))
-            tp = get_state_decision(1, phases[1], 1)
-            x.append(_reshape_to_vector(tp))
-            return _vertcat(x)
-        elif penalty.multinode_penalty:
-            x = []
-            phases, nodes = _get_multinode_indices(penalty)
-            controller_idx = 0
             for phase, node in zip(phases, nodes):
-                tp = get_state_decision(controller_idx, phase, 0)
-                x.append(_reshape_to_vector(tp))
-                controller_idx += 1
+                x.append(_reshape_to_vector(get_state_decision(phase, node, slice(0, 0))))
             return _vertcat(x)
+        
+        else:
+            return _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, 0)))
 
-        penalty_node_index = 0 if penalty_node_idx is None else penalty.node_idx[penalty_node_idx]
-        x = get_state_decision(0, penalty.phase, penalty_node_index)
 
-        need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,)
-        if need_end_point or penalty.derivative or penalty.explicit_derivative:
-            x = _reshape_to_vector(x)
-            x_next = get_state_decision(0, penalty.phase, penalty_node_index + 1)[:, 0]
-            x = vertcat(x_next, x) if penalty.derivative else vertcat(x, x_next)  #TODO: change order ?
-
-        return _reshape_to_vector(x)
 
     @staticmethod
-    def controls(penalty, ocp, penalty_node_idx, get_control_decision: Callable):
-        
-        def _get_control_internal(_controller, _phase, _node):
-            _nlp = ocp.nlp[_phase]
+    def controls(penalty, index, get_control_decision: Callable):
+        index = 0 if index is None else penalty.node_idx[index]
 
-            _u = get_control_decision(_controller, _phase, _node)
-            if _nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and _node >= _nlp.n_controls_nodes:
-                if isinstance(_u, (MX, SX, DM)):
-                    return type(_u)()
-                elif isinstance(_u, np.ndarray):
-                    return np.ndarray((0, 1))
-                else:
-                    raise RuntimeError("Invalid type for control")
-
-            return _u if _u.shape == (0, 0) else _u[:, 0]  # That is so Linear controls don't return two columns, it will be dealty with later
-
-        if penalty.transition:
+        if penalty.transition or penalty.multinode_penalty:
             u = []
             phases, nodes = _get_multinode_indices(penalty)
-            tp = _get_control_internal(0, phases[0], 0)
-            u.append(_reshape_to_vector(tp))
-            tp = _get_control_internal(1, phases[1], 1)
-            u.append(_reshape_to_vector(tp))
-            return _vertcat(u)
-        elif penalty.multinode_penalty:
-            u = []
-            phases, nodes = _get_multinode_indices(penalty)
-            idx_controller = 0
             for phase, node in zip(phases, nodes):
-                tp = _get_control_internal(idx_controller, phase, 0)
-                u.append(_reshape_to_vector(tp))
-                idx_controller += 1
+                u.append(_reshape_to_vector(get_control_decision(phase, node, slice(0, 0))))
             return _vertcat(u)
 
-        penalty_node_index = 0 if penalty_node_idx is None else penalty.node_idx[penalty_node_idx]
-        u = _get_control_internal(0, penalty.phase, penalty_node_index)
-
-        nlp = ocp.nlp[penalty.phase]
-        is_linear = nlp.control_type == ControlType.LINEAR_CONTINUOUS
-        if is_linear or penalty.integrate or penalty.derivative or penalty.explicit_derivative:
-            u = _reshape_to_vector(u)
+        elif penalty.integrate or penalty.derivative or penalty.explicit_derivative:
+            return _reshape_to_vector(get_control_decision(penalty.phase, index, slice(0, -1)))
             
-            next_node = penalty_node_index + 1  # (0 if penalty.derivative else 1)
-            if (penalty.derivative or penalty.explicit_derivative) and nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and next_node >= nlp.n_controls_nodes:
-                next_node -= 1
-            step = 0  # TODO: This should be 1 for integrate if TRAPEZOIDAL
-            next_u = _get_control_internal(0, penalty.phase, next_node)
-            if np.sum(next_u.shape) > 0:
-                u = vertcat(next_u, u) if penalty.derivative else vertcat(u, next_u)
-
-        return _reshape_to_vector(u)
+        else:
+            return _reshape_to_vector(get_control_decision(penalty.phase, index, slice(0, 0)))
 
     @staticmethod
     def parameters(penalty, ocp, get_parameter: Callable):
         p = get_parameter()
         return _reshape_to_vector(p)
-
-    @staticmethod
-    def stochastic_variables(penalty, ocp, penalty_node_idx, get_stochastic_decision: Callable):
-
-        if penalty.transition:
-            s = []
-            phases, nodes = _get_multinode_indices(penalty)
-            tp = get_stochastic_decision(0, phases[0], 0)
-            s.append(_reshape_to_vector(tp))
-            tp = get_stochastic_decision(1, phases[1], 1)
-            s.append(_reshape_to_vector(tp))
-            return _vertcat(s)
-        elif penalty.multinode_penalty:
-            s = []
-            phases, nodes = _get_multinode_indices(penalty)
-            idx_controller = 0
-            for phase, node in zip(phases, nodes):
-                tp = get_stochastic_decision(idx_controller, phase, 0)
-                s.append(_reshape_to_vector(tp))
-                idx_controller += 1
-            return _vertcat(s)
-
-        penalty_node_index = 0 if penalty_node_idx is None else penalty.node_idx[penalty_node_idx]
-        s = get_stochastic_decision(0, penalty.phase, penalty_node_index)
-
-        need_end_point = penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,)
-        if need_end_point or penalty.derivative or penalty.explicit_derivative:
-            s = _reshape_to_vector(s)
-            s_next = get_stochastic_decision(0, penalty.phase, penalty_node_index + 1)[:, 0]
-            s = vertcat(s_next, s) if penalty.derivative else vertcat(s, s_next)
-
-        return _reshape_to_vector(s)
 
     @staticmethod
     def weight(penalty):
