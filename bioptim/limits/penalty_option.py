@@ -519,6 +519,7 @@ class PenaltyOption(OptionGeneric):
             fake_controller.ode_solver.is_direct_collocation = is_direct_collocation  # Pariterre: don't know how to do cleaner
 
         else:
+            # TODO Add error message if there are free variables to guide the user? For instance controls with last node
             self.function[node] = Function(
                 name,
                 [time_cx, phases_dt_cx, x, u, param_cx, s],
@@ -664,17 +665,19 @@ class PenaltyOption(OptionGeneric):
         ocp = controller.ocp
         penalty_idx = self.node_idx.index(controller.node_index) if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 0
 
-        x = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
-        u = PenaltyHelpers.controls(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_u(ocp, p_idx, n_idx, sn_idx))
-        s = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].stochastic_variables, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
+        x = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, n_idx, sn_idx), is_constructing_penalty=True)
+        u = PenaltyHelpers.controls(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_u(ocp, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
+        s = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].stochastic_variables, n_idx, sn_idx), is_constructing_penalty=True)
 
         return controller, x, u, s
 
-    def _get_states(self, ocp, states, p_idx, n_idx, sn_idx):
+    def _get_states(self, ocp, states, n_idx, sn_idx):
         states.node_index = n_idx
-        sn_idx = self._adjust_subnodes_for_multinodes(p_idx, n_idx, sn_idx)
 
         x = ocp.cx()
+        if states.cx_start.shape == (0, 0):
+            return x
+
         if sn_idx.start == 0:
             x = vertcat(x, states.cx_start)
             if sn_idx.stop == 1:
@@ -683,7 +686,13 @@ class PenaltyOption(OptionGeneric):
                 x = vertcat(x, vertcat(*states.cx_intermediates_list))
             else:
                 raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
-            
+
+        elif sn_idx.start == 1:
+            if sn_idx.stop == 2:
+                x = vertcat(x, vertcat(states.cx_intermediates_list[0]))
+            else:
+                raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
+
         elif sn_idx.start == -1:
             x = vertcat(x, vertcat(states.cx_end))
             if sn_idx.stop is not None:
@@ -698,13 +707,15 @@ class PenaltyOption(OptionGeneric):
         nlp = ocp.nlp[p_idx]
         controls = nlp.controls
         controls.node_index = n_idx
-        sn_idx = self._adjust_subnodes_for_multinodes(p_idx, n_idx, sn_idx)
 
         def vertcat_cx_end():
             if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 return vertcat(u, controls.cx_end)
             elif nlp.control_type in (ControlType.CONSTANT,):
-                return u
+                if n_idx < nlp.n_controls_nodes and not (self.integrate or self.derivative or self.explicit_derivative):
+                    return vertcat(u, controls.cx_end)
+                else:
+                    return u
             else:
                 raise NotImplementedError(f"Control type {nlp.control_type} not implemented yet")
 
@@ -717,7 +728,13 @@ class PenaltyOption(OptionGeneric):
                 u = vertcat_cx_end()
             else:
                 raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
-            
+
+        elif sn_idx.start == 1:
+            if sn_idx.stop == 2:
+                u = vertcat(u, controls.cx_intermediates_list[0])
+            else:
+                raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
+
         elif sn_idx.start == -1:
             if sn_idx.stop is not None:
                 raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
@@ -728,24 +745,6 @@ class PenaltyOption(OptionGeneric):
         
         return u
 
-    def _adjust_subnodes_for_multinodes(self, phases_index, nodes_index, subnodes_index):
-        if (self.transition or self.multinode_penalty) and len(self.multinode_idx) == 2:
-            # This is a patch mostly for SHARED_DURING_PHASE when multinode is on exactly two nodes. That is
-            # because they must use different cx_states even though we are supposed to return the first subnode.
-            # While it fixed SHARED_DURING_PHASE, it does not cause any harm when ONE_PER_NODE, so just always use
-            # cx_end on the second node
-            idx = 0 if self.transition else 1
-            if self.nodes_phase[idx] == phases_index and self.multinode_idx[idx] == nodes_index:
-                if subnodes_index.start == 0 and subnodes_index.stop == 1:
-                    subnodes_index = slice(-1, None)
-                elif subnodes_index.start == -1 and subnodes_index.stop is None:
-                    pass
-                else:
-                    raise ValueError(
-                        "Slice is expected to be (0, 1) or (-1, None) when using transition or multinode_penalty"
-                    )
-
-        return subnodes_index
 
     @staticmethod
     def define_target_mapping(controller: PenaltyController, key: str):

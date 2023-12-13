@@ -24,7 +24,7 @@ class PenaltyHelpers:
         """
 
         if penalty.transition or penalty.multinode_penalty:
-            phases, nodes, _ = _get_multinode_indices(penalty)
+            phases, nodes, _ = _get_multinode_indices(penalty, is_constructing_penalty=False)
             phase = phases[0]
             node = nodes[0]
         else:
@@ -83,7 +83,7 @@ class PenaltyHelpers:
 
         elif penalty.transition or penalty.multinode_penalty:
             x = []
-            phases, nodes, subnodes = _get_multinode_indices(penalty)
+            phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             for phase, node, sub in zip(phases, nodes, subnodes):
                 x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
             return _vertcat(x)
@@ -92,12 +92,12 @@ class PenaltyHelpers:
             return _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
 
     @staticmethod
-    def controls(penalty, index, get_control_decision: Callable):
+    def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: bool):
         node = penalty.node_idx[index]
 
         if penalty.transition or penalty.multinode_penalty:
             u = []
-            phases, nodes, subnodes = _get_multinode_indices(penalty)
+            phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             for phase, node, sub in zip(phases, nodes, subnodes):
                 u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
             return _vertcat(u)
@@ -130,17 +130,33 @@ class PenaltyHelpers:
         return penalty.target[0][..., penalty_node_idx]
 
 
-def _get_multinode_indices(penalty):
+def _get_multinode_indices(penalty, is_constructing_penalty: bool):
     if penalty.transition:
         if len(penalty.nodes_phase) != 2 or len(penalty.multinode_idx) != 2:
             raise RuntimeError("Transition must have exactly 2 nodes and 2 phases")
         phases = [penalty.nodes_phase[1], penalty.nodes_phase[0]]
         nodes = [penalty.multinode_idx[1], penalty.multinode_idx[0]]
         subnodes = [slice(0, 1), slice(-1, None)]
-    else:
+
+    elif penalty.multinode_penalty:
         phases = penalty.nodes_phase
         nodes = penalty.multinode_idx
-        subnodes = [slice(0, 1)] * len(nodes)
+
+        if is_constructing_penalty:
+            if len(penalty.multinode_idx) == 2:
+                subnodes = [slice(0, 1), slice(-1, None)]
+            elif len(penalty.multinode_idx) == 3:
+                subnodes = [slice(0, 1), slice(1, 2), slice(-1, None)]
+            else:
+                raise NotImplementedError("This multinode penalties is not implemented for more than 3 nodes")
+
+        else:
+            # No need to test for wrong sizes as it will have failed during the constructing phase already
+            subnodes = [slice(0, 1)] * len(penalty.multinode_idx)
+
+    else:
+        raise RuntimeError("This function should not be called for this multinode penalties only")
+
     return phases, nodes, subnodes
 
 

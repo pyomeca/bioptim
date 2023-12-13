@@ -143,7 +143,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
             states_mapping = MultinodePenaltyFunctions.Functions._prepare_states_mapping(controllers, states_mapping)
 
             ctrl_0 = controllers[0]
@@ -181,7 +181,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the controls after and before
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
 
             ctrl_0 = controllers[0]
             controls_0 = ctrl_0.controls[key].cx
@@ -222,7 +222,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
 
             ctrl_0 = controllers[0]
             stochastic_0 = ctrl_0.stochastic_variables[key].cx
@@ -259,7 +259,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
 
             com_0 = controllers[0].model.center_of_mass(controllers[0].states["q"].cx)
 
@@ -287,7 +287,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
 
             com_dot_0 = controllers[0].model.center_of_mass_velocity(
                 controllers[0].states["q"].cx, controllers[0].states["qdot"].cx
@@ -319,7 +319,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the duration of the phases
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
 
             time_idx = [controller.get_time_parameter_idx() for i, controller in enumerate(controllers)]
 
@@ -348,7 +348,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the duration of the phases
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
 
             time_idx = [controller.get_time_parameter_idx() for i, controller in enumerate(controllers)]
 
@@ -645,9 +645,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[1].cx_index_to_get = 0  # cx_start
             else:
                 # Or it gathers the cx_start of a node, depending on unknown reason
-                for controller in controllers:
-                    controller.cx_index_to_get = sum([i == controller.phase_idx for i in existing_phases])
-                    existing_phases.append(controller.phase_idx)
+                if len(controllers) > 3:
+                    raise NotImplementedError("Multinode constraints with more than 3 nodes is not supported yet")
+
+                controllers[0].cx_index_to_get = 0  # cx_start
+                controllers[1].cx_index_to_get = 1  # cx_mid
+                controllers[2].cx_index_to_get = 2  # cx_end
+
 
         @staticmethod
         def _prepare_states_mapping(controllers: list[PenaltyController, ...], states_mapping: list[BiMapping, ...]):
