@@ -387,9 +387,7 @@ class NewVariableConfiguration:
 
     def _declare_cx_and_plot(self):
         if self.as_states:
-            for node_index in range(
-                (0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1
-            ):
+            for node_index in range(self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1):
                 n_cx = self.nlp.ode_solver.n_required_cx + 2
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[node_index][self.name].original_cx
@@ -419,21 +417,7 @@ class NewVariableConfiguration:
                     )
 
         if self.as_controls:
-            for node_index in range(
-                (
-                    1
-                    if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-                    else (
-                        self.nlp.ns
-                        + +(
-                            1
-                            if self.nlp.control_type
-                            in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE)
-                            else 0
-                        )
-                    )
-                )
-            ):
+            for node_index in range(self.nlp.n_controls_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1):
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[node_index][self.name].original_cx
                     if self.copy_controls
@@ -456,7 +440,7 @@ class NewVariableConfiguration:
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_controls"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, s: u[self.nlp.controls.key_index(self.name), :],
+                        lambda t0, phases_dt, node_idx, x, u, p, s: u[self.nlp.controls.key_index(self.name), :] if u.any() else np.ndarray((self.nlp.controls[self.name].shape, 1)) * np.nan,
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
                         legend=self.legend,

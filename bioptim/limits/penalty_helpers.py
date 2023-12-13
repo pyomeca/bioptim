@@ -61,24 +61,24 @@ class PenaltyHelpers:
         """
         if isinstance(penalty.phase, list) and len(penalty.phase) > 1:
             raise NotImplementedError("penalty cost over multiple phases is not implemented yet")
-                
-        index = 0 if index is None else penalty.node_idx[index]
+
+        node = penalty.node_idx[index]
 
         if penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,) or penalty.integrate:
-            x = _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, None)))
+            x = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, None)))
             
             if is_constructing_penalty:
-                x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, index, slice(-1, None))))
+                x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None))))
             else:
-                x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, index + 1, slice(0, 1))))
+                x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1))))
             return x
         
         elif penalty.derivative or penalty.explicit_derivative:
-            x0 = _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, 1)))
+            x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
             if is_constructing_penalty:
-                x1 = _reshape_to_vector(get_state_decision(penalty.phase, index, slice(-1, None)))
+                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None)))
             else: 
-                x1 = _reshape_to_vector(get_state_decision(penalty.phase, index + 1, slice(0, 1)))
+                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1)))
             return vertcat(x1, x0) if penalty.derivative else vertcat(x0, x1)
 
         elif penalty.transition or penalty.multinode_penalty:
@@ -89,13 +89,11 @@ class PenaltyHelpers:
             return _vertcat(x)
         
         else:
-            return _reshape_to_vector(get_state_decision(penalty.phase, index, slice(0, 1)))
-
-
+            return _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
 
     @staticmethod
     def controls(penalty, index, get_control_decision: Callable):
-        index = 0 if index is None else penalty.node_idx[index]
+        node = penalty.node_idx[index]
 
         if penalty.transition or penalty.multinode_penalty:
             u = []
@@ -105,10 +103,10 @@ class PenaltyHelpers:
             return _vertcat(u)
 
         elif penalty.integrate or penalty.derivative or penalty.explicit_derivative:
-            return _reshape_to_vector(get_control_decision(penalty.phase, index, slice(0, None)))
+            return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, None)))
             
         else:
-            return _reshape_to_vector(get_control_decision(penalty.phase, index, slice(0, 1)))
+            return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
 
     @staticmethod
     def parameters(penalty, get_parameter: Callable):
@@ -138,7 +136,7 @@ def _get_multinode_indices(penalty):
             raise RuntimeError("Transition must have exactly 2 nodes and 2 phases")
         phases = [penalty.nodes_phase[1], penalty.nodes_phase[0]]
         nodes = [penalty.multinode_idx[1], penalty.multinode_idx[0]]
-        subnodes = [slice(-1, None), slice(0, 1)]
+        subnodes = [slice(0, 1), slice(-1, None)]
     else:
         phases = penalty.nodes_phase
         nodes = penalty.multinode_idx

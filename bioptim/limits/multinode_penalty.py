@@ -627,7 +627,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return penalty.custom_function(controllers, **extra_params)
 
         @staticmethod
-        def _prepare_controller_cx(controllers: list[PenaltyController, ...]):
+        def _prepare_controller_cx(controllers: list[PenaltyController, ...], is_transition=False):
             """
             Prepare the current_cx_to_get for each of the controller. Basically it finds if this penalty has more than
             one usage. If it does, it increments a counter of the cx used, up to the maximum. On phase_dynamics
@@ -635,13 +635,14 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             """
             existing_phases = []
             if len(controllers) == 1:
-                # This does not make much sense in the context of multinode, but there is no reason to forbid it as it works
+                # This does not make much sense in the context of multinode,
+                # but there is no reason to forbid it as it works
                 controllers[0].cx_index_to_get = 0
             elif len(controllers) == 2:
-                # It seems that cx_index_to_get has two fonction, either it gathers cx_start, cx_mid or cx_end when its
-                # values are 0, 1 or 2 respectively.
-                controllers[0].cx_index_to_get = 0  # cx_start
-                controllers[1].cx_index_to_get = 2  # cx_end
+                # It seems that cx_index_to_get has two purposes, either it gathers cx_start, cx_mid or cx_end when its
+                # values are 0, 1 or 2 respectively or (see else case)
+                controllers[0].cx_index_to_get = 2  # cx_end
+                controllers[1].cx_index_to_get = 0  # cx_start
             else:
                 # Or it gathers the cx_start of a node, depending on unknown reason
                 for controller in controllers:

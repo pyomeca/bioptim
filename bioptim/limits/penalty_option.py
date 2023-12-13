@@ -519,7 +519,6 @@ class PenaltyOption(OptionGeneric):
             fake_controller.ode_solver.is_direct_collocation = is_direct_collocation  # Pariterre: don't know how to do cleaner
 
         else:
-            # Do not use nlp.add_casadi_func because all functions must be registered
             self.function[node] = Function(
                 name,
                 [time_cx, phases_dt_cx, x, u, param_cx, s],
@@ -527,9 +526,10 @@ class PenaltyOption(OptionGeneric):
                 ["t", "dt", "x", "u", "p", "s"],
                 ["val"],
             )
-            if self.expand:
-                self.function[node] = self.function[node].expand()
-            self.function_non_threaded[node] = self.function[node]
+
+        if self.expand:
+            self.function[node] = self.function[node].expand()
+        self.function_non_threaded[node] = self.function[node]
 
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
@@ -603,10 +603,8 @@ class PenaltyOption(OptionGeneric):
         else:
             modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, s) - target_cx) ** exponent
 
-        # for the future bioptim adventurer: here lies the reason that a constraint must have weight = 0.
+        # weight is zero for constraints penalty and non-zero for objective functions
         modified_fcn = (weight_cx * modified_fcn * self.dt) if self.weight else (modified_fcn * self.dt)
-
-        # Do not use nlp.add_casadi_func because all of them must be registered
         self.weighted_function[node] = Function(
             name,
             [time_cx, phases_dt_cx, x, u, param_cx, s, weight_cx, target_cx],
@@ -614,7 +612,6 @@ class PenaltyOption(OptionGeneric):
             ["t", "dt", "x", "u", "p", "s", "weight", "target"],
             ["val"],
         )
-
         self.weighted_function_non_threaded[node] = self.weighted_function[node]
 
         if controller.ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
@@ -648,7 +645,6 @@ class PenaltyOption(OptionGeneric):
             )
 
     def _get_variable_inputs(self, controller):
-
         if self.transition or self.multinode_penalty:
             if self.transition:
                 controllers = [controller[1], controller[0]]  # TODO put them in order?
@@ -662,21 +658,21 @@ class PenaltyOption(OptionGeneric):
             self.all_nodes_index = []
             for ctrl in controllers:
                 self.all_nodes_index.extend(ctrl.t)
-        else:
-            controllers = [controller]
 
         self._check_sanity_of_penalty_interactions(controller)
 
         ocp = controller.ocp
-        x = PenaltyHelpers.states(self, None, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
-        u = PenaltyHelpers.controls(self, None, lambda p_idx, n_idx, sn_idx: self._get_u(ocp, p_idx, n_idx, sn_idx))
-        s = PenaltyHelpers.states(self, None, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].stochastic_variables, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
+        penalty_idx = self.node_idx.index(controller.node_index) if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 0
+
+        x = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
+        u = PenaltyHelpers.controls(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_u(ocp, p_idx, n_idx, sn_idx))
+        s = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].stochastic_variables, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
 
         return controller, x, u, s
 
     def _get_states(self, ocp, states, p_idx, n_idx, sn_idx):
-        states.node_idx = n_idx
-        sn_idx = self._adjust_subnodes_for_multinodes(n_idx, sn_idx)
+        states.node_index = n_idx
+        sn_idx = self._adjust_subnodes_for_multinodes(p_idx, n_idx, sn_idx)
 
         x = ocp.cx()
         if sn_idx.start == 0:
@@ -701,8 +697,16 @@ class PenaltyOption(OptionGeneric):
     def _get_u(self, ocp, p_idx, n_idx, sn_idx):
         nlp = ocp.nlp[p_idx]
         controls = nlp.controls
-        controls.node_idx = n_idx
-        sn_idx = self._adjust_subnodes_for_multinodes(n_idx, sn_idx)
+        controls.node_index = n_idx
+        sn_idx = self._adjust_subnodes_for_multinodes(p_idx, n_idx, sn_idx)
+
+        def vertcat_cx_end():
+            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+                return vertcat(u, controls.cx_end)
+            elif nlp.control_type in (ControlType.CONSTANT,):
+                return u
+            else:
+                raise NotImplementedError(f"Control type {nlp.control_type} not implemented yet")
 
         u = ocp.cx()
         if sn_idx.start == 0:
@@ -710,36 +714,37 @@ class PenaltyOption(OptionGeneric):
             if sn_idx.stop == 1:
                 pass
             elif sn_idx.stop is None:
-                if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
-                    u = vertcat(u, vertcat(controls.cx_end))
-                elif nlp.control_type in (ControlType.CONSTANT,):
-                    # There is no endpoit in constant
-                    pass
-                else:
-                    raise NotImplementedError(f"Control type {nlp.control_type} not implemented yet")
+                u = vertcat_cx_end()
             else:
                 raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
             
         elif sn_idx.start == -1:
-            u = vertcat(u, controls.cx_end)
-            if sn_idx.stop != None:
+            if sn_idx.stop is not None:
                 raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
+            u = vertcat_cx_end()
 
         else: 
             raise ValueError("The sn_idx.start should be 0 or -1")
         
         return u
 
-    def _adjust_subnodes_for_multinodes(self, node_index, subnodes_index):
-        if (self.transition or self.multinode_penalty) and self.multinode_idx[1] == node_index:
-            # HERE!!!!!!
-            # This is a patch mostly for SHARED_DURING_THE_PHASE because they must use different states even though
-            # we are supposed to return the first state. Also, it does not cause any harm if ONE_PER_NODE is used
-            # if subnodes_index.start == 0 and subnodes_index.stop == 1:
-            #     subnodes_index = slice(-1, -1)
-            # else:
-            #     raise ValueError("Slice is expected to be slice(0, 0) when using transition or multinode_penalty")
-            pass
+    def _adjust_subnodes_for_multinodes(self, phases_index, nodes_index, subnodes_index):
+        if (self.transition or self.multinode_penalty) and len(self.multinode_idx) == 2:
+            # This is a patch mostly for SHARED_DURING_PHASE when multinode is on exactly two nodes. That is
+            # because they must use different cx_states even though we are supposed to return the first subnode.
+            # While it fixed SHARED_DURING_PHASE, it does not cause any harm when ONE_PER_NODE, so just always use
+            # cx_end on the second node
+            idx = 0 if self.transition else 1
+            if self.nodes_phase[idx] == phases_index and self.multinode_idx[idx] == nodes_index:
+                if subnodes_index.start == 0 and subnodes_index.stop == 1:
+                    subnodes_index = slice(-1, None)
+                elif subnodes_index.start == -1 and subnodes_index.stop is None:
+                    pass
+                else:
+                    raise ValueError(
+                        "Slice is expected to be (0, 1) or (-1, None) when using transition or multinode_penalty"
+                    )
+
         return subnodes_index
 
     @staticmethod
