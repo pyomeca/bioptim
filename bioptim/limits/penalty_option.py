@@ -702,32 +702,32 @@ class PenaltyOption(OptionGeneric):
         states.node_index = n_idx
 
         x = ocp.cx()
-        if states.cx_start.shape == (0, 0):
+        if states.scaled.cx_start.shape == (0, 0):
             return x
 
         if sn_idx.start == 0:
-            x = vertcat(x, states.cx_start)
+            x = vertcat(x, states.scaled.cx_start)
             if sn_idx.stop == 1:
                 pass
             elif sn_idx.stop is None:
-                x = vertcat(x, vertcat(*states.cx_intermediates_list))
+                x = vertcat(x, vertcat(*states.scaled.cx_intermediates_list))
             else:
                 raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
 
         elif sn_idx.start == 1:
             if sn_idx.stop == 2:
-                x = vertcat(x, vertcat(states.cx_intermediates_list[0]))
+                x = vertcat(x, vertcat(states.scaled.cx_intermediates_list[0]))
             else:
                 raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
 
         elif sn_idx.start == 2:
             if sn_idx.stop == 3:
-                x = vertcat(x, vertcat(states.cx_end))
+                x = vertcat(x, vertcat(states.scaled.cx_end))
             else:
                 raise ValueError("The sn_idx.stop should be 3 if sn_idx.start == 2")
 
         elif sn_idx.start == -1:
-            x = vertcat(x, vertcat(states.cx_end))
+            x = vertcat(x, vertcat(states.scaled.cx_end))
             if sn_idx.stop is not None:
                 raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
         
@@ -743,10 +743,10 @@ class PenaltyOption(OptionGeneric):
 
         def vertcat_cx_end():
             if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
-                return vertcat(u, controls.cx_end)
+                return vertcat(u, controls.scaled.cx_end)
             elif nlp.control_type in (ControlType.CONSTANT,):
                 if n_idx < nlp.n_controls_nodes and not (self.integrate or self.derivative or self.explicit_derivative):
-                    return vertcat(u, controls.cx_end)
+                    return vertcat(u, controls.scaled.cx_end)
                 else:
                     return u
             else:
@@ -754,7 +754,7 @@ class PenaltyOption(OptionGeneric):
 
         u = ocp.cx()
         if sn_idx.start == 0:
-            u = vertcat(u, controls.cx_start)
+            u = vertcat(u, controls.scaled.cx_start)
             if sn_idx.stop == 1:
                 pass
             elif sn_idx.stop is None:
@@ -764,14 +764,14 @@ class PenaltyOption(OptionGeneric):
 
         elif sn_idx.start == 1:
             if sn_idx.stop == 2:
-                u = vertcat(u, controls.cx_intermediates_list[0])
+                u = vertcat(u, controls.scaled.cx_intermediates_list[0])
             else:
                 raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
 
         elif sn_idx.start == 2:
             # This is not the actual endpoint but a midpoint that must use cx_end
             if sn_idx.stop == 3:
-                u = vertcat(u, controls.cx_end)
+                u = vertcat(u, controls.scaled.cx_end)
             else:
                 raise ValueError("The sn_idx.stop should be 3 if sn_idx.start == 2")
 
