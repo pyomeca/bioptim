@@ -487,75 +487,14 @@ class PenaltyOption(OptionGeneric):
         if self.is_stochastic:
             sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, x)
 
-        if self.derivative:
-            # This reimplementation is required because input sizes change. It will however produce wrong result
-            # for non weighted functions
-            fake_penalty = PenaltyOption(
-                penalty=self.type,
-                phase=self.phase,
-                node=self.node,
-                target=self.target,
-                quadratic=self.quadratic,
-                weight=self.weight,
-                derivative=False,
-                explicit_derivative=self.explicit_derivative,
-                integrate=self.integrate,
-                integration_rule=self.integration_rule,
-                rows=self.rows,
-                cols=self.cols,
-                custom_function=self.custom_function,
-                penalty_type=self.penalty_type,
-                is_stochastic=self.is_stochastic,
-                multi_thread=self.multi_thread,
-                expand=self.expand)
-
-            is_direct_collocation = controller.ode_solver.is_direct_collocation
-            fake_controller = controller.copy()
-            fake_controller.ode_solver.is_direct_collocation = False
-
-            _, x_for_original_fcn, u_for_original_fcn, s_for_original_fcn = fake_penalty.controller(fake_controller)
-            original_fcn = Function(
-                name,
-                [time_cx, phases_dt_cx, x_for_original_fcn, u_for_original_fcn, param_cx, s_for_original_fcn],
-                [sub_fcn],
-                ["t", "dt", "x", "u", "p", "s"],
-                ["val"],
-            )
-
-            self.function[node] = Function(
-                f"{name}",
-                [time_cx, phases_dt_cx, x, u, param_cx, s],
-                [original_fcn(
-                    time_cx,
-                    phases_dt_cx,
-                    controller.states.cx_end,
-                    controller.controls.cx_end,
-                    param_cx,
-                    controller.stochastic_variables_scaled.cx_end,
-                )
-                - original_fcn(
-                    time_cx,
-                    phases_dt_cx,
-                    controller.states.cx_start,
-                    controller.controls.cx_start,
-                    param_cx,
-                    controller.stochastic_variables_scaled.cx_start,
-                )],
-                ["t", "dt", "x", "u", "p", "s"],
-                ["val"], 
-            )
-
-            fake_controller.ode_solver.is_direct_collocation = is_direct_collocation  # Pariterre: don't know how to do cleaner
-
-        else:
-            # TODO Add error message if there are free variables to guide the user? For instance controls with last node
-            self.function[node] = Function(
-                name,
-                [time_cx, phases_dt_cx, x, u, param_cx, s],
-                [sub_fcn],
-                ["t", "dt", "x", "u", "p", "s"],
-                ["val"],
-            )
+        # TODO Add error message if there are free variables to guide the user? For instance controls with last node
+        self.function[node] = Function(
+            name,
+            [time_cx, phases_dt_cx, x, u, param_cx, s],
+            [sub_fcn],
+            ["t", "dt", "x", "u", "p", "s"],
+            ["val"],
+        )
 
         if self.expand:
             self.function[node] = self.function[node].expand()
