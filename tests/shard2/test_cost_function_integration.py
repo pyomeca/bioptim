@@ -178,13 +178,14 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     np.testing.assert_equal(f.shape, (1, 1))
     if integration_rule == QuadratureRule.RECTANGLE_LEFT:
         if control_type == ControlType.CONSTANT:
-            np.testing.assert_equal(tau[:, -1], np.array([np.nan, np.nan]))
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874164)
+                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.]))
             else:
                 np.testing.assert_almost_equal(f[0, 0], 18.91863487850207)
                 np.testing.assert_almost_equal(j_printed, 18.91863487850207)
+                np.testing.assert_almost_equal(tau[:, -1], np.array([-17.24468626, 0.]))
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
             if objective == "torque":

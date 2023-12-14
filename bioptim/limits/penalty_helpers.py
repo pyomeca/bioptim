@@ -118,6 +118,7 @@ class PenaltyHelpers:
             return _vertcat(u)
 
         elif penalty.integrate or penalty.derivative or penalty.explicit_derivative:
+            # FIX THIS!
             return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, None)))
             
         else:
