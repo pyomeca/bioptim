@@ -261,16 +261,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             if len(self.nlp) > 1 and i_phase < len(self.nlp) - 1:
                 phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
 
-    def _set_stochastic_variables_to_original_values(
-        self,
-        s_init: InitialGuessList,
-        s_bounds: BoundsList,
-        s_scaling: VariableScalingList,
-    ):
-        self.original_values["s_init"] = s_init
-        self.original_values["s_bounds"] = s_bounds
-        self.original_values["s_scaling"] = s_scaling
-
     @staticmethod
     def load(file_path: str) -> list:
         """

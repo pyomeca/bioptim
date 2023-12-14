@@ -172,9 +172,6 @@ def test_track_and_minimize_marker_displacement_global(ode_solver, phase_dynamic
         tau[:, -2], np.array([4.42976253e-02, 1.40077846e00, -7.28864793e-13, 9.24667396e01]), decimal=2
     )
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -221,9 +218,6 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, phase_dynamics):
         tau[:, -2], np.array([-1.97981112e01, -9.89876772e-02, 4.34033234e-08, 2.61513636e-08])
     )
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -267,9 +261,6 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
     # # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-4.52216174e-02, 9.25170010e-01, 0, 0]))
     np.testing.assert_almost_equal(tau[:, -2], np.array([4.4260355e-02, 1.4004583, 0, 0]))
-
-    # # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -325,9 +316,6 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dy
         # initial and final controls
         np.testing.assert_almost_equal(tau[2:, 0], np.array([-8.495542, 0]), decimal=5)
         np.testing.assert_almost_equal(tau[2:, -1], np.array([8.495541, 0]), decimal=5)
-
-        # save and load
-        TestUtils.save_and_load(sol, ocp, False)
 
         # simulate
         TestUtils.simulate(sol)

@@ -320,7 +320,7 @@ class OcpToConsole(GraphAbstract):
                 print("")
             print("")
             print(f"**********")
-            print(f"MODEL: {self.ocp.original_values['bio_model'][phase_idx]}")
+            print(f"MODEL: {self.ocp.nlp[phase_idx].model.name}")
             if isinstance(self.ocp.nlp[phase_idx].tf, (int, float)):
                 print(f"PHASE DURATION: {round(self.ocp.nlp[phase_idx].tf, 2)} s")
             else:

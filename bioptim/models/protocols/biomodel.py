@@ -13,6 +13,11 @@ class BioModel(Protocol):
     As a reminder for developers: only necessary attributes and methods should appear here.
     """
 
+    @property
+    def name(self) -> str:
+        """Get the name of the model"""
+        return ""
+
     def copy(self):
         """copy the model by reloading one"""
 
