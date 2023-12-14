@@ -388,6 +388,14 @@ def test_time_dependent_ding(time_mapping, use_sx):
             force_vector[i] = force_vector[i][1:]
     force_vector = [item for row in force_vector for item in row]
 
+
+    cn_vector = sol.decision_states(to_merge=SolutionMerge.NODES)
+    for i in range(len(cn_vector)):
+        cn_vector[i] = cn_vector[i]["Cn"][0]
+        if i != 0:
+            cn_vector[i] = cn_vector[i][1:]
+    cn_vector = [item for row in cn_vector for item in row]
+
     time_vector = sol.times
     for i in range(len(time_vector)):
         time_vector[i] = time_vector[i][::2]
@@ -397,4 +405,7 @@ def test_time_dependent_ding(time_mapping, use_sx):
     time_vector = np.cumsum(time_vector)
 
     plt.plot(time_vector, force_vector)
+    plt.show()
+
+    plt.plot(time_vector, cn_vector)
     plt.show()
