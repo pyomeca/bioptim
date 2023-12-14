@@ -11,7 +11,6 @@ from bioptim import (
     ConfigureProblem,
     ConstraintFcn,
     ConstraintList,
-    ControlType,
     DynamicsEvaluation,
     DynamicsList,
     ObjectiveFcn,
@@ -223,7 +222,6 @@ def prepare_ocp(
         objective_functions=objective_functions,
         constraints=constraints,
         ode_solver=ode_solver,
-        control_type=ControlType.NONE,
         use_sx=use_sx,
     )
 

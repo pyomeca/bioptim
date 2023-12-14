@@ -723,9 +723,6 @@ class PlotOcp:
 
         if not custom_plot:
             return None
-        if custom_plot.label:
-            if custom_plot.label[:16] == "PHASE_TRANSITION":
-                return np.zeros(np.shape(x)[0])
 
         x = x_stepwise if custom_plot.type == PlotType.INTEGRATED else x_decision
 
@@ -735,18 +732,18 @@ class PlotOcp:
             node_idx = custom_plot.node_idx[idx]
             if "penalty" in custom_plot.parameters:
                 penalty = custom_plot.parameters["penalty"]
-                t0 = PenaltyHelpers.t0(penalty, self.ocp, idx, lambda p_idx, n_idx: time_stepwise[p_idx][n_idx])
+                t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: time_stepwise[p_idx][n_idx])
                 
-                x_node = PenaltyHelpers.states(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: x[n_idx])
-                u_node = PenaltyHelpers.controls(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: u[n_idx])
-                p_node = PenaltyHelpers.parameters(penalty, self.ocp, lambda: np.array(p))
-                s_node = PenaltyHelpers.stochastic_variables(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: s[n_idx])
+                x_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx])
+                u_node = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)))
+                p_node = PenaltyHelpers.parameters(penalty, lambda: np.array(p))
+                s_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: s[n_idx][:, sn_idx])
                 
             else:
                 t0 = time_stepwise[phase_idx][node_idx][0]
 
                 x_node = x[node_idx]
-                u_node = u[node_idx]
+                u_node = u[node_idx] if node_idx < len(u) else np.ndarray((0, 1))
                 p_node = p
                 s_node = s[node_idx]
 

@@ -50,7 +50,6 @@ class OptimizationVectorHelper:
                 ControlType.CONSTANT,
                 ControlType.CONSTANT_WITH_LAST_NODE,
                 ControlType.LINEAR_CONTINUOUS,
-                ControlType.NONE,
             ):
                 raise NotImplementedError(f"Multiple shooting problem not implemented yet for {nlp.control_type}")
 
@@ -199,7 +198,7 @@ class OptimizationVectorHelper:
             current_nlp = ocp.nlp[i_phase]
             nlp = ocp.nlp[current_nlp.use_controls_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
-            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
+            if nlp.control_type in (ControlType.CONSTANT, ):
                 ns = nlp.ns
             elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns + 1
@@ -331,7 +330,7 @@ class OptimizationVectorHelper:
 
             nlp = ocp.nlp[current_nlp.use_controls_from_phase_idx]
             OptimizationVectorHelper._set_node_index(nlp, 0)
-            if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
+            if nlp.control_type in (ControlType.CONSTANT, ):
                 ns = nlp.ns - 1
             elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns
@@ -466,7 +465,7 @@ class OptimizationVectorHelper:
         for nlp in ocp.nlp:
             # using state nodes ensures for all ensures the dimensions of controls are coherent with states
             data_states.append({key: [None] * nlp.n_states_nodes for key in nlp.states.keys()})
-            data_controls.append({key: [None] * nlp.n_states_nodes for key in nlp.controls.keys()})
+            data_controls.append({key: [None] * nlp.n_controls_nodes for key in nlp.controls.keys()})
             data_stochastic.append({key: [None] * nlp.n_states_nodes for key in nlp.stochastic_variables.keys()})
         data_parameters = {key: None for key in ocp.parameters.keys()}
 
@@ -495,11 +494,11 @@ class OptimizationVectorHelper:
             if nlp.use_controls_from_phase_idx != nlp.phase_idx:
                 data_controls[p] = data_controls[nlp.use_controls_from_phase_idx]
                 continue
-            for node in range(nlp.n_states_nodes):  # Using n_states_nodes on purpose see higher
+            for node in range(nlp.n_controls_nodes):  # Using n_states_nodes on purpose see higher
                 n_cols = nlp.n_controls_steps(node)
                 
-                if n_cols == 0 or node >= nlp.n_controls_nodes:
-                    u_array = np.ndarray((nu, n_cols)) * np.nan
+                if nu == 0 or node >= nlp.n_controls_nodes:
+                    u_array = np.ndarray((0, 1))
                 else:
                     u_array = v_array[offset : offset + nu * n_cols].reshape((nu, -1), order="F")
                     offset += nu

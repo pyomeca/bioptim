@@ -137,7 +137,7 @@ class NonLinearProgram:
         self.casadi_func = {}
         self.contact_forces_func = None
         self.soft_contact_forces_func = None
-        self.control_type = ControlType.NONE
+        self.control_type = ControlType.CONSTANT
         self.cx = None
         self.dt = None
         self.dynamics = (
@@ -281,9 +281,7 @@ class NonLinearProgram:
         -------
         The number of states
         """
-        
-        if self.control_type == ControlType.NONE:
-            return 0      
+
         if self.control_type == ControlType.CONSTANT:
             return 1
         elif self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:

@@ -2,7 +2,6 @@ from enum import Enum, auto
 import numpy as np
 
 
-
 class SolutionMerge(Enum):
     """
     The level of merging that can be done on the solution

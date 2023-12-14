@@ -137,4 +137,4 @@ class SQPInterface(SolverInterface):
         -------
 
         """
-        return generic_get_all_penalties(self, nlp, penalties, is_unscaled=False)
+        return generic_get_all_penalties(self, nlp, penalties, scaled=True)

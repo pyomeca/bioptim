@@ -216,7 +216,7 @@ def generic_dispatch_obj_func(interface):
     return all_objectives
 
 
-def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_unscaled=False):
+def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scaled=True):
     """
     Parse the penalties of the full ocp to a SQP-friendly one
 
@@ -228,8 +228,8 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
         The nonlinear program to parse the penalties from
     penalties:
         The penalties to parse
-    is_unscaled: bool
-        If the penalty is unscaled or scaled
+    scaled: bool
+        If the penalty should be the scaled [True] or unscaled [False]
     Returns
     -------
     TODO
@@ -243,7 +243,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             continue
 
         phases_dt = PenaltyHelpers.phases_dt(penalty, interface.ocp, lambda _: interface.ocp.dt_parameter.cx)
-        p = PenaltyHelpers.parameters(penalty, ocp, lambda: interface.ocp.parameters.cx)
+        p = PenaltyHelpers.parameters(penalty, lambda: interface.ocp.parameters.cx)
 
         if penalty.multi_thread:
             if penalty.target is not None and len(penalty.target[0].shape) != 2:
@@ -256,7 +256,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
             weight = np.ndarray((0,))
             target = nlp.cx()
             for idx in range(len(penalty.node_idx)):
-                t0_tp, x_tp, u_tp, s_tp, weight_tp, target_tp = _get_weighted_function_inputs(penalty, idx, ocp, nlp, is_unscaled)
+                t0_tp, x_tp, u_tp, s_tp, weight_tp, target_tp = _get_weighted_function_inputs(penalty, idx, ocp, nlp, scaled)
                 
                 t0 = horzcat(t0, t0_tp)
                 x = horzcat(x, x_tp)
@@ -276,7 +276,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
                 nlp.parameters.node_index = penalty.node_idx[idx]
                 nlp.stochastic_variables.node_index = penalty.node_idx[idx]
 
-                t0, x, u, s, weight, target = _get_weighted_function_inputs(penalty, idx, ocp, nlp, is_unscaled)
+                t0, x, u, s, weight, target = _get_weighted_function_inputs(penalty, idx, ocp, nlp, scaled)
 
                 node_idx = penalty.node_idx[idx]
                 tp = vertcat(
@@ -287,16 +287,16 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, is_un
     return out
 
 
-def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, is_unscaled):
-    t0 = PenaltyHelpers.t0(penalty, ocp, penalty_idx, lambda p_idx, n_idx: ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx))
+def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
+    t0 = PenaltyHelpers.t0(penalty, penalty_idx, lambda p_idx, n_idx: ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx))
 
     weight = PenaltyHelpers.weight(penalty)
     target = PenaltyHelpers.target(penalty, penalty_idx)
 
     if nlp:
-        x = PenaltyHelpers.states(penalty, ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: _get_x(ocp, p_idx, n_idx, is_unscaled))
-        u = (PenaltyHelpers.controls(penalty, ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: _get_u(ocp, p_idx, n_idx, is_unscaled)) if len(nlp.controls) != 0 else [])
-        s = (PenaltyHelpers.stochastic_variables(penalty, ocp, penalty_idx, lambda controller_idx, p_idx, n_idx: _get_s(ocp, p_idx, n_idx, is_unscaled)) if len(nlp.stochastic_variables) != 0 else [])
+        x = PenaltyHelpers.states(penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_x(ocp, p_idx, n_idx, sn_idx, scaled))
+        u = PenaltyHelpers.controls(penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled))
+        s = PenaltyHelpers.states(penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_s(ocp, p_idx, n_idx, sn_idx, scaled))
     else:
         x = []
         u = []
@@ -305,15 +305,16 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, is_unscaled):
     return t0, x, u, s, weight, target,
 
 
-def _get_x(ocp, phase_idx, node_idx, is_unscaled):
-    return ocp.nlp[phase_idx].X[node_idx] if is_unscaled else ocp.nlp[phase_idx].X_scaled[node_idx]
+def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+    values = ocp.nlp[phase_idx].X_scaled if scaled else ocp.nlp[phase_idx].X
+    return values[node_idx][:, subnodes_idx]
+    
+
+def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+    values = ocp.nlp[phase_idx].U_scaled if scaled else ocp.nlp[phase_idx].U
+    return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
 
 
-def _get_u(ocp, phase_idx, node_idx, is_unscaled):
-    nlp_u = ocp.nlp[phase_idx].U if is_unscaled else ocp.nlp[phase_idx].U_scaled
-    return nlp_u[node_idx if node_idx < len(nlp_u) else -1]
-
-
-def _get_s(ocp, phase_idx, node_idx, is_unscaled):
-    s = ocp.nlp[phase_idx].S if is_unscaled else ocp.nlp[phase_idx].S_scaled
-    return [] if not s else s[node_idx]
+def _get_s(ocp, phase_idx, node_idx, subnodes_idx, scaled):
+    values = ocp.nlp[phase_idx].S_scaled if scaled else ocp.nlp[phase_idx].S
+    return [] if not values else values[node_idx][:, subnodes_idx]

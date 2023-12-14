@@ -41,6 +41,28 @@ class OdeSolverBase:
         raise RuntimeError("This method should be implemented in the child class")
 
     @property
+    def is_direct_collocation(self) -> bool:
+        """
+        indicating if the ode solver is direct collocation method
+
+        Returns
+        -------
+        True if the ode solver is direct collocation method
+        """
+        raise RuntimeError("This method should be implemented in the child class")
+
+    @property
+    def is_direct_shooting(self) -> bool:
+        """
+        indicating if the ode solver is direct shooting method
+
+        Returns
+        -------
+        True if the ode solver is direct shooting method
+        """
+        raise RuntimeError("This method should be implemented in the child class")
+
+    @property
     def n_required_cx(self) -> int:
         """
         The required number of column required in the casadi CX matrix for the state variables
@@ -175,6 +197,7 @@ class OdeSolverBase:
             "defects_type": self.defects_type,
             "allow_free_variables": allow_free_variables,
             "param_scaling": vertcat(*[nlp.parameters[key].scaling.scaling for key in nlp.parameters.keys()]),
+            "ode_index": node_index if nlp.dynamics_func[dynamics_index].size2_out("xdot") > 1 else 0,
             **extra_opt,
         }
 
@@ -242,8 +265,14 @@ class RK(OdeSolverBase):
 
         super(RK, self).__init__(**kwargs)
         self.n_integration_steps = n_integration_steps
-        self.is_direct_collocation = False
-        self.is_direct_shooting = True
+
+    @property
+    def is_direct_collocation(self) -> bool:
+        return False
+
+    @property
+    def is_direct_shooting(self) -> bool:
+        return True
 
     @property
     def n_required_cx(self) -> int:
@@ -262,7 +291,7 @@ class RK(OdeSolverBase):
         return nlp.states.scaled.cx_start
 
     def p_ode(self, nlp):
-        if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE):
+        if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ):
             return nlp.controls.scaled.cx_start
         else:
             return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
@@ -320,14 +349,17 @@ class OdeSolver:
         A trapezoidal ode solver
         """
 
-        def __init__(self):
-            super(OdeSolver.TRAPEZOIDAL, self).__init__()
-            self.is_direct_collocation = False
-            self.is_direct_shooting = True
-
         @property
         def integrator(self):
             return integrator.TRAPEZOIDAL
+
+        @property
+        def is_direct_collocation(self) -> bool:
+            return False
+
+        @property
+        def is_direct_shooting(self) -> bool:
+            return True
         
         @property
         def defects_type(self) -> DefectType:
@@ -397,12 +429,18 @@ class OdeSolver:
             self.duplicate_collocation_starting_point = duplicate_collocation_starting_point
             self.method = method
             self._defects_type = defects_type
-            self.is_direct_collocation = True
-            self.is_direct_shooting = False
 
         @property
         def integrator(self):
             return integrator.COLLOCATION
+
+        @property
+        def is_direct_shooting(self) -> bool:
+            return False
+
+        @property
+        def is_direct_collocation(self) -> bool:
+            return True
 
         @property
         def n_required_cx(self) -> int:
@@ -452,11 +490,6 @@ class OdeSolver:
         An implicit Runge-Kutta solver
         """
 
-        def __init__(self):
-            super(OdeSolver.IRK, self).__init__()
-            self.is_direct_collocation = False
-            self.is_direct_shooting = True
-
         def initialize_integrator(self, ocp, nlp, **kwargs):
             if ocp.cx is SX:
                 raise NotImplementedError("use_sx=True and OdeSolver.IRK are not yet compatible")
@@ -467,19 +500,30 @@ class OdeSolver:
         def integrator(self):
             return integrator.IRK
 
+        @property
+        def is_direct_collocation(self) -> bool:
+            return False
+
+        @property
+        def is_direct_shooting(self) -> bool:
+            return True
+
     class CVODES(OdeSolverBase):
         """
         An interface to CVODES
         """
 
-        def __init__(self):
-            super(OdeSolver.CVODES, self).__init__()
-            self.is_direct_collocation = False
-            self.is_direct_shooting = True
-
         @property
         def integrator(self):
             return integrator.CVODES
+
+        @property
+        def is_direct_collocation(self) -> bool:
+            return False
+
+        @property
+        def is_direct_shooting(self) -> bool:
+            return True
         
         @property
         def n_required_cx(self) -> int:

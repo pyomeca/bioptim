@@ -278,7 +278,7 @@ class Solution:
                 raise NotImplementedError(f"control_type {control_type} is not implemented in Solution")
 
             for key in ss.keys():
-                ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].controls[key]), all_ns[p], "controls")
+                ss[key].init.check_and_adjust_dimensions(len(ocp.nlp[p].controls[key]), all_ns[p] - 1 + off, "controls")
 
             for i in range(all_ns[p] + off):
                 for key in ss.keys():
@@ -386,6 +386,7 @@ class Solution:
             self._integrate_stepwise()
         
         out = self._stepwise_states.to_dict(to_merge=SolutionMerge.NODES, scaled=False)
+        # TODO automatically remove redundant time stamps?
         return out if len(out) > 1 else out[0]
     
     @property
@@ -958,16 +959,16 @@ class Solution:
         val_weighted = []
         
         phases_dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
-        params = PenaltyHelpers.parameters(penalty, self.ocp, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()]))
+        params = PenaltyHelpers.parameters(penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()]))
 
         merged_x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_s = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         for idx in range(len(penalty.node_idx)):
-            t0 = PenaltyHelpers.t0(penalty, self.ocp, idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
-            x = PenaltyHelpers.states(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: merged_x[p_idx][n_idx])
-            u = PenaltyHelpers.controls(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: merged_u[p_idx][n_idx])
-            s = PenaltyHelpers.stochastic_variables(penalty, self.ocp, idx, lambda controller_idx, p_idx, n_idx: merged_s[p_idx][n_idx])
+            t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
+            x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_x[p_idx][n_idx][:, sn_idx])
+            u = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_u[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_u[p_idx]) else np.array(()))
+            s = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_s[p_idx][n_idx][:, sn_idx])
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
 

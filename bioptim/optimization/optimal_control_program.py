@@ -371,7 +371,6 @@ class OptimalControlProgram:
             phase_transitions,
         )
 
-
     def _check_bioptim_version(self):
         self.version = {"casadi": casadi.__version__, "biorbd": biorbd.__version__, "bioptim": __version__}
         return
