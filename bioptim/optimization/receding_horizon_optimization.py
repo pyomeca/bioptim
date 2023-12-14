@@ -3,6 +3,7 @@ from math import inf
 from typing import Callable
 from time import perf_counter
 
+from casadi import SX
 import numpy as np
 
 from .optimal_control_program import OptimalControlProgram
@@ -35,6 +36,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         dynamics: Dynamics | DynamicsList,
         window_len: int | list | tuple,
         window_duration: int | float | list | tuple,
+        common_objective_functions: ObjectiveList = None,
         use_sx=True,
         **kwargs,
     ):
@@ -49,6 +51,8 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             The length of the sliding window. It is translated into n_shooting in each individual optimization program
         window_duration
             The time in second of the sliding window
+        common_objective_functions
+            The objective functions that carries through all the individual optimization program
         use_sx
             Same as OCP, but has True as default value
         """
@@ -56,12 +60,21 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         if isinstance(bio_model, (list, tuple)) and len(bio_model) > 1:
             raise ValueError("Receding horizon optimization must be defined using only one bio_model")
 
+        if "objective_functions" in kwargs:
+            raise ValueError(
+                "'objective_functions' should be defined via 'common_objective_functions' for the objectives that are shared between the windows "
+                "or via 'update_objectives' for the objective that is specific to each window"
+            )
+
+        self.common_objective_functions = deepcopy(common_objective_functions)
+
         super(RecedingHorizonOptimization, self).__init__(
             bio_model=bio_model,
             dynamics=dynamics,
             n_shooting=window_len,
             phase_time=window_duration,
             use_sx=use_sx,
+            objective_functions=common_objective_functions,
             **kwargs,
         )
         self.total_optimization_run = 0
@@ -220,17 +233,18 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             controls_tp = np.concatenate([control[key] for control in controls], axis=1)
             u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME, phase=0)
 
-        model_class = self.original_values["bio_model"][0][0]
-        model_initializer = self.original_values["bio_model"][0][1]
+        model_serialized = self.nlp[0].model.serialize()
+        model_class = model_serialized[0]
+        model_initializer = model_serialized[1]
 
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
-            dynamics=self.dynamics[0],
+            dynamics=self.nlp[0].dynamics_type,
             n_shooting=self.total_optimization_run,
             phase_time=self.total_optimization_run * dt,
             x_init=x_init,
             u_init=u_init,
-            use_sx=self.original_values["use_sx"],
+            use_sx=self.cx == SX,
         )
         s_init = InitialGuessList()
         p_init = InitialGuessList()
@@ -431,17 +445,17 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             controls_tp = np.concatenate([control[key] for control in controls], axis=1)
             u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME, phase=0)
 
-        model_class = self.original_values["bio_model"][0][0]
-        model_initializer = self.original_values["bio_model"][0][1]
-
+        model_serialized = self.nlp[0].model.serialize()
+        model_class = model_serialized[0]
+        model_initializer = model_serialized[1]
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
-            dynamics=self.dynamics[0],
+            dynamics=self.nlp[0].dynamics_type,
             n_shooting=self.total_optimization_run * self.nlp[0].ns,
             phase_time=self.total_optimization_run * self.nlp[0].ns * dt,
             x_init=x_init,
             u_init=u_init,
-            use_sx=self.original_values["use_sx"],
+            use_sx=self.cx == SX,
         )
         s_init = InitialGuessList()
         p_init = InitialGuessList()
@@ -674,17 +688,17 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             controls_tp = np.concatenate([control[key] for control in controls], axis=1)
             u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME, phase=0)
 
-        model_class = self.original_values["bio_model"][0][0]
-        model_initializer = self.original_values["bio_model"][0][1]
-
+        model_serialized = self.nlp[0].model.serialize()
+        model_class = model_serialized[0]
+        model_initializer = model_serialized[1]
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
-            dynamics=self.dynamics[0],
+            dynamics=self.nlp[0].dynamics_type,
             n_shooting=self.total_optimization_run * self.cycle_len,
             phase_time=self.total_optimization_run * self.cycle_len * dt,
             x_init=x_init,
             u_init=u_init,
-            use_sx=self.original_values["use_sx"],
+            use_sx=self.cx == SX,
         )
         s_init = InitialGuessList()
         p_init = InitialGuessList()
@@ -706,25 +720,23 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         for key in self.nlp[0].controls.keys():
             controls_tp = controls[key]
             u_init_for_solution.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME, phase=0)
-            if self.original_values["control_type"] == ControlType.CONSTANT:
+            if self.nlp[0].control_type == ControlType.CONSTANT:
                 controls_tp = controls_tp[:, :-1]
             u_init.add(key, controls_tp, interpolation=InterpolationType.EACH_FRAME, phase=0)
 
-        original_values = self.original_values
-
-        model_class = original_values["bio_model"][0][0]
-        model_initializer = original_values["bio_model"][0][1]
-
+        model_serialized = self.nlp[0].model.serialize()
+        model_class = model_serialized[0]
+        model_initializer = model_serialized[1]
         solution_ocp = OptimalControlProgram(
             bio_model=model_class(**model_initializer),
-            dynamics=original_values["dynamics"][0],
-            objective_functions=deepcopy(original_values["objective_functions"]),
+            dynamics=self.nlp[0].dynamics_type,
+            objective_functions=deepcopy(self.common_objective_functions),
             ode_solver=self.nlp[0].ode_solver,
             n_shooting=self.cycle_len,
             phase_time=self.cycle_len * dt,
             x_init=x_init,
             u_init=u_init,
-            use_sx=original_values["use_sx"],
+            use_sx=self.cx == SX,
         )
         s_init = InitialGuessList()
         p_init = InitialGuessList()

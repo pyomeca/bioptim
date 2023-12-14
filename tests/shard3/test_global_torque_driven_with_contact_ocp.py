@@ -85,9 +85,6 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
         np.testing.assert_almost_equal(tau[:, 0], np.array((-18.7970058)))
         np.testing.assert_almost_equal(tau[:, -2], np.array(-0.1918057))
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -133,9 +130,6 @@ def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.550905)))
     np.testing.assert_almost_equal(tau[:, -2], np.array(-0.0050623))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)

@@ -149,8 +149,5 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
     else:
         raise ValueError("Test not implemented")
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol, decimal_value=5)

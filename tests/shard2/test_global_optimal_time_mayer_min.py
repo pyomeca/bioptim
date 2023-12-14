@@ -95,9 +95,6 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
     else:
         raise ValueError("Test not implemented")
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
 
@@ -175,9 +172,6 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(tf, 0.9533725307316343)
     else:
         np.testing.assert_almost_equal(tf, min_ft, decimal=4)
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)

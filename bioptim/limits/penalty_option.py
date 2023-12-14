@@ -487,75 +487,14 @@ class PenaltyOption(OptionGeneric):
         if self.is_stochastic:
             sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, x)
 
-        if self.derivative:
-            # This reimplementation is required because input sizes change. It will however produce wrong result
-            # for non weighted functions
-            fake_penalty = PenaltyOption(
-                penalty=self.type,
-                phase=self.phase,
-                node=self.node,
-                target=self.target,
-                quadratic=self.quadratic,
-                weight=self.weight,
-                derivative=False,
-                explicit_derivative=self.explicit_derivative,
-                integrate=self.integrate,
-                integration_rule=self.integration_rule,
-                rows=self.rows,
-                cols=self.cols,
-                custom_function=self.custom_function,
-                penalty_type=self.penalty_type,
-                is_stochastic=self.is_stochastic,
-                multi_thread=self.multi_thread,
-                expand=self.expand)
-
-            is_direct_collocation = controller.ode_solver.is_direct_collocation
-            fake_controller = controller.copy()
-            fake_controller.ode_solver.is_direct_collocation = False
-
-            _, x_for_original_fcn, u_for_original_fcn, s_for_original_fcn = fake_penalty.controller(fake_controller)
-            original_fcn = Function(
-                name,
-                [time_cx, phases_dt_cx, x_for_original_fcn, u_for_original_fcn, param_cx, s_for_original_fcn],
-                [sub_fcn],
-                ["t", "dt", "x", "u", "p", "s"],
-                ["val"],
-            )
-
-            self.function[node] = Function(
-                f"{name}",
-                [time_cx, phases_dt_cx, x, u, param_cx, s],
-                [original_fcn(
-                    time_cx,
-                    phases_dt_cx,
-                    controller.states.cx_end,
-                    controller.controls.cx_end,
-                    param_cx,
-                    controller.stochastic_variables_scaled.cx_end,
-                )
-                - original_fcn(
-                    time_cx,
-                    phases_dt_cx,
-                    controller.states.cx_start,
-                    controller.controls.cx_start,
-                    param_cx,
-                    controller.stochastic_variables_scaled.cx_start,
-                )],
-                ["t", "dt", "x", "u", "p", "s"],
-                ["val"], 
-            )
-
-            fake_controller.ode_solver.is_direct_collocation = is_direct_collocation  # Pariterre: don't know how to do cleaner
-
-        else:
-            # TODO Add error message if there are free variables to guide the user? For instance controls with last node
-            self.function[node] = Function(
-                name,
-                [time_cx, phases_dt_cx, x, u, param_cx, s],
-                [sub_fcn],
-                ["t", "dt", "x", "u", "p", "s"],
-                ["val"],
-            )
+        # TODO Add error message if there are free variables to guide the user? For instance controls with last node
+        self.function[node] = Function(
+            name,
+            [time_cx, phases_dt_cx, x, u, param_cx, s],
+            [sub_fcn],
+            ["t", "dt", "x", "u", "p", "s"],
+            ["val"],
+        )
 
         if self.expand:
             self.function[node] = self.function[node].expand()
@@ -702,32 +641,32 @@ class PenaltyOption(OptionGeneric):
         states.node_index = n_idx
 
         x = ocp.cx()
-        if states.cx_start.shape == (0, 0):
+        if states.scaled.cx_start.shape == (0, 0):
             return x
 
         if sn_idx.start == 0:
-            x = vertcat(x, states.cx_start)
+            x = vertcat(x, states.scaled.cx_start)
             if sn_idx.stop == 1:
                 pass
             elif sn_idx.stop is None:
-                x = vertcat(x, vertcat(*states.cx_intermediates_list))
+                x = vertcat(x, vertcat(*states.scaled.cx_intermediates_list))
             else:
                 raise ValueError("The sn_idx.stop should be 1 or None if sn_idx.start == 0")
 
         elif sn_idx.start == 1:
             if sn_idx.stop == 2:
-                x = vertcat(x, vertcat(states.cx_intermediates_list[0]))
+                x = vertcat(x, vertcat(states.scaled.cx_intermediates_list[0]))
             else:
                 raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
 
         elif sn_idx.start == 2:
             if sn_idx.stop == 3:
-                x = vertcat(x, vertcat(states.cx_end))
+                x = vertcat(x, vertcat(states.scaled.cx_end))
             else:
                 raise ValueError("The sn_idx.stop should be 3 if sn_idx.start == 2")
 
         elif sn_idx.start == -1:
-            x = vertcat(x, vertcat(states.cx_end))
+            x = vertcat(x, vertcat(states.scaled.cx_end))
             if sn_idx.stop is not None:
                 raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
         
@@ -743,10 +682,10 @@ class PenaltyOption(OptionGeneric):
 
         def vertcat_cx_end():
             if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
-                return vertcat(u, controls.cx_end)
+                return vertcat(u, controls.scaled.cx_end)
             elif nlp.control_type in (ControlType.CONSTANT,):
                 if n_idx < nlp.n_controls_nodes and not (self.integrate or self.derivative or self.explicit_derivative):
-                    return vertcat(u, controls.cx_end)
+                    return vertcat(u, controls.scaled.cx_end)
                 else:
                     return u
             else:
@@ -754,7 +693,7 @@ class PenaltyOption(OptionGeneric):
 
         u = ocp.cx()
         if sn_idx.start == 0:
-            u = vertcat(u, controls.cx_start)
+            u = vertcat(u, controls.scaled.cx_start)
             if sn_idx.stop == 1:
                 pass
             elif sn_idx.stop is None:
@@ -764,14 +703,14 @@ class PenaltyOption(OptionGeneric):
 
         elif sn_idx.start == 1:
             if sn_idx.stop == 2:
-                u = vertcat(u, controls.cx_intermediates_list[0])
+                u = vertcat(u, controls.scaled.cx_intermediates_list[0])
             else:
                 raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
 
         elif sn_idx.start == 2:
             # This is not the actual endpoint but a midpoint that must use cx_end
             if sn_idx.stop == 3:
-                u = vertcat(u, controls.cx_end)
+                u = vertcat(u, controls.scaled.cx_end)
             else:
                 raise ValueError("The sn_idx.stop should be 3 if sn_idx.start == 2")
 
