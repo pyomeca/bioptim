@@ -135,8 +135,6 @@ class OptimalControlProgram:
         Set the internal stochastic variables (s_init, s_bounds, s_scaling) if any of the phases is stochastic
     _check_quaternions_hasattr(self, bio_model)
         Check if the bio_model has quaternions and set the flag accordingly
-    _check_and_prepare_dynamics(self, dynamics)
-        Check if the dynamics is a Dynamics or a DynamicsList and set the flag accordingly
     """
 
     def __init__(
@@ -237,7 +235,6 @@ class OptimalControlProgram:
         bio_model = self._initialize_model(bio_model)
 
         # Placed here because of MHE
-        self._check_and_prepare_dynamics(dynamics)
         s_init, s_bounds, s_scaling = self._set_stochastic_internal_stochastic_variables()
 
         self._check_and_set_threads(n_threads)
@@ -339,17 +336,7 @@ class OptimalControlProgram:
         bio_model = self._check_quaternions_hasattr(bio_model)
         self.n_phases = len(bio_model)
         return bio_model
-
-    def _check_and_prepare_dynamics(self, dynamics):
-        if isinstance(dynamics, Dynamics):
-            dynamics_type_tp = DynamicsList()
-            dynamics_type_tp.add(dynamics)
-            self.dynamics = dynamics_type_tp
-        elif isinstance(dynamics, DynamicsList):
-            self.dynamics = dynamics
-        elif not isinstance(dynamics, DynamicsList):
-            raise RuntimeError("dynamics should be a Dynamics or a DynamicsList")
-
+    
     def _check_and_set_threads(self, n_threads):
         if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
             raise RuntimeError("n_threads should be a positive integer greater or equal than 1")

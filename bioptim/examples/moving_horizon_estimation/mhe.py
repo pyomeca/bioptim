@@ -155,7 +155,7 @@ def prepare_mhe(
         Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics),
         window_len,
         window_duration,
-        objective_functions=new_objectives,
+        common_objective_functions=new_objectives,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         x_init=x_init_list,
