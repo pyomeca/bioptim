@@ -38,7 +38,7 @@ class PenaltyHelpers:
         TODO COMPLETE
         """
 
-        if penalty.transition or penalty.multinode_penalty:
+        if penalty.multinode_penalty:
             phases, nodes, _ = _get_multinode_indices(penalty, is_constructing_penalty=False)
             phase = phases[0]
             node = nodes[0]
@@ -96,7 +96,7 @@ class PenaltyHelpers:
                 x1 = _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1)))
             return vertcat(x1, x0) if penalty.derivative else vertcat(x0, x1)
 
-        elif penalty.transition or penalty.multinode_penalty:
+        elif penalty.multinode_penalty:
             x = []
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             for phase, node, sub in zip(phases, nodes, subnodes):
@@ -110,7 +110,7 @@ class PenaltyHelpers:
     def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: bool = False):
         node = penalty.node_idx[index]
 
-        if penalty.transition or penalty.multinode_penalty:
+        if penalty.multinode_penalty:
             u = []
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             for phase, node, sub in zip(phases, nodes, subnodes):
@@ -162,8 +162,9 @@ class PenaltyHelpers:
             # If there is no more available, it means there is more than 3 nodes in a single phase which is not possible
             if not share_phase_nodes[phase_idx]["available_cx"]:
                 raise ValueError(
-                    "Multinode constraints with more than 3 nodes a single phase for SHARED_DURING_THE_PHASE "
-                    "is not possible"
+                    "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried "
+                    "to add more penalties than available in a multinode constraint. You can try to split the "
+                    "constraints into more penalties or use phase_dynamics=PhaseDynamics.ONE_PER_NODE"
                 )
 
             if node_idx in share_phase_nodes[phase_idx]["nodes_used"]:
@@ -192,8 +193,8 @@ class PenaltyHelpers:
 
 
 def _get_multinode_indices(penalty, is_constructing_penalty: bool):
-    if not penalty.multinode_penalty and not penalty.transition:
-        raise RuntimeError("This function should only be called for multinode or transition penalties")
+    if not penalty.multinode_penalty:
+        raise RuntimeError("This function should only be called for multinode penalties")
 
     phases = penalty.nodes_phase
     nodes = penalty.multinode_idx

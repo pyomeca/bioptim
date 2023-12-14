@@ -185,8 +185,6 @@ class Integrator:
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             dt_norm = 1 - (t - self.t_span_sym[0]) / self.t_span_sym[1]
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
-        elif self.control_type == ControlType.NONE:
-            return np.ndarray((0,))
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")
 

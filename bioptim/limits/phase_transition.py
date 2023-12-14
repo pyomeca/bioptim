@@ -36,8 +36,6 @@ class PhaseTransition(MultinodePenalty):
         The delta time
     node_idx: int
         The index of the node in nlp pre
-    transition: bool
-        The nature of the cost function is transition
     penalty_type: PenaltyType
         If the penalty is from the user or from bioptim (implicit or internal)
     """
@@ -73,7 +71,6 @@ class PhaseTransition(MultinodePenalty):
         self.max_bound = max_bound
         self.bounds = Bounds("phase_transition", interpolation=InterpolationType.CONSTANT)
         self.node = Node.TRANSITION
-        self.transition = True
         self.quadratic = True
 
     def add_or_replace_to_penalty_pool(self, ocp, nlp):
@@ -267,7 +264,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the last and first node after applying the impulse equations
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(transition, controllers)
 
             ocp = controllers[0].ocp
             if ocp.nlp[transition.nodes_phase[0]].states.shape != ocp.nlp[transition.nodes_phase[1]].states.shape:

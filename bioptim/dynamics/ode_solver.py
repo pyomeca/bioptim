@@ -281,7 +281,7 @@ class RK(OdeSolverBase):
         return nlp.states.scaled.cx_start
 
     def p_ode(self, nlp):
-        if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE):
+        if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ):
             return nlp.controls.scaled.cx_start
         else:
             return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)

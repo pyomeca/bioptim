@@ -33,7 +33,7 @@ def check_conditioning(ocp):
         The control at a given time
         """
 
-        if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
+        if nlp.control_type in (ControlType.CONSTANT, ):
             return u
         elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
@@ -334,7 +334,7 @@ def check_conditioning(ocp):
                 nlp.stochastic_variables.node_index = node_index
 
                 # Test every possibility
-                if obj.multinode_penalty or obj.transition:
+                if obj.multinode_penalty:
                     phase = ocp.nlp[phase - 1]
                     nlp_post = nlp
                     time_pre = phase.time_cx_end

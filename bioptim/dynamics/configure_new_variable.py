@@ -440,7 +440,7 @@ class NewVariableConfiguration:
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_controls"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, s: u[self.nlp.controls.key_index(self.name), :] if u.any() else np.ndarray((self.nlp.controls[self.name].shape, 1)) * np.nan,
+                        lambda t0, phases_dt, node_idx, x, u, p, s: u[self.nlp.controls.key_index(self.name), :] if u.any() else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
                         legend=self.legend,

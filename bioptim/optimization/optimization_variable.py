@@ -246,10 +246,6 @@ class OptimizationVariableList:
             The index to set the current cx to
         """
 
-        if self.phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-            self._current_cx_to_get = 0
-            return
-
         if index < -1 or index > 2:
             raise ValueError(
                 "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "

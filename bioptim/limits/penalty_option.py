@@ -217,7 +217,6 @@ class PenaltyOption(OptionGeneric):
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
-        self.transition = False
         self.multinode_penalty = False
         self.nodes_phase = None  # This is relevant for multinodes
         self.nodes = None  # This is relevant for multinodes
@@ -657,10 +656,10 @@ class PenaltyOption(OptionGeneric):
 
     def _check_sanity_of_penalty_interactions(self, controller):
 
-        if self.transition and self.explicit_derivative:
-            raise ValueError("transition and explicit_derivative cannot be true simultaneously")
-        if self.transition and self.derivative:
-            raise ValueError("transition and derivative cannot be true simultaneously")
+        if self.multinode_penalty and self.explicit_derivative:
+            raise ValueError("multinode_penalty and explicit_derivative cannot be true simultaneously")
+        if self.multinode_penalty and self.derivative:
+            raise ValueError("multinode_penalty and derivative cannot be true simultaneously")
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
@@ -676,7 +675,7 @@ class PenaltyOption(OptionGeneric):
             )
 
     def _get_variable_inputs(self, controllers: list[PenaltyController, ...]):
-        if self.transition or self.multinode_penalty:
+        if self.multinode_penalty:
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             self.node_idx[0] = controller.node_index
 
@@ -698,7 +697,8 @@ class PenaltyOption(OptionGeneric):
 
         return controller, x, u, s
 
-    def _get_states(self, ocp, states, n_idx, sn_idx):
+    @staticmethod
+    def _get_states(ocp, states, n_idx, sn_idx):
         states.node_index = n_idx
 
         x = ocp.cx()
@@ -769,7 +769,7 @@ class PenaltyOption(OptionGeneric):
                 raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
 
         elif sn_idx.start == 2:
-            # This is not the actual endpoint but a mid point that must use cx_end
+            # This is not the actual endpoint but a midpoint that must use cx_end
             if sn_idx.stop == 3:
                 u = vertcat(u, controls.cx_end)
             else:
