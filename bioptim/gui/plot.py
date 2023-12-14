@@ -726,10 +726,6 @@ class PlotOcp:
 
         x = x_stepwise if custom_plot.type == PlotType.INTEGRATED else x_decision
 
-        if custom_plot.label:
-            if custom_plot.label[:16] == "PHASE_TRANSITION":
-                return np.zeros(np.shape(x)[0])
-
         # Compute the values of the plot at each node
         all_y = []
         for idx in range(len(custom_plot.node_idx)):

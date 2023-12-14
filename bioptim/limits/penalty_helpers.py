@@ -1,19 +1,34 @@
-from typing import Callable
+from typing import Callable, Protocol
 
 from casadi import MX, SX, DM, vertcat
 import numpy as np
 
-from ..misc.enums import QuadratureRule, PhaseDynamics, ControlType
+from ..misc.enums import QuadratureRule, PhaseDynamics
+
+
+class PenaltyProtocol(Protocol):
+    transition: bool  # If the penalty is a transition penalty
+    multinode_penalty: bool  # If the penalty is a multinode penalty
+    phase: int  # The phase of the penalty (only for non multinode or transition penalties)
+    nodes_phase: list[int, ...]  # The phases of the penalty (only for multinode penalties)
+    node_idx: list[int, ...]  # The node index of the penalty (only for non multinode or transition penalties)
+    multinode_idx: list[int, ...]  # The node index of the penalty (only for multinode penalties)
+    integration_rule: QuadratureRule  # The integration rule of the penalty
+    integrate: bool  # If the penalty is an integral penalty
+    derivative: bool  # If the penalty is a derivative penalty
+    explicit_derivative: bool  # If the penalty is an explicit derivative penalty
+    phase_dynamics: list[PhaseDynamics]  # The dynamics of the penalty (only for multinode penalties)
+    ns = list[int, ...]  # The number of shooting points of problem (only for multinode penalties)
 
 
 class PenaltyHelpers:
     
     @staticmethod
-    def t0(penalty, penalty_node_idx, get_t0: Callable):
+    def t0(penalty: PenaltyProtocol, penalty_node_idx, get_t0: Callable):
         """
         Parameters
         ----------
-        penalty: PenaltyFunctionAbstract
+        penalty: PenaltyProtocol
             The penalty function
         penalty_node_idx: int
             The index of the node in the penalty
@@ -92,7 +107,7 @@ class PenaltyHelpers:
             return _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
 
     @staticmethod
-    def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: bool):
+    def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: bool = False):
         node = penalty.node_idx[index]
 
         if penalty.transition or penalty.multinode_penalty:
@@ -129,33 +144,72 @@ class PenaltyHelpers:
 
         return penalty.target[0][..., penalty_node_idx]
 
+    @staticmethod
+    def get_multinode_penalty_subnodes_starting_index(p):
+        """
+        Prepare the current_cx_to_get for each of the controller. Basically it finds if this penalty has more than
+        one usage. If it does, it increments a counter of the cx used, up to the maximum. On phase_dynamics
+        being PhaseDynamics.ONE_PER_NODE, this is useless, as all the penalties uses cx_start.
+        """
+
+        out = []  # The cx index of the controllers in the order of the controllers
+        share_phase_nodes = {}
+        for phase_idx, node_idx, phase_dynamics, ns in zip(p.nodes_phase, p.multinode_idx, p.phase_dynamics, p.ns):
+            # Fill the share_phase_nodes dict with the number of times a phase is used and the nodes used
+            if phase_idx not in share_phase_nodes:
+                share_phase_nodes[phase_idx] = {"nodes_used": [], "available_cx": [0, 1, 2]}
+
+            # If there is no more available, it means there is more than 3 nodes in a single phase which is not possible
+            if not share_phase_nodes[phase_idx]["available_cx"]:
+                raise ValueError(
+                    "Multinode constraints with more than 3 nodes a single phase for SHARED_DURING_THE_PHASE "
+                    "is not possible"
+                )
+
+            if node_idx in share_phase_nodes[phase_idx]["nodes_used"]:
+                raise ValueError("It is not possible to constraints the same node twice")
+            share_phase_nodes[phase_idx]["nodes_used"].append(node_idx)
+
+            is_last_node = node_idx == ns
+
+            # If the phase dynamics is not shared, we can safely use cx_start all the time
+            if phase_dynamics == PhaseDynamics.ONE_PER_NODE:
+                out.append(2 if is_last_node else 0)  # cx_start or cx_end
+                continue
+
+            # Pick from the start if it is not the last node
+            next_idx_to_pick = -1 if is_last_node else 0
+
+            # next_idx will always be 2 for last node since it is not possible to have twice the same node (last) in the
+            # same phase (see above)
+            next_idx = share_phase_nodes[phase_idx]["available_cx"].pop(next_idx_to_pick)
+            if is_last_node:
+                # Override to signify that cx_end should behave as last node (mostly for the controls on last node)
+                next_idx = -1
+            out.append(next_idx)
+
+        return out
+
 
 def _get_multinode_indices(penalty, is_constructing_penalty: bool):
-    if penalty.transition:
-        if len(penalty.nodes_phase) != 2 or len(penalty.multinode_idx) != 2:
-            raise RuntimeError("Transition must have exactly 2 nodes and 2 phases")
-        phases = [penalty.nodes_phase[1], penalty.nodes_phase[0]]
-        nodes = [penalty.multinode_idx[1], penalty.multinode_idx[0]]
-        subnodes = [slice(0, 1), slice(-1, None)]
+    if not penalty.multinode_penalty and not penalty.transition:
+        raise RuntimeError("This function should only be called for multinode or transition penalties")
 
-    elif penalty.multinode_penalty:
-        phases = penalty.nodes_phase
-        nodes = penalty.multinode_idx
+    phases = penalty.nodes_phase
+    nodes = penalty.multinode_idx
 
-        if is_constructing_penalty:
-            if len(penalty.multinode_idx) == 2:
-                subnodes = [slice(0, 1), slice(-1, None)]
-            elif len(penalty.multinode_idx) == 3:
-                subnodes = [slice(0, 1), slice(1, 2), slice(-1, None)]
+    if is_constructing_penalty:
+        startings = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
+        subnodes = []
+        for starting in startings:
+            if starting < 0:
+                subnodes.append(slice(-1, None))
             else:
-                raise NotImplementedError("This multinode penalties is not implemented for more than 3 nodes")
-
-        else:
-            # No need to test for wrong sizes as it will have failed during the constructing phase already
-            subnodes = [slice(0, 1)] * len(penalty.multinode_idx)
+                subnodes.append(slice(starting, starting + 1))
 
     else:
-        raise RuntimeError("This function should not be called for this multinode penalties only")
+        # No need to test for wrong sizes as it will have failed during the constructing phase already
+        subnodes = [slice(0, 1)] * len(penalty.multinode_idx)
 
     return phases, nodes, subnodes
 

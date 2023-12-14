@@ -1,6 +1,5 @@
 from typing import Any, Callable
 
-import biorbd_casadi as biorbd
 from casadi import horzcat, vertcat, Function, MX, SX, jacobian, diag
 import numpy as np
 
@@ -69,7 +68,7 @@ class PenaltyOption(OptionGeneric):
     _check_target_dimensions(self, controller: PenaltyController, n_time_expected: int)
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
-    _set_penalty_function(self, controller: PenaltyController | list | tuple, fcn: MX | SX)
+    _set_penalty_function(self, controller: list[PenaltyController, ...], fcn: MX | SX)
         Finalize the preparation of the penalty (setting function and weighted_function)
     add_target_to_plot(self, controller: PenaltyController, combine_to: str)
         Interface to the plot so it can be properly added to the proper plot
@@ -77,7 +76,7 @@ class PenaltyOption(OptionGeneric):
         Internal interface to add (after having check the target dimensions) the target to the plot if needed
     add_or_replace_to_penalty_pool(self, ocp, nlp)
         Doing some configuration on the penalty and add it to the list of penalty
-    _add_penalty_to_pool(self, controller: PenaltyController | list[PenaltyController, ...])
+    _add_penalty_to_pool(self, controller: list[PenaltyController, ...])
         Return the penalty pool for the specified penalty (abstract)
     ensure_penalty_sanity(self, ocp, nlp)
         Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
@@ -165,6 +164,9 @@ class PenaltyOption(OptionGeneric):
         self.rows_is_set = False
         self.expand = expand
 
+        self.phase_dynamics = []  # This is set by _set_phase_dynamics
+        self.ns = []  # This is set by _set_ns
+
         self.target = None
         if target is not None:
             target = np.array(target)
@@ -226,7 +228,7 @@ class PenaltyOption(OptionGeneric):
 
         self.multi_thread = multi_thread
 
-    def set_penalty(self, penalty: MX | SX, controller: PenaltyController | list[PenaltyController, PenaltyController]):
+    def set_penalty(self, penalty: MX | SX, controllers: PenaltyController | list[PenaltyController, PenaltyController]):
         """
         Prepare the dimension and index of the penalty (including the target)
 
@@ -234,21 +236,27 @@ class PenaltyOption(OptionGeneric):
         ----------
         penalty: MX | SX,
             The actual penalty function
-        controller: PenaltyController | list[PenaltyController, PenaltyController]
+        controllers: PenaltyController | list[PenaltyController, PenaltyController]
             The penalty node elements
         """
 
         self.rows = self._set_dim_idx(self.rows, penalty.rows())
         self.cols = self._set_dim_idx(self.cols, penalty.columns())
         if self.target is not None:
-            if isinstance(controller, list):
+            if isinstance(controllers, list):
                 raise RuntimeError("Multinode constraints should call a self defined set_penalty")
 
-            self._check_target_dimensions(controller, len(controller.t))
+            self._check_target_dimensions(controllers, len(controllers.t))
             if self.plot_target:
-                self._finish_add_target_to_plot(controller)
-        self._set_penalty_function(controller, penalty)
-        self._add_penalty_to_pool(controller)
+                self._finish_add_target_to_plot(controllers)
+
+        if not isinstance(controllers, list):
+            controllers = [controllers]
+
+        self._set_phase_dynamics(controllers)
+        self._set_ns(controllers)
+        self._set_penalty_function(controllers, penalty)
+        self._add_penalty_to_pool(controllers)
 
     def _set_dim_idx(self, dim: list | tuple | range | np.ndarray, n_rows: int):
         """
@@ -412,8 +420,30 @@ class PenaltyOption(OptionGeneric):
 
         return diag(fcn_variation)
 
+    def _set_phase_dynamics(self, controllers: list[PenaltyController, ...]):
+        phase_dynamics = [c.get_nlp.phase_dynamics for c in controllers]
+        if self.phase_dynamics:
+            # If it was already set (e.g. for multinode), we want to make sure it is consistent
+            if self.phase_dynamics != phase_dynamics:
+                raise RuntimeError(
+                    "The phase dynamics of the penalty are not consistent. "
+                    "This should not happen. Please report this issue."
+                )
+        self.phase_dynamics = phase_dynamics
+
+    def _set_ns(self, controllers: list[PenaltyController, ...]):
+        ns = [c.ns for c in controllers]
+        if self.ns:
+            # If it was already set (e.g. for multinode), we want to make sure it is consistent
+            if self.ns != ns:
+                raise RuntimeError(
+                    "The number of shooting points of the penalty are not consistent. "
+                    "This should not happen. Please report this issue."
+                )
+        self.ns = ns
+
     def _set_penalty_function(
-        self, controller: PenaltyController | list[PenaltyController, PenaltyController], fcn: MX | SX
+        self, controller: list[PenaltyController, ...], fcn: MX | SX
     ):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
@@ -645,20 +675,17 @@ class PenaltyOption(OptionGeneric):
                 "Node.ALL_SHOOTING."
             )
 
-    def _get_variable_inputs(self, controller):
+    def _get_variable_inputs(self, controllers: list[PenaltyController, ...]):
         if self.transition or self.multinode_penalty:
-            if self.transition:
-                controllers = [controller[1], controller[0]]  # TODO put them in order?
-                controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
-            else:
-                controllers = controller
-                controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
-
+            controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             self.node_idx[0] = controller.node_index
 
             self.all_nodes_index = []
             for ctrl in controllers:
                 self.all_nodes_index.extend(ctrl.t)
+
+        else:
+            controller = controllers[0]
 
         self._check_sanity_of_penalty_interactions(controller)
 
@@ -692,6 +719,12 @@ class PenaltyOption(OptionGeneric):
                 x = vertcat(x, vertcat(states.cx_intermediates_list[0]))
             else:
                 raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
+
+        elif sn_idx.start == 2:
+            if sn_idx.stop == 3:
+                x = vertcat(x, vertcat(states.cx_end))
+            else:
+                raise ValueError("The sn_idx.stop should be 3 if sn_idx.start == 2")
 
         elif sn_idx.start == -1:
             x = vertcat(x, vertcat(states.cx_end))
@@ -735,6 +768,13 @@ class PenaltyOption(OptionGeneric):
             else:
                 raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
 
+        elif sn_idx.start == 2:
+            # This is not the actual endpoint but a mid point that must use cx_end
+            if sn_idx.stop == 3:
+                u = vertcat(u, controls.cx_end)
+            else:
+                raise ValueError("The sn_idx.stop should be 3 if sn_idx.start == 2")
+
         elif sn_idx.start == -1:
             if sn_idx.stop is not None:
                 raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
@@ -744,7 +784,6 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("The sn_idx.start should be 0 or -1")
         
         return u
-
 
     @staticmethod
     def define_target_mapping(controller: PenaltyController, key: str):
@@ -895,7 +934,7 @@ class PenaltyOption(OptionGeneric):
                 )
                 self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
-    def _add_penalty_to_pool(self, controller: PenaltyController | list[PenaltyController, ...]):
+    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
         """
         Return the penalty pool for the specified penalty (abstract)
 
@@ -940,42 +979,42 @@ class PenaltyOption(OptionGeneric):
         if not isinstance(self.node, (list, tuple)):
             self.node = (self.node,)
 
-        t = []
+        t_idx = []
         for node in self.node:
             if isinstance(node, int):
                 if node < 0 or node > nlp.ns:
                     raise RuntimeError(f"Invalid node, {node} must be between 0 and {nlp.ns}")
-                t.append(node)
+                t_idx.append(node)
             elif node == Node.START:
-                t.append(0)
+                t_idx.append(0)
             elif node == Node.MID:
                 if nlp.ns % 2 == 1:
-                    raise (ValueError("Number of shooting points must be even to use MID"))
-                t.append(nlp.ns // 2)
+                    raise ValueError("Number of shooting points must be even to use MID")
+                t_idx.append(nlp.ns // 2)
             elif node == Node.INTERMEDIATES:
-                t.extend(list(i for i in range(1, nlp.ns - 1)))
+                t_idx.extend(list(i for i in range(1, nlp.ns)))
             elif node == Node.PENULTIMATE:
                 if nlp.ns < 2:
-                    raise (ValueError("Number of shooting points must be greater than 1"))
-                t.append(nlp.ns - 1)
+                    raise ValueError("Number of shooting points must be greater than 1")
+                t_idx.append(nlp.ns - 1)
             elif node == Node.END:
-                t.append(nlp.ns)
+                t_idx.append(nlp.ns)
             elif node == Node.ALL_SHOOTING:
-                t.extend(range(nlp.ns))
+                t_idx.extend(range(nlp.ns))
             elif node == Node.ALL:
-                t.extend(range(nlp.ns + 1))
+                t_idx.extend(range(nlp.ns + 1))
             else:
                 raise RuntimeError(f"{node} is not a valid node")
 
-        x = [nlp.X[idx] for idx in t]
-        x_scaled = [nlp.X_scaled[idx] for idx in t]
+        x = [nlp.X[idx] for idx in t_idx]
+        x_scaled = [nlp.X_scaled[idx] for idx in t_idx]
         u, u_scaled = [], []
         if nlp.U is not None and (not isinstance(nlp.U, list) or nlp.U != []):
-            u = [nlp.U[idx] for idx in t if idx != nlp.ns]
-            u_scaled = [nlp.U_scaled[idx] for idx in t if idx != nlp.ns]
-        s = [nlp.S[idx] for idx in t]
-        s_scaled = [nlp.S_scaled[idx] for idx in t]
-        return PenaltyController(ocp, nlp, t, x, u, x_scaled, u_scaled, nlp.parameters.cx, s, s_scaled)
+            u = [nlp.U[idx] for idx in t_idx if idx != nlp.ns]
+            u_scaled = [nlp.U_scaled[idx] for idx in t_idx if idx != nlp.ns]
+        s = [nlp.S[idx] for idx in t_idx]
+        s_scaled = [nlp.S_scaled[idx] for idx in t_idx]
+        return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, s, s_scaled)
 
 
 def _get_u(control_type: ControlType, u: MX | SX, dt: MX | SX):

@@ -77,9 +77,8 @@ class Objective(PenaltyOption):
             penalty=objective, phase=phase, custom_function=custom_function, is_stochastic=is_stochastic, **params
         )
 
-    def _add_penalty_to_pool(self, controller: PenaltyController):
-        if isinstance(controller, (list, tuple)):
-            controller = controller[0]  # This is a special case of Node.TRANSITION
+    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
+        controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = (
@@ -486,9 +485,8 @@ class ParameterObjective(PenaltyOption):
 
         super(ParameterObjective, self).__init__(penalty=parameter_objective, custom_function=custom_function, **params)
 
-    def _add_penalty_to_pool(self, controller: PenaltyController):
-        if isinstance(controller, (list, tuple)):
-            controller = controller[0]  # This is a special case of Node.TRANSITION
+    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
+        controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = (

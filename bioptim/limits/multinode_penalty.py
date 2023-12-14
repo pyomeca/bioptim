@@ -4,6 +4,7 @@ from casadi import MX_eye, jacobian, Function, MX, vertcat
 from .constraints import PenaltyOption
 from .objective_functions import ObjectiveFunction
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
+from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import Node, PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import UniquePerPhaseOptionList
@@ -74,15 +75,13 @@ class MultinodePenalty(PenaltyOption):
         self.all_nodes_index = []  # This is filled when nodes are collapsed as actual time indices
         self.penalty_type = PenaltyType.INTERNAL
 
+        self.phase_dynamics = []  # This is set in _prepare_controller_cx
+        self.ns = []  # This is set in _prepare_controller_cx
+
     def _get_pool_to_add_penalty(self, ocp, nlp):
         raise NotImplementedError("This is an abstract method and should be implemented by child")
 
-    def _add_penalty_to_pool(self, controller: list[PenaltyController, PenaltyController]):
-        if not isinstance(controller, (list, tuple)):
-            raise RuntimeError(
-                "_add_penalty for multinode_penalty function was called without a list while it should not"
-            )
-
+    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
         ocp = controller[0].ocp
         nlp = controller[0].get_nlp
         pool = self._get_pool_to_add_penalty(ocp, nlp)
@@ -143,7 +142,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
             states_mapping = MultinodePenaltyFunctions.Functions._prepare_states_mapping(controllers, states_mapping)
 
             ctrl_0 = controllers[0]
@@ -181,7 +180,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the controls after and before
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
             ctrl_0 = controllers[0]
             controls_0 = ctrl_0.controls[key].cx
@@ -222,7 +221,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
             ctrl_0 = controllers[0]
             stochastic_0 = ctrl_0.stochastic_variables[key].cx
@@ -259,7 +258,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
             com_0 = controllers[0].model.center_of_mass(controllers[0].states["q"].cx)
 
@@ -287,7 +286,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
             com_dot_0 = controllers[0].model.center_of_mass_velocity(
                 controllers[0].states["q"].cx, controllers[0].states["qdot"].cx
@@ -319,7 +318,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the duration of the phases
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
             time_idx = [controller.get_time_parameter_idx() for i, controller in enumerate(controllers)]
 
@@ -348,7 +347,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The difference between the duration of the phases
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers, is_transition=True)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
             time_idx = [controller.get_time_parameter_idx() for i, controller in enumerate(controllers)]
 
@@ -623,35 +622,23 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             The expected difference between the last and first node provided by the user
             """
 
-            MultinodePenaltyFunctions.Functions._prepare_controller_cx(controllers)
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
             return penalty.custom_function(controllers, **extra_params)
 
         @staticmethod
-        def _prepare_controller_cx(controllers: list[PenaltyController, ...], is_transition=False):
+        def _prepare_controller_cx(penalty, controllers: list[PenaltyController, ...]):
             """
-            Prepare the current_cx_to_get for each of the controller. Basically it finds if this penalty has more than
-            one usage. If it does, it increments a counter of the cx used, up to the maximum. On phase_dynamics
-            being PhaseDynamics.ONE_PER_NODE, this is useless, as all the penalties uses cx_start.
+            This calls the _compute_controller_cx function for each of the controller then dispatch the cx appropriately
+            to the controllers
             """
-            existing_phases = []
-            if len(controllers) == 1:
-                # This does not make much sense in the context of multinode,
-                # but there is no reason to forbid it as it works
-                controllers[0].cx_index_to_get = 0
-            elif len(controllers) == 2:
-                # It seems that cx_index_to_get has two purposes, either it gathers cx_start, cx_mid or cx_end when its
-                # values are 0, 1 or 2 respectively or (see else case)
-                controllers[0].cx_index_to_get = 2  # cx_end
-                controllers[1].cx_index_to_get = 0  # cx_start
-            else:
-                # Or it gathers the cx_start of a node, depending on unknown reason
-                if len(controllers) > 3:
-                    raise NotImplementedError("Multinode constraints with more than 3 nodes is not supported yet")
 
-                controllers[0].cx_index_to_get = 0  # cx_start
-                controllers[1].cx_index_to_get = 1  # cx_mid
-                controllers[2].cx_index_to_get = 2  # cx_end
+            # This will be set again in set_penalty, but we need it before
+            penalty.phase_dynamics = [c.get_nlp.phase_dynamics for c in controllers]
+            penalty.ns = [c.get_nlp.ns for c in controllers]
 
+            indices = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
+            for index, c in zip(indices, controllers):
+                c.cx_index_to_get = index
 
         @staticmethod
         def _prepare_states_mapping(controllers: list[PenaltyController, ...], states_mapping: list[BiMapping, ...]):

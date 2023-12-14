@@ -250,7 +250,7 @@ class OptimizationVariableList:
             self._current_cx_to_get = 0
             return
 
-        if index < 0 or index > 2:
+        if index < -1 or index > 2:
             raise ValueError(
                 "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
                 "add more penalties than available in a multinode constraint. You can try to split the constraints "
@@ -258,7 +258,7 @@ class OptimizationVariableList:
             )
 
         else:
-            self._current_cx_to_get = index
+            self._current_cx_to_get = index if index != -1 else 2
 
     def append_fake(self, name: str, index: MX | SX | list, mx: MX, bimapping: BiMapping):
         """
