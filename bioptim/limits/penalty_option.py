@@ -500,19 +500,6 @@ class PenaltyOption(OptionGeneric):
         if self.is_stochastic:
             sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, x)
 
-        # TODO Add error message if there are free variables to guide the user? For instance controls with last node
-        self.function[node] = Function(
-            name,
-            [time_cx, phases_dt_cx, x, u, param_cx, s],
-            [sub_fcn],
-            ["t", "dt", "x", "u", "p", "s"],
-            ["val"],
-        )
-
-        if self.expand:
-            self.function[node] = self.function[node].expand()
-        self.function_non_threaded[node] = self.function[node]
-
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
@@ -526,48 +513,38 @@ class PenaltyOption(OptionGeneric):
             # TODO Remove all these declaration? I should already be in the state and control vector
 
             state_cx_start = controller.states_scaled.cx_start
-            if controller.ode_solver.is_direct_collocation:
-                state_cx_start = vertcat(state_cx_start, *controller.states_scaled.cx_intermediates_list)
             stochastic_start_cx = controller.stochastic_variables_scaled.cx_start
             stochastic_end_cx = controller.stochastic_variables_scaled.cx_end
+
+            if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                state_cx_end = controller.states_scaled.cx_end
+            else: 
+                state_cx_end = controller.integrate(
+                    t_span=controller.t_span,
+                    x0=controller.states.cx_start, 
+                    u=u, 
+                    p=controller.parameters.cx, 
+                    s=controller.stochastic_variables.cx_start
+                )["xf"]
 
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx_start = controller.controls_scaled.cx_start
-            if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
-                control_end = controller.controls.cx_start
-                control_end_unscaled = controller.controls.cx_start
-            else:
-                control_end = controller.controls.cx_end
-                control_end_unscaled = controller.controls.cx_end
+            if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                control_cx_end = controller.controls_scaled.cx_start
+            else: 
+                control_cx_end = controller.controls_scaled.cx_end
 
-            control_cx_end = _get_u(
-                controller.control_type, horzcat(controller.controls.cx_start, control_end), phases_dt_cx[self.phase],
+            fcn_at_one_instant = Function(
+                name, 
+                [time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, stochastic_start_cx], 
+                [sub_fcn],
             )
 
-            if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                state_cx_scaled = x
-                state_cx_end = controller.states_scaled.cx_end
-            else: 
-                control_cx_end_unscaled = _get_u(
-                    controller.control_type, 
-                    horzcat(controller.controls.cx_start, control_end_unscaled), 
-                    phases_dt_cx[self.phase],
-                )
-                state_cx_end = controller.integrate(
-                    t_span=controller.t_span,
-                    x0=controller.states.cx_start, 
-                    u=control_cx_end_unscaled, 
-                    p=controller.parameters.cx, 
-                    s=controller.stochastic_variables.cx_start
-                )["xf"]
-            if controller.ode_solver.is_direct_collocation:
-                state_cx_end = vertcat(state_cx_end, *controller.states.cx_intermediates_list)
-
-            func_at_start = self.function[node](
+            func_at_start = fcn_at_one_instant(
                 time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, stochastic_start_cx
             )
-            func_at_end = self.function[node](
+            func_at_end = fcn_at_one_instant(
                 time_cx, phases_dt_cx, state_cx_end, control_cx_end, param_cx, stochastic_end_cx
             )
             modified_fcn = ((func_at_start - target_cx[:, 0]) ** exponent + (func_at_end - target_cx[:, 1]) ** exponent) / 2
@@ -575,7 +552,7 @@ class PenaltyOption(OptionGeneric):
             # This reimplementation is required because input sizes change. It will however produce wrong result
             # for non weighted functions
             self.function[node] = Function(
-                f"{name}",
+                name,
                 [time_cx, phases_dt_cx, x, u, param_cx, s],
                 [(func_at_start + func_at_end) / 2],
                 ["t", "dt", "x", "u", "p", "s"],
@@ -583,10 +560,26 @@ class PenaltyOption(OptionGeneric):
             )
 
         else:
+            # TODO Add error message if there are free variables to guide the user? For instance controls with last node
+            self.function[node] = Function(
+                name,
+                [time_cx, phases_dt_cx, x, u, param_cx, s],
+                [sub_fcn],
+                ["t", "dt", "x", "u", "p", "s"],
+                ["val"],
+            )
+
             modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, s) - target_cx) ** exponent
 
+            
+        if self.expand:
+            self.function[node] = self.function[node].expand()
+
+        self.function_non_threaded[node] = self.function[node]
+        
         # weight is zero for constraints penalty and non-zero for objective functions
         modified_fcn = (weight_cx * modified_fcn * self.dt) if self.weight else (modified_fcn * self.dt)
+
         self.weighted_function[node] = Function(
             name,
             [time_cx, phases_dt_cx, x, u, param_cx, s, weight_cx, target_cx],
@@ -972,29 +965,3 @@ class PenaltyOption(OptionGeneric):
         s = [nlp.S[idx] for idx in t_idx]
         s_scaled = [nlp.S_scaled[idx] for idx in t_idx]
         return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, s, s_scaled)
-
-
-def _get_u(control_type: ControlType, u: MX | SX, dt: MX | SX):
-    """
-    Helper function to get the control at a given time
-
-    Parameters
-    ----------
-    control_type: ControlType
-        The type of control
-    u: MX | SX
-        The control matrix
-    dt: MX | SX
-        The time a which control should be computed
-
-    Returns
-    -------
-    The control at a given time
-    """
-
-    if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-        return u[:, 0]
-    elif control_type == ControlType.LINEAR_CONTINUOUS:
-        return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
-    else:
-        raise RuntimeError(f"{control_type} ControlType not implemented yet")

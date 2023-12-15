@@ -80,9 +80,9 @@ class PenaltyHelpers:
 
         node = penalty.node_idx[index]
 
-        if penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,) or penalty.integrate:
-            x = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, None)))
-            
+        if penalty.integrate or penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,):
+            x = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
+
             if is_constructing_penalty:
                 x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None))))
             else:
