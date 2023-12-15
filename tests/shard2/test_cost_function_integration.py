@@ -21,7 +21,6 @@ from bioptim import (
     BoundsList,
     Solver,
     PhaseDynamics,
-    Node,
 )
 
 
@@ -70,7 +69,7 @@ def prepare_ocp(
     # Add objective functions
     if objective == "torque":
         objective_functions = Objective(
-            ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", integration_rule=integration_rule, target=target, node=Node.ALL if control_type == ControlType.LINEAR_CONTINUOUS else Node.ALL_SHOOTING
+            ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", integration_rule=integration_rule, target=target, 
         )
     elif objective == "qdot":
         objective_functions = Objective(

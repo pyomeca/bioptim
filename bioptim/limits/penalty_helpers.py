@@ -134,7 +134,7 @@ class PenaltyHelpers:
                 u1 = u0
             return _vertcat([u0, u1])
         else:
-            return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, None)))
+            return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
             
     @staticmethod
     def parameters(penalty, get_parameter: Callable):

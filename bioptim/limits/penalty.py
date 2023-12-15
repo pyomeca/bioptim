@@ -1138,8 +1138,7 @@ class PenaltyFunctionAbstract:
                     f" actual length {len(penalty.node_idx[0])} "
                 )
             
-            t0 = controller.ocp.node_time(controller.phase_idx, controller.node_index)
-            t_span = vertcat(t0, t0 + controller.get_nlp.dt)
+            t_span = vertcat(controller.time.cx, controller.time.cx + controller.get_nlp.dt)
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
