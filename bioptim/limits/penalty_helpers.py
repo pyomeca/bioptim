@@ -119,12 +119,19 @@ class PenaltyHelpers:
                 u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
             return _vertcat(u)
 
-        if is_constructing_penalty:
-            return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, None)))
-
         if penalty.control_types[0] == ControlType.LINEAR_CONTINUOUS:
+            if is_constructing_penalty:
+                if node < penalty.ns[0] or penalty.phase_dynamics[0] == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                    # The last node should only be the last node except if the dynamics is shared, it should be the last
+                    return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, None)))
+                else: 
+                    return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
+            
             u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
             u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
+            if u1.shape[0] == 0 and penalty.phase_dynamics[0] == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                # In shared dynamics, it is expected that the last node always have a value
+                u1 = u0
             return _vertcat([u0, u1])
         else:
             return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, None)))

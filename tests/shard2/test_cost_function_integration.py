@@ -21,6 +21,7 @@ from bioptim import (
     BoundsList,
     Solver,
     PhaseDynamics,
+    Node,
 )
 
 
@@ -69,7 +70,7 @@ def prepare_ocp(
     # Add objective functions
     if objective == "torque":
         objective_functions = Objective(
-            ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", integration_rule=integration_rule, target=target
+            ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", integration_rule=integration_rule, target=target, node=Node.ALL if control_type == ControlType.LINEAR_CONTINUOUS else Node.ALL_SHOOTING
         )
     elif objective == "qdot":
         objective_functions = Objective(
@@ -186,6 +187,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                 np.testing.assert_almost_equal(f[0, 0], 18.91863487850207)
                 np.testing.assert_almost_equal(j_printed, 18.91863487850207)
                 np.testing.assert_almost_equal(tau[:, -1], np.array([-17.24468626, 0.]))
+                
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
             if objective == "torque":
@@ -211,6 +213,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
             else:
                 np.testing.assert_almost_equal(f[0, 0], 18.918634878502065)
                 np.testing.assert_almost_equal(j_printed, 18.918634878502065)
+
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 52.0209218166193)
@@ -218,6 +221,10 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
             else:
                 np.testing.assert_almost_equal(f[0, 0], 18.844221574687065)
                 np.testing.assert_almost_equal(j_printed, 18.844221574687065)
+
+        else:
+            raise NotImplementedError("Control type not implemented yet")
+        
     elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             np.testing.assert_equal(tau[:, -1], np.array([np.nan, np.nan]))

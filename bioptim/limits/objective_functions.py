@@ -375,6 +375,7 @@ class ObjectiveFcn:
         MINIMIZE_COM_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_com_acceleration,)
         MINIMIZE_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
         MINIMIZE_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
+        MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
         MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
         MINIMIZE_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
         MINIMIZE_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)

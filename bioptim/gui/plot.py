@@ -345,7 +345,7 @@ class PlotOcp:
                             penalty = nlp.plot[key].parameters["penalty"]
 
                             # As stated in penalty_option, the last controller is always supposed to be the right one
-                            casadi_function = penalty.function[-1]
+                            casadi_function = penalty.function[0] if penalty.function[0] is not None else penalty.function[-1]
                             if casadi_function is not None:
                                 size_x = casadi_function.size_in("x")[0]
                                 size_u = casadi_function.size_in("u")[0]
