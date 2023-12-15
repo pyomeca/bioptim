@@ -159,9 +159,15 @@ class Model:
                 as_controls=False,
             )
 
-        stim_apparition = [ocp.node_time(phase_idx=i, node_idx=0) for i in range(nlp.phase_idx + 1)]
+        # stim_apparition = [ocp.node_time(phase_idx=i, node_idx=0) for i in range(nlp.phase_idx + 1)]
+
+        stim_apparition = [0]
+        for i in range(nlp.phase_idx):
+            stim = ocp.nlp[i].dt_mx * ocp.nlp[i].ns
+            stim_apparition.append(stim + stim_apparition[-1])
+
         ConfigureProblem.configure_dynamics_function(
-            ocp, nlp, dyn_func=self.dynamics, stim_apparition=stim_apparition, allow_free_variables=True
+            ocp, nlp, dyn_func=self.dynamics, stim_apparition=stim_apparition, allow_free_variables=True if not self.time_as_states else False
         )
 
 
@@ -179,14 +185,15 @@ def prepare_ocp(
     n_shooting = [n_shooting] * n_stim
 
     constraints = ConstraintList()
-    for i in range(n_stim):
-        constraints.add(
-            ConstraintFcn.TIME_CONSTRAINT,
-            node=Node.END,
-            min_bound=time_min,
-            max_bound=time_max,
-            phase=i,
-        )
+    if time_min and time_max:
+        for i in range(n_stim):
+            constraints.add(
+                ConstraintFcn.TIME_CONSTRAINT,
+                node=Node.END,
+                min_bound=time_min,
+                max_bound=time_max,
+                phase=i,
+            )
 
     step_phase = final_time / n_stim
     final_time_phase = [step_phase] * n_stim
@@ -271,7 +278,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         constraints=constraints,
         use_sx=use_sx,
-        ode_solver=OdeSolver.RK4(n_integration_steps=1, allow_free_variables=True),
+        ode_solver=OdeSolver.RK4(n_integration_steps=1, allow_free_variables=True if not model.time_as_states else False),
     )
 
 
@@ -644,3 +651,22 @@ def test_time_dependent_ding(time_mapping, use_sx, time_as_states):
 
     # plt.plot(time_vector, cn_vector)
     # plt.show()
+
+
+def test_fixed_time_dependent_ding():
+    ocp = prepare_ocp(
+        model=Model(time_as_states=False),
+        n_stim=10,
+        n_shooting=10,
+        final_time=1,
+        time_bimapping=False,
+        use_sx=True,
+    )
+
+    sol = ocp.solve()
+    force_vector, cn_vector, time_vector = result_vectors(sol)
+    plt.plot(time_vector, force_vector)
+    plt.show()
+
+    plt.plot(time_vector, cn_vector)
+    plt.show()
