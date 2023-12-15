@@ -77,6 +77,7 @@ class MultinodePenalty(PenaltyOption):
 
         self.phase_dynamics = []  # This is set in _prepare_controller_cx
         self.ns = []  # This is set in _prepare_controller_cx
+        self.control_types = []  # This is set in _prepare_controller_cx
 
     def _get_pool_to_add_penalty(self, ocp, nlp):
         raise NotImplementedError("This is an abstract method and should be implemented by child")
@@ -635,6 +636,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             # This will be set again in set_penalty, but we need it before
             penalty.phase_dynamics = [c.get_nlp.phase_dynamics for c in controllers]
             penalty.ns = [c.get_nlp.ns for c in controllers]
+            penalty.control_types = [c.get_nlp.control_type for c in controllers]
 
             indices = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
             for index, c in zip(indices, controllers):

@@ -166,6 +166,7 @@ class PenaltyOption(OptionGeneric):
 
         self.phase_dynamics = []  # This is set by _set_phase_dynamics
         self.ns = []  # This is set by _set_ns
+        self.control_types = None  # This is set by _set_control_types
 
         self.target = None
         if target is not None:
@@ -254,6 +255,7 @@ class PenaltyOption(OptionGeneric):
 
         self._set_phase_dynamics(controllers)
         self._set_ns(controllers)
+        self._set_control_types(controllers)
         self._set_penalty_function(controllers, penalty)
         self._add_penalty_to_pool(controllers)
 
@@ -440,6 +442,17 @@ class PenaltyOption(OptionGeneric):
                     "This should not happen. Please report this issue."
                 )
         self.ns = ns
+
+    def _set_control_types(self, controllers: list[PenaltyController, ...]):
+        control_types = [c.control_type for c in controllers]
+        if self.control_types:
+            # If it was already set (e.g. for multinode), we want to make sure it is consistent
+            if self.control_types != control_types:
+                raise RuntimeError(
+                    "The control types of the penalty are not consistent. "
+                    "This should not happen. Please report this issue."
+                )
+        self.control_types = control_types
 
     def _set_penalty_function(
         self, controller: list[PenaltyController, ...], fcn: MX | SX
@@ -681,8 +694,13 @@ class PenaltyOption(OptionGeneric):
         controls.node_index = n_idx
 
         def vertcat_cx_end():
-            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ):
                 return vertcat(u, controls.scaled.cx_end)
+            elif nlp.control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ):
+                if self.integrate or self.derivative or self.explicit_derivative:
+                    return u
+                else:
+                    return vertcat(u, controls.scaled.cx_end)
             elif nlp.control_type in (ControlType.CONSTANT,):
                 if n_idx < nlp.n_controls_nodes and not (self.integrate or self.derivative or self.explicit_derivative):
                     return vertcat(u, controls.scaled.cx_end)

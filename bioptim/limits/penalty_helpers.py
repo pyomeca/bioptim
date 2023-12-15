@@ -3,7 +3,7 @@ from typing import Callable, Protocol
 from casadi import MX, SX, DM, vertcat
 import numpy as np
 
-from ..misc.enums import QuadratureRule, PhaseDynamics
+from ..misc.enums import QuadratureRule, PhaseDynamics, ControlType
 
 
 class PenaltyProtocol(Protocol):
@@ -19,6 +19,7 @@ class PenaltyProtocol(Protocol):
     explicit_derivative: bool  # If the penalty is an explicit derivative penalty
     phase_dynamics: list[PhaseDynamics]  # The dynamics of the penalty (only for multinode penalties)
     ns = list[int, ...]  # The number of shooting points of problem (only for multinode penalties)
+    control_types: ControlType  # The control type of the penalties
 
 
 class PenaltyHelpers:
@@ -114,16 +115,20 @@ class PenaltyHelpers:
             u = []
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             for phase, node, sub in zip(phases, nodes, subnodes):
+                # No need to test for control types as this is never integrated (so we only need the starting value)
                 u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
             return _vertcat(u)
 
-        elif penalty.integrate or penalty.derivative or penalty.explicit_derivative:
-            # FIX THIS!
+        if is_constructing_penalty:
+            return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, None)))
+
+        if penalty.control_types[0] == ControlType.LINEAR_CONTINUOUS:
+            u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
+            u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
+            return _vertcat([u0, u1])
+        else:
             return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, None)))
             
-        else:
-            return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
-
     @staticmethod
     def parameters(penalty, get_parameter: Callable):
         p = get_parameter()
