@@ -828,52 +828,28 @@ class OptimalControlProgram:
 
             if nlp.dynamics_type.state_continuity_weight is None:
                 # Continuity as constraints
-                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                penalty = Constraint(
+                    ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
+                )
+                penalty.add_or_replace_to_penalty_pool(self, nlp)
+                if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_collocation_starting_point:
                     penalty = Constraint(
-                        ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
-                    )
-                    penalty.add_or_replace_to_penalty_pool(self, nlp)
-                    if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_collocation_starting_point:
-                        penalty = Constraint(
-                            ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
-                            node=Node.ALL_SHOOTING,
-                            penalty_type=PenaltyType.INTERNAL,
-                        )
-                        penalty.add_or_replace_to_penalty_pool(self, nlp)
-                else:
-                    for shooting_node in range(nlp.ns):
-                        penalty = Constraint(
-                            ConstraintFcn.STATE_CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL
-                        )
-                        penalty.add_or_replace_to_penalty_pool(self, nlp)
-                        if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_collocation_starting_point:
-                            penalty = Constraint(
-                                ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
-                                node=shooting_node,
-                                penalty_type=PenaltyType.INTERNAL,
-                            )
-                            penalty.add_or_replace_to_penalty_pool(self, nlp)
-            else:
-                # Continuity as objectives
-                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
-                    penalty = Objective(
-                        ObjectiveFcn.Mayer.STATE_CONTINUITY,
-                        weight=nlp.dynamics_type.state_continuity_weight,
-                        quadratic=True,
+                        ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
                         node=Node.ALL_SHOOTING,
                         penalty_type=PenaltyType.INTERNAL,
                     )
                     penalty.add_or_replace_to_penalty_pool(self, nlp)
-                else:
-                    for shooting_point in range(nlp.ns):
-                        penalty = Objective(
-                            ObjectiveFcn.Mayer.STATE_CONTINUITY,
-                            weight=nlp.dynamics_type.state_continuity_weight,
-                            quadratic=True,
-                            node=shooting_point,
-                            penalty_type=PenaltyType.INTERNAL,
-                        )
-                        penalty.add_or_replace_to_penalty_pool(self, nlp)
+
+            else:
+                # Continuity as objectives
+                penalty = Objective(
+                    ObjectiveFcn.Mayer.STATE_CONTINUITY,
+                    weight=nlp.dynamics_type.state_continuity_weight,
+                    quadratic=True,
+                    node=Node.ALL_SHOOTING,
+                    penalty_type=PenaltyType.INTERNAL,
+                )
+                penalty.add_or_replace_to_penalty_pool(self, nlp)
 
         for pt in self.phase_transitions:
             # Phase transition as constraints

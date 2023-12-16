@@ -119,20 +119,27 @@ class PenaltyHelpers:
                 u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
             return _vertcat(u)
 
-        if penalty.control_types[0] == ControlType.LINEAR_CONTINUOUS:
+        elif penalty.control_types[0] == ControlType.LINEAR_CONTINUOUS:
             if is_constructing_penalty:
-                if node < penalty.ns[0] or penalty.phase_dynamics[0] == PhaseDynamics.SHARED_DURING_THE_PHASE:
-                    # The last node should only be the last node except if the dynamics is shared, it should be the last
-                    return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, None)))
-                else: 
-                    return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
-            
-            u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
-            u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
-            if u1.shape[0] == 0 and penalty.phase_dynamics[0] == PhaseDynamics.SHARED_DURING_THE_PHASE:
-                # In shared dynamics, it is expected that the last node always have a value
-                u1 = u0
-            return _vertcat([u0, u1])
+                final_subnode = None if node < penalty.ns[0] else 1
+                u = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, final_subnode)))
+            else:
+                u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
+                u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
+                u = _vertcat([u0, u1])
+            return u
+        
+        elif penalty.integration_rule in (QuadratureRule.TRAPEZOIDAL, ):
+            if is_constructing_penalty:
+                u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))  # cx_start
+                u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
+                u = _vertcat([u0, u1])
+            else:
+                u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
+                u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
+                u = _vertcat([u0, u1])
+            return u
+
         else:
             return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
             
@@ -161,8 +168,7 @@ class PenaltyHelpers:
     def get_multinode_penalty_subnodes_starting_index(p):
         """
         Prepare the current_cx_to_get for each of the controller. Basically it finds if this penalty has more than
-        one usage. If it does, it increments a counter of the cx used, up to the maximum. On phase_dynamics
-        being PhaseDynamics.ONE_PER_NODE, this is useless, as all the penalties uses cx_start.
+        one usage. If it does, it increments a counter of the cx used, up to the maximum. 
         """
 
         out = []  # The cx index of the controllers in the order of the controllers
@@ -186,7 +192,8 @@ class PenaltyHelpers:
 
             is_last_node = node_idx == ns
 
-            # If the phase dynamics is not shared, we can safely use cx_start all the time
+            # If the phase dynamics is not shared, we can safely use cx_start all the time since the node 
+            # is never the same. This allows to have arbitrary number of nodes penalties in a single phase
             if phase_dynamics == PhaseDynamics.ONE_PER_NODE:
                 out.append(2 if is_last_node else 0)  # cx_start or cx_end
                 continue
