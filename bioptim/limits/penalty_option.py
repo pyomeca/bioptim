@@ -216,6 +216,7 @@ class PenaltyOption(OptionGeneric):
         self.nodes = None  # This is relevant for multinodes
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be both True")
+        self.subnodes_are_decision_states = []  # This is set by _set_subnodes_are_decision_states
         self.penalty_type = penalty_type
         self.is_stochastic = is_stochastic
 
@@ -249,6 +250,7 @@ class PenaltyOption(OptionGeneric):
         self._set_phase_dynamics(controllers)
         self._set_ns(controllers)
         self._set_control_types(controllers)
+        self._set_subnodes_are_decision_states(controllers)
         
         self._set_penalty_function(controllers, penalty)
         self._add_penalty_to_pool(controllers)
@@ -437,6 +439,17 @@ class PenaltyOption(OptionGeneric):
                     "This should not happen. Please report this issue."
                 )
         self.control_types = control_types
+
+    def _set_subnodes_are_decision_states(self, controllers: list[PenaltyController, ...]):
+        subnodes_are_decision_states = [c.get_nlp.ode_solver.is_direct_collocation for c in controllers]
+        if self.subnodes_are_decision_states:
+            # If it was already set (e.g. for multinode), we want to make sure it is consistent
+            if self.subnodes_are_decision_states != subnodes_are_decision_states:
+                raise RuntimeError(
+                    "The subnodes_are_decision_states of the penalty are not consistent. "
+                    "This should not happen. Please report this issue."
+                )
+        self.subnodes_are_decision_states = subnodes_are_decision_states
 
     def _set_penalty_function(
         self, controllers: list[PenaltyController, ...], fcn: MX | SX

@@ -200,7 +200,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                     out += fcn(
                         0, 
                         dt,
-                        states[:, i],  # States
+                        states[:, i:i+2].reshape((-1, 1)),  # States
                         controls[:, i:i+2].reshape((-1, 1)),  # Controls
                         [],  # Parameters
                         [],  # Stochastic variables

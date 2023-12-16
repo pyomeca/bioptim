@@ -13,6 +13,7 @@ class PenaltyProtocol(Protocol):
     nodes_phase: list[int, ...]  # The phases of the penalty (only for multinode penalties)
     node_idx: list[int, ...]  # The node index of the penalty (only for non multinode or transition penalties)
     multinode_idx: list[int, ...]  # The node index of the penalty (only for multinode penalties)
+    subnodes_are_decision_states: list[bool]  # If the subnodes are decision states (e.g. collocation points)
     integrate: bool  # If the penalty is an integral penalty
     derivative: bool  # If the penalty is a derivative penalty
     explicit_derivative: bool  # If the penalty is an explicit derivative penalty
@@ -72,24 +73,7 @@ class PenaltyHelpers:
 
         node = penalty.node_idx[index]
 
-        if penalty.integrate:
-            x = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
-
-            if is_constructing_penalty:
-                x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None))))
-            else:
-                x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1))))
-            return x
-        
-        elif penalty.derivative or penalty.explicit_derivative:
-            x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
-            if is_constructing_penalty:
-                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None)))
-            else: 
-                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1)))
-            return vertcat(x1, x0) if penalty.derivative else vertcat(x0, x1)
-
-        elif penalty.multinode_penalty:
+        if penalty.multinode_penalty:
             x = []
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             for phase, node, sub in zip(phases, nodes, subnodes):
@@ -97,7 +81,16 @@ class PenaltyHelpers:
             return _vertcat(x)
         
         else:
-            return _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
+            if penalty.subnodes_are_decision_states[0]:
+                x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, None)))
+            else:
+                x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
+
+            if is_constructing_penalty:
+                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None)))
+            else:
+                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1)))
+            return vertcat(x1, x0) if penalty.derivative else vertcat(x0, x1)
 
     @staticmethod
     def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: bool = False):
