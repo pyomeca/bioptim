@@ -144,16 +144,9 @@ class PenaltyOption(OptionGeneric):
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
         self.node: Node | list | tuple = node
         self.quadratic = quadratic
-        if integration_rule not in (
-            QuadratureRule.DEFAULT,
-            QuadratureRule.RECTANGLE_LEFT,
-            QuadratureRule.TRAPEZOIDAL,
-            QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
-        ):
-            raise NotImplementedError(
-                f"{params['integration_rule']} has not been implemented yet for objective functions."
-            )
         self.integration_rule = integration_rule
+        if self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL):
+            integrate = True
         self.extra_arguments = params
 
         if index is not None and rows is not None:

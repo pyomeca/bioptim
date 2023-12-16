@@ -193,8 +193,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874185)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874185)
 
-                controls_faking_constant = sol.controls["tau"]
-                controls_faking_constant[:, -1] = 0
+                controls = sol.controls["tau"]
                 states = np.vstack((sol.states["q"], sol.states["qdot"]))
                 out = 0
                 for i, fcn in enumerate(ocp.nlp[0].J[0].weighted_function):
@@ -202,13 +201,13 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                         0, 
                         dt,
                         states[:, i],  # States
-                        controls_faking_constant[:, i],  # Controls
+                        controls[:, i:i+2].reshape((-1, 1)),  # Controls
                         [],  # Parameters
                         [],  # Stochastic variables
                         ocp.nlp[0].J[0].weight,  # Weight
                         [],  # Target
                     )
-                np.testing.assert_almost_equal(np.array([out])[0][0][0], 36.077211633874185)
+                np.testing.assert_almost_equal(float(out[0, 0]), 36.077211633874185)
             else:
                 np.testing.assert_almost_equal(f[0, 0], 18.918634878502065)
                 np.testing.assert_almost_equal(j_printed, 18.918634878502065)

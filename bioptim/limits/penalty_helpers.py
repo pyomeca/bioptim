@@ -3,7 +3,7 @@ from typing import Callable, Protocol
 from casadi import MX, SX, DM, vertcat
 import numpy as np
 
-from ..misc.enums import QuadratureRule, PhaseDynamics, ControlType
+from ..misc.enums import PhaseDynamics, ControlType
 
 
 class PenaltyProtocol(Protocol):
@@ -13,7 +13,6 @@ class PenaltyProtocol(Protocol):
     nodes_phase: list[int, ...]  # The phases of the penalty (only for multinode penalties)
     node_idx: list[int, ...]  # The node index of the penalty (only for non multinode or transition penalties)
     multinode_idx: list[int, ...]  # The node index of the penalty (only for multinode penalties)
-    integration_rule: QuadratureRule  # The integration rule of the penalty
     integrate: bool  # If the penalty is an integral penalty
     derivative: bool  # If the penalty is a derivative penalty
     explicit_derivative: bool  # If the penalty is an explicit derivative penalty
@@ -73,7 +72,7 @@ class PenaltyHelpers:
 
         node = penalty.node_idx[index]
 
-        if penalty.integrate or penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,):
+        if penalty.integrate:
             x = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
 
             if is_constructing_penalty:
@@ -112,7 +111,7 @@ class PenaltyHelpers:
                 u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
             return _vertcat(u)
 
-        elif penalty.control_types[0] == ControlType.LINEAR_CONTINUOUS:
+        if penalty.control_types[0] in (ControlType.LINEAR_CONTINUOUS, ):
             if is_constructing_penalty:
                 final_subnode = None if node < penalty.ns[0] else 1
                 u = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, final_subnode)))
@@ -122,20 +121,18 @@ class PenaltyHelpers:
                 u = _vertcat([u0, u1])
             return u
         
-        elif penalty.integration_rule in (QuadratureRule.TRAPEZOIDAL, ):
+        else:
             if is_constructing_penalty:
-                u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))  # cx_start
-                u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
-                u = _vertcat([u0, u1])
+                u = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))  # cx_start
+                if node < penalty.ns[0] - 1 or penalty.control_types[0] == ControlType.CONSTANT_WITH_LAST_NODE:
+                    u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
+                    u = vertcat(u, u1)
             else:
                 u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
                 u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
                 u = _vertcat([u0, u1])
             return u
 
-        else:
-            return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
-            
     @staticmethod
     def parameters(penalty, get_parameter: Callable):
         p = get_parameter()
@@ -150,7 +147,7 @@ class PenaltyHelpers:
         if penalty.target is None:
             return np.array([])
         
-        if penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL):
+        if penalty.integrate:
             target0 = penalty.target[0][..., penalty_node_idx]
             target1 = penalty.target[1][..., penalty_node_idx]
             return np.vstack((target0, target1)).T
