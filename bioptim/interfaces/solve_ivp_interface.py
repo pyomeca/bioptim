@@ -56,7 +56,7 @@ def solve_ivp_interface(
             u_slice = slice(ss, ss + 1) if control_type == ControlType.CONSTANT else slice(ss, ss + 2)
 
             # resize u to match the size of t_eval according to the type of control
-            if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            if control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 ui = np.repeat(u[:, u_slice], t_eval_step.shape[0], axis=1)
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)
@@ -104,7 +104,7 @@ def solve_ivp_interface(
             u_slice = slice(ss, ss + 1) if control_type == ControlType.CONSTANT else slice(ss, ss + 2)
 
             # resize u to match the size of t_eval according to the type of control
-            if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+            if control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 ui = np.repeat(u[:, u_slice], t_eval_step.shape[0], axis=1)
             elif control_type == ControlType.LINEAR_CONTINUOUS:
                 f = interp1d(t_eval_step[[0, -1]], u[:, u_slice], kind="linear", axis=1)

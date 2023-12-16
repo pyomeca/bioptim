@@ -256,14 +256,14 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874164)
             else:
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-16.29099346,   0.        ]))
-                np.testing.assert_almost_equal(f[0, 0], 17.944878542423062)
-                np.testing.assert_almost_equal(j_printed, 17.944878542423062)
+                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.3519514,   0.        ]))
+                np.testing.assert_almost_equal(f[0, 0], 18.112963129413707)
+                np.testing.assert_almost_equal(j_printed, 18.112963129413707)
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([0, 0]))
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
-                np.testing.assert_almost_equal(j_printed, 36.077211633874164)
+                np.testing.assert_almost_equal(f[0, 0], 31.527671241118135)
+                np.testing.assert_almost_equal(j_printed, 31.527671241118135)
             else:
                 np.testing.assert_almost_equal(f[0, 0], 17.944878542423062)
                 np.testing.assert_almost_equal(j_printed, 17.944878542423062)

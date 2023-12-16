@@ -507,10 +507,11 @@ class PenaltyOption(OptionGeneric):
             if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
                 state_cx_end = controller.states_scaled.cx_end
             elif self.integration_rule == QuadratureRule.TRAPEZOIDAL: 
+                u_integrate = u.reshape((-1, 2))
                 if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE ):
-                    u_integrate = u[:controller.controls.shape, :]
+                    u_integrate = u_integrate[:, 0]
                 elif self.control_types[0] in (ControlType.LINEAR_CONTINUOUS,):
-                    u_integrate = u
+                    pass
                 else:
                     raise NotImplementedError(f"Control type {self.control_types[0]} not implemented yet")
 
