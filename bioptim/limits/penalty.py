@@ -1129,7 +1129,7 @@ class PenaltyFunctionAbstract:
 
             penalty.expand = controller.get_nlp.dynamics_type.expand_continuity
             
-            t_span = vertcat(controller.time.cx, controller.time.cx + controller.get_nlp.dt)
+            t_span = vertcat(controller.time.cx, controller.time.cx + controller.dt)
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))

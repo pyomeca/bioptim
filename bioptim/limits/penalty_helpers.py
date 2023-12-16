@@ -38,16 +38,9 @@ class PenaltyHelpers:
         
         TODO COMPLETE
         """
-
-        if penalty.multinode_penalty:
-            phases, nodes, _ = _get_multinode_indices(penalty, is_constructing_penalty=False)
-            phase = phases[0]
-            node = nodes[0]
-        else:
-            phase = penalty.phase
-            node = penalty.node_idx[penalty_node_idx]
-
-        return get_t0(phase, node)[0, 0]
+        
+        # Time penalty is baked in the penalty declaration. No need to add it here
+        return 0
 
     @staticmethod
     def phases_dt(penalty, ocp, get_all_dt: Callable):

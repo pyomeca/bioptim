@@ -134,7 +134,11 @@ class PenaltyController:
         return self._nlp.model
 
     @property
-    def tf(self) -> int:
+    def dt(self) -> MX | SX:
+        return self._nlp.dt
+
+    @property
+    def tf(self) -> MX | SX:
         return self._nlp.tf
     
     @property

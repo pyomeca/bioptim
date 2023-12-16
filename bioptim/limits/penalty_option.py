@@ -256,6 +256,7 @@ class PenaltyOption(OptionGeneric):
         self._set_phase_dynamics(controllers)
         self._set_ns(controllers)
         self._set_control_types(controllers)
+        
         self._set_penalty_function(controllers, penalty)
         self._add_penalty_to_pool(controllers)
 
@@ -475,6 +476,7 @@ class PenaltyOption(OptionGeneric):
         node = controller.node_index
         param_cx = controller.parameters.cx
 
+        dt = controller.dt
         time_cx = controller.time.cx
         phases_dt_cx = controller.phases_time_cx
 
@@ -549,7 +551,7 @@ class PenaltyOption(OptionGeneric):
                 time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, stochastic_start_cx
             )
             func_at_end = func_at_subnode(
-                time_cx, phases_dt_cx, state_cx_end, control_cx_end, param_cx, stochastic_end_cx
+                time_cx + dt, phases_dt_cx, state_cx_end, control_cx_end, param_cx, stochastic_end_cx
             )
             modified_fcn = ((func_at_start - target_cx[:, 0]) ** exponent + (func_at_end - target_cx[:, 1]) ** exponent) / 2
 

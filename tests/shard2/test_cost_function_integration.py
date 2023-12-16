@@ -244,8 +244,8 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                 np.testing.assert_almost_equal(j_printed, 18.91863487850206)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 26.170949218870444)
-                np.testing.assert_almost_equal(j_printed, 26.170949218870444)
+                np.testing.assert_almost_equal(f[0, 0], 52.0209218166202)
+                np.testing.assert_almost_equal(j_printed, 52.0209218166202)
             else:
                 np.testing.assert_almost_equal(f[0, 0], 18.844221574687094)
                 np.testing.assert_almost_equal(j_printed, 18.844221574687094)
@@ -269,11 +269,11 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                 np.testing.assert_almost_equal(j_printed, 17.944878542423062)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 26.170949218870444)
-                np.testing.assert_almost_equal(j_printed, 26.170949218870444)
+                np.testing.assert_almost_equal(f[0, 0], 34.52084504124038)
+                np.testing.assert_almost_equal(j_printed, 34.52084504124038)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 18.799673213312587)
-                np.testing.assert_almost_equal(j_printed, 18.799673213312587)
+                np.testing.assert_almost_equal(f[0, 0], 17.410587837666313)
+                np.testing.assert_almost_equal(j_printed, 17.410587837666313)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
