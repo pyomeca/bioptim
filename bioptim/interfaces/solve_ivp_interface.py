@@ -353,11 +353,13 @@ def solve_ivp_bioptim_interface(
     # if multiple shooting, we need to set the first x0
     y = []
     for node in range(len(dynamics_func)):
+        t_spah = t[node]
+
         # If multiple shooting, we need to set the first x0, otherwise use the previous answer
         x0i = x[node] if node == 0 or shooting_type == Shooting.MULTIPLE else y[-1][:, -1]
-            
+
         # y always contains [x0, xf] of the interval
-        y.append(dynamics_func[node].function(t_span=t[node], x0=x0i, u=u[node], p=p, s=s[node])["xall"])
+        y.append(dynamics_func[node].function(t_span=t_span, x0=x0i, u=u[node], p=p, s=s[node])["xall"])
     
     y.append(x[-1] if shooting_type == Shooting.MULTIPLE else y[-1][:, -1])
 

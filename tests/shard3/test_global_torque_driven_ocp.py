@@ -594,7 +594,7 @@ def test_phase_transition_uneven_variable_number_by_mapping(phase_dynamics):
     )  # Time constraint with min / max bounds phase 1
 
     # Check some of the results
-    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
+    states, controls = sol.states, sol.controls
 
     # initial and final position
     np.testing.assert_almost_equal(states[0]["q"][:, 0], np.array([3.14, 0.0]))
