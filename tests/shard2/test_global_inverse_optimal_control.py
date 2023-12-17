@@ -52,4 +52,4 @@ def test_double_pendulum_torque_driven_IOCP(phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-11.49023683]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([0.04617407]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([0.04617407]))

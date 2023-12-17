@@ -328,7 +328,7 @@ def test_ocp_mass_ligament(rigidbody_dynamics, phase_dynamics):
             np.array([2.158472e-16]),
             decimal=6,
         )
-        np.testing.assert_almost_equal(tau[:, -2], np.array([1.423733e-17]), decimal=6)
+        np.testing.assert_almost_equal(tau[:, -1], np.array([1.423733e-17]), decimal=6)
 
     else:
         # initial and final position
@@ -344,7 +344,7 @@ def test_ocp_mass_ligament(rigidbody_dynamics, phase_dynamics):
             decimal=6,
         )
         np.testing.assert_almost_equal(
-            tau[:, -2],
+            tau[:, -1],
             np.array([1.423733e-17]),
             decimal=6,
         )

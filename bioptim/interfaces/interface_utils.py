@@ -1,18 +1,16 @@
 from time import perf_counter
-from typing import Callable
 from sys import platform
 
 from casadi import Importer, Function
 import numpy as np
-from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
+from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, DM, reshape
 
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
-from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule, PhaseDynamics
+from ..misc.enums import InterpolationType
 from bioptim.optimization.solution.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
-from ..dynamics.ode_solver import OdeSolver
 
 
 def generic_online_optim(interface, ocp, show_options: dict = None):
@@ -253,7 +251,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
             x = nlp.cx()
             u = nlp.cx()
             s = nlp.cx()
-            weight = np.ndarray((0,))
+            weight = np.ndarray((1, 0))
             target = nlp.cx()
             for idx in range(len(penalty.node_idx)):
                 t0_tp, x_tp, u_tp, s_tp, weight_tp, target_tp = _get_weighted_function_inputs(penalty, idx, ocp, nlp, scaled)
@@ -266,11 +264,11 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
                     u_tp = tp
                 u = horzcat(u, u_tp)
                 s = horzcat(s, s_tp)
-                weight = np.concatenate((weight, [weight_tp]))
+                weight = np.concatenate((weight, [[float(weight_tp)]]), axis=1)
                 target = horzcat(target, target_tp)
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, s, penalty.weight, target), -1, 1)
+            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, s, weight, target), -1, 1)
 
         else:
             tp = interface.ocp.cx()

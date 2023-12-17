@@ -87,7 +87,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
             np.array([0.77133463, 0.02085465, 0.63363299, 0.74881884, 0.49851663, 0.22482276]),
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -1],
             np.array([0.44190476, 0.43398509, 0.61774548, 0.51315871, 0.650407, 0.60099513]),
         )
     elif ode_solver == OdeSolver.COLLOCATION:
@@ -105,7 +105,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
        0.22482216]),
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -1],
             np.array([0.4418359 , 0.4340145 , 0.61776425, 0.5131385 , 0.65039449,
        0.60103605]),
         )
@@ -124,7 +124,7 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
             np.array([0.77133494, 0.02085459, 0.6336328, 0.74881914, 0.49851677, 0.22482304]),
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -1],
             np.array([0.44190501, 0.43398497, 0.61774539, 0.5131588, 0.65040706, 0.60099495]),
         )
     else:

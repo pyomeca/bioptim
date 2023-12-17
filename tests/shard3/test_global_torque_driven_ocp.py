@@ -56,7 +56,7 @@ def test_track_markers(ode_solver, actuator_type, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -113,7 +113,7 @@ def test_track_markers_changing_constraints(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((4.2641129, 9.81, 2.27903226)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((1.36088709, 9.81, -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((1.36088709, 9.81, -2.27903226)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -150,7 +150,7 @@ def test_track_markers_changing_constraints(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-5.625, 21.06, 2.2790323)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-5.625, 21.06, -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.625, 21.06, -2.27903226)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -200,7 +200,7 @@ def test_track_markers_with_actuators(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.2140175, 0.981, 0.3360075)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-0.2196496, 0.981, -0.3448498)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-0.2196496, 0.981, -0.3448498)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -272,7 +272,7 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((9.11770196, -13.83677175)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((1.16836132, 4.77230548)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((1.16836132, 4.77230548)))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         pass
@@ -293,7 +293,7 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.93890241, -12.76433504)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((0.13156876, 0.93749913)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((0.13156876, 0.93749913)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -368,7 +368,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((9.11770196, -13.83677175)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((1.16836132, 4.77230548)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((1.16836132, 4.77230548)))
 
     else:
         np.testing.assert_equal(g.shape, (n_shooting * 4 * 5, 1))
@@ -389,7 +389,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.80295612, -13.21566569)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((0.23724909, 0.92831857)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((0.23724909, 0.92831857)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -519,7 +519,7 @@ def test_trampo_quaternions(phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.zeros((12,)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -2], np.zeros((12,)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -1], np.zeros((12,)), decimal=6)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
@@ -611,9 +611,9 @@ def test_phase_transition_uneven_variable_number_by_mapping(phase_dynamics):
     )
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([-0.01975067]))
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array([-0.12304145]))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -1], np.array([-0.12304145]))
     np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array([3.21944836]))
-    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array([-0.01901175]))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, -1], np.array([-0.01901175]))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -655,7 +655,7 @@ def test_torque_activation_driven(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0.0, 0.0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.2256539, 0.0681475)), decimal=3)
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-0.0019898, -0.0238914)), decimal=3)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-0.0019898, -0.0238914)), decimal=3)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=4)
@@ -715,7 +715,7 @@ def test_example_multi_biorbd_model(phase_dynamics):
     )
     # initial and final controls
     np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-0.48437131, 0.0249894, 0.38051993]), decimal=6)
-    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-0.00235227, -0.02192184, -0.00709896]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, -1], np.array([-0.00235227, -0.02192184, -0.00709896]), decimal=6)
 
 
 def test_example_minimize_segment_velocity():
@@ -764,4 +764,4 @@ def test_example_minimize_segment_velocity():
     )
     # initial and final controls
     np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([-2.4613488, 3.70379261, -0.99483388]), decimal=6)
-    np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([0.80156395, 0.82773623, 0.35042046]), decimal=6)
+    np.testing.assert_almost_equal(controls["tau"][:, -1], np.array([0.80156395, 0.82773623, 0.35042046]), decimal=6)

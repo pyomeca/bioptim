@@ -22,6 +22,7 @@ from bioptim import (
     BiorbdModel,
     BiMappingList,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -123,7 +124,9 @@ class prepare_iocp:
             f"+++++++++++++++++++++++++++ Optimized the {i_inverse}th ocp in the inverse algo +++++++++++++++++++++++++++"
         )
         if sol.status == 0:
-            q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+            states = sol.decision_states(to_merge=SolutionMerge.NODES)
+            controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+            q, qdot, tau = states["q"], states["qdot"], controls["tau"]
             return [
                 np.sum((self.q_to_track - q) ** 2)
                 + np.sum((self.qdot_to_track - qdot) ** 2)
@@ -149,11 +152,9 @@ def main():
     solver = Solver.IPOPT()
     # solver.set_linear_solver("ma57")  # Much faster, but necessite libhsl installed
     sol_to_track = ocp_to_track.solve(solver)
-    q_to_track, qdot_to_track, tau_to_track = (
-        sol_to_track.states["q"],
-        sol_to_track.states["qdot"],
-        sol_to_track.controls["tau"],
-    )
+    states = sol_to_track.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol_to_track.decision_controls(to_merge=SolutionMerge.NODES)
+    q_to_track, qdot_to_track, tau_to_track = states["q"], states["qdot"], controls["tau"]
     print("+++++++++++++++++++++++++++ weights_to_track generated +++++++++++++++++++++++++++")
 
     # Find coefficients of the objective using Pareto
@@ -215,7 +216,9 @@ def main():
 
     ocp_final = prepare_ocp(weights=pop_weights, coefficients=coefficients)
     sol_final = ocp_final.solve(solver)
-    q_final, qdot_final, tau_final = sol_final.states["q"], sol_final.states["qdot"], sol_final.controls["tau"]
+    states = sol_final.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol_final.decision_controls(to_merge=SolutionMerge.NODES)
+    q_final, qdot_final, tau_final = states["q"], states["qdot"], controls["tau"]
 
     m = biorbd.Model("models/double_pendulum.bioMod")
     markers_to_track = np.zeros((2, np.shape(q_to_track)[1], 3))
