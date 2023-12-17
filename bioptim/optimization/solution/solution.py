@@ -769,7 +769,7 @@ class Solution:
             )
         else:
             t_all = [np.concatenate(self._stepwise_times[p]) for p in range(len(self.ocp.nlp))]
-            states = self._stepwise_states._merge_nodes(scaled=scaled)
+            states = self._stepwise_states.to_dict(scaled=scaled, to_merge=[SolutionMerge.KEYS, SolutionMerge.NODES])
 
         data = []
         for p in range(len(states)):
@@ -868,11 +868,13 @@ class Solution:
 
         if n_frames == 0:
             try:
-                data_to_animate = self.interpolate(sum([nlp.ns for nlp in self.ocp.nlp]) + 1)
-            except RuntimeError:
-                pass
+                data_to_animate = [self.interpolate(sum([nlp.ns for nlp in self.ocp.nlp]) + 1)]
+            except ValueError:
+                data_to_animate = self.interpolate([nlp.ns for nlp in self.ocp.nlp])
         elif n_frames > 0:
             data_to_animate = self.interpolate(n_frames)
+            if not isinstance(data_to_animate, list):
+                data_to_animate = [data_to_animate]
 
         if show_tracked_markers and len(self.ocp.nlp) == 1:
             tracked_markers = self._prepare_tracked_markers_for_animation(n_shooting=n_frames)
@@ -887,13 +889,17 @@ class Solution:
         # assuming that all the models or the same type.
         self._check_models_comes_from_same_super_class()
 
-        all_bioviz = self.ocp.nlp[0].model.animate(
-            self.ocp,
-            solution=data_to_animate,
-            show_now=show_now,
-            tracked_markers=tracked_markers,
-            **kwargs,
-        )
+        all_bioviz = []
+        for i, d in enumerate(data_to_animate):
+            all_bioviz.append(
+                self.ocp.nlp[i].model.animate(
+                    self.ocp,
+                    solution=d,
+                    show_now=show_now,
+                    tracked_markers=tracked_markers,
+                    **kwargs,
+                )
+            )
 
         return all_bioviz
 
