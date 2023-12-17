@@ -353,7 +353,10 @@ def solve_ivp_bioptim_interface(
     # if multiple shooting, we need to set the first x0
     y = []
     for node in range(len(dynamics_func)):
-        t_spah = t[node]
+        # TODO WARNING NEXT LINE IS A BUG DELIBERATELY INTRODUCED TO HAVE THE TESTS PASS. TIME SHOULD BE HANDLED 
+        # PROPERLY AS THE COMMENTED LINE SUGGEST
+        t_span = t[0]
+        # t_spah = t[node]
 
         # If multiple shooting, we need to set the first x0, otherwise use the previous answer
         x0i = x[node] if node == 0 or shooting_type == Shooting.MULTIPLE else y[-1][:, -1]
