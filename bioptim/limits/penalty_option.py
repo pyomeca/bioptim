@@ -65,7 +65,7 @@ class PenaltyOption(OptionGeneric):
         Prepare the dimension and index of the penalty (including the target)
     _set_dim_idx(self, dim: list | tuple | range | np.ndarray, n_rows: int)
         Checks if the variable index is consistent with the requested variable.
-    _check_target_dimensions(self, controller: PenaltyController, n_time_expected: int)
+    _check_target_dimensions(self, controller: PenaltyController, n_frames: int)
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
     _set_penalty_function(self, controller: list[PenaltyController, ...], fcn: MX | SX)
@@ -147,6 +147,10 @@ class PenaltyOption(OptionGeneric):
         self.integration_rule = integration_rule
         if self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL):
             integrate = True
+        self.derivative = derivative
+        self.explicit_derivative = explicit_derivative
+        self.integrate = integrate
+        
         self.extra_arguments = params
 
         if index is not None and rows is not None:
@@ -163,28 +167,12 @@ class PenaltyOption(OptionGeneric):
 
         self.target = None
         if target is not None:
-            target = np.array(target)
-            if isinstance(target, int) or isinstance(target, float) or isinstance(target, np.ndarray):
-                target = [target]
-            self.target = []
-            for t in target:
-                self.target.append(np.array(t))
-                if len(self.target[-1].shape) == 0:
-                    self.target[-1] = self.target[-1][np.newaxis]
-                if len(self.target[-1].shape) == 1:
-                    self.target[-1] = self.target[-1][:, np.newaxis]
-            if len(self.target) == 1 and (
-                self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                or self.integration_rule == QuadratureRule.TRAPEZOIDAL
-            ):
-                if self.node == Node.ALL or self.node == Node.DEFAULT:
-                    self.target = [self.target[0][:, :-1], self.target[0][:, 1:]]
-                else:
-                    raise NotImplementedError(
-                        f"A list of 2 elements is required with {self.node} and TRAPEZOIDAL Integration"
-                        f"except for Node.NODE_ALL and Node.NODE_DEFAULT"
-                        "which can be automatically generated"
-                    )
+            self.target = np.array(target)
+            # Make sure the target has at least 2 dimensions
+            if len(self.target.shape) == 0:
+                self.target = self.target[np.newaxis]
+            if len(self.target.shape) == 1:
+                self.target = self.target[:, np.newaxis]
 
         self.target_plot_name = None
         self.target_to_plot = None
@@ -208,9 +196,7 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded: list[Function | None, ...] = []
         self.weighted_function: list[Function | None, ...] = []
         self.weighted_function_non_threaded: list[Function | None, ...] = []
-        self.derivative = derivative
-        self.explicit_derivative = explicit_derivative
-        self.integrate = integrate
+        
         self.multinode_penalty = False
         self.nodes_phase = None  # This is relevant for multinodes
         self.nodes = None  # This is relevant for multinodes
@@ -240,7 +226,7 @@ class PenaltyOption(OptionGeneric):
             if isinstance(controllers, list):
                 raise RuntimeError("Multinode constraints should call a self defined set_penalty")
 
-            self._check_target_dimensions(controllers, len(controllers.t))
+            self._check_target_dimensions(controllers)
             if self.plot_target:
                 self._finish_add_target_to_plot(controllers)
 
@@ -283,7 +269,7 @@ class PenaltyOption(OptionGeneric):
             raise RuntimeError(f"{self.name} index must be a list of integer")
         return dim
 
-    def _check_target_dimensions(self, controller: PenaltyController | None, n_time_expected: int):
+    def _check_target_dimensions(self, controller: PenaltyController):
         """
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
@@ -292,85 +278,26 @@ class PenaltyOption(OptionGeneric):
         ----------
         controller: PenaltyController
             The penalty node elements
-        n_time_expected: int
-            The expected number of columns (n_rows, n_cols) of the data to track
         """
+        
+        n_frames = len(controller.t) + (1 if self.integrate else 0)
 
-        if self.integration_rule == QuadratureRule.RECTANGLE_LEFT:
-            n_dim = len(self.target[0].shape)
-            if n_dim != 2 and n_dim != 3:
-                raise RuntimeError(
-                    f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
-                )
-            if self.target[0].shape[-1] == 1:
-                if len(self.rows) == 1:
-                    self.target[0] = np.reshape(self.target[0], (1, len(self.target[0])))
-                else:
-                    self.target = np.repeat(self.target, n_time_expected, axis=-1)
-
-            shape = (
-                (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
+        n_dim = len(self.target.shape)
+        if n_dim != 2 and n_dim != 3:
+            raise RuntimeError(
+                f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
             )
-            if self.target[0].shape != shape:
-                # A second chance the shape is correct is if the targets are declared
-                if self.target[0].shape[-1] != len(self.node_idx):
-                    raise RuntimeError(
-                        f"target {self.target[0].shape} does not correspond to expected size {shape} for penalty {self.name}"
-                    )
+        
+        if self.target.shape[-1] == 1:
+            self.target = np.repeat(self.target, n_frames, axis=-1)
+            
+        shape = (len(self.rows), n_frames) if n_dim == 2 else (len(self.rows), len(self.cols), n_frames)
 
-            # If the target is on controls and control is constant, there will be one value missing
-            if controller is not None:
-                if (
-                    controller.control_type == ControlType.CONSTANT
-                    and controller.ns in controller.t
-                    and self.target[0].shape[-1] == controller.ns
-                ):
-                    if controller.t[-1] != controller.ns:
-                        raise NotImplementedError("Modifying target for END not being last is not implemented yet")
-                    self.target[0] = np.concatenate(
-                        (self.target[0], np.nan * np.zeros((self.target[0].shape[0], 1))), axis=1
-                    )
-        elif (
-            self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-            or self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-        ):
-            target_dim = len(self.target)
-            if target_dim != 2:
-                raise RuntimeError(f"targets with trapezoidal integration rule need to get a list of two elements.")
-
-            n_dim = None
-            for target in self.target:
-                n_dim = len(target.shape)
-                if n_dim != 2 and n_dim != 3:
-                    raise RuntimeError(
-                        f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
-                    )
-                if target.shape[-1] == 1:
-                    target = np.repeat(target, n_time_expected, axis=-1)
-
-            shape = (
-                (len(self.rows), n_time_expected - 1)
-                if n_dim == 2
-                else (len(self.rows), len(self.cols), n_time_expected - 1)
+        if self.target.shape != shape:
+            raise RuntimeError(
+                f"target {self.target.shape} does not correspond to expected size {shape} for penalty {self.name}"
             )
 
-            for target in self.target:
-                if target.shape != shape:
-                    raise RuntimeError(
-                        f"target {target.shape} does not correspond to expected size {shape} for penalty {self.name}"
-                    )
-
-            # If the target is on controls and control is constant, there will be one value missing
-            if controller is not None:
-                if (
-                    controller.control_type == ControlType.CONSTANT
-                    and controller.ns in controller.t
-                    and self.target[0].shape[-1] == controller.ns - 1
-                    and self.target[1].shape[-1] == controller.ns - 1
-                ):
-                    if controller.t[-1] != controller.ns:
-                        raise NotImplementedError("Modifying target for END not being last is not implemented yet")
-                    self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
     def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn, state_cx_scaled):
         """
@@ -775,10 +702,8 @@ class PenaltyOption(OptionGeneric):
 
         self.target_plot_name = combine_to
         # if the target is n x ns, we need to add a dimension (n x ns + 1) to make it compatible with the plot
-        if self.target[0].shape[1] == controller.ns:
-            self.target_to_plot = np.concatenate(
-                (self.target[0], np.nan * np.ndarray((self.target[0].shape[0], 1))), axis=1
-            )
+        if self.target.shape[1] == controller.ns:
+            self.target_to_plot = np.concatenate((self.target, np.nan * np.ndarray((self.target.shape[0], 1))), axis=1)
 
     def _finish_add_target_to_plot(self, controller: PenaltyController):
         """
@@ -862,15 +787,7 @@ class PenaltyOption(OptionGeneric):
             penalty_type.validate_penalty_time_index(self, controllers[0])
             self.ensure_penalty_sanity(ocp, nlp)
             self.dt = penalty_type.get_dt(nlp)
-            self.node_idx = (
-                controllers[0].t[:-1]
-                if (
-                    self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                    or self.integration_rule == QuadratureRule.TRAPEZOIDAL
-                )
-                and self.target is not None
-                else controllers[0].t
-            )
+            self.node_idx = controllers[0].t
 
         # The active controller is always the last one, and they all should be the same length anyway
         for node in range(len(controllers[-1])):

@@ -395,7 +395,7 @@ def check_conditioning(ocp):
                 t0 = PenaltyHelpers.t0()
                 _, x, u, s = obj.get_variable_inputs(controllers)
                 params = nlp.parameters.cx
-                target = [] if obj.target is None else obj.target
+                target = PenaltyHelpers.target(obj, obj.node_idx.index(node_index))
 
                 p = obj.weighted_function[node_index](t0, phases_dt, x, u, params, s, obj.weight, target)
 

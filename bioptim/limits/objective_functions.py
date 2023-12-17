@@ -294,7 +294,7 @@ class ObjectiveFunction:
         if list_index >= len(ocp_or_nlp.J) or list_index < 0:
             raise ValueError("'list_index' must be defined properly")
 
-        ocp_or_nlp.J[list_index].target = [new_target] if not isinstance(new_target, list | tuple) else new_target
+        ocp_or_nlp.J[list_index].target = new_target
 
 
 class ObjectiveFcn:

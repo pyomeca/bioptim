@@ -418,7 +418,7 @@ class AcadosInterface(SolverInterface):
                 y_ref = [np.zeros((n_states if is_state else n_controls, 1)) for _ in node_idx]
                 if objectives.target is not None:
                     for idx in node_idx:
-                        y_ref[idx][rows] = objectives.target[0][..., idx].T.reshape((-1, 1))
+                        y_ref[idx][rows] = objectives.target[..., idx].T.reshape((-1, 1))
                 acados.y_ref.append(y_ref)
 
             if objectives.type in allowed_control_objectives:
@@ -450,7 +450,7 @@ class AcadosInterface(SolverInterface):
                     acados.W_0 = linalg.block_diag(acados.W_0, np.diag([objectives.weight] * n_variables))
                     y_ref_start = np.zeros((n_variables, 1))
                     if objectives.target is not None:
-                        y_ref_start[rows] = objectives.target[0][..., 0].T.reshape((-1, 1))
+                        y_ref_start[rows] = objectives.target[..., 0].T.reshape((-1, 1))
                     acados.y_ref_start.append(y_ref_start)
 
                 if objectives.node[0] in [Node.END, Node.ALL]:
@@ -461,7 +461,7 @@ class AcadosInterface(SolverInterface):
                     acados.W_e = linalg.block_diag(acados.W_e, np.diag([objectives.weight] * n_states))
                     y_ref_end = np.zeros((n_states, 1))
                     if objectives.target is not None:
-                        y_ref_end[rows] = objectives.target[0][..., -1].T.reshape((-1, 1))
+                        y_ref_end[rows] = objectives.target[..., -1].T.reshape((-1, 1))
                     acados.y_ref_end.append(y_ref_end)
 
             if objectives.type in allowed_control_objectives:
@@ -479,7 +479,7 @@ class AcadosInterface(SolverInterface):
 
             node_idx = objectives.node_idx[:-1] if objectives.node[0] == Node.ALL else objectives.node_idx
             if objectives.target is not None:
-                acados.y_ref.append([objectives.target[0][..., idx].T.reshape((-1, 1)) for idx in node_idx])
+                acados.y_ref.append([objectives.target[..., idx].T.reshape((-1, 1)) for idx in node_idx])
             else:
                 acados.y_ref.append([np.zeros((objectives.function[0].numel_out(), 1)) for _ in node_idx])
 
@@ -493,7 +493,7 @@ class AcadosInterface(SolverInterface):
                 acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function[0](t, x, u, p, s).reshape((-1, 1)))
 
                 if objectives.target is not None:
-                    acados.y_ref_start.append(objectives.target[0][..., 0].T.reshape((-1, 1)))
+                    acados.y_ref_start.append(objectives.target[..., 0].T.reshape((-1, 1)))
                 else:
                     acados.y_ref_start.append(np.zeros((objectives.function[0].numel_out(), 1)))
 
@@ -508,7 +508,7 @@ class AcadosInterface(SolverInterface):
                 )
 
                 if objectives.target is not None:
-                    acados.y_ref_end.append(objectives.target[0][..., -1].T.reshape((-1, 1)))
+                    acados.y_ref_end.append(objectives.target[..., -1].T.reshape((-1, 1)))
                 else:
                     acados.y_ref_end.append(np.zeros((objectives.function[0].numel_out(), 1)))
 

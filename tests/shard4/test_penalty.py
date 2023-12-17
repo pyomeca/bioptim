@@ -114,13 +114,13 @@ def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, s):
 
 def test_penalty_targets_shapes():
     p = ObjectiveFcn.Parameter
-    np.testing.assert_equal(Objective([], custom_type=p, target=1).target[0].shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=np.array(1)).target[0].shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[1]).target[0].shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[1, 2]).target[0].shape, (2, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target[0].shape, (2, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target[0].shape, (1, 2))
-    np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target[0].shape, (1, 2))
+    np.testing.assert_equal(Objective([], custom_type=p, target=1).target.shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=np.array(1)).target.shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[1]).target.shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[1, 2]).target.shape, (2, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target.shape, (2, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target.shape, (1, 2))
+    np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target.shape, (1, 2))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

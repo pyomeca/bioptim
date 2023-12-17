@@ -863,7 +863,7 @@ class Solution:
                         ObjectiveFcn.Mayer.TRACK_MARKERS,
                         ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        n_frames += objective.target[0].shape[2]
+                        n_frames += objective.target.shape[2]
                         break
 
         if n_frames == 0:
@@ -934,7 +934,7 @@ class Solution:
                         tracked_markers = np.full((3, nlp.model.nb_markers, n_states_nodes), np.nan)
 
                         for i in range(len(objective.rows)):
-                            tracked_markers[objective.rows[i], objective.cols, :] = objective.target[0][i, :, :]
+                            tracked_markers[objective.rows[i], objective.cols, :] = objective.target[i, :, :]
 
                         missing_row = np.where(np.isnan(tracked_markers))[0]
                         if missing_row.size > 0:

@@ -134,11 +134,11 @@ class PenaltyHelpers:
             return np.array([])
         
         if penalty.integrate:
-            target0 = penalty.target[0][..., penalty_node_idx]
-            target1 = penalty.target[1][..., penalty_node_idx]
+            target0 = penalty.target[..., penalty_node_idx]
+            target1 = penalty.target[..., penalty_node_idx + 1]
             return np.vstack((target0, target1)).T
 
-        return penalty.target[0][..., penalty_node_idx]
+        return penalty.target[..., penalty_node_idx]
 
     @staticmethod
     def get_multinode_penalty_subnodes_starting_index(p):

@@ -246,7 +246,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
         p = PenaltyHelpers.parameters(penalty, lambda: interface.ocp.parameters.cx)
 
         if penalty.multi_thread:
-            if penalty.target is not None and len(penalty.target[0].shape) != 2:
+            if penalty.target is not None and len(penalty.target.shape) != 2:
                 raise NotImplementedError("multi_thread penalty with target shape != [n x m] is not implemented yet")
 
             t0 = nlp.cx()

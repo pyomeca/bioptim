@@ -523,6 +523,9 @@ def test_pendulum_target(control_type, integration_rule, objective, phase_dynami
             ]
         )
 
+    if integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL):
+        target = np.concatenate((target, np.zeros((2, 1))), axis=1)
+
     ocp = prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         n_shooting=30,
