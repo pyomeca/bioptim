@@ -257,9 +257,13 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
                 t0_tp, x_tp, u_tp, s_tp, weight_tp, target_tp = _get_weighted_function_inputs(penalty, idx, ocp, nlp, scaled)
                 
                 t0 = horzcat(t0, t0_tp)
+                if idx != 0 and x_tp.shape[0] != x.shape[0]:
+                    tp = ocp.cx.nan(x.shape[0], 1)
+                    tp[:x_tp.shape[0], :] = x_tp
+                    x_tp = tp
                 x = horzcat(x, x_tp)
                 if idx != 0 and u_tp.shape[0] != u.shape[0]: 
-                    tp = u.zeros(u.shape[0], 1)
+                    tp = ocp.cx.nan(u.shape[0], 1)
                     tp[:u_tp.shape[0], :] = u_tp
                     u_tp = tp
                 u = horzcat(u, u_tp)

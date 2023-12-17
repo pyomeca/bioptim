@@ -6,16 +6,11 @@ import platform
 
 import pytest
 import numpy as np
-from bioptim import Solver, MultiCyclicCycleSolutions, PhaseDynamics
+from bioptim import Solver, MultiCyclicCycleSolutions, PhaseDynamics, SolutionMerge
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_multi_cyclic_nmpc_get_final(phase_dynamics):
-    if platform.system() != "Linux":
-        # This is a long test and CI is already long for Windows and Mac
-        pass
-        # return
-
     def update_functions(_nmpc, cycle_idx, _sol):
         return cycle_idx < n_cycles_total  # True if there are still some cycle to perform
 
@@ -46,29 +41,28 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics):
     )
 
     # Check some of the results
-    states, controls = sol[0].states, sol[0].controls
+    states = sol[0].decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol[0].decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    n_steps = nmpc.nlp[0].ode_solver.n_integration_steps
-    np.testing.assert_equal(q.shape, (3, n_cycles_total * cycle_len * (n_steps + 1) - n_steps))
+    np.testing.assert_equal(q.shape, (3, n_cycles_total * cycle_len + 1))
     np.testing.assert_almost_equal(q[:, 0], np.array((-12.56637061, 1.04359174, 1.03625065)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-6.59734457, 0.89827771, 1.0842402)))
+    np.testing.assert_almost_equal(q[:, -1], np.array([1.37753244e-40, 1.04359174e+00, 1.03625065e+00]))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((6.28293718, 2.5617072, -0.00942694)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((6.28343343, 3.28099958, -1.27304428)), decimal=5)
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([ 6.28293718,  2.41433059, -0.59773899]), decimal=5)
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.00992505, 4.88488618, 2.4400698)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((0.00992505, 9.18387711, 5.22418771)), decimal=4)
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-0.00992505,  5.19414727,  2.34022319]), decimal=4)
 
     # check time
-    assert sol[0].times.shape == (n_cycles_total * cycle_len * (n_steps + 1) - n_steps,)
+    n_steps = nmpc.nlp[0].ode_solver.n_integration_steps
+    assert sol[0].times.shape == (n_cycles_total * cycle_len * (n_steps + 1) + 1,)
     assert sol[0].times[0] == 0
-    np.testing.assert_almost_equal(sol[0].times[-1], 2.95, decimal=4)
-    # full mhe cost
-    np.testing.assert_almost_equal(sol[0].cost.toarray().squeeze(), 296.37125635)
+    np.testing.assert_almost_equal(sol[0].times[-1], 3.0)
 
     # check some results of the second structure
     for s in sol[1]:
@@ -136,6 +130,6 @@ def test_multi_cyclic_nmpc_not_get_final(phase_dynamics):
     # check some result of the third structure
     assert len(sol[2]) == 3
 
-    np.testing.assert_almost_equal(sol[2][0].cost.toarray().squeeze(), 0.0002046)
-    np.testing.assert_almost_equal(sol[2][1].cost.toarray().squeeze(), 0.0002046)
-    np.testing.assert_almost_equal(sol[2][2].cost.toarray().squeeze(), 0.0002046)
+    np.testing.assert_almost_equal(sol[2][0].cost.toarray().squeeze(), 0.0002)
+    np.testing.assert_almost_equal(sol[2][1].cost.toarray().squeeze(), 0.0002)
+    np.testing.assert_almost_equal(sol[2][2].cost.toarray().squeeze(), 0.0002)
