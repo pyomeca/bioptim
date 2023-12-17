@@ -497,6 +497,37 @@ class PenaltyOption(OptionGeneric):
                 ["t", "dt", "x", "u", "p", "s"],
                 ["val"], 
             )
+        elif self.derivative:
+            # This assumes a Mayer-like penalty
+            x_start = controller.states_scaled.cx_start
+            x_end = controller.states_scaled.cx_end
+            u_start = controller.controls_scaled.cx_start
+            if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
+                u_end = controller.controls_scaled.cx_start
+            else: 
+                u_end = controller.controls_scaled.cx_end
+            param_cx = controller.parameters.cx
+            s_start = controller.stochastic_variables_scaled.cx_start
+            s_end = controller.stochastic_variables_scaled.cx_end
+
+            fcn_tp = self.function[node] = Function(
+                name,
+                [time_cx, phases_dt_cx, x_start, u_start, param_cx, s_start],
+                [sub_fcn],
+                ["t", "dt", "x", "u", "p", "s"],
+                ["val"],
+            )
+
+            # TODO: Charbie -> this is False, add stochastic_variables for start, mid AND end
+            self.function[node] = Function(
+                f"{name}",
+                [time_cx, phases_dt_cx, x, u, param_cx, s],
+                [fcn_tp(time_cx, phases_dt_cx, x_end, u_end, param_cx, s_end) - fcn_tp(time_cx, phases_dt_cx, x_start, u_start, param_cx, s_start)],
+                ["t", "dt", "x", "u", "p", "s"],
+                ["val"],
+            )
+
+            modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, s) - target_cx) ** exponent
 
         else:
             # TODO Add error message if there are free variables to guide the user? For instance controls with last node

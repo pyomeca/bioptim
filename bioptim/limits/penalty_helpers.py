@@ -83,7 +83,7 @@ class PenaltyHelpers:
                     x1 = type(x0).sym("dummy_x", 0, 1)
             else:
                 x1 = _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1)))
-            return vertcat(x1, x0) if penalty.derivative else vertcat(x0, x1)
+            return vertcat(x0, x1)
 
     @staticmethod
     def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: bool = False):
