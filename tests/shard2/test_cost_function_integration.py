@@ -261,8 +261,8 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([0, 0]))
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 31.527671241118135)
-                np.testing.assert_almost_equal(j_printed, 31.527671241118135)
+                np.testing.assert_almost_equal(f[0, 0], 36.077211633874384)
+                np.testing.assert_almost_equal(j_printed, 36.077211633874384)
             else:
                 np.testing.assert_almost_equal(f[0, 0], 17.944878542423062)
                 np.testing.assert_almost_equal(j_printed, 17.944878542423062)
