@@ -260,9 +260,9 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
                 
                 t0 = horzcat(t0, t0_tp)
                 x = horzcat(x, x_tp)
-                if idx == penalty.ns[0] - 1: 
+                if idx != 0 and u_tp.shape[0] != u.shape[0]: 
                     tp = u.zeros(u.shape[0], 1)
-                    tp[u_tp.shape[0]:, :] = u_tp
+                    tp[:u_tp.shape[0], :] = u_tp
                     u_tp = tp
                 u = horzcat(u, u_tp)
                 s = horzcat(s, s_tp)
