@@ -69,7 +69,7 @@ def prepare_ocp(
     # Add objective functions
     if objective == "torque":
         objective_functions = Objective(
-            ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", integration_rule=integration_rule, target=target, 
+            ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", integration_rule=integration_rule, target=target
         )
     elif objective == "qdot":
         objective_functions = Objective(
@@ -583,8 +583,8 @@ def test_pendulum_target(control_type, integration_rule, objective, phase_dynami
                 np.testing.assert_almost_equal(j_printed, 79.20445223932471, decimal=5)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 48.842983152427955)
-                np.testing.assert_almost_equal(j_printed, 48.842983152427955)
+                np.testing.assert_almost_equal(f[0, 0], 48.49207210991624)
+                np.testing.assert_almost_equal(j_printed, 48.49207210991624)
             else:
                 np.testing.assert_almost_equal(f[0, 0], 47.038431660223246)
                 np.testing.assert_almost_equal(j_printed, 47.038431660223246)
@@ -605,11 +605,11 @@ def test_pendulum_target(control_type, integration_rule, objective, phase_dynami
                 np.testing.assert_almost_equal(j_printed, 33.46130228109848)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 48.842983152427955)
-                np.testing.assert_almost_equal(j_printed, 48.842983152427955)
+                np.testing.assert_almost_equal(f[0, 0], 43.72737954458251)
+                np.testing.assert_almost_equal(j_printed, 43.72737954458251)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 55.5377703306112)
-                np.testing.assert_almost_equal(j_printed, 55.5377703306112)
+                np.testing.assert_almost_equal(f[0, 0], 22.03942046815059)
+                np.testing.assert_almost_equal(j_printed, 22.03942046815059)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

@@ -463,7 +463,7 @@ class PenaltyOption(OptionGeneric):
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx_start = controller.controls_scaled.cx_start
-            if self.control_types[0] in (ControlType.CONSTANT, ):
+            if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 # This effectively equates a TRAPEZOIDAL integration into a LEFT_RECTANGLE for penalties that targets
                 # controls with a constant control. This phiolosophically makes sense as the control is constant and
                 # applying a trapezoidal integration would be equivalent to applying a left rectangle integration
@@ -633,11 +633,11 @@ class PenaltyOption(OptionGeneric):
                     return vertcat(u, controls.scaled.cx_end)
                 
                 elif n_idx == nlp.n_controls_nodes - 1:
-                    # If we are at the penultimate node, we still can be able to use the cx_end, unless we are
+                    # If we are at the penultimate node, we still can use the cx_end, unless we are
                     # performing some kind of integration or derivative and this last node does not exist
                     if nlp.control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ):
                         return vertcat(u, controls.scaled.cx_end)
-                    if self.integrate or self.derivative or self.explicit_derivative or self.integration_rule == QuadratureRule.TRAPEZOIDAL:
+                    if self.integrate or self.derivative or self.explicit_derivative:
                         return u
                     else: 
                         return vertcat(u, controls.scaled.cx_end)
@@ -798,6 +798,7 @@ class PenaltyOption(OptionGeneric):
             penalty_function = self.type(
                 self, controllers if len(controllers) > 1 else controllers[0], **self.params
             )
+            
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
