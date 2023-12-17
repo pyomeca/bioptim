@@ -260,6 +260,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
                 
                 t0 = horzcat(t0, t0_tp)
                 x = horzcat(x, x_tp)
+                if idx == penalty.ns[0] - 1: 
+                    tp = u.zeros(u.shape[0], 1)
+                    tp[u_tp.shape[0]:, :] = u_tp
+                    u_tp = tp
                 u = horzcat(u, u_tp)
                 s = horzcat(s, s_tp)
                 weight = np.concatenate((weight, [weight_tp]))
@@ -288,7 +292,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
 
 
 def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
-    t0 = PenaltyHelpers.t0(penalty, penalty_idx, lambda p_idx, n_idx: ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx))
+    t0 = PenaltyHelpers.t0()
 
     weight = PenaltyHelpers.weight(penalty)
     target = PenaltyHelpers.target(penalty, penalty_idx)
@@ -307,7 +311,7 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
 
 def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].X_scaled if scaled else ocp.nlp[phase_idx].X
-    return values[node_idx][:, subnodes_idx]
+    return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
     
 
 def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
@@ -317,4 +321,4 @@ def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
 
 def _get_s(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].S_scaled if scaled else ocp.nlp[phase_idx].S
-    return [] if not values else values[node_idx][:, subnodes_idx]
+    return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()

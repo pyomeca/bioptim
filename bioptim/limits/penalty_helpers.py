@@ -25,18 +25,10 @@ class PenaltyProtocol(Protocol):
 class PenaltyHelpers:
     
     @staticmethod
-    def t0(penalty: PenaltyProtocol, penalty_node_idx, get_t0: Callable):
+    def t0():
         """
-        Parameters
-        ----------
-        penalty: PenaltyProtocol
-            The penalty function
-        penalty_node_idx: int
-            The index of the node in the penalty
-        get_t0: Callable
-            A function that returns the time of the node. It is expected to return stepwise time
-        
-        TODO COMPLETE
+        This method returns the t0 of a penalty. It is currently always 0, because the time is always baked in the 
+        penalty function
         """
         
         # Time penalty is baked in the penalty declaration. No need to add it here
@@ -81,13 +73,14 @@ class PenaltyHelpers:
             return _vertcat(x)
         
         else:
-            if penalty.subnodes_are_decision_states[0]:
-                x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, None)))
-            else:
-                x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
-
+            subnodes = slice(0, None if node < penalty.ns[0] and penalty.subnodes_are_decision_states[0] else 1)
+            x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, subnodes))
+            
             if is_constructing_penalty:
-                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None)))
+                if node < penalty.ns[0]:
+                    x1 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None)))
+                else:
+                    x1 = type(x0).sym("dummy_x", 0, 1)
             else:
                 x1 = _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1)))
             return vertcat(x1, x0) if penalty.derivative else vertcat(x0, x1)

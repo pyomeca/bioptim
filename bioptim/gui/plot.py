@@ -732,12 +732,12 @@ class PlotOcp:
             node_idx = custom_plot.node_idx[idx]
             if "penalty" in custom_plot.parameters:
                 penalty = custom_plot.parameters["penalty"]
-                t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: time_stepwise[p_idx][n_idx])
+                t0 = PenaltyHelpers.t0()
                 
-                x_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx])
+                x_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx] if n_idx < len(x) else np.ndarray((0, 1)))
                 u_node = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)))
                 p_node = PenaltyHelpers.parameters(penalty, lambda: np.array(p))
-                s_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: s[n_idx][:, sn_idx])
+                s_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: s[n_idx][:, sn_idx] if n_idx < len(s) else np.ndarray((0, 1)))
                 
             else:
                 t0 = time_stepwise[phase_idx][node_idx][0]

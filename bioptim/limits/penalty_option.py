@@ -476,7 +476,7 @@ class PenaltyOption(OptionGeneric):
             .replace("__", "_")
         )
 
-        controller, x, u, s = self._get_variable_inputs(controllers)
+        controller, x, u, s = self.get_variable_inputs(controllers)
 
         # Alias some variables
         node = controller.node_index
@@ -631,7 +631,7 @@ class PenaltyOption(OptionGeneric):
                 "Node.ALL_SHOOTING."
             )
 
-    def _get_variable_inputs(self, controllers: list[PenaltyController, ...]):
+    def get_variable_inputs(self, controllers: list[PenaltyController, ...]):
         if self.multinode_penalty:
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             self.node_idx[0] = controller.node_index
@@ -844,7 +844,7 @@ class PenaltyOption(OptionGeneric):
                 self.node = node
                 nlp = ocp.nlp[phase_idx % ocp.n_phases]  # this is to allow using -1 to refer to the last phase
 
-                controllers.append(self._get_penalty_controller(ocp, nlp))
+                controllers.append(self.get_penalty_controller(ocp, nlp))
                 if (self.node[0] == Node.END or self.node[0] == nlp.ns) and nlp.U != []:
                     # Make an exception to the fact that U is not available for the last node
                     controllers[-1].u = [nlp.U[-1]]
@@ -858,7 +858,7 @@ class PenaltyOption(OptionGeneric):
             self.ensure_penalty_sanity(ocp, controllers[0].get_nlp)
 
         else:
-            controllers = [self._get_penalty_controller(ocp, nlp)]
+            controllers = [self.get_penalty_controller(ocp, nlp)]
             penalty_type.validate_penalty_time_index(self, controllers[0])
             self.ensure_penalty_sanity(ocp, nlp)
             self.dt = penalty_type.get_dt(nlp)
@@ -909,7 +909,7 @@ class PenaltyOption(OptionGeneric):
 
         raise RuntimeError("_reset_penalty cannot be called from an abstract class")
 
-    def _get_penalty_controller(self, ocp, nlp) -> PenaltyController:
+    def get_penalty_controller(self, ocp, nlp) -> PenaltyController:
         """
         Get the actual node (time, X and U) specified in the penalty
 

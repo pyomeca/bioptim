@@ -678,7 +678,7 @@ class Solution:
         penalty = self.ocp.phase_transitions[phase_idx - 1]
 
         times = DM([t[-1] for t in self._stepwise_times])
-        t0 = PenaltyHelpers.t0(penalty, self.ocp, 0, lambda p, n: times[p])
+        t0 = PenaltyHelpers.t0()
         dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
         # Compute the error between the last state of the previous phase and the first state of the next phase
         # based on the phase transition objective or constraint function. That is why we need to concatenate
@@ -965,10 +965,10 @@ class Solution:
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_s = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         for idx in range(len(penalty.node_idx)):
-            t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
-            x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_x[p_idx][n_idx][:, sn_idx])
+            t0 = PenaltyHelpers.t0()
+            x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_x[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_x[p_idx]) else np.array(()))
             u = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_u[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_u[p_idx]) else np.array(()))
-            s = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_s[p_idx][n_idx][:, sn_idx])
+            s = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_s[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_s[p_idx]) else np.array(()))
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
 
