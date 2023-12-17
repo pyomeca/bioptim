@@ -84,7 +84,7 @@ class SQPInterface(SolverInterface):
         """
         generic_online_optim(self, ocp, show_options)
 
-    def solve(self) -> dict:
+    def solve(self, expand_during_shake_tree) -> dict:
         """
         Solve the prepared ocp
 
@@ -92,7 +92,7 @@ class SQPInterface(SolverInterface):
         -------
         A reference to the solution
         """
-        return generic_solve(self)
+        return generic_solve(self, expand_during_shake_tree)
 
     def set_lagrange_multiplier(self, sol: Solution):
         """

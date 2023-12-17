@@ -110,7 +110,10 @@ class PenaltyHelpers:
         else:
             if is_constructing_penalty:
                 u = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))  # cx_start
-                if node < penalty.ns[0] - 1 or penalty.control_types[0] == ControlType.CONSTANT_WITH_LAST_NODE:
+                if node < penalty.ns[0] - 1:
+                    u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
+                    u = vertcat(u, u1)
+                elif node < penalty.ns[0] and penalty.control_types[0] == ControlType.CONSTANT_WITH_LAST_NODE:
                     u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
                     u = vertcat(u, u1)
             else:

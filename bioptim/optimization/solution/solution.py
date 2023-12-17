@@ -683,9 +683,9 @@ class Solution:
         # Compute the error between the last state of the previous phase and the first state of the next phase
         # based on the phase transition objective or constraint function. That is why we need to concatenate
         # twice the last state
-        x = PenaltyHelpers.states(penalty, self.ocp, 0, lambda controller_idx, p, n: integrated_states[-1])
-        u = PenaltyHelpers.controls(penalty, self.ocp, 0, lambda controller_idx, p, n: decision_controls[p][n])
-        s = PenaltyHelpers.stochastic_variables(penalty, self.ocp, 0, lambda controller_idx, p, n: decision_stochastic[p][n])
+        x = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: integrated_states[-1])
+        u = PenaltyHelpers.controls(penalty, 0, lambda p, n, sn: decision_controls[p][n] if n < len(decision_controls[p]) else np.ndarray((0, 1)))
+        s = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: decision_stochastic[p][n] if n < len(decision_stochastic[p]) else np.ndarray((0, 1)))
 
         dx = penalty.function[-1](t0, dt, x, u, params, s)
         if dx.shape[0] != decision_states[phase_idx][0].shape[0]:

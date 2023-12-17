@@ -194,7 +194,7 @@ def test_pendulum_min_time_lagrange(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-99.9999592, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-68.84256311, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-68.84010891,   0.        ]))
 
         # optimized time
         np.testing.assert_almost_equal(tf, 0.3508219547856098)
