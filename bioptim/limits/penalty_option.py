@@ -897,7 +897,7 @@ class PenaltyOption(OptionGeneric):
                     raise ValueError("Number of shooting points must be even to use MID")
                 t_idx.append(nlp.ns // 2)
             elif node == Node.INTERMEDIATES:
-                t_idx.extend(list(i for i in range(1, nlp.ns)))
+                t_idx.extend(list(i for i in range(1, nlp.ns - 1)))
             elif node == Node.PENULTIMATE:
                 if nlp.ns < 2:
                     raise ValueError("Number of shooting points must be greater than 1")

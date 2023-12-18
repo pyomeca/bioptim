@@ -339,21 +339,6 @@ class PenaltyController:
         """
         return self._nlp.parameters.scaled
 
-    def get_time_parameter_idx(self):
-        time_idx = None
-        for i in range(self.parameters.cx.shape[0]):
-            param_name = self.parameters.cx[i].name()
-            if param_name == "time_phase_" + str(self.phase_idx):
-                time_idx = self.phase_idx
-        if time_idx is None:
-            raise RuntimeError(
-                f"Time penalty can't be established since the {self.phase_idx}th phase has no time parameter. "
-                f"\nTime parameter can be added with : "
-                f"\nobjective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
-                f"\nwith constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
-            )
-        return time_idx
-
     def copy(self):
         return PenaltyController(
             self.ocp,

@@ -321,13 +321,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            time_idx = [controller.get_time_parameter_idx() for i, controller in enumerate(controllers)]
+            times = [controller.tf for i, controller in enumerate(controllers)]
 
-            time_0 = controllers[0].parameters.cx[time_idx[0]]
+            time_0 = times[0]
             out = controllers[0].cx.zeros((1, 1))
-            for i in range(1, len(controllers)):
-                time_i = controllers[i].parameters.cx[time_idx[i]]
-                out += time_0 - time_i
+            for i in range(1, len(times)):
+                out += time_0 - times[i]
 
             return out
 
@@ -349,15 +348,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             """
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
-
-            time_idx = [controller.get_time_parameter_idx() for i, controller in enumerate(controllers)]
-
-            time = controllers[0].parameters.cx[time_idx[0]]
-            for i in range(1, len(controllers)):
-                time_i = controllers[i].parameters.cx[time_idx[i]]
-                time += time_i
-
-            return time
+            return sum([controller.tf for i, controller in enumerate(controllers)])
 
         @staticmethod
         def stochastic_helper_matrix_explicit(
