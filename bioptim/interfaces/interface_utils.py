@@ -3,7 +3,7 @@ from sys import platform
 
 from casadi import Importer, Function
 import numpy as np
-from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, DM, reshape
+from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds

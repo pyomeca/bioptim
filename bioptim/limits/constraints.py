@@ -1,21 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import (
-    sum1,
-    if_else,
-    vertcat,
-    lt,
-    SX,
-    MX,
-    jacobian,
-    Function,
-    MX_eye,
-    horzcat,
-    ldl,
-    diag,
-    collocation_points,
-)
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat, ldl, diag
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -306,7 +292,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             controller: PenaltyController
                 The penalty node elements
             min_torque: float
-                Minimum joint torques. This prevent from having too small torques, but introduces an if statement
+                Minimum joint torques. This prevents from having too small torques, but introduces an if statement
             """
 
             if min_torque and min_torque < 0:
@@ -349,7 +335,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 else:
                     if isinstance(constraint.rows, int):
                         n_rows = 1
-                    elif isinstance(constraint.rows, (tuple, list)):
+                    elif isinstance(constraint.rows, (tuple, list, np.ndarray)):
                         n_rows = len(constraint.rows)
                     else:
                         raise ValueError("Wrong type for rows")
