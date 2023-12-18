@@ -63,7 +63,7 @@ def solve_ivp_interface(
             if control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 return u[node]
             elif control_type == ControlType.LINEAR_CONTINUOUS:
-                return interp1d(t_span, u[node], kind="linear", axis=1)
+                return interp1d(np.array(t_span)[:, 0], u[node], kind="linear", axis=1)
             else:
                 raise NotImplementedError("Control type not implemented in integration")
 
