@@ -1401,18 +1401,13 @@ class OptimalControlProgram:
                 for key in state:
                     x_init_guess.add(key, state[key], interpolation=x_interp, phase=0)
                 for key in ctrl:
-                    if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                        u_init_guess.add(key, ctrl[key], interpolation=InterpolationType.EACH_FRAME, phase=0)
-                    else:
-                        u_init_guess.add(key, ctrl[key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=0)
+                    u_init_guess.add(key, ctrl[key], interpolation=InterpolationType.EACH_FRAME, phase=0)
+
             else:
                 for key in state[i]:
                     x_init_guess.add(key, state[i][key], interpolation=x_interp, phase=i)
                 for key in ctrl[i]:
-                    if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                        u_init_guess.add(key, ctrl[i][key], interpolation=InterpolationType.EACH_FRAME, phase=i)
-                    else:
-                        u_init_guess.add(key, ctrl[i][key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=i)
+                    u_init_guess.add(key, ctrl[i][key], interpolation=InterpolationType.EACH_FRAME, phase=i)
 
         for key in param:
             param_init_guess.add(key, param[key], name=key)
