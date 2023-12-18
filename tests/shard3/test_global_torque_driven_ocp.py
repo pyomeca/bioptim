@@ -389,7 +389,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((1.12924394, 0.43151372)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((0.21181288, 0.95199836)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((0.21181288, 0.95199836)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -401,20 +401,12 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
     np.testing.assert_almost_equal(
         tracked_markers[0][1:, :, 0], np.array([[0.82873751, 0.5612772], [0.22793516, 0.24205527]])
     )
-    if type(ode_solver) == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(
-            tracked_markers[0][1:, :, 5], np.array([[0.77390897, 0.06282121], [0.41871545, 0.41634836]])
-        )
-        np.testing.assert_almost_equal(
-            tracked_markers[0][1:, :, -1], np.array([[0.71324479, 0.31800347], [0.48945276, 0.25794163]])
-        )
-    else:
-        np.testing.assert_almost_equal(
-            tracked_markers[0][1:, :, 5], np.array([[0.80219698, 0.02541913], [0.5107473, 0.36778313]])
-        )
-        np.testing.assert_almost_equal(
-            tracked_markers[0][1:, :, -1], np.array([[0.76078505, 0.11005192], [0.98565045, 0.65998405]])
-        )
+    np.testing.assert_almost_equal(
+        tracked_markers[0][1:, :, 5], np.array([[0.80219698, 0.02541913], [0.5107473, 0.36778313]])
+    )
+    np.testing.assert_almost_equal(
+        tracked_markers[0][1:, :, -1], np.array([[0.76078505, 0.11005192], [0.98565045, 0.65998405]])
+    )
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])

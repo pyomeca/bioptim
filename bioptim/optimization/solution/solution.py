@@ -927,8 +927,6 @@ class Solution:
 
         for phase, nlp in enumerate(self.ocp.nlp):
             n_states_nodes = self.ocp.nlp[phase].n_states_nodes
-            if type(nlp.ode_solver) == OdeSolver.COLLOCATION:
-                n_states_nodes -= 1
 
             tracked_markers = None
             for objective in nlp.J:
