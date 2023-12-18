@@ -1,6 +1,6 @@
 from typing import Any, Callable
 
-from casadi import horzcat, vertcat, Function, MX, SX, jacobian, diag
+from casadi import vertcat, Function, MX, SX, jacobian, diag
 import numpy as np
 
 from .penalty_controller import PenaltyController
@@ -386,7 +386,7 @@ class PenaltyOption(OptionGeneric):
 
         Parameters
         ----------
-        controller: PenaltyController | list[PenaltyController, PenaltyController]
+        controllers: list[PenaltyController, PenaltyController]
             The nodes
         fcn: MX | SX
             The value of the penalty function
@@ -631,7 +631,7 @@ class PenaltyOption(OptionGeneric):
 
         elif sn_idx.start == 1:
             if sn_idx.stop == 2:
-                x = vertcat(x, vertcat(states.scaled.cx_intermediates_list[0]))
+                x = vertcat(x, vertcat(states.scaled.cx_mid))
             else:
                 raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
 

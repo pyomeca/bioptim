@@ -1073,7 +1073,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
 
     # Note that dt=1, because the multi-node objectives are treated as mayer terms
     out = fun[0](t_out, dt, x_out, u_out, p_out, s_out, weight, target)
-    out_expected = sum2(sum1(sol.controls["tau"][:, :-1] ** 2)) * dt * weight
+    out_expected = sum2(sum1(sol.controls["tau"] ** 2)) * dt * weight
     np.testing.assert_almost_equal(out, out_expected)
 
 
