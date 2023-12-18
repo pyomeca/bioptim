@@ -333,8 +333,12 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
         for key in sol.states:
             states[key] = merged_states[key][:, self.frame_to_export]
+
+        frames = self.frame_to_export
+        if frames.stop is not None:
+            frames = slice(self.frame_to_export.start, self.frame_to_export.stop - 1 if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE) else self.frame_to_export.stop)
         for key in sol.controls:
-            controls[key] = merged_controls[key][:, self.frame_to_export]
+            controls[key] = merged_controls[key][:, frames]
         return states, controls
 
     def _define_time(
@@ -540,10 +544,6 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             self.nlp[0].u_init[key].init[:, :] = sol.controls[key][:, :]
         return True
 
-    def export_data(self, sol) -> tuple:
-        states, controls = super(CyclicRecedingHorizonOptimization, self).export_data(sol)
-        controls = {key: controls[key][:, :-1] for key in controls.keys()}
-        return states, controls
 
 class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
     def __init__(
