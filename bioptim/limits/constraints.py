@@ -319,26 +319,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls["tau"].cx_start + min_bound, controller.controls["tau"].cx_start - max_bound
             )
 
-            if constraint.rows is None:
+            if constraint.rows is None or isinstance(constraint.rows, (tuple, list, np.ndarray)):
                 n_rows = value.shape[0] // 2
+            elif isinstance(constraint.rows, int):
+                n_rows = 1
             else:
-                if (
-                    controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE
-                    and not isinstance(constraint.rows, int)
-                    and len(constraint.rows) == value.shape[0]
-                ):
-                    # This is a very special case where phase_dynamics==ONE_PER_NODE declare rows by itself, but because
-                    # this constraint is twice the real length (two constraints per value), it declares it too large
-                    # on the subsequent pass. In reality, it means the user did not declare 'rows' by themselves.
-                    # Therefore, we are acting as such
-                    n_rows = value.shape[0] // 2
-                else:
-                    if isinstance(constraint.rows, int):
-                        n_rows = 1
-                    elif isinstance(constraint.rows, (tuple, list, np.ndarray)):
-                        n_rows = len(constraint.rows)
-                    else:
-                        raise ValueError("Wrong type for rows")
+                raise ValueError("Wrong type for rows")
             constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows
             constraint.max_bound = [np.inf] * n_rows + [0] * n_rows
             return value
