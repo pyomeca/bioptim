@@ -29,7 +29,7 @@ def prepare_ocp(
     bio_model = (BiorbdModel(biorbd_model_path), BiorbdModel(biorbd_model_path_with_translations))
 
     # Problem parameters
-    final_time = (1.5, 2.5)
+    final_time = (0.5, 0.5)
     tau_min, tau_max = -200, 200
 
     # Mapping
