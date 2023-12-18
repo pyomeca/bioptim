@@ -4,7 +4,7 @@ from sys import platform
 import pytest
 
 import numpy as np
-from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, PhaseDynamics, SolutionMerge
+from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, PhaseDynamics, SolutionMerge, ControlType
 
 
 @pytest.mark.parametrize("scaled", [True, False])
@@ -459,7 +459,8 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
 @pytest.mark.parametrize("merge", [False, True])
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
-def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dynamics):
+@pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS])
+def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dynamics, control_type):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -474,6 +475,7 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dyna
         ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
+        control_type=control_type,
     )
 
     solver = Solver.IPOPT()
@@ -508,9 +510,9 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dyna
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
-@pytest.mark.parametrize("keep_intermediate_points", [True, False])
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
-def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, ode_solver, phase_dynamics):
+@pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS])
+def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, control_type):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -528,19 +530,7 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
     sol = ocp.solve(solver)
     n_shooting = [20, 30, 20]
 
-    opts = {
-        "shooting_type": shooting,
-        "keep_intermediate_points": keep_intermediate_points,
-        "integrator": integrator,
-    }
-    if shooting == Shooting.MULTIPLE and not keep_intermediate_points:
-        with pytest.raises(
-            ValueError,
-            match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
-            "When using multiple shooting, the intermediate points should be kept.",
-        ):
-            _ = sol.integrate(**opts)
-        return
+    opts = {"shooting_type": shooting, "integrator": integrator}
 
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
@@ -557,41 +547,27 @@ def test_integrate_multiphase(shooting, keep_intermediate_points, integrator, od
     shapes = (3, 3)
     states_shape_sum = 0
     time_shape_sum = 0
-    for i in range(len(sol_integrated.states)):
-        for key in sol_integrated.states[i].keys():
-            states_shape_sum += np.shape(sol_integrated.states[i][key])[1]
-    for t in sol_integrated.time:
+    for i in range(len(sol_integrated)):
+        for key in sol_integrated[i].keys():
+            states_shape_sum += np.shape(sol_integrated[i][key])[1]
+    for t in sol.times:
         time_shape_sum += t.shape[0] * 2  # For q and qdot
     assert states_shape_sum == time_shape_sum
 
     decimal = 1 if integrator != SolutionIntegrator.OCP else 8
-    for i in range(len(sol_integrated.states)):
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
+    for i in range(len(sol_integrated)):
         for k, key in enumerate(sol.states[i]):
             if integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE:
                 np.testing.assert_almost_equal(
-                    sol_integrated.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
+                    sol_integrated[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
                 )
 
-            if keep_intermediate_points:
-                if shooting == Shooting.MULTIPLE:
-                    assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * 6 + 1)
-                else:
-                    assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
-            else:
-                if integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE:
-                    np.testing.assert_almost_equal(sol_integrated.states[i][key], sol.states[i][key])
-                assert sol_integrated.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
-            if ode_solver == OdeSolver.COLLOCATION:
-                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
-            else:
-                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
+            if integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE:
+                np.testing.assert_almost_equal(sol_integrated[i][key], sol.states[i][key])
 
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. This may happen in previously "
-        "integrated and interpolated structure",
-    ):
-        _ = sol_integrated.controls
+            assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
+            assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
 
 
 def test_check_models_comes_from_same_super_class():
