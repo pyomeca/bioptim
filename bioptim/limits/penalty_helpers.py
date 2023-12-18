@@ -97,18 +97,11 @@ class PenaltyHelpers:
                 u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
             return _vertcat(u)
 
-        if penalty.control_types[0] in (ControlType.LINEAR_CONTINUOUS, ):
-            if is_constructing_penalty:
+        if is_constructing_penalty:
+            if penalty.control_types[0] in (ControlType.LINEAR_CONTINUOUS,):
                 final_subnode = None if node < penalty.ns[0] else 1
                 u = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, final_subnode)))
             else:
-                u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
-                u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
-                u = _vertcat([u0, u1])
-            return u
-        
-        else:
-            if is_constructing_penalty:
                 u = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))  # cx_start
                 if node < penalty.ns[0] - 1:
                     u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
@@ -116,11 +109,15 @@ class PenaltyHelpers:
                 elif node < penalty.ns[0] and penalty.control_types[0] == ControlType.CONSTANT_WITH_LAST_NODE:
                     u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
                     u = vertcat(u, u1)
-            else:
-                u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
-                u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
-                u = _vertcat([u0, u1])
-            return u
+                else:
+                    pass
+
+        else:
+            u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
+            u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
+            u = _vertcat([u0, u1])
+
+        return u
 
     @staticmethod
     def parameters(penalty, get_parameter: Callable):
