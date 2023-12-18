@@ -286,7 +286,7 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver, phase_dyna
     solver.set_print_level(0)
     sol = ocp.solve(solver)
 
-    opts = {"keep_intermediate_points": keep_intermediate_points, "integrator": SolutionIntegrator.OCP}
+    opts = {"integrator": SolutionIntegrator.OCP}
     if ode_solver == OdeSolver.COLLOCATION:
         with pytest.raises(
             ValueError,
@@ -298,31 +298,18 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver, phase_dyna
             sol.integrate(**opts)
         return
 
-    sol_integrated = sol.integrate(**opts)
-    for key in sol_integrated.states.keys():
-        assert np.shape(sol_integrated.states[key])[1] == np.shape(sol_integrated._time_vector)[1]
+    sol_integrated = sol.integrate(**opts, to_merge=SolutionMerge.NODES)
+    for key in sol_integrated.keys():
+        assert np.shape(sol_integrated[key])[1] == np.shape(sol.times)[0]
 
     shapes = (2, 2)
     decimal = 1
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
     for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(
-            sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal
-        )
+        np.testing.assert_almost_equal(sol_integrated[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal)
 
-        if keep_intermediate_points or ode_solver == OdeSolver.COLLOCATION:
-            assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
-        else:
-            np.testing.assert_almost_equal(sol_integrated.states[key], sol.states[key], decimal=decimal)
-            assert sol_integrated.states[key].shape == (shapes[i], n_shooting + 1)
-
-        assert sol.states[key].shape == (shapes[i], n_shooting + 1)
-
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. This may happen in previously "
-        "integrated and interpolated structure",
-    ):
-        _ = sol_integrated.controls
+        assert sol_integrated[key].shape == (shapes[i], n_shooting * n_steps + 1)
+        assert sol.states[key].shape == (shapes[i], n_shooting * n_steps + 1)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -354,131 +341,117 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
     solver.set_print_level(0)
     sol = ocp.solve(solver)
 
-    opts = {
-        "keep_intermediate_points": keep_intermediate_points,
-        "integrator": SolutionIntegrator.SCIPY_RK45,
-        "shooting_type": Shooting.SINGLE,
-    }
+    opts = {"integrator": SolutionIntegrator.SCIPY_RK45, "shooting_type": Shooting.SINGLE}
 
-    sol_integrated = sol.integrate(**opts)
-    for key in sol_integrated.states.keys():
-        assert np.shape(sol_integrated.states[key])[1] == np.shape(sol_integrated.time)[0]
+    sol_integrated = sol.integrate(**opts, to_merge=SolutionMerge.NODES)
+    for key in sol_integrated.keys():
+        assert np.shape(sol_integrated[key])[1] == np.shape(sol.times)[0]
 
     decimal = 1
     if ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(
-            sol_integrated.states["q"][:, [0, -1]],
+            sol_integrated["q"][:, [0, -1]],
             np.array([[0.0, -0.40229917], [0.0, 2.66577734]]),
             decimal=decimal,
         )
         np.testing.assert_almost_equal(
-            sol_integrated.states["qdot"][:, [0, -1]],
+            sol_integrated["qdot"][:, [0, -1]],
             np.array([[0.0, 4.09704146], [0.0, 4.54449186]]),
             decimal=decimal,
         )
 
     else:
         np.testing.assert_almost_equal(
-            sol_integrated.states["q"][:, [0, -1]],
+            sol_integrated["q"][:, [0, -1]],
             np.array([[0.0, -0.93010486], [0.0, 1.25096783]]),
             decimal=decimal,
         )
         np.testing.assert_almost_equal(
-            sol_integrated.states["qdot"][:, [0, -1]],
+            sol_integrated["qdot"][:, [0, -1]],
             np.array([[0.0, -0.78079849], [0.0, 1.89447328]]),
             decimal=decimal,
         )
 
     shapes = (2, 2)
-    if keep_intermediate_points:
-        assert sol_integrated.states["q"].shape == (shapes[0], n_shooting * 5 + 1)
-        assert sol_integrated.states["qdot"].shape == (shapes[1], n_shooting * 5 + 1)
-    else:
-        if ode_solver == OdeSolver.RK4:
-            np.testing.assert_almost_equal(
-                sol_integrated.states["q"],
-                np.array(
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
+    assert sol_integrated["q"].shape == (shapes[0], n_shooting * n_steps + 1)
+    assert sol_integrated["qdot"].shape == (shapes[1], n_shooting * n_steps + 1)
+
+    if ode_solver == OdeSolver.RK4:
+        np.testing.assert_almost_equal(
+            sol_integrated["q"][:, ::n_steps],
+            np.array(
+                [
                     [
-                        [
-                            0.0,
-                            0.33771737,
-                            0.60745128,
-                            0.77322807,
-                            0.87923355,
-                            0.75783664,
-                            -0.39855413,
-                            -0.78071335,
-                            -0.9923451,
-                            -0.92719046,
-                            -0.40229917,
-                        ],
-                        [
-                            0.0,
-                            -0.33826953,
-                            -0.59909116,
-                            -0.72747641,
-                            -0.76068201,
-                            -0.56369461,
-                            0.62924769,
-                            1.23356971,
-                            1.64774156,
-                            2.09574642,
-                            2.66577734,
-                        ],
+                        0.0,
+                        0.33771737,
+                        0.60745128,
+                        0.77322807,
+                        0.87923355,
+                        0.75783664,
+                        -0.39855413,
+                        -0.78071335,
+                        -0.9923451,
+                        -0.92719046,
+                        -0.40229917,
                     ],
-                ),
-                decimal=decimal,
-            )
-            np.testing.assert_almost_equal(
-                sol_integrated.states["qdot"],
-                np.array(
                     [
-                        [
-                            0.0,
-                            4.56061105,
-                            2.00396203,
-                            1.71628908,
-                            0.67171827,
-                            -4.17420278,
-                            -9.3109149,
-                            -1.09241789,
-                            -3.74378463,
-                            6.01186572,
-                            4.09704146,
-                        ],
-                        [
-                            0.0,
-                            -4.52749096,
-                            -1.8038578,
-                            -1.06710062,
-                            0.30405407,
-                            4.80782728,
-                            10.24044964,
-                            4.893414,
-                            4.12673905,
-                            6.83563286,
-                            4.54449186,
-                        ],
-                    ]
-                ),
-                decimal=decimal,
-            )
-        assert sol_integrated.states["q"].shape == (shapes[0], n_shooting + 1) and sol_integrated.states[
-            "qdot"
-        ].shape == (shapes[1], n_shooting + 1)
+                        0.0,
+                        -0.33826953,
+                        -0.59909116,
+                        -0.72747641,
+                        -0.76068201,
+                        -0.56369461,
+                        0.62924769,
+                        1.23356971,
+                        1.64774156,
+                        2.09574642,
+                        2.66577734,
+                    ],
+                ],
+            ),
+            decimal=decimal,
+        )
+        np.testing.assert_almost_equal(
+            sol_integrated["qdot"][:, ::n_steps],
+            np.array(
+                [
+                    [
+                        0.0,
+                        4.56061105,
+                        2.00396203,
+                        1.71628908,
+                        0.67171827,
+                        -4.17420278,
+                        -9.3109149,
+                        -1.09241789,
+                        -3.74378463,
+                        6.01186572,
+                        4.09704146,
+                    ],
+                    [
+                        0.0,
+                        -4.52749096,
+                        -1.8038578,
+                        -1.06710062,
+                        0.30405407,
+                        4.80782728,
+                        10.24044964,
+                        4.893414,
+                        4.12673905,
+                        6.83563286,
+                        4.54449186,
+                    ],
+                ]
+            ),
+            decimal=decimal,
+        )
 
     if ode_solver == OdeSolver.COLLOCATION:
         b = bool(1)
         for i, key in enumerate(sol.states):
             b = b * sol.states[key].shape == (shapes[i], n_shooting * 5 + 1)
         assert b
-
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. This may happen in previously "
-        "integrated and interpolated structure",
-    ):
-        _ = sol_integrated.controls
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -507,22 +480,7 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dyna
     solver.set_print_level(0)
     sol = ocp.solve(solver)
 
-    opts = {
-        "shooting_type": shooting,
-        "keep_intermediate_points": False,
-        "integrator": integrator,
-    }
-
-    if shooting == Shooting.MULTIPLE:
-        with pytest.raises(
-            ValueError,
-            match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
-            "When using multiple shooting, the intermediate points should be kept.",
-        ):
-            _ = sol.integrate(**opts)
-
-    opts["keep_intermediate_points"] = True
-    opts["merge_phases"] = merge
+    opts = {"shooting_type": shooting, "integrator": integrator, "to_merge": [SolutionMerge.NODES, SolutionMerge.PHASES if merge else None]}
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
             ValueError,
@@ -535,35 +493,16 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dyna
         return
 
     sol_integrated = sol.integrate(**opts)
-    for key in sol_integrated.states.keys():
-        assert np.shape(sol_integrated.states[key])[1] == np.shape(sol_integrated._time_vector)[1]
+    for key in sol_integrated.keys():
+        assert np.shape(sol_integrated[key])[1] == np.shape(sol.times)[0]
 
     shapes = (2, 2)
     decimal = 0 if integrator != SolutionIntegrator.OCP or ode_solver == OdeSolver.COLLOCATION else 8
-    np.testing.assert_almost_equal(sol_integrated.states["q"][:, [0, -1]], sol.states["q"][:, [0, -1]], decimal=decimal)
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
+    np.testing.assert_almost_equal(sol_integrated["q"][:, [0, -1]], sol.states["q"][:, [0, -1]], decimal=decimal)
     for i, key in enumerate(sol.states):
-        if ode_solver == OdeSolver.COLLOCATION:
-            if integrator != SolutionIntegrator.OCP:
-                if shooting == Shooting.MULTIPLE:
-                    assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 6 + 1)
-                else:
-                    assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
-            else:
-                assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (4 + 1) + 1)
-            assert sol.states[key].shape == (shapes[i], n_shooting * 5 + 1)
-        else:
-            if shooting == Shooting.MULTIPLE:
-                assert sol_integrated.states[key].shape == (shapes[i], n_shooting * (5 + 1) + 1)
-            else:
-                assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 5 + 1)
-            assert sol.states[key].shape == (shapes[i], n_shooting + 1)
-
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. This may happen in previously "
-        "integrated and interpolated structure",
-    ):
-        _ = sol_integrated.controls
+        assert sol_integrated[key].shape == (shapes[i], n_shooting * n_steps + 1)
+        assert sol.states[key].shape == (shapes[i], n_shooting * n_steps + 1)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

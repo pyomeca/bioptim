@@ -74,7 +74,7 @@ def solve_ivp_interface(
 
         y.append(result.y)
 
-    y.append(x[-1] if shooting_type == Shooting.MULTIPLE else y[-1][:, -1])
+    y.append(x[-1] if shooting_type == Shooting.MULTIPLE else y[-1][:, -1][:, np.newaxis])
 
     return y
 
