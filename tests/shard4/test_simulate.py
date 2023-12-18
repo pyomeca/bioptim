@@ -4,7 +4,52 @@ from sys import platform
 import pytest
 
 import numpy as np
-from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, PhaseDynamics
+from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, PhaseDynamics, SolutionMerge
+
+
+@pytest.mark.parametrize("scaled", [True, False])
+def test_merge_combinations(scaled):
+    # Load pendulum
+    from bioptim.examples.getting_started import pendulum as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod", final_time=2, n_shooting=10
+    )
+
+    solver = Solver.IPOPT()
+    solver.set_print_level(0)
+    solver.set_maximum_iterations(1)
+    sol = ocp.solve(solver)
+
+    # Merges that includes PHASES
+    with pytest.raises(ValueError, match="Merging must at least contain SolutionMerge.KEYS or SolutionMerge.NODES"):
+        sol.decision_states(to_merge=SolutionMerge.PHASES)
+    with pytest.raises(ValueError, match="Merging must at least contain SolutionMerge.KEYS or SolutionMerge.NODES"):
+        sol.decision_states(to_merge=[SolutionMerge.PHASES])
+    with pytest.raises(ValueError, match="to_merge must contain SolutionMerge.NODES when merging phases"):
+        sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.KEYS])
+    sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
+    sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.KEYS, SolutionMerge.NODES])
+
+    # Merges that includes KEYS
+    sol.decision_states(to_merge=SolutionMerge.KEYS, scaled=scaled)
+    sol.decision_states(to_merge=[SolutionMerge.KEYS], scaled=scaled)
+    sol.decision_states(to_merge=[SolutionMerge.KEYS, SolutionMerge.NODES], scaled=scaled)
+    with pytest.raises(ValueError, match="to_merge must contain SolutionMerge.NODES when merging phases"):
+        sol.decision_states(to_merge=[SolutionMerge.KEYS, SolutionMerge.PHASES], scaled=scaled)
+    sol.decision_states(to_merge=[SolutionMerge.KEYS, SolutionMerge.PHASES, SolutionMerge.NODES], scaled=scaled)
+
+    # Merges that includes NODES
+    sol.decision_states(to_merge=SolutionMerge.NODES, scaled=scaled)
+    sol.decision_states(to_merge=[SolutionMerge.NODES], scaled=scaled)
+    sol.decision_states(to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS], scaled=scaled)
+    sol.decision_states(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES], scaled=scaled)
+    sol.decision_states(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES, SolutionMerge.KEYS], scaled=scaled)
+
+    # Merges that includes ALL
+    sol.decision_states(to_merge=SolutionMerge.ALL)
+    sol.decision_states(to_merge=[SolutionMerge.ALL])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -25,11 +70,11 @@ def test_merge_phases_one_phase(phase_dynamics):
     solver = Solver.IPOPT()
     solver.set_print_level(0)
     sol = ocp.solve(solver)
-    sol_merged = sol.merge_phases()
+    sol_merged = sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
+
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
     for key in sol.states:
-        np.testing.assert_almost_equal(sol_merged.states[key], sol.states[key])
-    for key in sol.controls:
-        np.testing.assert_almost_equal(sol_merged.controls[key], sol.controls[key])
+        np.testing.assert_almost_equal(sol_merged[key], sol.states[key][:, ::n_steps])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -48,19 +93,12 @@ def test_merge_phases_multi_phase(phase_dynamics):
     solver = Solver.IPOPT()
     solver.set_print_level(0)
     sol = ocp.solve(solver)
-    sol_merged = sol.merge_phases()
+    sol_merged = sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
 
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
     for key in sol.states[0]:
-        expected = np.concatenate([s[key][:, :-1] for s in sol.states], axis=1)
-        expected = np.concatenate((expected, sol.states[-1][key][:, -1][:, np.newaxis]), axis=1)
-
-        np.testing.assert_almost_equal(sol_merged.states[key], expected)
-
-    for key in sol.controls[0]:
-        expected = np.concatenate([s[key][:, :-1] for s in sol.controls], axis=1)
-        expected = np.concatenate((expected, sol.controls[-1][key][:, -1][:, np.newaxis]), axis=1)
-
-        np.testing.assert_almost_equal(sol_merged.controls[key], expected)
+        expected = np.concatenate([s[key][:, ::n_steps] for s in sol.states], axis=1)
+        np.testing.assert_almost_equal(sol_merged[key], expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -74,7 +112,7 @@ def test_interpolate(phase_dynamics):
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=2,
+        final_time=1,
         n_shooting=n_shooting,
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
@@ -86,20 +124,15 @@ def test_interpolate(phase_dynamics):
     n_frames = 100
     sol_interp = sol.interpolate(n_frames)
     sol_interp_list = sol.interpolate([n_frames])
-    shapes = (2, 2)
-    for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(sol_interp.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
-        np.testing.assert_almost_equal(sol_interp_list.states[key][:, [0, -1]], sol.states[key][:, [0, -1]])
-        assert sol_interp.states[key].shape == (shapes[i], n_frames)
-        assert sol_interp_list.states[key].shape == (shapes[i], n_frames)
-        assert sol.states[key].shape == (shapes[i], n_shooting + 1)
 
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. This may happen in previously "
-        "integrated and interpolated structure",
-    ):
-        _ = sol_interp.controls
+    shapes = (2, 2)
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
+    for i, key in enumerate(sol.states):
+        np.testing.assert_almost_equal(sol_interp[key][:, [0, -1]], sol.states[key][:, [0, -1]])
+        np.testing.assert_almost_equal(sol_interp_list[key][:, [0, -1]], sol.states[key][:, [0, -1]])
+        assert sol_interp[key].shape == (shapes[i], n_frames)
+        assert sol_interp_list[key].shape == (shapes[i], n_frames)
+        assert sol.states[key].shape == (shapes[i], (n_shooting * n_steps) + 1)
 
     with pytest.raises(
         ValueError,
@@ -133,22 +166,13 @@ def test_interpolate_multiphases(ode_solver, phase_dynamics):
     shapes = (3, 3)
 
     decimal = 2 if ode_solver == OdeSolver.COLLOCATION else 8
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
     for i, key in enumerate(sol.states[0]):
         np.testing.assert_almost_equal(
-            sol_interp.states[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
+            sol_interp[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
         )
-        assert sol_interp.states[i][key].shape == (shapes[i], n_frames)
-        if ode_solver == OdeSolver.COLLOCATION:
-            assert sol.states[i][key].shape == (shapes[i], n_shooting[i] * 5 + 1)
-        else:
-            assert sol.states[i][key].shape == (shapes[i], n_shooting[i] + 1)
-
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. This may happen in previously "
-        "integrated and interpolated structure",
-    ):
-        _ = sol_interp.controls
+        assert sol_interp[i][key].shape == (shapes[i], n_frames)
+        assert sol.states[i][key].shape == (shapes[i], (n_shooting [i] * n_steps) + 1)
 
     with pytest.raises(
         ValueError,
@@ -179,19 +203,13 @@ def test_interpolate_multiphases_merge_phase(phase_dynamics):
     sol_interp = sol.interpolate(n_frames)
     shapes = (3, 3)
 
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
     for i, key in enumerate(sol.states[0]):
         expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
-        np.testing.assert_almost_equal(sol_interp.states[key][:, [0, -1]], expected)
+        np.testing.assert_almost_equal(sol_interp[key][:, [0, -1]], expected)
 
-        assert sol_interp.states[key].shape == (shapes[i], n_frames)
-        assert sol.states[i][key].shape == (shapes[i], n_shooting[i] + 1)
-
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. This may happen in previously "
-        "integrated and interpolated structure",
-    ):
-        _ = sol_interp.controls
+        assert sol_interp[key].shape == (shapes[i], n_frames)
+        assert sol.states[i][key].shape == (shapes[i], (n_shooting[i] * n_steps) + 1)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -218,15 +236,7 @@ def test_integrate(integrator, ode_solver, phase_dynamics):
     solver.set_print_level(0)
     sol = ocp.solve(solver)
 
-    opts = {"shooting_type": Shooting.MULTIPLE, "keep_intermediate_points": False, "integrator": integrator}
-    with pytest.raises(
-        ValueError,
-        match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
-        "When using multiple shooting, the intermediate points should be kept.",
-    ):
-        _ = sol.integrate(**opts)
-
-    opts["keep_intermediate_points"] = True
+    opts = {"shooting_type": Shooting.MULTIPLE, "integrator": integrator}
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
             ValueError,
@@ -238,29 +248,18 @@ def test_integrate(integrator, ode_solver, phase_dynamics):
             sol.integrate(**opts)
         return
 
-    sol_integrated = sol.integrate(**opts)
-    for key in sol_integrated.states.keys():
-        assert np.shape(sol_integrated.states[key])[1] == np.shape(sol_integrated.time)[0]
+    sol_integrated = sol.integrate(**opts, to_merge=SolutionMerge.NODES)
+    for key in sol_integrated.keys():
+        assert np.shape(sol_integrated[key])[1] == np.shape(sol.times)[0]
 
     shapes = (2, 2)
     decimal = 5 if integrator != SolutionIntegrator.OCP else 8
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
     for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(
-            sol_integrated.states[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal
-        )
+        np.testing.assert_almost_equal(sol_integrated[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal)
 
-        assert sol_integrated.states[key].shape == (shapes[i], n_shooting * 6 + 1)
-        if ode_solver == OdeSolver.COLLOCATION:
-            assert sol.states[key].shape == (shapes[i], n_shooting * 5 + 1)
-        else:
-            assert sol.states[key].shape == (shapes[i], n_shooting + 1)
-
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. "
-        "This may happen in previously integrated and interpolated structure",
-    ):
-        _ = sol_integrated.controls
+        assert sol_integrated[key].shape == (shapes[i], n_shooting * n_steps + 1)
+        assert sol.states[key].shape == (shapes[i], n_shooting * n_steps + 1)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

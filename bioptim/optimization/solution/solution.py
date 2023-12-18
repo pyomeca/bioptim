@@ -14,8 +14,7 @@ from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
 from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
 from ...dynamics.ode_solver import OdeSolver
-from ...interfaces.solve_ivp_interface import solve_ivp_bioptim_interface
-
+from ...interfaces.solve_ivp_interface import solve_ivp_bioptim_interface, solve_ivp_interface
 
 
 class Solution:
@@ -592,6 +591,7 @@ class Solution:
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
             )
+
         has_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
         if has_trapezoidal:
             raise ValueError(
@@ -616,6 +616,10 @@ class Solution:
             if integrator == SolutionIntegrator.OCP:
                 integrated_sol = solve_ivp_bioptim_interface(
                     shooting_type=shooting_type, dynamics_func=nlp.dynamics, t=t, x=next_x, u=u[p], s=s[p], p=params
+                )
+            elif integrator in (SolutionIntegrator.SCIPY_RK45, SolutionIntegrator.SCIPY_RK23, SolutionIntegrator.SCIPY_RK45, SolutionIntegrator.SCIPY_DOP853, SolutionIntegrator.SCIPY_BDF, SolutionIntegrator.SCIPY_LSODA):
+                integrated_sol = solve_ivp_interface(
+                    method=integrator, shooting_type=shooting_type, nlp=nlp, t=t, x=next_x, u=u[p], s=s[p], p=params
                 )
             else:
                 raise NotImplementedError(f"{integrator} is not implemented yet")
@@ -866,6 +870,7 @@ class Solution:
                         n_frames += objective.target.shape[2]
                         break
 
+        data_to_animate = []
         if n_frames == 0:
             try:
                 data_to_animate = [self.interpolate(sum([nlp.ns for nlp in self.ocp.nlp]) + 1)]
@@ -921,11 +926,11 @@ class Solution:
     def _prepare_tracked_markers_for_animation(self, n_shooting: int = None) -> list:
         """Prepare the markers which are tracked to the animation"""
 
-        n_frames = sum(self.ns) + 1 if n_shooting is None else n_shooting + 1
-
         all_tracked_markers = []
 
         for phase, nlp in enumerate(self.ocp.nlp):
+            n_frames = sum(nlp.ns) + 1 if n_shooting is None else n_shooting + 1
+
             n_states_nodes = self.ocp.nlp[phase].n_states_nodes
 
             tracked_markers = None
