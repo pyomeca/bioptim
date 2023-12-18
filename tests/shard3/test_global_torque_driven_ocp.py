@@ -687,7 +687,7 @@ def test_example_multi_biorbd_model(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((240, 1)), decimal=6)
 
     # Check some of the results
-    states, controls, states_no_intermediate = sol.states, sol.controls, sol.states_no_intermediate
+    states, controls = sol.states, sol.controls
 
     # initial and final position
     np.testing.assert_almost_equal(

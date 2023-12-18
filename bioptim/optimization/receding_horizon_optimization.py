@@ -335,8 +335,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             states[key] = merged_states[key][:, self.frame_to_export]
 
         frames = self.frame_to_export
-        if frames.stop is not None:
-            frames = slice(self.frame_to_export.start, self.frame_to_export.stop - 1 if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE) else self.frame_to_export.stop)
+        if frames.stop is not None and frames.stop == self.nlp[0].n_controls_nodes:
+            if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
+                frames = slice(self.frame_to_export.start, self.frame_to_export.stop - 1)
         for key in sol.controls:
             controls[key] = merged_controls[key][:, frames]
         return states, controls
