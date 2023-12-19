@@ -276,8 +276,7 @@ def test_integrate(integrator, ode_solver, phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-@pytest.mark.parametrize("keep_intermediate_points", [False, True])
-def test_integrate_single_shoot(keep_intermediate_points, ode_solver, phase_dynamics):
+def test_integrate_single_shoot(ode_solver, phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import pendulum as ocp_module
 
@@ -328,8 +327,7 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver, phase_dyna
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
-@pytest.mark.parametrize("keep_intermediate_points", [False, True])
-def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, phase_dynamics):
+def test_integrate_single_shoot_use_scipy(ode_solver, phase_dynamics):
     if ode_solver == OdeSolver.COLLOCATION and platform != "linux-64":
         # For some reason, the test fails on Mac
         warnings.warn("Test test_integrate_single_shoot_use_scipy skiped on Mac")
@@ -641,9 +639,8 @@ def test_check_models_comes_from_same_super_class():
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("shooting", [Shooting.SINGLE, Shooting.MULTIPLE, Shooting.SINGLE_DISCONTINUOUS_PHASE])
-@pytest.mark.parametrize("keep_intermediate_points", [True, False])
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
-def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integrator, ode_solver, phase_dynamics):
+def test_integrate_multiphase_merged(shooting, integrator, ode_solver, phase_dynamics):
     # Load pendulum
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
