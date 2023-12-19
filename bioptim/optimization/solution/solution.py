@@ -14,7 +14,7 @@ from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
 from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
 from ...dynamics.ode_solver import OdeSolver
-from ...interfaces.solve_ivp_interface import solve_ivp_bioptim_interface, solve_ivp_interface
+from ...interfaces.solve_ivp_interface import solve_ivp_interface
 
 
 class Solution:
@@ -612,18 +612,10 @@ class Solution:
             t = self._decision_times[p]
 
             next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, s)
-
-            if integrator == SolutionIntegrator.OCP:
-                integrated_sol = solve_ivp_bioptim_interface(
-                    shooting_type=shooting_type, dynamics_func=nlp.dynamics, t=t, x=next_x, u=u[p], s=s[p], p=params
-                )
-            elif integrator in (SolutionIntegrator.SCIPY_RK45, SolutionIntegrator.SCIPY_RK23, SolutionIntegrator.SCIPY_RK45, SolutionIntegrator.SCIPY_DOP853, SolutionIntegrator.SCIPY_BDF, SolutionIntegrator.SCIPY_LSODA):
-                integrated_sol = solve_ivp_interface(
-                    method=integrator, shooting_type=shooting_type, nlp=nlp, t=t, x=next_x, u=u[p], s=s[p], p=params
-                )
-            else:
-                raise NotImplementedError(f"{integrator} is not implemented yet")
-            
+            integrated_sol = solve_ivp_interface(
+                shooting_type=shooting_type, nlp=nlp, t=t, x=next_x, u=u[p], s=s[p], p=params, method=integrator
+            )
+        
             out[p] = {}
             for key in nlp.states.keys():
                 out[p][key] = [None] * nlp.n_states_nodes
@@ -721,8 +713,8 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             t = self._decision_times[p]
 
-            integrated_sol = solve_ivp_bioptim_interface(
-                shooting_type=Shooting.MULTIPLE, dynamics_func=nlp.dynamics, t=t, x=x[p], u=u[p], s=s[p], p=params
+            integrated_sol = solve_ivp_interface(
+                shooting_type=Shooting.MULTIPLE, nlp=nlp, t=t, x=x[p], u=u[p], s=s[p], p=params, method=SolutionIntegrator.OCP,
             )
             
             unscaled[p] = {}
