@@ -546,7 +546,7 @@ def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, 
     sol = ocp.solve(solver)
     n_shooting = [20, 30, 20]
 
-    opts = {"shooting_type": shooting, "integrator": integrator}
+    opts = {"shooting_type": shooting, "integrator": integrator, "to_merge": SolutionMerge.NODES}
 
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
@@ -579,10 +579,10 @@ def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, 
                     sol_integrated[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
                 )
 
-            if integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE:
+            if ode_solver != OdeSolver.COLLOCATION and (integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE):
                 np.testing.assert_almost_equal(sol_integrated[i][key], sol.states[i][key])
 
-            assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
+            assert sol_integrated[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
             assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
 
 
@@ -642,19 +642,8 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
     sol = ocp.solve(solver)
 
     opts = {
-        "shooting_type": shooting,
-        "keep_intermediate_points": keep_intermediate_points,
-        "integrator": integrator,
+        "shooting_type": shooting, "integrator": integrator, "to_merge": [SolutionMerge.NODES, SolutionMerge.PHASES]
     }
-
-    if shooting == Shooting.MULTIPLE and not keep_intermediate_points:
-        with pytest.raises(
-            ValueError,
-            match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
-            "When using multiple shooting, the intermediate points should be kept.",
-        ):
-            _ = sol.integrate(**opts)
-        return
 
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
@@ -667,51 +656,21 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
             sol.integrate(**opts)
         return
 
-    opts["merge_phases"] = True
-
     n_shooting = [20, 30, 20]
     sol_integrated = sol.integrate(**opts)
 
-    for key in sol_integrated.states.keys():
-        assert np.shape(sol_integrated.states[key])[1] == np.shape(sol_integrated._time_vector)[1]
+    for key in sol_integrated.keys():
+        assert np.shape(sol_integrated[key])[1] == sol.stepwise_times(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES]).shape[0]
 
     shapes = (3, 3)
     decimal = 0 if integrator != SolutionIntegrator.OCP else 8
+    n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
     for k, key in enumerate(sol.states[0]):
         expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
-        if integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE:
-            np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected, decimal=decimal)
+        np.testing.assert_almost_equal(sol_integrated[key][:, [0, -1]], expected, decimal=decimal)
 
-        if keep_intermediate_points:
-            if shooting == Shooting.MULTIPLE:
-                assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * 6 + 3 * 1)
-            elif shooting == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-                assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * 5 + 3 * 1)
-            else:
-                assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) * 5 + 1)
-        else:
-            # The interpolation prevents from comparing all points
-            if integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE:
-                expected = np.concatenate(
-                    (sol.states[0][key][:, 0:1], sol.states[-1][key][:, -1][:, np.newaxis]), axis=1
-                )
-                np.testing.assert_almost_equal(sol_integrated.states[key][:, [0, -1]], expected)
-
-            if shooting == Shooting.SINGLE_DISCONTINUOUS_PHASE:
-                assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) + 3 * 1)
-            else:
-                assert sol_integrated.states[key].shape == (shapes[k], sum(n_shooting) + 1)
-
-    for i in range(len(sol_integrated.states)):
+        assert sol_integrated[key].shape == (shapes[k], sum(n_shooting) * n_steps + 3)
+        
+    for i in range(len(sol_integrated)):
         for k, key in enumerate(sol.states[i]):
-            if ode_solver == OdeSolver.COLLOCATION:
-                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * 5 + 1)
-            else:
-                assert sol.states[i][key].shape == (shapes[k], n_shooting[i] + 1)
-
-    with pytest.raises(
-        RuntimeError,
-        match="There is no controls in the solution. This may happen in previously "
-        "integrated and interpolated structure",
-    ):
-        _ = sol_integrated.controls
+            assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)

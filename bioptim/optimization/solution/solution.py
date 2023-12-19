@@ -372,12 +372,32 @@ class Solution:
         """
         return self.phase_times(t_span=True)
     
-    @property
-    def stepwise_times(self):
+    def stepwise_times(self, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
         """
         Returns the time vector at each node
         """
-        return self.phase_times(t_span=False)
+        if to_merge is None:
+            return self.phase_times(t_span=False)
+        
+        if isinstance(to_merge, SolutionMerge):
+            to_merge = [to_merge]
+
+        t = self.phase_times(t_span=False)
+        if not isinstance(t, list):
+            t = [t]
+        if SolutionMerge.NODES in to_merge:
+            for phase_idx in range(len(t)):
+                t[phase_idx] = np.concatenate(t[phase_idx])
+
+        if SolutionMerge.PHASES in to_merge and SolutionMerge.NODES not in to_merge:
+            raise ValueError("Cannot merge phases without nodes")
+        
+        if SolutionMerge.PHASES in to_merge:
+            # NODES is necessarily in to_merge if PHASES is in to_merge
+            t = np.concatenate(t)
+        
+        return t
+        
 
     @property
     def states(self):
