@@ -22,8 +22,6 @@ class OdeSolverBase:
         """
         Parameters
         ----------
-        n_integration_steps: int
-            The number of steps for the integration
         allow_free_variables: bool
             If the free variables are allowed in the integrator's casadi function
         """
@@ -546,7 +544,6 @@ class OdeSolver:
             self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False, **extra_opt
         ):
             raise NotImplementedError("CVODES is not yet implemented")
-
 
             if extra_opt:
                 raise RuntimeError("CVODES does not accept extra options")

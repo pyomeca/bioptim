@@ -3,7 +3,7 @@ from typing import Callable, Protocol
 from casadi import MX, SX, DM, vertcat
 import numpy as np
 
-from ..misc.enums import QuadratureRule, PhaseDynamics
+from ..misc.enums import PhaseDynamics, ControlType
 
 
 class PenaltyProtocol(Protocol):
@@ -13,40 +13,26 @@ class PenaltyProtocol(Protocol):
     nodes_phase: list[int, ...]  # The phases of the penalty (only for multinode penalties)
     node_idx: list[int, ...]  # The node index of the penalty (only for non multinode or transition penalties)
     multinode_idx: list[int, ...]  # The node index of the penalty (only for multinode penalties)
-    integration_rule: QuadratureRule  # The integration rule of the penalty
+    subnodes_are_decision_states: list[bool]  # If the subnodes are decision states (e.g. collocation points)
     integrate: bool  # If the penalty is an integral penalty
     derivative: bool  # If the penalty is a derivative penalty
     explicit_derivative: bool  # If the penalty is an explicit derivative penalty
     phase_dynamics: list[PhaseDynamics]  # The dynamics of the penalty (only for multinode penalties)
     ns = list[int, ...]  # The number of shooting points of problem (only for multinode penalties)
+    control_types: ControlType  # The control type of the penalties
 
 
 class PenaltyHelpers:
     
     @staticmethod
-    def t0(penalty: PenaltyProtocol, penalty_node_idx, get_t0: Callable):
+    def t0():
         """
-        Parameters
-        ----------
-        penalty: PenaltyProtocol
-            The penalty function
-        penalty_node_idx: int
-            The index of the node in the penalty
-        get_t0: Callable
-            A function that returns the time of the node. It is expected to return stepwise time
+        This method returns the t0 of a penalty. It is currently always 0, because the time is always baked in the 
+        penalty function
+        """
         
-        TODO COMPLETE
-        """
-
-        if penalty.multinode_penalty:
-            phases, nodes, _ = _get_multinode_indices(penalty, is_constructing_penalty=False)
-            phase = phases[0]
-            node = nodes[0]
-        else:
-            phase = penalty.phase
-            node = penalty.node_idx[penalty_node_idx]
-
-        return get_t0(phase, node)[0, 0]
+        # Time penalty is baked in the penalty declaration. No need to add it here
+        return 0
 
     @staticmethod
     def phases_dt(penalty, ocp, get_all_dt: Callable):
@@ -79,24 +65,7 @@ class PenaltyHelpers:
 
         node = penalty.node_idx[index]
 
-        if penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL,) or penalty.integrate:
-            x = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, None)))
-            
-            if is_constructing_penalty:
-                x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None))))
-            else:
-                x = vertcat(x, _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1))))
-            return x
-        
-        elif penalty.derivative or penalty.explicit_derivative:
-            x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
-            if is_constructing_penalty:
-                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None)))
-            else: 
-                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1)))
-            return vertcat(x1, x0) if penalty.derivative else vertcat(x0, x1)
-
-        elif penalty.multinode_penalty:
+        if penalty.multinode_penalty:
             x = []
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             for phase, node, sub in zip(phases, nodes, subnodes):
@@ -104,7 +73,17 @@ class PenaltyHelpers:
             return _vertcat(x)
         
         else:
-            return _reshape_to_vector(get_state_decision(penalty.phase, node, slice(0, 1)))
+            subnodes = slice(0, None if node < penalty.ns[0] and penalty.subnodes_are_decision_states[0] else 1)
+            x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, subnodes))
+            
+            if is_constructing_penalty:
+                if node < penalty.ns[0]:
+                    x1 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None)))
+                else:
+                    x1 = type(x0).sym("dummy_x", 0, 1)
+            else:
+                x1 = _reshape_to_vector(get_state_decision(penalty.phase, node + 1, slice(0, 1)))
+            return vertcat(x0, x1)
 
     @staticmethod
     def controls(penalty, index, get_control_decision: Callable, is_constructing_penalty: bool = False):
@@ -114,15 +93,31 @@ class PenaltyHelpers:
             u = []
             phases, nodes, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             for phase, node, sub in zip(phases, nodes, subnodes):
+                # No need to test for control types as this is never integrated (so we only need the starting value)
                 u.append(_reshape_to_vector(get_control_decision(phase, node, sub)))
             return _vertcat(u)
 
-        elif penalty.integrate or penalty.derivative or penalty.explicit_derivative:
-            # FIX THIS!
-            return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, None)))
-            
+        if is_constructing_penalty:
+            if penalty.control_types[0] in (ControlType.LINEAR_CONTINUOUS,):
+                final_subnode = None if node < penalty.ns[0] else 1
+                u = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, final_subnode)))
+            else:
+                u = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))  # cx_start
+                if node < penalty.ns[0] - 1:
+                    u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
+                    u = vertcat(u, u1)
+                elif node < penalty.ns[0] and penalty.control_types[0] == ControlType.CONSTANT_WITH_LAST_NODE:
+                    u1 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(-1, None)))
+                    u = vertcat(u, u1)
+                else:
+                    pass
+
         else:
-            return _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
+            u0 = _reshape_to_vector(get_control_decision(penalty.phase, node, slice(0, 1)))
+            u1 = _reshape_to_vector(get_control_decision(penalty.phase, node + 1, slice(0, 1)))
+            u = _vertcat([u0, u1])
+
+        return u
 
     @staticmethod
     def parameters(penalty, get_parameter: Callable):
@@ -138,19 +133,18 @@ class PenaltyHelpers:
         if penalty.target is None:
             return np.array([])
         
-        if penalty.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL):
-            target0 = penalty.target[0][..., penalty_node_idx]
-            target1 = penalty.target[1][..., penalty_node_idx]
+        if penalty.integrate:
+            target0 = penalty.target[..., penalty_node_idx]
+            target1 = penalty.target[..., penalty_node_idx + 1]
             return np.vstack((target0, target1)).T
 
-        return penalty.target[0][..., penalty_node_idx]
+        return penalty.target[..., penalty_node_idx]
 
     @staticmethod
     def get_multinode_penalty_subnodes_starting_index(p):
         """
         Prepare the current_cx_to_get for each of the controller. Basically it finds if this penalty has more than
-        one usage. If it does, it increments a counter of the cx used, up to the maximum. On phase_dynamics
-        being PhaseDynamics.ONE_PER_NODE, this is useless, as all the penalties uses cx_start.
+        one usage. If it does, it increments a counter of the cx used, up to the maximum. 
         """
 
         out = []  # The cx index of the controllers in the order of the controllers
@@ -174,7 +168,8 @@ class PenaltyHelpers:
 
             is_last_node = node_idx == ns
 
-            # If the phase dynamics is not shared, we can safely use cx_start all the time
+            # If the phase dynamics is not shared, we can safely use cx_start all the time since the node 
+            # is never the same. This allows to have arbitrary number of nodes penalties in a single phase
             if phase_dynamics == PhaseDynamics.ONE_PER_NODE:
                 out.append(2 if is_last_node else 0)  # cx_start or cx_end
                 continue

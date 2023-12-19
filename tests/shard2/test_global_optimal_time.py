@@ -105,7 +105,7 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(f[0, 0], -1, decimal=5)
 
     np.testing.assert_almost_equal(tau[1, 0], np.array(0))
-    np.testing.assert_almost_equal(tau[1, -2], np.array(0))
+    np.testing.assert_almost_equal(tau[1, -1], np.array(0))
 
     # optimized time
     np.testing.assert_almost_equal(tf, max_ft, decimal=5)
@@ -181,7 +181,7 @@ def test_pendulum_min_time_lagrange(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((87.13363409, 0)), decimal=6)
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.99938226, 0)), decimal=6)
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99938226, 0)), decimal=6)
 
         # optimized time
         np.testing.assert_almost_equal(tf, 0.2855606738489078)
@@ -194,7 +194,7 @@ def test_pendulum_min_time_lagrange(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-99.9999592, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-68.84256311, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-68.84010891,   0.        ]))
 
         # optimized time
         np.testing.assert_almost_equal(tf, 0.3508219547856098)
@@ -207,7 +207,7 @@ def test_pendulum_min_time_lagrange(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((99.99914811, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-99.9990548, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.9990548, 0)))
 
         # optimized time
         np.testing.assert_almost_equal(tf, 0.28519514602152585)
@@ -356,7 +356,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.33802896, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-23.69200381, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-23.69200381, 0)))
 
     elif ode_solver == OdeSolver.COLLOCATION:
         # Check objective function value
@@ -366,7 +366,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((10.47494692, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-19.49344386, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-19.49344386, 0)))
 
     elif ode_solver == OdeSolver.RK4:
         # Check objective function value
@@ -376,7 +376,7 @@ def test_time_constraint(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.28713595, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-12.72892599, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-12.72892599, 0)))
     else:
         raise ValueError("Test not ready")
 
@@ -436,7 +436,7 @@ def test_monophase_time_constraint(ode_solver, phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)), decimal=5)
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-5.71428583, 9.81, 0)), decimal=5)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.71428583, 9.81, 0)), decimal=5)
 
     # optimized time
     np.testing.assert_almost_equal(tf, 1.0, decimal=5)
@@ -504,7 +504,7 @@ def test_multiphase_time_constraint(ode_solver, phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)), decimal=5)
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-8.92857121, 9.81, -14.01785679)), decimal=5)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-8.92857121, 9.81, -14.01785679)), decimal=5)
 
     # optimized time
     np.testing.assert_almost_equal(tf_all, [1.0, 3, 0.8], decimal=5)
@@ -581,7 +581,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((6.24518474, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-6.24518474, 9.81, -9.80494005)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-6.24518474, 9.81, -9.80494005)))
 
     # optimized time
     np.testing.assert_almost_equal(tf_all, [0.95655144, 3, 0.95655144], decimal=5)

@@ -1,11 +1,10 @@
 from typing import Callable, Any
-from copy import deepcopy
 from math import inf
 
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, Function, sum1, horzcat, vertcat
+from casadi import MX, SX, sum1, horzcat, vertcat
 from matplotlib import pyplot as plt
 
 from .optimization_vector import OptimizationVectorHelper
@@ -19,22 +18,13 @@ from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..interfaces import Solver
 from ..interfaces.abstract_options import GenericSolver
 from ..limits.constraints import (
-    ConstraintFunction,
-    ConstraintFcn,
-    ConstraintList,
-    Constraint,
-    ParameterConstraintList,
-    ParameterConstraint,
+    ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList, ParameterConstraint
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import (
-    ObjectiveFcn,
-    ObjectiveList,
-    Objective,
-    ParameterObjectiveList,
-    ParameterObjective,
+    ObjectiveFcn, ObjectiveList, Objective, ParameterObjectiveList, ParameterObjective
 )
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -43,21 +33,10 @@ from ..limits.penalty_helpers import PenaltyHelpers
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
 from ..misc.enums import (
-    ControlType,
-    SolverType,
-    Shooting,
-    PlotType,
-    CostType,
-    SolutionIntegrator,
-    QuadratureRule,
-    InterpolationType,
-    PenaltyType,
-    Node,
-    PhaseDynamics,
+    ControlType, SolverType, Shooting, PlotType, CostType, SolutionIntegrator, InterpolationType, PenaltyType, Node
 )
 from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
-from ..misc.utils import check_version
 from ..optimization.parameters import ParameterList, Parameter
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
@@ -127,7 +106,7 @@ class OptimalControlProgram:
     _define_time(self, phase_time: float | tuple, objective_functions: ObjectiveList, constraints: ConstraintList)
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
         a sanity check is perform and the values of initial guess and bounds for these particular phases
-    __modify_penalty(self, new_penalty: PenaltyOption | Parameter)
+    _modify_penalty(self, new_penalty: PenaltyOption | Parameter)
         The internal function to modify a penalty.
     __set_nlp_is_stochastic(self)
         Set the nlp as stochastic if any of the phases is stochastic
@@ -828,52 +807,28 @@ class OptimalControlProgram:
 
             if nlp.dynamics_type.state_continuity_weight is None:
                 # Continuity as constraints
-                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                penalty = Constraint(
+                    ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
+                )
+                penalty.add_or_replace_to_penalty_pool(self, nlp)
+                if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_collocation_starting_point:
                     penalty = Constraint(
-                        ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
-                    )
-                    penalty.add_or_replace_to_penalty_pool(self, nlp)
-                    if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_collocation_starting_point:
-                        penalty = Constraint(
-                            ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
-                            node=Node.ALL_SHOOTING,
-                            penalty_type=PenaltyType.INTERNAL,
-                        )
-                        penalty.add_or_replace_to_penalty_pool(self, nlp)
-                else:
-                    for shooting_node in range(nlp.ns):
-                        penalty = Constraint(
-                            ConstraintFcn.STATE_CONTINUITY, node=shooting_node, penalty_type=PenaltyType.INTERNAL
-                        )
-                        penalty.add_or_replace_to_penalty_pool(self, nlp)
-                        if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_collocation_starting_point:
-                            penalty = Constraint(
-                                ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
-                                node=shooting_node,
-                                penalty_type=PenaltyType.INTERNAL,
-                            )
-                            penalty.add_or_replace_to_penalty_pool(self, nlp)
-            else:
-                # Continuity as objectives
-                if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
-                    penalty = Objective(
-                        ObjectiveFcn.Mayer.STATE_CONTINUITY,
-                        weight=nlp.dynamics_type.state_continuity_weight,
-                        quadratic=True,
+                        ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
                         node=Node.ALL_SHOOTING,
                         penalty_type=PenaltyType.INTERNAL,
                     )
                     penalty.add_or_replace_to_penalty_pool(self, nlp)
-                else:
-                    for shooting_point in range(nlp.ns):
-                        penalty = Objective(
-                            ObjectiveFcn.Mayer.STATE_CONTINUITY,
-                            weight=nlp.dynamics_type.state_continuity_weight,
-                            quadratic=True,
-                            node=shooting_point,
-                            penalty_type=PenaltyType.INTERNAL,
-                        )
-                        penalty.add_or_replace_to_penalty_pool(self, nlp)
+
+            else:
+                # Continuity as objectives
+                penalty = Objective(
+                    ObjectiveFcn.Mayer.STATE_CONTINUITY,
+                    weight=nlp.dynamics_type.state_continuity_weight,
+                    quadratic=True,
+                    node=Node.ALL_SHOOTING,
+                    penalty_type=PenaltyType.INTERNAL,
+                )
+                penalty.add_or_replace_to_penalty_pool(self, nlp)
 
         for pt in self.phase_transitions:
             # Phase transition as constraints
@@ -895,12 +850,12 @@ class OptimalControlProgram:
         """
 
         if isinstance(new_objective_function, Objective):
-            self.__modify_penalty(new_objective_function)
+            self._modify_penalty(new_objective_function)
 
         elif isinstance(new_objective_function, ObjectiveList):
             for objective_in_phase in new_objective_function:
                 for objective in objective_in_phase:
-                    self.__modify_penalty(objective)
+                    self._modify_penalty(objective)
 
         else:
             raise RuntimeError("new_objective_function must be a Objective or an ObjectiveList")
@@ -916,12 +871,12 @@ class OptimalControlProgram:
         """
 
         if isinstance(new_objective_function, ParameterObjective):
-            self.__modify_parameter_penalty(new_objective_function)
+            self._modify_parameter_penalty(new_objective_function)
 
         elif isinstance(new_objective_function, ParameterObjectiveList):
             for objective_in_phase in new_objective_function:
                 for objective in objective_in_phase:
-                    self.__modify_parameter_penalty(objective)
+                    self._modify_parameter_penalty(objective)
 
         else:
             raise RuntimeError("new_objective_function must be a ParameterObjective or an ParameterObjectiveList")
@@ -950,23 +905,23 @@ class OptimalControlProgram:
 
         ObjectiveFunction.update_target(self.nlp[phase] if phase >= 0 else self, list_index, target)
 
-    def update_constraints(self, new_constraint: Constraint | ConstraintList):
+    def update_constraints(self, new_constraints: Constraint | ConstraintList):
         """
         The main user interface to add or modify constraint in the ocp
 
         Parameters
         ----------
-        new_constraint: Constraint | ConstraintList
+        new_constraints: Constraint | ConstraintList
             The constraint to add to the ocp
         """
 
-        if isinstance(new_constraint, Constraint):
-            self.__modify_penalty(new_constraint)
+        if isinstance(new_constraints, Constraint):
+            self._modify_penalty(new_constraints)
 
-        elif isinstance(new_constraint, ConstraintList):
-            for constraints_in_phase in new_constraint:
+        elif isinstance(new_constraints, ConstraintList):
+            for constraints_in_phase in new_constraints:
                 for constraint in constraints_in_phase:
-                    self.__modify_penalty(constraint)
+                    self._modify_penalty(constraint)
         else:
             raise RuntimeError("new_constraint must be a Constraint or a ConstraintList")
 
@@ -982,11 +937,11 @@ class OptimalControlProgram:
 
         if isinstance(new_constraint, ParameterConstraint):
             # This should work, but was not fully tested
-            self.__modify_parameter_penalty(new_constraint)
+            self._modify_parameter_penalty(new_constraint)
         elif isinstance(new_constraint, ParameterConstraintList):
             for constraint_in_phase in new_constraint:
                 for constraint in constraint_in_phase:
-                    self.__modify_parameter_penalty(constraint)
+                    self._modify_parameter_penalty(constraint)
         else:
             raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
 
@@ -1425,18 +1380,13 @@ class OptimalControlProgram:
                 for key in state:
                     x_init_guess.add(key, state[key], interpolation=x_interp, phase=0)
                 for key in ctrl:
-                    if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                        u_init_guess.add(key, ctrl[key], interpolation=InterpolationType.EACH_FRAME, phase=0)
-                    else:
-                        u_init_guess.add(key, ctrl[key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=0)
+                    u_init_guess.add(key, ctrl[key], interpolation=InterpolationType.EACH_FRAME, phase=0)
+
             else:
                 for key in state[i]:
                     x_init_guess.add(key, state[i][key], interpolation=x_interp, phase=i)
                 for key in ctrl[i]:
-                    if self.nlp[i].control_type == ControlType.LINEAR_CONTINUOUS:
-                        u_init_guess.add(key, ctrl[i][key], interpolation=InterpolationType.EACH_FRAME, phase=i)
-                    else:
-                        u_init_guess.add(key, ctrl[i][key][:, :-1], interpolation=InterpolationType.EACH_FRAME, phase=i)
+                    u_init_guess.add(key, ctrl[i][key], interpolation=InterpolationType.EACH_FRAME, phase=i)
 
         for key in param:
             param_init_guess.add(key, param[key], name=key)
@@ -1572,7 +1522,7 @@ class OptimalControlProgram:
         self.dt_parameter_bounds = Bounds("dt_bounds", min_bound=[v["min"] for v in dt_bounds.values()], max_bound=[v["max"] for v in dt_bounds.values()], interpolation=InterpolationType.CONSTANT)
         self.dt_parameter_initial_guess = InitialGuess("dt_initial_guess", initial_guess=[v for v in dt_initial_guess.values()])
 
-    def __modify_penalty(self, new_penalty: PenaltyOption | Parameter):
+    def _modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """
         The internal function to modify a penalty.
 
@@ -1589,7 +1539,7 @@ class OptimalControlProgram:
 
         self.program_changed = True
 
-    def __modify_parameter_penalty(self, new_penalty: PenaltyOption | Parameter):
+    def _modify_parameter_penalty(self, new_penalty: PenaltyOption | Parameter):
         """
         The internal function to modify a parameter penalty.
 

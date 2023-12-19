@@ -53,4 +53,4 @@ def test_pendulum(phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((11.75634204, 0)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-16.60785771, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-16.60785771, 0)))

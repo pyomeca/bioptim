@@ -190,7 +190,7 @@ class Integrator:
         if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
-            dt_norm = 1 - (t - self.t_span_sym[0]) / self.t_span_sym[1]
+            dt_norm = (t - self.t_span_sym[0]) / self.t_span_sym[1]
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt_norm
         else:
             raise RuntimeError(f"{self.control_type} ControlType not implemented yet")

@@ -228,15 +228,15 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -2], np.array((-0.7553692, -1.6579819)))
+    np.testing.assert_almost_equal(q[:, -2], np.array([-0.75310861, -1.65299482]))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
-    np.testing.assert_almost_equal(qdot[:, -2], np.array((1.05240919, 2.864199)))
+    np.testing.assert_almost_equal(qdot[:, -2], np.array([1.06121162, 2.91187814]))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.89, 1.8)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((1, 2)))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -274,15 +274,15 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((-0.33208579, 0.06094747)))
+    np.testing.assert_almost_equal(q[:, -1], np.array([-0.48327558,  0.40051344]))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0.1, 0.2)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((-4.43192682, 6.38146735)))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([1.05637442, 0.87221644]))
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.89, 1.8)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((1, 2)))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

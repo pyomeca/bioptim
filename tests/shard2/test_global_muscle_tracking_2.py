@@ -82,12 +82,12 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
         )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([6.66733699e-05, 6.40935259e-06]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([5.67398982e-05, -5.00305009e-05]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([5.67398982e-05, -5.00305009e-05]))
         np.testing.assert_almost_equal(
             mus_controls[:, 0], np.array([0.76677771, 0.02174135, 0.633964, 0.74879614, 0.49849973, 0.22512206])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.44112329, 0.43426359, 0.61784926, 0.51301095, 0.65031982, 0.60125901])
+            mus_controls[:, -1], np.array([0.44112329, 0.43426359, 0.61784926, 0.51301095, 0.65031982, 0.60125901])
         )
 
     elif ode_solver == OdeSolver.COLLOCATION:
@@ -110,13 +110,13 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
         )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([4.63258794e-05, 2.39522172e-05]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([-2.86456641e-08,  8.63101439e-08]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-2.86456641e-08,  8.63101439e-08]))
         np.testing.assert_almost_equal(
             mus_controls[:, 0], np.array([0.76819928, 0.02175646, 0.6339027 , 0.74872788, 0.49847323,
        0.22487671])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.44183311, 0.43401359, 0.61776037, 0.51314242, 0.65039128,
+            mus_controls[:, -1], np.array([0.44183311, 0.43401359, 0.61776037, 0.51314242, 0.65039128,
        0.60103257])
         )
 
@@ -138,12 +138,12 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
         )
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([6.72188259e-05, 5.01548712e-06]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([5.74813746e-05, -5.17061496e-05]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([5.74813746e-05, -5.17061496e-05]))
         np.testing.assert_almost_equal(
             mus_controls[:, 0], np.array([0.76676674, 0.02172467, 0.63396249, 0.74880157, 0.49850197, 0.22513888])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.44110908, 0.43426931, 0.6178526, 0.51300672, 0.65031742, 0.60126635])
+            mus_controls[:, -1], np.array([0.44110908, 0.43426931, 0.6178526, 0.51300672, 0.65031742, 0.60126635])
         )
 
     else:
@@ -227,7 +227,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
             mus_controls[:, 0], np.array([0.76677683, 0.02174148, 0.63396384, 0.74879658, 0.49849991, 0.22512315])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.44112273, 0.43426381, 0.61784939, 0.51301078, 0.65031973, 0.6012593])
+            mus_controls[:, -1], np.array([0.44112273, 0.43426381, 0.61784939, 0.51301078, 0.65031973, 0.6012593])
         )
 
     elif ode_solver == OdeSolver.COLLOCATION:
@@ -254,7 +254,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
        0.22487699])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.44183311, 0.43401359, 0.61776037, 0.51314242, 0.65039128,
+            mus_controls[:, -1], np.array([0.44183311, 0.43401359, 0.61776037, 0.51314242, 0.65039128,
        0.60103257])
         )
 
@@ -279,7 +279,7 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
             mus_controls[:, 0], np.array([0.76676586, 0.02172479, 0.63396233, 0.74880202, 0.49850216, 0.22514])
         )
         np.testing.assert_almost_equal(
-            mus_controls[:, -2], np.array([0.44110851, 0.43426954, 0.61785274, 0.51300655, 0.65031733, 0.60126665])
+            mus_controls[:, -1], np.array([0.44110851, 0.43426954, 0.61785274, 0.51300655, 0.65031733, 0.60126665])
         )
 
     else:

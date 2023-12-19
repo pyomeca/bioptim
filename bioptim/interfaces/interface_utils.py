@@ -1,5 +1,4 @@
 from time import perf_counter
-from typing import Callable
 from sys import platform
 
 from casadi import Importer, Function
@@ -9,10 +8,9 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
-from ..misc.enums import InterpolationType, ControlType, Node, QuadratureRule, PhaseDynamics
+from ..misc.enums import InterpolationType
 from bioptim.optimization.solution.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
-from ..dynamics.ode_solver import OdeSolver
 
 
 def generic_online_optim(interface, ocp, show_options: dict = None):
@@ -246,27 +244,35 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
         p = PenaltyHelpers.parameters(penalty, lambda: interface.ocp.parameters.cx)
 
         if penalty.multi_thread:
-            if penalty.target is not None and len(penalty.target[0].shape) != 2:
+            if penalty.target is not None and len(penalty.target.shape) != 2:
                 raise NotImplementedError("multi_thread penalty with target shape != [n x m] is not implemented yet")
 
             t0 = nlp.cx()
             x = nlp.cx()
             u = nlp.cx()
             s = nlp.cx()
-            weight = np.ndarray((0,))
+            weight = np.ndarray((1, 0))
             target = nlp.cx()
             for idx in range(len(penalty.node_idx)):
                 t0_tp, x_tp, u_tp, s_tp, weight_tp, target_tp = _get_weighted_function_inputs(penalty, idx, ocp, nlp, scaled)
                 
                 t0 = horzcat(t0, t0_tp)
+                if idx != 0 and x_tp.shape[0] != x.shape[0]:
+                    tp = ocp.cx.nan(x.shape[0], 1)
+                    tp[:x_tp.shape[0], :] = x_tp
+                    x_tp = tp
                 x = horzcat(x, x_tp)
+                if idx != 0 and u_tp.shape[0] != u.shape[0]: 
+                    tp = ocp.cx.nan(u.shape[0], 1)
+                    tp[:u_tp.shape[0], :] = u_tp
+                    u_tp = tp
                 u = horzcat(u, u_tp)
                 s = horzcat(s, s_tp)
-                weight = np.concatenate((weight, [weight_tp]))
+                weight = np.concatenate((weight, [[float(weight_tp)]]), axis=1)
                 target = horzcat(target, target_tp)
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, s, penalty.weight, target), -1, 1)
+            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, s, weight, target), -1, 1)
 
         else:
             tp = interface.ocp.cx()
@@ -288,7 +294,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
 
 
 def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
-    t0 = PenaltyHelpers.t0(penalty, penalty_idx, lambda p_idx, n_idx: ocp.cx(0) if not nlp else ocp.node_time(p_idx, n_idx))
+    t0 = PenaltyHelpers.t0()
 
     weight = PenaltyHelpers.weight(penalty)
     target = PenaltyHelpers.target(penalty, penalty_idx)
@@ -307,7 +313,7 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
 
 def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].X_scaled if scaled else ocp.nlp[phase_idx].X
-    return values[node_idx][:, subnodes_idx]
+    return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
     
 
 def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
@@ -317,4 +323,4 @@ def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
 
 def _get_s(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].S_scaled if scaled else ocp.nlp[phase_idx].S
-    return [] if not values else values[node_idx][:, subnodes_idx]
+    return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()

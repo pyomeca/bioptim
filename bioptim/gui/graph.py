@@ -193,12 +193,12 @@ class GraphAbstract:
                     if obj.target is not None:
                         if obj.quadratic:
                             mayer_str += (
-                                f"({obj.name} - {self._vector_layout(obj.target[0][:, obj.node_idx.index(i)])})"
+                                f"({obj.name} - {self._vector_layout(obj.target)})"
                                 f"{self._squared}{self._return_line}"
                             )
                         else:
                             mayer_str += (
-                                f"{obj.name} - {self._vector_layout(obj.target[0][:, obj.node_idx.index(i)])}"
+                                f"{obj.name} - {self._vector_layout(obj.target)}"
                                 f"{self._return_line}"
                             )
                     else:
@@ -528,7 +528,7 @@ class OcpToGraph(GraphAbstract):
                 global_objectives += f"<b>Type:</b> {objective.type} <br/>"
                 global_objectives_names += name
                 global_objectives += (
-                    f"{f'<b>Target</b>: {self._vector_layout(objective.target[0])} <br/>'}"
+                    f"{f'<b>Target</b>: {self._vector_layout(objective.target)} <br/>'}"
                     if objective.target is not None
                     else ""
                 )

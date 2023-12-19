@@ -98,7 +98,7 @@ class SolutionData:
             elif SolutionMerge.NODES in to_merge:
                 phase_data = self._merge_nodes(data, phase=phase_idx)
             else:
-                raise ValueError("Merging phases must contain at least SolutionMerge.KEYS or SolutionMerge.NODES")
+                raise ValueError("Merging must at least contain SolutionMerge.KEYS or SolutionMerge.NODES")
 
             out.append(phase_data)
 
@@ -108,14 +108,14 @@ class SolutionData:
         return out
 
     @staticmethod
-    def _merge_phases(data: dict, to_merge: SolutionMerge):
+    def _merge_phases(data: list, to_merge: list[SolutionMerge, ...]):
         """
         Merge the phases by merging keys and nodes before. 
         This method does not remove the redundent nodes when merging the phase nor the nodes
         """
         
         if SolutionMerge.NODES not in to_merge:
-            raise RuntimeError("to_merge must contain SolutionMerge.NODES when merging phases")
+            raise ValueError("to_merge must contain SolutionMerge.NODES when merging phases")
         if SolutionMerge.KEYS not in to_merge:
             return {
                 key: np.concatenate([data[phase][key] for phase in range(len(data))], axis=1) for key in data[0].keys()

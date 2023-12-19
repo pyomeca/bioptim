@@ -54,7 +54,7 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.16129033, 1.16129033, -0.58458751)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-1.16129033, -1.16129033, 0.58458751)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-1.16129033, -1.16129033, 0.58458751)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -105,7 +105,7 @@ def test_symmetry_by_constraint(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.16129033, 1.16129033, 0, -0.58458751, 0.58458751)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-1.16129033, -1.16129033, 0, 0.58458751, -0.58458751)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-1.16129033, -1.16129033, 0, 0.58458751, -0.58458751)))
 
     # simulate
     TestUtils.simulate(sol)

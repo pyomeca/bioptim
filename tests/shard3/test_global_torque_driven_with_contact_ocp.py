@@ -61,7 +61,7 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
         np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2477864, -1.2847726, -3.5819658, 3.5819658)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-18.6635363)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array(-0.5142317))
+        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.5142317))
     elif objective_name == "MINIMIZE_COM_POSITION":
         # Check objective function value
         np.testing.assert_almost_equal(f[0, 0], 0.4652603337905152)
@@ -72,7 +72,7 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
         np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2302646, -1.2667316, -3.5316666, 3.5316666)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-18.5531974)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array(-0.9187262))
+        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.9187262))
     elif objective_name == "MINIMIZE_COM_VELOCITY":
         # Check objective function value
         np.testing.assert_almost_equal(f[0, 0], 0.46678212036841293)
@@ -83,7 +83,7 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
         np.testing.assert_almost_equal(qdot[:, -1], np.array((1.2640489, -1.3015177, -3.6286507, 3.6286507)))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-18.7970058)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array(-0.1918057))
+        np.testing.assert_almost_equal(tau[:, -1], np.array(-0.1918057))
 
     # simulate
     TestUtils.simulate(sol)
@@ -129,7 +129,7 @@ def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
     )
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-0.550905)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array(-0.0050623))
+    np.testing.assert_almost_equal(tau[:, -1], np.array(-0.0050623))
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)

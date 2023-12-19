@@ -175,7 +175,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
 
 
 def get_cov_mat(nlp, node_index):
-    dt = nlp.tf / nlp.ns
+    dt = nlp.dt_mx
 
     nlp.states.node_index = node_index - 1
     nlp.controls.node_index = node_index - 1
@@ -207,6 +207,7 @@ def get_cov_mat(nlp, node_index):
     func_eval = cas.Function(
         "p_next",
         [
+            dt,
             nlp.states.cx_start,
             nlp.controls.cx_start,
             nlp.parameters,
@@ -217,6 +218,7 @@ def get_cov_mat(nlp, node_index):
         ],
         [p_next],
     )(
+        dt,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,

@@ -1,6 +1,6 @@
 from typing import Any, Callable
 
-from casadi import horzcat, vertcat, Function, MX, SX, jacobian, diag
+from casadi import vertcat, Function, MX, SX, jacobian, diag
 import numpy as np
 
 from .penalty_controller import PenaltyController
@@ -65,7 +65,7 @@ class PenaltyOption(OptionGeneric):
         Prepare the dimension and index of the penalty (including the target)
     _set_dim_idx(self, dim: list | tuple | range | np.ndarray, n_rows: int)
         Checks if the variable index is consistent with the requested variable.
-    _check_target_dimensions(self, controller: PenaltyController, n_time_expected: int)
+    _check_target_dimensions(self, controller: PenaltyController, n_frames: int)
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
     _set_penalty_function(self, controller: list[PenaltyController, ...], fcn: MX | SX)
@@ -144,16 +144,13 @@ class PenaltyOption(OptionGeneric):
         super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
         self.node: Node | list | tuple = node
         self.quadratic = quadratic
-        if integration_rule not in (
-            QuadratureRule.DEFAULT,
-            QuadratureRule.RECTANGLE_LEFT,
-            QuadratureRule.TRAPEZOIDAL,
-            QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
-        ):
-            raise NotImplementedError(
-                f"{params['integration_rule']} has not been implemented yet for objective functions."
-            )
         self.integration_rule = integration_rule
+        if self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL):
+            integrate = True
+        self.derivative = derivative
+        self.explicit_derivative = explicit_derivative
+        self.integrate = integrate
+        
         self.extra_arguments = params
 
         if index is not None and rows is not None:
@@ -166,31 +163,16 @@ class PenaltyOption(OptionGeneric):
 
         self.phase_dynamics = []  # This is set by _set_phase_dynamics
         self.ns = []  # This is set by _set_ns
+        self.control_types = None  # This is set by _set_control_types
 
         self.target = None
         if target is not None:
-            target = np.array(target)
-            if isinstance(target, int) or isinstance(target, float) or isinstance(target, np.ndarray):
-                target = [target]
-            self.target = []
-            for t in target:
-                self.target.append(np.array(t))
-                if len(self.target[-1].shape) == 0:
-                    self.target[-1] = self.target[-1][np.newaxis]
-                if len(self.target[-1].shape) == 1:
-                    self.target[-1] = self.target[-1][:, np.newaxis]
-            if len(self.target) == 1 and (
-                self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                or self.integration_rule == QuadratureRule.TRAPEZOIDAL
-            ):
-                if self.node == Node.ALL or self.node == Node.DEFAULT:
-                    self.target = [self.target[0][:, :-1], self.target[0][:, 1:]]
-                else:
-                    raise NotImplementedError(
-                        f"A list of 2 elements is required with {self.node} and TRAPEZOIDAL Integration"
-                        f"except for Node.NODE_ALL and Node.NODE_DEFAULT"
-                        "which can be automatically generated"
-                    )
+            self.target = np.array(target)
+            # Make sure the target has at least 2 dimensions
+            if len(self.target.shape) == 0:
+                self.target = self.target[np.newaxis]
+            if len(self.target.shape) == 1:
+                self.target = self.target[:, np.newaxis]
 
         self.target_plot_name = None
         self.target_to_plot = None
@@ -214,14 +196,13 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded: list[Function | None, ...] = []
         self.weighted_function: list[Function | None, ...] = []
         self.weighted_function_non_threaded: list[Function | None, ...] = []
-        self.derivative = derivative
-        self.explicit_derivative = explicit_derivative
-        self.integrate = integrate
+        
         self.multinode_penalty = False
         self.nodes_phase = None  # This is relevant for multinodes
         self.nodes = None  # This is relevant for multinodes
         if self.derivative and self.explicit_derivative:
             raise ValueError("derivative and explicit_derivative cannot be both True")
+        self.subnodes_are_decision_states = []  # This is set by _set_subnodes_are_decision_states
         self.penalty_type = penalty_type
         self.is_stochastic = is_stochastic
 
@@ -245,7 +226,7 @@ class PenaltyOption(OptionGeneric):
             if isinstance(controllers, list):
                 raise RuntimeError("Multinode constraints should call a self defined set_penalty")
 
-            self._check_target_dimensions(controllers, len(controllers.t))
+            self._check_target_dimensions(controllers)
             if self.plot_target:
                 self._finish_add_target_to_plot(controllers)
 
@@ -254,6 +235,9 @@ class PenaltyOption(OptionGeneric):
 
         self._set_phase_dynamics(controllers)
         self._set_ns(controllers)
+        self._set_control_types(controllers)
+        self._set_subnodes_are_decision_states(controllers)
+        
         self._set_penalty_function(controllers, penalty)
         self._add_penalty_to_pool(controllers)
 
@@ -285,7 +269,7 @@ class PenaltyOption(OptionGeneric):
             raise RuntimeError(f"{self.name} index must be a list of integer")
         return dim
 
-    def _check_target_dimensions(self, controller: PenaltyController | None, n_time_expected: int):
+    def _check_target_dimensions(self, controller: PenaltyController):
         """
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
@@ -294,95 +278,26 @@ class PenaltyOption(OptionGeneric):
         ----------
         controller: PenaltyController
             The penalty node elements
-        n_time_expected: int
-            The expected number of columns (n_rows, n_cols) of the data to track
         """
+        
+        n_frames = len(controller.t) + (1 if self.integrate else 0)
 
-        if self.integration_rule == QuadratureRule.RECTANGLE_LEFT:
-            n_dim = len(self.target[0].shape)
-            if n_dim != 2 and n_dim != 3:
-                raise RuntimeError(
-                    f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
-                )
-            if self.target[0].shape[-1] == 1:
-                if len(self.rows) == 1:
-                    self.target[0] = np.reshape(self.target[0], (1, len(self.target[0])))
-                else:
-                    self.target = np.repeat(self.target, n_time_expected, axis=-1)
-
-            shape = (
-                (len(self.rows), n_time_expected) if n_dim == 2 else (len(self.rows), len(self.cols), n_time_expected)
+        n_dim = len(self.target.shape)
+        if n_dim != 2 and n_dim != 3:
+            raise RuntimeError(
+                f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
             )
-            if self.target[0].shape != shape:
-                # A second chance the shape is correct is if the targets are declared but phase_dynamics is ONE_PER_NODE
-                if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and self.target[0].shape[-1] == len(
-                    self.node_idx
-                ):
-                    pass
-                else:
-                    raise RuntimeError(
-                        f"target {self.target[0].shape} does not correspond to expected size {shape} for penalty {self.name}"
-                    )
+        
+        if self.target.shape[-1] == 1:
+            self.target = np.repeat(self.target, n_frames, axis=-1)
+            
+        shape = (len(self.rows), n_frames) if n_dim == 2 else (len(self.rows), len(self.cols), n_frames)
 
-            # If the target is on controls and control is constant, there will be one value missing
-            if controller is not None:
-                if (
-                    controller.control_type == ControlType.CONSTANT
-                    and controller.ns in controller.t
-                    and self.target[0].shape[-1] == controller.ns
-                ):
-                    if controller.t[-1] != controller.ns:
-                        raise NotImplementedError("Modifying target for END not being last is not implemented yet")
-                    self.target[0] = np.concatenate(
-                        (self.target[0], np.nan * np.zeros((self.target[0].shape[0], 1))), axis=1
-                    )
-        elif (
-            self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-            or self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-        ):
-            target_dim = len(self.target)
-            if target_dim != 2:
-                raise RuntimeError(f"targets with trapezoidal integration rule need to get a list of two elements.")
-
-            n_dim = None
-            for target in self.target:
-                n_dim = len(target.shape)
-                if n_dim != 2 and n_dim != 3:
-                    raise RuntimeError(
-                        f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
-                    )
-                if target.shape[-1] == 1:
-                    target = np.repeat(target, n_time_expected, axis=-1)
-
-            shape = (
-                (len(self.rows), n_time_expected - 1)
-                if n_dim == 2
-                else (len(self.rows), len(self.cols), n_time_expected - 1)
+        if self.target.shape != shape:
+            raise RuntimeError(
+                f"target {self.target.shape} does not correspond to expected size {shape} for penalty {self.name}"
             )
 
-            for target in self.target:
-                if target.shape != shape:
-                    # A second chance the shape is correct if phase_dynamics is ONE_PER_NODE
-                    if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE and target.shape[-1] == len(
-                        self.node_idx
-                    ):
-                        pass
-                    else:
-                        raise RuntimeError(
-                            f"target {target.shape} does not correspond to expected size {shape} for penalty {self.name}"
-                        )
-
-            # If the target is on controls and control is constant, there will be one value missing
-            if controller is not None:
-                if (
-                    controller.control_type == ControlType.CONSTANT
-                    and controller.ns in controller.t
-                    and self.target[0].shape[-1] == controller.ns - 1
-                    and self.target[1].shape[-1] == controller.ns - 1
-                ):
-                    if controller.t[-1] != controller.ns:
-                        raise NotImplementedError("Modifying target for END not being last is not implemented yet")
-                    self.target = np.concatenate((self.target, np.nan * np.zeros((self.target.shape[0], 1))), axis=1)
 
     def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn, state_cx_scaled):
         """
@@ -441,15 +356,37 @@ class PenaltyOption(OptionGeneric):
                 )
         self.ns = ns
 
+    def _set_control_types(self, controllers: list[PenaltyController, ...]):
+        control_types = [c.control_type for c in controllers]
+        if self.control_types:
+            # If it was already set (e.g. for multinode), we want to make sure it is consistent
+            if self.control_types != control_types:
+                raise RuntimeError(
+                    "The control types of the penalty are not consistent. "
+                    "This should not happen. Please report this issue."
+                )
+        self.control_types = control_types
+
+    def _set_subnodes_are_decision_states(self, controllers: list[PenaltyController, ...]):
+        subnodes_are_decision_states = [c.get_nlp.ode_solver.is_direct_collocation for c in controllers]
+        if self.subnodes_are_decision_states:
+            # If it was already set (e.g. for multinode), we want to make sure it is consistent
+            if self.subnodes_are_decision_states != subnodes_are_decision_states:
+                raise RuntimeError(
+                    "The subnodes_are_decision_states of the penalty are not consistent. "
+                    "This should not happen. Please report this issue."
+                )
+        self.subnodes_are_decision_states = subnodes_are_decision_states
+
     def _set_penalty_function(
-        self, controller: list[PenaltyController, ...], fcn: MX | SX
+        self, controllers: list[PenaltyController, ...], fcn: MX | SX
     ):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
 
         Parameters
         ----------
-        controller: PenaltyController | list[PenaltyController, PenaltyController]
+        controllers: list[PenaltyController, PenaltyController]
             The nodes
         fcn: MX | SX
             The value of the penalty function
@@ -466,12 +403,13 @@ class PenaltyOption(OptionGeneric):
             .replace("__", "_")
         )
 
-        controller, x, u, s = self._get_variable_inputs(controller)
+        controller, x, u, s = self.get_variable_inputs(controllers)
 
         # Alias some variables
         node = controller.node_index
         param_cx = controller.parameters.cx
 
+        dt = controller.dt
         time_cx = controller.time.cx
         phases_dt_cx = controller.phases_time_cx
 
@@ -487,19 +425,6 @@ class PenaltyOption(OptionGeneric):
         if self.is_stochastic:
             sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, x)
 
-        # TODO Add error message if there are free variables to guide the user? For instance controls with last node
-        self.function[node] = Function(
-            name,
-            [time_cx, phases_dt_cx, x, u, param_cx, s],
-            [sub_fcn],
-            ["t", "dt", "x", "u", "p", "s"],
-            ["val"],
-        )
-
-        if self.expand:
-            self.function[node] = self.function[node].expand()
-        self.function_non_threaded[node] = self.function[node]
-
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
@@ -509,71 +434,122 @@ class PenaltyOption(OptionGeneric):
         if is_trapezoidal:
             # Hypothesis for APPROXIMATE_TRAPEZOIDAL: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
-
-            # TODO Remove all these declaration? I should already be in the state and control vector
-
             state_cx_start = controller.states_scaled.cx_start
-            if controller.ode_solver.is_direct_collocation:
-                state_cx_start = vertcat(state_cx_start, *controller.states_scaled.cx_intermediates_list)
             stochastic_start_cx = controller.stochastic_variables_scaled.cx_start
             stochastic_end_cx = controller.stochastic_variables_scaled.cx_end
+
+            # Perform the integration to get the final subnode
+            if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                state_cx_end = controller.states_scaled.cx_end
+            elif self.integration_rule == QuadratureRule.TRAPEZOIDAL: 
+                u_integrate = u.reshape((-1, 2))
+                if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE ):
+                    u_integrate = u_integrate[:, 0]
+                elif self.control_types[0] in (ControlType.LINEAR_CONTINUOUS,):
+                    pass
+                else:
+                    raise NotImplementedError(f"Control type {self.control_types[0]} not implemented yet")
+
+                state_cx_end = controller.integrate(
+                    t_span=controller.t_span,
+                    x0=controller.states.cx_start, 
+                    u=u_integrate, 
+                    p=controller.parameters.cx, 
+                    s=controller.stochastic_variables.cx_start
+                )["xf"]
+            else:
+                raise NotImplementedError(f"Integration rule {self.integration_rule} not implemented yet")
 
             # to handle piecewise constant in controls we have to compute the value for the end of the interval
             # which only relies on the value of the control at the beginning of the interval
             control_cx_start = controller.controls_scaled.cx_start
-            if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
-                control_end = controller.controls.cx_start
-                control_end_unscaled = controller.controls.cx_start
-            else:
-                control_end = controller.controls.cx_end
-                control_end_unscaled = controller.controls.cx_end
-
-            control_cx_end = _get_u(
-                controller.control_type, horzcat(controller.controls.cx_start, control_end), phases_dt_cx[self.phase],
-            )
-
-            if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
-                state_cx_scaled = x
-                state_cx_end = controller.states_scaled.cx_end
+            if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
+                # This effectively equates a TRAPEZOIDAL integration into a LEFT_RECTANGLE for penalties that targets
+                # controls with a constant control. This phiolosophically makes sense as the control is constant and
+                # applying a trapezoidal integration would be equivalent to applying a left rectangle integration
+                control_cx_end = controller.controls_scaled.cx_start
             else: 
-                control_cx_end_unscaled = _get_u(
-                    controller.control_type, 
-                    horzcat(controller.controls.cx_start, control_end_unscaled), 
-                    phases_dt_cx[self.phase],
-                )
-                state_cx_end = controller.integrate(
-                    t_span=controller.t_span,
-                    x0=controller.states.cx_start, 
-                    u=control_cx_end_unscaled, 
-                    p=controller.parameters.cx, 
-                    s=controller.stochastic_variables.cx_start
-                )["xf"]
-            if controller.ode_solver.is_direct_collocation:
-                state_cx_end = vertcat(state_cx_end, *controller.states.cx_intermediates_list)
+                if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
+                    control_cx_end = controller.controls_scaled.cx_start
+                else: 
+                    control_cx_end = controller.controls_scaled.cx_end
 
-            func_at_start = self.function[node](
+            # Compute the penalty function at starting and ending of the interval
+            func_at_subnode = Function(
+                name, 
+                [time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, stochastic_start_cx], 
+                [sub_fcn],
+            )
+            func_at_start = func_at_subnode(
                 time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, stochastic_start_cx
             )
-            func_at_end = self.function[node](
-                time_cx, phases_dt_cx, state_cx_end, control_cx_end, param_cx, stochastic_end_cx
+            func_at_end = func_at_subnode(
+                time_cx + dt, phases_dt_cx, state_cx_end, control_cx_end, param_cx, stochastic_end_cx
             )
             modified_fcn = ((func_at_start - target_cx[:, 0]) ** exponent + (func_at_end - target_cx[:, 1]) ** exponent) / 2
 
             # This reimplementation is required because input sizes change. It will however produce wrong result
             # for non weighted functions
             self.function[node] = Function(
-                f"{name}",
+                name,
                 [time_cx, phases_dt_cx, x, u, param_cx, s],
                 [(func_at_start + func_at_end) / 2],
                 ["t", "dt", "x", "u", "p", "s"],
                 ["val"], 
             )
+        elif self.derivative:
+            # This assumes a Mayer-like penalty
+            x_start = controller.states_scaled.cx_start
+            x_end = controller.states_scaled.cx_end
+            u_start = controller.controls_scaled.cx_start
+            if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
+                u_end = controller.controls_scaled.cx_start
+            else: 
+                u_end = controller.controls_scaled.cx_end
+            param_cx = controller.parameters.cx
+            s_start = controller.stochastic_variables_scaled.cx_start
+            s_end = controller.stochastic_variables_scaled.cx_end
 
-        else:
+            fcn_tp = self.function[node] = Function(
+                name,
+                [time_cx, phases_dt_cx, x_start, u_start, param_cx, s_start],
+                [sub_fcn],
+                ["t", "dt", "x", "u", "p", "s"],
+                ["val"],
+            )
+
+            # TODO: Charbie -> this is False, add stochastic_variables for start, mid AND end
+            self.function[node] = Function(
+                f"{name}",
+                [time_cx, phases_dt_cx, x, u, param_cx, s],
+                [fcn_tp(time_cx, phases_dt_cx, x_end, u_end, param_cx, s_end) - fcn_tp(time_cx, phases_dt_cx, x_start, u_start, param_cx, s_start)],
+                ["t", "dt", "x", "u", "p", "s"],
+                ["val"],
+            )
+
             modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, s) - target_cx) ** exponent
 
+        else:
+            # TODO Add error message if there are free variables to guide the user? For instance controls with last node
+            self.function[node] = Function(
+                name,
+                [time_cx, phases_dt_cx, x, u, param_cx, s],
+                [sub_fcn],
+                ["t", "dt", "x", "u", "p", "s"],
+                ["val"],
+            )
+
+            modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, s) - target_cx) ** exponent
+
+            
+        if self.expand:
+            self.function[node] = self.function[node].expand()
+
+        self.function_non_threaded[node] = self.function[node]
+        
         # weight is zero for constraints penalty and non-zero for objective functions
         modified_fcn = (weight_cx * modified_fcn * self.dt) if self.weight else (modified_fcn * self.dt)
+
         self.weighted_function[node] = Function(
             name,
             [time_cx, phases_dt_cx, x, u, param_cx, s, weight_cx, target_cx],
@@ -613,7 +589,7 @@ class PenaltyOption(OptionGeneric):
                 "Node.ALL_SHOOTING."
             )
 
-    def _get_variable_inputs(self, controllers: list[PenaltyController, ...]):
+    def get_variable_inputs(self, controllers: list[PenaltyController, ...]):
         if self.multinode_penalty:
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             self.node_idx[0] = controller.node_index
@@ -628,7 +604,7 @@ class PenaltyOption(OptionGeneric):
         self._check_sanity_of_penalty_interactions(controller)
 
         ocp = controller.ocp
-        penalty_idx = self.node_idx.index(controller.node_index) if controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 0
+        penalty_idx = self.node_idx.index(controller.node_index)
 
         x = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, n_idx, sn_idx), is_constructing_penalty=True)
         u = PenaltyHelpers.controls(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_u(ocp, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
@@ -655,7 +631,7 @@ class PenaltyOption(OptionGeneric):
 
         elif sn_idx.start == 1:
             if sn_idx.stop == 2:
-                x = vertcat(x, vertcat(states.scaled.cx_intermediates_list[0]))
+                x = vertcat(x, vertcat(states.scaled.cx_mid))
             else:
                 raise ValueError("The sn_idx.stop should be 2 if sn_idx.start == 1")
 
@@ -681,11 +657,22 @@ class PenaltyOption(OptionGeneric):
         controls.node_index = n_idx
 
         def vertcat_cx_end():
-            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
+            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ):
                 return vertcat(u, controls.scaled.cx_end)
-            elif nlp.control_type in (ControlType.CONSTANT,):
-                if n_idx < nlp.n_controls_nodes and not (self.integrate or self.derivative or self.explicit_derivative):
+            elif nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
+                if n_idx < nlp.n_controls_nodes - 1:
                     return vertcat(u, controls.scaled.cx_end)
+                
+                elif n_idx == nlp.n_controls_nodes - 1:
+                    # If we are at the penultimate node, we still can use the cx_end, unless we are
+                    # performing some kind of integration or derivative and this last node does not exist
+                    if nlp.control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ):
+                        return vertcat(u, controls.scaled.cx_end)
+                    if self.integrate or self.derivative or self.explicit_derivative:
+                        return u
+                    else: 
+                        return vertcat(u, controls.scaled.cx_end)
+                    
                 else:
                     return u
             else:
@@ -746,10 +733,8 @@ class PenaltyOption(OptionGeneric):
 
         self.target_plot_name = combine_to
         # if the target is n x ns, we need to add a dimension (n x ns + 1) to make it compatible with the plot
-        if self.target[0].shape[1] == controller.ns:
-            self.target_to_plot = np.concatenate(
-                (self.target[0], np.nan * np.ndarray((self.target[0].shape[0], 1))), axis=1
-            )
+        if self.target.shape[1] == controller.ns:
+            self.target_to_plot = np.concatenate((self.target, np.nan * np.ndarray((self.target.shape[0], 1))), axis=1)
 
     def _finish_add_target_to_plot(self, controller: PenaltyController):
         """
@@ -815,7 +800,7 @@ class PenaltyOption(OptionGeneric):
                 self.node = node
                 nlp = ocp.nlp[phase_idx % ocp.n_phases]  # this is to allow using -1 to refer to the last phase
 
-                controllers.append(self._get_penalty_controller(ocp, nlp))
+                controllers.append(self.get_penalty_controller(ocp, nlp))
                 if (self.node[0] == Node.END or self.node[0] == nlp.ns) and nlp.U != []:
                     # Make an exception to the fact that U is not available for the last node
                     controllers[-1].u = [nlp.U[-1]]
@@ -829,49 +814,30 @@ class PenaltyOption(OptionGeneric):
             self.ensure_penalty_sanity(ocp, controllers[0].get_nlp)
 
         else:
-            controllers = [self._get_penalty_controller(ocp, nlp)]
+            controllers = [self.get_penalty_controller(ocp, nlp)]
             penalty_type.validate_penalty_time_index(self, controllers[0])
             self.ensure_penalty_sanity(ocp, nlp)
             self.dt = penalty_type.get_dt(nlp)
-            self.node_idx = (
-                controllers[0].t[:-1]
-                if (
-                    self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                    or self.integration_rule == QuadratureRule.TRAPEZOIDAL
-                )
-                and self.target is not None
-                else controllers[0].t
-            )
+            self.node_idx = controllers[0].t
 
-        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+        # The active controller is always the last one, and they all should be the same length anyway
+        for node in range(len(controllers[-1])):
+            # TODO WARNING THE NEXT IF STATEMENT IS A BUG DELIBERATELY INTRODUCED TO FIT THE PREVIOUS RESULTS. 
+            # IT SHOULD BE REMOVED AS SOON AS THE MERGE IS DONE (AND VALUES OF THE TESTS ADJUSTED)
+            if self.integrate and self.target is not None:
+                self.node_idx = controllers[0].t[:-1]
+                if node not in self.node_idx:
+                    continue
+            
             for controller in controllers:
-                controller.node_index = 0
+                controller.node_index = controller.t[node]
                 controller.cx_index_to_get = 0
 
-            penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
+            penalty_function = self.type(
+                self, controllers if len(controllers) > 1 else controllers[0], **self.params
+            )
+            
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
-
-            # Define much more function than needed, but we don't mind since they are reference copy of each other
-            ns = (
-                max(controllers[0].get_nlp.ns, controllers[1].get_nlp.ns)
-                if len(controllers) > 1
-                else controllers[0].get_nlp.ns
-            ) + 1
-            self.function = self.function * ns
-            self.weighted_function = self.weighted_function * ns
-            self.function_non_threaded = self.function_non_threaded * ns
-            self.weighted_function_non_threaded = self.weighted_function_non_threaded * ns
-        else:
-            # The active controller is always the last one, and they all should be the same length anyway
-            for node in range(len(controllers[-1])):
-                for controller in controllers:
-                    controller.node_index = controller.t[node]
-                    controller.cx_index_to_get = 0
-
-                penalty_function = self.type(
-                    self, controllers if len(controllers) > 1 else controllers[0], **self.params
-                )
-                self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
         """
@@ -899,7 +865,7 @@ class PenaltyOption(OptionGeneric):
 
         raise RuntimeError("_reset_penalty cannot be called from an abstract class")
 
-    def _get_penalty_controller(self, ocp, nlp) -> PenaltyController:
+    def get_penalty_controller(self, ocp, nlp) -> PenaltyController:
         """
         Get the actual node (time, X and U) specified in the penalty
 
@@ -931,7 +897,7 @@ class PenaltyOption(OptionGeneric):
                     raise ValueError("Number of shooting points must be even to use MID")
                 t_idx.append(nlp.ns // 2)
             elif node == Node.INTERMEDIATES:
-                t_idx.extend(list(i for i in range(1, nlp.ns)))
+                t_idx.extend(list(i for i in range(1, nlp.ns - 1)))
             elif node == Node.PENULTIMATE:
                 if nlp.ns < 2:
                     raise ValueError("Number of shooting points must be greater than 1")
@@ -954,29 +920,3 @@ class PenaltyOption(OptionGeneric):
         s = [nlp.S[idx] for idx in t_idx]
         s_scaled = [nlp.S_scaled[idx] for idx in t_idx]
         return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, s, s_scaled)
-
-
-def _get_u(control_type: ControlType, u: MX | SX, dt: MX | SX):
-    """
-    Helper function to get the control at a given time
-
-    Parameters
-    ----------
-    control_type: ControlType
-        The type of control
-    u: MX | SX
-        The control matrix
-    dt: MX | SX
-        The time a which control should be computed
-
-    Returns
-    -------
-    The control at a given time
-    """
-
-    if control_type == ControlType.CONSTANT or control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-        return u[:, 0]
-    elif control_type == ControlType.LINEAR_CONTINUOUS:
-        return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
-    else:
-        raise RuntimeError(f"{control_type} ControlType not implemented yet")

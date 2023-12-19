@@ -219,25 +219,25 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
     # initial and final controls
     if isinstance(ode_solver_obj, OdeSolver.RK8):
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.03763589, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.59527556, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-13.59527556, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.IRK):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.40765381, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-25.26494109, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-25.26494109, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.COLLOCATION):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.78386563, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-18.22245512, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-18.22245512, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.RK1):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.498956, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-17.6888209, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-17.6888209, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.RK2):
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.6934385, 0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-27.6610711, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-27.6610711, 0)))
     elif isinstance(ode_solver_obj, OdeSolver.TRAPEZOIDAL):
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.79720006, 0.0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-15.23562005, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-15.23562005, 0.0)))
     else:
         np.testing.assert_almost_equal(tau[:, 0], np.array((6.01549798, 0.0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.68877181, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-13.68877181, 0.0)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -285,7 +285,7 @@ def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516129, 9.81, 2.27903226)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-1.45161291, 9.81, -2.27903226)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-1.45161291, 9.81, -2.27903226)))
 
         # detailed cost values
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
@@ -296,7 +296,7 @@ def test_custom_constraint_track_markers(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(f[0, 0], 19767.533125695223)
 
         np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516128810214546, 9.81, 2.2790322540381487)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-1.4516128810214546, 9.81, -2.2790322540381487)))
 
         # detailed cost values
         np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
@@ -367,7 +367,7 @@ def test_initial_guesses(ode_solver, interpolation, random_init, phase_dynamics)
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([5.0, 9.81, 7.85]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-5.0, 9.81, -7.85]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-5.0, 9.81, -7.85]))
 
     # simulate
     TestUtils.simulate(sol)
@@ -418,7 +418,7 @@ def test_cyclic_objective(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([9.89210954, 9.39362112, -15.53061197]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([17.16370432, 9.78643138, -26.94701577]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([17.16370432, 9.78643138, -26.94701577]))
 
     # simulate
     TestUtils.simulate(sol)
@@ -470,7 +470,7 @@ def test_cyclic_constraint(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([20.0, 9.81, -31.4]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([20.0, 9.81, -31.4]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([20.0, 9.81, -31.4]))
 
     # simulate
     TestUtils.simulate(sol)
@@ -526,7 +526,7 @@ def test_phase_transitions(ode_solver, phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((0.73170732, 12.71705188, -0.0928732)))
-    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array((0.11614402, 8.70686126, 1.05599166)))
+    np.testing.assert_almost_equal(controls[-1]["tau"][:, -1], np.array((0.11614402, 8.70686126, 1.05599166)))
 
     # simulate
     with pytest.raises(
@@ -606,7 +606,7 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((7.08951794, 0.0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-15.21533398, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-15.21533398, 0.0)))
 
         # gravity parameter
         np.testing.assert_almost_equal(gravity, np.array([[0, 4.95762449e-03, -9.93171691e00]]).T)
@@ -623,7 +623,7 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((5.82740495, 0.0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-13.06649769, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-13.06649769, 0.0)))
 
         # gravity parameter
         np.testing.assert_almost_equal(gravity, np.array([[0, 5.19787253e-03, -9.84722491e00]]).T)
@@ -640,7 +640,7 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array((-0.23081842, 0.0)))
-        np.testing.assert_almost_equal(tau[:, -2], np.array((-26.01316438, 0.0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-26.01316438, 0.0)))
 
         # gravity parameter
         np.testing.assert_almost_equal(gravity, np.array([[0, 6.82939855e-03, -1.00000000e01]]).T)
@@ -703,7 +703,7 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.4516129, 9.81, 2.27903226)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-1.45161291, 9.81, -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-1.45161291, 9.81, -2.27903226)))
 
     # detailed cost values
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 19767.533125695227)
@@ -742,7 +742,7 @@ def test_example_external_forces(ode_solver):
     np.testing.assert_almost_equal(tau[:, 0], np.array([2.0377671e-09, 6.9841937e00, 4.3690494e-19, 0]))
     np.testing.assert_almost_equal(tau[:, 10], np.array([-8.2313903e-10, 6.2433705e00, 1.5403878e-17, 0]))
     np.testing.assert_almost_equal(tau[:, 20], np.array([-6.7256342e-10, 5.5025474e00, 1.3602434e-17, 0]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([2.0377715e-09, 4.8358065e00, 3.7533411e-19, 0]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([2.0377715e-09, 4.8358065e00, 3.7533411e-19, 0]))
 
     if isinstance(ode_solver, OdeSolver.IRK):
         # initial and final position
@@ -826,11 +826,11 @@ def test_example_multiphase(ode_solver_type, phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array((1.42857142, 9.81, 0.01124212)))
-    np.testing.assert_almost_equal(controls[0]["tau"][:, -2], np.array((-1.42857144, 9.81, -0.01124212)))
+    np.testing.assert_almost_equal(controls[0]["tau"][:, -1], np.array((-1.42857144, 9.81, -0.01124212)))
     np.testing.assert_almost_equal(controls[1]["tau"][:, 0], np.array((-0.22788183, 9.81, 0.01775688)))
-    np.testing.assert_almost_equal(controls[1]["tau"][:, -2], np.array((0.2957136, 9.81, 0.285805)))
+    np.testing.assert_almost_equal(controls[1]["tau"][:, -1], np.array((0.2957136, 9.81, 0.285805)))
     np.testing.assert_almost_equal(controls[2]["tau"][:, 0], np.array((0.3078264, 9.81, 0.34001243)))
-    np.testing.assert_almost_equal(controls[2]["tau"][:, -2], np.array((-0.36233407, 9.81, -0.58394606)))
+    np.testing.assert_almost_equal(controls[2]["tau"][:, -1], np.array((-0.36233407, 9.81, -0.58394606)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -912,7 +912,7 @@ def test_contact_forces_inequality_greater_than_constraint(ode_solver, phase_dyn
     np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.53979971, 0.43468705, 1.38612634, -1.38612634)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-33.50557304)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-29.43209257)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-29.43209257)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -962,7 +962,7 @@ def test_contact_forces_inequality_lesser_than_constraint(ode_solver):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((-0.18616011, 0.16512913, 0.49768751, -0.49768751)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((-24.36593641)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-24.36125297)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-24.36125297)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -1035,7 +1035,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([6.49295131, 0.0]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-14.26800861, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -1], np.array([-14.26800861, 0.0]))
 
     elif isinstance(ode_solver, OdeSolver.RK8):
         # Check objective function value
@@ -1050,7 +1050,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
 
         # initial and final controls
         np.testing.assert_almost_equal(controls["tau"][:, 0], np.array([5.84195684, 0.0]))
-        np.testing.assert_almost_equal(controls["tau"][:, -2], np.array([-13.1269555, 0.0]))
+        np.testing.assert_almost_equal(controls["tau"][:, -1], np.array([-13.1269555, 0.0]))
 
     # Check that the output is what we expect
     weight = 10
@@ -1073,7 +1073,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
 
     # Note that dt=1, because the multi-node objectives are treated as mayer terms
     out = fun[0](t_out, dt, x_out, u_out, p_out, s_out, weight, target)
-    out_expected = sum2(sum1(sol.controls["tau"][:, :-1] ** 2)) * dt * weight
+    out_expected = sum2(sum1(sol.controls["tau"] ** 2)) * dt * weight
     np.testing.assert_almost_equal(out, out_expected)
 
 
@@ -1187,7 +1187,7 @@ def test_multinode_constraints(ode_solver, phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(controls[0]["tau"][:, 0], np.array([1.32977862, 9.81, 0.0]))
-    np.testing.assert_almost_equal(controls[-1]["tau"][:, -2], np.array([-1.2, 9.81, -1.884]))
+    np.testing.assert_almost_equal(controls[-1]["tau"][:, -1], np.array([-1.2, 9.81, -1.884]))
 
 
 def test_multistart():
@@ -1413,4 +1413,4 @@ def test_example_variable_scaling(phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-1000.00000999, 0.0]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-1000.00000999, 0.0]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-1000.00000999, 0.0]))

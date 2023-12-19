@@ -53,4 +53,4 @@ def test_soft_contact(phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([-0.16347455, 0.02123226, -13.25955361]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([0.00862357, -0.00298151, -0.16425701]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([0.00862357, -0.00298151, -0.16425701]))

@@ -14,8 +14,7 @@ from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
 from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
 from ...dynamics.ode_solver import OdeSolver
-from ...interfaces.solve_ivp_interface import solve_ivp_bioptim_interface
-
+from ...interfaces.solve_ivp_interface import solve_ivp_bioptim_interface, solve_ivp_interface
 
 
 class Solution:
@@ -592,6 +591,7 @@ class Solution:
                 "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
             )
+
         has_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
         if has_trapezoidal:
             raise ValueError(
@@ -616,6 +616,10 @@ class Solution:
             if integrator == SolutionIntegrator.OCP:
                 integrated_sol = solve_ivp_bioptim_interface(
                     shooting_type=shooting_type, dynamics_func=nlp.dynamics, t=t, x=next_x, u=u[p], s=s[p], p=params
+                )
+            elif integrator in (SolutionIntegrator.SCIPY_RK45, SolutionIntegrator.SCIPY_RK23, SolutionIntegrator.SCIPY_RK45, SolutionIntegrator.SCIPY_DOP853, SolutionIntegrator.SCIPY_BDF, SolutionIntegrator.SCIPY_LSODA):
+                integrated_sol = solve_ivp_interface(
+                    method=integrator, shooting_type=shooting_type, nlp=nlp, t=t, x=next_x, u=u[p], s=s[p], p=params
                 )
             else:
                 raise NotImplementedError(f"{integrator} is not implemented yet")
@@ -678,14 +682,14 @@ class Solution:
         penalty = self.ocp.phase_transitions[phase_idx - 1]
 
         times = DM([t[-1] for t in self._stepwise_times])
-        t0 = PenaltyHelpers.t0(penalty, self.ocp, 0, lambda p, n: times[p])
+        t0 = PenaltyHelpers.t0()
         dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
         # Compute the error between the last state of the previous phase and the first state of the next phase
         # based on the phase transition objective or constraint function. That is why we need to concatenate
         # twice the last state
-        x = PenaltyHelpers.states(penalty, self.ocp, 0, lambda controller_idx, p, n: integrated_states[-1])
-        u = PenaltyHelpers.controls(penalty, self.ocp, 0, lambda controller_idx, p, n: decision_controls[p][n])
-        s = PenaltyHelpers.stochastic_variables(penalty, self.ocp, 0, lambda controller_idx, p, n: decision_stochastic[p][n])
+        x = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: integrated_states[-1])
+        u = PenaltyHelpers.controls(penalty, 0, lambda p, n, sn: decision_controls[p][n] if n < len(decision_controls[p]) else np.ndarray((0, 1)))
+        s = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: decision_stochastic[p][n] if n < len(decision_stochastic[p]) else np.ndarray((0, 1)))
 
         dx = penalty.function[-1](t0, dt, x, u, params, s)
         if dx.shape[0] != decision_states[phase_idx][0].shape[0]:
@@ -769,7 +773,7 @@ class Solution:
             )
         else:
             t_all = [np.concatenate(self._stepwise_times[p]) for p in range(len(self.ocp.nlp))]
-            states = self._stepwise_states._merge_nodes(scaled=scaled)
+            states = self._stepwise_states.to_dict(scaled=scaled, to_merge=[SolutionMerge.KEYS, SolutionMerge.NODES])
 
         data = []
         for p in range(len(states)):
@@ -863,16 +867,19 @@ class Solution:
                         ObjectiveFcn.Mayer.TRACK_MARKERS,
                         ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        n_frames += objective.target[0].shape[2]
+                        n_frames += objective.target.shape[2]
                         break
 
+        data_to_animate = []
         if n_frames == 0:
             try:
-                data_to_animate = self.interpolate(sum([nlp.ns for nlp in self.ocp.nlp]) + 1)
-            except RuntimeError:
-                pass
+                data_to_animate = [self.interpolate(sum([nlp.ns for nlp in self.ocp.nlp]) + 1)]
+            except ValueError:
+                data_to_animate = self.interpolate([nlp.ns for nlp in self.ocp.nlp])
         elif n_frames > 0:
             data_to_animate = self.interpolate(n_frames)
+            if not isinstance(data_to_animate, list):
+                data_to_animate = [data_to_animate]
 
         if show_tracked_markers and len(self.ocp.nlp) == 1:
             tracked_markers = self._prepare_tracked_markers_for_animation(n_shooting=n_frames)
@@ -887,13 +894,17 @@ class Solution:
         # assuming that all the models or the same type.
         self._check_models_comes_from_same_super_class()
 
-        all_bioviz = self.ocp.nlp[0].model.animate(
-            self.ocp,
-            solution=data_to_animate,
-            show_now=show_now,
-            tracked_markers=tracked_markers,
-            **kwargs,
-        )
+        all_bioviz = []
+        for i, d in enumerate(data_to_animate):
+            all_bioviz.append(
+                self.ocp.nlp[i].model.animate(
+                    self.ocp,
+                    solution=d,
+                    show_now=show_now,
+                    tracked_markers=tracked_markers,
+                    **kwargs,
+                )
+            )
 
         return all_bioviz
 
@@ -915,14 +926,12 @@ class Solution:
     def _prepare_tracked_markers_for_animation(self, n_shooting: int = None) -> list:
         """Prepare the markers which are tracked to the animation"""
 
-        n_frames = sum(self.ns) + 1 if n_shooting is None else n_shooting + 1
-
         all_tracked_markers = []
 
         for phase, nlp in enumerate(self.ocp.nlp):
+            n_frames = sum(nlp.ns) + 1 if n_shooting is None else n_shooting + 1
+
             n_states_nodes = self.ocp.nlp[phase].n_states_nodes
-            if type(nlp.ode_solver) == OdeSolver.COLLOCATION:
-                n_states_nodes -= 1
 
             tracked_markers = None
             for objective in nlp.J:
@@ -934,7 +943,7 @@ class Solution:
                         tracked_markers = np.full((3, nlp.model.nb_markers, n_states_nodes), np.nan)
 
                         for i in range(len(objective.rows)):
-                            tracked_markers[objective.rows[i], objective.cols, :] = objective.target[0][i, :, :]
+                            tracked_markers[objective.rows[i], objective.cols, :] = objective.target[i, :, :]
 
                         missing_row = np.where(np.isnan(tracked_markers))[0]
                         if missing_row.size > 0:
@@ -965,10 +974,10 @@ class Solution:
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_s = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         for idx in range(len(penalty.node_idx)):
-            t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: self._stepwise_times[p_idx][n_idx])
-            x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_x[p_idx][n_idx][:, sn_idx])
+            t0 = PenaltyHelpers.t0()
+            x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_x[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_x[p_idx]) else np.array(()))
             u = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_u[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_u[p_idx]) else np.array(()))
-            s = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_s[p_idx][n_idx][:, sn_idx])
+            s = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_s[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_s[p_idx]) else np.array(()))
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
 

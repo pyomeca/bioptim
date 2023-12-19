@@ -97,7 +97,7 @@ def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, s):
     if isinstance(val, float):
         return val
 
-    time = ocp.nlp[0].time_cx if ocp.nlp[0].time_cx.shape == (0, 0) else ocp.cx(0, 0)
+    time = ocp.nlp[0].time_cx
     phases_dt_cx = vertcat(*[nlp.dt for nlp in ocp.nlp])
     states = ocp.nlp[0].states.cx_start if ocp.nlp[0].states.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     controls = ocp.nlp[0].controls.cx_start if ocp.nlp[0].controls.cx_start.shape != (0, 0) else ocp.cx(0, 0)
@@ -114,13 +114,13 @@ def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, s):
 
 def test_penalty_targets_shapes():
     p = ObjectiveFcn.Parameter
-    np.testing.assert_equal(Objective([], custom_type=p, target=1).target[0].shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=np.array(1)).target[0].shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[1]).target[0].shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[1, 2]).target[0].shape, (2, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target[0].shape, (2, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target[0].shape, (1, 2))
-    np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target[0].shape, (1, 2))
+    np.testing.assert_equal(Objective([], custom_type=p, target=1).target.shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=np.array(1)).target.shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[1]).target.shape, (1, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[1, 2]).target.shape, (2, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target.shape, (2, 1))
+    np.testing.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target.shape, (1, 2))
+    np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target.shape, (1, 2))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -140,7 +140,10 @@ def test_penalty_minimize_time(penalty_origin, value, phase_dynamics):
     penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0))
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, s)
 
-    np.testing.assert_almost_equal(res, np.array(1))
+    if penalty_origin == ObjectiveFcn.Lagrange:
+        np.testing.assert_almost_equal(res, np.array(1))
+    else:
+        np.testing.assert_almost_equal(res, np.array(0.05) * ocp.nlp[0].ns)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1143,7 +1146,7 @@ def test_penalty_time_constraint(value, phase_dynamics):
     penalty = Constraint(penalty_type)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, s)
 
-    np.testing.assert_almost_equal(res, np.array(0))
+    np.testing.assert_almost_equal(res, np.array(0.05) * ocp.nlp[0].ns)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1151,7 +1154,7 @@ def test_penalty_time_constraint(value, phase_dynamics):
 def test_penalty_constraint_total_time(value, phase_dynamics):
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
-    phases_dt = [0.05, 0.05]
+    phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
     u = [0]
     p = [0.1]
@@ -1166,6 +1169,7 @@ def test_penalty_constraint_total_time(value, phase_dynamics):
         nodes_phase=(0, 1),
         nodes=(Node.END, Node.END),
     )
+    penalty[0].multinode_idx = (ocp.nlp[0].ns, ocp.nlp[0].ns)
 
     penalty_type(
         penalty[0],
@@ -1176,7 +1180,7 @@ def test_penalty_constraint_total_time(value, phase_dynamics):
     )
     res = get_penalty_value(ocp, penalty[0], t, phases_dt, x, u, p, s)
 
-    np.testing.assert_almost_equal(res, np.array(0.2))
+    np.testing.assert_almost_equal(res, np.array(0.05) * ocp.nlp[0].ns * 2)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1356,26 +1360,26 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
 
     if node == Node.MID and ns % 2 != 0:
         with pytest.raises(ValueError, match="Number of shooting points must be even to use MID"):
-            _ = penalty._get_penalty_controller([], nlp)
+            _ = penalty.get_penalty_controller([], nlp)
         return
     elif node == Node.TRANSITION:
         with pytest.raises(RuntimeError, match="Node.TRANSITION is not a valid node"):
-            _ = penalty._get_penalty_controller([], nlp)
+            _ = penalty.get_penalty_controller([], nlp)
         return
     elif node == Node.MULTINODES:
         with pytest.raises(RuntimeError, match="Node.MULTINODES is not a valid node"):
-            _ = penalty._get_penalty_controller([], nlp)
+            _ = penalty.get_penalty_controller([], nlp)
         return
     elif node == Node.DEFAULT:
         with pytest.raises(RuntimeError, match="Node.DEFAULT is not a valid node"):
-            _ = penalty._get_penalty_controller([], nlp)
+            _ = penalty.get_penalty_controller([], nlp)
         return
     elif ns == 1 and node == Node.PENULTIMATE:
         with pytest.raises(ValueError, match="Number of shooting points must be greater than 1"):
-            _ = penalty._get_penalty_controller([], nlp)
+            _ = penalty.get_penalty_controller([], nlp)
         return
     else:
-        controller = penalty._get_penalty_controller([], nlp)
+        controller = penalty.get_penalty_controller([], nlp)
 
     x_expected = nlp.X
     u_expected = nlp.U

@@ -467,7 +467,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
                 np.array([-1.071535, 0.0]),
                 decimal=6,
             )
-            np.testing.assert_almost_equal(tau[:, -2], np.array([-19.422394, 0.0]), decimal=6)
+            np.testing.assert_almost_equal(tau[:, -1], np.array([-19.422394, 0.0]), decimal=6)
 
         else:
             # initial and final position
@@ -483,7 +483,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
                 decimal=6,
             )
             np.testing.assert_almost_equal(
-                tau[:, -2],
+                tau[:, -1],
                 np.array([-18.254416, 0.0]),
                 decimal=6,
             )
@@ -503,7 +503,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
                 decimal=6,
             )
             np.testing.assert_almost_equal(
-                tau[:, -2],
+                tau[:, -1],
                 np.array([-39.19793, 0.0]),
                 decimal=6,
             )
@@ -522,7 +522,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
                 decimal=6,
             )
             np.testing.assert_almost_equal(
-                tau[:, -2],
+                tau[:, -1],
                 np.array([-24.611219, 0.0]),
                 decimal=6,
             )

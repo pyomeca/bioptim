@@ -74,7 +74,7 @@ def test_arm_reaching_torque_driven_collocations():
     np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
     np.testing.assert_almost_equal(tau[:, 0], np.array([1.72235954, -0.90041542]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-1.64870266, 1.08550928]))
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-1.64870266, 1.08550928]))
 
     np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
     np.testing.assert_almost_equal(
@@ -151,7 +151,7 @@ def test_arm_reaching_torque_driven_collocations():
     )
 
     np.testing.assert_almost_equal(
-        cov[:, -2],
+        cov[:, -1],
         np.array(
             [
                 -0.57472415,
@@ -238,7 +238,7 @@ def test_obstacle_avoidance_direct_collocation():
     np.testing.assert_almost_equal(qdot[:, -1], np.array([4.59876163, 0.33406115]))
 
     np.testing.assert_almost_equal(u[:, 0], np.array([3.94130314, 0.50752995]))
-    np.testing.assert_almost_equal(u[:, -2], np.array([1.37640701, 2.78054156]))
+    np.testing.assert_almost_equal(u[:, -1], np.array([1.37640701, 2.78054156]))
 
     np.testing.assert_almost_equal(
         m[:, 0],

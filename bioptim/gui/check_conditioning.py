@@ -8,6 +8,7 @@ from ..misc.enums import (
 )
 from ..misc.enums import QuadratureRule
 from ..dynamics.ode_solver import OdeSolver
+from ..limits.penalty_helpers import PenaltyHelpers
 
 
 def check_conditioning(ocp):
@@ -67,33 +68,30 @@ def check_conditioning(ocp):
                 nlp.controls.node_index = node_index
                 nlp.stochastic_variables.node_index = node_index
                 time = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
-                for axis in range(
-                    0,
-                    constraints.function[node_index](
-                        time,
-                        phases_dt,
-                        nlp.states.cx_start,
-                        nlp.controls.cx_start,
-                        nlp.parameters.cx,
-                        nlp.stochastic_variables.cx_start,
-                    ).shape[0],
-                ):
+
+                if constraints.multinode_penalty:
+                    n_phases = ocp.n_phases
+                    for phase_idx in constraints.nodes_phase:
+                        controllers.append(constraints.get_penalty_controller(ocp, ocp.nlp[phase_idx % n_phases]))
+                else:
+                    controllers = [constraints.get_penalty_controller(ocp, nlp)]
+
+                for axis in range(constraints.function[node_index].size_out("val")[0]):
                     # depends if there are parameters
                     if nlp.parameters.shape == 0:
                         vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S_scaled)
                     else:
                         vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S_scaled])
 
+                    for controller in controllers:
+                        controller.node_index = constraints.node_idx[0]
+                    t0 = PenaltyHelpers.t0()
+                    _, x, u, s = constraints.get_variable_inputs(controllers)
+                    p = nlp.parameters.cx
+
                     list_constraints.append(
                         jacobian(
-                            constraints.function[constraints.node_idx[0]](
-                                [],
-                                phases_dt,
-                                nlp.states.cx_start,
-                                nlp.controls.cx_start,
-                                nlp.parameters.cx,
-                                nlp.stochastic_variables.cx_start,
-                            )[axis],
+                            constraints.function[constraints.node_idx[0]](t0, phases_dt, x, u, p, s,)[axis],
                             vertcat_obj,
                         )
                     )
@@ -170,18 +168,15 @@ def check_conditioning(ocp):
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
                 nlp.stochastic_variables.node_index = node_index
-                time = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+                
+                if constraints.multinode_penalty:
+                    n_phases = ocp.n_phases
+                    for phase_idx in constraints.nodes_phase:
+                        controllers.append(constraints.get_penalty_controller(ocp, ocp.nlp[phase_idx % n_phases]))
+                else:
+                    controllers = [constraints.get_penalty_controller(ocp, nlp)]
 
-                for axis in range(
-                    0,
-                    constraints.function[node_index](
-                        nlp.time_cx,
-                        phases_dt,
-                        nlp.states.cx_start,
-                        nlp.controls.cx_start,
-                        nlp.parameters.cx,
-                        nlp.stochastic_variables.cx_start,
-                    ).shape[0],
+                for axis in range(constraints.function[node_index].size_out("val")[0]
                 ):
                     # find all equality constraints
                     if constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]:
@@ -192,17 +187,13 @@ def check_conditioning(ocp):
                             vertcat_obj = vertcat(vertcat_obj, *[nlp.parameters.cx])
                         vertcat_obj = vertcat(vertcat_obj, *nlp.S_scaled)
 
-                        hessian_cas = hessian(
-                            constraints.function[node_index](
-                                time,
-                                phases_dt,
-                                nlp.states.cx_start,
-                                nlp.controls.cx_start,
-                                nlp.parameters.cx,
-                                nlp.stochastic_variables.cx_start,
-                            )[axis],
-                            vertcat_obj,
-                        )[0]
+                        for controller in controllers:
+                            controller.node_index = constraints.node_idx[0]
+                        t0 = PenaltyHelpers.t0()
+                        _, x, u, s = constraints.get_variable_inputs(controllers)
+                        p = nlp.parameters.cx
+                        
+                        hessian_cas = hessian(constraints.function[node_index](t0, phases_dt, x, u, p, s)[axis], vertcat_obj)[0]
 
                         tick_labels.append(constraints.name)
 
@@ -333,6 +324,14 @@ def check_conditioning(ocp):
                 nlp.controls.node_index = node_index
                 nlp.stochastic_variables.node_index = node_index
 
+                if obj.multinode_penalty:
+                    n_phases = ocp.n_phases
+                    for phase_idx in obj.nodes_phase:
+                        controllers.append(obj.get_penalty_controller(ocp, ocp.nlp[phase_idx % n_phases]))
+                else:
+                    controllers = [obj.get_penalty_controller(ocp, nlp)]
+
+
                 # Test every possibility
                 if obj.multinode_penalty:
                     phase = ocp.nlp[phase - 1]
@@ -391,28 +390,14 @@ def check_conditioning(ocp):
                         else nlp.stochastic_variables.cx_start
                     )
 
-                if obj.target is None:
-                    p = obj.weighted_function[node_index](
-                        nlp.time_cx,
-                        phases_dt,
-                        state_cx,
-                        control_cx,
-                        nlp.parameters.cx,
-                        stochastic_cx,
-                        obj.weight,
-                        [],
-                    )
-                else:
-                    p = obj.weighted_function[node_index](
-                        nlp.time_cx,
-                        phases_dt,
-                        state_cx,
-                        control_cx,
-                        nlp.parameters.cx,
-                        stochastic_cx,
-                        obj.weight,
-                        obj.target,
-                    )
+                for controller in controllers:
+                    controller.node_index = obj.node_idx[0]
+                t0 = PenaltyHelpers.t0()
+                _, x, u, s = obj.get_variable_inputs(controllers)
+                params = nlp.parameters.cx
+                target = PenaltyHelpers.target(obj, obj.node_idx.index(node_index))
+
+                p = obj.weighted_function[node_index](t0, phases_dt, x, u, params, s, obj.weight, target)
 
                 for i in range(p.shape[0]):
                     objective += p[i] ** 2

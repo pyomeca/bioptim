@@ -204,7 +204,6 @@ class OptimizationVariableList:
             return self.elements[item]
         elif isinstance(item, str):
             if item == "all":
-                # TODO Benjamin
                 index = []
                 for elt in self.elements:
                     index.extend(list(elt.index))

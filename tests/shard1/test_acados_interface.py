@@ -402,7 +402,7 @@ def test_acados_custom_dynamics(problem_type_custom):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0, 9.81, -2.27903226)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226)))
 
 
 def test_acados_one_parameter():
@@ -598,7 +598,7 @@ def test_acados_one_end_constraints():
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((2.72727272, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-2.72727272, 9.81, 0)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-2.72727272, 9.81, 0)))
 
 
 def test_acados_constraints_all():
@@ -640,7 +640,7 @@ def test_acados_constraints_all():
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.04483914, 9.90739842, 2.24951691, 0.78496612)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.15945561, 10.03978178, -2.36075327, 0.07267697)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0.15945561, 10.03978178, -2.36075327, 0.07267697)), decimal=6)
 
 
 def test_acados_constraints_end_all():
@@ -683,7 +683,7 @@ def test_acados_constraints_end_all():
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.04648408, 9.88616194, 2.24285498, 0.864213)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.19389194, 9.99905781, -2.37713652, -0.19858311)), decimal=6)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0.19389194, 9.99905781, -2.37713652, -0.19858311)), decimal=6)
 
 
 def test_acados_phase_dynamics_reject():

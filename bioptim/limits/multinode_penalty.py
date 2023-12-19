@@ -77,6 +77,7 @@ class MultinodePenalty(PenaltyOption):
 
         self.phase_dynamics = []  # This is set in _prepare_controller_cx
         self.ns = []  # This is set in _prepare_controller_cx
+        self.control_types = []  # This is set in _prepare_controller_cx
 
     def _get_pool_to_add_penalty(self, ocp, nlp):
         raise NotImplementedError("This is an abstract method and should be implemented by child")
@@ -320,13 +321,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            time_idx = [controller.get_time_parameter_idx() for i, controller in enumerate(controllers)]
+            times = [controller.tf for i, controller in enumerate(controllers)]
 
-            time_0 = controllers[0].parameters.cx[time_idx[0]]
+            time_0 = times[0]
             out = controllers[0].cx.zeros((1, 1))
-            for i in range(1, len(controllers)):
-                time_i = controllers[i].parameters.cx[time_idx[i]]
-                out += time_0 - time_i
+            for i in range(1, len(times)):
+                out += time_0 - times[i]
 
             return out
 
@@ -348,15 +348,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             """
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
-
-            time_idx = [controller.get_time_parameter_idx() for i, controller in enumerate(controllers)]
-
-            time = controllers[0].parameters.cx[time_idx[0]]
-            for i in range(1, len(controllers)):
-                time_i = controllers[i].parameters.cx[time_idx[i]]
-                time += time_i
-
-            return time
+            return sum([controller.tf for i, controller in enumerate(controllers)])
 
         @staticmethod
         def stochastic_helper_matrix_explicit(
@@ -635,6 +627,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             # This will be set again in set_penalty, but we need it before
             penalty.phase_dynamics = [c.get_nlp.phase_dynamics for c in controllers]
             penalty.ns = [c.get_nlp.ns for c in controllers]
+            penalty.control_types = [c.get_nlp.control_type for c in controllers]
 
             indices = PenaltyHelpers.get_multinode_penalty_subnodes_starting_index(penalty)
             for index, c in zip(indices, controllers):

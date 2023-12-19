@@ -294,7 +294,7 @@ class ObjectiveFunction:
         if list_index >= len(ocp_or_nlp.J) or list_index < 0:
             raise ValueError("'list_index' must be defined properly")
 
-        ocp_or_nlp.J[list_index].target = [new_target] if not isinstance(new_target, list | tuple) else new_target
+        ocp_or_nlp.J[list_index].target = new_target
 
 
 class ObjectiveFcn:
@@ -375,6 +375,7 @@ class ObjectiveFcn:
         MINIMIZE_COM_ACCELERATION = (PenaltyFunctionAbstract.Functions.minimize_com_acceleration,)
         MINIMIZE_COM_POSITION = (PenaltyFunctionAbstract.Functions.minimize_com_position,)
         MINIMIZE_COM_VELOCITY = (PenaltyFunctionAbstract.Functions.minimize_com_velocity,)
+        MINIMIZE_CONTROL = (PenaltyFunctionAbstract.Functions.minimize_controls,)
         MINIMIZE_FATIGUE = (PenaltyFunctionAbstract.Functions.minimize_fatigue,)
         MINIMIZE_LINEAR_MOMENTUM = (PenaltyFunctionAbstract.Functions.minimize_linear_momentum,)
         MINIMIZE_MARKERS = (PenaltyFunctionAbstract.Functions.minimize_markers,)

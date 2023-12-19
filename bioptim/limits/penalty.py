@@ -1128,18 +1128,8 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("continuity should be called one node at a time")
 
             penalty.expand = controller.get_nlp.dynamics_type.expand_continuity
-
-            if (
-                len(penalty.node_idx) > 1
-                and not controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
-            ):
-                raise NotImplementedError(
-                    f"Length of node index superior to 1 is not implemented yet,"
-                    f" actual length {len(penalty.node_idx[0])} "
-                )
             
-            t0 = controller.ocp.node_time(controller.phase_idx, controller.node_index)
-            t_span = vertcat(t0, t0 + controller.get_nlp.dt)
+            t_span = vertcat(controller.time.cx, controller.time.cx + controller.dt)
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
