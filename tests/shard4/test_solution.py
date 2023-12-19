@@ -250,7 +250,7 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
             integrator=integrator,
         )
 
-        time = sol.stepwise_times(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES if merge_phase else None])
+        time = sol.stepwise_time(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES if merge_phase else None], continuous=True)
         
         if merge_phase:
             merged_sol = sol.stepwise_states(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES])
@@ -258,7 +258,7 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
             np.testing.assert_almost_equal(time.shape[0], integrated_sol["q"][0, :].shape[0])
         else:
             for t, state in zip(time, integrated_sol):
-                np.testing.assert_almost_equal(t.shape, state["q"][0, :].shape)
+                np.testing.assert_almost_equal(t.shape[0], state["q"][0, :].shape[0])
 
         if shooting_type == Shooting.SINGLE and merge_phase is False:
             np.testing.assert_almost_equal(integrated_sol[0]["q"][0, -1], integrated_sol[1]["q"][0, 0])
@@ -268,19 +268,12 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
 
         plt.figure()
 
-        plt.plot(time, merged_sol["q"][0, :], label="merged", marker=".")
         if merge_phase:
-            plt.plot(
-                time,
-                integrated_sol["q"][0, :],
-                label="integrated by bioptim",
-                marker=".",
-                alpha=0.5,
-                markersize=5,
-            )
+            plt.plot(time, merged_sol["q"][0, :], label="merged", marker=".")
+            
         else:
             for t, state in zip(time, integrated_sol):
-                plt.plot(t[:, np.newaxis], state["q"].T, label="integrated by bioptim", marker=".")
+                plt.plot(t, state["q"].T, label="integrated by bioptim", marker=".")
 
         plt.legend()
         plt.vlines(0.2, -1, 1, color="black", linestyle="--")

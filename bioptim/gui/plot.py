@@ -296,14 +296,11 @@ class PlotOcp:
 
         self.t = []
         self.t_integrated = []
-        last_t = 0
         for nlp, time in zip(self.ocp.nlp, phase_times):
             self.n_nodes += nlp.n_states_nodes
 
-            self.t_integrated.append([t + last_t for t in time])
-            self.t.append(np.linspace(last_t, last_t + float(time[-1][-1]), nlp.n_states_nodes))
-
-            last_t += float(time[-1][-1])
+            self.t_integrated.append(time)
+            self.t.append(np.linspace(float(time[0][0]), float(time[-1][-1]), nlp.n_states_nodes))
 
     def __create_plots(self):
         """
@@ -672,7 +669,7 @@ class PlotOcp:
             data_controls = [data_controls]
             data_stochastic = [data_stochastic]
 
-        time_stepwise = sol.stepwise_time(to_merge=SolutionMerge.NODES)
+        time_stepwise = sol.stepwise_time(continuous=True)
         if self.ocp.n_phases == 1:
             time_stepwise = [time_stepwise]
         phases_dt = sol.phases_dt

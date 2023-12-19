@@ -344,10 +344,24 @@ class Solution:
     def decision_time(
             self, 
             to_merge: SolutionMerge | list[SolutionMerge, ...] = None, 
-            time_alignment: TimeAlignment = TimeAlignment.STATES
+            time_alignment: TimeAlignment = TimeAlignment.STATES,
+            continuous: bool = False,
         ) -> list | np.ndarray:
         """
-        Returns the time vector at each node
+        Returns the time vector at each node that matches decision_states or decision_controls
+
+        Parameters
+        ----------
+        to_merge: SolutionMerge | list[SolutionMerge, ...]
+            The type of merge to perform. If None, then no merge is performed. It is often useful to merge NODES, but
+            is completely useless to merge KEYS
+        time_alignment: TimeAlignment
+            The type of alignment to perform. If TimeAlignment.STATES, then the time vector is aligned with the states
+            (i.e. the last node time is present). If TimeAlignment.CONTROLS, then the time vector is aligned with the
+            controls (i.e. the last node time is not present for CONSTANT controls).
+        continuous: bool
+            If the time should be continuous throughout the whole ocp. If False, then the time is reset at the
+            beginning of each phases.
         """
 
         if time_alignment != TimeAlignment.STATES:
@@ -360,24 +374,43 @@ class Solution:
             else:
                 time.append(self._t_span[nlp.phase_idx])
 
-        return self._process_time_vector(time, to_merge=to_merge, time_alignment=time_alignment)
+        return self._process_time_vector(time, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
     
     def stepwise_time(
             self, 
             to_merge: SolutionMerge | list[SolutionMerge, ...] = None, 
-            time_alignment: TimeAlignment = TimeAlignment.STATES
+            time_alignment: TimeAlignment = TimeAlignment.STATES,
+            continuous: bool = False,
         ) -> list | np.ndarray:
         """
-        Returns the time vector at each node
+        Returns the time vector at each node that matches stepwise_states or stepwise_controls
+
+        Parameters
+        ----------
+        to_merge: SolutionMerge | list[SolutionMerge, ...]
+            The type of merge to perform. If None, then no merge is performed. It is often useful to merge NODES, but
+            is completely useless to merge KEYS
+        time_alignment: TimeAlignment
+            The type of alignment to perform. If TimeAlignment.STATES, then the time vector is aligned with the states
+            (i.e. the last node time is present). If TimeAlignment.CONTROLS, then the time vector is aligned with the
+            controls (i.e. the last node time is not present for CONSTANT controls).
+        continuous: bool
+            If the time should be continuous throughout the whole ocp. If False, then the time is reset at the
+            beginning of each phases.
+
+        Returns
+        -------
+        The time vector at each node that matches stepwise_states or stepwise_controls
         """
 
-        return self._process_time_vector(self._stepwise_times, to_merge=to_merge, time_alignment=time_alignment)
+        return self._process_time_vector(self._stepwise_times, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
         
     def _process_time_vector(
             self,
             times, 
             to_merge: SolutionMerge | list[SolutionMerge, ...],
-            time_alignment: TimeAlignment
+            time_alignment: TimeAlignment,
+            continuous: bool,
         ):
 
         if time_alignment != TimeAlignment.STATES:
@@ -388,6 +421,13 @@ class Solution:
         
         # Make sure to not return internal structure
         times = deepcopy(times)
+
+        if continuous:
+            for phase_idx, phase_time in enumerate(times):
+                if phase_idx == 0:
+                    continue
+                previous_tf = times[phase_idx - 1][-1]
+                times[phase_idx] = [t + previous_tf for t in phase_time]
 
         if SolutionMerge.NODES in to_merge:
             for phase_idx in range(len(times)):
