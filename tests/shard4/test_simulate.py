@@ -70,11 +70,13 @@ def test_merge_phases_one_phase(phase_dynamics):
     solver = Solver.IPOPT()
     solver.set_print_level(0)
     sol = ocp.solve(solver)
+
+    states = sol.stepwise_states(to_merge=[SolutionMerge.NODES])
     sol_merged = sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
 
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
-    for key in sol.states:
-        np.testing.assert_almost_equal(sol_merged[key], sol.states[key][:, ::n_steps])
+    for key in states:
+        np.testing.assert_almost_equal(sol_merged[key], states[key][:, ::n_steps])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -93,11 +95,13 @@ def test_merge_phases_multi_phase(phase_dynamics):
     solver = Solver.IPOPT()
     solver.set_print_level(0)
     sol = ocp.solve(solver)
+
+    states = sol.stepwise_states(to_merge=[SolutionMerge.NODES])
     sol_merged = sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
 
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
-    for key in sol.states[0]:
-        expected = np.concatenate([s[key][:, ::n_steps] for s in sol.states], axis=1)
+    for key in states[0]:
+        expected = np.concatenate([s[key][:, ::n_steps] for s in states], axis=1)
         np.testing.assert_almost_equal(sol_merged[key], expected)
 
 
@@ -123,16 +127,18 @@ def test_interpolate(phase_dynamics):
     sol = ocp.solve(solver)
     n_frames = 100
     sol_interp = sol.interpolate(n_frames)
+
+    states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
     sol_interp_list = sol.interpolate([n_frames])
 
     shapes = (2, 2)
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
-    for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(sol_interp[key][:, [0, -1]], sol.states[key][:, [0, -1]])
-        np.testing.assert_almost_equal(sol_interp_list[key][:, [0, -1]], sol.states[key][:, [0, -1]])
+    for i, key in enumerate(states):
+        np.testing.assert_almost_equal(sol_interp[key][:, [0, -1]], states[key][:, [0, -1]])
+        np.testing.assert_almost_equal(sol_interp_list[key][:, [0, -1]], states[key][:, [0, -1]])
         assert sol_interp[key].shape == (shapes[i], n_frames)
         assert sol_interp_list[key].shape == (shapes[i], n_frames)
-        assert sol.states[key].shape == (shapes[i], (n_shooting * n_steps) + 1)
+        assert states[key].shape == (shapes[i], (n_shooting * n_steps) + 1)
 
     with pytest.raises(
         ValueError,
@@ -162,17 +168,19 @@ def test_interpolate_multiphases(ode_solver, phase_dynamics):
     sol = ocp.solve(solver)
     n_frames = 100
     n_shooting = [20, 30, 20]
+
+    states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
     sol_interp = sol.interpolate([n_frames, n_frames, n_frames])
     shapes = (3, 3)
 
     decimal = 2 if ode_solver == OdeSolver.COLLOCATION else 8
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
-    for i, key in enumerate(sol.states[0]):
+    for i, key in enumerate(states[0]):
         np.testing.assert_almost_equal(
-            sol_interp[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
+            sol_interp[i][key][:, [0, -1]], states[i][key][:, [0, -1]], decimal=decimal
         )
         assert sol_interp[i][key].shape == (shapes[i], n_frames)
-        assert sol.states[i][key].shape == (shapes[i], (n_shooting [i] * n_steps) + 1)
+        assert states[i][key].shape == (shapes[i], (n_shooting [i] * n_steps) + 1)
 
     with pytest.raises(
         ValueError,
@@ -200,16 +208,18 @@ def test_interpolate_multiphases_merge_phase(phase_dynamics):
     sol = ocp.solve(solver)
     n_frames = 100
     n_shooting = [20, 30, 20]
+
+    states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
     sol_interp = sol.interpolate(n_frames)
     shapes = (3, 3)
 
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
-    for i, key in enumerate(sol.states[0]):
-        expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
+    for i, key in enumerate(states[0]):
+        expected = np.array([states[0][key][:, 0], states[-1][key][:, -1]]).T
         np.testing.assert_almost_equal(sol_interp[key][:, [0, -1]], expected)
 
         assert sol_interp[key].shape == (shapes[i], n_frames)
-        assert sol.states[i][key].shape == (shapes[i], (n_shooting[i] * n_steps) + 1)
+        assert states[i][key].shape == (shapes[i], (n_shooting[i] * n_steps) + 1)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -248,18 +258,20 @@ def test_integrate(integrator, ode_solver, phase_dynamics):
             sol.integrate(**opts)
         return
 
+    states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
     sol_integrated = sol.integrate(**opts, to_merge=SolutionMerge.NODES)
     for key in sol_integrated.keys():
-        assert np.shape(sol_integrated[key])[1] == np.shape(sol.times)[0]
+        assert np.shape(sol_integrated[key])[1] == np.shape(sol.stepwise_time(to_merge=SolutionMerge.NODES))[0]
 
     shapes = (2, 2)
     decimal = 5 if integrator != SolutionIntegrator.OCP else 8
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
-    for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(sol_integrated[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal)
+
+    for i, key in enumerate(states.keys()):
+        np.testing.assert_almost_equal(sol_integrated[key][:, [0, -1]], states[key][:, [0, -1]], decimal=decimal)
 
         assert sol_integrated[key].shape == (shapes[i], n_shooting * n_steps + 1)
-        assert sol.states[key].shape == (shapes[i], n_shooting * n_steps + 1)
+        assert states[key].shape == (shapes[i], n_shooting * n_steps + 1)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -298,18 +310,20 @@ def test_integrate_single_shoot(keep_intermediate_points, ode_solver, phase_dyna
             sol.integrate(**opts)
         return
 
+    states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
     sol_integrated = sol.integrate(**opts, to_merge=SolutionMerge.NODES)
+    time = sol.stepwise_time(to_merge=SolutionMerge.NODES)
     for key in sol_integrated.keys():
-        assert np.shape(sol_integrated[key])[1] == np.shape(sol.times)[0]
+        assert np.shape(sol_integrated[key])[1] == np.shape(time)[0]
 
     shapes = (2, 2)
     decimal = 1
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
-    for i, key in enumerate(sol.states):
-        np.testing.assert_almost_equal(sol_integrated[key][:, [0, -1]], sol.states[key][:, [0, -1]], decimal=decimal)
+    for i, key in enumerate(states):
+        np.testing.assert_almost_equal(sol_integrated[key][:, [0, -1]], states[key][:, [0, -1]], decimal=decimal)
 
         assert sol_integrated[key].shape == (shapes[i], n_shooting * n_steps + 1)
-        assert sol.states[key].shape == (shapes[i], n_shooting * n_steps + 1)
+        assert states[key].shape == (shapes[i], n_shooting * n_steps + 1)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -343,9 +357,11 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
 
     opts = {"integrator": SolutionIntegrator.SCIPY_RK45, "shooting_type": Shooting.SINGLE}
 
+    states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
     sol_integrated = sol.integrate(**opts, to_merge=SolutionMerge.NODES)
+    time = sol.stepwise_time(to_merge=SolutionMerge.NODES)
     for key in sol_integrated.keys():
-        assert np.shape(sol_integrated[key])[1] == np.shape(sol.times)[0]
+        assert np.shape(sol_integrated[key])[1] == np.shape(time)[0]
 
     decimal = 1
     if ode_solver == OdeSolver.RK4:
@@ -449,8 +465,8 @@ def test_integrate_single_shoot_use_scipy(keep_intermediate_points, ode_solver, 
 
     if ode_solver == OdeSolver.COLLOCATION:
         b = bool(1)
-        for i, key in enumerate(sol.states):
-            b = b * sol.states[key].shape == (shapes[i], n_shooting * 5 + 1)
+        for i, key in enumerate(states):
+            b = b * states[key].shape == (shapes[i], n_shooting * 5 + 1)
         assert b
 
 
@@ -510,17 +526,18 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dyna
             sol.integrate(**opts)
         return
 
+    states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
     sol_integrated = sol.integrate(**opts)
     for key in sol_integrated.keys():
-        assert np.shape(sol_integrated[key])[1] == np.shape(sol.times)[0]
+        assert np.shape(sol_integrated[key])[1] == np.shape(sol.stepwise_time(to_merge=SolutionMerge.NODES))[0]
 
     shapes = (2, 2)
     decimal = 0 if integrator != SolutionIntegrator.OCP or ode_solver == OdeSolver.COLLOCATION else 8
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
-    np.testing.assert_almost_equal(sol_integrated["q"][:, [0, -1]], sol.states["q"][:, [0, -1]], decimal=decimal)
-    for i, key in enumerate(sol.states):
+    np.testing.assert_almost_equal(sol_integrated["q"][:, [0, -1]], states["q"][:, [0, -1]], decimal=decimal)
+    for i, key in enumerate(states.keys()):
         assert sol_integrated[key].shape == (shapes[i], n_shooting * n_steps + 1)
-        assert sol.states[key].shape == (shapes[i], n_shooting * n_steps + 1)
+        assert states[key].shape == (shapes[i], n_shooting * n_steps + 1)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -559,6 +576,7 @@ def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, 
             sol.integrate(**opts)
         return
 
+    states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
     sol_integrated = sol.integrate(**opts)
     shapes = (3, 3)
     states_shape_sum = 0
@@ -566,24 +584,25 @@ def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, 
     for i in range(len(sol_integrated)):
         for key in sol_integrated[i].keys():
             states_shape_sum += np.shape(sol_integrated[i][key])[1]
-    for t in sol.times:
+    time = sol.stepwise_time(to_merge=SolutionMerge.NODES)
+    for t in time:
         time_shape_sum += t.shape[0] * 2  # For q and qdot
     assert states_shape_sum == time_shape_sum
 
     decimal = 1 if integrator != SolutionIntegrator.OCP else 8
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
     for i in range(len(sol_integrated)):
-        for k, key in enumerate(sol.states[i]):
+        for k, key in enumerate(states[i]):
             if integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE:
                 np.testing.assert_almost_equal(
-                    sol_integrated[i][key][:, [0, -1]], sol.states[i][key][:, [0, -1]], decimal=decimal
+                    sol_integrated[i][key][:, [0, -1]], states[i][key][:, [0, -1]], decimal=decimal
                 )
 
             if ode_solver != OdeSolver.COLLOCATION and (integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE):
-                np.testing.assert_almost_equal(sol_integrated[i][key], sol.states[i][key])
+                np.testing.assert_almost_equal(sol_integrated[i][key], states[i][key])
 
             assert sol_integrated[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
-            assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
+            assert states[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
 
 
 def test_check_models_comes_from_same_super_class():
@@ -657,20 +676,18 @@ def test_integrate_multiphase_merged(shooting, keep_intermediate_points, integra
         return
 
     n_shooting = [20, 30, 20]
+    states = sol.stepwise_states(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES])
     sol_integrated = sol.integrate(**opts)
 
     for key in sol_integrated.keys():
-        assert np.shape(sol_integrated[key])[1] == sol.stepwise_times(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES]).shape[0]
+        assert np.shape(sol_integrated[key])[1] == sol.stepwise_time(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES]).shape[0]
 
     shapes = (3, 3)
     decimal = 0 if integrator != SolutionIntegrator.OCP else 8
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
-    for k, key in enumerate(sol.states[0]):
-        expected = np.array([sol.states[0][key][:, 0], sol.states[-1][key][:, -1]]).T
+    for k, key in enumerate(states):
+        expected = np.array([states[key][:, 0], states[key][:, -1]]).T
         np.testing.assert_almost_equal(sol_integrated[key][:, [0, -1]], expected, decimal=decimal)
 
         assert sol_integrated[key].shape == (shapes[k], sum(n_shooting) * n_steps + 3)
-        
-    for i in range(len(sol_integrated)):
-        for k, key in enumerate(sol.states[i]):
-            assert sol.states[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
+        assert states[key].shape == (shapes[k], sum(n_shooting) * n_steps + 3)

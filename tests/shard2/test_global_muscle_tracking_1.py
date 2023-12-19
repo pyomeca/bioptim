@@ -6,7 +6,7 @@ import pytest
 import platform
 
 import numpy as np
-from bioptim import OdeSolver, PhaseDynamics, BiorbdModel
+from bioptim import OdeSolver, PhaseDynamics, BiorbdModel, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -71,7 +71,9 @@ def test_muscle_activation_no_residual_torque_and_markers_tracking(ode_solver, p
         np.testing.assert_almost_equal(g, np.zeros((20, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, mus = sol.states["q"], sol.states["qdot"], sol.controls["muscles"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, mus = states["q"], states["qdot"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(f[0, 0], 4.162211328576168e-09)

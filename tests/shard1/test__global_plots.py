@@ -149,7 +149,7 @@ def test_plot_graphs_for_implicit_constraints(rigidbody_dynamics, phase_dynamics
         final_time=1,
         rigidbody_dynamics=rigidbody_dynamics,
         phase_dynamics=phase_dynamics,
-        expand_dynamics=True,
+        expand_dynamics=False,
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()

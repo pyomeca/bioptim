@@ -197,7 +197,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         real_time = perf_counter() - real_time
 
         # Prepare the modified ocp that fits the solution dimension
-        dt = sol.t_spans[0][-1]
+        dt = sol.t_span[0][-1]
         final_sol = self._initialize_solution(float(dt), states, controls)
         final_sol.solver_time_to_optimize = total_time
         final_sol.real_time_to_optimize = real_time
@@ -309,6 +309,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         return True
 
     def advance_window_initial_guess_controls(self, sol, **advance_options):
+        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
         for key in self.nlp[0].u_init.keys():
             self.nlp[0].controls.node_index = 0
 
@@ -316,12 +317,12 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                 # Override the previous u_init
                 self.nlp[0].u_init.add(
                     key,
-                    np.ndarray((sol.controls[key].shape[0], self.nlp[0].n_controls_nodes)),
+                    np.ndarray((controls[key].shape[0], self.nlp[0].n_controls_nodes)),
                     interpolation=InterpolationType.EACH_FRAME,
                     phase=0,
                 )
                 self.nlp[0].u_init[key].check_and_adjust_dimensions(len(self.nlp[0].controls[key]), self.nlp[0].n_controls_nodes - 1)
-            self.nlp[0].u_init[key].init[:, :] = np.concatenate((sol.controls[key][:, 1:], sol.controls[key][:, -1][:, np.newaxis]), axis=1)
+            self.nlp[0].u_init[key].init[:, :] = np.concatenate((controls[key][:, 1:], controls[key][:, -1][:, np.newaxis]), axis=1)
         return True
 
     def export_data(self, sol) -> tuple:
@@ -331,14 +332,14 @@ class RecedingHorizonOptimization(OptimalControlProgram):
         states = {}
         controls = {}
 
-        for key in sol.states:
+        for key in self.nlp[0].states.keys():
             states[key] = merged_states[key][:, self.frame_to_export]
 
         frames = self.frame_to_export
         if frames.stop is not None and frames.stop == self.nlp[0].n_controls_nodes:
             if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 frames = slice(self.frame_to_export.start, self.frame_to_export.stop - 1)
-        for key in sol.controls:
+        for key in self.nlp[0].controls.keys():
             controls[key] = merged_controls[key][:, frames]
         return states, controls
 
@@ -434,6 +435,21 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             export_options=export_options,
             **extra_options,
         )
+    
+    def export_data(self, sol) -> tuple:
+        states, controls = super(CyclicRecedingHorizonOptimization, self).export_data(sol)
+        
+        frames = self.frame_to_export
+        if frames is not None and frames.stop != self.nlp[0].n_controls_nodes:
+            # The "not" conditions are there because if they are true, super() already avec done it. 
+            # Otherwise since it is cyclic it should always be done anyway
+            if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
+                frames = slice(self.frame_to_export.start, self.frame_to_export.stop - 1)
+            
+            for key in self.nlp[0].controls.keys():
+                controls[key] = controls[key][:, frames]
+            
+        return states, controls
 
     def _initialize_solution(self, dt: float, states: list, controls: list):
         x_init = InitialGuessList()
@@ -497,11 +513,6 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
                 self.nlp[0].x_bounds[key].min[s, 2] = states[key][s, t] - range_of_motion * 0.01
                 self.nlp[0].x_bounds[key].max[s, 2] = states[key][s, t] + range_of_motion * 0.01
 
-    @staticmethod
-    def _append_current_solution(sol: Solution, states: list, controls: list):
-        states.append(sol.states["all"][:, :-1])
-        controls.append(sol.controls["all"][:, :-1])
-
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
         super(CyclicRecedingHorizonOptimization, self).advance_window(sol, steps, **advance_options)
         if self.ocp_solver.opts.type == SolverType.IPOPT:
@@ -530,19 +541,21 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         return True
 
     def advance_window_initial_guess_controls(self, sol, **advance_options):
-        for key in sol.controls.keys():
+        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+
+        for key in self.nlp[0].controls.keys():
             self.nlp[0].controls.node_index = 0
 
             if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
                 self.nlp[0].u_init.add(
                     key,
-                    np.ndarray((sol.controls[key].shape[0], self.nlp[0].n_controls_nodes)),
+                    np.ndarray((controls[key].shape[0], self.nlp[0].n_controls_nodes)),
                     interpolation=InterpolationType.EACH_FRAME,
                     phase=0,
                 )
                 self.nlp[0].u_init[key].check_and_adjust_dimensions(len(self.nlp[0].controls[key]), self.nlp[0].n_controls_nodes - 1)
 
-            self.nlp[0].u_init[key].init[:, :] = sol.controls[key][:, :]
+            self.nlp[0].u_init[key].init[:, :] = controls[key][:, :]
         return True
 
 
@@ -608,13 +621,15 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             self.nlp[0].x_init[key].init[:, :] = states[key][:, self.initial_guess_frames]
 
     def advance_window_initial_guess_controls(self, sol, **advance_options):
-        for key in sol.controls.keys():
+        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+
+        for key in self.nlp[0].controls.keys():
             self.nlp[0].controls.node_index = 0
             
             if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
                 self.nlp[0].u_init.add(
                     key,
-                    np.ndarray((sol.controls[key].shape[0], self.nlp[0].n_controls_nodes)),
+                    np.ndarray((controls[key].shape[0], self.nlp[0].n_controls_nodes)),
                     interpolation=InterpolationType.EACH_FRAME,
                     phase=0,
                 )
@@ -626,7 +641,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                 frames = self.initial_guess_frames
             else:
                 raise NotImplementedError(f"Control type {self.nlp[0].control_type} is not implemented yet")
-            self.nlp[0].u_init[key].init[:, :] = sol.controls[key][:, frames]
+            self.nlp[0].u_init[key].init[:, :] = controls[key][:, frames]
 
     def solve(
         self,
@@ -660,13 +675,13 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
             for sol in solution[1]:
                 _states, _controls = self.export_cycles(sol)
-                dt = float(sol.t_spans[0][-1])
+                dt = float(sol.t_span[0][-1])
                 cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls))
 
         if cycle_solutions == MultiCyclicCycleSolutions.ALL_CYCLES:
             for cycle_number in range(1, self.n_cycles):
                 _states, _controls = self.export_cycles(solution[1][-1], cycle_number=cycle_number)
-                dt = float(sol.t_spans[0][-1])
+                dt = float(sol.t_span[0][-1])
                 cycle_solutions_output.append(self._initialize_one_cycle(dt, _states, _controls))
 
         if cycle_solutions in (MultiCyclicCycleSolutions.FIRST_CYCLES, MultiCyclicCycleSolutions.ALL_CYCLES):
@@ -683,12 +698,12 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
         states = {}
         controls = {}
         window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len + 1)
-        for key in sol.states.keys():
+        for key in self.nlp[0].states.keys():
             states[key] = decision_states[key][:, window_slice]
 
         if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
             window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len )
-        for key in sol.controls.keys():
+        for key in self.nlp[0].controls.keys():
             controls[key] = decision_controls[key][:, window_slice]
             
         return states, controls

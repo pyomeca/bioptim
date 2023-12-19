@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 from casadi import vertcat, DM
 from matplotlib import pyplot as plt
 
-from .solution_data import SolutionData, SolutionMerge
+from .solution_data import SolutionData, SolutionMerge, TimeAlignment
 from ..optimization_vector import OptimizationVectorHelper
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
@@ -159,9 +159,6 @@ class Solution:
         if self.vector is not None:
             self.phases_dt = OptimizationVectorHelper.extract_phase_dt(ocp, vector)
             self._stepwise_times = OptimizationVectorHelper.extract_step_times(ocp, vector)
-            self._decision_times = [
-                [vertcat(t[0], t[-1]) for t in self._stepwise_times[p]] for p in range(self.ocp.n_phases)
-            ]
             
             x, u, p, s = OptimizationVectorHelper.to_dictionaries(ocp, vector)
             self._decision_states = SolutionData.from_scaled(ocp, x, "x")
@@ -235,7 +232,7 @@ class Solution:
                 "an InitialGuess[List] of len 4 (states, controls, parameters, stochastic_variables), "
                 "or a None"
             )
-        if sum([len(s) != len(all_ns) if p != 3 else False for p, s in enumerate(sol)]) != 0:
+        if sum([len(s) != len(all_ns) if p != 4 else False for p, s in enumerate(sol)]) != 0:
             raise ValueError("The InitialGuessList len must match the number of phases")
         if n_param != 0:
             if len(sol) != 3 and len(sol[3]) != 1 and sol[3][0].shape != (n_param, 1):
@@ -333,86 +330,78 @@ class Solution:
         return cls(ocp=ocp)
 
     @property
-    def times(self):
-        """
-        Returns the time vector at each phase
-
-        Returns
-        -------
-        The time vector
-        """
-
-        out = deepcopy(self._stepwise_times)
-        for p in range(len(out)):
-            out[p] = np.concatenate(out[p])[:, 0]
-        return out if len(out) > 1 else out[0]
-
-    def phase_times(self, t_span: bool = False) -> list:
-        """
-        Returns the time vector at each node
-
-        Parameters
-        ----------
-        t_span: bool
-            If the time vector should correspond to stepwise_states (False) or to t_span (True). If you don't know what
-            it means, you probably want the stepwise_states (False) version.
-
-        Returns
-        -------
-        The time vector
-        """
-
-        out = deepcopy(self._decision_times if t_span else self._stepwise_times)
-        return out if len(out) > 1 else out[0]
+    def _t_span(self):
+        return [[vertcat(t[0], t[-1]) for t in self._stepwise_times[p]] for p in range(self.ocp.n_phases)]
 
     @property
-    def t_spans(self):
+    def t_span(self):
         """
-        Returns the time vector at each node
+        Returns the time span at each node of each phases
         """
-        return self.phase_times(t_span=True)
-    
-    def stepwise_times(self, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
-        """
-        Returns the time vector at each node
-        """
-        if to_merge is None:
-            return self.phase_times(t_span=False)
-        
-        if isinstance(to_merge, SolutionMerge):
-            to_merge = [to_merge]
+        out = self._t_span
+        return out if len(out) > 1 else out[0]
 
-        t = self.phase_times(t_span=False)
-        if not isinstance(t, list):
-            t = [t]
+    def decision_time(
+            self, 
+            to_merge: SolutionMerge | list[SolutionMerge, ...] = None, 
+            time_alignment: TimeAlignment = TimeAlignment.STATES
+        ) -> list | np.ndarray:
+        """
+        Returns the time vector at each node
+        """
+
+        if time_alignment != TimeAlignment.STATES:
+            raise NotImplementedError("Only TimeAlignment.STATES is implemented for now")
+
+        time = []
+        for nlp in self.ocp.nlp:
+            if nlp.ode_solver.is_direct_collocation:
+                time.append(self._stepwise_times[nlp.phase_idx])
+            else:
+                time.append(self._t_span[nlp.phase_idx])
+
+        return self._process_time_vector(time, to_merge=to_merge, time_alignment=time_alignment)
+    
+    def stepwise_time(
+            self, 
+            to_merge: SolutionMerge | list[SolutionMerge, ...] = None, 
+            time_alignment: TimeAlignment = TimeAlignment.STATES
+        ) -> list | np.ndarray:
+        """
+        Returns the time vector at each node
+        """
+
+        return self._process_time_vector(self._stepwise_times, to_merge=to_merge, time_alignment=time_alignment)
+        
+    def _process_time_vector(
+            self,
+            times, 
+            to_merge: SolutionMerge | list[SolutionMerge, ...],
+            time_alignment: TimeAlignment
+        ):
+
+        if time_alignment != TimeAlignment.STATES:
+            raise NotImplementedError("Only TimeAlignment.STATES is implemented for now")
+        
+        if to_merge is None or isinstance(to_merge, SolutionMerge):
+            to_merge = [to_merge]
+        
+        # Make sure to not return internal structure
+        times = deepcopy(times)
+
         if SolutionMerge.NODES in to_merge:
-            for phase_idx in range(len(t)):
-                t[phase_idx] = np.concatenate(t[phase_idx])
+            for phase_idx in range(len(times)):
+                times[phase_idx] = np.concatenate(times[phase_idx])
 
         if SolutionMerge.PHASES in to_merge and SolutionMerge.NODES not in to_merge:
             raise ValueError("Cannot merge phases without nodes")
         
         if SolutionMerge.PHASES in to_merge:
             # NODES is necessarily in to_merge if PHASES is in to_merge
-            t = np.concatenate(t)
+            times = np.concatenate(times)
         
-        return t
+        return times if len(times) > 1 else times[0]
         
-
-    @property
-    def states(self):
-        if self._stepwise_states is None:
-            self._integrate_stepwise()
-        
-        out = self._stepwise_states.to_dict(to_merge=SolutionMerge.NODES, scaled=False)
-        # TODO automatically remove redundant time stamps?
-        return out if len(out) > 1 else out[0]
-    
-    @property
-    def controls(self):
-        out = self._stepwise_controls.to_dict(to_merge=SolutionMerge.NODES, scaled=False)
-        return out if len(out) > 1 else out[0]
-
     def decision_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
         """
         Returns the decision states
@@ -584,7 +573,6 @@ class Solution:
 
         new.phases_dt = deepcopy(self.phases_dt)
         new._stepwise_times = deepcopy(self._stepwise_times)
-        new._decision_times = deepcopy(self._decision_times)
 
         if not skip_data:
             new._decision_states = deepcopy(self._decision_states)
@@ -629,11 +617,9 @@ class Solution:
         out: list = [None] * len(self.ocp.nlp)
         integrated_sol = None
         for p, nlp in enumerate(self.ocp.nlp):
-            t = self._decision_times[p]
-
             next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, s)
             integrated_sol = solve_ivp_interface(
-                shooting_type=shooting_type, nlp=nlp, t=t, x=next_x, u=u[p], s=s[p], p=params, method=integrator
+                shooting_type=shooting_type, nlp=nlp, t=self._t_span[p], x=next_x, u=u[p], s=s[p], p=params, method=integrator
             )
         
             out[p] = {}
@@ -693,7 +679,6 @@ class Solution:
 
         penalty = self.ocp.phase_transitions[phase_idx - 1]
 
-        times = DM([t[-1] for t in self._stepwise_times])
         t0 = PenaltyHelpers.t0()
         dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
         # Compute the error between the last state of the previous phase and the first state of the next phase
@@ -731,10 +716,15 @@ class Solution:
 
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
-            t = self._decision_times[p]
-
             integrated_sol = solve_ivp_interface(
-                shooting_type=Shooting.MULTIPLE, nlp=nlp, t=t, x=x[p], u=u[p], s=s[p], p=params, method=SolutionIntegrator.OCP,
+                shooting_type=Shooting.MULTIPLE, 
+                nlp=nlp,
+                t=self._t_span[p], 
+                x=x[p], 
+                u=u[p], 
+                s=s[p], 
+                p=params, 
+                method=SolutionIntegrator.OCP,
             )
             
             unscaled[p] = {}

@@ -17,6 +17,7 @@ from bioptim import (
     OdeSolverBase,
     Node,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 from tests.utils import TestUtils
@@ -159,7 +160,9 @@ def test_track_and_minimize_marker_displacement_global(ode_solver, phase_dynamic
     np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0.37791617, 3.70167396, 10.0, 10.0]), decimal=2)
@@ -204,7 +207,9 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.07221334, -0.4578082, -3.00436948, 1.57079633]))
@@ -250,7 +255,9 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([7.18708669e-01, -4.45703930e-01, -3.14159262e00, 0]))
@@ -305,7 +312,9 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dy
         np.testing.assert_almost_equal(g, np.zeros((40, 1)))
 
         # Check some of the results
-        q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+        q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
         # initial and final position
         np.testing.assert_almost_equal(q[2:, 0], np.array([-3.14159264, 0]))

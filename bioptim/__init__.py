@@ -218,7 +218,7 @@ from .optimization.receding_horizon_optimization import (
 )
 from .optimization.parameters import ParameterList
 from .optimization.solution.solution import Solution
-from .optimization.solution.solution_data import SolutionMerge
+from .optimization.solution.solution_data import SolutionMerge, TimeAlignment
 from .optimization.optimization_variable import OptimizationVariableList
 from .optimization.variable_scaling import VariableScalingList, VariableScaling
 from .optimization.variational_optimal_control_program import VariationalOptimalControlProgram

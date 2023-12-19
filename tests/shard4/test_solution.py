@@ -2,7 +2,7 @@ import os
 
 import pytest
 import numpy as np
-from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, ControlType, PhaseDynamics
+from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, ControlType, PhaseDynamics, SolutionMerge
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -207,12 +207,9 @@ def test_generate_time(ode_solver, merge_phase, keep_intermediate_points, shooti
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION])
 @pytest.mark.parametrize("merge_phase", [True, False])
-@pytest.mark.parametrize("keep_intermediate_points", [True, False])
 @pytest.mark.parametrize("shooting_type", [Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE, Shooting.MULTIPLE])
 @pytest.mark.parametrize("integrator", [SolutionIntegrator.OCP, SolutionIntegrator.SCIPY_RK45])
-def test_generate_integrate(
-    ode_solver, merge_phase, keep_intermediate_points, shooting_type, integrator, phase_dynamics
-):
+def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, phase_dynamics):
     # Load slider
     from bioptim.examples.torque_driven_ocp import slider as ocp_module
 
@@ -232,19 +229,7 @@ def test_generate_integrate(
     solver.set_print_level(0)
     sol = ocp.solve(solver=solver)
 
-    if shooting_type == Shooting.MULTIPLE and keep_intermediate_points is False:
-        with pytest.raises(
-            ValueError,
-            match="shooting_type=Shooting.MULTIPLE and keep_intermediate_points=False cannot be used simultaneously."
-            "When using multiple shooting, the intermediate points should be kept",
-        ):
-            sol.integrate(
-                shooting_type=shooting_type,
-                merge_phases=merge_phase,
-                keep_intermediate_points=keep_intermediate_points,
-                integrator=integrator,
-            )
-    elif ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
+    if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
             ValueError,
             match="When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
@@ -254,48 +239,47 @@ def test_generate_integrate(
         ):
             sol.integrate(
                 shooting_type=shooting_type,
-                merge_phases=merge_phase,
-                keep_intermediate_points=keep_intermediate_points,
+                to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES if merge_phase else None],
                 integrator=integrator,
             )
 
     else:
         integrated_sol = sol.integrate(
             shooting_type=shooting_type,
-            merge_phases=merge_phase,
-            keep_intermediate_points=keep_intermediate_points,
+            to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES if merge_phase else None],
             integrator=integrator,
         )
 
-        merged_sol = sol.merge_phases()
-
-        np.testing.assert_equal(merged_sol.time.shape, merged_sol.states["q"][0, :].shape)
+        time = sol.stepwise_times(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES if merge_phase else None])
+        
         if merge_phase:
-            np.testing.assert_almost_equal(integrated_sol.time.shape, integrated_sol.states["q"][0, :].shape)
+            merged_sol = sol.stepwise_states(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES])
+            np.testing.assert_equal(time.shape[0], merged_sol["q"][0, :].shape[0])
+            np.testing.assert_almost_equal(time.shape[0], integrated_sol["q"][0, :].shape[0])
         else:
-            for t, state in zip(integrated_sol.time, integrated_sol.states):
+            for t, state in zip(time, integrated_sol):
                 np.testing.assert_almost_equal(t.shape, state["q"][0, :].shape)
 
         if shooting_type == Shooting.SINGLE and merge_phase is False:
-            np.testing.assert_almost_equal(integrated_sol.states[0]["q"][0, -1], integrated_sol.states[1]["q"][0, 0])
-            np.testing.assert_almost_equal(integrated_sol.states[1]["q"][0, -1], integrated_sol.states[2]["q"][0, 0])
+            np.testing.assert_almost_equal(integrated_sol[0]["q"][0, -1], integrated_sol[1]["q"][0, 0])
+            np.testing.assert_almost_equal(integrated_sol[1]["q"][0, -1], integrated_sol[2]["q"][0, 0])
 
         import matplotlib.pyplot as plt
 
         plt.figure()
 
-        plt.plot(merged_sol.time, merged_sol.states["q"][0, :], label="merged", marker=".")
+        plt.plot(time, merged_sol["q"][0, :], label="merged", marker=".")
         if merge_phase:
             plt.plot(
-                integrated_sol.time,
-                integrated_sol.states["q"][0, :],
+                time,
+                integrated_sol["q"][0, :],
                 label="integrated by bioptim",
                 marker=".",
                 alpha=0.5,
                 markersize=5,
             )
         else:
-            for t, state in zip(integrated_sol.time, integrated_sol.states):
+            for t, state in zip(time, integrated_sol):
                 plt.plot(t[:, np.newaxis], state["q"].T, label="integrated by bioptim", marker=".")
 
         plt.legend()
@@ -303,7 +287,6 @@ def test_generate_integrate(
         plt.vlines(0.5, -1, 1, color="black", linestyle="--")
 
         plt.title(
-            f"keep_intermediate={keep_intermediate_points},\n"
             f" merged={merge_phase},\n"
             f" ode_solver={ode_solver},\n"
             f" integrator={integrator},\n"

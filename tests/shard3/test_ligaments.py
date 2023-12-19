@@ -15,6 +15,7 @@ from bioptim import (
     VariableScalingList,
     ParameterList,
     PhaseDynamics,
+    SolutionMerge,
 )
 from tests.utils import TestUtils
 import os
@@ -313,7 +314,9 @@ def test_ocp_mass_ligament(rigidbody_dynamics, phase_dynamics):
     sol = ocp.solve(solver)
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         # initial and final position

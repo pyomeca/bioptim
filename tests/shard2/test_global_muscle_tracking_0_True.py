@@ -6,7 +6,7 @@ import pytest
 import platform
 
 import numpy as np
-from bioptim import OdeSolver, Solver, BiorbdModel, PhaseDynamics
+from bioptim import OdeSolver, Solver, BiorbdModel, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -80,7 +80,9 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         np.testing.assert_almost_equal(g, np.zeros((20, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(f[0, 0], 8.776096413864758e-09)

@@ -55,9 +55,7 @@ def solve_ivp_interface(
 
         # If multiple shooting, we need to set the first x0, otherwise use the previous answer
         x0i = np.array(x[node] if node == 0 or shooting_type == Shooting.MULTIPLE else y[-1][:, -1])
-        if len(x0i.shape) > 1:
-            x0i = x0i[:, 0]
-
+        
         if method == SolutionIntegrator.OCP:
             result = _solve_ivp_bioptim_interface(
                 lambda t, x: nlp.dynamics[node](t, x, u[node], p, s[node])[1], 
@@ -72,6 +70,10 @@ def solve_ivp_interface(
             SolutionIntegrator.SCIPY_BDF, 
             SolutionIntegrator.SCIPY_LSODA
         ):
+            # Prevent from integrating collocation points
+            if len(x0i.shape) > 1:
+                x0i = x0i[:, 0]
+
             func = nlp.dynamics_func[0] if len(nlp.dynamics_func) == 1 else nlp.dynamics_func[node]
             result = _solve_ivp_scipy_interface(
                 lambda t, x: np.array(func(t, x, _control_function(control_type, t, t_span, u[node]), p, s[node]))[:, 0], 

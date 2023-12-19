@@ -13,6 +13,15 @@ class SolutionMerge(Enum):
     ALL = auto()
 
 
+class TimeAlignment(Enum):
+    """
+    With which decision variable the time is aligned with
+    """
+    
+    STATES = auto()
+    CONTROLS = auto()
+
+
 class SolutionData:
     def __init__(self, unscaled, scaled, n_nodes: list[int, ...]):
         """

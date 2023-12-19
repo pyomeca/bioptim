@@ -1,6 +1,6 @@
 import pytest
 import numpy as np
-from bioptim import Solver, PhaseDynamics
+from bioptim import Solver, PhaseDynamics, SolutionMerge
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -31,7 +31,8 @@ def test_custom_model(phase_dynamics):
     solver.set_maximum_iterations(2)
     sol = ocp.solve(solver=solver)
 
-    np.testing.assert_almost_equal(sol.states["q"][0, 0], np.array([0]))
-    np.testing.assert_almost_equal(sol.states["q"][0, -1], np.array([3.14]))
-    np.testing.assert_almost_equal(sol.states["qdot"][0, 0], np.array([0]))
-    np.testing.assert_almost_equal(sol.states["qdot"][0, -1], np.array([0]))
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    np.testing.assert_almost_equal(states["q"][0, 0], np.array([0]))
+    np.testing.assert_almost_equal(states["q"][0, -1], np.array([3.14]))
+    np.testing.assert_almost_equal(states["qdot"][0, 0], np.array([0]))
+    np.testing.assert_almost_equal(states["qdot"][0, -1], np.array([0]))

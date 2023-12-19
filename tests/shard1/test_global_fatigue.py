@@ -3,7 +3,7 @@ import os
 
 import pytest
 import numpy as np
-from bioptim import OdeSolver, Solver, PhaseDynamics
+from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -39,7 +39,8 @@ def test_xia_fatigable_muscles(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((552, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, ma, mr, mf = states["q"], states["qdot"], states["muscles_ma"], states["muscles_mr"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -114,7 +115,8 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((552, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, ma, mr, mf = states["q"], states["qdot"], states["muscles_ma"], states["muscles_mr"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -227,7 +229,8 @@ def test_effort_fatigable_muscles(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((252, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, mf = states["q"], states["qdot"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -330,7 +333,8 @@ def test_fatigable_xia_torque_split(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((160, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot = states["q"], states["qdot"]
     ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
     ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
@@ -399,7 +403,8 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((160, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot = states["q"], states["qdot"]
     ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
     ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
@@ -505,7 +510,8 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((200, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot = states["q"], states["qdot"]
     ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
     ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]

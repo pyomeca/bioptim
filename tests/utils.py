@@ -72,22 +72,28 @@ class TestUtils:
         solver.set_maximum_iterations(0)
         solver.set_initialization_options(1e-10)
 
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    
         sol_warm_start = ocp.solve(solver)
+        warm_start_states = sol_warm_start.decision_states(to_merge=SolutionMerge.NODES)
+        warm_start_controls = sol_warm_start.decision_controls(to_merge=SolutionMerge.NODES)
         if ocp.n_phases > 1:
             for i in range(ocp.n_phases):
-                for key in sol.states[i]:
+                for key in states[i]:
                     np.testing.assert_almost_equal(
-                        sol_warm_start.states[i][key], sol.states[i][key], decimal=state_decimal
+                        warm_start_states[i][key], states[i][key], decimal=state_decimal
                     )
-                for key in sol.controls[i]:
+                for key in controls[i]:
                     np.testing.assert_almost_equal(
-                        sol_warm_start.controls[i][key], sol.controls[i][key], decimal=control_decimal
+                        warm_start_controls[i][key], controls[i][key], decimal=control_decimal
                     )
         else:
-            for key in sol.states:
-                np.testing.assert_almost_equal(sol_warm_start.states[key], sol.states[key], decimal=state_decimal)
-            for key in sol.controls:
-                np.testing.assert_almost_equal(sol_warm_start.controls[key], sol.controls[key], decimal=control_decimal)
+            for key in states:
+                np.testing.assert_almost_equal(warm_start_states[key], states[key], decimal=state_decimal)
+            for key in controls:
+                np.testing.assert_almost_equal(warm_start_controls[key], controls[key], decimal=control_decimal)
+
         for key in sol_warm_start.parameters.keys():
             np.testing.assert_almost_equal(sol_warm_start.parameters[key], sol.parameters[key], decimal=param_decimal)
 

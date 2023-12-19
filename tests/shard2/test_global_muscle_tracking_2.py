@@ -5,7 +5,7 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver, BiorbdModel
+from bioptim import OdeSolver, BiorbdModel, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -56,13 +56,10 @@ def test_muscle_excitation_with_torque_and_markers_tracking(ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((50, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, mus_states, tau, mus_controls = (
-        sol.states["q"],
-        sol.states["qdot"],
-        sol.states["muscles"],
-        sol.controls["tau"],
-        sol.controls["muscles"],
-    )
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, mus_states = states["q"], states["qdot"], states["muscles"]
+    tau, mus_controls = controls["tau"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(f[0, 0], 1.9423215393458834e-05)
@@ -199,12 +196,9 @@ def test_muscle_excitation_no_residual_torque_and_markers_tracking(ode_solver):
         np.testing.assert_almost_equal(g, np.zeros((50, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, mus_states, mus_controls = (
-        sol.states["q"],
-        sol.states["qdot"],
-        sol.states["muscles"],
-        sol.controls["muscles"],
-    )
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, mus_states, mus_controls = states["q"], states["qdot"], states["muscles"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(f[0, 0], 1.9426861462787857e-05)

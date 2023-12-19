@@ -24,6 +24,7 @@ from bioptim import (
     RigidBodyDynamics,
     Solution,
     PhaseDynamics,
+    SolutionMerge,
 )
 import matplotlib.pyplot as plt
 import numpy as np
@@ -180,9 +181,9 @@ def solve_ocp(
 
 def prepare_plots(sol_implicit, sol_semi_explicit, sol_explicit):
     plt.figure()
-    tau_ex = sol_explicit.controls["tau"][0, :]
-    tau_sex = sol_semi_explicit.controls["tau"][0, :]
-    tau_im = sol_implicit.controls["tau"][0, :]
+    tau_ex = sol_explicit.decision_controls(to_merge=SolutionMerge.NODES)["tau"][0, :]
+    tau_sex = sol_semi_explicit.decision_controls(to_merge=SolutionMerge.NODES)["tau"][0, :]
+    tau_im = sol_implicit.decision_controls(to_merge=SolutionMerge.NODES)["tau"][0, :]
     plt.plot(tau_ex, label="tau in explicit dynamics")
     plt.plot(tau_sex, label="tau in semi-explicit dynamics")
     plt.plot(tau_im, label="tau in implicit dynamics")
