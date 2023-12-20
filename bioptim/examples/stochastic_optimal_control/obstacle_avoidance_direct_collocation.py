@@ -168,7 +168,7 @@ def prepare_socp(
     socp_type=SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-    use_sx: bool = True,
+    use_sx: bool = False,
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
     problem_type = socp_type
 

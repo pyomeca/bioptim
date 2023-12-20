@@ -238,7 +238,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                         f"transition or supply states_mapping"
                     )
 
-                out += algebraic_states_0 - algebraic_states_i
+                out += algebraic_states_i - algebraic_states_0
 
             return out
 

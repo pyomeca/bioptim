@@ -355,6 +355,7 @@ def prepare_socp(
     sensory_noise_magnitude: cas.DM,
     force_field_magnitude: float = 0,
     example_type=ExampleType.CIRCLE,
+    use_sx: bool = False,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -384,6 +385,7 @@ def prepare_socp(
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_reference=sensory_reference,
+        use_sx=use_sx,
     )
     bio_model.force_field_magnitude = force_field_magnitude
 
@@ -592,6 +594,7 @@ def prepare_socp(
         n_threads=1,
         problem_type=SocpType.TRAPEZOIDAL_EXPLICIT(),
         integrated_value_functions=integrated_value_functions,
+        use_sx=use_sx,
     )
 
 
