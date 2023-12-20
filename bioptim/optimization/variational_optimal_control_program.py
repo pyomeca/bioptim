@@ -246,10 +246,10 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
-                    nlp.stochastic_variables.scaled.mx,
+                    nlp.algebraic_states.scaled.mx,
                 ],
                 [dynamics_dxdt],
-                ["t_span", "x", "u", "p", "s"],
+                ["t_span", "x", "u", "p", "a"],
                 ["xdot"],
             ),
         )

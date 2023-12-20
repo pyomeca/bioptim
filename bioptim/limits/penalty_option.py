@@ -298,15 +298,14 @@ class PenaltyOption(OptionGeneric):
                 f"target {self.target.shape} does not correspond to expected size {shape} for penalty {self.name}"
             )
 
-
     def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn, state_cx_scaled):
         """
         Transform the penalty fcn into the variation of fcn depending on the noise:
-            fcn = fcn(x, u, p, s) becomes d/dx(fcn) * covariance * d/dx(fcn).T
+            fcn = fcn(x, u, p, a) becomes d/dx(fcn) * covariance * d/dx(fcn).T
 
-        Please note that this is usually used to add a buffer around an equality constraint h(x, u, p, s) = 0
+        Please note that this is usually used to add a buffer around an equality constraint h(x, u, p, a) = 0
         transforming it into an inequality constraint of the form:
-            h(x, u, p, s) + sqrt(dh/dx * covariance * dh/dx.T) <= 0
+            h(x, u, p, a) + sqrt(dh/dx * covariance * dh/dx.T) <= 0
 
         Here, we chose a different implementation to avoid the discontinuity of the sqrt, we instead decompose the two
         terms, meaning that you have to declare the constraint h=0 and the "variation of h"=buffer ** 2 with
@@ -319,14 +318,14 @@ class PenaltyOption(OptionGeneric):
         n_root = controller.model.nb_root
         n_joints = nx - n_root
 
-        if "cholesky_cov" in controller.stochastic_variables.keys():
+        if "cholesky_cov" in controller.algebraic_states.keys():
             l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                controller.stochastic_variables["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
+                controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
             )
             cov_matrix = l_cov_matrix @ l_cov_matrix.T
         else:
             cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+                controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
             )
 
         jac_fcn_states = jacobian(fcn, state_cx_scaled)
@@ -435,8 +434,8 @@ class PenaltyOption(OptionGeneric):
             # Hypothesis for APPROXIMATE_TRAPEZOIDAL: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
             state_cx_start = controller.states_scaled.cx_start
-            stochastic_start_cx = controller.stochastic_variables_scaled.cx_start
-            stochastic_end_cx = controller.stochastic_variables_scaled.cx_end
+            algebraic_states_start_cx = controller.algebraic_states_scaled.cx_start
+            algebraic_states_end_cx = controller.algebraic_states_scaled.cx_end
 
             # Perform the integration to get the final subnode
             if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
@@ -455,7 +454,7 @@ class PenaltyOption(OptionGeneric):
                     x0=controller.states.cx_start, 
                     u=u_integrate, 
                     p=controller.parameters.cx, 
-                    s=controller.stochastic_variables.cx_start
+                    s=controller.algebraic_states.cx_start
                 )["xf"]
             else:
                 raise NotImplementedError(f"Integration rule {self.integration_rule} not implemented yet")
@@ -477,14 +476,14 @@ class PenaltyOption(OptionGeneric):
             # Compute the penalty function at starting and ending of the interval
             func_at_subnode = Function(
                 name, 
-                [time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, stochastic_start_cx], 
+                [time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, algebraic_states_start_cx],
                 [sub_fcn],
             )
             func_at_start = func_at_subnode(
-                time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, stochastic_start_cx
+                time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, algebraic_states_start_cx
             )
             func_at_end = func_at_subnode(
-                time_cx + dt, phases_dt_cx, state_cx_end, control_cx_end, param_cx, stochastic_end_cx
+                time_cx + dt, phases_dt_cx, state_cx_end, control_cx_end, param_cx, algebraic_states_end_cx
             )
             modified_fcn = ((func_at_start - target_cx[:, 0]) ** exponent + (func_at_end - target_cx[:, 1]) ** exponent) / 2
 
@@ -494,7 +493,7 @@ class PenaltyOption(OptionGeneric):
                 name,
                 [time_cx, phases_dt_cx, x, u, param_cx, s],
                 [(func_at_start + func_at_end) / 2],
-                ["t", "dt", "x", "u", "p", "s"],
+                ["t", "dt", "x", "u", "p", "a"],
                 ["val"], 
             )
         elif self.derivative:
@@ -507,23 +506,23 @@ class PenaltyOption(OptionGeneric):
             else: 
                 u_end = controller.controls_scaled.cx_end
             param_cx = controller.parameters.cx
-            s_start = controller.stochastic_variables_scaled.cx_start
-            s_end = controller.stochastic_variables_scaled.cx_end
+            a_start = controller.algebraic_states_scaled.cx_start
+            a_end = controller.algebraic_states_scaled.cx_end
 
             fcn_tp = self.function[node] = Function(
                 name,
-                [time_cx, phases_dt_cx, x_start, u_start, param_cx, s_start],
+                [time_cx, phases_dt_cx, x_start, u_start, param_cx, a_start],
                 [sub_fcn],
-                ["t", "dt", "x", "u", "p", "s"],
+                ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
 
-            # TODO: Charbie -> this is False, add stochastic_variables for start, mid AND end
+            # TODO: Charbie -> this is False, add algebraic_states for start, mid AND end
             self.function[node] = Function(
                 f"{name}",
                 [time_cx, phases_dt_cx, x, u, param_cx, s],
-                [fcn_tp(time_cx, phases_dt_cx, x_end, u_end, param_cx, s_end) - fcn_tp(time_cx, phases_dt_cx, x_start, u_start, param_cx, s_start)],
-                ["t", "dt", "x", "u", "p", "s"],
+                [fcn_tp(time_cx, phases_dt_cx, x_end, u_end, param_cx, a_end) - fcn_tp(time_cx, phases_dt_cx, x_start, u_start, param_cx, a_start)],
+                ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
 
@@ -535,7 +534,7 @@ class PenaltyOption(OptionGeneric):
                 name,
                 [time_cx, phases_dt_cx, x, u, param_cx, s],
                 [sub_fcn],
-                ["t", "dt", "x", "u", "p", "s"],
+                ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
 
@@ -554,7 +553,7 @@ class PenaltyOption(OptionGeneric):
             name,
             [time_cx, phases_dt_cx, x, u, param_cx, s, weight_cx, target_cx],
             [modified_fcn],
-            ["t", "dt", "x", "u", "p", "s", "weight", "target"],
+            ["t", "dt", "x", "u", "p", "a", "weight", "target"],
             ["val"],
         )
         self.weighted_function_non_threaded[node] = self.weighted_function[node]
@@ -608,9 +607,9 @@ class PenaltyOption(OptionGeneric):
 
         x = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, n_idx, sn_idx), is_constructing_penalty=True)
         u = PenaltyHelpers.controls(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_u(ocp, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
-        s = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].stochastic_variables, n_idx, sn_idx), is_constructing_penalty=True)
+        a = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].algebraic_states, n_idx, sn_idx), is_constructing_penalty=True)
 
-        return controller, x, u, s
+        return controller, x, u, a
 
     @staticmethod
     def _get_states(ocp, states, n_idx, sn_idx):
@@ -747,7 +746,7 @@ class PenaltyOption(OptionGeneric):
 
         """
 
-        def plot_function(t0, phases_dt, node_idx, x, u, p, s, penalty=None):
+        def plot_function(t0, phases_dt, node_idx, x, u, p, a, penalty=None):
             if isinstance(node_idx, (list, tuple)):
                 return self.target_to_plot[:, [self.node_idx.index(idx) for idx in node_idx]]
             else:
@@ -917,6 +916,6 @@ class PenaltyOption(OptionGeneric):
         if nlp.U is not None and (not isinstance(nlp.U, list) or nlp.U != []):
             u = [nlp.U[idx] for idx in t_idx if idx != nlp.ns]
             u_scaled = [nlp.U_scaled[idx] for idx in t_idx if idx != nlp.ns]
-        s = [nlp.S[idx] for idx in t_idx]
-        s_scaled = [nlp.S_scaled[idx] for idx in t_idx]
-        return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, s, s_scaled)
+        a = [nlp.A[idx] for idx in t_idx]
+        a_scaled = [nlp.A_scaled[idx] for idx in t_idx]
+        return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, a, a_scaled)

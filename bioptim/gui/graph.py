@@ -282,7 +282,7 @@ class OcpToConsole(GraphAbstract):
             self.ocp.nlp[phase_idx].states.node_index = 0
             self.ocp.nlp[phase_idx].states_dot.node_index = 0
             self.ocp.nlp[phase_idx].controls.node_index = 0
-            self.ocp.nlp[phase_idx].stochastic_variables.node_index = 0
+            self.ocp.nlp[phase_idx].algebraic_states.node_index = 0
 
             print(f"PHASE: {phase_idx}")
             print(f"**********")

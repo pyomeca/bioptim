@@ -304,7 +304,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             controllers: list[PenaltyController, PenaltyController],
         ):
             """
-            The most common continuity function, that is the covariance before equals covariance after for stochastic ocp
+            The most common continuity function, that is the covariance before equals covariance after
+            for stochastic ocp
 
             Parameters
             ----------
@@ -318,7 +319,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the covariance after and before
             """
 
-            return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
+            return MultinodePenaltyFunctions.Functions.algebraic_states_equality(transition, controllers, "cov")
 
         @staticmethod
         def covariance_continuous(
@@ -326,7 +327,8 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             controllers: list[PenaltyController, PenaltyController],
         ):
             """
-            The most common continuity function, that is the covariance before equals covariance after for stochastic ocp
+            The most common continuity function, that is the covariance before equals covariance after
+            for stochastic ocp
 
             Parameters
             ----------
@@ -340,7 +342,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the covariance after and before
             """
 
-            return MultinodePenaltyFunctions.Functions.stochastic_equality(transition, controllers, "cov")
+            return MultinodePenaltyFunctions.Functions.algebraic_states_equality(transition, controllers, "cov")
 
 
 class PhaseTransitionFcn(FcnEnum):

@@ -186,12 +186,12 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_contact:
-            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
             if with_external_force:
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
@@ -228,7 +228,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                 )
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         if with_contact:
-            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
             if with_external_force:
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
@@ -254,7 +254,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                 )
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_contact:
-            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
             if with_external_force:
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
@@ -334,12 +334,12 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
         np.testing.assert_almost_equal(
             x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
         )
@@ -409,12 +409,12 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
         np.testing.assert_almost_equal(
             x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
         )
@@ -576,12 +576,12 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
         if with_external_force:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
@@ -713,12 +713,12 @@ def test_torque_derivative_driven_implicit(with_contact, cx, phase_dynamics):
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
         np.testing.assert_almost_equal(
             x_out[:, 0],
             [
@@ -820,12 +820,12 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
         np.testing.assert_almost_equal(
             x_out[:, 0],
             [
@@ -1098,12 +1098,12 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
         if with_external_force:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
@@ -1301,9 +1301,9 @@ def test_torque_activation_driven_with_residual_torque(
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_residual_torque:
         if with_external_force:
@@ -1518,9 +1518,9 @@ def test_muscle_driven(
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
@@ -2016,9 +2016,9 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
         states = np.random.rand(nlp.states.shape, nlp.ns)
         controls = np.random.rand(nlp.controls.shape, nlp.ns)
         params = np.random.rand(nlp.parameters.shape, nlp.ns)
-        stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+        algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
         time = np.random.rand(2)
-        x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+        x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
         # obtained using Ipuch reference implementation. [https://github.com/Ipuch/OnDynamicsForSomersaults]
         np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
@@ -2028,7 +2028,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact, phase_dynamics):
     def custom_dynamic(
-        time, states, controls, parameters, stochastic_variables, nlp, with_contact=False
+        time, states, controls, parameters, algebraic_states, nlp, with_contact=False
     ) -> DynamicsEvaluation:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -2097,12 +2097,12 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
         np.testing.assert_almost_equal(
             x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
         )

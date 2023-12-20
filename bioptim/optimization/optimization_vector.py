@@ -33,19 +33,23 @@ class OptimizationVectorHelper:
         """
         Declare all the casadi variables with the right size to be used during a specific phase
         """
+        # states
         x = []
         x_scaled = []
+        # controls
         u = []
         u_scaled = []
-        s = []
-        s_scaled = []
+        # algebraic states
+        a = []
+        a_scaled = []
+
         for nlp in ocp.nlp:
             x.append([])
             x_scaled.append([])
             u.append([])
             u_scaled.append([])
-            s.append([])
-            s_scaled.append([])
+            a.append([])
+            a_scaled.append([])
             if nlp.control_type not in (
                 ControlType.CONSTANT,
                 ControlType.CONSTANT_WITH_LAST_NODE,
@@ -85,16 +89,16 @@ class OptimizationVectorHelper:
                     u_scaled[nlp.phase_idx] = u_scaled[nlp.use_controls_from_phase_idx]
                     u[nlp.phase_idx] = u[nlp.use_controls_from_phase_idx]
 
-                s_scaled[nlp.phase_idx].append(
-                    nlp.cx.sym("S_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.stochastic_variables.shape, 1)
+                a_scaled[nlp.phase_idx].append(
+                    nlp.cx.sym("A_scaled_" + str(nlp.phase_idx) + "_" + str(k), nlp.algebraic_states.shape, 1)
                 )
-                if nlp.stochastic_variables.keys():
-                    s[nlp.phase_idx].append(
-                        s_scaled[nlp.phase_idx][0]
-                        * np.concatenate([nlp.s_scaling[key].scaling for key in nlp.stochastic_variables.keys()])
+                if nlp.algebraic_states.keys():
+                    a[nlp.phase_idx].append(
+                        a_scaled[nlp.phase_idx][0]
+                        * np.concatenate([nlp.a_scaling[key].scaling for key in nlp.algebraic_states.keys()])
                     )
                 else:
-                    s[nlp.phase_idx].append(s_scaled[nlp.phase_idx][0])
+                    a[nlp.phase_idx].append(a_scaled[nlp.phase_idx][0])
 
             OptimizationVectorHelper._set_node_index(nlp, 0)
 
@@ -104,8 +108,8 @@ class OptimizationVectorHelper:
             nlp.U_scaled = u_scaled[nlp.phase_idx]
             nlp.U = u[nlp.phase_idx]
 
-            nlp.S_scaled = s_scaled[nlp.phase_idx]
-            nlp.S = s[nlp.phase_idx]
+            nlp.A_scaled = a_scaled[nlp.phase_idx]
+            nlp.A = a[nlp.phase_idx]
 
     @staticmethod
     def vector(ocp):
@@ -120,7 +124,7 @@ class OptimizationVectorHelper:
         t_scaled = ocp.dt_parameter.cx
         x_scaled = []
         u_scaled = []
-        s_scaled = []
+        a_scaled = []
 
         for nlp in ocp.nlp:
             if nlp.ode_solver.is_direct_collocation:
@@ -128,9 +132,9 @@ class OptimizationVectorHelper:
             else:
                 x_scaled += nlp.X_scaled
             u_scaled += nlp.U_scaled
-            s_scaled += nlp.S_scaled
+            a_scaled += nlp.A_scaled
 
-        return vertcat(t_scaled, *x_scaled, *u_scaled, ocp.parameters.cx, *s_scaled)
+        return vertcat(t_scaled, *x_scaled, *u_scaled, ocp.parameters.cx, *a_scaled)
 
     @staticmethod
     def bounds_vectors(ocp) -> tuple[np.ndarray, np.ndarray]:
@@ -243,29 +247,29 @@ class OptimizationVectorHelper:
         v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
         v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
 
-        # For stochastic variables
+        # For algebraic_states variables
         for i_phase in range(ocp.n_phases):
             nlp = ocp.nlp[i_phase]
             OptimizationVectorHelper._set_node_index(nlp, 0)
-            for key in nlp.stochastic_variables.keys():
-                if key in nlp.s_bounds.keys():
-                    nlp.s_bounds[key].check_and_adjust_dimensions(nlp.stochastic_variables[key].cx.shape[0], nlp.ns)
+            for key in nlp.algebraic_states.keys():
+                if key in nlp.a_bounds.keys():
+                    nlp.a_bounds[key].check_and_adjust_dimensions(nlp.algebraic_states[key].cx.shape[0], nlp.ns)
 
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
-                collapsed_values_min = np.ndarray((nlp.stochastic_variables.shape, 1))
-                collapsed_values_max = np.ndarray((nlp.stochastic_variables.shape, 1))
-                for key in nlp.stochastic_variables.keys():
-                    if key in nlp.s_bounds.keys():
-                        value_min = nlp.s_bounds[key].min.evaluate_at(shooting_point=k)[:, np.newaxis] / nlp.s_scaling[key].scaling
-                        value_max = nlp.s_bounds[key].max.evaluate_at(shooting_point=k)[:, np.newaxis] / nlp.s_scaling[key].scaling
+                collapsed_values_min = np.ndarray((nlp.algebraic_states.shape, 1))
+                collapsed_values_max = np.ndarray((nlp.algebraic_states.shape, 1))
+                for key in nlp.algebraic_states.keys():
+                    if key in nlp.a_bounds.keys():
+                        value_min = nlp.a_bounds[key].min.evaluate_at(shooting_point=k)[:, np.newaxis] / nlp.a_scaling[key].scaling
+                        value_max = nlp.a_bounds[key].max.evaluate_at(shooting_point=k)[:, np.newaxis] / nlp.a_scaling[key].scaling
                     else:
                         value_min = -np.inf
                         value_max = np.inf
 
-                    # Organize the stochastic variables according to the correct indices
-                    collapsed_values_min[nlp.stochastic_variables[key].index, :] = np.reshape(value_min, (-1, 1))
-                    collapsed_values_max[nlp.stochastic_variables[key].index, :] = np.reshape(value_max, (-1, 1))
+                    # Organize the algebraic_states variables according to the correct indices
+                    collapsed_values_min[nlp.algebraic_states[key].index, :] = np.reshape(value_min, (-1, 1))
+                    collapsed_values_max[nlp.algebraic_states[key].index, :] = np.reshape(value_max, (-1, 1))
 
                 v_bounds_min = np.concatenate((v_bounds_min, np.reshape(collapsed_values_min.T, (-1, 1))))
                 v_bounds_max = np.concatenate((v_bounds_max, np.reshape(collapsed_values_max.T, (-1, 1))))
@@ -367,27 +371,27 @@ class OptimizationVectorHelper:
             collapsed_values[ocp.parameters[key].index, :] = scaled_init.init
         v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
 
-        # For stochastic variables
+        # For algebraic_states variables
         for i_phase in range(len(ocp.nlp)):
             nlp = ocp.nlp[i_phase]
             OptimizationVectorHelper._set_node_index(nlp, 0)
 
-            for key in nlp.stochastic_variables.keys():
-                if key in nlp.s_init.keys():
-                    nlp.s_init[key].check_and_adjust_dimensions(nlp.stochastic_variables[key].cx.shape[0], nlp.ns)
+            for key in nlp.algebraic_states.keys():
+                if key in nlp.a_init.keys():
+                    nlp.a_init[key].check_and_adjust_dimensions(nlp.algebraic_states[key].cx.shape[0], nlp.ns)
 
             for k in range(nlp.ns + 1):
                 OptimizationVectorHelper._set_node_index(nlp, k)
-                collapsed_values = np.ndarray((nlp.stochastic_variables.shape, 1))
-                for key in nlp.stochastic_variables:
-                    if key in nlp.s_init.keys():
-                        value = nlp.s_init[key].init.evaluate_at(shooting_point=k)[:, np.newaxis] / nlp.s_scaling[key].scaling
+                collapsed_values = np.ndarray((nlp.algebraic_states.shape, 1))
+                for key in nlp.algebraic_states:
+                    if key in nlp.a_init.keys():
+                        value = nlp.a_init[key].init.evaluate_at(shooting_point=k)[:, np.newaxis] / nlp.a_scaling[key].scaling
                         value = value[:, 0]
                     else:
                         value = 0
 
-                    # Organize the stochastic variables according to the correct indices
-                    collapsed_values[nlp.stochastic_variables[key].index, 0] = value
+                    # Organize the algebraic_states variables according to the correct indices
+                    collapsed_values[nlp.algebraic_states[key].index, 0] = value
 
                 v_init = np.concatenate((v_init, np.reshape(collapsed_values.T, (-1, 1))))
 
@@ -461,12 +465,12 @@ class OptimizationVectorHelper:
         v_array = np.array(data).squeeze()
         data_states = []
         data_controls = []
-        data_stochastic = []
+        data_algebraic_states = []
         for nlp in ocp.nlp:
             # using state nodes ensures for all ensures the dimensions of controls are coherent with states
             data_states.append({key: [None] * nlp.n_states_nodes for key in nlp.states.keys()})
             data_controls.append({key: [None] * nlp.n_controls_nodes for key in nlp.controls.keys()})
-            data_stochastic.append({key: [None] * nlp.n_states_nodes for key in nlp.stochastic_variables.keys()})
+            data_algebraic_states.append({key: [None] * nlp.n_states_nodes for key in nlp.algebraic_states.keys()})
         data_parameters = {key: None for key in ocp.parameters.keys()}
 
         # For states
@@ -513,17 +517,18 @@ class OptimizationVectorHelper:
         data_parameters = [data_parameters]
         offset += len(ocp.parameters)
 
-        # For stochastic variables
-        if nlp.stochastic_variables.shape > 0:
-            for p in range(ocp.n_phases):
+        # For algebraic_states variables
+        for p in range(ocp.n_phases):
+            nlp = ocp.nlp[p]
+            if nlp.algebraic_states.shape > 0:
                 # TODO
-                raise NotImplementedError("Stochastic variables not implemented yet")
+                raise NotImplementedError("Algebraic states variables not implemented yet")
 
-        return data_states, data_controls, data_parameters, data_stochastic
+        return data_states, data_controls, data_parameters, data_algebraic_states
 
     @staticmethod
     def _set_node_index(nlp, node):
         nlp.states.node_index = node
         nlp.states_dot.node_index = node
         nlp.controls.node_index = node
-        nlp.stochastic_variables.node_index = node
+        nlp.algebraic_states.node_index = node

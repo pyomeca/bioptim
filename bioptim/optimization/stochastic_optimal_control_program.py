@@ -45,10 +45,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         phase_time: int | float | list | tuple,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
-        s_bounds: BoundsList = None,
+        a_bounds: BoundsList = None,
         x_init: InitialGuessList | None = None,
         u_init: InitialGuessList | None = None,
-        s_init: InitialGuessList | None = None,
+        a_init: InitialGuessList | None = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
         parameters: ParameterList = None,
@@ -67,7 +67,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         x_scaling: VariableScalingList = None,
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
-        s_scaling: VariableScalingList = None,
+        a_scaling: VariableScalingList = None,
         n_threads: int = 1,
         use_sx: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
@@ -79,9 +79,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs)
 
         self.problem_type = problem_type
-        self._s_init = s_init
-        self._s_bounds = s_bounds
-        self._s_scaling = s_scaling
+        self._a_init = a_init
+        self._a_bounds = a_bounds
+        self._a_scaling = a_scaling
 
         super(StochasticOptimalControlProgram, self).__init__(
             bio_model=bio_model,
@@ -235,7 +235,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         integration. This is the real implementation suggested in Gillis 2013.
         """
 
-        if "ref" in self.nlp[0].stochastic_variables:
+        if "ref" in self.nlp[0].algebraic_states:
             constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
 
         # Constraints for M
@@ -316,18 +316,18 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 
-    def _set_stochastic_internal_stochastic_variables(self):
+    def _set_internal_algebraic_states(self):
         """
-        Set the stochastic variables to their internal values
+        Set the algebraic_states variables to their internal values
 
         Note
         ----
         This method overrides the method in OptimalControlProgram
         """
         return (
-            self._s_init,
-            self._s_bounds,
-            self._s_scaling,
+            self._a_init,
+            self._a_bounds,
+            self._a_scaling,
         )  # Nothing to do here as they are already set before calling super().__init__
 
     def _set_nlp_is_stochastic(self):

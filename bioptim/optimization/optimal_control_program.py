@@ -108,10 +108,10 @@ class OptimalControlProgram:
         a sanity check is perform and the values of initial guess and bounds for these particular phases
     _modify_penalty(self, new_penalty: PenaltyOption | Parameter)
         The internal function to modify a penalty.
-    __set_nlp_is_stochastic(self)
+    _set_nlp_is_stochastic(self)
         Set the nlp as stochastic if any of the phases is stochastic
-    __set_stochastic_internal_stochastic_variables(self)
-        Set the internal stochastic variables (s_init, s_bounds, s_scaling) if any of the phases is stochastic
+    _set_internal_algebraic_states(self)
+        Set the internal algebraic_states variables (a_init, a_bounds, a_scaling) if any of the phases
     _check_quaternions_hasattr(self, bio_model)
         Check if the bio_model has quaternions and set the flag accordingly
     """
@@ -214,7 +214,7 @@ class OptimalControlProgram:
         bio_model = self._initialize_model(bio_model)
 
         # Placed here because of MHE
-        s_init, s_bounds, s_scaling = self._set_stochastic_internal_stochastic_variables()
+        a_init, a_bounds, a_scaling = self._set_internal_algebraic_states()
 
         self._check_and_set_threads(n_threads)
         self._check_and_set_shooting_points(n_shooting)
@@ -227,9 +227,9 @@ class OptimalControlProgram:
             u_bounds,
             u_init,
             u_scaling,
-            s_bounds,
-            s_init,
-            s_scaling,
+            a_bounds,
+            a_init,
+            a_scaling,
             xdot_scaling,
         ) = self._prepare_all_decision_variables(
             x_bounds,
@@ -239,9 +239,9 @@ class OptimalControlProgram:
             u_init,
             u_scaling,
             xdot_scaling,
-            s_bounds,
-            s_init,
-            s_scaling,
+            a_bounds,
+            a_init,
+            a_scaling,
         )
 
         (
@@ -281,14 +281,14 @@ class OptimalControlProgram:
         NLP.add(self, "x_scaling", x_scaling, True)
         NLP.add(self, "xdot_scaling", xdot_scaling, True)
         NLP.add(self, "u_scaling", u_scaling, True)
-        NLP.add(self, "s_scaling", s_scaling, True)
+        NLP.add(self, "a_scaling", a_scaling, True)
 
         self._set_nlp_is_stochastic()
 
         self._prepare_node_mapping(node_mappings)
         self._prepare_dynamics()
         self._prepare_bounds_and_init(
-            x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
+            x_bounds, u_bounds, parameter_bounds, a_bounds, x_init, u_init, parameter_init, a_init
         )
 
         self._declare_multi_node_penalties(multinode_constraints, multinode_objectives, constraints, phase_transitions)
@@ -377,26 +377,25 @@ class OptimalControlProgram:
         u_init,
         u_scaling,
         xdot_scaling,
-        s_bounds,
-        s_init,
-        s_scaling,
+        a_bounds,
+        a_init,
+        a_scaling,
     ):
         """
         This function checks if the decision variables are of the right type for initial guess and bounds.
         It also prepares the scaling for the decision variables.
-
-        Note
-        ----
-        s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
         """
 
+        # states
         x_bounds, x_init, x_scaling = self._check_and_prepare_decision_variables("x", x_bounds, x_init, x_scaling)
+        # controls
         u_bounds, u_init, u_scaling = self._check_and_prepare_decision_variables("u", u_bounds, u_init, u_scaling)
-        s_bounds, s_init, s_scaling = self._check_and_prepare_decision_variables("s", s_bounds, s_init, s_scaling)
+        # algebraic states
+        a_bounds, a_init, a_scaling = self._check_and_prepare_decision_variables("a", a_bounds, a_init, a_scaling)
 
         xdot_scaling = self._prepare_option_dict_for_phase("xdot_scaling", xdot_scaling, VariableScalingList)
 
-        return x_bounds, x_init, x_scaling, u_bounds, u_init, u_scaling, s_bounds, s_init, s_scaling, xdot_scaling
+        return x_bounds, x_init, x_scaling, u_bounds, u_init, u_scaling, a_bounds, a_init, a_scaling, xdot_scaling
 
     def _check_arguments_and_build_nlp(
         self,
@@ -600,20 +599,20 @@ class OptimalControlProgram:
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
-            if (isinstance(self.nlp[i].model, VariationalBiorbdModel)) and self.nlp[i].stochastic_variables.shape > 0:
+            if (isinstance(self.nlp[i].model, VariationalBiorbdModel)) and self.nlp[i].algebraic_states.shape > 0:
                 raise NotImplementedError(
-                    "Stochastic variables were not tested with variational integrators. If you come across this error, "
+                    "Algebraic states were not tested with variational integrators. If you come across this error, "
                     "please notify the developers by opening open an issue on GitHub pinging Ipuch and EveCharbie"
                 )
 
     def _prepare_bounds_and_init(
-        self, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
+        self, x_bounds, u_bounds, parameter_bounds, a_bounds, x_init, u_init, parameter_init, a_init
     ):
         self.parameter_bounds = BoundsList()
         self.parameter_init = InitialGuessList()
 
-        self.update_bounds(x_bounds, u_bounds, parameter_bounds, s_bounds)
-        self.update_initial_guess(x_init, u_init, parameter_init, s_init)
+        self.update_bounds(x_bounds, u_bounds, parameter_bounds, a_bounds)
+        self.update_initial_guess(x_init, u_init, parameter_init, a_init)
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
 
@@ -971,7 +970,7 @@ class OptimalControlProgram:
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
         parameter_bounds: BoundsList = None,
-        s_bounds: BoundsList = None,
+        a_bounds: BoundsList = None,
     ):
         """
         The main user interface to add bounds in the ocp
@@ -984,8 +983,8 @@ class OptimalControlProgram:
             The control bounds to add
         parameter_bounds: BoundsList
             The parameters bounds to add
-        s_bounds: BoundsList
-            The stochastic variable bounds to add
+        a_bounds: BoundsList
+            The algebraic_states variable bounds to add
         """
         for i in range(self.n_phases):
             if x_bounds is not None:
@@ -1002,12 +1001,12 @@ class OptimalControlProgram:
                     origin_phase = 0 if len(u_bounds) == 1 else i
                     self.nlp[i].u_bounds.add(key, u_bounds[origin_phase][key], phase=0)
 
-            if s_bounds is not None:
-                if not isinstance(s_bounds, BoundsList):
-                    raise RuntimeError("s_bounds should be built from a BoundsList")
-                for key in s_bounds.keys():
-                    origin_phase = 0 if len(s_bounds) == 1 else i
-                    self.nlp[i].s_bounds.add(key, s_bounds[origin_phase][key], phase=0)
+            if a_bounds is not None:
+                if not isinstance(a_bounds, BoundsList):
+                    raise RuntimeError("a_bounds should be built from a BoundsList")
+                for key in a_bounds.keys():
+                    origin_phase = 0 if len(a_bounds) == 1 else i
+                    self.nlp[i].a_bounds.add(key, a_bounds[origin_phase][key], phase=0)
 
         if parameter_bounds is not None:
             if not isinstance(parameter_bounds, BoundsList):
@@ -1028,7 +1027,7 @@ class OptimalControlProgram:
         x_init: InitialGuessList = None,
         u_init: InitialGuessList = None,
         parameter_init: InitialGuessList = None,
-        s_init: InitialGuessList = None,
+        a_init: InitialGuessList = None,
     ):
         """
         The main user interface to add initial guesses in the ocp
@@ -1041,8 +1040,8 @@ class OptimalControlProgram:
             The control initial guess to add
         parameter_init: BoundsList
             The parameters initial guess to add
-        s_init: BoundsList
-            The stochastic variable initial guess to add
+        a_init: BoundsList
+            The algebraic_states variable initial guess to add
         """
 
         for i in range(self.n_phases):
@@ -1070,12 +1069,12 @@ class OptimalControlProgram:
                         raise ValueError("InterpolationType.ALL_POINTS must only be used with direct collocation")
                     self.nlp[i].u_init.add(key, u_init[origin_phase][key], phase=0)
 
-            if s_init:
-                if not isinstance(s_init, InitialGuessList):
-                    raise RuntimeError("s_init should be built from a InitialGuessList")
-                origin_phase = 0 if len(s_init) == 1 else i
-                for key in s_init[origin_phase].keys():
-                    self.nlp[i].s_init.add(key, s_init[origin_phase][key], phase=0)
+            if a_init:
+                if not isinstance(a_init, InitialGuessList):
+                    raise RuntimeError("a_init should be built from a InitialGuessList")
+                origin_phase = 0 if len(a_init) == 1 else i
+                for key in a_init[origin_phase].keys():
+                    self.nlp[i].a_init.add(key, a_init[origin_phase][key], phase=0)
 
         if parameter_init is not None:
             if not isinstance(parameter_init, InitialGuessList):
@@ -1172,7 +1171,7 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def compute_penalty_values(t0, phases_dt, node_idx, x, u, p, s, penalty):
+        def compute_penalty_values(t0, phases_dt, node_idx, x, u, p, a, penalty):
             """
             Compute the penalty value for the given time, state, control, parameters, penalty and time step
 
@@ -1190,8 +1189,8 @@ class OptimalControlProgram:
                 Control vector with starting control (and sometimes final control)
             p: ndarray
                 Parameters vector
-            s: ndarray
-                Stochastic variables vector
+            a: ndarray
+                Algebraic states variables vector
             penalty: Penalty
                 The penalty object containing details on how to compute it
 
@@ -1203,7 +1202,7 @@ class OptimalControlProgram:
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, node_idx)
 
-            val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, s, weight, target)
+            val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, weight, target)
             return sum1(horzcat(val))
 
         def add_penalty(_penalties):
@@ -1581,26 +1580,17 @@ class OptimalControlProgram:
     def _set_default_ode_solver(self):
         """
         Set the default ode solver to RK4
-
-        Note
-        ----
-        This method is overrided in StochasticOptimalControlProgram
         """
         return OdeSolver.RK4()
 
-    def _set_stochastic_internal_stochastic_variables(self):
+    def _set_internal_algebraic_states(self):
         """
-        Set the stochastic variables to their internal values
-
-        Note
-        ----
-        This method is overrided in StochasticOptimalControlProgram
+        Set the algebraic states to their internal values
         """
-        # s decision variables are not relevant for traditional OCPs, only relevant for StochasticOptimalControlProgram
-        self._s_init = InitialGuessList()
-        self._s_bounds = BoundsList()
-        self._s_scaling = VariableScalingList()
-        return self._s_init, self._s_bounds, self._s_scaling
+        self._a_init = InitialGuessList()
+        self._a_bounds = BoundsList()
+        self._a_scaling = VariableScalingList()
+        return self._a_init, self._a_bounds, self._a_scaling
 
     def _set_nlp_is_stochastic(self):
         """

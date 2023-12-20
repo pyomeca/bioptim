@@ -42,7 +42,7 @@ def time_dependent_dynamic(
     nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, s)
+    The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a)
 
     Parameters
     ----------
@@ -55,7 +55,7 @@ def time_dependent_dynamic(
     parameters: MX | SX
         The parameters acting on the system
     stochastic_variables: MX | SX
-        The stochastic variables of the system
+        The Algebraic states variables of the system
     nlp: NonLinearProgram
         A reference to the phase
 

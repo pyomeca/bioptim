@@ -1,6 +1,6 @@
 """
 This example is adapted from arm_reaching_muscle_driven.py to make it torque driven.
-The states dynamics is explicit, while the stochastic variables dynamics is implicit.
+The states dynamics is explicit, while the algebraic states dynamics is implicit.
 This formulation allow to decouple the covariance matrix with the previous states reducing the complexity of resolution,
 but increases largely the number of variables to optimize.
 Decomposing the covariance matrix using Cholesky L @ @.T allows to reduce the number of variables and ensures that the
@@ -221,8 +221,8 @@ def prepare_socp(
     u_init = InitialGuessList()
     u_init.add("tau", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
 
-    s_init = InitialGuessList()
-    s_bounds = BoundsList()
+    a_init = InitialGuessList()
+    a_bounds = BoundsList()
     # K(2x4) + ref(4x1) + M(4x4)
     n_stochastic = n_tau * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states
     n_cholesky_cov = 0
@@ -238,34 +238,34 @@ def prepare_socp(
     stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
     curent_index = 0
     stochastic_init[: n_tau * (n_q + n_qdot), :] = 0.01  # K
-    s_init.add(
+    a_init.add(
         "k", initial_guess=stochastic_init[: n_tau * (n_q + n_qdot), :], interpolation=InterpolationType.EACH_FRAME
     )
-    s_bounds.add(
+    a_bounds.add(
         "k",
         min_bound=stochastic_min[: n_tau * (n_q + n_qdot), :],
         max_bound=stochastic_max[: n_tau * (n_q + n_qdot), :],
     )
     curent_index += n_tau * (n_q + n_qdot)
     stochastic_init[curent_index : curent_index + n_q + n_qdot, :] = 0.01  # ref
-    s_init.add(
+    a_init.add(
         "ref",
         initial_guess=stochastic_init[curent_index : curent_index + n_q + n_qdot, :],
         interpolation=InterpolationType.EACH_FRAME,
     )
-    s_bounds.add(
+    a_bounds.add(
         "ref",
         min_bound=stochastic_min[curent_index : curent_index + n_q + n_qdot, :],
         max_bound=stochastic_max[curent_index : curent_index + n_q + n_qdot, :],
     )
     curent_index += n_q + n_qdot
     stochastic_init[curent_index : curent_index + n_states * n_states, :] = 0.01  # M
-    s_init.add(
+    a_init.add(
         "m",
         initial_guess=stochastic_init[curent_index : curent_index + n_states * n_states, :],
         interpolation=InterpolationType.EACH_FRAME,
     )
-    s_bounds.add(
+    a_bounds.add(
         "m",
         min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
         max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
@@ -278,12 +278,12 @@ def prepare_socp(
         for i in range(n_states):
             for j in range(n_states):
                 stochastic_init[idx, 0] = cov_init[i, j]
-        s_init.add(
+        a_init.add(
             "cov",
             initial_guess=stochastic_init[curent_index : curent_index + n_states * n_states, :],
             interpolation=InterpolationType.EACH_FRAME,
         )
-        s_bounds.add(
+        a_bounds.add(
             "cov",
             min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
             max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
@@ -295,12 +295,12 @@ def prepare_socp(
         for i in range(n_states):
             for j in range(i + 1):
                 stochastic_init[idx, 0] = cov_init[i, j]
-        s_init.add(
+        a_init.add(
             "cholesky_cov",
             initial_guess=stochastic_init[curent_index : curent_index + n_cholesky_cov, :],
             interpolation=InterpolationType.EACH_FRAME,
         )
-        s_bounds.add(
+        a_bounds.add(
             "cholesky_cov",
             min_bound=stochastic_min[curent_index : curent_index + n_cholesky_cov, :],
             max_bound=stochastic_max[curent_index : curent_index + n_cholesky_cov, :],
@@ -311,11 +311,11 @@ def prepare_socp(
     if with_scaling:
         u_scaling["tau"] = [10] * n_tau
 
-    s_scaling = VariableScalingList()
+    a_scaling = VariableScalingList()
     if with_scaling:
-        s_scaling["k"] = [100] * (n_tau * (n_q + n_qdot))
-        s_scaling["ref"] = [1] * (n_q + n_qdot)
-        s_scaling["m"] = [1] * (n_states * n_states)
+        a_scaling["k"] = [100] * (n_tau * (n_q + n_qdot))
+        a_scaling["ref"] = [1] * (n_q + n_qdot)
+        a_scaling["m"] = [1] * (n_states * n_states)
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -324,12 +324,12 @@ def prepare_socp(
         final_time,
         x_init=x_init,
         u_init=u_init,
-        s_init=s_init,
+        a_init=a_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        s_bounds=s_bounds,
+        a_bounds=a_bounds,
         u_scaling=u_scaling,
-        s_scaling=s_scaling,
+        a_scaling=a_scaling,
         objective_functions=objective_functions,
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,

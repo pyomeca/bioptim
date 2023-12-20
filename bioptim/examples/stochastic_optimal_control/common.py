@@ -5,7 +5,6 @@ This file contains the functions that are common for multiple stochastic example
 import casadi as cas
 import numpy as np
 from bioptim import StochasticBioModel, DynamicsFunctions, SocpType
-from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms

@@ -91,7 +91,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
-    # Stochastic variables
+    # Algebraic states variables
     ConfigureProblem.configure_stochastic_m(
         ocp, nlp, n_noised_states=4, n_collocation_points=nlp.model.polynomial_degree + 1
     )
@@ -137,7 +137,7 @@ def path_constraint(controller: PenaltyController, super_elipse_index: int, is_r
         gamma = 1
         dh_dx = cas.jacobian(h, controller.states.cx_start)
         cov = StochasticBioModel.reshape_to_matrix(
-            controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+            controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
         )
         safe_guard = gamma * cas.sqrt(dh_dx @ cov @ dh_dx.T)
         out -= safe_guard
@@ -251,15 +251,15 @@ def prepare_socp(
 
         phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
 
-        s_init = InitialGuessList()
-        s_init.add(
+        a_init = InitialGuessList()
+        a_init.add(
             "m",
             initial_guess=[0] * bio_model.matrix_shape_m[0] * bio_model.matrix_shape_m[1],
             interpolation=InterpolationType.CONSTANT,
         )
 
         cov0 = (np.eye(bio_model.matrix_shape_cov[0]) * 0.01).reshape((-1,), order="F")
-        s_init.add(
+        a_init.add(
             "cov",
             initial_guess=cov0,
             interpolation=InterpolationType.CONSTANT,
@@ -272,7 +272,7 @@ def prepare_socp(
             final_time,
             x_init=x_init,
             u_init=control_init,
-            s_init=s_init,
+            a_init=a_init,
             x_bounds=x_bounds,
             u_bounds=control_bounds,
             objective_functions=objective_functions,
@@ -396,8 +396,8 @@ def main():
     ax[1, 0].set_xlabel("t")
 
     if is_stochastic:
-        m = sol_socp.stochastic_variables["m"]
-        cov = sol_socp.stochastic_variables["cov"]
+        m = sol_socp.algebraic_states["m"]
+        cov = sol_socp.algebraic_states["cov"]
 
         for i in range(n_shooting + 1):
             cov_i = cov[:, i]

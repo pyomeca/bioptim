@@ -330,7 +330,7 @@ class ConfigureProblem:
         n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
         n_noised_states = 2 * n_noised_tau
 
-        # Stochastic variables
+        # Algebraic states variables
         ConfigureProblem.configure_stochastic_k(
             ocp, nlp, n_noised_controls=n_noised_tau, n_references=nlp.model.n_references
         )
@@ -716,7 +716,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, stochastic] | tuple[Callable[time, states, controls, param, stochastic], ...]
+        dyn_func: Callable[time, states, controls, param, algebraic_states] | tuple[Callable[time, states, controls, param, algebraic_states], ...]
             The function to get the derivative of the states
         allow_free_variables: bool
             If it is expected the dynamics depends on more than the variable provided by bioptim. It is therefore to the
@@ -735,7 +735,7 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
-                nlp.stochastic_variables.scaled.mx,
+                nlp.algebraic_states.scaled.mx,
                 nlp,
                 **extra_params,
             )
@@ -752,10 +752,10 @@ class ConfigureProblem:
                         nlp.states.scaled.mx_reduced,
                         nlp.controls.scaled.mx_reduced,
                         nlp.parameters.mx,
-                        nlp.stochastic_variables.scaled.mx,
+                        nlp.algebraic_states.scaled.mx,
                     ],
                     [dynamics_dxdt],
-                    ["t_span", "x", "u", "p", "s"],
+                    ["t_span", "x", "u", "p", "a"],
                     ["xdot"],
                     {"allow_free": allow_free_variables},
                 ),
@@ -784,11 +784,11 @@ class ConfigureProblem:
                             nlp.states.scaled.mx_reduced,
                             nlp.controls.scaled.mx_reduced,
                             nlp.parameters.mx,
-                            nlp.stochastic_variables.scaled.mx,
+                            nlp.algebraic_states.scaled.mx,
                             nlp.states_dot.scaled.mx_reduced,
                         ],
                         [dynamics_eval.defects],
-                        ["t_span", "x", "u", "p", "s", "xdot"],
+                        ["t_span", "x", "u", "p", "a", "xdot"],
                         ["defects"],
                         {"allow_free": allow_free_variables},
                     )
@@ -817,7 +817,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, stochastic]
+        dyn_func: Callable[time, states, controls, param, algebraic_states]
             The function to get the values of contact forces from the dynamics
         """
 
@@ -829,7 +829,7 @@ class ConfigureProblem:
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx,
-                nlp.stochastic_variables.scaled.mx,
+                nlp.algebraic_states.scaled.mx,
             ],
             [
                 dyn_func(
@@ -837,12 +837,12 @@ class ConfigureProblem:
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
-                    nlp.stochastic_variables.scaled.mx,
+                    nlp.algebraic_states.scaled.mx,
                     nlp,
                     **extra_params,
                 )
             ],
-            ["t_span", "x", "u", "p", "s"],
+            ["t_span", "x", "u", "p", "a"],
             ["contact_forces"],
         ).expand()
 
@@ -864,7 +864,7 @@ class ConfigureProblem:
             )
 
         nlp.plot["contact_forces"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, s: nlp.contact_forces_func([t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, s),
+            lambda t0, phases_dt, node_idx, x, u, p, a: nlp.contact_forces_func([t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
             legend=all_contact_names,
@@ -927,7 +927,7 @@ class ConfigureProblem:
                     to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, s: nlp.soft_contact_forces_func([t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, s)[(i_sc * 6) : ((i_sc + 1) * 6), :],
+                lambda t0, phases_dt, node_idx, x, u, p, a: nlp.soft_contact_forces_func([t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a)[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
                 legend=all_soft_contact_names,
@@ -942,7 +942,7 @@ class ConfigureProblem:
         as_states: bool,
         as_controls: bool,
         as_states_dot: bool = False,
-        as_stochastic: bool = False,
+        as_algebraic_states: bool = False,
         fatigue: FatigueList = None,
         combine_name: str = None,
         combine_state_control_plot: bool = False,
@@ -968,8 +968,8 @@ class ConfigureProblem:
             If the new variable should be added to the state_dot variable set
         as_controls: bool
             If the new variable should be added to the control variable set
-        as_stochastic: bool
-            If the new variable should be added to the stochastic variable set
+        as_algebraic_states: bool
+            If the new variable should be added to the algebraic states variable set
         fatigue: FatigueList
             The list of fatigable item
         combine_name: str
@@ -989,7 +989,7 @@ class ConfigureProblem:
             as_states,
             as_controls,
             as_states_dot,
-            as_stochastic,
+            as_algebraic_states,
             fatigue,
             combine_name,
             combine_state_control_plot,
@@ -1150,7 +1150,7 @@ class ConfigureProblem:
         name = "k"
 
         if name in nlp.variable_mappings:
-            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+            raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_k = []
         control_names = [f"control_{i}" for i in range(n_noised_controls)]
@@ -1169,7 +1169,7 @@ class ConfigureProblem:
             as_states=False,
             as_controls=False,
             as_states_dot=False,
-            as_stochastic=True,
+            as_algebraic_states=True,
             skip_plot=True,
         )
 
@@ -1185,7 +1185,7 @@ class ConfigureProblem:
         name = "c"
 
         if name in nlp.variable_mappings:
-            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+            raise NotImplementedError(f"Algebraic states variables and mapping cannot be use together for now.")
 
         name_c = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1203,7 +1203,7 @@ class ConfigureProblem:
             as_states=False,
             as_controls=False,
             as_states_dot=False,
-            as_stochastic=True,
+            as_algebraic_states=True,
             skip_plot=True,
         )
 
@@ -1219,7 +1219,7 @@ class ConfigureProblem:
         name = "a"
 
         if name in nlp.variable_mappings:
-            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+            raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_a = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1235,7 +1235,7 @@ class ConfigureProblem:
             as_states=False,
             as_controls=False,
             as_states_dot=False,
-            as_stochastic=True,
+            as_algebraic_states=True,
             skip_plot=True,
         )
 
@@ -1251,7 +1251,7 @@ class ConfigureProblem:
         name = "cov"
 
         if name in nlp.variable_mappings:
-            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+            raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_cov = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1278,7 +1278,7 @@ class ConfigureProblem:
         name = "cov"
 
         if name in nlp.variable_mappings:
-            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+            raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_cov = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1293,7 +1293,7 @@ class ConfigureProblem:
             as_states=False,
             as_controls=False,
             as_states_dot=False,
-            as_stochastic=True,
+            as_algebraic_states=True,
             skip_plot=True,
         )
 
@@ -1310,7 +1310,7 @@ class ConfigureProblem:
         name = "cholesky_cov"
 
         if name in nlp.variable_mappings:
-            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+            raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_cov = []
         for nb_1, name_1 in enumerate([f"X_{i}" for i in range(n_noised_states)]):
@@ -1325,7 +1325,7 @@ class ConfigureProblem:
             as_states=False,
             as_controls=False,
             as_states_dot=False,
-            as_stochastic=True,
+            as_algebraic_states=True,
             skip_plot=True,
         )
 
@@ -1342,7 +1342,7 @@ class ConfigureProblem:
         name = "ref"
 
         if name in nlp.variable_mappings:
-            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+            raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_ref = [f"reference_{i}" for i in range(n_references)]
         nlp.variable_mappings[name] = BiMapping(list(range(n_references)), list(range(n_references)))
@@ -1354,7 +1354,7 @@ class ConfigureProblem:
             as_states=False,
             as_controls=False,
             as_states_dot=False,
-            as_stochastic=True,
+            as_algebraic_states=True,
             skip_plot=True,
         )
 
@@ -1371,7 +1371,7 @@ class ConfigureProblem:
         name = "m"
 
         if name in nlp.variable_mappings:
-            raise NotImplementedError(f"Stochastic variables and mapping cannot be use together for now.")
+            raise NotImplementedError(f"Algebraic states and mapping cannot be use together for now.")
 
         name_m = []
         for name_1 in [f"X_{i}" for i in range(n_noised_states)]:
@@ -1389,7 +1389,7 @@ class ConfigureProblem:
             as_states=False,
             as_controls=False,
             as_states_dot=False,
-            as_stochastic=True,
+            as_algebraic_states=True,
             skip_plot=True,
         )
 

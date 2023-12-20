@@ -45,8 +45,6 @@ class Solution:
         The number of iterations that were required to solve the program
     status: int
         Optimization success status (Ipopt: 0=Succeeded, 1=Failed)
-    _decision_times: list
-        The time at each node so the integration can be done (equivalent to t_span)
     _stepwise_times: list
         The time corresponding to _stepwise_states
     _decision_states: SolutionData
@@ -57,8 +55,8 @@ class Solution:
         The data structure that holds the controls
     _parameters: SolutionData
         The data structure that holds the parameters
-    _stochastic: SolutionData
-        The data structure that holds the stochastic variables
+    _decision_algebraic_states: SolutionData
+        The data structure that holds the algebraic_states variables
     phases_dt: list
         The time step for each phases
 
@@ -111,7 +109,7 @@ class Solution:
         ocp: OptimalControlProgram
             A reference to the ocp to strip
         vector: np.ndarray | DM
-            The solution vector, containing all the states, controls, parameters and stochastic variables
+            The solution vector, containing all the states, controls, parameters and algebraic_states variables
         cost: np.ndarray | DM
             The cost value of the objective function
         constraints: np.ndarray | DM
@@ -153,18 +151,18 @@ class Solution:
         self._stepwise_states = None
         self._stepwise_controls = None
         self._parameters = None
-        self._stochastic = None
+        self._decision_algebraic_states = None
 
         self.vector = vector
         if self.vector is not None:
             self.phases_dt = OptimizationVectorHelper.extract_phase_dt(ocp, vector)
             self._stepwise_times = OptimizationVectorHelper.extract_step_times(ocp, vector)
             
-            x, u, p, s = OptimizationVectorHelper.to_dictionaries(ocp, vector)
+            x, u, p, a = OptimizationVectorHelper.to_dictionaries(ocp, vector)
             self._decision_states = SolutionData.from_scaled(ocp, x, "x")
             self._stepwise_controls = SolutionData.from_scaled(ocp, u, "u")
             self._parameters = SolutionData.from_scaled(ocp, p, "p")
-            self._stochastic = SolutionData.from_scaled(ocp, s, "s")
+            self._decision_algebraic_states = SolutionData.from_scaled(ocp, a, "a")
 
     @classmethod
     def from_dict(cls, ocp, sol: dict):
@@ -229,7 +227,7 @@ class Solution:
         if sum([isinstance(s, InitialGuessList) for s in sol]) != 4:
             raise ValueError(
                 "solution must be a solution dict, "
-                "an InitialGuess[List] of len 4 (states, controls, parameters, stochastic_variables), "
+                "an InitialGuess[List] of len 4 (states, controls, parameters, algebraic_states), "
                 "or a None"
             )
         if sum([len(s) != len(all_ns) if p != 4 else False for p, s in enumerate(sol)]) != 0:
@@ -241,7 +239,7 @@ class Solution:
                     "should be a unique vector of size equal to n_param"
                 )
 
-        dt, sol_states, sol_controls, sol_params, sol_stochastic_variables = sol
+        dt, sol_states, sol_controls, sol_params, sol_algebraic_states = sol
 
         vector = np.ndarray((0, 1))
 
@@ -285,11 +283,11 @@ class Solution:
             for p, ss in enumerate(sol_params):
                 vector = np.concatenate((vector, np.repeat(ss.init, all_ns[p] + 1)[:, np.newaxis]))
 
-        # For stochastic variables
-        for p, ss in enumerate(sol_stochastic_variables):
+        # For algebraic_states variables
+        for p, ss in enumerate(sol_algebraic_states):
             for key in ss.keys():
                 ss[key].init.check_and_adjust_dimensions(
-                    len(ocp.nlp[p].stochastic_variables[key]), all_ns[p], "stochastic_variables"
+                    len(ocp.nlp[p].algebraic_states[key]), all_ns[p], "algebraic_states"
                 )
 
             for i in range(all_ns[p] + 1):
@@ -558,26 +556,24 @@ class Solution:
         
         return out
 
-    def stochastic(self, scaled: bool = False, concatenate_keys: bool = False):
+    def decision_algebraic_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
         """
-        Returns the stochastic variables
+        Returns the decision algebraic_states
 
         Parameters
         ----------
         scaled: bool
-            If the stochastic variables should be scaled or not (note that scaled is as Ipopt received them, while
-            unscaled is as the model needs temps). If you don't know what it means, you probably want the
-            unscaled version.
-        concatenate_keys: bool
-            If the stochastic variables should be returned individually (False) or concatenated (True). If individual,
-            then the return value does not contain the key dict.
+            If the decision states should be scaled or not (note that scaled is as Ipopt received them, while unscaled
+            is as the model needs temps). If you don't know what it means, you probably want the unscaled version.
+        to_merge: SolutionMerge | list[SolutionMerge, ...]
+            The type of merge to perform. If None, then no merge is performed.
 
         Returns
         -------
-        The stochastic variables
+        The decision variables
         """
 
-        data = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS if concatenate_keys else None, scaled=scaled)
+        data = self._decision_algebraic_states.to_dict(to_merge=to_merge, scaled=scaled)
         if not isinstance(data, list):
             return data
         return data if len(data) > 1 else data[0]
@@ -620,7 +616,7 @@ class Solution:
 
             new._stepwise_controls = deepcopy(self._stepwise_controls)
 
-            new._stochastic = deepcopy(self._stochastic)
+            new._decision_algebraic_states = deepcopy(self._decision_algebraic_states)
             new._parameters = deepcopy(self._parameters)
         return new
 
@@ -652,14 +648,14 @@ class Solution:
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
         x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
-        s = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
+        a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
 
         out: list = [None] * len(self.ocp.nlp)
         integrated_sol = None
         for p, nlp in enumerate(self.ocp.nlp):
-            next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, s)
+            next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
             integrated_sol = solve_ivp_interface(
-                shooting_type=shooting_type, nlp=nlp, t=self._t_span[p], x=next_x, u=u[p], s=s[p], p=params, method=integrator
+                shooting_type=shooting_type, nlp=nlp, t=self._t_span[p], x=next_x, u=u[p], a=a[p], p=params, method=integrator
             )
         
             out[p] = {}
@@ -681,7 +677,7 @@ class Solution:
         decision_states,
         decision_controls,
         params,
-        decision_stochastic,
+        decision_algebraic_states,
     ):
         """
         Returns the states to integrate for the phase_idx phase. If there was a phase transition, the last state of the
@@ -701,8 +697,8 @@ class Solution:
             The decision controls merged with SolutionMerge.KEYS
         params
             The parameters merged with SolutionMerge.KEYS
-        decision_stochastic
-            The stochastic merged with SolutionMerge.KEYS
+        decision_algebraic_states
+            The algebraic_states merged with SolutionMerge.KEYS
 
         Returns
         -------
@@ -726,7 +722,7 @@ class Solution:
         # twice the last state
         x = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: integrated_states[-1])
         u = PenaltyHelpers.controls(penalty, 0, lambda p, n, sn: decision_controls[p][n][:, sn] if n < len(decision_controls[p]) else np.ndarray((0, 1)))
-        s = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: decision_stochastic[p][n][:, sn] if n < len(decision_stochastic[p]) else np.ndarray((0, 1)))
+        s = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: decision_algebraic_states[p][n][:, sn] if n < len(decision_algebraic_states[p]) else np.ndarray((0, 1)))
 
         dx = penalty.function[-1](t0, dt, x, u, params, s)
         if dx.shape[0] != decision_states[phase_idx][0].shape[0]:
@@ -752,7 +748,7 @@ class Solution:
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
         x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
-        s = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
+        a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
 
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
@@ -762,7 +758,7 @@ class Solution:
                 t=self._t_span[p], 
                 x=x[p], 
                 u=u[p], 
-                s=s[p], 
+                a=a[p],
                 p=params, 
                 method=SolutionIntegrator.OCP,
             )
@@ -1014,18 +1010,18 @@ class Solution:
 
         merged_x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
-        merged_s = self._stochastic.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
+        merged_a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         for idx in range(len(penalty.node_idx)):
             t0 = PenaltyHelpers.t0()
             x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_x[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_x[p_idx]) else np.array(()))
             u = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_u[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_u[p_idx]) else np.array(()))
-            s = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_s[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_s[p_idx]) else np.array(()))
+            a = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_a[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_a[p_idx]) else np.array(()))
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
 
             node_idx = penalty.node_idx[idx]
-            val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, s))
-            val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, s, weight, target))
+            val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, a))
+            val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, a, weight, target))
 
         if self.ocp.n_threads > 1:
             val = [v[:, 0] for v in val]

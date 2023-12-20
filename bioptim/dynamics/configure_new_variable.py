@@ -10,7 +10,7 @@ from ..misc.mapping import BiMapping
 
 
 def variable_type_from_booleans_to_enums(
-    as_states: bool, as_controls: bool, as_states_dot: bool, as_stochastic: bool
+    as_states: bool, as_controls: bool, as_states_dot: bool, as_algebraic_states: bool
 ) -> list[VariableType]:
     """
     Convert the booleans to enums
@@ -23,8 +23,8 @@ def variable_type_from_booleans_to_enums(
         If the new variable should be added to the state_dot variable set
     as_controls: bool
         If the new variable should be added to the control variable set
-    as_stochastic: bool
-        If the new variable should be added to the stochastic variable set
+    as_algebraic_states: bool
+        If the new variable should be added to the algebraic states variable set
 
     Returns
     -------
@@ -38,13 +38,13 @@ def variable_type_from_booleans_to_enums(
         variable_type.append(VariableType.STATES_DOT)
     if as_controls:
         variable_type.append(VariableType.CONTROLS)
-    if as_stochastic:
-        variable_type.append(VariableType.STOCHASTIC)
+    if as_algebraic_states:
+        variable_type.append(VariableType.ALGEBRAIC_STATES)
     return variable_type
 
 
 class NewVariableConfiguration:
-    # todo: add a way to remove the if as_states, as_controls, as_states_dot, as_stochastic, etc...
+    # todo: add a way to remove the if as_states, as_controls, as_states_dot, as_algebraic_states, etc...
     #   if we want to remove ocp, nlp, it
     #   should be a method of ocp, and specify the phase_idx where the variable is added
     #   ocp.configure_new_variable(
@@ -52,7 +52,7 @@ class NewVariableConfiguration:
     #     name,
     #     name_elements,
     #     variable_type=variable_types,
-    #     # VariableType.CONTROL, VariableType.STATE_DOT, VariableType.STOCHASTIC, VariableType.ALGEBRAIC_STATE
+    #     # VariableType.CONTROL, VariableType.STATE_DOT, VariableType.ALGEBRAIC_STATE
     #   )
     def __init__(
         self,
@@ -63,7 +63,7 @@ class NewVariableConfiguration:
         as_states: bool,
         as_controls: bool,
         as_states_dot: bool = False,
-        as_stochastic: bool = False,
+        as_algebraic_states: bool = False,
         fatigue: FatigueList = None,
         combine_name: str = None,
         combine_state_control_plot: bool = False,
@@ -89,8 +89,8 @@ class NewVariableConfiguration:
             If the new variable should be added to the state_dot variable set
         as_controls: bool
             If the new variable should be added to the control variable set
-        as_stochastic: bool
-            If the new variable should be added to the stochastic variable set
+        as_algebraic_states: bool
+            If the new variable should be added to the algebraic states variable set
         fatigue: FatigueList
             The list of fatigable item
         combine_name: str
@@ -110,7 +110,7 @@ class NewVariableConfiguration:
         self.as_states = as_states
         self.as_controls = as_controls
         self.as_states_dot = as_states_dot
-        self.as_stochastic = as_stochastic
+        self.as_algebraic_states = as_algebraic_states
         self.fatigue = fatigue
         self.combine_name = combine_name
         self.combine_state_control_plot = combine_state_control_plot
@@ -124,7 +124,7 @@ class NewVariableConfiguration:
         self.mx_states = None
         self.mx_states_dot = None
         self.mx_controls = None
-        self.mx_stochastic = None
+        self.mx_algebraic_states = None
 
         self._check_combine_state_control_plot()
 
@@ -302,8 +302,8 @@ class NewVariableConfiguration:
                 self.name, initial_guess=np.zeros(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
 
-        if self.as_stochastic and self.name not in self.nlp.s_init:
-            self.nlp.s_init.add(
+        if self.as_algebraic_states and self.name not in self.nlp.a_init:
+            self.nlp.a_init.add(
                 self.name, initial_guess=np.zeros(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
 
@@ -320,8 +320,8 @@ class NewVariableConfiguration:
             self.nlp.u_scaling.add(
                 self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
-        if self.as_stochastic and self.name not in self.nlp.s_scaling:
-            self.nlp.s_scaling.add(
+        if self.as_algebraic_states and self.name not in self.nlp.a_scaling:
+            self.nlp.a_scaling.add(
                 self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
 
@@ -341,7 +341,7 @@ class NewVariableConfiguration:
             if not self.copy_controls
             else [self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[0][self.name].mx]
         )
-        self.mx_stochastic = []
+        self.mx_algebraic_states = []
 
         # todo: if mapping on variables, what do we do with mapping on the nodes
         for i in self.nlp.variable_mappings[self.name].to_second.map_idx:
@@ -360,12 +360,12 @@ class NewVariableConfiguration:
             if not self.copy_controls:
                 self.mx_controls.append(MX.sym(var_name, 1, 1))
 
-            self.mx_stochastic.append(MX.sym(var_name, 1, 1))
+            self.mx_algebraic_states.append(MX.sym(var_name, 1, 1))
 
         self.mx_states = vertcat(*self.mx_states)
         self.mx_states_dot = vertcat(*self.mx_states_dot)
         self.mx_controls = vertcat(*self.mx_controls)
-        self.mx_stochastic = vertcat(*self.mx_stochastic)
+        self.mx_algebraic_states = vertcat(*self.mx_algebraic_states)
 
     def _declare_auto_axes_idx(self):
         """Declare the axes index if not already declared"""
@@ -409,7 +409,7 @@ class NewVariableConfiguration:
                 )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_states"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, s: x[self.nlp.states.key_index(self.name), :] if x.any() else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
+                        lambda t0, phases_dt, node_idx, x, u, p, a: x[self.nlp.states.key_index(self.name), :] if x.any() else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
@@ -440,7 +440,7 @@ class NewVariableConfiguration:
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_controls"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, s: u[self.nlp.controls.key_index(self.name), :] if u.any() else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
+                        lambda t0, phases_dt, node_idx, x, u, p, a: u[self.nlp.controls.key_index(self.name), :] if u.any() else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
@@ -479,7 +479,7 @@ class NewVariableConfiguration:
                     node_index,
                 )
 
-        if self.as_stochastic:
+        if self.as_algebraic_states:
             for node_index in range(
                 (0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1
             ):
@@ -487,11 +487,11 @@ class NewVariableConfiguration:
                 cx_scaled = self.define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
                 cx = self.define_cx_unscaled(cx_scaled, self.nlp.s_scaling[self.name].scaling)
 
-                self.nlp.stochastic_variables.append(
+                self.nlp.algebraic_states.append(
                     self.name,
                     cx[0],
                     cx_scaled[0],
-                    self.mx_stochastic,
+                    self.mx_algebraic_states,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -554,14 +554,14 @@ def _manage_fatigue_to_new_variable(
     legend = [f"{name}_{i}" for i in name_elements]
     fatigue_plot_name = f"fatigue_{name}"
     nlp.plot[fatigue_plot_name] = CustomPlot(
-        lambda t0, phases_dt, node_idx, x, u, p, s: (x[:n_elements, :] if x.any() else np.ndarray((len(name_elements), 1))) * np.nan,
+        lambda t0, phases_dt, node_idx, x, u, p, a: (x[:n_elements, :] if x.any() else np.ndarray((len(name_elements), 1))) * np.nan,
         plot_type=PlotType.INTEGRATED,
         legend=legend,
         bounds=Bounds(None, -1, 1),
     )
     control_plot_name = f"{name}_controls" if not multi_interface and split_controls else f"{name}"
     nlp.plot[control_plot_name] = CustomPlot(
-        lambda t0, phases_dt, node_idx, x, u, p, s: (u[:n_elements, :] if u.any() else np.ndarray((len(name_elements), 1))) * np.nan, plot_type=PlotType.STEP, legend=legend
+        lambda t0, phases_dt, node_idx, x, u, p, a: (u[:n_elements, :] if u.any() else np.ndarray((len(name_elements), 1))) * np.nan, plot_type=PlotType.STEP, legend=legend
     )
 
     var_names_with_suffix = []
@@ -576,7 +576,7 @@ def _manage_fatigue_to_new_variable(
                 var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
             )
             nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, s, key: u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan,
+                lambda t0, phases_dt, node_idx, x, u, p, a, key: u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan,
                 plot_type=PlotType.STEP,
                 combine_to=control_plot_name,
                 key=var_names_with_suffix[-1],
@@ -585,7 +585,7 @@ def _manage_fatigue_to_new_variable(
         elif i == 0:
             NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True)
             nlp.plot[f"{name}_controls"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, s, key: u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan,
+                lambda t0, phases_dt, node_idx, x, u, p, a, key: u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan,
                 plot_type=PlotType.STEP,
                 combine_to=control_plot_name,
                 key=f"{name}",
@@ -596,7 +596,7 @@ def _manage_fatigue_to_new_variable(
             name_tp = f"{var_names_with_suffix[-1]}_{params}"
             NewVariableConfiguration(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
             nlp.plot[name_tp] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, s, key, mod: mod * x[nlp.states.key_index(key), :] if x.any() else np.ndarray((len(name_elements), 1)) * np.nan,
+                lambda t0, phases_dt, node_idx, x, u, p, a, key, mod: mod * x[nlp.states.key_index(key), :] if x.any() else np.ndarray((len(name_elements), 1)) * np.nan,
                 plot_type=PlotType.INTEGRATED,
                 combine_to=fatigue_plot_name,
                 key=name_tp,

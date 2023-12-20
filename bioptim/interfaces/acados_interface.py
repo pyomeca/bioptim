@@ -98,8 +98,8 @@ class AcadosInterface(SolverInterface):
         if ocp.nlp[0].phase_dynamics != PhaseDynamics.SHARED_DURING_THE_PHASE:
             raise RuntimeError("ACADOS necessitate phase_dynamics==PhaseDynamics.SHARED_DURING_THE_PHASE")
 
-        if ocp.nlp[0].stochastic_variables.cx_start.shape[0] != 0:
-            raise RuntimeError("ACADOS does not support stochastic variables yet")
+        if ocp.nlp[0].algebraic_states.cx_start.shape[0] != 0:
+            raise RuntimeError("ACADOS does not support algebraic states yet")
 
         super().__init__(ocp)
 
@@ -162,7 +162,7 @@ class AcadosInterface(SolverInterface):
         x = ocp.nlp[0].states.cx_start
         u = ocp.nlp[0].controls.cx_start
         p = ocp.nlp[0].parameters.cx
-        s = ocp.nlp[0].stochastic_variables.cx_start
+        a = ocp.nlp[0].algebraic_states.cx_start
         if ocp.parameters:
             for param in ocp.parameters:
                 if str(param.cx)[:11] == f"time_phase_":
@@ -173,7 +173,7 @@ class AcadosInterface(SolverInterface):
         x = vertcat(p, x)
         x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
 
-        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func[0](t, x[self.nparams :, :], u, p, s))
+        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func[0](t, x[self.nparams :, :], u, p, a))
         f_impl = x_dot - f_expl
 
         self.acados_model.f_impl_expr = f_impl
@@ -284,21 +284,21 @@ class AcadosInterface(SolverInterface):
             x = nlp.states.cx_start
             u = nlp.controls.cx_start
             p = nlp.parameters.cx
-            s = nlp.stochastic_variables.cx_start
+            a = nlp.algebraic_states.cx_start
 
             for g, G in enumerate(nlp.g):
                 if not G:
                     continue
 
                 if G.node[0] == Node.ALL or G.node[0] == Node.ALL_SHOOTING:
-                    self.all_constr = vertcat(self.all_constr, G.function[0](t, x, u, p, s))
+                    self.all_constr = vertcat(self.all_constr, G.function[0](t, x, u, p, a))
                     self.all_g_bounds.concatenate(G.bounds)
                     if G.node[0] == Node.ALL:
-                        self.end_constr = vertcat(self.end_constr, G.function[0](t, x, u, p, s))
+                        self.end_constr = vertcat(self.end_constr, G.function[0](t, x, u, p, a))
                         self.end_g_bounds.concatenate(G.bounds)
 
                 elif G.node[0] == Node.END:
-                    self.end_constr = vertcat(self.end_constr, G.function[0](t, x, u, p, s))
+                    self.end_constr = vertcat(self.end_constr, G.function[0](t, x, u, p, a))
                     self.end_g_bounds.concatenate(G.bounds)
 
                 else:
@@ -471,9 +471,9 @@ class AcadosInterface(SolverInterface):
             else:
                 raise RuntimeError(f"{objectives.type.name} is an incompatible objective term with LINEAR_LS cost type")
 
-        def add_nonlinear_ls_lagrange(acados, objectives, t, x, u, p, s):
+        def add_nonlinear_ls_lagrange(acados, objectives, t, x, u, p, a):
             acados.lagrange_costs = vertcat(
-                acados.lagrange_costs, objectives.function[0](t, x, u, p, s).reshape((-1, 1))
+                acados.lagrange_costs, objectives.function[0](t, x, u, p, a).reshape((-1, 1))
             )
             acados.W = linalg.block_diag(acados.W, np.diag([objectives.weight] * objectives.function[0].numel_out()))
 
@@ -483,14 +483,14 @@ class AcadosInterface(SolverInterface):
             else:
                 acados.y_ref.append([np.zeros((objectives.function[0].numel_out(), 1)) for _ in node_idx])
 
-        def add_nonlinear_ls_mayer(acados, objectives, t, x, u, p, s, node=None):
+        def add_nonlinear_ls_mayer(acados, objectives, t, x, u, p, a, node=None):
             if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
                 acados.W_0 = linalg.block_diag(
                     acados.W_0, np.diag([objectives.weight] * objectives.function[0].numel_out())
                 )
                 x = x if objectives.function[0].size_in("x") != (0, 0) else []
                 u = u if objectives.function[0].size_in("u") != (0, 0) else []
-                acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function[0](t, x, u, p, s).reshape((-1, 1)))
+                acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function[0](t, x, u, p, a).reshape((-1, 1)))
 
                 if objectives.target is not None:
                     acados.y_ref_start.append(objectives.target[..., 0].T.reshape((-1, 1)))
@@ -504,7 +504,7 @@ class AcadosInterface(SolverInterface):
                 x = x if objectives.function[0].size_in("x") != (0, 0) else []
                 u = u if objectives.function[0].size_in("u") != (0, 0) else []
                 acados.mayer_costs_e = vertcat(
-                    acados.mayer_costs_e, objectives.function[0](t, x, u, p, s).reshape((-1, 1))
+                    acados.mayer_costs_e, objectives.function[0](t, x, u, p, a).reshape((-1, 1))
                 )
 
                 if objectives.target is not None:
@@ -603,7 +603,7 @@ class AcadosInterface(SolverInterface):
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
-                            nlp.stochastic_variables.cx_start,
+                            nlp.algebraic_states.cx_start,
                         )
 
                         # Deal with first and last node
@@ -614,7 +614,7 @@ class AcadosInterface(SolverInterface):
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
-                            nlp.stochastic_variables.cx_start,
+                            nlp.algebraic_states.cx_start,
                         )
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
@@ -625,7 +625,7 @@ class AcadosInterface(SolverInterface):
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
-                            nlp.stochastic_variables.cx_start,
+                            nlp.algebraic_states.cx_start,
                         )
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
@@ -643,7 +643,7 @@ class AcadosInterface(SolverInterface):
                         nlp.states.cx_start,
                         nlp.controls.cx_start,
                         nlp.parameters.cx,
-                        nlp.stochastic_variables.cx_start,
+                        nlp.algebraic_states.cx_start,
                     )
 
             # Set costs

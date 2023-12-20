@@ -108,11 +108,10 @@ def test_variable_type():
     assert VariableType.STATES.value == "states"
     assert VariableType.CONTROLS.value == "controls"
     assert VariableType.STATES_DOT.value == "states_dot"
-    assert VariableType.ALGEBRAIC.value == "algebraic"
-    assert VariableType.STOCHASTIC.value == "stochastic"
+    assert VariableType.ALGEBRAIC_STATES.value == "algebraic_states"
 
     # verify the number of elements
-    assert len(VariableType) == 5
+    assert len(VariableType) == 4
 
 
 def test_solution_integrator():

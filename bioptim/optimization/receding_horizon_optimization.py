@@ -246,9 +246,9 @@ class RecedingHorizonOptimization(OptimalControlProgram):
             u_init=u_init,
             use_sx=self.cx == SX,
         )
-        s_init = InitialGuessList()
+        a_init = InitialGuessList()
         p_init = InitialGuessList()
-        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, s_init])
+        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
     def advance_window(self, sol: Solution, steps: int = 0, **advance_options):
         state_bounds_have_changed = self.advance_window_bounds_states(sol, **advance_options)
@@ -478,9 +478,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             u_init=u_init,
             use_sx=self.cx == SX,
         )
-        s_init = InitialGuessList()
+        a_init = InitialGuessList()
         p_init = InitialGuessList()
-        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, s_init])
+        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
     def _initialize_state_idx_to_cycle(self, options):
         if "states" not in options:
@@ -735,9 +735,9 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             u_init=u_init,
             use_sx=self.cx == SX,
         )
-        s_init = InitialGuessList()
+        a_init = InitialGuessList()
         p_init = InitialGuessList()
-        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, s_init])
+        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init, p_init, a_init])
 
     def _initialize_one_cycle(self, dt: float, states: np.ndarray, controls: np.ndarray):
         """return a solution for a single window kept of the MHE"""
@@ -773,9 +773,9 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             u_init=u_init,
             use_sx=self.cx == SX,
         )
-        s_init = InitialGuessList()
+        a_init = InitialGuessList()
         p_init = InitialGuessList()
-        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init_for_solution, p_init, s_init])
+        return Solution.from_initial_guess(solution_ocp, [np.array([dt]), x_init, u_init_for_solution, p_init, a_init])
 
 
 class NonlinearModelPredictiveControl(RecedingHorizonOptimization):

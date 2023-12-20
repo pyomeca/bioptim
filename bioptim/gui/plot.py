@@ -1,26 +1,16 @@
 from typing import Callable, Any
 import multiprocessing as mp
-from copy import copy
 import tkinter
 from itertools import accumulate
 
 import numpy as np
 from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import StrMethodFormatter
-from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM, Function
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
-from ..limits.multinode_constraint import MultinodeConstraint
-from ..misc.enums import (
-    PlotType,
-    ControlType,
-    InterpolationType,
-    Shooting,
-    SolutionIntegrator,
-    QuadratureRule,
-    PhaseDynamics,
-)
+from ..misc.enums import PlotType,Shooting, SolutionIntegrator, QuadratureRule, InterpolationType
 from ..misc.mapping import Mapping, BiMapping
 from ..optimization.solution.solution import Solution
 from ..dynamics.ode_solver import OdeSolver
@@ -34,7 +24,7 @@ class CustomPlot:
 
     Attributes
     ----------
-    function: Callable[time, states, controls, parameters, stochastic_variables]
+    function: Callable[time, states, controls, parameters, algebraic_states]
         The function to call to update the graph
     type: PlotType
         Type of plot to use
@@ -78,7 +68,7 @@ class CustomPlot:
         """
         Parameters
         ----------
-        update_function: Callable[time, states, controls, parameters, stochastic_variables]
+        update_function: Callable[time, states, controls, parameters, algebraic_states]
             The function to call to update the graph
         plot_type: PlotType
             Type of plot to use
@@ -145,8 +135,6 @@ class PlotOcp:
         The height of the figure
     n_horizontal_windows: int
         The number of figure columns
-    nodes: int
-        The total number of nodes points
     n_vertical_windows: int
         The number of figure rows
     ocp: OptimalControlProgram
@@ -331,13 +319,13 @@ class PlotOcp:
                         nlp.states.node_index = node_index
                         nlp.states_dot.node_index = node_index
                         nlp.controls.node_index = node_index
-                        nlp.stochastic_variables.node_index = node_index
+                        nlp.algebraic_states.node_index = node_index
 
                         # If multi-node penalties = None, stays zero
                         size_x = nlp.states.shape
                         size_u = nlp.controls.shape
                         size_p = nlp.parameters.shape
-                        size_s = nlp.stochastic_variables.shape
+                        size_a = nlp.algebraic_states.shape
                         if "penalty" in nlp.plot[key].parameters:
                             penalty = nlp.plot[key].parameters["penalty"]
 
@@ -347,7 +335,7 @@ class PlotOcp:
                                 size_x = casadi_function.size_in("x")[0]
                                 size_u = casadi_function.size_in("u")[0]
                                 size_p = casadi_function.size_in("p")[0]
-                                size_s = casadi_function.size_in("s")[0]
+                                size_a = casadi_function.size_in("a")[0]
 
                         size = (
                             nlp.plot[key].function(
@@ -357,7 +345,7 @@ class PlotOcp:
                                 np.zeros((size_x, 1)),  # states
                                 np.zeros((size_u, 1)),  # controls
                                 np.zeros((size_p, 1)),  # parameters
-                                np.zeros((size_s, 1)),  # stochastic_variables
+                                np.zeros((size_a, 1)),  # algebraic_states
                                 **nlp.plot[key].parameters,  # parameters
                             )
                             .shape[0]
@@ -660,14 +648,14 @@ class PlotOcp:
 
         data_controls = sol.stepwise_controls(scaled=True, to_merge=SolutionMerge.KEYS)
         p = sol.decision_parameters(scaled=True, to_merge=SolutionMerge.KEYS)
-        data_stochastic = sol.stochastic(scaled=True, concatenate_keys=True)
+        data_algebraic_states = sol.decision_algebraic_states(scaled=True, to_merge=SolutionMerge.KEYS)
 
         if len(self.ocp.nlp) == 1:
             # This is automatically removed in the Solution, but to keep things clean we put them back in a list
             data_states_decision = [data_states_decision]
             data_states_stepwise = [data_states_stepwise]
             data_controls = [data_controls]
-            data_stochastic = [data_stochastic]
+            data_algebraic_states = [data_algebraic_states]
 
         time_stepwise = sol.stepwise_time(continuous=True)
         if self.ocp.n_phases == 1:
@@ -680,17 +668,17 @@ class PlotOcp:
             x_decision = data_states_decision[phase_idx]
             x_stepwise = data_states_stepwise[phase_idx]
             u = data_controls[phase_idx]
-            s = data_stochastic[phase_idx]
+            a = data_algebraic_states[phase_idx]
 
             for key in self.variable_sizes[phase_idx]:
-                y_data = self._compute_y_from_plot_func(self.custom_plots[key][phase_idx], phase_idx, time_stepwise, phases_dt, x_decision, x_stepwise, u, s, p)
+                y_data = self._compute_y_from_plot_func(self.custom_plots[key][phase_idx], phase_idx, time_stepwise, phases_dt, x_decision, x_stepwise, u, p, a)
                 if y_data is None:
                     continue
                 self._append_to_ydata(y_data)
 
         self.__update_axes()
 
-    def _compute_y_from_plot_func(self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, s, p):
+    def _compute_y_from_plot_func(self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a):
         """
         Compute the y data from the plot function
 
@@ -708,10 +696,10 @@ class PlotOcp:
             The states of the current phase (stepwise)
         u
             The controls of the current phase
-        s
-            The stochastic of the current phase
         p
             The parameters of the current phase
+        a
+            The algebraic states of the current phase
 
         Returns
         -------
@@ -734,7 +722,7 @@ class PlotOcp:
                 x_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx] if n_idx < len(x) else np.ndarray((0, 1)))
                 u_node = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)))
                 p_node = PenaltyHelpers.parameters(penalty, lambda: np.array(p))
-                s_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: s[n_idx][:, sn_idx] if n_idx < len(s) else np.ndarray((0, 1)))
+                a_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)))
                 
             else:
                 t0 = time_stepwise[phase_idx][node_idx][0]
@@ -742,9 +730,9 @@ class PlotOcp:
                 x_node = x[node_idx]
                 u_node = u[node_idx] if node_idx < len(u) else np.ndarray((0, 1))
                 p_node = p
-                s_node = s[node_idx]
+                a_node = a[node_idx]
 
-            tp = custom_plot.function(t0, dt, node_idx, x_node, u_node, p_node, s_node, **custom_plot.parameters)
+            tp = custom_plot.function(t0, dt, node_idx, x_node, u_node, p_node, a_node, **custom_plot.parameters)
 
             y_tp = np.ndarray((max(custom_plot.phase_mappings.to_first.map_idx) + 1, tp.shape[1])) * np.nan
             for ctr, axe_index in enumerate(custom_plot.phase_mappings.to_first.map_idx):

@@ -27,6 +27,7 @@ from bioptim import (
     InitialGuessList,
     ControlType,
     Axis,
+    SolutionMerge,
 )
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
@@ -202,39 +203,39 @@ def prepare_socp(
     u_init = InitialGuessList()
     u_init.add("tau", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
 
-    s_init = InitialGuessList()
-    s_bounds = BoundsList()
+    a_init = InitialGuessList()
+    a_bounds = BoundsList()
     n_k = 2 * 4
     n_ref = 4
     n_m = 4 * 4 * (3 + 1)
     n_cov = 4 * 4
 
-    s_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
-    s_bounds.add(
+    a_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
+    a_bounds.add(
         "k",
         min_bound=[-cas.inf] * n_k,
         max_bound=[cas.inf] * n_k,
         interpolation=InterpolationType.CONSTANT,
     )
 
-    s_init.add(
+    a_init.add(
         "ref",
         initial_guess=[0.01] * n_ref,
         interpolation=InterpolationType.CONSTANT,
     )
-    s_bounds.add(
+    a_bounds.add(
         "ref",
         min_bound=[-cas.inf] * n_ref,
         max_bound=[cas.inf] * n_ref,
         interpolation=InterpolationType.CONSTANT,
     )
 
-    s_init.add(
+    a_init.add(
         "m",
         initial_guess=[0.01] * n_m,
         interpolation=InterpolationType.CONSTANT,
     )
-    s_bounds.add(
+    a_bounds.add(
         "m",
         min_bound=[-cas.inf] * n_m,
         max_bound=[cas.inf] * n_m,
@@ -247,12 +248,12 @@ def prepare_socp(
     for i in range(n_states):
         for j in range(n_states):
             cov_init_vector[idx] = cov_init[i, j]
-    s_init.add(
+    a_init.add(
         "cov",
         initial_guess=cov_init_vector,
         interpolation=InterpolationType.CONSTANT,
     )
-    s_bounds.add(
+    a_bounds.add(
         "cov",
         min_bound=[-cas.inf] * n_cov,
         max_bound=[cas.inf] * n_cov,
@@ -266,10 +267,10 @@ def prepare_socp(
         final_time,
         x_init=x_init,
         u_init=u_init,
-        s_init=s_init,
+        a_init=a_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        s_bounds=s_bounds,
+        a_bounds=a_bounds,
         objective_functions=objective_functions,
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
@@ -329,13 +330,16 @@ def main():
     sol_socp = socp.solve(solver)
     # sol_socp.graphs()
 
-    q_sol = sol_socp.states["q"]
-    qdot_sol = sol_socp.states["qdot"]
-    tau_sol = sol_socp.controls["tau"]
-    k_sol = sol_socp.stochastic_variables["k"]
-    ref_sol = sol_socp.stochastic_variables["ref"]
-    m_sol = sol_socp.stochastic_variables["m"]
-    cov_sol = sol_socp.stochastic_variables["cov"]
+    states = sol_socp.stepwise_states(to_merge=SolutionMerge.NODES)
+    controls = sol_socp.stepwise_controls(to_merge=SolutionMerge.NODES)
+
+    q_sol = states["q"]
+    qdot_sol = states["qdot"]
+    tau_sol = controls["tau"]
+    k_sol = stochastic_variables["k"]
+    ref_sol = stochastic_variables["ref"]
+    m_sol = stochastic_variables["m"]
+    cov_sol = stochastic_variables["cov"]
     stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol))
     data = {
         "q_sol": q_sol,

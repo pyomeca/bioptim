@@ -72,8 +72,6 @@ class NonLinearProgram:
         The collection of plot for each of the variables
     plot_mapping: list
         The mapping for the plots
-    t0: float
-        The time stamp of the beginning of the phase
     tf: float
         The time stamp of the end of the phase
     tf_mx:
@@ -100,16 +98,16 @@ class NonLinearProgram:
         The scaling for the states
     states: OptimizationVariableContainer
         A list of all the state variables
-    s_bounds = Bounds()
-        The bounds for the stochastic variables
-    s_init = InitialGuess()
-        The initial guess for the stochastic variables
-    s_scaling:
-        The scaling for the stochastic variables
+    a_bounds = Bounds()
+        The bounds for the algebraic_states variables
+    a_init = InitialGuess()
+        The initial guess for the algebraic_states variables
+    a_scaling:
+        The scaling for the algebraic_states variables
     phase_dynamics: PhaseDynamics
         The dynamics of the current phase (e.g. SHARED_DURING_PHASE, or ONE_PER_NODE)
-    S: list[MX | SX]
-        The casadi variables for the stochastic variables
+    A: list[MX | SX]
+        The casadi variables for the algebraic_states variables
 
 
     Methods
@@ -179,11 +177,11 @@ class NonLinearProgram:
         self.X_scaled = None
         self.x_scaling = None
         self.X = None
-        self.s_bounds = BoundsList()
-        self.s_init = InitialGuessList()
-        self.S = None
-        self.S_scaled = None
-        self.s_scaling = None
+        self.a_bounds = BoundsList()
+        self.a_init = InitialGuessList()
+        self.A = None
+        self.A_scaled = None
+        self.a_scaling = None
         self.phase_dynamics = phase_dynamics
         self.time_index = None
         self.time_cx = None
@@ -195,7 +193,7 @@ class NonLinearProgram:
         self.states = OptimizationVariableContainer(self.phase_dynamics)
         self.states_dot = OptimizationVariableContainer(self.phase_dynamics)
         self.controls = OptimizationVariableContainer(self.phase_dynamics)
-        self.stochastic_variables = OptimizationVariableContainer(self.phase_dynamics)
+        self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
 
     def initialize(self, cx: MX | SX | Callable = None):
@@ -218,7 +216,7 @@ class NonLinearProgram:
         self.states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.states_dot.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.controls.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
-        self.stochastic_variables.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
+        self.algebraic_states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
     @property
@@ -292,15 +290,15 @@ class NonLinearProgram:
             raise RuntimeError("Not implemented yet")
 
     @property
-    def n_stochastic_nodes(self) -> int:
+    def n_algebraic_states_nodes(self) -> int:
         """
         Returns
         -------
-        The number of stochastic variables
+        The number of algebraic_states variables
         """
         return self.ns + 1
     
-    def n_decision_stochastic_steps(self, node_idx) -> int:
+    def n_decision_algebraic_states_steps(self, node_idx) -> int:
         """
         Parameters
         ----------
@@ -309,11 +307,11 @@ class NonLinearProgram:
 
         Returns
         -------
-        The number of stochastic variables
+        The number of algebraic_states variables
         """
         if node_idx >= self.ns:
             return 1
-        return self.stochastic_variables.shape
+        return self.algebraic_states.shape
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):

@@ -9,8 +9,8 @@ from bioptim import Solver, SocpType
 def test_arm_reaching_torque_driven_collocations():
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_collocations as ocp_module
 
-    if platform != "linux":
-        return
+    # if platform != "linux":
+    #     return
 
     final_time = 0.4
     n_shooting = 4

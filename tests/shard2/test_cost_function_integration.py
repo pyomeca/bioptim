@@ -190,7 +190,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                         states[:, i:i+2].reshape((-1, 1)),  # States
                         controls[:, i:i+2].reshape((-1, 1)),  # Controls
                         [],  # Parameters
-                        [],  # Stochastic variables
+                        [],  # Algebraic states
                         ocp.nlp[0].J[0].weight,  # Weight
                         [],  # Target
                     )

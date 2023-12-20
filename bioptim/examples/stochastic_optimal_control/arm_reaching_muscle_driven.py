@@ -86,8 +86,8 @@ def stochastic_forward_dynamics(
     mus_excitations_fb = mus_excitations
     noise_torque = np.zeros(nlp.model.motor_noise_magnitude.shape)
     if with_noise:
-        ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
-        k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
+        ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], stochastic_variables)
+        k = DynamicsFunctions.get(nlp.algebraic_states["k"], stochastic_variables)
         k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
         hand_pos_velo = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
@@ -136,7 +136,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
         ocp, nlp, True, True
     )  # Muscles activations as states + muscles excitations as controls
 
-    # Stochastic variables
+    # Algebraic variables
     ConfigureProblem.configure_stochastic_k(ocp, nlp, n_noised_controls=6, n_references=4)
     ConfigureProblem.configure_stochastic_ref(ocp, nlp, n_references=4)
     ConfigureProblem.configure_stochastic_m(ocp, nlp, n_noised_states=10)
@@ -179,10 +179,10 @@ def get_cov_mat(nlp, node_index):
 
     nlp.states.node_index = node_index - 1
     nlp.controls.node_index = node_index - 1
-    nlp.stochastic_variables.node_index = node_index - 1
+    nlp.algebraic_states.node_index = node_index - 1
     nlp.integrated_values.node_index = node_index - 1
 
-    m_matrix = StochasticBioModel.reshape_to_matrix(nlp.stochastic_variables["m"].cx_start, nlp.model.matrix_shape_m)
+    m_matrix = StochasticBioModel.reshape_to_matrix(nlp.algebraic_states["m"].cx_start, nlp.model.matrix_shape_m)
 
     sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * cas.MX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
@@ -192,7 +192,7 @@ def get_cov_mat(nlp, node_index):
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,
-        nlp.stochastic_variables.cx_start,
+        nlp.algebraic_states.cx_start,
         nlp,
         force_field_magnitude=nlp.model.force_field_magnitude,
         with_noise=True,
@@ -211,7 +211,7 @@ def get_cov_mat(nlp, node_index):
             nlp.states.cx_start,
             nlp.controls.cx_start,
             nlp.parameters,
-            nlp.stochastic_variables.cx_start,
+            nlp.algebraic_states.cx_start,
             cov_sym,
             nlp.model.motor_noise_sym,
             nlp.model.sensory_noise_sym,
@@ -222,7 +222,7 @@ def get_cov_mat(nlp, node_index):
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,
-        nlp.stochastic_variables.cx_start,
+        nlp.algebraic_states.cx_start,
         nlp.integrated_values["cov"].cx_start,
         nlp.model.motor_noise_magnitude,
         nlp.model.sensory_noise_magnitude,
@@ -263,7 +263,7 @@ def reach_target_consistantly(controllers: list[PenaltyController]) -> cas.MX:
         controllers[-1].states["qdot"].cx_start,
         controllers[-1].integrated_values.cx_start,
     )
-    # Since the stochastic variables are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
+    # Since the algebraic states are defined with ns+1, the cx_start actually refers to the last node (when using node=Node.END)
 
     return val
 
@@ -287,11 +287,11 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
 
     # create the casadi function to be evaluated
     # Get the symbolic variables
-    ref = controllers[0].stochastic_variables["ref"].cx_start
+    ref = controllers[0].algebraic_states["ref"].cx_start
     cov_sym = cas.MX.sym("cov", controllers[0].integrated_values.cx_start.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, controllers[0].model.matrix_shape_cov)
 
-    k = controllers[0].stochastic_variables["k"].cx_start
+    k = controllers[0].algebraic_states["k"].cx_start
     k_matrix = StochasticBioModel.reshape_to_matrix(k, controllers[0].model.matrix_shape_k)
 
     # Compute the expected effort
@@ -299,7 +299,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
         controllers[0].states.cx_start,
         controllers[0].controls.cx_start,
         controllers[0].parameters.cx_start,
-        controllers[0].stochastic_variables.cx_start,
+        controllers[0].algebraic_states.cx_start,
         controllers[0].get_nlp,
     )
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
@@ -523,44 +523,44 @@ def prepare_socp(
     u_init.add("muscles", initial_guess=controls_init, interpolation=InterpolationType.EACH_FRAME)
 
     n_stochastic = n_muscles * (n_q + n_qdot) + n_q + n_qdot + n_states * n_states  # K(6x4) + ref(4x1) + M(10x10)
-    s_init = InitialGuessList()
-    s_bounds = BoundsList()
+    a_init = InitialGuessList()
+    a_bounds = BoundsList()
     stochastic_min = np.ones((n_stochastic, 3)) * -cas.inf
     stochastic_max = np.ones((n_stochastic, 3)) * cas.inf
 
     stochastic_init = np.zeros((n_stochastic, n_shooting + 1))
     curent_index = 0
     stochastic_init[: n_muscles * (n_q + n_qdot), :] = 0.01  # K
-    s_init.add(
+    a_init.add(
         "k",
         initial_guess=stochastic_init[: n_muscles * (n_q + n_qdot), :],
         interpolation=InterpolationType.EACH_FRAME,
     )
-    s_bounds.add(
+    a_bounds.add(
         "k",
         min_bound=stochastic_min[: n_muscles * (n_q + n_qdot), :],
         max_bound=stochastic_max[: n_muscles * (n_q + n_qdot), :],
     )
     curent_index += n_muscles * (n_q + n_qdot)
     stochastic_init[curent_index : curent_index + n_q + n_qdot, :] = 0.01  # ref
-    s_init.add(
+    a_init.add(
         "ref",
         initial_guess=stochastic_init[curent_index : curent_index + n_q + n_qdot, :],
         interpolation=InterpolationType.EACH_FRAME,
     )
-    s_bounds.add(
+    a_bounds.add(
         "ref",
         min_bound=stochastic_min[curent_index : curent_index + n_q + n_qdot, :],
         max_bound=stochastic_max[curent_index : curent_index + n_q + n_qdot, :],
     )
     curent_index += n_q + n_qdot
     stochastic_init[curent_index : curent_index + n_states * n_states, :] = 0.01  # M
-    s_init.add(
+    a_init.add(
         "m",
         initial_guess=stochastic_init[curent_index : curent_index + n_states * n_states, :],
         interpolation=InterpolationType.EACH_FRAME,
     )
-    s_bounds.add(
+    a_bounds.add(
         "m",
         min_bound=stochastic_min[curent_index : curent_index + n_states * n_states, :],
         max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
@@ -580,10 +580,10 @@ def prepare_socp(
         final_time,
         x_init=x_init,
         u_init=u_init,
-        s_init=s_init,
+        a_init=a_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        s_bounds=s_bounds,
+        a_bounds=a_bounds,
         objective_functions=objective_functions,
         multinode_objectives=multinode_objectives,
         constraints=constraints,

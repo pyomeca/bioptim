@@ -6,7 +6,6 @@ import numpy as np
 from ..limits.penalty_controller import PenaltyController
 from ..limits.penalty import PenaltyOption
 from ..misc.options import UniquePerProblemOptionList
-from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.variable_scaling import VariableScaling, VariableScalingList
 
 
@@ -142,19 +141,19 @@ class Parameter(PenaltyOption):
         state_cx = ocp.cx(0, 0)
         control_cx = ocp.cx(0, 0)
         param_cx = ocp.parameters.cx
-        stochastic_cx = ocp.cx(0, 0)
+        algebraic_states_cx = ocp.cx(0, 0)
 
         penalty.function.append(
             Function(
                 f"{self.name}",
-                [time_cx, dt, state_cx, control_cx, param_cx, stochastic_cx], 
+                [time_cx, dt, state_cx, control_cx, param_cx, algebraic_states_cx],
                 [penalty_function],
-                ["t", "dt", "x", "u", "p", "s"],
+                ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
         )
 
-        modified_fcn = penalty.function[0](time_cx, dt, state_cx, control_cx, param_cx, stochastic_cx)
+        modified_fcn = penalty.function[0](time_cx, dt, state_cx, control_cx, param_cx, algebraic_states_cx)
 
         weight_cx = ocp.cx.sym("weight", 1, 1)
         target_cx = ocp.cx.sym("target", modified_fcn.shape)
@@ -165,9 +164,9 @@ class Parameter(PenaltyOption):
         penalty.weighted_function.append(
             Function(  # Do not use nlp.add_casadi_func because all of them must be registered
                 f"{self.name}",
-                [time_cx, dt, state_cx, control_cx, param_cx, stochastic_cx, weight_cx, target_cx],
+                [time_cx, dt, state_cx, control_cx, param_cx, algebraic_states_cx, weight_cx, target_cx],
                 [weight_cx * modified_fcn],
-                ["t", "dt", "x", "u", "p", "s", "weight", "target"],
+                ["t", "dt", "x", "u", "p", "a", "weight", "target"],
                 ["val"],
             )
         )

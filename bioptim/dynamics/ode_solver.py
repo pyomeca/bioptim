@@ -128,9 +128,9 @@ class OdeSolverBase:
         """
         raise RuntimeError("This method should be implemented in the child class")
 
-    def s_ode(self, nlp) -> MX:
+    def a_ode(self, nlp) -> MX:
         """
-        The symbolic stochastic variables
+        The symbolic algebraic states variables
 
         Parameters
         ----------
@@ -139,7 +139,7 @@ class OdeSolverBase:
 
         Returns
         -------
-        The symbolic stochastic variables
+        The symbolic algebraic variables
         """
         raise RuntimeError("This method should be implemented in the child class")
 
@@ -187,7 +187,7 @@ class OdeSolverBase:
         nlp.states.node_index = node_index
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
-        nlp.stochastic_variables.node_index = node_index
+        nlp.algebraic_states.node_index = node_index
         ode_opt = {
             "model": nlp.model,
             "cx": nlp.cx,
@@ -203,7 +203,7 @@ class OdeSolverBase:
             "t": self.t_ode(nlp),
             "x": self.x_ode(nlp),
             "p": self.p_ode(nlp),
-            "s": self.s_ode(nlp),
+            "a": self.a_ode(nlp),
             "param": self.param_ode(nlp),
             "ode": nlp.dynamics_func[dynamics_index],
             # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
@@ -294,8 +294,8 @@ class RK(OdeSolverBase):
         else:
             return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
 
-    def s_ode(self, nlp):
-        return nlp.stochastic_variables.scaled.cx_start
+    def a_ode(self, nlp):
+        return nlp.algebraic_states.scaled.cx_start
 
     def __str__(self):
         ode_solver_string = f"{self.integrator.__name__} {self.n_integration_steps} step"
@@ -377,8 +377,8 @@ class OdeSolver:
         def p_ode(self, nlp):
             return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
 
-        def s_ode(self, nlp):
-            return horzcat(nlp.stochastic_variables.scaled.cx_start, nlp.stochastic_variables.scaled.cx_end)
+        def a_ode(self, nlp):
+            return horzcat(nlp.algebraic_states.scaled.cx_start, nlp.algebraic_states.scaled.cx_end)
 
         def initialize_integrator(self, ocp, nlp, **kwargs):
             if nlp.control_type == ControlType.CONSTANT:
@@ -458,8 +458,8 @@ class OdeSolver:
         def p_ode(self, nlp):
             return nlp.controls.scaled.cx_start
 
-        def s_ode(self, nlp):
-            return nlp.stochastic_variables.scaled.cx_start
+        def a_ode(self, nlp):
+            return nlp.algebraic_states.scaled.cx_start
 
         def initialize_integrator(self, ocp, nlp, **kwargs):
             if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -537,8 +537,8 @@ class OdeSolver:
         def p_ode(self, nlp):
             return nlp.controls.scaled.cx
 
-        def s_ode(self, nlp):
-            return nlp.stochastic_variables.scaled.cx
+        def a_ode(self, nlp):
+            return nlp.algebraic_states.scaled.cx
 
         def initialize_integrator(
             self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False, **extra_opt
@@ -554,21 +554,21 @@ class OdeSolver:
                 raise RuntimeError(
                     "CVODES cannot be used while optimizing parameters"
                 )  # todo: should accept parameters now
-            if nlp.stochastic_variables.cx_start.shape != 0 and nlp.stochastic_variables.cx_start.shape != (0, 0):
-                raise RuntimeError("CVODES cannot be used while optimizing stochastic variables")
+            if nlp.algebraic_states.cx_start.shape != 0 and nlp.algebraic_states.cx_start.shape != (0, 0):
+                raise RuntimeError("CVODES cannot be used while optimizing algebraic_states variables")
             if nlp.external_forces:
                 raise RuntimeError("CVODES cannot be used with external_forces")
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
-            if nlp.stochastic_variables.shape != 0:
-                raise RuntimeError("CVODES cannot be used with stochastic variables")
+            if nlp.algebraic_states.shape != 0:
+                raise RuntimeError("CVODES cannot be used with algebraic_states variables")
 
             t = [self.t_ode(nlp)[0], self.t_ode(nlp)[1] - self.t_ode(nlp)[0]]
             ode = {
                 "x": nlp.states.scaled.cx_start,
                 "u": nlp.controls.scaled.cx_start,  # todo: add p=parameters
                 "ode": nlp.dynamics_func[dynamics_index](
-                    vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.s_ode(nlp)
+                    vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.a_ode(nlp)
                 ),
             }
 
@@ -578,13 +578,13 @@ class OdeSolver:
             return [
                 Function(
                     "integrator",
-                    [vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.s_ode(nlp)],
+                    [vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.a_ode(nlp)],
                     self._adapt_integrator_output(
                         integrator_func,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
                     ),
-                    ["t_span", "x0", "u", "p", "s"],
+                    ["t_span", "x0", "u", "p", "a"],
                     ["xf", "xall"],
                     {"allow_free": allow_free_variables},
                 )

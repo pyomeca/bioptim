@@ -125,7 +125,7 @@ def test_add_new_plot(phase_dynamics):
     sol = ocp.solve(solver)
 
     # Test 1 - Working plot
-    ocp.add_plot("My New Plot", lambda t0, phases_dt, node_idx, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t0, phases_dt, node_idx, x, u, p, a: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Add the plot of objectives and constraints to this mess
@@ -205,7 +205,7 @@ def test_console_objective_functions(phase_dynamics):
                     nlp.states.node_index = node_index
                     nlp.states_dot.node_index = node_index
                     nlp.controls.node_index = node_index
-                    nlp.stochastic_variables.node_index = node_index
+                    nlp.algebraic_states.node_index = node_index
 
                     name = (
                         p.name.replace("->", "_")
@@ -224,17 +224,17 @@ def test_console_objective_functions(phase_dynamics):
                     if p.weighted_function[node_index].size_in("u") == (0, 0):
                         u = MX.sym("u", 3, 1)
                     param = MX.sym("param", *p.weighted_function[node_index].size_in("p"))
-                    s = MX.sym("s", *p.weighted_function[node_index].size_in("s"))
+                    a = MX.sym("a", *p.weighted_function[node_index].size_in("a"))
                     weight = MX.sym("weight", *p.weighted_function[node_index].size_in("weight"))
                     target = MX.sym("target", *p.weighted_function[node_index].size_in("target"))
 
                     p.function[node_index] = Function(
-                        name, [t, phases_dt, x, u, param, s], [np.array([range(cmp, len(p.rows) + cmp)]).T]
+                        name, [t, phases_dt, x, u, param, a], [np.array([range(cmp, len(p.rows) + cmp)]).T]
                     )
                     p.function_non_threaded[node_index] = p.function[node_index]
                     p.weighted_function[node_index] = Function(
                         name,
-                        [t, phases_dt, x, u, param, s, weight, target],
+                        [t, phases_dt, x, u, param, a, weight, target],
                         [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T],
                     )
                     p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]
