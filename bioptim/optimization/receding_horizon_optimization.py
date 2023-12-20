@@ -440,7 +440,7 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         states, controls = super(CyclicRecedingHorizonOptimization, self).export_data(sol)
         
         frames = self.frame_to_export
-        if frames is not None and frames.stop != self.nlp[0].n_controls_nodes:
+        if frames.stop is not None and frames.stop != self.nlp[0].n_controls_nodes:
             # The "not" conditions are there because if they are true, super() already avec done it. 
             # Otherwise since it is cyclic it should always be done anyway
             if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
