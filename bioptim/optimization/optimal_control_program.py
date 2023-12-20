@@ -810,7 +810,7 @@ class OptimalControlProgram:
                     ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
                 )
                 penalty.add_or_replace_to_penalty_pool(self, nlp)
-                if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_collocation_starting_point:
+                if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_starting_point:
                     penalty = Constraint(
                         ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
                         node=Node.ALL_SHOOTING,

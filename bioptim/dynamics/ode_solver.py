@@ -18,14 +18,17 @@ class OdeSolverBase:
         Properly set the integration in an nlp
     """
 
-    def __init__(self, allow_free_variables: bool = False):
+    def __init__(self, allow_free_variables: bool = False, duplicate_starting_point: bool = False):
         """
         Parameters
         ----------
         allow_free_variables: bool
             If the free variables are allowed in the integrator's casadi function
+        duplicate_starting_point: bool
+            If the starting point should be duplicated in the integrator's casadi function
         """
         self.allow_free_variables = allow_free_variables
+        self.duplicate_starting_point = duplicate_starting_point
 
     @property
     def integrator(self):
@@ -196,6 +199,7 @@ class OdeSolverBase:
             "allow_free_variables": allow_free_variables,
             "param_scaling": vertcat(*[nlp.parameters[key].scaling.scaling for key in nlp.parameters.keys()]),
             "ode_index": node_index if nlp.dynamics_func[dynamics_index].size2_out("xdot") > 1 else 0,
+            "duplicate_starting_point": self.duplicate_starting_point,
             **extra_opt,
         }
 
@@ -403,7 +407,7 @@ class OdeSolver:
             The method of interpolation ("legendre" or "radau")
         defects_type: DefectType
             The type of defect to use (DefectType.EXPLICIT or DefectType.IMPLICIT)
-        duplicate_collocation_starting_point: bool
+        duplicate_starting_point: bool
             Whether an additional collocation point should be added at the shooting node (this is typically used in SOCPs)
         """
 
@@ -412,7 +416,6 @@ class OdeSolver:
             polynomial_degree: int = 4,
             method: str = "legendre",
             defects_type: DefectType = DefectType.EXPLICIT,
-            duplicate_collocation_starting_point: bool = False,
             **kwargs,
         ):
             """
@@ -424,7 +427,6 @@ class OdeSolver:
 
             super(OdeSolver.COLLOCATION, self).__init__(**kwargs)
             self.polynomial_degree = polynomial_degree
-            self.duplicate_collocation_starting_point = duplicate_collocation_starting_point
             self.method = method
             self._defects_type = defects_type
 
@@ -442,7 +444,7 @@ class OdeSolver:
 
         @property
         def n_required_cx(self) -> int:
-            return self.polynomial_degree + (1 if self.duplicate_collocation_starting_point else 0)
+            return self.polynomial_degree + (1 if self.duplicate_starting_point else 0)
 
         @property
         def defects_type(self) -> DefectType:
@@ -450,7 +452,7 @@ class OdeSolver:
 
         def x_ode(self, nlp):
             out = [nlp.states.scaled.cx_start]
-            if not self.duplicate_collocation_starting_point:
+            if not self.duplicate_starting_point:
                 out += [nlp.states.scaled.cx_start]
             out += nlp.states.scaled.cx_intermediates_list
             return out
@@ -476,8 +478,7 @@ class OdeSolver:
                 nlp,
                 **kwargs,
                 method=self.method,
-                irk_polynomial_interpolation_degree=self.polynomial_degree,
-                duplicate_collocation_starting_point=self.duplicate_collocation_starting_point
+                irk_polynomial_interpolation_degree=self.polynomial_degree
             )
 
         def __str__(self):

@@ -3,11 +3,11 @@ from math import inf
 import inspect
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, jacobian, trace
+from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, SX_eye, SX, jacobian, trace
 
 from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
-from ..misc.enums import Node, Axis, ControlType, QuadratureRule, PhaseDynamics
+from ..misc.enums import Node, Axis, ControlType, QuadratureRule
 from ..misc.mapping import BiMapping
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
@@ -175,7 +175,8 @@ class PenaltyFunctionAbstract:
                 Controller to be used to compute the expected effort.
             """
 
-            sensory_noise_matrix = controller.model.sensory_noise_magnitude * MX_eye(
+            eye = SX_eye if controller.ocp.cx == SX else MX_eye
+            sensory_noise_matrix = controller.model.sensory_noise_magnitude * eye(
                 controller.model.sensory_noise_magnitude.shape[0]
             )
 
@@ -203,20 +204,28 @@ class PenaltyFunctionAbstract:
             nb_root = controller.model.nb_root
             nu = controller.model.nb_q - controller.model.nb_root
 
-            q_root = MX.sym("q_root", nb_root, 1)
-            q_joints = MX.sym("q_joints", nu, 1)
-            qdot_root = MX.sym("qdot_root", nb_root, 1)
-            qdot_joints = MX.sym("qdot_joints", nu, 1)
+            q_root_mx = MX.sym("q_root", nb_root, 1)
+            q_joints_mx = MX.sym("q_joints", nu, 1)
+            qdot_root_mx = MX.sym("qdot_root", nb_root, 1)
+            qdot_joints_mx = MX.sym("qdot_joints", nu, 1)
+            q_root = controller.cx.sym("q_root", nb_root, 1)
+            q_joints = controller.cx.sym("q_joints", nu, 1)
+            qdot_root = controller.cx.sym("qdot_root", nb_root, 1)
+            qdot_joints = controller.cx.sym("qdot_joints", nu, 1)
 
             # Compute the expected effort
             trace_k_sensor_k = trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
             ee = controller.model.sensory_reference(
-                states=vertcat(q_root, q_joints, qdot_root, qdot_joints),
-                controls=controller.controls.cx_start,
-                parameters=controller.parameters.cx_start,
-                algebraic_states=controller.algebraic_states.cx_start,
+                states=vertcat(q_root_mx, q_joints_mx, qdot_root_mx, qdot_joints_mx),
+                controls=controller.controls.mx,
+                parameters=controller.parameters.mx,
+                algebraic_states=controller.algebraic_states.mx,
                 nlp=controller.get_nlp,
             )
+            # ee to cx
+            ee = Function("tp", [
+                q_root_mx, q_joints_mx, qdot_root_mx, qdot_joints_mx, controller.controls.mx, controller.parameters.mx, controller.algebraic_states.mx
+            ], [ee])(q_root, q_joints, qdot_root, qdot_joints, controller.controls.cx_start, controller.parameters.cx_start, controller.algebraic_states.cx_start)
 
             e_fb = k_matrix @ ((ee - ref) + controller.model.sensory_noise_magnitude)
             jac_e_fb_x = jacobian(e_fb, vertcat(q_joints, qdot_joints))
@@ -1156,8 +1165,8 @@ class PenaltyFunctionAbstract:
         @staticmethod
         def first_collocation_point_equals_state(penalty: PenaltyOption, controller: PenaltyController | list):
             """
-            Insures that the first collocation helper is equal to the states at the shooting node.
-            This is a necessary constraint for COLLOCATION with duplicate_collocation_starting_point.
+            Ensures that the first collocation helper is equal to the states at the shooting node.
+            This is a necessary constraint for COLLOCATION with duplicate_starting_point.
             """
             collocation_helper = controller.states.cx_intermediates_list[0]
             states = controller.states.cx_start

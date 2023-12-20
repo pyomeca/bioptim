@@ -306,7 +306,7 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
     else:
         x = []
         u = []
-        s = []
+        a = []
 
     return t0, x, u, a, weight, target,
 

@@ -241,7 +241,7 @@ class NonLinearProgram:
         """
         if node_idx >= self.ns:
             return 1
-        return self.dynamics[node_idx].shape_xf[1]
+        return self.dynamics[node_idx].shape_xf[1] + (1 if self.ode_solver.duplicate_starting_point else 0)
 
     def n_states_stepwise_steps(self, node_idx) -> int:
         """
@@ -294,11 +294,13 @@ class NonLinearProgram:
         """
         Returns
         -------
-        The number of algebraic_states variables
+        The number of controls
         """
-        return self.ns + 1
-    
-    def n_decision_algebraic_states_steps(self, node_idx) -> int:
+
+        return self.n_states_nodes
+
+    @staticmethod
+    def n_algebraic_states_decision_steps(node_idx) -> int:
         """
         Parameters
         ----------
@@ -307,11 +309,10 @@ class NonLinearProgram:
 
         Returns
         -------
-        The number of algebraic_states variables
+        The number of states
         """
-        if node_idx >= self.ns:
-            return 1
-        return self.algebraic_states.shape
+
+        return 1
 
     @staticmethod
     def add(ocp, param_name: str, param: Any, duplicate_singleton: bool, _type: Any = None, name: str = None):

@@ -72,6 +72,7 @@ class Integrator:
         self.control_type = ode_opt["control_type"]
         self.function = None
         self.allow_free_variables = ode_opt["allow_free_variables"]
+        self.duplicate_starting_point = ode_opt["duplicate_starting_point"]
 
         # Initialize is expected to set step_time
         self._initialize(ode, ode_opt)
@@ -506,7 +507,6 @@ class COLLOCATION(Integrator):
         """
         self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
-        self.duplicate_collocation_starting_point = ode_opt["duplicate_collocation_starting_point"]
         self.allow_free_variables = ode_opt["allow_free_variables"]
 
         # Coefficients of the collocation equation
@@ -547,7 +547,7 @@ class COLLOCATION(Integrator):
 
     @property
     def _x_sym_modified(self):
-        return horzcat(*self.x_sym) if self.duplicate_collocation_starting_point else horzcat(*self.x_sym[1:])
+        return horzcat(*self.x_sym) if self.duplicate_starting_point else horzcat(*self.x_sym[1:])
 
     @property
     def _output_names(self):
@@ -696,7 +696,7 @@ class IRK(COLLOCATION):
         )
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
-        collocation_states = vertcat(*states[1:]) if self.duplicate_collocation_starting_point else vertcat(*states[2:])
+        collocation_states = vertcat(*states[1:]) if self.duplicate_starting_point else vertcat(*states[2:])
         vfcn = Function(
             "vfcn",
             [collocation_states, self.t_span_sym, states[0], controls, params, algebraic_states],

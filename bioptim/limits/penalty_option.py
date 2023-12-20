@@ -402,7 +402,7 @@ class PenaltyOption(OptionGeneric):
             .replace("__", "_")
         )
 
-        controller, x, u, s = self.get_variable_inputs(controllers)
+        controller, x, u, a = self.get_variable_inputs(controllers)
 
         # Alias some variables
         node = controller.node_index
@@ -491,7 +491,7 @@ class PenaltyOption(OptionGeneric):
             # for non weighted functions
             self.function[node] = Function(
                 name,
-                [time_cx, phases_dt_cx, x, u, param_cx, s],
+                [time_cx, phases_dt_cx, x, u, param_cx, a],
                 [(func_at_start + func_at_end) / 2],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"], 
@@ -520,27 +520,26 @@ class PenaltyOption(OptionGeneric):
             # TODO: Charbie -> this is False, add algebraic_states for start, mid AND end
             self.function[node] = Function(
                 f"{name}",
-                [time_cx, phases_dt_cx, x, u, param_cx, s],
+                [time_cx, phases_dt_cx, x, u, param_cx, a],
                 [fcn_tp(time_cx, phases_dt_cx, x_end, u_end, param_cx, a_end) - fcn_tp(time_cx, phases_dt_cx, x_start, u_start, param_cx, a_start)],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
 
-            modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, s) - target_cx) ** exponent
+            modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, a) - target_cx) ** exponent
 
         else:
             # TODO Add error message if there are free variables to guide the user? For instance controls with last node
             self.function[node] = Function(
                 name,
-                [time_cx, phases_dt_cx, x, u, param_cx, s],
+                [time_cx, phases_dt_cx, x, u, param_cx, a],
                 [sub_fcn],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
 
-            modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, s) - target_cx) ** exponent
+            modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, a) - target_cx) ** exponent
 
-            
         if self.expand:
             self.function[node] = self.function[node].expand()
 
@@ -551,7 +550,7 @@ class PenaltyOption(OptionGeneric):
 
         self.weighted_function[node] = Function(
             name,
-            [time_cx, phases_dt_cx, x, u, param_cx, s, weight_cx, target_cx],
+            [time_cx, phases_dt_cx, x, u, param_cx, a, weight_cx, target_cx],
             [modified_fcn],
             ["t", "dt", "x", "u", "p", "a", "weight", "target"],
             ["val"],
@@ -913,9 +912,11 @@ class PenaltyOption(OptionGeneric):
         x = [nlp.X[idx] for idx in t_idx]
         x_scaled = [nlp.X_scaled[idx] for idx in t_idx]
         u, u_scaled = [], []
+        a, a_scaled = [], []
         if nlp.U is not None and (not isinstance(nlp.U, list) or nlp.U != []):
             u = [nlp.U[idx] for idx in t_idx if idx != nlp.ns]
             u_scaled = [nlp.U_scaled[idx] for idx in t_idx if idx != nlp.ns]
-        a = [nlp.A[idx] for idx in t_idx]
-        a_scaled = [nlp.A_scaled[idx] for idx in t_idx]
+        if nlp.A is not None and (not isinstance(nlp.A, list) or nlp.A != []):
+            a = [nlp.A[idx] for idx in t_idx]
+            a_scaled = [nlp.A_scaled[idx] for idx in t_idx]
         return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, a, a_scaled)

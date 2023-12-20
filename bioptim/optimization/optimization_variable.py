@@ -287,12 +287,13 @@ class OptimizationVariableList:
             The MX variable associated with this variable
         """
 
-        if len(cx) < 3:
-            raise NotImplementedError("cx should be of dimension 3 (start, mid, end)")
+        if len(cx) < 2:
+            raise NotImplementedError("cx should be of dimension 2 (start, [mid], end)")
 
         index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
         self._cx_start = vertcat(self._cx_start, cx[0])
-        self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1) // 2])
+        if len(cx) > 2:
+            self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1) // 2])
         self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):
@@ -323,11 +324,12 @@ class OptimizationVariableList:
             The scaled optimization variable associated with this variable
         """
 
-        if len(cx) < 3:
-            raise NotImplementedError("cx should be of dimension 3 (start, mid, end)")
+        if len(cx) < 2:
+            raise NotImplementedError("cx should be of dimension 2 (start, [mid], end)")
 
         self._cx_start = vertcat(self._cx_start, cx[0])
-        self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1) // 2])
+        if len(cx) > 2:
+            self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1) // 2])
         self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):
@@ -368,7 +370,8 @@ class OptimizationVariableList:
         """
 
         # Recast in CX since if it happens to be empty it is transformed into a DM behind the scene
-        return self.cx_constructor([] if self.shape == 0 else self._cx_start[:, 0])
+        is_empty = self.shape == 0 or np.prod(self._cx_start.shape) == 0
+        return self.cx_constructor([] if is_empty else self._cx_start[:, 0])
 
     @property
     def cx_mid(self):
@@ -377,7 +380,8 @@ class OptimizationVariableList:
         """
 
         # Recast in CX since if it happens to be empty it is transformed into a DM behind the scene
-        return self.cx_constructor([] if self.shape == 0 else self._cx_mid[:, 0])
+        is_empty = self.shape == 0 or np.prod(self._cx_mid.shape) == 0
+        return self.cx_constructor([] if is_empty else self._cx_mid[:, 0])
 
     @property
     def cx_end(self):
@@ -386,7 +390,8 @@ class OptimizationVariableList:
         """
 
         # Recast in CX since if it happens to be empty it is transformed into a DM behind the scene
-        return self.cx_constructor([] if self.shape == 0 else self._cx_end[:, 0])
+        is_empty = self.shape == 0 or np.prod(self._cx_end.shape) == 0
+        return self.cx_constructor([] if is_empty else self._cx_end[:, 0])
 
     @property
     def cx_intermediates_list(self):

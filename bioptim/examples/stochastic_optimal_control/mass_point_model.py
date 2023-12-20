@@ -3,10 +3,10 @@ This file contains the model used in the article.
 """
 
 from typing import Callable
-from casadi import vertcat, MX, DM, sqrt
+from casadi import vertcat, SX, MX, DM, sqrt
 import numpy as np
 
-from bioptim import DynamicsEvaluation, DynamicsFunctions, SocpType
+from bioptim import DynamicsEvaluation, DynamicsFunctions
 
 
 class MassPointModel:
@@ -19,18 +19,22 @@ class MassPointModel:
         motor_noise_magnitude: np.ndarray | DM = None,
         polynomial_degree: int = 1,
         socp_type=None,
+        use_sx: bool = False,
     ):
         self.socp_type = socp_type
 
-        self.motor_noise_sym = MX()
+        self.cx = SX if use_sx else MX
+
         if motor_noise_magnitude is not None:
             self.motor_noise_magnitude = motor_noise_magnitude
-            self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
+            self.motor_noise_sym = self.cx.sym("motor_noise", motor_noise_magnitude.shape[0])
+            self.motor_noise_sym_mx = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
 
-        self.sensory_noise_magnitude = (
-            []
-        )  # This is necessary to have the right shapes in bioptim's internal constraints
-        self.sensory_noise_sym = MX()
+        # This is necessary to have the right shapes in bioptim's internal constraints
+        self.sensory_noise_magnitude = ([])
+        self.sensory_noise_sym = self.cx.sym("sensory_noise", 0, 1)
+        self.sensory_noise_sym_mx = MX.sym("sensory_noise", 0, 1)
+
         self.sensory_reference = None
 
         n_noised_states = 4
@@ -90,7 +94,7 @@ class MassPointModel:
         u = DynamicsFunctions.get(nlp.controls["u"], controls)
         motor_noise = 0
         if with_noise:
-            motor_noise = self.motor_noise_sym
+            motor_noise = self.motor_noise_sym_mx
         qddot = -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
 
         return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)

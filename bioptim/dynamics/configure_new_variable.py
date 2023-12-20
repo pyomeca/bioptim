@@ -2,7 +2,6 @@ from casadi import MX, SX, vertcat
 import numpy as np
 
 from .fatigue.fatigue_dynamics import FatigueList, MultiFatigueInterface
-from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
 from ..limits.path_conditions import Bounds
 from ..misc.enums import PlotType, ControlType, VariableType, PhaseDynamics
@@ -189,6 +188,10 @@ class NewVariableConfiguration:
             nlp, phase_idx, self.nlp.use_states_dot_from_phase_idx, self.name, "states_dot"
         )
 
+        self.copy_algebraic_states = self.check_variable_copy_condition(
+            nlp, phase_idx, self.nlp.use_states_from_phase_idx, self.name, "algebraic_states"
+        )
+
     @staticmethod
     def check_variable_copy_condition(
         nlp, phase_idx: int, use_from_phase_idx: int, name: str, decision_variable_attribute: str
@@ -341,7 +344,9 @@ class NewVariableConfiguration:
             if not self.copy_controls
             else [self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[0][self.name].mx]
         )
-        self.mx_algebraic_states = []
+        self.mx_algebraic_states = (
+            [] if not self.copy_algebraic_states else [self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[0][self.name].mx]
+        )
 
         # todo: if mapping on variables, what do we do with mapping on the nodes
         for i in self.nlp.variable_mappings[self.name].to_second.map_idx:
@@ -451,15 +456,8 @@ class NewVariableConfiguration:
 
         if self.as_states_dot:
             for node_index in range(
-                (0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1
-            ):
-                n_cx = (
-                    self.nlp.ode_solver.polynomial_degree + 1
-                    if isinstance(self.nlp.ode_solver, OdeSolver.COLLOCATION)
-                    else 3
-                )
-                if n_cx < 3:
-                    n_cx = 3
+                    self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1):
+                n_cx = self.nlp.ode_solver.n_required_cx + 2
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_states_dot_from_phase_idx].states_dot[node_index][self.name].original_cx
                     if self.copy_states_dot
@@ -481,17 +479,24 @@ class NewVariableConfiguration:
 
         if self.as_algebraic_states:
             for node_index in range(
-                (0 if self.nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else self.nlp.ns) + 1
-            ):
-                n_cx = 3
-                cx_scaled = self.define_cx_scaled(n_col=n_cx, n_shooting=1, initial_node=node_index)
-                cx = self.define_cx_unscaled(cx_scaled, self.nlp.s_scaling[self.name].scaling)
+                    self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1):
+                n_cx = 2
+                cx_scaled = (
+                    self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[node_index][self.name].original_cx
+                    if self.copy_algebraic_states
+                    else self.define_cx_scaled(n_col=n_cx, n_shooting=0, initial_node=node_index)
+                )
+                cx = (
+                    self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[node_index][self.name].original_cx
+                    if self.copy_algebraic_states
+                    else self.define_cx_unscaled(cx_scaled, self.nlp.a_scaling[self.name].scaling)
+                )
 
                 self.nlp.algebraic_states.append(
                     self.name,
                     cx[0],
                     cx_scaled[0],
-                    self.mx_algebraic_states,
+                    self.mx_states,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )

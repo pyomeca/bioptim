@@ -5,7 +5,7 @@ from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_ey
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
-from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType, PhaseDynamics
+from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
@@ -816,12 +816,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             ref = controller.algebraic_states["ref"].cx_start
             sensory_input = controller.model.sensory_reference(
-                states=controller.states.cx_start,
-                controls=controller.controls.cx_start,
-                parameters=controller.parameters.cx_start,
-                algebraic_states=controller.algebraic_states.cx_start,
+                states=controller.states.mx,
+                controls=controller.controls.mx,
+                parameters=controller.parameters.mx,
+                algebraic_states=controller.algebraic_states.mx,
                 nlp=controller.get_nlp,
             )
+
+            sensory_input = Function(
+                "tp",
+                [controller.states.mx, controller.controls.mx, controller.parameters.mx, controller.algebraic_states.mx],
+                [sensory_input]
+            )(controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx, controller.algebraic_states.cx_start)
+
             return sensory_input - ref
 
         @staticmethod
@@ -892,17 +899,60 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_q_joints = controller.cx.sym("z_q_joints", nu, polynomial_degree + 1)
             z_qdot_root = controller.cx.sym("z_qdot_root", nb_root, polynomial_degree + 1)
             z_qdot_joints = controller.cx.sym("z_qdot_joints", nu, polynomial_degree + 1)
+            x_q_root_mx = MX.sym("x_q_root", nb_root, 1)
+            x_q_joints_mx = MX.sym("x_q_joints", nu, 1)
+            x_qdot_root_mx = MX.sym("x_qdot_root", nb_root, 1)
+            x_qdot_joints_mx = MX.sym("x_qdot_joints", nu, 1)
+            z_q_root_mx = MX.sym("z_q_root", nb_root, polynomial_degree + 1)
+            z_q_joints_mx = MX.sym("z_q_joints", nu, polynomial_degree + 1)
+            z_qdot_root_mx = MX.sym("z_qdot_root", nb_root, polynomial_degree + 1)
+            z_qdot_joints_mx = MX.sym("z_qdot_joints", nu, polynomial_degree + 1)
 
             x_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
             z_full = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
+            x_full_mx = vertcat(x_q_root_mx, x_q_joints_mx, x_qdot_root_mx, x_qdot_joints_mx)
+            z_full_mx = vertcat(z_q_root_mx, z_q_joints_mx, z_qdot_root_mx, z_qdot_joints_mx)
 
-            xf, xall, defects = controller.integrate_extra_dynamics(0).function(
+            xf, _, defects_mx = controller.integrate_extra_dynamics(0).function(
+                controller.time.mx,
+                horzcat(x_full_mx, z_full_mx),
+                controller.controls.mx,
+                controller.parameters.mx,
+                controller.algebraic_states.mx,
+            )
+            mx_all = [
+                controller.time.mx,
+                x_q_root_mx,
+                x_q_joints_mx, x_qdot_root_mx, x_qdot_joints_mx,
+                z_q_root_mx,
+                z_q_joints_mx,
+                z_qdot_root_mx,
+                z_qdot_joints_mx,
+                controller.controls.mx,
+                controller.parameters.mx,
+                controller.algebraic_states.mx,
+                controller.model.motor_noise_sym_mx,
+                controller.model.sensory_noise_sym_mx,
+            ]
+            cx_all = [
                 controller.time.cx,
-                horzcat(x_full, z_full),
+                x_q_root,
+                x_q_joints,
+                x_qdot_root,
+                x_qdot_joints,
+                z_q_root,
+                z_q_joints,
+                z_qdot_root,
+                z_qdot_joints,
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.algebraic_states.cx_start,
-            )
+                controller.model.motor_noise_sym,
+                controller.model.sensory_noise_sym,
+            ]
+            defects = Function("tp", mx_all, [defects_mx])(*cx_all)
+            xf = Function("tp", mx_all, [xf])(*cx_all)
+
             G_joints = [x_full - z_full[:, 0]]
             nx = 2 * (nb_root + nu)
             for i in range(controller.ode_solver.polynomial_degree):

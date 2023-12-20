@@ -60,6 +60,7 @@ def prepare_socp(
     motor_noise_magnitude: cas.DM,
     sensory_noise_magnitude: cas.DM,
     example_type=ExampleType.CIRCLE,
+    use_sx=False,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -81,6 +82,8 @@ def prepare_socp(
         The magnitude of the sensory noise
     example_type
         The type of problem to solve (CIRCLE or BAR)
+    use_sx: bool
+        If SX should be used instead of MX
 
     Returns
     -------
@@ -99,6 +102,7 @@ def prepare_socp(
         n_noised_controls=2,
         n_collocation_points=polynomial_degree + 1,
         friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
+        use_sx=use_sx,
     )
 
     n_tau = bio_model.nb_tau
@@ -168,19 +172,12 @@ def prepare_socp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(
-        DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
-        problem_type=problem_type,
-        expand_dynamics=True,
-    )
+    dynamics.add(DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN, problem_type=problem_type, expand_dynamics=True)
 
     x_bounds = BoundsList()
     x_bounds.add("q", min_bound=[-cas.inf] * n_q, max_bound=[cas.inf] * n_q, interpolation=InterpolationType.CONSTANT)
     x_bounds.add(
-        "qdot",
-        min_bound=[-cas.inf] * n_qdot,
-        max_bound=[cas.inf] * n_qdot,
-        interpolation=InterpolationType.CONSTANT,
+        "qdot", min_bound=[-cas.inf] * n_qdot, max_bound=[cas.inf] * n_qdot, interpolation=InterpolationType.CONSTANT
     )
 
     u_bounds = BoundsList()
@@ -212,35 +209,16 @@ def prepare_socp(
 
     a_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
     a_bounds.add(
-        "k",
-        min_bound=[-cas.inf] * n_k,
-        max_bound=[cas.inf] * n_k,
-        interpolation=InterpolationType.CONSTANT,
+        "k", min_bound=[-cas.inf] * n_k, max_bound=[cas.inf] * n_k, interpolation=InterpolationType.CONSTANT
     )
 
-    a_init.add(
-        "ref",
-        initial_guess=[0.01] * n_ref,
-        interpolation=InterpolationType.CONSTANT,
-    )
+    a_init.add("ref", initial_guess=[0.01] * n_ref, interpolation=InterpolationType.CONSTANT)
     a_bounds.add(
-        "ref",
-        min_bound=[-cas.inf] * n_ref,
-        max_bound=[cas.inf] * n_ref,
-        interpolation=InterpolationType.CONSTANT,
+        "ref", min_bound=[-cas.inf] * n_ref, max_bound=[cas.inf] * n_ref, interpolation=InterpolationType.CONSTANT
     )
 
-    a_init.add(
-        "m",
-        initial_guess=[0.01] * n_m,
-        interpolation=InterpolationType.CONSTANT,
-    )
-    a_bounds.add(
-        "m",
-        min_bound=[-cas.inf] * n_m,
-        max_bound=[cas.inf] * n_m,
-        interpolation=InterpolationType.CONSTANT,
-    )
+    a_init.add("m", initial_guess=[0.01] * n_m, interpolation=InterpolationType.CONSTANT)
+    a_bounds.add("m", min_bound=[-cas.inf] * n_m, max_bound=[cas.inf] * n_m, interpolation=InterpolationType.CONSTANT)
 
     cov_init = cas.DM_eye(n_states) * np.array([1e-4, 1e-4, 1e-7, 1e-7])
     idx = 0
@@ -274,8 +252,9 @@ def prepare_socp(
         objective_functions=objective_functions,
         constraints=constraints,
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
-        n_threads=2,
+        n_threads=1,
         problem_type=problem_type,
+        use_sx=use_sx,
     )
 
 
@@ -332,6 +311,7 @@ def main():
 
     states = sol_socp.stepwise_states(to_merge=SolutionMerge.NODES)
     controls = sol_socp.stepwise_controls(to_merge=SolutionMerge.NODES)
+    algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
 
     q_sol = states["q"]
     qdot_sol = states["qdot"]

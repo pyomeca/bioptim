@@ -32,6 +32,7 @@ from bioptim import (
     OdeSolver,
     PhaseDynamics,
     BoundsList,
+    SolutionMerge,
 )
 
 from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPointModel
@@ -167,6 +168,7 @@ def prepare_socp(
     socp_type=SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    use_sx: bool = True,
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
     problem_type = socp_type
 
@@ -174,6 +176,7 @@ def prepare_socp(
         socp_type=problem_type,
         motor_noise_magnitude=motor_noise_magnitude,
         polynomial_degree=polynomial_degree,
+        use_sx=use_sx,
     )
 
     nb_q = bio_model.nb_q
@@ -281,6 +284,7 @@ def prepare_socp(
             n_threads=6,
             problem_type=problem_type,
             phase_transitions=phase_transitions,
+            use_sx=use_sx
         )
 
     else:
@@ -300,7 +304,7 @@ def prepare_socp(
         ode_solver = OdeSolver.COLLOCATION(
             polynomial_degree=socp_type.polynomial_degree,
             method=socp_type.method,
-            duplicate_collocation_starting_point=True,
+            duplicate_starting_point=True,
         )
 
         return OptimalControlProgram(
@@ -325,6 +329,8 @@ def main():
     """
     Prepare, solve and plot the solution
     """
+
+    use_sx = True
     is_stochastic = True
     is_robust = True
     if not is_stochastic:
@@ -338,7 +344,7 @@ def main():
     n_shooting = 40
     final_time = 4
     motor_noise_magnitude = np.array([1, 1])
-    bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
+    bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude, use_sx=use_sx)
 
     q_init = np.zeros((bio_model.nb_q, (polynomial_degree + 2) * n_shooting + 1))
     zq_init = initialize_circle((polynomial_degree + 1) * n_shooting + 1)
@@ -357,16 +363,22 @@ def main():
         is_sotchastic=is_stochastic,
         is_robustified=is_robust,
         socp_type=socp_type,
+        use_sx=use_sx,
     )
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
-    solver.set_linear_solver("ma57")
+    # solver.set_linear_solver("ma57")
     sol_socp = socp.solve(solver)
 
-    q = sol_socp.states["q"]
-    u = sol_socp.controls["u"]
-    Tf = sol_socp.time[-1]
+    time = sol_socp.time(to_merge=SolutionMerge.NODES)
+    states = sol_socp.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol_socp.decision_controls(to_merge=SolutionMerge.NODES)
+    algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+
+    q = states["q"]
+    u = controls["u"]
+    Tf = time[-1]
     tgrid = np.linspace(0, Tf, n_shooting + 1).squeeze()
 
     fig, ax = plt.subplots(2, 2)
@@ -396,8 +408,8 @@ def main():
     ax[1, 0].set_xlabel("t")
 
     if is_stochastic:
-        m = sol_socp.algebraic_states["m"]
-        cov = sol_socp.algebraic_states["cov"]
+        m = algebraic_states["m"]
+        cov = algebraic_states["cov"]
 
         for i in range(n_shooting + 1):
             cov_i = cov[:, i]
