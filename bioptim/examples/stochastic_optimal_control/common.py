@@ -10,7 +10,7 @@ from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 
 
-def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochastic_variables, nlp, with_noise):
+def dynamics_torque_driven_with_feedbacks(states, controls, parameters, algebraic_states, nlp, with_noise):
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
@@ -18,13 +18,13 @@ def dynamics_torque_driven_with_feedbacks(states, controls, parameters, stochast
     tau_feedback = 0
     motor_noise = 0
     if with_noise:
-        ref = DynamicsFunctions.get(nlp.stochastic_variables["ref"], stochastic_variables)
-        k = DynamicsFunctions.get(nlp.stochastic_variables["k"], stochastic_variables)
+        ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], algebraic_states)
+        k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
         k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
         motor_noise = nlp.model.motor_noise_sym
         sensory_noise = nlp.model.sensory_noise_sym
-        end_effector = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
+        end_effector = nlp.model.sensory_reference(states, controls, parameters, algebraic_states, nlp)
         tau_feedback = get_excitation_with_feedback(k_matrix, end_effector, ref, sensory_noise)
 
     tau_force_field = get_force_field(q, nlp.model.force_field_magnitude)

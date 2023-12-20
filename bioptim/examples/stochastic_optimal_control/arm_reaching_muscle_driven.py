@@ -51,7 +51,7 @@ def sensory_reference(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
-    stochastic_variables: cas.MX | cas.SX,
+    algebraic_states: cas.MX | cas.SX,
     nlp: NonLinearProgram,
 ):
     """
@@ -67,7 +67,7 @@ def stochastic_forward_dynamics(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
-    stochastic_variables: cas.MX | cas.SX,
+    algebraic_states: cas.MX | cas.SX,
     nlp: NonLinearProgram,
     force_field_magnitude,
     with_noise,
@@ -86,11 +86,11 @@ def stochastic_forward_dynamics(
     mus_excitations_fb = mus_excitations
     noise_torque = np.zeros(nlp.model.motor_noise_magnitude.shape)
     if with_noise:
-        ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], stochastic_variables)
-        k = DynamicsFunctions.get(nlp.algebraic_states["k"], stochastic_variables)
+        ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], algebraic_states)
+        k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
         k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
-        hand_pos_velo = nlp.model.sensory_reference(states, controls, parameters, stochastic_variables, nlp)
+        hand_pos_velo = nlp.model.sensory_reference(states, controls, parameters, algebraic_states, nlp)
 
         mus_excitations_fb += nlp.model.get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, sensory_noise)
         noise_torque = motor_noise
@@ -145,15 +145,15 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, stochastic_variables, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, stochastic_variables, nlp, with_noise=True
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, nlp, with_noise=True
         ),
         allow_free_variables=True,
     )
@@ -309,14 +309,14 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     func = cas.Function(
         "f_expectedEffort_fb",
-        [controllers[0].states.cx_start, controllers[0].stochastic_variables.cx_start, cov_sym],
+        [controllers[0].states.cx_start, controllers[0].algebraic_states.cx_start, cov_sym],
         [expectedEffort_fb_mx],
     )
 
     f_expectedEffort_fb = 0
     for i, ctrl in enumerate(controllers):
         P_vector = ctrl.integrated_values.cx_start
-        out = func(ctrl.states.cx_start, ctrl.stochastic_variables.cx_start, P_vector)
+        out = func(ctrl.states.cx_start, ctrl.algebraic_states.cx_start, P_vector)
         f_expectedEffort_fb += out * dt
 
     return f_expectedEffort_fb
@@ -330,7 +330,7 @@ def zero_acceleration(controller: PenaltyController, force_field_magnitude: floa
         controller.states.cx_start,
         controller.controls.cx_start,
         controller.parameters.cx_start,
-        controller.stochastic_variables.cx_start,
+        controller.algebraic_states.cx_start,
         controller.get_nlp,
         force_field_magnitude=force_field_magnitude,
         with_noise=False,
@@ -463,11 +463,11 @@ def prepare_socp(
     dynamics = DynamicsList()
     dynamics.add(
         configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, with_noise: stochastic_forward_dynamics(
+        dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: stochastic_forward_dynamics(
             states,
             controls,
             parameters,
-            stochastic_variables,
+            algebraic_states,
             nlp,
             force_field_magnitude=force_field_magnitude,
             with_noise=with_noise,
@@ -658,16 +658,16 @@ def main():
     qdot_sol = sol_socp.states["qdot"]
     activations_sol = sol_socp.states["muscles"]
     excitations_sol = sol_socp.controls["muscles"]
-    k_sol = sol_socp.stochastic_variables["k"]
-    ref_sol = sol_socp.stochastic_variables["ref"]
-    m_sol = sol_socp.stochastic_variables["m"]
+    k_sol = sol_socp.algebraic_states["k"]
+    ref_sol = sol_socp.algebraic_states["ref"]
+    m_sol = sol_socp.algebraic_states["m"]
     cov_sol_vect = sol_socp.integrated_values["cov"]
     cov_sol = np.zeros((10, 10, n_shooting))
     for i in range(n_shooting):
         for j in range(10):
             for k in range(10):
                 cov_sol[j, k, i] = cov_sol_vect[j * 10 + k, i]
-    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol))
+    algebraic_states_sol = np.vstack((k_sol, ref_sol, m_sol))
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
@@ -677,7 +677,7 @@ def main():
         "ref_sol": ref_sol,
         "m_sol": m_sol,
         "cov_sol": cov_sol,
-        "stochastic_variables_sol": stochastic_variables_sol,
+        "algebraic_states_sol": algebraic_states_sol,
     }
 
     # --- Save the results --- #
@@ -703,7 +703,7 @@ def main():
         states = socp.nlp[0].states.cx_start
         controls = socp.nlp[0].controls.cx_start
         parameters = socp.nlp[0].parameters.cx_start
-        stochastic_variables = socp.nlp[0].stochastic_variables.cx_start
+        algebraic_states = socp.nlp[0].algebraic_states.cx_start
         nlp = socp.nlp[0]
         motor_noise_sym = cas.MX.sym("motor_noise", 2, 1)
         sensory_noise_sym = cas.MX.sym("sensory_noise", 4, 1)
@@ -711,14 +711,14 @@ def main():
             states,
             controls,
             parameters,
-            stochastic_variables,
+            algebraic_states,
             nlp,
             force_field_magnitude=force_field_magnitude,
             with_noise=True,
         )
         dyn_fun = cas.Function(
             "dyn_fun",
-            [states, controls, parameters, stochastic_variables, motor_noise_sym, sensory_noise_sym],
+            [states, controls, parameters, algebraic_states, motor_noise_sym, sensory_noise_sym],
             [out.dxdt],
         )
 
@@ -748,7 +748,7 @@ def main():
                     hand_vel_fcn(x_prev[:2], x_prev[2:4])[:2], (2,)
                 )
                 u = excitations_sol[:, i_node]
-                s = stochastic_variables_sol[:, i_node]
+                s = algebraic_states_sol[:, i_node]
                 k1 = dyn_fun(x_prev, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node])
                 x_next = x_prev + dt * dyn_fun(
                     x_prev + dt / 2 * k1, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node]

@@ -48,7 +48,7 @@ def sensory_reference(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
-    stochastic_variables: cas.MX | cas.SX,
+    algebraic_states: cas.MX | cas.SX,
     nlp: NonLinearProgram,
 ):
     """
@@ -394,18 +394,18 @@ def main():
     q_sol = sol_socp.states["q"]
     qdot_sol = sol_socp.states["qdot"]
     tau_sol = sol_socp.controls["tau"]
-    k_sol = sol_socp.stochastic_variables["k"]
-    ref_sol = sol_socp.stochastic_variables["ref"]
-    m_sol = sol_socp.stochastic_variables["m"]
+    k_sol = sol_socp.algebraic_states["k"]
+    ref_sol = sol_socp.algebraic_states["ref"]
+    m_sol = sol_socp.algebraic_states["m"]
     if with_cholesky:
         cov_sol = None
-        cholesky_cov_sol = sol_socp.stochastic_variables["cholesky_cov"]
+        cholesky_cov_sol = sol_socp.algebraic_states["cholesky_cov"]
     else:
-        cov_sol = sol_socp.stochastic_variables["cov"]
+        cov_sol = sol_socp.algebraic_states["cov"]
         cholesky_cov_sol = None
-    a_sol = sol_socp.stochastic_variables["a"]
-    c_sol = sol_socp.stochastic_variables["c"]
-    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol, cholesky_cov_sol, a_sol, c_sol))
+    a_sol = sol_socp.algebraic_states["a"]
+    c_sol = sol_socp.algebraic_states["c"]
+    algebraic_states_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol, cholesky_cov_sol, a_sol, c_sol))
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
@@ -417,7 +417,7 @@ def main():
         "cholesky_cov_sol": cholesky_cov_sol,
         "a_sol": a_sol,
         "c_sol": c_sol,
-        "stochastic_variables_sol": stochastic_variables_sol,
+        "algebraic_states_sol": algebraic_states_sol,
     }
 
     # --- Save the results --- #

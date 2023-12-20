@@ -53,18 +53,18 @@ def test_arm_reaching_torque_driven_collocations():
     np.testing.assert_equal(g.shape, (442, 1))
 
     # Check some of the results
-    states, controls, stochastic_variables = (
+    states, controls, algebraic_states = (
         sol.states,
         sol.controls,
-        sol.stochastic_variables,
+        sol.algebraic_states,
     )
     q, qdot = states["q"], states["qdot"]
     tau = controls["tau"]
     k, ref, m, cov = (
-        stochastic_variables["k"],
-        stochastic_variables["ref"],
-        stochastic_variables["m"],
-        stochastic_variables["cov"],
+        algebraic_states["k"],
+        algebraic_states["ref"],
+        algebraic_states["m"],
+        algebraic_states["cov"],
     )
 
     # initial and final position
@@ -219,16 +219,16 @@ def test_obstacle_avoidance_direct_collocation():
     np.testing.assert_equal(g.shape, (1043, 1))
 
     # Check some of the results
-    states, controls, stochastic_variables = (
+    states, controls, algebraic_states = (
         sol.states,
         sol.controls,
-        sol.stochastic_variables,
+        sol.algebraic_states,
     )
     q, qdot = states["q"], states["qdot"]
     u = controls["u"]
     m, cov = (
-        stochastic_variables["m"],
-        stochastic_variables["cov"],
+        algebraic_states["m"],
+        algebraic_states["cov"],
     )
 
     # initial and final position

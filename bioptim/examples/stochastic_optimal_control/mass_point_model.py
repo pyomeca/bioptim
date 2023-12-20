@@ -81,7 +81,7 @@ class MassPointModel:
     def name_u(self):
         return ["Ux", "Uy"]
 
-    def dynamics(self, states, controls, parameters, stochastic_variables, nlp, with_noise=False):
+    def dynamics(self, states, controls, parameters, algebraic_states, nlp, with_noise=False):
         """
         The dynamics from equation (22).
         """

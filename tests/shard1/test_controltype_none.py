@@ -82,7 +82,7 @@ class NonControlledMethod:
         states: MX | SX,
         controls: MX | SX,
         parameters: MX | SX,
-        stochastic_variables: MX | SX,
+        algebraic_states: MX | SX,
         nlp: NonLinearProgram,
         my_ocp,
     ) -> DynamicsEvaluation:

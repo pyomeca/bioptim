@@ -617,16 +617,16 @@ def main():
     qddot_sol = sol_socp.states["qddot"]
     qdddot_sol = sol_socp.controls["qdddot"]
     tau_sol = sol_socp.controls["tau"]
-    k_sol = sol_socp.stochastic_variables["k"]
-    ref_sol = sol_socp.stochastic_variables["ref"]
-    m_sol = sol_socp.stochastic_variables["m"]
+    k_sol = sol_socp.algebraic_states["k"]
+    ref_sol = sol_socp.algebraic_states["ref"]
+    m_sol = sol_socp.algebraic_states["m"]
     cov_sol_vect = sol_socp.integrated_values["cov"]
     cov_sol = np.zeros((6, 6, n_shooting))
     for i in range(n_shooting):
         for j in range(6):
             for k in range(6):
                 cov_sol[j, k, i] = cov_sol_vect[j * 6 + k, i]
-    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol))
+    algebraic_states_sol = np.vstack((k_sol, ref_sol, m_sol))
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
@@ -637,7 +637,7 @@ def main():
         "ref_sol": ref_sol,
         "m_sol": m_sol,
         "cov_sol": cov_sol,
-        "stochastic_variables_sol": stochastic_variables_sol,
+        "algebraic_states_sol": algebraic_states_sol,
     }
 
     # --- Save the results --- #

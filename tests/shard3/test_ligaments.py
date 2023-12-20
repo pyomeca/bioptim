@@ -78,9 +78,9 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
     if with_ligament:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -142,9 +142,9 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
     if with_ligament:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -202,9 +202,9 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
     if with_ligament:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -270,9 +270,9 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_ligament:
         np.testing.assert_almost_equal(

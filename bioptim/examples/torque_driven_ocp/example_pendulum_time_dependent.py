@@ -38,7 +38,7 @@ def time_dependent_dynamic(
     states: MX | SX,
     controls: MX | SX,
     parameters: MX | SX,
-    stochastic_variables: MX | SX,
+    algebraic_states: MX | SX,
     nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """
@@ -54,7 +54,7 @@ def time_dependent_dynamic(
         The controls of the system
     parameters: MX | SX
         The parameters acting on the system
-    stochastic_variables: MX | SX
+    algebraic_states: MX | SX
         The Algebraic states variables of the system
     nlp: NonLinearProgram
         A reference to the phase

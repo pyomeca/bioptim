@@ -110,7 +110,7 @@ class Model:
         states: MX,
         controls: MX,
         parameters: MX,
-        stochastic_variables: MX,
+        algebraic_states: MX,
         nlp: NonLinearProgram,
         stim_apparition=None,
     ) -> DynamicsEvaluation:

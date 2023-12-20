@@ -37,7 +37,7 @@ def sensory_reference(
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
-    stochastic_variables: cas.MX | cas.SX,
+    algebraic_states: cas.MX | cas.SX,
     nlp: NonLinearProgram,
 ):
     """
@@ -336,11 +336,11 @@ def main():
     q_sol = states["q"]
     qdot_sol = states["qdot"]
     tau_sol = controls["tau"]
-    k_sol = stochastic_variables["k"]
-    ref_sol = stochastic_variables["ref"]
-    m_sol = stochastic_variables["m"]
-    cov_sol = stochastic_variables["cov"]
-    stochastic_variables_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol))
+    k_sol = algebraic_states["k"]
+    ref_sol = algebraic_states["ref"]
+    m_sol = algebraic_states["m"]
+    cov_sol = algebraic_states["cov"]
+    algebraic_states_sol = np.vstack((k_sol, ref_sol, m_sol, cov_sol))
     data = {
         "q_sol": q_sol,
         "qdot_sol": qdot_sol,
@@ -349,7 +349,7 @@ def main():
         "ref_sol": ref_sol,
         "m_sol": m_sol,
         "cov_sol": cov_sol,
-        "stochastic_variables_sol": stochastic_variables_sol,
+        "algebraic_states_sol": algebraic_states_sol,
     }
 
     # --- Save the results --- #

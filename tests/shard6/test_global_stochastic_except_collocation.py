@@ -66,15 +66,15 @@ def test_arm_reaching_muscle_driven():
     np.testing.assert_equal(g.shape, (546, 1))
 
     # Check some of the results
-    states, controls, stochastic_variables, integrated_values = (
+    states, controls, algebraic_states, integrated_values = (
         sol.states,
         sol.controls,
-        sol.stochastic_variables,
+        sol.algebraic_states,
         sol.integrated_values,
     )
     q, qdot, mus_activations = states["q"], states["qdot"], states["muscles"]
     mus_excitations = controls["muscles"]
-    k, ref, m = stochastic_variables["k"], stochastic_variables["ref"], stochastic_variables["m"]
+    k, ref, m = algebraic_states["k"], algebraic_states["ref"], algebraic_states["m"]
     cov = integrated_values["cov"]
 
     # initial and final position
@@ -403,15 +403,15 @@ def test_arm_reaching_torque_driven_explicit():
     np.testing.assert_equal(g.shape, (214, 1))
 
     # Check some of the results
-    states, controls, stochastic_variables, integrated_values = (
+    states, controls, algebraic_states, integrated_values = (
         sol.states,
         sol.controls,
-        sol.stochastic_variables,
+        sol.algebraic_states,
         sol.integrated_values,
     )
     q, qdot, qddot = states["q"], states["qdot"], states["qddot"]
     qdddot, tau = controls["qdddot"], controls["tau"]
-    k, ref, m = stochastic_variables["k"], stochastic_variables["ref"], stochastic_variables["m"]
+    k, ref, m = algebraic_states["k"], algebraic_states["ref"], algebraic_states["m"]
     cov = integrated_values["cov"]
 
     # initial and final position
@@ -586,10 +586,10 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
     np.testing.assert_equal(g.shape, (378, 1))
 
     # Check some of the solution values
-    states, controls, stochastic_variables = (
+    states, controls, algebraic_states = (
         sol.states,
         sol.controls,
-        sol.stochastic_variables,
+        sol.algebraic_states,
     )
     q, qdot = states["q"], states["qdot"]
     tau = controls["tau"]
@@ -597,12 +597,12 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
     if not with_cholesky:
         # Check some of the results
         k, ref, m, cov, a, c = (
-            stochastic_variables["k"],
-            stochastic_variables["ref"],
-            stochastic_variables["m"],
-            stochastic_variables["cov"],
-            stochastic_variables["a"],
-            stochastic_variables["c"],
+            algebraic_states["k"],
+            algebraic_states["ref"],
+            algebraic_states["m"],
+            algebraic_states["cov"],
+            algebraic_states["a"],
+            algebraic_states["c"],
         )
         if not with_scaling:
             # Check objective function value
@@ -737,12 +737,12 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
     else:
         # Check some of the results
         k, ref, m, cov, a, c = (
-            stochastic_variables["k"],
-            stochastic_variables["ref"],
-            stochastic_variables["m"],
-            stochastic_variables["cholesky_cov"],
-            stochastic_variables["a"],
-            stochastic_variables["c"],
+            algebraic_states["k"],
+            algebraic_states["ref"],
+            algebraic_states["m"],
+            algebraic_states["cholesky_cov"],
+            algebraic_states["a"],
+            algebraic_states["c"],
         )
         if not with_scaling:
             # Check objective function value

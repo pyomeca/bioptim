@@ -25,7 +25,7 @@ from bioptim import (
 
 
 def custom_dynamic(
-    time: MX, states: MX, controls: MX, parameters: MX, stochastic_variables: MX, nlp: NonLinearProgram
+    time: MX, states: MX, controls: MX, parameters: MX, algebraic_states: MX, nlp: NonLinearProgram
 ) -> DynamicsEvaluation:
     """
     The dynamics of the system using an external force (see custom_dynamics for more explanation)
@@ -40,8 +40,8 @@ def custom_dynamic(
         The current controls of the system
     parameters: MX
         The current parameters of the system
-    stochastic_variables: MX
-        The current stochastic variables of the system
+    algebraic_states: MX
+        The current algebraic states of the system
     nlp: NonLinearProgram
         A reference to the phase of the ocp
 
