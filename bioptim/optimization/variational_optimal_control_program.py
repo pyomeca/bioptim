@@ -11,6 +11,7 @@ from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..models.protocols.variational_biomodel import VariationalBioModel
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
+from ..misc.enums import ControlType
 from ..limits.constraints import ParameterConstraintList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ParameterObjectiveList
@@ -194,6 +195,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             parameter_init=parameter_init,
             parameter_bounds=parameter_bounds,
             multinode_constraints=multinode_constraints,
+            control_type=ControlType.LINEAR_CONTINUOUS,
             **kwargs,
         )
 
@@ -240,14 +242,14 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             Function(
                 "ForwardDyn",
                 [
-                    nlp.time_mx,
+                    vertcat(nlp.time_mx, nlp.dt_mx),
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.mx,
                     nlp.stochastic_variables.scaled.mx,
                 ],
                 [dynamics_dxdt],
-                ["t", "x", "u", "p", "s"],
+                ["t_span", "x", "u", "p", "s"],
                 ["xdot"],
             ),
         )

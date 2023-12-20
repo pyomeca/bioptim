@@ -15,8 +15,6 @@ class Integrator:
         The biorbd model to integrate
     time_integration_grid = tuple[float, ...]
         The time integration grid
-    idx: int
-        The index of the degrees of freedom to integrate
     cx: MX | SX
         The CasADi type the integration should be built from
     x_sym: MX | SX
@@ -98,13 +96,6 @@ class Integrator:
             self._output_names,
             {"allow_free": self.allow_free_variables},
         )
-
-        self.symbolic_dxdt = self.dxdt(
-                states=self.x_sym,
-                controls=self.u_sym,
-                params=self.param_sym * self.param_scaling,
-                stochastic_variables=self.s_sym,
-            )
 
     @property
     def shape_xf(self) -> tuple[int, int]:

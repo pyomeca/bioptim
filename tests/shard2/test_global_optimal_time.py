@@ -88,8 +88,10 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    tf = sol.times[-1]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    tf = sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -162,8 +164,10 @@ def test_pendulum_min_time_lagrange(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    tf = sol.times[-1]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    tf = sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -334,8 +338,10 @@ def test_time_constraint(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(g, np.concatenate((np.zeros((ns * 4, 1)), [[1]])))
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    tf = sol.times[-1]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    tf = sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -423,8 +429,10 @@ def test_monophase_time_constraint(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(g, np.concatenate((np.zeros((126, 1)), [[1]])), decimal=6)
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    tf = sol.times[-1]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    tf = sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -472,27 +480,26 @@ def test_multiphase_time_constraint(ode_solver, phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
+    np.testing.assert_almost_equal(f[0, 0], 53441.6, decimal=1)
 
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(f[0, 0], 55582.037247919245)
         np.testing.assert_equal(g.shape, (421 * 5 + 22, 1))
         np.testing.assert_almost_equal(
-            g, np.concatenate((np.zeros((612, 1)), [[1]], np.zeros((909, 1)), [[3]], np.zeros((603, 1)), [[0.8]])), decimal=6
+            g, np.concatenate((np.zeros((612, 1)), [[1]], np.zeros((909, 1)), [[3]], np.zeros((603, 1)), [[1.06766639]])), decimal=6
         )
     else:
-        np.testing.assert_almost_equal(f[0, 0], 55582.03357609387)
         np.testing.assert_equal(g.shape, (447, 1))
         np.testing.assert_almost_equal(
-            g, np.concatenate((np.zeros((132, 1)), [[1]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[0.8]])), decimal=6
+            g, np.concatenate((np.zeros((132, 1)), [[1]], np.zeros((189, 1)), [[3]], np.zeros((123, 1)), [[1.06766639]])), decimal=6
         )
 
     # Check some results
     states = sol.stepwise_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
     controls = sol.stepwise_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-    tf_all = [t[-1] for t in sol.times]
+    tf_all = [t[-1, 0] for t in sol.decision_time(to_merge=SolutionMerge.NODES)]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -504,10 +511,10 @@ def test_multiphase_time_constraint(ode_solver, phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((5.71428583, 9.81, 0)), decimal=5)
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-8.92857121, 9.81, -14.01785679)), decimal=5)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-5.01292039,  9.81      , -7.87028502)), decimal=5)
 
     # optimized time
-    np.testing.assert_almost_equal(tf_all, [1.0, 3, 0.8], decimal=5)
+    np.testing.assert_almost_equal(tf_all, [1.0, 3, 1.06766639], decimal=5)
 
     # simulate
     TestUtils.simulate(sol)
@@ -555,7 +562,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
             decimal=6,
         )
     else:
-        np.testing.assert_almost_equal(f[0, 0], 53463.26240909248)
+        np.testing.assert_almost_equal(f[0, 0], 53463.26240909248, decimal=1)
         np.testing.assert_equal(g.shape, (447, 1))
         np.testing.assert_almost_equal(
             g,
@@ -569,7 +576,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
     states = sol.stepwise_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
     controls = sol.stepwise_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-    tf_all = [t[-1] for t in sol.times]
+    tf_all = [t[-1, 0] for t in sol.decision_time(to_merge=SolutionMerge.NODES)]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))

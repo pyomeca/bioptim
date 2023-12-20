@@ -48,9 +48,9 @@ def test_double_update_bounds_and_init(phase_dynamics):
     u_bounds["tau"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
     ocp.update_bounds(x_bounds, u_bounds)
 
-    expected = np.array([[-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns]).T
+    expected = np.array([[0.1] + [-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns]).T
     np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
-    expected = np.array([[1] * (nq * 2) * (ns + 1) + [2] * nq * ns]).T
+    expected = np.array([[0.1] + [1] * (nq * 2) * (ns + 1) + [2] * nq * ns]).T
     np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     x_init = InitialGuessList()
@@ -59,7 +59,7 @@ def test_double_update_bounds_and_init(phase_dynamics):
     u_init = InitialGuessList()
     u_init["tau"] = -0.5 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
-    expected = np.array([[0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns]).T
+    expected = np.array([[0.1] + [0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns]).T
     np.testing.assert_almost_equal(ocp.init_vector, expected)
 
     x_bounds = BoundsList()
@@ -70,9 +70,9 @@ def test_double_update_bounds_and_init(phase_dynamics):
     ocp.update_bounds(x_bounds=x_bounds)
     ocp.update_bounds(u_bounds=u_bounds)
 
-    expected = np.array([[-2] * (nq * 2) * (ns + 1) + [-4] * nq * ns]).T
+    expected = np.array([[0.1] + [-2] * (nq * 2) * (ns + 1) + [-4] * nq * ns]).T
     np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
-    expected = np.array([[2] * (nq * 2) * (ns + 1) + [4] * nq * ns]).T
+    expected = np.array([[0.1] + [2] * (nq * 2) * (ns + 1) + [4] * nq * ns]).T
     np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     x_init = InitialGuessList()
@@ -81,7 +81,7 @@ def test_double_update_bounds_and_init(phase_dynamics):
     u_init = InitialGuessList()
     u_init["tau"] = -0.25 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
-    expected = np.array([[0.25] * (nq * 2) * (ns + 1) + [-0.25] * nq * ns]).T
+    expected = np.array([[0.1] + [0.25] * (nq * 2) * (ns + 1) + [-0.25] * nq * ns]).T
     np.testing.assert_almost_equal(ocp.init_vector, expected)
 
     with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessList"):
@@ -133,9 +133,9 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
     )
 
     # Before modifying
-    expected = np.array([[-np.inf] * (nq * 2) * (ns + 1) + [-np.inf] * nq * ns + [g_min]]).T
+    expected = np.array([[0.1] + [-np.inf] * (nq * 2) * (ns + 1) + [-np.inf] * nq * ns + [g_min]]).T
     np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
-    expected = np.array([[np.inf] * (nq * 2) * (ns + 1) + [np.inf] * nq * ns + [g_max]]).T
+    expected = np.array([[0.1] + [np.inf] * (nq * 2) * (ns + 1) + [np.inf] * nq * ns + [g_max]]).T
     np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     x_bounds = BoundsList()
@@ -145,9 +145,9 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
     u_bounds["tau"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
     ocp.update_bounds(x_bounds, u_bounds)
 
-    expected = np.array([[-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns + [g_min]]).T
+    expected = np.array([[0.1] + [-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns + [g_min]]).T
     np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
-    expected = np.array([[1] * (nq * 2) * (ns + 1) + [2] * nq * ns + [g_max]]).T
+    expected = np.array([[0.1] + [1] * (nq * 2) * (ns + 1) + [2] * nq * ns + [g_max]]).T
     np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     x_init = InitialGuessList()
@@ -157,7 +157,7 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
     u_init["tau"] = -0.5 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
 
-    expected = np.array([[0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns + [g_init]]).T
+    expected = np.array([[0.1] + [0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns + [g_init]]).T
     np.testing.assert_almost_equal(ocp.init_vector, expected)
 
     # Try on parameters too
@@ -170,12 +170,12 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
     ocp.update_bounds(parameter_bounds=parameter_bounds)
     ocp.update_initial_guess(parameter_init=parameter_init)
 
-    expected = np.array([[-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns + [g_min * 2]]).T
+    expected = np.array([[0.1] + [-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns + [g_min * 2]]).T
     np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
-    expected = np.array([[1] * (nq * 2) * (ns + 1) + [2] * nq * ns + [g_max * 2]]).T
+    expected = np.array([[0.1] + [1] * (nq * 2) * (ns + 1) + [2] * nq * ns + [g_max * 2]]).T
     np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
-    expected = np.array([[0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns + [g_init * 2]]).T
+    expected = np.array([[0.1] + [0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns + [g_init * 2]]).T
     np.testing.assert_almost_equal(ocp.init_vector, expected)
 
 
@@ -291,6 +291,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
         if interpolation == InterpolationType.CONSTANT:
             expected = np.array(
                 [
+                    [0.33333333],
                     [0.00292881],
                     [0.0],
                     [0.0],
@@ -330,6 +331,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
         elif interpolation == InterpolationType.LINEAR:
             expected = np.array(
                 [
+                    [0.33333333],
                     [1.00292881e00],
                     [0.00000000e00],
                     [0.00000000e00],
@@ -369,6 +371,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
         elif interpolation == InterpolationType.SPLINE:
             expected = np.array(
                 [
+                    [0.33333333],
                     [0.61502453],
                     [-0.1],
                     [-0.1],
@@ -408,6 +411,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
         elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             expected = np.array(
                 [
+                    [0.33333333],
                     [1.00292881e00],
                     [0.00000000e00],
                     [0.00000000e00],
@@ -447,6 +451,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
         elif interpolation in (InterpolationType.EACH_FRAME, InterpolationType.ALL_POINTS):
             expected = np.array(
                 [
+                    [0.33333333],
                     [0.00292881],
                     [0.0],
                     [0.0],
@@ -486,6 +491,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
         elif interpolation == InterpolationType.CUSTOM:
             expected = np.array(
                 [
+                    [0.33333333],
                     [0.00292881],
                     [0.0],
                     [0.0],
@@ -638,6 +644,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
         if interpolation == InterpolationType.CONSTANT:
             expected = np.array(
                 [
+                    0.33333333,
                     -0.00752759,
                     0.0,
                     0.0,
@@ -676,6 +683,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
         elif interpolation == InterpolationType.LINEAR:
             expected = np.array(
                 [
+                    0.33333333,
                     0.99247241,
                     0.0,
                     0.0,
@@ -714,6 +722,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
         elif interpolation == InterpolationType.SPLINE:
             expected = np.array(
                 [
+                    0.33333333,
                     0.59113089,
                     -0.1,
                     -0.1,
@@ -753,6 +762,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
         elif interpolation == InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT:
             expected = np.array(
                 [
+                    0.33333333,
                     0.99247241,
                     0.0,
                     0.0,
@@ -792,6 +802,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
         elif interpolation == InterpolationType.EACH_FRAME:
             expected = np.array(
                 [
+                    0.33333333,
                     -0.00752759,
                     -0.1,
                     -0.1,
@@ -831,6 +842,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
         elif interpolation == InterpolationType.CUSTOM:
             expected = np.array(
                 [
+                    0.33333333,
                     -0.00752759,
                     0.0,
                     0.0,

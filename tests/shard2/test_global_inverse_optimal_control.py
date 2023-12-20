@@ -3,7 +3,7 @@ Test for file IO
 """
 import os
 
-from bioptim import PhaseDynamics
+from bioptim import PhaseDynamics, SolutionMerge
 import numpy as np
 import pytest
 
@@ -31,7 +31,8 @@ def test_double_pendulum_torque_driven_IOCP(phase_dynamics):
     g = np.array(sol.constraints)
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     np.testing.assert_equal(g.shape, (120, 1))

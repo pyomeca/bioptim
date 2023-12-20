@@ -1,7 +1,7 @@
 import os
 
 import numpy as np
-from bioptim import OdeSolver, PhaseDynamics
+from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 import pytest
 
 
@@ -40,7 +40,8 @@ def test_soft_contact(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((228, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position

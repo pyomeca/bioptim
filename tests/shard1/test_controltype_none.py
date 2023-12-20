@@ -257,7 +257,8 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     np.testing.assert_almost_equal(f[0, 0], 0.2919065990591678)
 
     # Check finishing time
-    np.testing.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.8299336018055604)
+    times = [float(t[-1, 0]) for t in sol.decision_time(to_merge=SolutionMerge.NODES)]
+    np.testing.assert_almost_equal(sum(times), 0.8299336018055604)
 
     # Check constraints
     g = np.array(sol.constraints)

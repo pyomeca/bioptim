@@ -19,12 +19,11 @@ from bioptim import (
     DynamicsList,
     DynamicsFcn,
     BiMappingList,
-    SelectionMapping,
-    Dependency,
     BoundsList,
     InitialGuessList,
     OdeSolver,
     Solver,
+    SolutionMerge,
 )
 
 
@@ -130,11 +129,14 @@ def main():
     nlp = ocp.nlp[0]
     nlp.model = BiorbdModel(biorbd_model_path)
 
-    q = sol.states["q"]
-    qdot = sol.states["qdot"]
-    activations = sol.states["muscles"]
-    tau = sol.controls["tau"]
-    excitations = sol.controls["muscles"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    
+    q = states["q"]
+    qdot = states["qdot"]
+    activations = states["muscles"]
+    tau = controls["tau"]
+    excitations = controls["muscles"]
 
     x = np.concatenate((q, qdot, activations))
     u = np.concatenate((tau, excitations))

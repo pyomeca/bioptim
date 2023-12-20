@@ -5,7 +5,7 @@ import os
 
 import pytest
 import numpy as np
-from bioptim import OdeSolver, PhaseDynamics
+from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -44,7 +44,9 @@ def test_symmetry_by_mapping(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((186, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-0.2, -1.1797959, 0.20135792)))
@@ -95,7 +97,9 @@ def test_symmetry_by_constraint(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((336, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-0.2, -1.1797959, 0, 0.20135792, -0.20135792)))

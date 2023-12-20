@@ -220,7 +220,7 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
     S = InitialGuessList()
 
     sol = Solution.from_initial_guess(ocp, [phases_dt, X, U, P, S])
-    controls = sol.controls
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     states = sol.integrate(shooting_type=Shooting.MULTIPLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES)
 
     # Check some of the results
@@ -269,7 +269,7 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
     states = sol.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES)
 
     # Check some of the results
-    controls = sol.controls
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position

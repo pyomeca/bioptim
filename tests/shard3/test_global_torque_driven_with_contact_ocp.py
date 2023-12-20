@@ -9,7 +9,7 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver, RigidBodyDynamics, Solver, PhaseDynamics
+from bioptim import OdeSolver, RigidBodyDynamics, Solver, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -44,7 +44,9 @@ def test_maximize_predicted_height_CoM(objective_name, phase_dynamics):
     np.testing.assert_equal(g.shape, (76, 1))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))
@@ -117,7 +119,9 @@ def test_maximize_predicted_height_CoM_with_actuators(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((160, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0.0, 0.0, -0.5, 0.5)))

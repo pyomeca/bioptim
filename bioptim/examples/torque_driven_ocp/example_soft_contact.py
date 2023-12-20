@@ -27,6 +27,7 @@ from bioptim import (
     RigidBodyDynamics,
     SolutionIntegrator,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -70,6 +71,7 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     ocp = prepare_single_shooting(model, ns, tf, ode_solver)
 
     # Find equilibrium
+    dt = np.array([tf / ns])
     x = InitialGuessList()
     x["q"] = [0, 0.10, 0]
     x["qdot"] = [1e-10, 1e-10, 1e-10]
@@ -78,12 +80,12 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     p = InitialGuessList()
     s = InitialGuessList()
 
-    sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
-    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
+    sol_from_initial_guess = Solution.from_initial_guess(ocp, [dt, x, u, p, s])
+    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES)
     # s.animate()
 
     # Rolling Sphere at equilibrium
-    x0 = s.states["q"][:, -1]
+    x0 = s["q"][:, -1]
     x = InitialGuessList()
     x["q"] = x0
     x["qdot"] = np.array([0] * 3)
@@ -92,8 +94,8 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     p = InitialGuessList()
     s = InitialGuessList()
 
-    sol_from_initial_guess = Solution.from_initial_guess(ocp, [x, u, p, s])
-    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
+    sol_from_initial_guess = Solution.from_initial_guess(ocp, [dt, x, u, p, s])
+    s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES)
     # s.animate()
 
     return x

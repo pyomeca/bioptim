@@ -21,6 +21,7 @@ from bioptim import (
     BoundsList,
     Solver,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -130,28 +131,13 @@ def sum_cost_function_output(sol):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("objective", ["torque", "qdot"])
 @pytest.mark.parametrize(
-    "objective",
-    [
-        "torque",
-        "qdot"
-    ],
+    "control_type", [ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS]
 )
 @pytest.mark.parametrize(
-    "control_type",
-    [
-        ControlType.CONSTANT,
-        ControlType.CONSTANT_WITH_LAST_NODE,
-        ControlType.LINEAR_CONTINUOUS
-    ],
-)
-@pytest.mark.parametrize(
-    "integration_rule",
-    [
-        QuadratureRule.RECTANGLE_LEFT,
-        QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
-        QuadratureRule.TRAPEZOIDAL
-    ],
+    "integration_rule", 
+    [QuadratureRule.RECTANGLE_LEFT, QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL]
 )
 def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
@@ -170,8 +156,9 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     solver.set_maximum_iterations(5)
     sol = ocp.solve(solver)
     j_printed = sum_cost_function_output(sol)
-    tau = sol.controls["tau"]
-    dt = sol.t_spans[0][-1]
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    tau = controls["tau"]
+    dt = sol.t_span[0][-1]
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -193,8 +180,8 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874185)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874185)
 
-                controls = sol.controls["tau"]
-                states = np.vstack((sol.states["q"], sol.states["qdot"]))
+                controls = sol.decision_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS])
+                states = sol.decision_states(to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS])
                 out = 0
                 for i, fcn in enumerate(ocp.nlp[0].J[0].weighted_function):
                     out += fcn(

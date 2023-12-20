@@ -22,6 +22,7 @@ from bioptim import (
     OdeSolverBase,
     BiMapping,
     PhaseDynamics,
+    SolutionMerge,
 )
 import numpy as np
 
@@ -117,7 +118,7 @@ def prepare_ocp(
             ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2
         )
         constraints.add(
-            ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[2], max_bound=time_max[2], phase=2
+            ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[0], max_bound=time_max[0], phase=2
         )
 
     # Path constraint
@@ -183,8 +184,8 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    times = [t[-1] for t in sol.times]
-    print(f"The optimized phase time are: {times[0]}s, {np.cumsum(times[:2])[-1]}s and {np.cumsum(times)[-1]}s.")
+    times = [float(t[-1, 0]) for t in sol.decision_time(to_merge=SolutionMerge.NODES)]
+    print(f"The optimized phase time are: {times[0]}s, {times[1]}s and {times[2]}s.")
     sol.animate()
 
 

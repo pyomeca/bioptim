@@ -5,7 +5,7 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver, ControlType, PhaseDynamics
+from bioptim import OdeSolver, ControlType, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -52,7 +52,9 @@ def test_muscle_driven_ocp(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((20, 1)), decimal=5)
 
     # Check some of the results
-    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
     if ode_solver == OdeSolver.RK4:
         np.testing.assert_almost_equal(f[0, 0], 0.1264429986075503)

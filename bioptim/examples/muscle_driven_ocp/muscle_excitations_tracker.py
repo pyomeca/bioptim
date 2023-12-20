@@ -32,6 +32,7 @@ from bioptim import (
     Solver,
     RigidBodyDynamics,
     PhaseDynamics,
+    SolutionMerge,
 )
 from bioptim.optimization.optimization_variable import OptimizationVariableContainer
 
@@ -363,7 +364,8 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show the results --- #
-    q = sol.states["q"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = states["q"]
 
     n_q = ocp.nlp[0].model.nb_q
     n_mark = ocp.nlp[0].model.nb_markers

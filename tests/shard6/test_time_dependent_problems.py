@@ -209,15 +209,7 @@ def prepare_ocp(
 
 
 @pytest.mark.parametrize("n_phase", [1, 2])
-@pytest.mark.parametrize(
-    "integrator",
-    [
-        OdeSolver.IRK,
-        OdeSolver.RK4,
-        OdeSolver.COLLOCATION,
-        OdeSolver.TRAPEZOIDAL,
-    ],
-)
+@pytest.mark.parametrize("integrator", [OdeSolver.IRK, OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.TRAPEZOIDAL])
 @pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS])
 @pytest.mark.parametrize("minimize_time", [True, False])
 @pytest.mark.parametrize("use_sx", [False, True])

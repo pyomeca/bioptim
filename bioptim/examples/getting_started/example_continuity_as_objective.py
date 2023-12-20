@@ -234,11 +234,12 @@ def prepare_ocp_second_pass(
     constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
 
+    final_time = float(solution.decision_time(to_merge=SolutionMerge.NODES)[-1, 0])
     return OptimalControlProgram(
         bio_model,
         dynamics,
         ns,
-        solution.times[-1],
+        final_time,
         x_init=x_init,
         u_init=u_init,
         x_bounds=x_bounds,

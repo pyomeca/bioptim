@@ -60,37 +60,40 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics):
 
     # check time
     n_steps = nmpc.nlp[0].ode_solver.n_integration_steps
-    assert sol[0].times.shape == (n_cycles_total * cycle_len * (n_steps + 1) + 1,)
-    assert sol[0].times[0] == 0
-    np.testing.assert_almost_equal(sol[0].times[-1], 3.0)
+    time = sol[0].stepwise_time(to_merge=SolutionMerge.NODES)
+    assert time.shape == (n_cycles_total * cycle_len * (n_steps + 1) + 1, 1)
+    assert time[0] == 0
+    np.testing.assert_almost_equal(time[-1], 3.0)
 
     # check some results of the second structure
     for s in sol[1]:
-        states, controls = s.states, s.controls
+        states = s.stepwise_states(to_merge=SolutionMerge.NODES)
         q = states["q"]
 
         # initial and final position
         np.testing.assert_equal(q.shape, (3, 241))
 
         # check time
-        assert s.times.shape == (241,)
-        assert s.times[0] == 0
-        np.testing.assert_almost_equal(s.times[-1], 2.0, decimal=4)
+        time = s.stepwise_time(to_merge=SolutionMerge.NODES)
+        assert time.shape == (241, 1)
+        assert time[0] == 0
+        np.testing.assert_almost_equal(time[-1], 2.0, decimal=4)
 
     # check some result of the third structure
     assert len(sol[2]) == 4
 
     for s in sol[2]:
-        states, controls = s.states, s.controls
+        states = s.stepwise_states(to_merge=SolutionMerge.NODES)
         q = states["q"]
 
         # initial and final position
         np.testing.assert_equal(q.shape, (3, 121))
 
         # check time
-        assert s.times.shape == (121,)
-        assert s.times[0] == 0
-        np.testing.assert_almost_equal(s.times[-1], 1.0, decimal=4)
+        time = s.stepwise_time(to_merge=SolutionMerge.NODES)
+        assert time.shape == (121, 1)
+        assert time[0] == 0
+        np.testing.assert_almost_equal(time[-1], 1.0, decimal=4)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

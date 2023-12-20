@@ -6,7 +6,7 @@ import platform
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver, PhaseDynamics
+from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -59,8 +59,10 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    tf = sol.times[-1]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    tf = sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
@@ -148,8 +150,9 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
-    tf = sol.times[-1]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q, qdot = states["q"], states["qdot"]
+    tf = sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
