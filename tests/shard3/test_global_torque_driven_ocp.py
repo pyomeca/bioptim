@@ -262,7 +262,9 @@ def test_track_marker_2D_pendulum(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((n_shooting * 4, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     if isinstance(ode_solver, OdeSolver.IRK):
         # Check objective function value
@@ -449,7 +451,9 @@ def test_trampo_quaternions(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((130, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(
@@ -697,7 +701,8 @@ def test_example_multi_biorbd_model(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((240, 1)), decimal=6)
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 
     # initial and final position
     np.testing.assert_almost_equal(

@@ -588,13 +588,11 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
     sol = ocp.solve()
 
     # Check some of the results
-    q, qdot, tau, gravity = (
-        sol.states["q"],
-        sol.states["qdot"],
-        sol.controls["tau"],
-        sol.parameters["gravity_xyz"],
-    )
-
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    gravity = sol.parameters["gravity_xyz"]
+    
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))

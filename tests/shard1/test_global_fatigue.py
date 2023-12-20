@@ -619,7 +619,9 @@ def test_fatigable_effort_torque_split(phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((80, 1)))
 
         # Check some of the results
-        states, controls = sol.states, sol.controls
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+        
         q, qdot = states["q"], states["qdot"]
         mf_minus, mf_plus = states["tau_minus_mf"], states["tau_plus_mf"]
         tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]

@@ -26,6 +26,7 @@ from bioptim import (
     Solver,
     BoundsList,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 from tests.utils import TestUtils
@@ -76,7 +77,8 @@ def test_acados_one_mayer(cost_type):
     sol = ocp.solve(solver=solver)
 
     # Check end state value
-    q = sol.states["q"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = states["q"]
     np.testing.assert_almost_equal(q[0, -1], 1.0)
 
     # Clean test folder
@@ -110,7 +112,8 @@ def test_acados_mayer_first_node(cost_type):
     sol = ocp.solve(solver=solver)
 
     # Check end state value
-    q = sol.states["q"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = states["q"]
     np.testing.assert_almost_equal(q[0, 0], 0.999999948505021)
 
     # Clean test folder
@@ -144,7 +147,8 @@ def test_acados_several_mayer(cost_type):
     sol = ocp.solve(solver=solver)
 
     # Check end state value
-    q = sol.states["q"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = states["q"]
     np.testing.assert_almost_equal(q[0, -1], 1.0)
     np.testing.assert_almost_equal(q[1, -1], 2.0)
     np.testing.assert_almost_equal(q[2, -1], 3.0)
@@ -190,7 +194,8 @@ def test_acados_one_lagrange(cost_type):
     sol = ocp.solve(solver=solver)
 
     # Check end state value
-    q = sol.states["q"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = states["q"]
     np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze())
 
     # Clean test folder
@@ -237,7 +242,8 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     sol = ocp.solve(solver=solver)
 
     # Check end state value
-    q = sol.states["q"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = states["q"]
     np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze(), decimal=6)
 
     # Clean test folder
@@ -275,7 +281,8 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     sol = ocp.solve(solver=solver)
 
     # Check end state value
-    q = sol.states["q"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = states["q"]
     np.testing.assert_almost_equal(q[0, -1], target.squeeze())
 
     # Clean test folder
@@ -390,7 +397,9 @@ def test_acados_custom_dynamics(problem_type_custom):
     sol = ocp.solve(solver=Solver.ACADOS())
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((2, 0, 0)), decimal=6)
@@ -454,7 +463,10 @@ def test_acados_one_parameter():
     sol = ocp.solve(solver=solver)
 
     # Check some results
-    q, qdot, tau, gravity = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.parameters["gravity_xyz"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    gravity = sol.parameters["gravity_xyz"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
@@ -525,13 +537,10 @@ def test_acados_several_parameter():
     sol = ocp.solve(solver=solver)
 
     # Check some results
-    q, qdot, tau, gravity, mass = (
-        sol.states["q"],
-        sol.states["qdot"],
-        sol.controls["tau"],
-        sol.parameters["gravity_xyz"],
-        sol.parameters["mass"],
-    )
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    gravity, mass = sol.parameters["gravity_xyz"], sol.parameters["mass"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
@@ -591,7 +600,9 @@ def test_acados_one_end_constraints():
     sol = ocp.solve(solver=Solver.ACADOS())
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # final position
     np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)))
@@ -629,7 +640,9 @@ def test_acados_constraints_all():
     sol = ocp.solve(solver=Solver.ACADOS())
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # final position
     np.testing.assert_almost_equal(q[:, 0], np.array([2.28988221, 0, 0, 2.95087911e-01]), decimal=6)
@@ -672,7 +685,9 @@ def test_acados_constraints_end_all():
     sol = ocp.solve(solver=Solver.ACADOS())
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # final position
     np.testing.assert_almost_equal(q[:, 0], np.array([2.01701330, 0, 0, 3.20057865e-01]), decimal=6)

@@ -13,6 +13,7 @@ from bioptim import (
     InterpolationType,
     BoundsList,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 from tests.utils import TestUtils
@@ -71,10 +72,11 @@ def test_mhe(solver, phase_dynamics):
         expand_dynamics=True,
     ).solve(update_functions, **ocp_module.get_solver_options(solver))
 
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
     if solver.type == SolverType.ACADOS:
         # Compare the position on the first few frames (only ACADOS, since IPOPT is not precise with current options)
         np.testing.assert_almost_equal(
-            sol.states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len - 1], decimal=3
+            states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len - 1], decimal=3
         )
         # Clean test folder
         os.remove(f"./acados_ocp.json")
