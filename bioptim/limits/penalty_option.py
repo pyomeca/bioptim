@@ -454,7 +454,7 @@ class PenaltyOption(OptionGeneric):
                     x0=controller.states.cx_start, 
                     u=u_integrate, 
                     p=controller.parameters.cx, 
-                    s=controller.algebraic_states.cx_start
+                    a=controller.algebraic_states.cx_start
                 )["xf"]
             else:
                 raise NotImplementedError(f"Integration rule {self.integration_rule} not implemented yet")
