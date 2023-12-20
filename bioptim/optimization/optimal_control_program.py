@@ -1613,21 +1613,3 @@ class OptimalControlProgram:
         This method is thus overriden in StochasticOptimalControlProgram
         """
         NLP.add(self, "is_stochastic", False, True)
-
-
-def _scale_values(values, scaling_entities, penalty, scaling_data):
-    """Scale the provided values based on the scaling entities and type."""
-
-    scaling = np.concatenate(
-        [np.repeat(scaling_data[key].scaling[:, np.newaxis], values.shape[1], axis=1) for key in scaling_entities]
-    )
-
-    scaling = np.repeat(scaling, int(values.shape[0] / scaling.shape[0]), axis=0)
-
-    if penalty.multinode_penalty:
-        len_values = sum(scaling_entities[key].shape for key in scaling_entities)
-        complete_scaling = np.array(scaling)
-        number_of_repeat = values.shape[0] // len_values
-        scaling = np.repeat(complete_scaling, number_of_repeat, axis=0)
-
-    return values / scaling
