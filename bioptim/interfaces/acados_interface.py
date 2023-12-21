@@ -548,10 +548,7 @@ class AcadosInterface(SolverInterface):
                 )
 
                 if objectives.target is not None:
-                    if objectives.target.shape[0] == 1 or objectives.target.shape[1] == 1:
-                        acados.y_ref_end.append(objectives.target.reshape((-1, 1)))
-                    else:
-                        acados.y_ref_end.append(objectives.target[..., -1].T.reshape((-1, 1)))
+                    acados.y_ref_end.append(objectives.target[..., -1].T.reshape((-1, 1)))
                 else:
                     acados.y_ref_end.append(np.zeros((objectives.function[-1].numel_out(), 1)))
 

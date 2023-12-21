@@ -433,7 +433,7 @@ def test_acados_one_parameter():
         max_g=np.array([1, 1, -5]),
         min_m=10,
         max_m=30,
-        target_g=np.array([0, 0, -9.81]),
+        target_g=np.array([0, 0, -9.81])[:, np.newaxis],
         target_m=20,
         use_sx=True,
         expand_dynamics=True,

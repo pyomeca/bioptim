@@ -308,7 +308,7 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
         u = []
         a = []
 
-    return t0, x, u, a, weight, target,
+    return t0, x, u, a, weight, target
 
 
 def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):

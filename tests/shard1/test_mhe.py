@@ -76,7 +76,7 @@ def test_mhe(solver, phase_dynamics):
     if solver.type == SolverType.ACADOS:
         # Compare the position on the first few frames (only ACADOS, since IPOPT is not precise with current options)
         np.testing.assert_almost_equal(
-            states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len - 1], decimal=3
+            states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len], decimal=3
         )
         # Clean test folder
         os.remove(f"./acados_ocp.json")
