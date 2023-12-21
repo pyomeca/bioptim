@@ -561,6 +561,10 @@ class OptimizationVariableContainer:
         return self.unscaled.mx_reduced
 
     @property
+    def cx(self):
+        return self.unscaled.cx
+
+    @property
     def cx_start(self):
         return self.unscaled.cx_start
 

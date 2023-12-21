@@ -79,7 +79,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
 
 
 def cost(controller: PenaltyController):
-    q = controller.states["q"].cx_start
+    q = controller.states["q"].cx
     return (q - 3) ** 2
 
 
@@ -88,12 +88,12 @@ def bound(t):
 
 
 def path_constraint(controller, is_robustified: bool = False):
-    t = controller.time.cx_start
-    q = controller.states["q"].cx_start
+    t = controller.time.cx
+    q = controller.states["q"].cx
     sup = bound(t)
     if is_robustified:
         P = StochasticBioModel.reshape_to_matrix(
-            controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
+            controller.algebraic_states["cov"].cx, controller.model.matrix_shape_cov
         )
         sigma = cas.sqrt(cas.horzcat(1, 0) @ P @ cas.vertcat(1, 0))
         sup -= sigma

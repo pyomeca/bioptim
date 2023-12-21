@@ -382,14 +382,31 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
             )
 
-            dx = controllers[0].extra_dynamics(0)(
+            dx = Function("tp", [
+                controllers[0].time.mx,
+                controllers[0].states.mx,
+                controllers[0].controls.mx,
+                controllers[0].parameters.mx,
+                controllers[0].algebraic_states.mx, 
+                controllers[0].model.motor_noise_sym_mx,
+                controllers[0].model.sensory_noise_sym_mx,
+            ], [controllers[0].extra_dynamics(0)(
+                controllers[0].time.mx,
+                controllers[0].states.mx,
+                controllers[0].controls.mx,
+                controllers[0].parameters.mx,
+                controllers[0].algebraic_states.mx
+            )]
+            )(
                 controllers[0].time.cx,
                 controllers[0].states.cx,
                 controllers[0].controls.cx,
                 controllers[0].parameters.cx,
-                controllers[0].algebraic_states.cx
+                controllers[0].algebraic_states.cx,
+                controllers[0].model.motor_noise_magnitude,
+                controllers[0].model.sensory_noise_magnitude,
             )
-
+            
             DdZ_DX_fun = Function(
                 "DdZ_DX_fun",
                 [
@@ -767,10 +784,11 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
                     raise ValueError("nodes_phase of the multinode_penalty must be between 0 and number of phases")
 
             node_names = [
-                f"Phase {phase} node {node.name if isinstance(node, Node) else node}, "
+                f"P{phase}n{node.name if isinstance(node, Node) else node}, "
                 for node, phase in zip(mnc.nodes, mnc.nodes_phase)
             ]
-            mnc.name = "".join(("Multinode: ", *node_names))[:-2]
+            
+            mnc.name = mnc.type.name + "_" + "".join(("Multinode: ", *node_names))[:-2]
 
             if mnc.weight:
                 mnc.base = ObjectiveFunction.MayerFunction

@@ -127,9 +127,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     dt = controllers[0].tf / controllers[0].ns
     out: Any = 0
     for i, ctrl in enumerate(controllers):
-        cov_matrix = StochasticBioModel.reshape_to_matrix(
-            ctrl.integrated_values["cov"].cx_start, ctrl.model.matrix_shape_cov
-        )
+        cov_matrix = StochasticBioModel.reshape_to_matrix(ctrl.integrated_values["cov"].cx, ctrl.model.matrix_shape_cov)
         p_partial = cov_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(p_partial) * dt
     return out
@@ -174,13 +172,13 @@ def get_cov_mat(nlp, node_index, use_sx):
 
     dt = nlp.dt
 
-    M_matrix = StochasticBioModel.reshape_to_matrix(nlp.algebraic_states["m"].cx_start, nlp.model.matrix_shape_m)
+    M_matrix = StochasticBioModel.reshape_to_matrix(nlp.algebraic_states["m"].cx, nlp.model.matrix_shape_m)
 
     CX_eye = cas.SX_eye if use_sx else cas.DM_eye
     sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * CX_eye(
         cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym).shape[0]
     )
-    cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
+    cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(
@@ -195,11 +193,11 @@ def get_cov_mat(nlp, node_index, use_sx):
         "tp", 
         [nlp.states.mx, nlp.controls.mx, nlp.parameters, nlp.algebraic_states.mx, nlp.model.sensory_noise_sym_mx, nlp.model.motor_noise_sym_mx], 
         [dx.dxdt]
-    )(nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters, nlp.algebraic_states.cx_start, nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym)
+    )(nlp.states.cx, nlp.controls.cx, nlp.parameters, nlp.algebraic_states.cx, nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym)
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym))
     dg_dw = -ddx_dwm * dt
-    ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx_start)
+    ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx)
     dg_dx: Any = -(ddx_dx * dt / 2 + CX_eye(ddx_dx.shape[0]))
 
     p_next = M_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
@@ -207,10 +205,10 @@ def get_cov_mat(nlp, node_index, use_sx):
         "p_next",
         [
             dt,
-            nlp.states.cx_start,
-            nlp.controls.cx_start,
+            nlp.states.cx,
+            nlp.controls.cx,
             nlp.parameters,
-            nlp.algebraic_states.cx_start,
+            nlp.algebraic_states.cx,
             cov_sym,
             nlp.model.motor_noise_sym,
             nlp.model.sensory_noise_sym,
@@ -225,11 +223,11 @@ def get_cov_mat(nlp, node_index, use_sx):
 
     func_eval = func(
         nlp.dt,
-        nlp.states.cx_start,
-        nlp.controls.cx_start,
+        nlp.states.cx,
+        nlp.controls.cx,
         nlp.parameters,
-        nlp.algebraic_states.cx_start,
-        nlp.integrated_values["cov"].cx_start,
+        nlp.algebraic_states.cx,
+        nlp.integrated_values["cov"].cx,
         nlp.model.motor_noise_magnitude,
         nlp.model.sensory_noise_magnitude,
     )
@@ -244,9 +242,9 @@ def reach_target_consistently(controllers: list[PenaltyController]) -> cas.MX:
     applies at the END node.
     """
 
-    q_sym = cas.MX.sym("q_sym", controllers[-1].states["q"].cx_start.shape[0])
-    qdot_sym = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx_start.shape[0])
-    cov_sym = cas.MX.sym("cov", controllers[-1].integrated_values.cx_start.shape[0])
+    q_sym = cas.MX.sym("q_sym", controllers[-1].states["q"].cx.shape[0])
+    qdot_sym = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx.shape[0])
+    cov_sym = cas.MX.sym("cov", controllers[-1].integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, controllers[-1].model.matrix_shape_cov)
 
     hand_pos = controllers[0].model.markers(q_sym)[2][:2]
@@ -264,13 +262,7 @@ def reach_target_consistently(controllers: list[PenaltyController]) -> cas.MX:
     out = cas.vertcat(pos_constraint[0, 0], pos_constraint[1, 1], vel_constraint[0, 0], vel_constraint[1, 1])
 
     fun = cas.Function("reach_target_consistently", [q_sym, qdot_sym, cov_sym], [out])
-    val = fun(
-        controllers[-1].states["q"].cx_start,
-        controllers[-1].states["qdot"].cx_start,
-        controllers[-1].integrated_values.cx_start,
-    )
-    # Since the algebraic states are defined with ns+1,
-    # the cx_start actually refers to the last node (when using node=Node.END)
+    val = fun(controllers[-1].states["q"].cx, controllers[-1].states["qdot"].cx, controllers[-1].integrated_values.cx)
 
     return val
 
@@ -293,36 +285,36 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
 
     # create the casadi function to be evaluated
     # Get the symbolic variables
-    ref = controllers[0].algebraic_states["ref"].cx_start
-    cov_sym = cas.MX.sym("cov", controllers[0].integrated_values.cx_start.shape[0])
+    ref = controllers[0].algebraic_states["ref"].cx
+    cov_sym = cas.MX.sym("cov", controllers[0].integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, controllers[0].model.matrix_shape_cov)
 
-    k = controllers[0].algebraic_states["k"].cx_start
+    k = controllers[0].algebraic_states["k"].cx
     k_matrix = StochasticBioModel.reshape_to_matrix(k, controllers[0].model.matrix_shape_k)
 
     # Compute the expected effort
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
     estimated_ref = controllers[0].model.sensory_reference(
-        controllers[0].states.cx_start,
-        controllers[0].controls.cx_start,
-        controllers[0].parameters.cx_start,
-        controllers[0].algebraic_states.cx_start,
+        controllers[0].states.cx,
+        controllers[0].controls.cx,
+        controllers[0].parameters.cx,
+        controllers[0].algebraic_states,
         controllers[0].get_nlp,
     )
     e_fb = k_matrix @ ((estimated_ref - ref) + controllers[0].model.sensory_noise_magnitude)
-    jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx_start)
+    jac_e_fb_x = cas.jacobian(e_fb, controllers[0].states.cx)
     trace_jac_p_jack = cas.trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
     expected_effort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
     func = cas.Function(
         "expected_effort_fb_mx",
-        [controllers[0].states.cx_start, controllers[0].algebraic_states.cx_start, cov_sym],
+        [controllers[0].states.cx, controllers[0].algebraic_states.cx, cov_sym],
         [expected_effort_fb_mx],
     )
 
     f_expected_effort_fb: Any = 0
     for i, ctrl in enumerate(controllers):
-        P_vector = ctrl.integrated_values.cx_start
-        out = func(ctrl.states.cx_start, ctrl.algebraic_states.cx_start, P_vector)
+        P_vector = ctrl.integrated_values.cx
+        out = func(ctrl.states.cx, ctrl.algebraic_states.cx, P_vector)
         f_expected_effort_fb += out * dt
 
     return f_expected_effort_fb
@@ -418,12 +410,12 @@ def prepare_socp(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=np.array([shoulder_pos_initial, elbow_pos_initial])
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=np.array([0, 0]))
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.START, target=0)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.START, target=np.array([0, 0]))
     constraints.add(
         ConstraintFcn.TRACK_MARKERS, node=Node.END, target=hand_final_position, marker_index=2, axes=[Axis.X, Axis.Y]
     )
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
-    constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.END, target=0)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qddot", node=Node.END, target=np.array([0, 0]))
     constraints.add(
         ConstraintFcn.TRACK_STATE, key="q", node=Node.ALL, min_bound=0, max_bound=180
     )  # This is a bug, it should be in radians
@@ -571,6 +563,7 @@ def prepare_socp(
 
 def main():
     # --- Options --- #
+    use_sx = True
     vizualize_sol_flag = True
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
@@ -615,6 +608,7 @@ def main():
         sensory_noise_magnitude=sensory_noise_magnitude,
         example_type=example_type,
         force_field_magnitude=force_field_magnitude,
+        use_sx=use_sx,
     )
 
     sol_socp = socp.solve(solver)

@@ -115,8 +115,8 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
 
 
 def path_constraint(controller: PenaltyController, super_elipse_index: int, is_robustified: bool = False):
-    p_x = controller.states["q"].cx_start[0]
-    p_y = controller.states["q"].cx_start[1]
+    p_x = controller.states["q"].cx[0]
+    p_y = controller.states["q"].cx[1]
 
     h = (
         (
@@ -136,9 +136,9 @@ def path_constraint(controller: PenaltyController, super_elipse_index: int, is_r
 
     if is_robustified:
         gamma = 1
-        dh_dx = cas.jacobian(h, controller.states.cx_start)
+        dh_dx = cas.jacobian(h, controller.states.cx)
         cov = StochasticBioModel.reshape_to_matrix(
-            controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
+            controller.algebraic_states["cov"].cx, controller.model.matrix_shape_cov
         )
         safe_guard = gamma * cas.sqrt(dh_dx @ cov @ dh_dx.T)
         out -= safe_guard

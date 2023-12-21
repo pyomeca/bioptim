@@ -1009,6 +1009,7 @@ class ConfigureProblem:
         Add a new integrated value. This creates an MX (not an optimization variable) that is integrated using the
         integrated_value_functions function provided. This integrated_value can be used in the constraints and objectives
         without having to recompute them over and over again.
+        
         Parameters
         ----------
         name: str

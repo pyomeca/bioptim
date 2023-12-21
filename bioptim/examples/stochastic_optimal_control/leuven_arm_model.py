@@ -246,7 +246,7 @@ class LeuvenArmModel:
 
     def force_field(self, q, force_field_magnitude):
         F_forceField = force_field_magnitude * (self.l1 * cos(q[0]) + self.l2 * cos(q[0] + q[1]))
-        hand_pos = MX(2, 1)
+        hand_pos = type(q)(2, 1)
         hand_pos[0] = self.l2 * sin(q[0] + q[1]) + self.l1 * sin(q[0])
         hand_pos[1] = self.l2 * sin(q[0] + q[1])
         tau_force_field = -F_forceField @ hand_pos
