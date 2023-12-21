@@ -184,7 +184,8 @@ def get_cov_mat(nlp, node_index):
 
     m_matrix = StochasticBioModel.reshape_to_matrix(nlp.algebraic_states["m"].cx_start, nlp.model.matrix_shape_m)
 
-    sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * cas.MX_eye(6)
+    CX_eye = cas.SX_eye if nlp.cx == cas.SX else cas.MX_eye
+    sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * CX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
@@ -201,7 +202,7 @@ def get_cov_mat(nlp, node_index):
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym))
     dg_dw = -ddx_dwm * dt
     ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx_start)
-    dg_dx = -(ddx_dx * dt / 2 + cas.MX_eye(ddx_dx.shape[0]))
+    dg_dx = -(ddx_dx * dt / 2 + CX_eye(ddx_dx.shape[0]))
 
     p_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
     func_eval = cas.Function(

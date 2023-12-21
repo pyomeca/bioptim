@@ -72,6 +72,7 @@ def prepare_socp(
     example_type=ExampleType.CIRCLE,
     with_cholesky: bool = False,
     with_scaling: bool = False,
+    use_sx: bool = False,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -110,6 +111,7 @@ def prepare_socp(
         n_noised_states=4,
         n_noised_controls=2,
         friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
+        use_sx=use_sx,
     )
 
     n_tau = bio_model.nb_tau
@@ -335,6 +337,7 @@ def prepare_socp(
         control_type=ControlType.CONSTANT_WITH_LAST_NODE,
         n_threads=1,
         problem_type=problem_type,
+        use_sx=use_sx,
     )
 
 

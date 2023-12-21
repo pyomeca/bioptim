@@ -153,7 +153,7 @@ def sensory_reference(
     return hand_pos_velo
 
 
-def get_cov_mat(nlp, node_index):
+def get_cov_mat(nlp, node_index, use_sx):
     """
     Perform a trapezoidal integration to get the covariance matrix at the next node.
     It is computed as:
@@ -172,34 +172,41 @@ def get_cov_mat(nlp, node_index):
     nlp.algebraic_states.node_index = 0
     nlp.integrated_values.node_index = 0
 
-    dt = nlp.tf / nlp.ns
+    dt = nlp.dt
 
     M_matrix = StochasticBioModel.reshape_to_matrix(nlp.algebraic_states["m"].cx_start, nlp.model.matrix_shape_m)
 
-    sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * cas.MX_eye(
+    CX_eye = cas.SX_eye if use_sx else cas.DM_eye
+    sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * CX_eye(
         cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym).shape[0]
     )
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx_start.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(
-        nlp.states.cx_start,
-        nlp.controls.cx_start,
+        nlp.states.mx,
+        nlp.controls.mx,
         nlp.parameters,
-        nlp.algebraic_states.cx_start,
+        nlp.algebraic_states.mx,
         nlp,
         with_noise=True,
     )
+    dx.dxdt = cas.Function(
+        "tp", 
+        [nlp.states.mx, nlp.controls.mx, nlp.parameters, nlp.algebraic_states.mx, nlp.model.sensory_noise_sym_mx, nlp.model.motor_noise_sym_mx], 
+        [dx.dxdt]
+    )(nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters, nlp.algebraic_states.cx_start, nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym)
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym))
     dg_dw = -ddx_dwm * dt
     ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx_start)
-    dg_dx: Any = -(ddx_dx * dt / 2 + cas.MX_eye(ddx_dx.shape[0]))
+    dg_dx: Any = -(ddx_dx * dt / 2 + CX_eye(ddx_dx.shape[0]))
 
     p_next = M_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
     func = cas.Function(
         "p_next",
         [
+            dt,
             nlp.states.cx_start,
             nlp.controls.cx_start,
             nlp.parameters,
@@ -217,6 +224,7 @@ def get_cov_mat(nlp, node_index):
     nlp.integrated_values.node_index = node_index - 1
 
     func_eval = func(
+        nlp.dt,
         nlp.states.cx_start,
         nlp.controls.cx_start,
         nlp.parameters,
@@ -329,6 +337,7 @@ def prepare_socp(
     sensory_noise_magnitude: cas.DM,
     force_field_magnitude: float = 0,
     example_type=ExampleType.CIRCLE,
+    use_sx: bool = False,
 ) -> StochasticOptimalControlProgram:
     """
     The initialization of an ocp
@@ -365,6 +374,7 @@ def prepare_socp(
         motor_noise_magnitude=motor_noise_magnitude,
         friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
         sensory_reference=sensory_reference,
+        use_sx=use_sx,
     )
     bio_model.force_field_magnitude = force_field_magnitude
 
@@ -533,10 +543,7 @@ def prepare_socp(
     )
 
     integrated_value_functions = {
-        "cov": lambda nlp, node_index: get_cov_mat(
-            nlp,
-            node_index,
-        )
+        "cov": lambda nlp, node_index: get_cov_mat(nlp, node_index, use_sx)
     }
 
     return StochasticOptimalControlProgram(
@@ -558,6 +565,7 @@ def prepare_socp(
         n_threads=1,
         problem_type=SocpType.TRAPEZOIDAL_EXPLICIT(),
         integrated_value_functions=integrated_value_functions,
+        use_sx=use_sx,
     )
 
 

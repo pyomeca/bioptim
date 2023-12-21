@@ -1,5 +1,5 @@
 from typing import Callable, Any
-from casadi import MX_eye, jacobian, Function, MX, vertcat
+from casadi import MX_eye, SX_eye, jacobian, Function, MX, SX, vertcat
 
 from .constraints import PenaltyOption
 from .objective_functions import ObjectiveFunction
@@ -374,47 +374,50 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             if controllers[0].phase_idx != controllers[1].phase_idx:
                 raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
 
-            dt = controllers[0].tf / controllers[0].ns
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
+
+            dt = controllers[0].dt
 
             M_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["m"].cx_start, controllers[0].model.matrix_shape_m
+                controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
             )
 
             dx = controllers[0].extra_dynamics(0)(
                 controllers[0].time.cx,
-                controllers[0].states.cx_start,
-                controllers[0].controls.cx_start,
-                controllers[0].parameters.cx_start,
-                controllers[0].algebraic_states.cx_start,
+                controllers[0].states.cx,
+                controllers[0].controls.cx,
+                controllers[0].parameters.cx,
+                controllers[0].algebraic_states.cx
             )
 
             DdZ_DX_fun = Function(
                 "DdZ_DX_fun",
                 [
                     controllers[0].time.cx,
-                    controllers[0].states.cx_start,
-                    controllers[0].controls.cx_start,
-                    controllers[0].parameters.cx_start,
-                    controllers[0].algebraic_states.cx_start,
+                    controllers[0].states.cx,
+                    controllers[0].controls.cx,
+                    controllers[0].parameters.cx,
+                    controllers[0].algebraic_states.cx,
                     controllers[0].model.motor_noise_sym,
                     controllers[0].model.sensory_noise_sym,
                 ],
-                [jacobian(dx, controllers[0].states.cx_start)],
+                [jacobian(dx, controllers[0].states.cx)],
             )
 
             DdZ_DX = DdZ_DX_fun(
                 controllers[1].time.cx,
-                controllers[1].states.cx_start,
-                controllers[1].controls.cx_start,
-                controllers[1].parameters.cx_start,
-                controllers[1].algebraic_states.cx_start,
+                controllers[1].states.cx,
+                controllers[1].controls.cx,
+                controllers[1].parameters.cx,
+                controllers[1].algebraic_states.cx,
                 controllers[1].model.motor_noise_magnitude,
                 controllers[1].model.sensory_noise_magnitude,
             )
 
-            DG_DZ = MX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
+            CX_eye = SX_eye if controllers[0].cx == SX else MX_eye
+            DG_DZ = CX_eye(DdZ_DX.shape[0]) - DdZ_DX * dt / 2
 
-            val = M_matrix @ DG_DZ - MX_eye(M_matrix.shape[0])
+            val = M_matrix @ DG_DZ - CX_eye(M_matrix.shape[0])
 
             out_vector = StochasticBioModel.reshape_to_vector(val)
             return out_vector
@@ -443,20 +446,23 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             if controllers[0].phase_idx != controllers[1].phase_idx:
                 raise RuntimeError("For this constraint to make sens, the two nodes must belong to the same phase.")
 
-            dt = controllers[0].tf / controllers[0].ns
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
+
+            dt = controllers[0].dt
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
             m_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["m"].cx_start, controllers[0].model.matrix_shape_m
+                controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
             )
             a_plus_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[1].algebraic_states["a"].cx_start, controllers[1].model.matrix_shape_a
+                controllers[1].algebraic_states["a"].cx, controllers[1].model.matrix_shape_a
             )
 
-            DG_DZ = MX_eye(a_plus_matrix.shape[0]) - a_plus_matrix * dt / 2
+            CX_eye = SX_eye if controllers[0].cx == SX else MX_eye
+            DG_DZ = CX_eye(a_plus_matrix.shape[0]) - a_plus_matrix * dt / 2
 
-            val = m_matrix @ DG_DZ - MX_eye(2 * nu)
+            val = m_matrix @ DG_DZ - CX_eye(2 * nu)
 
             out_vector = StochasticBioModel.reshape_to_vector(val)
             return out_vector
@@ -475,26 +481,30 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
+
             cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["cov"].cx_start, controllers[0].model.matrix_shape_cov
+                controllers[0].algebraic_states["cov"].cx, controllers[0].model.matrix_shape_cov
             )
             cov_matrix_next = StochasticBioModel.reshape_to_matrix(
-                controllers[1].algebraic_states["cov"].cx_start, controllers[1].model.matrix_shape_cov
+                controllers[1].algebraic_states["cov"].cx, controllers[1].model.matrix_shape_cov
             )
             a_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["a"].cx_start, controllers[0].model.matrix_shape_a
+                controllers[0].algebraic_states["a"].cx, controllers[0].model.matrix_shape_a
             )
             c_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["c"].cx_start, controllers[0].model.matrix_shape_c
+                controllers[0].algebraic_states["c"].cx, controllers[0].model.matrix_shape_c
             )
             m_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["m"].cx_start, controllers[0].model.matrix_shape_m
+                controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
             )
+
 
             sigma_w = vertcat(controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude)
             dt = controllers[0].tf / controllers[0].ns
             dg_dw = -dt * c_matrix
-            dg_dx = -MX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
+            CX_eye = SX_eye if controllers[0].cx == SX else MX_eye
+            dg_dx = -CX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
 
             cov_next_computed = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
             cov_implicit_deffect = cov_next_computed - cov_matrix_next
@@ -515,14 +525,16 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
+            
+            MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            dt = controllers[0].tf / controllers[0].ns
+            dt = controllers[0].dt
 
             nb_root = controllers[0].model.nb_root
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
 
             c_matrix = StochasticBioModel.reshape_to_matrix(
-                controllers[0].algebraic_states["c"].cx_start, controllers[0].model.matrix_shape_c
+                controllers[0].algebraic_states["c"].cx, controllers[0].model.matrix_shape_c
             )
 
             q_root = MX.sym("q_root", nb_root, 1)
@@ -556,38 +568,38 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     tau_joints,
                     parameters_sym,
                     algebraic_states_sym,
-                    controllers[0].model.motor_noise_sym,
-                    controllers[0].model.sensory_noise_sym,
+                    controllers[0].model.motor_noise_sym_mx,
+                    controllers[0].model.sensory_noise_sym_mx,
                 ],
                 [
                     jacobian(
                         dx[non_root_index],
-                        vertcat(controllers[0].model.motor_noise_sym, controllers[0].model.sensory_noise_sym),
+                        vertcat(controllers[0].model.motor_noise_sym_mx, controllers[0].model.sensory_noise_sym_mx),
                     )
                 ],
             )
 
             DF_DW = DF_DW_fun(
                 controllers[0].time.cx,
-                controllers[0].states["q"].cx_start[:nb_root],
-                controllers[0].states["q"].cx_start[nb_root:],
-                controllers[0].states["qdot"].cx_start[:nb_root],
-                controllers[0].states["qdot"].cx_start[nb_root:],
-                controllers[0].controls["tau"].cx_start,
-                controllers[0].parameters.cx_start,
-                controllers[0].algebraic_states.cx_start,
+                controllers[0].states["q"].cx[:nb_root],
+                controllers[0].states["q"].cx[nb_root:],
+                controllers[0].states["qdot"].cx[:nb_root],
+                controllers[0].states["qdot"].cx[nb_root:],
+                controllers[0].controls["tau"].cx,
+                controllers[0].parameters.cx,
+                controllers[0].algebraic_states.cx,
                 controllers[0].model.motor_noise_magnitude,
                 controllers[0].model.sensory_noise_magnitude,
             )
             DF_DW_plus = DF_DW_fun(
                 controllers[1].time.cx,
-                controllers[1].states["q"].cx_start[:nb_root],
-                controllers[1].states["q"].cx_start[nb_root:],
-                controllers[1].states["qdot"].cx_start[:nb_root],
-                controllers[1].states["qdot"].cx_start[nb_root:],
-                controllers[1].controls.cx_start,
-                controllers[1].parameters.cx_start,
-                controllers[1].algebraic_states.cx_start,
+                controllers[1].states["q"].cx[:nb_root],
+                controllers[1].states["q"].cx[nb_root:],
+                controllers[1].states["qdot"].cx[:nb_root],
+                controllers[1].states["qdot"].cx[nb_root:],
+                controllers[1].controls.cx,
+                controllers[1].parameters.cx,
+                controllers[1].algebraic_states.cx,
                 controllers[1].model.motor_noise_magnitude,
                 controllers[1].model.sensory_noise_magnitude,
             )

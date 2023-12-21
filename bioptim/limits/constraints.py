@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, horzcat, ldl, diag
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, SX_eye, horzcat, ldl, diag
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
@@ -608,14 +608,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.algebraic_states["m"].cx_start, controller.model.matrix_shape_m
             )
 
+            CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
             sigma_w = vertcat(
                 controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude
-            ) * MX_eye(
+            ) * CX_eye(
                 vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude).shape[0]
             )
             dt = controller.tf / controller.ns
             dg_dw = -dt * c_matrix
-            dg_dx = -MX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
+            dg_dx = -CX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
 
             cov_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
             cov_implicit_deffect = cov_next - cov_matrix
@@ -648,7 +649,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nu = controller.model.nb_q - controller.model.nb_root
 
             a_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["a"].cx_start, controller.model.matrix_shape_a
+                controller.algebraic_states["a"].cx, controller.model.matrix_shape_a
             )
 
             q_root = MX.sym("q_root", nb_root, 1)
@@ -681,26 +682,27 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     tau_joints,
                     parameters_sym,
                     algebraic_states_sym,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
+                    controller.model.motor_noise_sym_mx,
+                    controller.model.sensory_noise_sym_mx,
                 ],
                 [jacobian(dx[non_root_index], vertcat(q_joints, qdot_joints))],
             )
 
             DF_DX = DF_DX_fun(
                 controller.time.cx,
-                controller.states["q"].cx_start[:nb_root],
-                controller.states["q"].cx_start[nb_root:],
-                controller.states["qdot"].cx_start[:nb_root],
-                controller.states["qdot"].cx_start[nb_root:],
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.algebraic_states.cx_start,
+                controller.states["q"].cx[:nb_root],
+                controller.states["q"].cx[nb_root:],
+                controller.states["qdot"].cx[:nb_root],
+                controller.states["qdot"].cx[nb_root:],
+                controller.controls.cx,
+                controller.parameters.cx,
+                controller.algebraic_states.cx,
                 controller.model.motor_noise_magnitude,
                 controller.model.sensory_noise_magnitude,
             )
 
-            out = a_matrix - (MX_eye(DF_DX.shape[0]) - DF_DX * dt / 2)
+            CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
+            out = a_matrix - (CX_eye(DF_DX.shape[0]) - DF_DX * dt / 2)
 
             out_vector = StochasticBioModel.reshape_to_vector(out)
             return out_vector

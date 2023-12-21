@@ -1,15 +1,16 @@
 import os
 import pytest
-import platform
+import re
 
 import numpy as np
 from casadi import DM, vertcat
-from bioptim import Solver
+from bioptim import Solver, SolutionMerge
 
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 
 
-def test_arm_reaching_muscle_driven():
+@pytest.mark.parametrize("use_sx", [True, False])
+def test_arm_reaching_muscle_driven(use_sx):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_muscle_driven as ocp_module
 
     final_time = 0.8
@@ -35,6 +36,7 @@ def test_arm_reaching_muscle_driven():
         sensory_noise_magnitude=sensory_noise_magnitude,
         force_field_magnitude=force_field_magnitude,
         example_type=example_type,
+        use_sx=use_sx,
     )
 
     # ocp.print(to_console=True, to_graph=False)  #TODO: check to adjust the print method
@@ -346,11 +348,9 @@ def test_arm_reaching_muscle_driven():
     # for now, it does not match because the integration is done in the multinode_constraint
 
 
-def test_arm_reaching_torque_driven_explicit():
+@pytest.mark.parametrize("use_sx", [True, False])
+def test_arm_reaching_torque_driven_explicit(use_sx):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_explicit as ocp_module
-
-    if platform.system() != "Linux":
-        return
 
     final_time = 0.8
     n_shooting = 4
@@ -367,6 +367,23 @@ def test_arm_reaching_torque_driven_explicit():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    if use_sx:
+        with pytest.raises(
+            RuntimeError, match=
+            re.escape("Error in Function::call for 'tp' [MXFunction] at .../casadi/core/function.cpp:339:\n"
+            ".../casadi/core/linsol_internal.cpp:65: eval_sx not defined for LinsolQr")
+        ):
+            ocp = ocp_module.prepare_socp(
+                biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
+                final_time=final_time,
+                n_shooting=n_shooting,
+                hand_final_position=hand_final_position,
+                motor_noise_magnitude=motor_noise_magnitude,
+                sensory_noise_magnitude=sensory_noise_magnitude,
+                use_sx=use_sx,
+            )
+        return
+
     ocp = ocp_module.prepare_socp(
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
         final_time=final_time,
@@ -374,6 +391,7 @@ def test_arm_reaching_torque_driven_explicit():
         hand_final_position=hand_final_position,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
+        use_sx=use_sx,
     )
 
     # Solver parameters
@@ -532,13 +550,11 @@ def test_arm_reaching_torque_driven_explicit():
 
 @pytest.mark.parametrize("with_cholesky", [True, False])
 @pytest.mark.parametrize("with_scaling", [True, False])
-def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
+@pytest.mark.parametrize("use_sx", [True, False])
+def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx):
     from bioptim.examples.stochastic_optimal_control import arm_reaching_torque_driven_implicit as ocp_module
 
     if with_cholesky and not with_scaling:
-        return
-
-    if platform.system() != "Linux":
         return
 
     final_time = 0.8
@@ -565,6 +581,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
         sensory_noise_magnitude=sensory_noise_magnitude,
         with_cholesky=with_cholesky,
         with_scaling=with_scaling,
+        use_sx=use_sx,
     )
 
     # Solver parameters
@@ -583,11 +600,10 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling):
     np.testing.assert_equal(g.shape, (378, 1))
 
     # Check some of the solution values
-    states, controls, algebraic_states = (
-        sol.states,
-        sol.controls,
-        sol.algebraic_states,
-    )
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+    
     q, qdot = states["q"], states["qdot"]
     tau = controls["tau"]
 
