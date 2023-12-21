@@ -3,7 +3,7 @@ from datetime import datetime
 
 import numpy as np
 from scipy import linalg
-from casadi import SX, vertcat
+from casadi import SX, vertcat, Function
 from acados_template import AcadosModel, AcadosOcp, AcadosOcpSolver
 
 from .solver_interface import SolverInterface
@@ -209,7 +209,9 @@ class AcadosInterface(SolverInterface):
         self.acados_ocp.model = self.acados_model
 
         # set time
-        self.acados_ocp.solver_options.tf = ocp.nlp[0].tf
+        tf_init = ocp.dt_parameter_initial_guess.init[0, 0]
+        tf = float(Function("tf", [ocp.nlp[0].dt], [ocp.nlp[0].tf])(tf_init))
+        self.acados_ocp.solver_options.tf = tf
 
         # set dimensions
         self.acados_ocp.dims.nx = ocp.nlp[0].parameters.shape + ocp.nlp[0].states.shape
@@ -281,6 +283,7 @@ class AcadosInterface(SolverInterface):
         self.end_g_bounds = Bounds(None, interpolation=InterpolationType.CONSTANT)
         for i, nlp in enumerate(ocp.nlp):
             t = nlp.time_cx
+            dt = nlp.dt
             x = nlp.states.cx_start
             u = nlp.controls.cx_start
             p = nlp.parameters.cx
@@ -291,14 +294,28 @@ class AcadosInterface(SolverInterface):
                     continue
 
                 if G.node[0] == Node.ALL or G.node[0] == Node.ALL_SHOOTING:
-                    self.all_constr = vertcat(self.all_constr, G.function[0](t, x, u, p, a))
+                    x_tp = x
+                    u_tp = u
+                    if x.shape[0] * 2 == G.function[0].size_in("x")[0]:
+                        x_tp = vertcat(x_tp, x_tp)
+                    if u.shape[0] * 2 == G.function[0].size_in("u")[0]:
+                        u_tp = vertcat(u_tp, u_tp)
+
+                    self.all_constr = vertcat(self.all_constr, G.function[0](t, dt, x_tp, u_tp, p, a))
                     self.all_g_bounds.concatenate(G.bounds)
                     if G.node[0] == Node.ALL:
-                        self.end_constr = vertcat(self.end_constr, G.function[0](t, x, u, p, a))
+                        self.end_constr = vertcat(self.end_constr, G.function[0](t, dt, x_tp, u_tp, p, a))
                         self.end_g_bounds.concatenate(G.bounds)
 
                 elif G.node[0] == Node.END:
-                    self.end_constr = vertcat(self.end_constr, G.function[0](t, x, u, p, a))
+                    x_tp = x
+                    u_tp = u
+                    if x.shape[0] * 2 == G.function[-1].size_in("x")[0]:
+                        x_tp = vertcat(x_tp, x_tp)
+                    if u.shape[0] * 2 == G.function[-1].size_in("u")[0]:
+                        u_tp = vertcat(u_tp, u_tp)
+
+                    self.end_constr = vertcat(self.end_constr, G.function[-1](t, dt, x_tp, u_tp, p, a))
                     self.end_g_bounds.concatenate(G.bounds)
 
                 else:
@@ -317,7 +334,7 @@ class AcadosInterface(SolverInterface):
         param_bounds_min = []
 
         for key in self.ocp.parameter_bounds.keys():
-            param_bounds_scale = self.ocp.parameter_bounds[key].scale(self.ocp.parameters[key].scaling)
+            param_bounds_scale = self.ocp.parameter_bounds[key].scale(self.ocp.parameters[key].scaling.scaling)
             param_bounds_max = np.concatenate((param_bounds_max, param_bounds_scale.max[:, 0]))
             param_bounds_min = np.concatenate((param_bounds_min, param_bounds_scale.min[:, 0]))
 
@@ -471,9 +488,14 @@ class AcadosInterface(SolverInterface):
             else:
                 raise RuntimeError(f"{objectives.type.name} is an incompatible objective term with LINEAR_LS cost type")
 
-        def add_nonlinear_ls_lagrange(acados, objectives, t, x, u, p, a):
+        def add_nonlinear_ls_lagrange(acados, objectives, t, dt, x, u, p, a):
+            if objectives.function[0].size_in("x")[0] == x.shape[0] * 2:
+                x = vertcat(x, x)
+            if objectives.function[0].size_in("u")[0] == u.shape[0] * 2:
+                u = vertcat(u, u)
+
             acados.lagrange_costs = vertcat(
-                acados.lagrange_costs, objectives.function[0](t, x, u, p, a).reshape((-1, 1))
+                acados.lagrange_costs, objectives.function[0](t, dt, x, u, p, a).reshape((-1, 1))
             )
             acados.W = linalg.block_diag(acados.W, np.diag([objectives.weight] * objectives.function[0].numel_out()))
 
@@ -483,14 +505,23 @@ class AcadosInterface(SolverInterface):
             else:
                 acados.y_ref.append([np.zeros((objectives.function[0].numel_out(), 1)) for _ in node_idx])
 
-        def add_nonlinear_ls_mayer(acados, objectives, t, x, u, p, a, node=None):
+        def add_nonlinear_ls_mayer(acados, objectives, t, dt, x, u, p, a, node=None):
             if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
                 acados.W_0 = linalg.block_diag(
                     acados.W_0, np.diag([objectives.weight] * objectives.function[0].numel_out())
                 )
-                x = x if objectives.function[0].size_in("x") != (0, 0) else []
-                u = u if objectives.function[0].size_in("u") != (0, 0) else []
-                acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function[0](t, x, u, p, a).reshape((-1, 1)))
+
+                x_tp = x
+                u_tp = u
+                if objectives.function[0].size_in("x")[0] == x_tp.shape[0] * 2:
+                    x_tp = vertcat(x_tp, x_tp)
+                if objectives.function[0].size_in("u")[0] == u_tp.shape[0] * 2:
+                    u_tp = vertcat(u_tp, u_tp)
+
+                x_tp = x_tp if objectives.function[0].size_in("x") != (0, 0) else []
+                u_tp = u_tp if objectives.function[0].size_in("u") != (0, 0) else []
+
+                acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function[0](t, dt, x_tp, u_tp, p, a).reshape((-1, 1)))
 
                 if objectives.target is not None:
                     acados.y_ref_start.append(objectives.target[..., 0].T.reshape((-1, 1)))
@@ -498,19 +529,28 @@ class AcadosInterface(SolverInterface):
                     acados.y_ref_start.append(np.zeros((objectives.function[0].numel_out(), 1)))
 
             if objectives.node[0] in [Node.END, Node.ALL]:
+
                 acados.W_e = linalg.block_diag(
-                    acados.W_e, np.diag([objectives.weight] * objectives.function[0].numel_out())
+                    acados.W_e, np.diag([objectives.weight] * objectives.function[-1].numel_out())
                 )
-                x = x if objectives.function[0].size_in("x") != (0, 0) else []
-                u = u if objectives.function[0].size_in("u") != (0, 0) else []
+                x_tp = x
+                u_tp = u
+                if objectives.function[-1].size_in("x")[0] == x_tp.shape[0] * 2:
+                    x_tp = vertcat(x_tp, x_tp)
+                if objectives.function[-1].size_in("u")[0] == u_tp.shape[0] * 2:
+                    u_tp = vertcat(u_tp, u_tp)
+
+                x_tp = x_tp if objectives.function[-1].size_in("x") != (0, 0) else []
+                u_tp = u_tp if objectives.function[-1].size_in("u") != (0, 0) else []
+
                 acados.mayer_costs_e = vertcat(
-                    acados.mayer_costs_e, objectives.function[0](t, x, u, p, a).reshape((-1, 1))
+                    acados.mayer_costs_e, objectives.function[-1](t, dt, x_tp, u_tp, p, a).reshape((-1, 1))
                 )
 
                 if objectives.target is not None:
                     acados.y_ref_end.append(objectives.target[..., -1].T.reshape((-1, 1)))
                 else:
-                    acados.y_ref_end.append(np.zeros((objectives.function[0].numel_out(), 1)))
+                    acados.y_ref_end.append(np.zeros((objectives.function[-1].numel_out(), 1)))
 
         if ocp.n_phases != 1:
             raise NotImplementedError("ACADOS with more than one phase is not implemented yet.")
@@ -600,6 +640,7 @@ class AcadosInterface(SolverInterface):
                             self,
                             J,
                             nlp.time_cx,
+                            nlp.dt,
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
@@ -611,6 +652,7 @@ class AcadosInterface(SolverInterface):
                             self,
                             J,
                             nlp.time_cx,
+                            nlp.dt,
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
@@ -622,6 +664,7 @@ class AcadosInterface(SolverInterface):
                             self,
                             J,
                             nlp.time_cx,
+                            nlp.dt,
                             nlp.states.cx_start,
                             nlp.controls.cx_start,
                             nlp.parameters.cx,
@@ -640,6 +683,7 @@ class AcadosInterface(SolverInterface):
                         self,
                         J,
                         nlp.time_cx,
+                        nlp.dt,
                         nlp.states.cx_start,
                         nlp.controls.cx_start,
                         nlp.parameters.cx,
@@ -685,7 +729,7 @@ class AcadosInterface(SolverInterface):
 
         param_init = []
         for key in self.ocp.nlp[0].parameters.keys():
-            scale_init = self.ocp.parameter_init[key].scale(self.ocp.parameters[key].scaling)
+            scale_init = self.ocp.parameter_init[key].scale(self.ocp.parameters[key].scaling.scaling)
             param_init = np.concatenate((param_init, scale_init.init[:, 0]))
 
         for n in range(self.acados_ocp.dims.N):
@@ -800,10 +844,16 @@ class AcadosInterface(SolverInterface):
         out["x"] = vertcat(out["x"], acados_u.reshape(-1, 1, order="F"))
         out["x"] = vertcat(out["x"], acados_p[:, 0])
 
+        # Add dt to solution
+        dt_init = self.ocp.dt_parameter_initial_guess.init[0, 0]
+        dt = Function("dt", [self.ocp.nlp[0].dt], [self.ocp.nlp[0].dt])(dt_init)
+        out["x"] = vertcat(dt, out["x"])
+
         self.out["sol"] = out
         out = []
         for key in self.out.keys():
             out.append(self.out[key])
+
         return out[0] if len(out) == 1 else out
 
     def solve(self, expand_during_shake_tree=False) -> list | dict:
