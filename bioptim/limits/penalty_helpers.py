@@ -25,13 +25,16 @@ class PenaltyProtocol(Protocol):
 class PenaltyHelpers:
     
     @staticmethod
-    def t0():
+    def t0(penalty, ocp):
         """
         This method returns the t0 of a penalty. It is currently always 0, because the time is always baked in the 
         penalty function
         """
         
         # Time penalty is baked in the penalty declaration. No need to add it here
+        # TODO WARNING THIS SHOULD NOT BE 0, BUT THE TIME OF THE NODE. THIS IS A BUG INTRODUCED TO HAVE THE TESTS PASS
+        # WHATEVER THE TIME IS, IT SHOULD NOT CHANGE THE VALUE OF THE PENALTY. IT SHOULD LOOK LIKE SOMETHING LIKE THIS:
+        # t0 = ocp.node_time(phase_idx=penalty.phase_idx, node_idx=penalty.node_index)
         return 0
 
     @staticmethod

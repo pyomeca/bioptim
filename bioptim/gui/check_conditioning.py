@@ -85,7 +85,7 @@ def check_conditioning(ocp):
 
                     for controller in controllers:
                         controller.node_index = constraints.node_idx[0]
-                    t0 = PenaltyHelpers.t0()
+                    t0 = PenaltyHelpers.t0(constraints, controllers[0].ocp)
                     _, x, u, a = constraints.get_variable_inputs(controllers)
                     p = nlp.parameters.cx
 
@@ -189,7 +189,7 @@ def check_conditioning(ocp):
 
                         for controller in controllers:
                             controller.node_index = constraints.node_idx[0]
-                        t0 = PenaltyHelpers.t0()
+                        t0 = PenaltyHelpers.t0(constraints, controllers[0].ocp)
                         _, x, u, a = constraints.get_variable_inputs(controllers)
                         p = nlp.parameters.cx
                         
@@ -391,7 +391,7 @@ def check_conditioning(ocp):
 
                 for controller in controllers:
                     controller.node_index = obj.node_idx[0]
-                t0 = PenaltyHelpers.t0()
+                t0 = PenaltyHelpers.t0(obj, controllers[0].ocp)
                 _, x, u, s = obj.get_variable_inputs(controllers)
                 params = nlp.parameters.cx
                 target = PenaltyHelpers.target(obj, obj.node_idx.index(node_index))

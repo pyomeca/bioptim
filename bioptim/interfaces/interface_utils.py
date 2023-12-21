@@ -294,7 +294,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
 
 
 def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
-    t0 = PenaltyHelpers.t0()
+    t0 = PenaltyHelpers.t0(penalty, ocp)
 
     weight = PenaltyHelpers.weight(penalty)
     target = PenaltyHelpers.target(penalty, penalty_idx)

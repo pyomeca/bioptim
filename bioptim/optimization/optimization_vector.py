@@ -436,7 +436,12 @@ class OptimizationVectorHelper:
             for node in range(nlp.n_states_nodes):
                 nlp.algebraic_states.node_index = node
                 n_cols = nlp.n_algebraic_states_decision_steps(node)
-                a_array = v_array[offset : offset + na * n_cols].reshape((na, -1), order="F")
+
+                if na == 0:
+                    a_array = np.ndarray((0, 1))
+                else:
+                    a_array = v_array[offset : offset + na * n_cols].reshape((na, -1), order="F")
+
                 for key in nlp.algebraic_states.keys():
                     data_algebraic_states[p][key][node] = a_array[nlp.algebraic_states[key].index, :]
                 offset += na * n_cols

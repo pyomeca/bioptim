@@ -717,7 +717,7 @@ class PlotOcp:
             node_idx = custom_plot.node_idx[idx]
             if "penalty" in custom_plot.parameters:
                 penalty = custom_plot.parameters["penalty"]
-                t0 = PenaltyHelpers.t0()
+                t0 = PenaltyHelpers.t0(penalty, self.ocp)
                 
                 x_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx] if n_idx < len(x) else np.ndarray((0, 1)))
                 u_node = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)))
