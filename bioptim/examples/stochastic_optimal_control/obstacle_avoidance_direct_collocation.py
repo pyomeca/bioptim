@@ -163,7 +163,7 @@ def prepare_socp(
     motor_noise_magnitude: np.ndarray,
     polynomial_degree: int,
     q_init: np.ndarray,
-    is_sotchastic: bool = False,
+    is_stochastic: bool = False,
     is_robustified: bool = False,
     socp_type=SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
     expand_dynamics: bool = True,
@@ -187,7 +187,7 @@ def prepare_socp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
     objective_functions.add(
-        ObjectiveFcn.Mayer.MINIMIZE_CONTROL,
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
         key="u",
         weight=1e-2 / (2 * n_shooting),
         node=Node.ALL_SHOOTING,
@@ -237,7 +237,7 @@ def prepare_socp(
     # Dynamics
     dynamics = DynamicsList()
 
-    if is_sotchastic:
+    if is_stochastic:
         dynamics.add(
             configure_stochastic_optimal_control_problem,
             dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
@@ -360,7 +360,7 @@ def main():
         polynomial_degree=polynomial_degree,
         motor_noise_magnitude=motor_noise_magnitude,
         q_init=q_init,
-        is_sotchastic=is_stochastic,
+        is_stochastic=is_stochastic,
         is_robustified=is_robust,
         socp_type=socp_type,
         use_sx=use_sx,
@@ -371,7 +371,7 @@ def main():
     # solver.set_linear_solver("ma57")
     sol_socp = socp.solve(solver)
 
-    time = sol_socp.time(to_merge=SolutionMerge.NODES)
+    time = sol_socp.decision_time(to_merge=SolutionMerge.NODES)
     states = sol_socp.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol_socp.decision_controls(to_merge=SolutionMerge.NODES)
     algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)

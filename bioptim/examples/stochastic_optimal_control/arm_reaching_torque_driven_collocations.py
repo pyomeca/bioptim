@@ -260,6 +260,7 @@ def prepare_socp(
 
 def main():
     # --- Options --- #
+    use_sx = True
     vizualize_sol_flag = True
 
     biorbd_model_path = "models/LeuvenArmModel.bioMod"
@@ -304,6 +305,7 @@ def main():
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_noise_magnitude=sensory_noise_magnitude,
         example_type=example_type,
+        use_sx=use_sx,
     )
 
     sol_socp = socp.solve(solver)

@@ -94,7 +94,7 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
         polynomial_degree=polynomial_degree,
         motor_noise_magnitude=np.array([1, 1]),
         q_init=q_init,
-        is_sotchastic=True,
+        is_stochastic=True,
         is_robustified=True,
         socp_type=SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre"),
         use_sx=use_sx,
