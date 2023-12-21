@@ -22,7 +22,9 @@ from bioptim import (
     OdeSolverBase,
     BiMapping,
     PhaseDynamics,
+    SolutionMerge,
 )
+import numpy as np
 
 
 def prepare_ocp(
@@ -116,7 +118,7 @@ def prepare_ocp(
             ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="m0", second_marker="m2", phase=2
         )
         constraints.add(
-            ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[2], max_bound=time_max[2], phase=2
+            ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[0], max_bound=time_max[0], phase=2
         )
 
     # Path constraint
@@ -168,10 +170,12 @@ def main():
     Run a multiphase problem with free time phases and animate the results
     """
 
-    final_time = (2, 5, 4)
-    time_min = (0.7, 3, 0.1)
-    time_max = (2, 4, 1)
+    # Even though three phases are declared (len(ns) = 3), we only need to declare two final times because of the
+    # time phase mapping
     ns = (20, 30, 20)
+    final_time = (2, 5)
+    time_min = (0.7, 3)
+    time_max = (2, 4)
     ocp = prepare_ocp(
         final_time=final_time, time_min=time_min, time_max=time_max, n_shooting=ns, with_phase_time_equality=True
     )
@@ -180,8 +184,8 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    time = [sol.parameters["time"][i, 0] for i in ocp.time_phase_mapping.to_second.map_idx]
-    print(f"The optimized phase time are: {time[0]}s, {time[1]}s and {time[2]}s.")
+    times = [float(t[-1, 0]) for t in sol.decision_time(to_merge=SolutionMerge.NODES)]
+    print(f"The optimized phase time are: {times[0]}s, {times[1]}s and {times[2]}s.")
     sol.animate()
 
 

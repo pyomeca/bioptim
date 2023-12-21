@@ -22,6 +22,7 @@ from bioptim import (
     BoundsList,
     InitialGuessList,
     Solver,
+    SolutionMerge,
 )
 
 
@@ -121,7 +122,10 @@ def main():
     nlp = ocp.nlp[0]
     nlp.model = BiorbdModel(biorbd_model_path)
 
-    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
+
     x = np.concatenate((q, qdot))
     u = np.concatenate((tau, mus))
     contact_forces = np.array(nlp.contact_forces_func(x[:, :-1], u[:, :-1], []))

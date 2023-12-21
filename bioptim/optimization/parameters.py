@@ -6,7 +6,7 @@ import numpy as np
 from ..limits.penalty_controller import PenaltyController
 from ..limits.penalty import PenaltyOption
 from ..misc.options import UniquePerProblemOptionList
-from ..optimization.non_linear_program import NonLinearProgram
+from ..optimization.variable_scaling import VariableScaling, VariableScalingList
 
 
 class Parameter(PenaltyOption):
@@ -33,7 +33,7 @@ class Parameter(PenaltyOption):
         quadratic: bool = True,
         size: int = None,
         cx: Callable | MX | SX = None,
-        scaling: np.ndarray = None,
+        scaling: VariableScaling = None,
         **params: Any,
     ):
         """
@@ -55,37 +55,21 @@ class Parameter(PenaltyOption):
 
         super(Parameter, self).__init__(Parameters, **params)
         self.function.append(function)
+        self.size = size
 
         if scaling is None:
-            scaling = np.array([1.0])
-        elif not isinstance(scaling, np.ndarray):
-            raise ValueError("Parameter scaling must be a numpy array")
+            scaling = VariableScaling(self.name, np.ones((self.size, 1)))
+        if not isinstance(scaling, VariableScaling):
+            raise ValueError("Parameter scaling must be a VariableScaling")
 
-        if not (scaling > 0).all():
-            raise ValueError("Parameter scaling must contain only positive values")
+        if scaling.shape[0] != self.size:
+            raise ValueError(f"Parameter scaling must be of size {self.size}, not {scaling.shape[0]}.")
+        if scaling.shape[1] != 1:
+            raise ValueError(f"Parameter scaling must have exactly one column, not {scaling.shape[1]}.")
 
-        if len(scaling.shape) == 0:
-            raise ValueError("Parameter scaling must be a 1- or 2- dimensional array")
-        elif len(scaling.shape) == 1:
-            self.scaling = scaling[:, np.newaxis]
-            if self.scaling.shape[0] != size and self.scaling.shape[0] == 1:
-                self.scaling = np.repeat(self.scaling, size, 0)
-            elif self.scaling.shape[0] != size and self.scaling.shape[0] != 1:
-                raise ValueError(
-                    f"The shape ({scaling.shape[0]}) of the scaling of parameter {params['name']} "
-                    f"does not match the params shape."
-                )
-        elif len(scaling.shape) == 2:
-            if scaling.shape[1] != 1:
-                raise ValueError(
-                    f"Invalid ncols for Parameter Scaling "
-                    f"(ncols = {scaling.shape[1]}), the expected number of column is 1"
-                )
-        else:
-            raise ValueError("Parameter scaling must be a 1- or 2- dimensional numpy array")
+        self.scaling = scaling
 
         self.quadratic = quadratic
-        self.size = size
         self.index = None
         self.cx = None
         self.mx = None
@@ -153,27 +137,24 @@ class Parameter(PenaltyOption):
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         time_cx = ocp.cx(0, 0)
+        dt = ocp.cx(0, 0)
         state_cx = ocp.cx(0, 0)
         control_cx = ocp.cx(0, 0)
         param_cx = ocp.parameters.cx
-        stochastic_cx = ocp.cx(0, 0)
+        algebraic_states_cx = ocp.cx(0, 0)
 
         penalty.function.append(
-            NonLinearProgram.to_casadi_func(
+            Function(
                 f"{self.name}",
-                penalty_function,
-                time_cx,
-                state_cx,
-                control_cx,
-                param_cx,
-                stochastic_cx,
-                expand=expand,
+                [time_cx, dt, state_cx, control_cx, param_cx, algebraic_states_cx],
+                [penalty_function],
+                ["t", "dt", "x", "u", "p", "a"],
+                ["val"],
             )
         )
 
-        modified_fcn = penalty.function[0](time_cx, state_cx, control_cx, param_cx, stochastic_cx)
+        modified_fcn = penalty.function[0](time_cx, dt, state_cx, control_cx, param_cx, algebraic_states_cx)
 
-        dt_cx = ocp.cx.sym("dt", 1, 1)
         weight_cx = ocp.cx.sym("weight", 1, 1)
         target_cx = ocp.cx.sym("target", modified_fcn.shape)
 
@@ -183,23 +164,16 @@ class Parameter(PenaltyOption):
         penalty.weighted_function.append(
             Function(  # Do not use nlp.add_casadi_func because all of them must be registered
                 f"{self.name}",
-                [
-                    time_cx,
-                    state_cx,
-                    control_cx,
-                    param_cx,
-                    stochastic_cx,
-                    weight_cx,
-                    target_cx,
-                    dt_cx,
-                ],
-                [weight_cx * modified_fcn * dt_cx],
+                [time_cx, dt, state_cx, control_cx, param_cx, algebraic_states_cx, weight_cx, target_cx],
+                [weight_cx * modified_fcn],
+                ["t", "dt", "x", "u", "p", "a", "weight", "target"],
+                ["val"],
             )
         )
 
         if expand:
-            penalty.function[0].expand()
-            penalty.weighted_function[0].expand()
+            penalty.function[0] = penalty.function[0].expand()
+            penalty.weighted_function[0] = penalty.weighted_function[0].expand()
 
         pool = controller.ocp.J
         pool.append(penalty)
@@ -250,7 +224,7 @@ class ParameterList(UniquePerProblemOptionList):
         function: Callable = None,
         size: int = None,
         list_index: int = -1,
-        scaling: np.ndarray = np.array([1.0]),
+        scaling: VariableScaling = None,
         allow_reserved_name: bool = False,
         **extra_arguments: Any,
     ):
@@ -277,13 +251,13 @@ class ParameterList(UniquePerProblemOptionList):
             Any argument that should be passed to the user defined functions
         """
 
-        if not allow_reserved_name and parameter_name == "time":
-            raise KeyError("It is not possible to declare a parameter with the key 'time' as it is a reserved name")
+        if not allow_reserved_name and parameter_name == "dt":
+            raise KeyError("It is not possible to declare a parameter with the key 'dt' as it is a reserved name")
 
         if isinstance(parameter_name, Parameter):
             # case it is not a parameter name but trying to copy another parameter
             self.copy(parameter_name)
-            if parameter_name.name != "time":
+            if parameter_name.name != "dt":
                 self[parameter_name.name].declare_symbolic(self.cx_type)
         else:
             if "phase" in extra_arguments:
@@ -301,6 +275,16 @@ class ParameterList(UniquePerProblemOptionList):
                 cx=self.cx_type,
                 **extra_arguments,
             )
+
+    @property
+    def scaling(self) -> VariableScalingList:
+        """
+        The scaling of the parameters
+        """
+        out = VariableScalingList()
+        for p in self:
+            out.add(p.name, p.scaling.scaling)
+        return out
 
     def __contains__(self, item: str) -> bool:
         """
@@ -358,14 +342,6 @@ class ParameterList(UniquePerProblemOptionList):
 
     def keys(self):
         return [p.name for p in self.options[0]]
-
-    @property
-    def scaling(self):
-        """
-        The scaling of all parameters
-        """
-
-        return np.vstack([p.scaling for p in self]) if len(self) else np.array([[1.0]])
 
     @property
     def cx(self):

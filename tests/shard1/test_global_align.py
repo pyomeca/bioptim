@@ -5,7 +5,7 @@ import pytest
 import os
 
 import numpy as np
-from bioptim import OdeSolver, PhaseDynamics
+from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -38,7 +38,9 @@ def test_track_segment_on_rt(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((91, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.30543155, 0, -1.57, -1.57]))
@@ -48,10 +50,7 @@ def test_track_segment_on_rt(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([0, 9.81, 66.98666900582079, 66.98666424580644]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-0, 9.81, -66.98666900582079, -66.98666424580644]))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-0, 9.81, -66.98666900582079, -66.98666424580644]))
 
     # simulate
     TestUtils.simulate(sol)
@@ -86,7 +85,9 @@ def test_track_marker_on_segment(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((88, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([1, 0, 0, 0.46364761]))
@@ -96,10 +97,7 @@ def test_track_marker_on_segment(ode_solver, phase_dynamics):
     np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)))
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array([23.6216587, 12.2590703, 31.520697, 12.9472294]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-16.659525, 14.5872277, -36.1009998, 4.417834]))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-16.659525, 14.5872277, -36.1009998, 4.417834]))
 
     # simulate
     TestUtils.simulate(sol)
@@ -131,7 +129,9 @@ def test_track_vector_orientation(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((80, 1)))
 
     # Check some of the results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.80000001, -0.68299837, -1.57, -1.56999089]))
@@ -146,5 +146,5 @@ def test_track_vector_orientation(phase_dynamics):
         tau[:, 0], np.array([-1.27269674e-24, 1.97261036e-08, -3.01420965e-05, 3.01164220e-05])
     )
     np.testing.assert_almost_equal(
-        tau[:, -2], np.array([-2.10041085e-23, 1.97261036e-08, 2.86303889e-05, -2.86047182e-05])
+        tau[:, -1], np.array([-2.10041085e-23, 1.97261036e-08, 2.86303889e-05, -2.86047182e-05])
     )

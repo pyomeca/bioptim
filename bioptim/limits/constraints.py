@@ -1,25 +1,11 @@
 from typing import Callable, Any
 
 import numpy as np
-from casadi import (
-    sum1,
-    if_else,
-    vertcat,
-    lt,
-    SX,
-    MX,
-    jacobian,
-    Function,
-    MX_eye,
-    horzcat,
-    ldl,
-    diag,
-    collocation_points,
-)
+from casadi import sum1, if_else, vertcat, lt, SX, MX, jacobian, Function, MX_eye, SX_eye, horzcat, ldl, diag
 
 from .path_conditions import Bounds
 from .penalty import PenaltyFunctionAbstract, PenaltyOption, PenaltyController
-from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType, PhaseDynamics
+from ..misc.enums import Node, InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from ..misc.options import OptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
@@ -117,9 +103,8 @@ class Constraint(PenaltyOption):
         elif self.bounds.shape[0] != len(self.rows):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
-    def _add_penalty_to_pool(self, controller: PenaltyController):
-        if isinstance(controller, (list, tuple)):
-            controller = controller[0]  # This is a special case of Node.TRANSITION
+    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
+        controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = (
@@ -272,7 +257,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx,
-                controller.stochastic_variables.cx_start,
+                controller.algebraic_states.cx_start,
             )
             normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
             if len(tangential_component_idx) == 1:
@@ -307,7 +292,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             controller: PenaltyController
                 The penalty node elements
             min_torque: float
-                Minimum joint torques. This prevent from having too small torques, but introduces an if statement
+                Minimum joint torques. This prevents from having too small torques, but introduces an if statement
             """
 
             if min_torque and min_torque < 0:
@@ -334,26 +319,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls["tau"].cx_start + min_bound, controller.controls["tau"].cx_start - max_bound
             )
 
-            if constraint.rows is None:
+            if constraint.rows is None or isinstance(constraint.rows, (tuple, list, np.ndarray)):
                 n_rows = value.shape[0] // 2
+            elif isinstance(constraint.rows, int):
+                n_rows = 1
             else:
-                if (
-                    controller.get_nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE
-                    and not isinstance(constraint.rows, int)
-                    and len(constraint.rows) == value.shape[0]
-                ):
-                    # This is a very special case where phase_dynamics==ONE_PER_NODE declare rows by itself, but because
-                    # this constraint is twice the real length (two constraints per value), it declares it too large
-                    # on the subsequent pass. In reality, it means the user did not declare 'rows' by themselves.
-                    # Therefore, we are acting as such
-                    n_rows = value.shape[0] // 2
-                else:
-                    if isinstance(constraint.rows, int):
-                        n_rows = 1
-                    elif isinstance(constraint.rows, (tuple, list)):
-                        n_rows = len(constraint.rows)
-                    else:
-                        raise ValueError("Wrong type for rows")
+                raise ValueError("Wrong type for rows")
             constraint.min_bound = [0] * n_rows + [-np.inf] * n_rows
             constraint.max_bound = [np.inf] * n_rows + [0] * n_rows
             return value
@@ -618,33 +589,34 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            if "cholesky_cov" in controller.stochastic_variables.keys():
+            if "cholesky_cov" in controller.algebraic_states.keys():
                 l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
-                    controller.stochastic_variables["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
+                    controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
                 )
                 cov_matrix = l_cov_matrix @ l_cov_matrix.T
             else:
                 cov_matrix = StochasticBioModel.reshape_to_matrix(
-                    controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+                    controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
                 )
             a_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["a"].cx_start, controller.model.matrix_shape_a
+                controller.algebraic_states["a"].cx_start, controller.model.matrix_shape_a
             )
             c_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["c"].cx_start, controller.model.matrix_shape_c
+                controller.algebraic_states["c"].cx_start, controller.model.matrix_shape_c
             )
             m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
+                controller.algebraic_states["m"].cx_start, controller.model.matrix_shape_m
             )
 
+            CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
             sigma_w = vertcat(
                 controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude
-            ) * MX_eye(
+            ) * CX_eye(
                 vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude).shape[0]
             )
             dt = controller.tf / controller.ns
             dg_dw = -dt * c_matrix
-            dg_dx = -MX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
+            dg_dx = -CX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
 
             cov_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
             cov_implicit_deffect = cov_next - cov_matrix
@@ -664,7 +636,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             controller: PenaltyController,
         ):
             """
-            This function constrains the stochastic matrix A to its actual value which is
+            This function constraints the stochastic matrix A to its actual value which is
             A = df/dx
             """
             if not controller.get_nlp.is_stochastic:
@@ -677,7 +649,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nu = controller.model.nb_q - controller.model.nb_root
 
             a_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["a"].cx_start, controller.model.matrix_shape_a
+                controller.algebraic_states["a"].cx, controller.model.matrix_shape_a
             )
 
             q_root = MX.sym("q_root", nb_root, 1)
@@ -686,14 +658,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot_joints = MX.sym("qdot_joints", nu, 1)
             tau_joints = MX.sym("tau_joints", nu, 1)
             parameters_sym = MX.sym("parameters_sym", controller.parameters.shape, 1)
-            stochastic_sym = MX.sym("stochastic_sym", controller.stochastic_variables.shape, 1)
+            algebraic_states_sym = MX.sym("algebraic_states_sym", controller.algebraic_states.shape, 1)
 
             dx = controller.extra_dynamics(0)(
                 controller.time.mx,
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,
                 parameters_sym,
-                stochastic_sym,
+                algebraic_states_sym,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -709,27 +681,28 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     qdot_joints,
                     tau_joints,
                     parameters_sym,
-                    stochastic_sym,
-                    controller.model.motor_noise_sym,
-                    controller.model.sensory_noise_sym,
+                    algebraic_states_sym,
+                    controller.model.motor_noise_sym_mx,
+                    controller.model.sensory_noise_sym_mx,
                 ],
                 [jacobian(dx[non_root_index], vertcat(q_joints, qdot_joints))],
             )
 
             DF_DX = DF_DX_fun(
                 controller.time.cx,
-                controller.states["q"].cx_start[:nb_root],
-                controller.states["q"].cx_start[nb_root:],
-                controller.states["qdot"].cx_start[:nb_root],
-                controller.states["qdot"].cx_start[nb_root:],
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
+                controller.states["q"].cx[:nb_root],
+                controller.states["q"].cx[nb_root:],
+                controller.states["qdot"].cx[:nb_root],
+                controller.states["qdot"].cx[nb_root:],
+                controller.controls.cx,
+                controller.parameters.cx,
+                controller.algebraic_states.cx,
                 controller.model.motor_noise_magnitude,
                 controller.model.sensory_noise_magnitude,
             )
 
-            out = a_matrix - (MX_eye(DF_DX.shape[0]) - DF_DX * dt / 2)
+            CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
+            out = a_matrix - (CX_eye(DF_DX.shape[0]) - DF_DX * dt / 2)
 
             out_vector = StochasticBioModel.reshape_to_vector(out)
             return out_vector
@@ -761,6 +734,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_joints = horzcat(*(controller.states.cx_intermediates_list))
 
             constraint = Mc(
+                controller.time_cx,
                 controller.states.cx_start[:nb_root],  # x_q_root
                 controller.states.cx_start[nb_root : nb_root + nu],  # x_q_joints
                 controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],  # x_qdot_root
@@ -771,7 +745,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 z_joints[2 * nb_root + nu : 2 * (nb_root + nu), :],  # z_qdot_joints
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
+                controller.algebraic_states.cx_start,
                 controller.model.motor_noise_magnitude,
                 controller.model.sensory_noise_magnitude,
             )
@@ -801,7 +775,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             cov_matrix_next = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["cov"].cx_end, controller.model.matrix_shape_cov
+                controller.algebraic_states["cov"].cx_end, controller.model.matrix_shape_cov
             )
 
             nb_root = controller.model.nb_root
@@ -809,6 +783,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_joints = horzcat(*(controller.states.cx_intermediates_list))
 
             cov_next_computed = Pf(
+                controller.time_cx,
                 controller.states.cx_start[:nb_root],  # x_q_root
                 controller.states.cx_start[nb_root : nb_root + nu],  # x_q_joints
                 controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],  # x_qdot_root
@@ -819,7 +794,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 z_joints[2 * nb_root + nu : 2 * (nb_root + nu), :],  # z_qdot_joints
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
+                controller.algebraic_states.cx_start,
                 controller.model.motor_noise_magnitude,
                 controller.model.sensory_noise_magnitude,
             )
@@ -841,14 +816,31 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             Get the error between the hand position and the reference.
             """
-            ref = controller.stochastic_variables["ref"].cx_start
+            ref = controller.algebraic_states["ref"].cx_start
             sensory_input = controller.model.sensory_reference(
-                states=controller.states.cx_start,
-                controls=controller.controls.cx_start,
-                parameters=controller.parameters.cx_start,
-                stochastic_variables=controller.stochastic_variables.cx_start,
+                states=controller.states.mx,
+                controls=controller.controls.mx,
+                parameters=controller.parameters.mx,
+                algebraic_states=controller.algebraic_states.mx,
                 nlp=controller.get_nlp,
             )
+
+            sensory_input = Function(
+                "tp",
+                [
+                    controller.states.mx,
+                    controller.controls.mx,
+                    controller.parameters.mx,
+                    controller.algebraic_states.mx,
+                ],
+                [sensory_input],
+            )(
+                controller.states.cx_start,
+                controller.controls.cx_start,
+                controller.parameters.cx,
+                controller.algebraic_states.cx_start,
+            )
+
             return sensory_input - ref
 
         @staticmethod
@@ -860,7 +852,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             This function constrains a matrix to be symmetric
             """
-            variable = controller.stochastic_variables[key].cx_start
+            variable = controller.algebraic_states[key].cx_start
             if np.sqrt(variable.shape[0]) % 1 != 0:
                 raise RuntimeError(f"The matrix {key} is not square")
             else:
@@ -878,7 +870,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             This function constrains a matrix to be semi-definite positive.
             """
-            variable = controller.stochastic_variables[key].cx_start
+            variable = controller.algebraic_states[key].cx_start
             if np.sqrt(variable.shape[0]) % 1 != 0:
                 raise RuntimeError(f"The matrix {key} is not square")
             else:
@@ -901,10 +893,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             sigma_ww = diag(vertcat(controller.model.motor_noise_sym, controller.model.sensory_noise_sym))
 
             cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+                controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
             )
             m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.stochastic_variables["m"].cx_start, controller.model.matrix_shape_m
+                controller.algebraic_states["m"].cx_start, controller.model.matrix_shape_m
             )
 
             nb_root = controller.model.nb_root
@@ -919,16 +911,62 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_q_joints = controller.cx.sym("z_q_joints", nu, polynomial_degree + 1)
             z_qdot_root = controller.cx.sym("z_qdot_root", nb_root, polynomial_degree + 1)
             z_qdot_joints = controller.cx.sym("z_qdot_joints", nu, polynomial_degree + 1)
+            x_q_root_mx = MX.sym("x_q_root", nb_root, 1)
+            x_q_joints_mx = MX.sym("x_q_joints", nu, 1)
+            x_qdot_root_mx = MX.sym("x_qdot_root", nb_root, 1)
+            x_qdot_joints_mx = MX.sym("x_qdot_joints", nu, 1)
+            z_q_root_mx = MX.sym("z_q_root", nb_root, polynomial_degree + 1)
+            z_q_joints_mx = MX.sym("z_q_joints", nu, polynomial_degree + 1)
+            z_qdot_root_mx = MX.sym("z_qdot_root", nb_root, polynomial_degree + 1)
+            z_qdot_joints_mx = MX.sym("z_qdot_joints", nu, polynomial_degree + 1)
 
             x_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
             z_full = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
+            x_full_mx = vertcat(x_q_root_mx, x_q_joints_mx, x_qdot_root_mx, x_qdot_joints_mx)
+            z_full_mx = vertcat(z_q_root_mx, z_q_joints_mx, z_qdot_root_mx, z_qdot_joints_mx)
 
-            xf, xall, defects = controller.integrate_extra_dynamics(0).function(
-                horzcat(x_full, z_full),
+            xf, _, defects_mx = controller.integrate_extra_dynamics(0).function(
+                controller.time.mx,
+                horzcat(x_full_mx, z_full_mx),
+                controller.controls.mx,
+                controller.parameters.mx,
+                controller.algebraic_states.mx,
+            )
+            mx_all = [
+                controller.time.mx,
+                x_q_root_mx,
+                x_q_joints_mx,
+                x_qdot_root_mx,
+                x_qdot_joints_mx,
+                z_q_root_mx,
+                z_q_joints_mx,
+                z_qdot_root_mx,
+                z_qdot_joints_mx,
+                controller.controls.mx,
+                controller.parameters.mx,
+                controller.algebraic_states.mx,
+                controller.model.motor_noise_sym_mx,
+                controller.model.sensory_noise_sym_mx,
+            ]
+            cx_all = [
+                controller.time.cx,
+                x_q_root,
+                x_q_joints,
+                x_qdot_root,
+                x_qdot_joints,
+                z_q_root,
+                z_q_joints,
+                z_qdot_root,
+                z_qdot_joints,
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
-                controller.stochastic_variables.cx_start,
-            )
+                controller.algebraic_states.cx_start,
+                controller.model.motor_noise_sym,
+                controller.model.sensory_noise_sym,
+            ]
+            defects = Function("tp", mx_all, [defects_mx])(*cx_all)
+            xf = Function("tp", mx_all, [xf])(*cx_all)
+
             G_joints = [x_full - z_full[:, 0]]
             nx = 2 * (nb_root + nu)
             for i in range(controller.ode_solver.polynomial_degree):
@@ -948,6 +986,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Mc = Function(
                 "M_cons",
                 [
+                    controller.time_cx,
                     x_q_root,
                     x_q_joints,
                     x_qdot_root,
@@ -958,7 +997,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     z_qdot_joints,
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
+                    controller.algebraic_states.cx_start,
                     controller.model.motor_noise_sym,
                     controller.model.sensory_noise_sym,
                 ],
@@ -971,6 +1010,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Pf = Function(
                 "P_next",
                 [
+                    controller.time_cx,
                     x_q_root,
                     x_q_joints,
                     x_qdot_root,
@@ -981,7 +1021,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     z_qdot_joints,
                     controller.controls.cx_start,
                     controller.parameters.cx_start,
-                    controller.stochastic_variables.cx_start,
+                    controller.algebraic_states.cx_start,
                     controller.model.motor_noise_sym,
                     controller.model.sensory_noise_sym,
                 ],
@@ -1017,7 +1057,7 @@ class ConstraintFcn(FcnEnum):
     NON_SLIPPING = (ConstraintFunction.Functions.non_slipping,)
     PROPORTIONAL_CONTROL = (PenaltyFunctionAbstract.Functions.proportional_controls,)
     PROPORTIONAL_STATE = (PenaltyFunctionAbstract.Functions.proportional_states,)
-    TRACK_STOCHASTIC = (PenaltyFunctionAbstract.Functions.stochastic_minimize_variables,)
+    TRACK_ALGEBRAIC_STATE = (PenaltyFunctionAbstract.Functions.minimize_algebraic_states,)
     STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT = (
         ConstraintFunction.Functions.stochastic_covariance_matrix_continuity_implicit,
     )
@@ -1170,9 +1210,8 @@ class ParameterConstraint(PenaltyOption):
         elif self.bounds.shape[0] != len(self.rows):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
-    def _add_penalty_to_pool(self, controller: PenaltyController):
-        if isinstance(controller, (list, tuple)):
-            controller = controller[0]  # This is a special case of Node.TRANSITION
+    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
+        controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
             pool = (

@@ -6,7 +6,7 @@ import pytest
 import platform
 
 import numpy as np
-from bioptim import OdeSolver, Solver, BiorbdModel, PhaseDynamics
+from bioptim import OdeSolver, Solver, BiorbdModel, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -80,7 +80,9 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         np.testing.assert_almost_equal(g, np.zeros((20, 1)), decimal=6)
 
     # Check some of the results
-    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(f[0, 0], 8.776096413864758e-09)
@@ -93,13 +95,13 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.43557515, -6.90724245]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([3.10812296e-06, -8.10321473e-06]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([-9.47419953e-07, 3.09587412e-06]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-9.47419953e-07, 3.09587412e-06]))
         np.testing.assert_almost_equal(
             mus[:, 0],
             np.array([0.77134219, 0.02085427, 0.6336279, 0.74882745, 0.49852058, 0.22483054]),
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -1],
             np.array([0.44191616, 0.43397999, 0.61774185, 0.51316252, 0.65040935, 0.60098744]),
         )
 
@@ -114,12 +116,12 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.43553183, -6.90717365]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([2.13121740e-06, -5.61544104e-06]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([-8.44568436e-07, 2.61276733e-06]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-8.44568436e-07, 2.61276733e-06]))
         np.testing.assert_almost_equal(
             mus[:, 0], np.array([0.77133409, 0.02085475, 0.63363328, 0.74881837, 0.49851642, 0.22482234])
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -1],
             np.array([0.44190465, 0.43398513, 0.61774549, 0.51315869, 0.65040699, 0.60099517]),
         )
 
@@ -134,21 +136,18 @@ def test_muscle_activations_and_states_tracking(ode_solver, n_threads, phase_dyn
         np.testing.assert_almost_equal(qdot[:, -1], np.array([-0.43557883, -6.90723878]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([3.13930953e-06, -8.18582928e-06]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([-9.49304938e-07, 3.10696405e-06]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-9.49304938e-07, 3.10696405e-06]))
         np.testing.assert_almost_equal(
             mus[:, 0],
             np.array([0.7713425, 0.02085421, 0.63362772, 0.74882775, 0.49852071, 0.22483082]),
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -1],
             np.array([0.44191641, 0.43397987, 0.61774176, 0.5131626, 0.65040941, 0.60098726]),
         )
 
     else:
         raise ValueError("Test not implemented")
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)

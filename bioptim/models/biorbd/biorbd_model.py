@@ -30,6 +30,11 @@ class BiorbdModel:
         self._friction_coefficients = friction_coefficients
 
     @property
+    def name(self) -> str:
+        # parse the path and split to get the .bioMod name
+        return self.model.path().absolutePath().to_string().split("/")[-1]
+
+    @property
     def path(self) -> str:
         return self.model.path().relativePath().to_string()
 
@@ -539,7 +544,11 @@ class BiorbdModel:
 
     @staticmethod
     def animate(
-        solution: Any, show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
+        ocp,
+        solution: "SolutionData",
+        show_now: bool = True,
+        tracked_markers: list[np.ndarray, ...] = None,
+        **kwargs: Any
     ) -> None | list:
         try:
             import bioviz
@@ -548,7 +557,8 @@ class BiorbdModel:
 
         check_version(bioviz, "2.0.0", "2.4.0")
 
-        states = solution.states
+        states = solution["q"]
+
         if not isinstance(states, (list, tuple)):
             states = [states]
 
@@ -557,17 +567,17 @@ class BiorbdModel:
 
         all_bioviz = []
         for idx_phase, data in enumerate(states):
-            if not isinstance(solution.ocp.nlp[idx_phase].model, BiorbdModel):
+            if not isinstance(ocp.nlp[idx_phase].model, BiorbdModel):
                 raise NotImplementedError("Animation is only implemented for biorbd models")
 
             # This calls each of the function that modify the internal dynamic model based on the parameters
-            nlp = solution.ocp.nlp[idx_phase]
+            nlp = ocp.nlp[idx_phase]
 
             # noinspection PyTypeChecker
             biorbd_model: BiorbdModel = nlp.model
 
             all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
-            all_bioviz[-1].load_movement(solution.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
+            all_bioviz[-1].load_movement(ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data))
 
             if tracked_markers[idx_phase] is not None:
                 all_bioviz[-1].load_experimental_markers(tracked_markers[idx_phase])

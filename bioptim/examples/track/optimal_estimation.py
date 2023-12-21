@@ -7,9 +7,6 @@ See https://www.tandfonline.com/doi/full/10.1080/14763141.2022.2066015 for compa
 """
 
 from typing import Callable
-import importlib.util
-from pathlib import Path
-import platform
 
 import biorbd_casadi as biorbd
 import numpy as np
@@ -23,19 +20,12 @@ from bioptim import (
     BoundsList,
     ObjectiveList,
     ObjectiveFcn,
-    Axis,
-    PlotType,
     OdeSolver,
     OdeSolverBase,
     Node,
     Solver,
     BiMappingList,
-    ConstraintList,
-    ConstraintFcn,
-    Axis,
-    InitialGuessList,
-    InterpolationType,
-    PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -224,10 +214,10 @@ def main():
     # sol.animate()
     # sol.graphs()
 
-    q = sol.states["q"]
-    qdot = sol.states["qdot"]
-    tau = sol.controls["tau"]
-    time = sol.parameters["time"][0][0]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+    time = float(sol.decision_time(to_merge=SolutionMerge.NODES)[-1])
 
     model = biorbd.Model(biorbd_model_path)
     n_q = model.nbQ()
@@ -250,7 +240,8 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
     # --- Show results --- #
-    q = sol.states["q"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = states["q"]
 
     markers_opt = np.zeros((3, n_marker, n_shooting + 1))
     for i_node in range(n_shooting + 1):

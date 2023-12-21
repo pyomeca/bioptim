@@ -1,4 +1,4 @@
-from bioptim import PhaseDynamics
+from bioptim import PhaseDynamics, SolutionMerge
 import numpy as np
 import pytest
 
@@ -23,4 +23,4 @@ def test_continuity_as_objective(phase_dynamics):
     sol = ocp.solve()
 
     expected = np.array([-0.1376, 2.9976372])
-    np.testing.assert_almost_equal(sol.states["q"][:, -1], expected)
+    np.testing.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["q"][:, -1], expected)

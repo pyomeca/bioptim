@@ -1,6 +1,6 @@
 from typing import Callable
 
-from casadi import MX, DM
+from casadi import MX, DM, SX
 import numpy as np
 
 from ...misc.mapping import BiMappingList
@@ -23,6 +23,7 @@ class StochasticBiorbdModel(BiorbdModel):
         sensory_reference: Callable,
         motor_noise_mapping: BiMappingList = BiMappingList(),
         n_collocation_points: int = 1,
+        use_sx: bool = False,
         **kwargs,
     ):
         super().__init__(bio_model if isinstance(bio_model, str) else bio_model.model, **kwargs)
@@ -32,8 +33,11 @@ class StochasticBiorbdModel(BiorbdModel):
 
         self.sensory_reference = sensory_reference
 
-        self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
-        self.sensory_noise_sym = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0])
+        self.cx = SX if use_sx else MX
+        self.motor_noise_sym = self.cx.sym("motor_noise", motor_noise_magnitude.shape[0])
+        self.motor_noise_sym_mx = MX.sym("motor_noise_mx", motor_noise_magnitude.shape[0])
+        self.sensory_noise_sym = self.cx.sym("sensory_noise", sensory_noise_magnitude.shape[0])
+        self.sensory_noise_sym_mx = MX.sym("sensory_noise_mx", sensory_noise_magnitude.shape[0])
         self.motor_noise_mapping = motor_noise_mapping
 
         self.n_references = n_references
@@ -54,5 +58,5 @@ class StochasticBiorbdModel(BiorbdModel):
 
     def compute_torques_from_noise_and_feedback(self, k_matrix, sensory_input, ref):
         """Compute the torques from the sensory feedback"""
-        mapped_sensory_feedback_torque = k_matrix @ ((sensory_input - ref) + self.sensory_noise_sym)
+        mapped_sensory_feedback_torque = k_matrix @ ((sensory_input - ref) + self.sensory_noise_sym_mx)
         return mapped_sensory_feedback_torque

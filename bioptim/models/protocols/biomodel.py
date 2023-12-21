@@ -13,6 +13,11 @@ class BioModel(Protocol):
     As a reminder for developers: only necessary attributes and methods should appear here.
     """
 
+    @property
+    def name(self) -> str:
+        """Get the name of the model"""
+        return ""
+
     def copy(self):
         """copy the model by reloading one"""
 
@@ -329,14 +334,18 @@ class BioModel(Protocol):
 
     @staticmethod
     def animate(
-        solution: Any, show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
+        ocp,
+        solution: "SolutionData",
+        show_now: bool = True,
+        tracked_markers: list[np.ndarray, ...] = None,
+        **kwargs: Any
     ) -> None | list:
         """
         Animate a solution
 
         Parameters
         ----------
-        solution: Any
+        solution: SolutionData
             The solution to animate
         show_now: bool
             If the animation should be shown immediately or not

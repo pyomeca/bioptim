@@ -51,9 +51,14 @@ class SolverInterface:
 
         raise RuntimeError("SolverInterface is an abstract class")
 
-    def solve(self) -> dict:
+    def solve(self, expand_during_shake_tree) -> dict:
         """
         Solve the prepared ocp
+
+        Parameters
+        ----------
+        expand_during_shake_tree: bool
+            If the graph should be expanded during the shake tree
 
         Returns
         -------

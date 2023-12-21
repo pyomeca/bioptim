@@ -8,7 +8,7 @@ import pytest
 
 from casadi import Function, MX
 import numpy as np
-from bioptim import OptimalControlProgram, CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel, PhaseDynamics
+from bioptim import CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel, PhaseDynamics
 from bioptim.limits.penalty import PenaltyOption
 
 import matplotlib
@@ -53,7 +53,7 @@ def test_plot_check_conditioning(phase_dynamics):
     sol.graphs(automatically_organize=False)
 
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE])
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_merged_graphs(phase_dynamics):
     # Load graphs_one_phase
     from bioptim.examples.muscle_driven_ocp import muscle_excitations_tracker as ocp_module
@@ -124,37 +124,13 @@ def test_add_new_plot(phase_dynamics):
     solver.set_maximum_iterations(1)
     sol = ocp.solve(solver)
 
-    # Saving/loading files reset the plot settings to normal
-    save_name = "test_plot.bo"
-    ocp.save(sol, save_name)
-
     # Test 1 - Working plot
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
-    sol.graphs(automatically_organize=False)
-
-    # Test 2 - Combine using combine_to is not allowed
-    ocp, sol = OptimalControlProgram.load(save_name)
-    with pytest.raises(RuntimeError):
-        ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :], combine_to="NotAllowed")
-
-    # Test 3 - Create a completely new plot
-    ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
-    ocp.add_plot("My Second New Plot", lambda t, x, p, u, s: x[0:2, :])
-    sol.graphs(automatically_organize=False)
-
-    # Test 4 - Combine to the first using fig_name
-    ocp, sol = OptimalControlProgram.load(save_name)
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
-    ocp.add_plot("My New Plot", lambda t, x, u, p, s: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t0, phases_dt, node_idx, x, u, p, a: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Add the plot of objectives and constraints to this mess
     ocp.add_plot_penalty(CostType.ALL)
     sol.graphs(automatically_organize=False)
-
-    # Delete the saved file
-    os.remove(save_name)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -173,7 +149,7 @@ def test_plot_graphs_for_implicit_constraints(rigidbody_dynamics, phase_dynamics
         final_time=1,
         rigidbody_dynamics=rigidbody_dynamics,
         phase_dynamics=phase_dynamics,
-        expand_dynamics=True,
+        expand_dynamics=False,
     )
     ocp.add_plot_penalty(CostType.ALL)
     sol = ocp.solve()
@@ -229,7 +205,7 @@ def test_console_objective_functions(phase_dynamics):
                     nlp.states.node_index = node_index
                     nlp.states_dot.node_index = node_index
                     nlp.controls.node_index = node_index
-                    nlp.stochastic_variables.node_index = node_index
+                    nlp.algebraic_states.node_index = node_index
 
                     name = (
                         p.name.replace("->", "_")
@@ -241,24 +217,24 @@ def test_console_objective_functions(phase_dynamics):
                         .replace(".", "_")
                         .replace("__", "_")
                     )
-                    t = MX.sym("t", *p.weighted_function[node_index].sparsity_in("i0").shape)
-                    x = MX.sym("x", *p.weighted_function[node_index].sparsity_in("i1").shape)
-                    u = MX.sym("u", *p.weighted_function[node_index].sparsity_in("i2").shape)
-                    if p.weighted_function[node_index].sparsity_in("i3").shape == (0, 0):
+                    t = MX.sym("t", *p.weighted_function[node_index].size_in("t"))
+                    phases_dt = MX.sym("dt", *p.weighted_function[node_index].size_in("dt"))
+                    x = MX.sym("x", *p.weighted_function[node_index].size_in("x"))
+                    u = MX.sym("u", *p.weighted_function[node_index].size_in("u"))
+                    if p.weighted_function[node_index].size_in("u") == (0, 0):
                         u = MX.sym("u", 3, 1)
-                    param = MX.sym("param", *p.weighted_function[node_index].sparsity_in("i3").shape)
-                    s = MX.sym("s", *p.weighted_function[node_index].sparsity_in("i4").shape)
-                    weight = MX.sym("weight", *p.weighted_function[node_index].sparsity_in("i5").shape)
-                    target = MX.sym("target", *p.weighted_function[node_index].sparsity_in("i6").shape)
-                    dt = MX.sym("dt", *p.weighted_function[node_index].sparsity_in("i7").shape)
+                    param = MX.sym("param", *p.weighted_function[node_index].size_in("p"))
+                    a = MX.sym("a", *p.weighted_function[node_index].size_in("a"))
+                    weight = MX.sym("weight", *p.weighted_function[node_index].size_in("weight"))
+                    target = MX.sym("target", *p.weighted_function[node_index].size_in("target"))
 
                     p.function[node_index] = Function(
-                        name, [t, x, u, param, s], [np.array([range(cmp, len(p.rows) + cmp)]).T]
+                        name, [t, phases_dt, x, u, param, a], [np.array([range(cmp, len(p.rows) + cmp)]).T]
                     )
                     p.function_non_threaded[node_index] = p.function[node_index]
                     p.weighted_function[node_index] = Function(
                         name,
-                        [t, x, u, param, s, weight, target, dt],
+                        [t, phases_dt, x, u, param, a, weight, target],
                         [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T],
                     )
                     p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]
@@ -278,146 +254,42 @@ def test_console_objective_functions(phase_dynamics):
     sys.stdout = captured_output  # and redirect stdout.
     sol.print_cost()
 
-    if phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
-        expected_output = (
-            "Solver reported time: 1.2345 sec\n"
-            "Real time: 5.4321 sec\n"
-            "\n"
-            "---- COST FUNCTION VALUES ----\n"
-            "PHASE 0\n"
-            "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
-            "\n"
-            "PHASE 1\n"
-            "MultinodeObjectiveFcn.CUSTOM: 6.0 (non weighted  3.00)\n"
-            "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.00)\n"
-            "\n"
-            "PHASE 2\n"
-            "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
-            "\n"
-            "Sum cost functions: 426.0\n"
-            "------------------------------\n"
-            "\n"
-            "--------- CONSTRAINTS ---------\n"
-            "PHASE 0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 420.0\n"
-            "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
-            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
-            "ConstraintFcn.SUPERIMPOSE_MARKERS: 9.0\n"
-            "\n"
-            "PHASE 1\n"
-            "ConstraintFcn.STATE_CONTINUITY: 630.0\n"
-            "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
-            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
-            "\n"
-            "PHASE 2\n"
-            "ConstraintFcn.STATE_CONTINUITY: 420.0\n"
-            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
-            "\n"
-            "------------------------------\n"
-        )
-    else:
-        expected_output = (
-            "Solver reported time: 1.2345 sec\n"
-            "Real time: 5.4321 sec\n"
-            "\n"
-            "---- COST FUNCTION VALUES ----\n"
-            "PHASE 0\n"
-            "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
-            "\n"
-            "PHASE 1\n"
-            "MultinodeObjectiveFcn.CUSTOM: 6.0 (non weighted  3.00)\n"
-            "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.00)\n"
-            "\n"
-            "PHASE 2\n"
-            "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
-            "\n"
-            "Sum cost functions: 426.0\n"
-            "------------------------------\n"
-            "\n"
-            "--------- CONSTRAINTS ---------\n"
-            "PHASE 0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 21.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 27.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 33.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 39.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 45.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 51.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 57.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 63.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 69.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 75.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 81.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 87.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 93.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 99.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 105.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 111.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 117.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 123.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 129.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 135.0\n"
-            "PhaseTransitionFcn.CONTINUOUS: 141.0\n"
-            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
-            "ConstraintFcn.SUPERIMPOSE_MARKERS: 9.0\n"
-            "\n"
-            "PHASE 1\n"
-            "ConstraintFcn.STATE_CONTINUITY: 21.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 27.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 33.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 39.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 45.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 51.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 57.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 63.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 69.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 75.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 81.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 87.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 93.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 99.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 105.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 111.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 117.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 123.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 129.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 135.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 141.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 147.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 153.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 159.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 165.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 171.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 177.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 183.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 189.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 195.0\n"
-            "PhaseTransitionFcn.CONTINUOUS: 201.0\n"
-            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
-            "\n"
-            "PHASE 2\n"
-            "ConstraintFcn.STATE_CONTINUITY: 21.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 27.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 33.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 39.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 45.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 51.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 57.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 63.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 69.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 75.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 81.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 87.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 93.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 99.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 105.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 111.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 117.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 123.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 129.0\n"
-            "ConstraintFcn.STATE_CONTINUITY: 135.0\n"
-            "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
-            "\n"
-            "------------------------------\n"
-        )
+    expected_output = (
+        "Solver reported time: 1.2345 sec\n"
+        "Real time: 5.4321 sec\n"
+        "\n"
+        "---- COST FUNCTION VALUES ----\n"
+        "PHASE 0\n"
+        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
+        "\n"
+        "PHASE 1\n"
+        "MultinodeObjectiveFcn.CUSTOM: 6.0 (non weighted  3.00)\n"
+        "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.00)\n"
+        "\n"
+        "PHASE 2\n"
+        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
+        "\n"
+        "Sum cost functions: 426.0\n"
+        "------------------------------\n"
+        "\n"
+        "--------- CONSTRAINTS ---------\n"
+        "PHASE 0\n"
+        "ConstraintFcn.STATE_CONTINUITY: 420.0\n"
+        "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 9.0\n"
+        "\n"
+        "PHASE 1\n"
+        "ConstraintFcn.STATE_CONTINUITY: 630.0\n"
+        "PhaseTransitionFcn.CONTINUOUS: 27.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+        "\n"
+        "PHASE 2\n"
+        "ConstraintFcn.STATE_CONTINUITY: 420.0\n"
+        "ConstraintFcn.SUPERIMPOSE_MARKERS: 6.0\n"
+        "\n"
+        "------------------------------\n"
+    )
+
     sys.stdout = sys.__stdout__  # Reset redirect.
     assert captured_output.getvalue() == expected_output

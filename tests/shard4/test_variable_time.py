@@ -20,6 +20,7 @@ from bioptim import (
     ParameterObjectiveList,
     PenaltyController,
     PhaseDynamics,
+    SolutionMerge,
 )
 from bioptim.optimization.solution.solution import Solution
 
@@ -150,10 +151,12 @@ def test_variable_time(phase_time_constraint, use_parameter, phase_dynamics):
 
     # --- Solve the program --- #
     np.random.seed(42)
-    sol = Solution.from_vector(ocp, np.random.random((649 + use_parameter, 1)))
+    time_init = np.array([1.23, 4.56, 7.89])[:, np.newaxis]
+    sol = Solution.from_vector(ocp, np.concatenate((time_init, np.random.random((649 + use_parameter, 1)))))
 
     # --- Show results --- #
-    states, controls, parameters = sol.states, sol.controls, sol.parameters
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 
     np.testing.assert_almost_equal(
         states[0]["q"][0, 0:8],
@@ -199,5 +202,4 @@ def test_variable_time(phase_time_constraint, use_parameter, phase_dynamics):
         np.array([0.12804584, 0.64087474, 0.89678841, 0.17231987, 0.16893506, 0.08870253, 0.20633372, 0.69039483]),
     )
 
-    np.testing.assert_almost_equal(parameters["gravity_z"], 0.78917124)
-    np.testing.assert_almost_equal(parameters["time"], 0.4984422)
+    np.testing.assert_almost_equal(sol.parameters["gravity_z"], 0.78917124)

@@ -21,6 +21,7 @@ from bioptim import (
     Solution,
     MagnitudeType,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -146,7 +147,7 @@ def save_results(
     save_folder = extra_parameters["save_folder"]
 
     file_path = construct_filepath(save_folder, n_shooting, seed)
-    states = sol.states
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
     with open(file_path, "wb") as file:
         pickle.dump(states, file)
 

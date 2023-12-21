@@ -29,6 +29,7 @@ from bioptim import (
     Node,
     Solver,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 # Load track_segment_on_rt
@@ -108,10 +109,10 @@ def prepare_ocp(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(
-        ObjectiveFcn.Lagrange.TRACK_MARKERS,
+        ObjectiveFcn.Mayer.TRACK_MARKERS,
         axes=[Axis.Y, Axis.Z],
         node=Node.ALL,
-        weight=100,
+        weight=0.5,
         target=markers_ref[1:, :, :],
     )
     objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="tau", target=tau_ref)
@@ -162,7 +163,9 @@ def main():
         biorbd_model_path=biorbd_path, final_time=final_time, n_shooting=n_shooting
     )
     sol = ocp_to_track.solve()
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     n_q = bio_model.nb_q
     n_marker = bio_model.nb_markers
     x = np.concatenate((q, qdot))
@@ -188,14 +191,14 @@ def main():
 
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda t, x, u, p: get_markers_pos(x, 0, markers_fun, n_q),
+        update_function=lambda t0, phases_dt, node_idx, x, u, p, a: get_markers_pos(x, 0, markers_fun, n_q),
         linestyle=".-",
         plot_type=PlotType.STEP,
         color=marker_color[0],
     )
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda t, x, u, p: get_markers_pos(x, 1, markers_fun, n_q),
+        update_function=lambda t0, phases_dt, node_idx, x, u, p, a: get_markers_pos(x, 1, markers_fun, n_q),
         linestyle=".-",
         plot_type=PlotType.STEP,
         color=marker_color[1],
@@ -203,14 +206,14 @@ def main():
 
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda t, x, u, p: markers_ref[:, 0, :],
+        update_function=lambda t0, phases_dt, node_idx, x, u, p, a: markers_ref[:, 0, :],
         plot_type=PlotType.PLOT,
         color=marker_color[0],
         legend=title_markers,
     )
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda t, x, u, p: markers_ref[:, 1, :],
+        update_function=lambda t0, phases_dt, node_idx, x, u, p, a: markers_ref[:, 1, :],
         plot_type=PlotType.PLOT,
         color=marker_color[1],
         legend=title_markers,

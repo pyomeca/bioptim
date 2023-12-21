@@ -1,5 +1,5 @@
-from typing import Callable
-from casadi import MX
+from typing import Callable, Union
+from casadi import MX, SX
 import numpy as np
 
 from ..protocols.biomodel import BioModel
@@ -14,8 +14,10 @@ class StochasticBioModel(BioModel):
     sensory_noise_magnitude: float
     motor_noise_magnitude: float
 
-    sensory_noise_sym: MX.sym
-    motor_noise_sym: MX.sym
+    sensory_noise_sym: Union[MX.sym, SX.sym]
+    sensory_noise_sym_mx: MX.sym
+    motor_noise_sym: Union[MX.sym, SX.sym]
+    motor_noise_sym_mx: MX.sym
 
     sensory_reference: Callable
     motor_noise_mapping: BiMappingList
