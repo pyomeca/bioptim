@@ -167,9 +167,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     dt = controllers[0].dt
     out = 0
     for i, ctrl in enumerate(controllers):
-        cov_matrix = StochasticBioModel.reshape_to_matrix(
-            ctrl.integrated_values["cov"].cx, ctrl.model.matrix_shape_cov
-        )
+        cov_matrix = StochasticBioModel.reshape_to_matrix(ctrl.integrated_values["cov"].cx, ctrl.model.matrix_shape_cov)
         p_partial = cov_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(p_partial) * dt
     return out
@@ -191,25 +189,32 @@ def get_cov_mat(nlp, node_index):
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(
+        nlp.states.mx,
+        nlp.controls.mx,
+        nlp.parameters,
+        nlp.algebraic_states.mx,
+        nlp,
+        force_field_magnitude=nlp.model.force_field_magnitude,
+        with_noise=True,
+    )
+
+    dx.dxdt = cas.Function(
+        "tp",
+        [
             nlp.states.mx,
             nlp.controls.mx,
             nlp.parameters,
             nlp.algebraic_states.mx,
-            nlp,
-            force_field_magnitude=nlp.model.force_field_magnitude,
-            with_noise=True
-        )
-    
-    dx.dxdt = cas.Function(
-        "tp", 
-        [nlp.states.mx, nlp.controls.mx, nlp.parameters, nlp.algebraic_states.mx, nlp.model.sensory_noise_sym_mx, nlp.model.motor_noise_sym_mx],
-        [dx.dxdt]
+            nlp.model.sensory_noise_sym_mx,
+            nlp.model.motor_noise_sym_mx,
+        ],
+        [dx.dxdt],
     )(
         nlp.states.cx,
         nlp.controls.cx,
         nlp.parameters,
-        nlp.algebraic_states.cx, 
-        nlp.model.sensory_noise_sym, 
+        nlp.algebraic_states.cx,
+        nlp.model.sensory_noise_sym,
         nlp.model.motor_noise_sym,
     )
 

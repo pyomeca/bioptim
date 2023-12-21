@@ -10,7 +10,7 @@ from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
 
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
-from ..misc.enums import PlotType,Shooting, SolutionIntegrator, QuadratureRule, InterpolationType
+from ..misc.enums import PlotType, Shooting, SolutionIntegrator, QuadratureRule, InterpolationType
 from ..misc.mapping import Mapping, BiMapping
 from ..optimization.solution.solution import Solution
 from ..dynamics.ode_solver import OdeSolver
@@ -330,7 +330,9 @@ class PlotOcp:
                             penalty = nlp.plot[key].parameters["penalty"]
 
                             # As stated in penalty_option, the last controller is always supposed to be the right one
-                            casadi_function = penalty.function[0] if penalty.function[0] is not None else penalty.function[-1]
+                            casadi_function = (
+                                penalty.function[0] if penalty.function[0] is not None else penalty.function[-1]
+                            )
                             if casadi_function is not None:
                                 size_x = casadi_function.size_in("x")[0]
                                 size_u = casadi_function.size_in("u")[0]
@@ -338,7 +340,8 @@ class PlotOcp:
                                 size_a = casadi_function.size_in("a")[0]
 
                         size = (
-                            nlp.plot[key].function(
+                            nlp.plot[key]
+                            .function(
                                 0,  # t0
                                 np.zeros(len(self.ocp.nlp)),  # phases_dt
                                 node_index,  # node_idx
@@ -351,7 +354,7 @@ class PlotOcp:
                             .shape[0]
                         )
                         nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
-                    
+
                     n_subplots = max(nlp.plot[key].phase_mappings.to_second.map_idx) + 1
 
                     if key not in variable_sizes[i]:
@@ -457,7 +460,11 @@ class PlotOcp:
 
                     if plot_type == PlotType.PLOT:
                         zero = np.zeros((t.shape[0], 1))
-                        color = self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else "tab:green"
+                        color = (
+                            self.custom_plots[variable][i].color
+                            if self.custom_plots[variable][i].color
+                            else "tab:green"
+                        )
                         self.plots.append(
                             [
                                 plot_type,
@@ -474,7 +481,11 @@ class PlotOcp:
                         )
                     elif plot_type == PlotType.INTEGRATED:
                         plots_integrated = []
-                        color = self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else "tab:brown"
+                        color = (
+                            self.custom_plots[variable][i].color
+                            if self.custom_plots[variable][i].color
+                            else "tab:brown"
+                        )
                         for cmp in range(nlp.ns):
                             plots_integrated.append(
                                 ax.plot(
@@ -489,9 +500,15 @@ class PlotOcp:
 
                     elif plot_type == PlotType.STEP:
                         zero = np.zeros((t.shape[0], 1))
-                        color = self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else "tab:orange"
+                        color = (
+                            self.custom_plots[variable][i].color
+                            if self.custom_plots[variable][i].color
+                            else "tab:orange"
+                        )
                         linestyle = (
-                            self.custom_plots[variable][i].linestyle if self.custom_plots[variable][i].linestyle else "-"
+                            self.custom_plots[variable][i].linestyle
+                            if self.custom_plots[variable][i].linestyle
+                            else "-"
                         )
                         self.plots.append(
                             [
@@ -502,7 +519,11 @@ class PlotOcp:
                         )
                     elif plot_type == PlotType.POINT:
                         zero = np.zeros((t.shape[0], 1))
-                        color = self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else "tab:purple"
+                        color = (
+                            self.custom_plots[variable][i].color
+                            if self.custom_plots[variable][i].color
+                            else "tab:purple"
+                        )
                         self.plots.append(
                             [
                                 plot_type,
@@ -522,7 +543,9 @@ class PlotOcp:
                     if ctr in mapping_to_first_index:
                         intersections_time = self.find_phases_intersections()
                         for time in intersections_time:
-                            self.plots_vertical_lines.append(ax.axvline(float(time), **self.plot_options["vertical_lines"]))
+                            self.plots_vertical_lines.append(
+                                ax.axvline(float(time), **self.plot_options["vertical_lines"])
+                            )
 
                         if nlp.plot[variable].bounds and self.show_bounds:
                             if nlp.plot[variable].bounds.type == InterpolationType.EACH_FRAME:
@@ -671,14 +694,26 @@ class PlotOcp:
             a = data_algebraic_states[phase_idx]
 
             for key in self.variable_sizes[phase_idx]:
-                y_data = self._compute_y_from_plot_func(self.custom_plots[key][phase_idx], phase_idx, time_stepwise, phases_dt, x_decision, x_stepwise, u, p, a)
+                y_data = self._compute_y_from_plot_func(
+                    self.custom_plots[key][phase_idx],
+                    phase_idx,
+                    time_stepwise,
+                    phases_dt,
+                    x_decision,
+                    x_stepwise,
+                    u,
+                    p,
+                    a,
+                )
                 if y_data is None:
                     continue
                 self._append_to_ydata(y_data)
 
         self.__update_axes()
 
-    def _compute_y_from_plot_func(self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a):
+    def _compute_y_from_plot_func(
+        self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a
+    ):
         """
         Compute the y data from the plot function
 
@@ -718,12 +753,24 @@ class PlotOcp:
             if "penalty" in custom_plot.parameters:
                 penalty = custom_plot.parameters["penalty"]
                 t0 = PenaltyHelpers.t0(penalty, self.ocp)
-                
-                x_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx] if n_idx < len(x) else np.ndarray((0, 1)))
-                u_node = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)))
+
+                x_node = PenaltyHelpers.states(
+                    penalty,
+                    idx,
+                    lambda p_idx, n_idx, sn_idx: x[n_idx][:, sn_idx] if n_idx < len(x) else np.ndarray((0, 1)),
+                )
+                u_node = PenaltyHelpers.controls(
+                    penalty,
+                    idx,
+                    lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)),
+                )
                 p_node = PenaltyHelpers.parameters(penalty, lambda: np.array(p))
-                a_node = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)))
-                
+                a_node = PenaltyHelpers.states(
+                    penalty,
+                    idx,
+                    lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)),
+                )
+
             else:
                 t0 = time_stepwise[phase_idx][node_idx][0]
 

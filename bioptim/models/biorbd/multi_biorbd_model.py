@@ -726,7 +726,8 @@ class MultiBiorbdModel:
 
     def _q_mapping(self, mapping: BiMapping = None) -> dict:
         return _q_mapping(self, mapping)
-#
+
+    #
     def _qdot_mapping(self, mapping: BiMapping = None) -> dict:
         return _qdot_mapping(self, mapping)
 

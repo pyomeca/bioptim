@@ -74,16 +74,14 @@ class TestUtils:
 
         states = sol.decision_states(to_merge=SolutionMerge.NODES)
         controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    
+
         sol_warm_start = ocp.solve(solver)
         warm_start_states = sol_warm_start.decision_states(to_merge=SolutionMerge.NODES)
         warm_start_controls = sol_warm_start.decision_controls(to_merge=SolutionMerge.NODES)
         if ocp.n_phases > 1:
             for i in range(ocp.n_phases):
                 for key in states[i]:
-                    np.testing.assert_almost_equal(
-                        warm_start_states[i][key], states[i][key], decimal=state_decimal
-                    )
+                    np.testing.assert_almost_equal(warm_start_states[i][key], states[i][key], decimal=state_decimal)
                 for key in controls[i]:
                     np.testing.assert_almost_equal(
                         warm_start_controls[i][key], controls[i][key], decimal=control_decimal

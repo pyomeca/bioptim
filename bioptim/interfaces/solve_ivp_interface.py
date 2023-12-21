@@ -46,7 +46,6 @@ def solve_ivp_interface(
     y = []
     control_type = nlp.control_type
     for node in range(nlp.ns):
-
         # TODO WARNING NEXT LINE IS A BUG DELIBERATELY INTRODUCED TO HAVE THE TESTS PASS. TIME SHOULD BE HANDLED
         # PROPERLY AS THE COMMENTED LINE SUGGEST
         t_span = t[0]
@@ -55,20 +54,18 @@ def solve_ivp_interface(
 
         # If multiple shooting, we need to set the first x0, otherwise use the previous answer
         x0i = np.array(x[node] if node == 0 or shooting_type == Shooting.MULTIPLE else y[-1][:, -1])
-        
+
         if method == SolutionIntegrator.OCP:
             result = _solve_ivp_bioptim_interface(
-                lambda t, x: nlp.dynamics[node](t, x, u[node], p, a[node])[1],
-                x0=x0i, 
-                t_span=np.array(t_span)
+                lambda t, x: nlp.dynamics[node](t, x, u[node], p, a[node])[1], x0=x0i, t_span=np.array(t_span)
             )
 
         elif method in (
             SolutionIntegrator.SCIPY_RK45,
-            SolutionIntegrator.SCIPY_RK23, 
-            SolutionIntegrator.SCIPY_DOP853, 
-            SolutionIntegrator.SCIPY_BDF, 
-            SolutionIntegrator.SCIPY_LSODA
+            SolutionIntegrator.SCIPY_RK23,
+            SolutionIntegrator.SCIPY_DOP853,
+            SolutionIntegrator.SCIPY_BDF,
+            SolutionIntegrator.SCIPY_LSODA,
         ):
             # Prevent from integrating collocation points
             if len(x0i.shape) > 1:
@@ -76,13 +73,15 @@ def solve_ivp_interface(
 
             func = nlp.dynamics_func[0] if len(nlp.dynamics_func) == 1 else nlp.dynamics_func[node]
             result = _solve_ivp_scipy_interface(
-                lambda t, x: np.array(func(t, x, _control_function(control_type, t, t_span, u[node]), p, a[node]))[:, 0],
-                x0=x0i, 
-                t_span=np.array(t_span), 
-                t_eval=t_eval, 
-                method=method.value
+                lambda t, x: np.array(func(t, x, _control_function(control_type, t, t_span, u[node]), p, a[node]))[
+                    :, 0
+                ],
+                x0=x0i,
+                t_span=np.array(t_span),
+                t_eval=t_eval,
+                method=method.value,
             )
-            
+
         else:
             raise NotImplementedError(f"{method} is not implemented yet")
 
@@ -109,15 +108,14 @@ def _solve_ivp_bioptim_interface(
     t_span: np.ndarray,
     x0: np.ndarray,
 ):
-
     # y always contains [x0, xf] of the interval
     return np.array(dynamics(t_span, x0))
-    
+
 
 def _control_function(control_type, t, t_span, u) -> np.ndarray:
     """
     This function is used to wrap the control function in a way that solve_ivp can use it
-    
+
     Parameters
     ----------
     control_type: ControlType
@@ -126,7 +124,7 @@ def _control_function(control_type, t, t_span, u) -> np.ndarray:
         The time at which the control is evaluated
     t_span: np.ndarray
         The time span
-    u: np.ndarray   
+    u: np.ndarray
         The control value
 
     Returns
@@ -134,7 +132,7 @@ def _control_function(control_type, t, t_span, u) -> np.ndarray:
     np.ndarray
         The control value
     """
-    
+
     if control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
         return u
     elif control_type == ControlType.LINEAR_CONTINUOUS:

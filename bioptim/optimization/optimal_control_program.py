@@ -18,13 +18,22 @@ from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..interfaces import Solver
 from ..interfaces.abstract_options import GenericSolver
 from ..limits.constraints import (
-    ConstraintFunction, ConstraintFcn, ConstraintList, Constraint, ParameterConstraintList, ParameterConstraint
+    ConstraintFunction,
+    ConstraintFcn,
+    ConstraintList,
+    Constraint,
+    ParameterConstraintList,
+    ParameterConstraint,
 )
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import (
-    ObjectiveFcn, ObjectiveList, Objective, ParameterObjectiveList, ParameterObjective
+    ObjectiveFcn,
+    ObjectiveList,
+    Objective,
+    ParameterObjectiveList,
+    ParameterObjective,
 )
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
@@ -33,7 +42,15 @@ from ..limits.penalty_helpers import PenaltyHelpers
 from ..limits.objective_functions import ObjectiveFunction
 from ..misc.__version__ import __version__
 from ..misc.enums import (
-    ControlType, SolverType, Shooting, PlotType, CostType, SolutionIntegrator, InterpolationType, PenaltyType, Node
+    ControlType,
+    SolverType,
+    Shooting,
+    PlotType,
+    CostType,
+    SolutionIntegrator,
+    InterpolationType,
+    PenaltyType,
+    Node,
 )
 from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
@@ -315,7 +332,7 @@ class OptimalControlProgram:
         bio_model = self._check_quaternions_hasattr(bio_model)
         self.n_phases = len(bio_model)
         return bio_model
-    
+
     def _check_and_set_threads(self, n_threads):
         if not isinstance(n_threads, int) or isinstance(n_threads, bool) or n_threads < 1:
             raise RuntimeError("n_threads should be a positive integer greater or equal than 1")
@@ -1293,10 +1310,7 @@ class OptimalControlProgram:
         check_conditioning(self)
 
     def solve(
-        self,
-        solver: GenericSolver = None,
-        warm_start: Solution = None,
-        expand_during_shake_tree=False
+        self, solver: GenericSolver = None, warm_start: Solution = None, expand_during_shake_tree=False
     ) -> Solution:
         """
         Call the solver to actually solve the ocp
@@ -1361,10 +1375,10 @@ class OptimalControlProgram:
             The solution to initiate the OCP from
         """
 
-        state = sol.decision_states(to_merge=SolutionMerge.NODES) 
+        state = sol.decision_states(to_merge=SolutionMerge.NODES)
         ctrl = sol.decision_controls(to_merge=SolutionMerge.NODES)
         param = sol.parameters
-        
+
         u_init_guess = InitialGuessList()
         x_init_guess = InitialGuessList()
         param_init_guess = InitialGuessList()
@@ -1514,12 +1528,21 @@ class OptimalControlProgram:
 
         # Otherwise, add the time to the Parameters
         params = vertcat(*[dt_cx[i] for i in self.time_phase_mapping.to_first.map_idx])
-        self.dt_parameter = Parameter(function=lambda model, values: None, name="dt", size=params.shape[0], allow_reserved_name=True, cx=self.cx)
+        self.dt_parameter = Parameter(
+            function=lambda model, values: None, name="dt", size=params.shape[0], allow_reserved_name=True, cx=self.cx
+        )
         self.dt_parameter.cx = params
         self.dt_parameter.index = [nlp.time_index for nlp in self.nlp]
 
-        self.dt_parameter_bounds = Bounds("dt_bounds", min_bound=[v["min"] for v in dt_bounds.values()], max_bound=[v["max"] for v in dt_bounds.values()], interpolation=InterpolationType.CONSTANT)
-        self.dt_parameter_initial_guess = InitialGuess("dt_initial_guess", initial_guess=[v for v in dt_initial_guess.values()])
+        self.dt_parameter_bounds = Bounds(
+            "dt_bounds",
+            min_bound=[v["min"] for v in dt_bounds.values()],
+            max_bound=[v["max"] for v in dt_bounds.values()],
+            interpolation=InterpolationType.CONSTANT,
+        )
+        self.dt_parameter_initial_guess = InitialGuess(
+            "dt_initial_guess", initial_guess=[v for v in dt_initial_guess.values()]
+        )
 
     def _modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """

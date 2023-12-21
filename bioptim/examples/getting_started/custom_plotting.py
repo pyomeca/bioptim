@@ -93,7 +93,11 @@ def prepare_ocp(
     )
 
     # Add my lovely new plot
-    ocp.add_plot("My New Extra Plot", lambda t0, phases_dt, node_idx, x, u, p, a: custom_plot_callback(x, [0, 1, 3]), plot_type=PlotType.PLOT)
+    ocp.add_plot(
+        "My New Extra Plot",
+        lambda t0, phases_dt, node_idx, x, u, p, a: custom_plot_callback(x, [0, 1, 3]),
+        plot_type=PlotType.PLOT,
+    )
     ocp.add_plot(  # This one combines to the previous one as they have the same name
         "My New Extra Plot",
         lambda t0, phases_dt, node_idx, x, u, p, a: custom_plot_callback(x, [1, 3]),

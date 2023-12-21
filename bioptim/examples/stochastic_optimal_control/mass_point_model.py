@@ -31,7 +31,7 @@ class MassPointModel:
             self.motor_noise_sym_mx = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
 
         # This is necessary to have the right shapes in bioptim's internal constraints
-        self.sensory_noise_magnitude = ([])
+        self.sensory_noise_magnitude = []
         self.sensory_noise_sym = self.cx.sym("sensory_noise", 0, 1)
         self.sensory_noise_sym_mx = MX.sym("sensory_noise", 0, 1)
 

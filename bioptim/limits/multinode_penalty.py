@@ -382,21 +382,26 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
             )
 
-            dx = Function("tp", [
-                controllers[0].time.mx,
-                controllers[0].states.mx,
-                controllers[0].controls.mx,
-                controllers[0].parameters.mx,
-                controllers[0].algebraic_states.mx, 
-                controllers[0].model.motor_noise_sym_mx,
-                controllers[0].model.sensory_noise_sym_mx,
-            ], [controllers[0].extra_dynamics(0)(
-                controllers[0].time.mx,
-                controllers[0].states.mx,
-                controllers[0].controls.mx,
-                controllers[0].parameters.mx,
-                controllers[0].algebraic_states.mx
-            )]
+            dx = Function(
+                "tp",
+                [
+                    controllers[0].time.mx,
+                    controllers[0].states.mx,
+                    controllers[0].controls.mx,
+                    controllers[0].parameters.mx,
+                    controllers[0].algebraic_states.mx,
+                    controllers[0].model.motor_noise_sym_mx,
+                    controllers[0].model.sensory_noise_sym_mx,
+                ],
+                [
+                    controllers[0].extra_dynamics(0)(
+                        controllers[0].time.mx,
+                        controllers[0].states.mx,
+                        controllers[0].controls.mx,
+                        controllers[0].parameters.mx,
+                        controllers[0].algebraic_states.mx,
+                    )
+                ],
             )(
                 controllers[0].time.cx,
                 controllers[0].states.cx,
@@ -406,7 +411,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].model.motor_noise_magnitude,
                 controllers[0].model.sensory_noise_magnitude,
             )
-            
+
             DdZ_DX_fun = Function(
                 "DdZ_DX_fun",
                 [
@@ -516,7 +521,6 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
             )
 
-
             sigma_w = vertcat(controllers[0].model.sensory_noise_magnitude, controllers[0].model.motor_noise_magnitude)
             dt = controllers[0].tf / controllers[0].ns
             dg_dw = -dt * c_matrix
@@ -542,7 +546,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             if not controllers[0].get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
-            
+
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
             dt = controllers[0].dt
@@ -787,7 +791,7 @@ class MultinodePenaltyList(UniquePerPhaseOptionList):
                 f"P{phase}n{node.name if isinstance(node, Node) else node}, "
                 for node, phase in zip(mnc.nodes, mnc.nodes_phase)
             ]
-            
+
             mnc.name = mnc.type.name + "_" + "".join(("Multinode: ", *node_names))[:-2]
 
             if mnc.weight:

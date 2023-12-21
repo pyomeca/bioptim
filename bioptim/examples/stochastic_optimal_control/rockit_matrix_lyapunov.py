@@ -176,7 +176,9 @@ def prepare_socp(
             interpolation=InterpolationType.CONSTANT,
         )
         constraints.add(ConstraintFcn.TRACK_ALGEBRAIC_STATE, key="cov", node=Node.START, target=cov0)
-        constraints.add(ConstraintFcn.TRACK_ALGEBRAIC_STATE, key="cov", node=Node.ALL, min_bound=1e-6, max_bound=cas.inf)
+        constraints.add(
+            ConstraintFcn.TRACK_ALGEBRAIC_STATE, key="cov", node=Node.ALL, min_bound=1e-6, max_bound=cas.inf
+        )
 
         return StochasticOptimalControlProgram(
             bio_model,

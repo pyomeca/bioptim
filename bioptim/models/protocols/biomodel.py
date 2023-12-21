@@ -334,7 +334,11 @@ class BioModel(Protocol):
 
     @staticmethod
     def animate(
-        ocp, solution: "SolutionData", show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
+        ocp,
+        solution: "SolutionData",
+        show_now: bool = True,
+        tracked_markers: list[np.ndarray, ...] = None,
+        **kwargs: Any
     ) -> None | list:
         """
         Animate a solution

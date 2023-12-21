@@ -18,7 +18,7 @@ from bioptim import (
     Node,
     ControlType,
     PhaseDynamics,
-    SolutionMerge
+    SolutionMerge,
 )
 
 from tests.utils import TestUtils
@@ -592,7 +592,7 @@ def test_parameter_optimization(ode_solver, phase_dynamics):
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
     gravity = sol.parameters["gravity_xyz"]
-    
+
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
     np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
@@ -1085,9 +1085,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
         if i == n_shooting:
             u_out = np.vstack((u_out, []))
         else:
-            u_out = np.vstack(
-                (u_out, np.concatenate([controls[key][:, i] for key in controls.keys()])[:, np.newaxis])
-            )
+            u_out = np.vstack((u_out, np.concatenate([controls[key][:, i] for key in controls.keys()])[:, np.newaxis]))
 
     # Note that dt=1, because the multi-node objectives are treated as mayer terms
     out = fun[0](t_out, dt, x_out, u_out, p_out, s_out, weight, target)

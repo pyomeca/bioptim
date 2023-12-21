@@ -266,7 +266,7 @@ def test_generate_decision_time(ode_solver, merge_phase, phase_dynamics, continu
                 np.testing.assert_almost_equal(time[0][4], 0.06203787705313508)
                 np.testing.assert_almost_equal(time[1][4], 0.269792611684777)
                 np.testing.assert_almost_equal(time[2][4], 0.5930568155797027)
-    else: 
+    else:
         if merge_phase:
             np.testing.assert_almost_equal(time[0], 0)
             np.testing.assert_almost_equal(time[-1], 0.5)
@@ -326,7 +326,7 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
                 expand_dynamics=True,
             )
         return
-    
+
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/slider.bioMod",
         ode_solver=ode_solver(),
@@ -363,8 +363,10 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
         integrator=integrator,
     )
 
-    time = sol.stepwise_time(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES if merge_phase else None], continuous=True)
-    
+    time = sol.stepwise_time(
+        to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES if merge_phase else None], continuous=True
+    )
+
     if merge_phase:
         merged_sol = sol.stepwise_states(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES])
         np.testing.assert_equal(time.shape[0], merged_sol["q"][0, :].shape[0])
@@ -383,7 +385,7 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
 
     if merge_phase:
         plt.plot(time, merged_sol["q"][0, :], label="merged", marker=".")
-        
+
     else:
         for t, state in zip(time, integrated_sol):
             plt.plot(t, state["q"].T, label="integrated by bioptim", marker=".")
@@ -392,11 +394,7 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
     plt.vlines(0.2, -1, 1, color="black", linestyle="--")
     plt.vlines(0.5, -1, 1, color="black", linestyle="--")
 
-    plt.title(
-        f" merged={merge_phase},\n"
-        f" ode_solver={ode_solver},\n"
-        f" integrator={integrator},\n"
-    )
+    plt.title(f" merged={merge_phase},\n" f" ode_solver={ode_solver},\n" f" integrator={integrator},\n")
     plt.rcParams["axes.titley"] = 1.0  # y is in axes-relative coordinates.
     plt.rcParams["axes.titlepad"] = -20
     # plt.show()

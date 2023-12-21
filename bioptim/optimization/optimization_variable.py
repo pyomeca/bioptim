@@ -544,7 +544,7 @@ class OptimizationVariableContainer:
 
     def keys(self):
         return self._unscaled[0].keys()
-    
+
     def key_index(self, key):
         return self._unscaled[0][key].index
 

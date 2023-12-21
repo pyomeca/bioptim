@@ -136,8 +136,8 @@ def sum_cost_function_output(sol):
     "control_type", [ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS]
 )
 @pytest.mark.parametrize(
-    "integration_rule", 
-    [QuadratureRule.RECTANGLE_LEFT, QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL]
+    "integration_rule",
+    [QuadratureRule.RECTANGLE_LEFT, QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL],
 )
 def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
@@ -168,12 +168,12 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
             if objective == "torque":
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874164)
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.]))
+                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.0]))
             else:
                 np.testing.assert_almost_equal(f[0, 0], 18.91863487850207)
                 np.testing.assert_almost_equal(j_printed, 18.91863487850207)
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-17.24468626, 0.]))
-                
+                np.testing.assert_almost_equal(tau[:, -1], np.array([-17.24468626, 0.0]))
+
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
             if objective == "torque":
@@ -185,10 +185,10 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                 out = 0
                 for i, fcn in enumerate(ocp.nlp[0].J[0].weighted_function):
                     out += fcn(
-                        0, 
+                        0,
                         dt,
-                        states[:, i:i+2].reshape((-1, 1)),  # States
-                        controls[:, i:i+2].reshape((-1, 1)),  # Controls
+                        states[:, i : i + 2].reshape((-1, 1)),  # States
+                        controls[:, i : i + 2].reshape((-1, 1)),  # Controls
                         [],  # Parameters
                         [],  # Algebraic states
                         ocp.nlp[0].J[0].weight,  # Weight
@@ -209,15 +209,15 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
 
         else:
             raise NotImplementedError("Control type not implemented yet")
-        
+
     elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.79894366,   0.        ]))
+                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.0]))
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874164)
             else:
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-17.24468626,   0.        ]))
+                np.testing.assert_almost_equal(tau[:, -1], np.array([-17.24468626, 0.0]))
                 np.testing.assert_almost_equal(f[0, 0], 18.91863487850206)
                 np.testing.assert_almost_equal(j_printed, 18.91863487850206)
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
@@ -238,11 +238,11 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     elif integration_rule == QuadratureRule.TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.79894366,   0.        ]))
+                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.0]))
                 np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
                 np.testing.assert_almost_equal(j_printed, 36.077211633874164)
             else:
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.3519514,   0.        ]))
+                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.3519514, 0.0]))
                 np.testing.assert_almost_equal(f[0, 0], 18.112963129413707)
                 np.testing.assert_almost_equal(j_printed, 18.112963129413707)
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:

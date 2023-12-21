@@ -72,7 +72,6 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
 
 
-
 # @pytest.mark.parametrize("use_sx", [False, True])
 # def test_obstacle_avoidance_direct_collocation(use_sx: bool):
 #     from bioptim.examples.stochastic_optimal_control import obstacle_avoidance_direct_collocation as ocp_module

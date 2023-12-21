@@ -51,12 +51,8 @@ def test_param_scaling():
     ):
         param.add("gravity_z", my_parameter_function, size=1, scaling=VariableScaling("gravity_z", np.array([[[1]]])))
 
-    with pytest.raises(
-        ValueError, match=f"Parameter scaling must be of size 3, not 2."
-    ):
+    with pytest.raises(ValueError, match=f"Parameter scaling must be of size 3, not 2."):
         param.add("gravity_z", my_parameter_function, size=3, scaling=VariableScaling("gravity_z", np.array([1, 2])))
 
-    with pytest.raises(
-        ValueError, match=f"Parameter scaling must have exactly one column, not 2."
-    ):
+    with pytest.raises(ValueError, match=f"Parameter scaling must have exactly one column, not 2."):
         param.add("gravity_z", my_parameter_function, size=3, scaling=VariableScaling("gravity_z", np.ones((3, 2))))

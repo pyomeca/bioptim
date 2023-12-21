@@ -104,14 +104,14 @@ class Integrator:
         Returns the expected shape of xf
         """
         raise NotImplementedError("This method should be implemented for a given integrator")
-    
+
     @property
     def shape_xall(self) -> tuple[int, int]:
         """
         Returns the expected shape of xall
         """
         raise NotImplementedError("This method should be implemented for a given integrator")
-    
+
     @property
     def time_xall(self) -> DM:
         """
@@ -126,7 +126,7 @@ class Integrator:
     @property
     def _x_sym_modified(self):
         return self.x_sym
-    
+
     @property
     def _input_names(self):
         return ["t_span", "x0", "u", "p", "a"]
@@ -137,7 +137,7 @@ class Integrator:
 
     def _initialize(self, ode: dict, ode_opt: dict):
         """
-        This method is called by the constructor to initialize the integrator right before 
+        This method is called by the constructor to initialize the integrator right before
         creating the CasADi function from dxdt
         """
         pass
@@ -237,7 +237,7 @@ class RK(Integrator):
         """
         self._n_step = ode_opt["number_of_finite_elements"]
         super(RK, self).__init__(ode, ode_opt)
-        
+
     @property
     def _integration_time(self):
         return self.t_span_sym[1] / self._n_step
@@ -253,9 +253,9 @@ class RK(Integrator):
     @property
     def _time_xall_from_dt_func(self) -> Function:
         return Function(
-            "step_time", 
-            [self.t_span_sym], 
-            [linspace(self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1], self.shape_xall[1])]
+            "step_time",
+            [self.t_span_sym],
+            [linspace(self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1], self.shape_xall[1])],
         )
 
     @property
@@ -293,7 +293,6 @@ class RK(Integrator):
         params: MX | SX,
         algebraic_states: MX | SX,
     ) -> tuple:
-
         u = controls
         x = self.cx(states.shape[0], self._n_step + 1)
         p = params
@@ -425,15 +424,15 @@ class TRAPEZOIDAL(Integrator):
     @property
     def _time_xall_from_dt_func(self) -> Function:
         return Function(
-            "step_time", 
-            [self.t_span_sym], 
-            [linspace(self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1], self.shape_xall[1])]
+            "step_time",
+            [self.t_span_sym],
+            [linspace(self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1], self.shape_xall[1])],
         )
-    
+
     @property
     def shape_xf(self):
         return [self.x_sym.shape[0], 1]
-    
+
     @property
     def shape_xall(self):
         return [self.x_sym.shape[0], self._n_step + 1]
@@ -449,7 +448,6 @@ class TRAPEZOIDAL(Integrator):
         params: MX | SX,
         algebraic_states: MX | SX,
     ) -> tuple:
-
         x_prev = self.cx(states.shape[0], 2)
 
         states_next = states[:, 1]
@@ -524,7 +522,9 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - self._integration_time[r]) / (self._integration_time[j] - self._integration_time[r])
+                    _l *= (time_control_interval - self._integration_time[r]) / (
+                        self._integration_time[j] - self._integration_time[r]
+                    )
 
             # Evaluate the polynomial at the final time to get the coefficients of the continuity equation
             if self.method == "radau":
@@ -537,7 +537,9 @@ class COLLOCATION(Integrator):
             _l = 1
             for r in range(self.degree + 1):
                 if r != j:
-                    _l *= (time_control_interval - self._integration_time[r]) / (self._integration_time[j] - self._integration_time[r])
+                    _l *= (time_control_interval - self._integration_time[r]) / (
+                        self._integration_time[j] - self._integration_time[r]
+                    )
 
             # Evaluate the time derivative of the polynomial at all collocation points to get
             # the coefficients of the continuity equation
@@ -552,7 +554,7 @@ class COLLOCATION(Integrator):
     @property
     def _output_names(self):
         return ["xf", "xall", "defects"]
-    
+
     @property
     def h(self):
         return self.t_span_sym[1] - self.t_span_sym[0]
@@ -560,11 +562,11 @@ class COLLOCATION(Integrator):
     @property
     def _integration_time(self):
         return [0] + collocation_points(self.degree, self.method)
-    
+
     @property
     def shape_xf(self):
         return [self._x_sym_modified.shape[0], self.degree + 1]
-    
+
     @property
     def shape_xall(self):
         return [self._x_sym_modified.shape[0], self.degree + 2]
@@ -603,12 +605,11 @@ class COLLOCATION(Integrator):
         params: MX | SX,
         algebraic_states: MX | SX,
     ) -> tuple:
-
         # Total number of variables for one finite element
         states_end = self._d[0] * states[1]
         defects = []
         for j in range(1, self.degree + 1):
-            t = vertcat(self.t_span_sym[0] + self._integration_time[j-1] * self.h, self.h)
+            t = vertcat(self.t_span_sym[0] + self._integration_time[j - 1] * self.h, self.h)
 
             # Expression for the state derivative at the collocation point
             xp_j = 0
@@ -670,14 +671,16 @@ class IRK(COLLOCATION):
     @property
     def shape_xf(self):
         return [self._x_sym_modified.shape[0], 1]
-    
+
     @property
     def shape_xall(self):
         return [self._x_sym_modified.shape[0], 2]
 
     @property
     def _time_xall_from_dt_func(self) -> Function:
-        return Function("step_time", [self.t_span_sym], [vertcat(*[self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1]])])
+        return Function(
+            "step_time", [self.t_span_sym], [vertcat(*[self.t_span_sym[0], self.t_span_sym[0] + self.t_span_sym[1]])]
+        )
 
     def dxdt(
         self,
@@ -686,7 +689,6 @@ class IRK(COLLOCATION):
         params: MX | SX,
         algebraic_states: MX | SX,
     ) -> tuple:
-
         nx = states[0].shape[0]
         _, _, defect = super(IRK, self).dxdt(
             states=states,
@@ -698,9 +700,7 @@ class IRK(COLLOCATION):
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         collocation_states = vertcat(*states[1:]) if self.duplicate_starting_point else vertcat(*states[2:])
         vfcn = Function(
-            "vfcn",
-            [collocation_states, self.t_span_sym, states[0], controls, params, algebraic_states],
-            [defect]
+            "vfcn", [collocation_states, self.t_span_sym, states[0], controls, params, algebraic_states], [defect]
         ).expand()
 
         # Create an implicit function instance to solve the system of equations

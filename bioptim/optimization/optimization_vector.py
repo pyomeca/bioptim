@@ -64,9 +64,12 @@ class OptimizationVectorHelper:
                     x_scaled[nlp.phase_idx].append(
                         nlp.cx.sym(f"X_scaled_{nlp.phase_idx}_{k}", nlp.states.scaled.shape, n_col)
                     )
-                    
+
                     x[nlp.phase_idx].append(
-                        x_scaled[nlp.phase_idx][k] * np.repeat(np.concatenate([nlp.x_scaling[key].scaling for key in nlp.states.keys()]), n_col, axis=1)
+                        x_scaled[nlp.phase_idx][k]
+                        * np.repeat(
+                            np.concatenate([nlp.x_scaling[key].scaling for key in nlp.states.keys()]), n_col, axis=1
+                        )
                     )
                 else:
                     x_scaled[nlp.phase_idx] = x_scaled[nlp.use_states_from_phase_idx]
@@ -95,8 +98,12 @@ class OptimizationVectorHelper:
 
                 if nlp.algebraic_states.keys():
                     a[nlp.phase_idx].append(
-                        a_scaled[nlp.phase_idx][k] * np.repeat(
-                            np.concatenate([nlp.a_scaling[key].scaling for key in nlp.algebraic_states.keys()]), n_col, axis=1)
+                        a_scaled[nlp.phase_idx][k]
+                        * np.repeat(
+                            np.concatenate([nlp.a_scaling[key].scaling for key in nlp.algebraic_states.keys()]),
+                            n_col,
+                            axis=1,
+                        )
                     )
 
             _set_node_index(nlp, 0)
@@ -165,7 +172,7 @@ class OptimizationVectorHelper:
             current_nlp = ocp.nlp[i_phase]
             nlp = ocp.nlp[current_nlp.use_controls_from_phase_idx]
             _set_node_index(nlp, 0)
-            if nlp.control_type in (ControlType.CONSTANT, ):
+            if nlp.control_type in (ControlType.CONSTANT,):
                 ns = nlp.ns
             elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns + 1
@@ -182,8 +189,14 @@ class OptimizationVectorHelper:
                 collapsed_values_max = np.ndarray((nlp.controls.shape, 1))
                 for key in nlp.controls:
                     if key in nlp.u_bounds.keys():
-                        value_min = nlp.u_bounds[key].min.evaluate_at(shooting_point=k)[:, np.newaxis] / nlp.u_scaling[key].scaling
-                        value_max = nlp.u_bounds[key].max.evaluate_at(shooting_point=k)[:, np.newaxis] / nlp.u_scaling[key].scaling
+                        value_min = (
+                            nlp.u_bounds[key].min.evaluate_at(shooting_point=k)[:, np.newaxis]
+                            / nlp.u_scaling[key].scaling
+                        )
+                        value_max = (
+                            nlp.u_bounds[key].max.evaluate_at(shooting_point=k)[:, np.newaxis]
+                            / nlp.u_scaling[key].scaling
+                        )
                         value_min = value_min[:, 0]
                         value_max = value_max[:, 0]
                     else:
@@ -216,7 +229,11 @@ class OptimizationVectorHelper:
 
             nlp = ocp.nlp[current_nlp.use_states_from_phase_idx]
             min_bounds, max_bounds = _dispatch_state_bounds(
-                nlp, nlp.algebraic_states, nlp.a_bounds, nlp.a_scaling, lambda n: nlp.n_algebraic_states_decision_steps(n)
+                nlp,
+                nlp.algebraic_states,
+                nlp.a_bounds,
+                nlp.a_scaling,
+                lambda n: nlp.n_algebraic_states_decision_steps(n),
             )
 
             v_bounds_min = np.concatenate((v_bounds_min, min_bounds))
@@ -255,7 +272,7 @@ class OptimizationVectorHelper:
 
             nlp = ocp.nlp[current_nlp.use_controls_from_phase_idx]
             _set_node_index(nlp, 0)
-            if nlp.control_type in (ControlType.CONSTANT, ):
+            if nlp.control_type in (ControlType.CONSTANT,):
                 ns = nlp.ns - 1
             elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 ns = nlp.ns
@@ -271,7 +288,10 @@ class OptimizationVectorHelper:
                 collapsed_values = np.ndarray((nlp.controls.shape, 1))
                 for key in nlp.controls:
                     if key in nlp.u_init.keys():
-                        value = nlp.u_init[key].init.evaluate_at(shooting_point=k)[:, np.newaxis] / nlp.u_scaling[key].scaling
+                        value = (
+                            nlp.u_init[key].init.evaluate_at(shooting_point=k)[:, np.newaxis]
+                            / nlp.u_scaling[key].scaling
+                        )
                         value = value[:, 0]
                     else:
                         value = 0
@@ -408,7 +428,7 @@ class OptimizationVectorHelper:
                 continue
             for node in range(nlp.n_controls_nodes):  # Using n_states_nodes on purpose see higher
                 n_cols = nlp.n_controls_steps(node)
-                
+
                 if nu == 0 or node >= nlp.n_controls_nodes:
                     u_array = np.ndarray((0, 1))
                 else:
@@ -483,12 +503,12 @@ def _dispatch_state_bounds(nlp, states, states_bounds, states_scaling, n_steps_c
             for key in states:
                 if key in states_bounds.keys():
                     value_min = (
-                            states_bounds[key].min.evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
-                            / states_scaling[key].scaling
+                        states_bounds[key].min.evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
+                        / states_scaling[key].scaling
                     )
                     value_max = (
-                            states_bounds[key].max.evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
-                            / states_scaling[key].scaling
+                        states_bounds[key].max.evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
+                        / states_scaling[key].scaling
                     )
                 else:
                     value_min = -np.inf
@@ -528,8 +548,8 @@ def _dispatch_state_initial_guess(nlp, states, states_init, states_scaling, n_st
             for key in states:
                 if key in states_init.keys():
                     value_init = (
-                            states_init[key].init.evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
-                            / states_scaling[key].scaling
+                        states_init[key].init.evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
+                        / states_scaling[key].scaling
                     )
 
                 else:

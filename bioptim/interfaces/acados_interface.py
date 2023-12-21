@@ -521,7 +521,9 @@ class AcadosInterface(SolverInterface):
                 x_tp = x_tp if objectives.function[0].size_in("x") != (0, 0) else []
                 u_tp = u_tp if objectives.function[0].size_in("u") != (0, 0) else []
 
-                acados.mayer_costs = vertcat(acados.mayer_costs, objectives.function[0](t, dt, x_tp, u_tp, p, a).reshape((-1, 1)))
+                acados.mayer_costs = vertcat(
+                    acados.mayer_costs, objectives.function[0](t, dt, x_tp, u_tp, p, a).reshape((-1, 1))
+                )
 
                 if objectives.target is not None:
                     acados.y_ref_start.append(objectives.target[..., 0].T.reshape((-1, 1)))
@@ -529,7 +531,6 @@ class AcadosInterface(SolverInterface):
                     acados.y_ref_start.append(np.zeros((objectives.function[0].numel_out(), 1)))
 
             if objectives.node[0] in [Node.END, Node.ALL]:
-
                 acados.W_e = linalg.block_diag(
                     acados.W_e, np.diag([objectives.weight] * objectives.function[-1].numel_out())
                 )

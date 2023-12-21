@@ -140,7 +140,7 @@ class PenaltyController:
     @property
     def tf(self) -> MX | SX:
         return self._nlp.tf
-    
+
     @property
     def time(self) -> OptimizationVariable:
         """

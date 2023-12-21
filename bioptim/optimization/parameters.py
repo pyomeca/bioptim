@@ -274,8 +274,8 @@ class ParameterList(UniquePerProblemOptionList):
                 scaling=scaling,
                 cx=self.cx_type,
                 **extra_arguments,
-        )
-    
+            )
+
     @property
     def scaling(self) -> VariableScalingList:
         """

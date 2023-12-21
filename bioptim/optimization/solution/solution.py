@@ -157,7 +157,7 @@ class Solution:
         if self.vector is not None:
             self.phases_dt = OptimizationVectorHelper.extract_phase_dt(ocp, vector)
             self._stepwise_times = OptimizationVectorHelper.extract_step_times(ocp, vector)
-            
+
             x, u, p, a = OptimizationVectorHelper.to_dictionaries(ocp, vector)
             self._decision_states = SolutionData.from_scaled(ocp, x, "x")
             self._stepwise_controls = SolutionData.from_scaled(ocp, u, "u")
@@ -340,11 +340,11 @@ class Solution:
         return out if len(out) > 1 else out[0]
 
     def decision_time(
-            self, 
-            to_merge: SolutionMerge | list[SolutionMerge, ...] = None, 
-            time_alignment: TimeAlignment = TimeAlignment.STATES,
-            continuous: bool = False,
-        ) -> list | np.ndarray:
+        self,
+        to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
+        time_alignment: TimeAlignment = TimeAlignment.STATES,
+        continuous: bool = False,
+    ) -> list | np.ndarray:
         """
         Returns the time vector at each node that matches decision_states or decision_controls
 
@@ -373,13 +373,13 @@ class Solution:
                 time.append(self._t_span[nlp.phase_idx])
 
         return self._process_time_vector(time, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
-    
+
     def stepwise_time(
-            self, 
-            to_merge: SolutionMerge | list[SolutionMerge, ...] = None, 
-            time_alignment: TimeAlignment = TimeAlignment.STATES,
-            continuous: bool = False,
-        ) -> list | np.ndarray:
+        self,
+        to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
+        time_alignment: TimeAlignment = TimeAlignment.STATES,
+        continuous: bool = False,
+    ) -> list | np.ndarray:
         """
         Returns the time vector at each node that matches stepwise_states or stepwise_controls
 
@@ -401,22 +401,23 @@ class Solution:
         The time vector at each node that matches stepwise_states or stepwise_controls
         """
 
-        return self._process_time_vector(self._stepwise_times, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
-        
-    def _process_time_vector(
-            self,
-            times, 
-            to_merge: SolutionMerge | list[SolutionMerge, ...],
-            time_alignment: TimeAlignment,
-            continuous: bool,
-        ):
+        return self._process_time_vector(
+            self._stepwise_times, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous
+        )
 
+    def _process_time_vector(
+        self,
+        times,
+        to_merge: SolutionMerge | list[SolutionMerge, ...],
+        time_alignment: TimeAlignment,
+        continuous: bool,
+    ):
         if time_alignment != TimeAlignment.STATES:
             raise NotImplementedError("Only TimeAlignment.STATES is implemented for now")
-        
+
         if to_merge is None or isinstance(to_merge, SolutionMerge):
             to_merge = [to_merge]
-        
+
         # Make sure to not return internal structure
         times = deepcopy(times)
 
@@ -433,13 +434,13 @@ class Solution:
 
         if SolutionMerge.PHASES in to_merge and SolutionMerge.NODES not in to_merge:
             raise ValueError("Cannot merge phases without nodes")
-        
+
         if SolutionMerge.PHASES in to_merge:
             # NODES is necessarily in to_merge if PHASES is in to_merge
             times = np.concatenate(times)
-        
+
         return times if len(times) > 1 else times[0]
-        
+
     def decision_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
         """
         Returns the decision states
@@ -450,7 +451,7 @@ class Solution:
             If the decision states should be scaled or not (note that scaled is as Ipopt received them, while unscaled
             is as the model needs temps). If you don't know what it means, you probably want the unscaled version.
         to_merge: SolutionMerge | list[SolutionMerge, ...]
-            The type of merge to perform. If None, then no merge is performed. 
+            The type of merge to perform. If None, then no merge is performed.
 
         Returns
         -------
@@ -547,16 +548,18 @@ class Solution:
 
         out = self._parameters.to_dict(scaled=scaled, to_merge=to_merge)
 
-        # Remove the residual phases and nodes 
+        # Remove the residual phases and nodes
         if to_merge:
             out = out[0][0][:, 0]
         else:
             out = out[0]
             out = {key: out[key][0][:, 0] for key in out.keys()}
-        
+
         return out
 
-    def decision_algebraic_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
+    def decision_algebraic_states(
+        self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None
+    ):
         """
         Returns the decision algebraic_states
 
@@ -621,12 +624,11 @@ class Solution:
         return new
 
     def integrate(
-            self, 
-            shooting_type: Shooting = Shooting.SINGLE, 
-            integrator: SolutionIntegrator = SolutionIntegrator.OCP, 
-            to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
-        ):
-
+        self,
+        shooting_type: Shooting = Shooting.SINGLE,
+        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
+        to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
+    ):
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
             raise ValueError(
@@ -655,9 +657,16 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
             integrated_sol = solve_ivp_interface(
-                shooting_type=shooting_type, nlp=nlp, t=self._t_span[p], x=next_x, u=u[p], a=a[p], p=params, method=integrator
+                shooting_type=shooting_type,
+                nlp=nlp,
+                t=self._t_span[p],
+                x=next_x,
+                u=u[p],
+                a=a[p],
+                p=params,
+                method=integrator,
             )
-        
+
             out[p] = {}
             for key in nlp.states.keys():
                 out[p][key] = [None] * nlp.n_states_nodes
@@ -721,8 +730,18 @@ class Solution:
         # based on the phase transition objective or constraint function. That is why we need to concatenate
         # twice the last state
         x = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: integrated_states[-1])
-        u = PenaltyHelpers.controls(penalty, 0, lambda p, n, sn: decision_controls[p][n][:, sn] if n < len(decision_controls[p]) else np.ndarray((0, 1)))
-        s = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: decision_algebraic_states[p][n][:, sn] if n < len(decision_algebraic_states[p]) else np.ndarray((0, 1)))
+        u = PenaltyHelpers.controls(
+            penalty,
+            0,
+            lambda p, n, sn: decision_controls[p][n][:, sn] if n < len(decision_controls[p]) else np.ndarray((0, 1)),
+        )
+        s = PenaltyHelpers.states(
+            penalty,
+            0,
+            lambda p, n, sn: decision_algebraic_states[p][n][:, sn]
+            if n < len(decision_algebraic_states[p])
+            else np.ndarray((0, 1)),
+        )
 
         dx = penalty.function[-1](t0, dt, x, u, params, s)
         if dx.shape[0] != decision_states[phase_idx][0].shape[0]:
@@ -736,7 +755,7 @@ class Solution:
 
     def _integrate_stepwise(self) -> None:
         """
-        This method integrate to stepwise level the states. That is the states that are used in the dynamics and 
+        This method integrate to stepwise level the states. That is the states that are used in the dynamics and
         continuity constraints.
 
         Returns
@@ -753,16 +772,16 @@ class Solution:
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
             integrated_sol = solve_ivp_interface(
-                shooting_type=Shooting.MULTIPLE, 
+                shooting_type=Shooting.MULTIPLE,
                 nlp=nlp,
-                t=self._t_span[p], 
-                x=x[p], 
-                u=u[p], 
+                t=self._t_span[p],
+                x=x[p],
+                u=u[p],
                 a=a[p],
-                p=params, 
+                p=params,
                 method=SolutionIntegrator.OCP,
             )
-            
+
             unscaled[p] = {}
             for key in nlp.states.keys():
                 unscaled[p][key] = [None] * nlp.n_states_nodes
@@ -823,13 +842,13 @@ class Solution:
             t_round = np.round(t_all[p], decimals=8)  # Otherwise, there are some numerical issues with np.unique
             t, idx = np.unique(t_round, return_index=True)
             x = states[p][:, idx]
-            
+
             x_interpolated = np.ndarray((x.shape[0], n_frames[p]))
             t_interpolated = np.linspace(t_round[0], t_round[-1], n_frames[p])
             for j in range(x.shape[0]):
                 s = sci_interp.splrep(t, x[j, :], k=1)
                 x_interpolated[j, :] = sci_interp.splev(t_interpolated, s)[:, 0]
-            
+
             for key in nlp.states.keys():
                 data[p][key] = x_interpolated[nlp.states[key].index, :]
 
@@ -1004,18 +1023,38 @@ class Solution:
 
         val = []
         val_weighted = []
-        
+
         phases_dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
-        params = PenaltyHelpers.parameters(penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()]))
+        params = PenaltyHelpers.parameters(
+            penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()])
+        )
 
         merged_x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         for idx in range(len(penalty.node_idx)):
             t0 = PenaltyHelpers.t0(penalty, self.ocp)
-            x = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_x[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_x[p_idx]) else np.array(()))
-            u = PenaltyHelpers.controls(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_u[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_u[p_idx]) else np.array(()))
-            a = PenaltyHelpers.states(penalty, idx, lambda p_idx, n_idx, sn_idx: merged_a[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_a[p_idx]) else np.array(()))
+            x = PenaltyHelpers.states(
+                penalty,
+                idx,
+                lambda p_idx, n_idx, sn_idx: merged_x[p_idx][n_idx][:, sn_idx]
+                if n_idx < len(merged_x[p_idx])
+                else np.array(()),
+            )
+            u = PenaltyHelpers.controls(
+                penalty,
+                idx,
+                lambda p_idx, n_idx, sn_idx: merged_u[p_idx][n_idx][:, sn_idx]
+                if n_idx < len(merged_u[p_idx])
+                else np.array(()),
+            )
+            a = PenaltyHelpers.states(
+                penalty,
+                idx,
+                lambda p_idx, n_idx, sn_idx: merged_a[p_idx][n_idx][:, sn_idx]
+                if n_idx < len(merged_a[p_idx])
+                else np.array(()),
+            )
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
 

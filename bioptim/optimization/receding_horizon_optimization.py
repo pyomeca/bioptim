@@ -321,8 +321,12 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                     interpolation=InterpolationType.EACH_FRAME,
                     phase=0,
                 )
-                self.nlp[0].u_init[key].check_and_adjust_dimensions(len(self.nlp[0].controls[key]), self.nlp[0].n_controls_nodes - 1)
-            self.nlp[0].u_init[key].init[:, :] = np.concatenate((controls[key][:, 1:], controls[key][:, -1][:, np.newaxis]), axis=1)
+                self.nlp[0].u_init[key].check_and_adjust_dimensions(
+                    len(self.nlp[0].controls[key]), self.nlp[0].n_controls_nodes - 1
+                )
+            self.nlp[0].u_init[key].init[:, :] = np.concatenate(
+                (controls[key][:, 1:], controls[key][:, -1][:, np.newaxis]), axis=1
+            )
         return True
 
     def export_data(self, sol) -> tuple:
@@ -427,7 +431,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
         if solver.type == SolverType.IPOPT:
             self.update_bounds(self.nlp[0].x_bounds)
 
-        export_options = {"frame_to_export": slice(0, (self.time_idx_to_cycle + 1) if self.time_idx_to_cycle >= 0 else None)}
+        export_options = {
+            "frame_to_export": slice(0, (self.time_idx_to_cycle + 1) if self.time_idx_to_cycle >= 0 else None)
+        }
         return super(CyclicRecedingHorizonOptimization, self).solve(
             update_function=update_function,
             solver=solver,
@@ -435,20 +441,20 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
             export_options=export_options,
             **extra_options,
         )
-    
+
     def export_data(self, sol) -> tuple:
         states, controls = super(CyclicRecedingHorizonOptimization, self).export_data(sol)
-        
+
         frames = self.frame_to_export
         if frames.stop is not None and frames.stop != self.nlp[0].n_controls_nodes:
-            # The "not" conditions are there because if they are true, super() already avec done it. 
+            # The "not" conditions are there because if they are true, super() already avec done it.
             # Otherwise since it is cyclic it should always be done anyway
             if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 frames = slice(self.frame_to_export.start, self.frame_to_export.stop - 1)
-            
+
             for key in self.nlp[0].controls.keys():
                 controls[key] = controls[key][:, frames]
-            
+
         return states, controls
 
     def _initialize_solution(self, dt: float, states: list, controls: list):
@@ -553,7 +559,9 @@ class CyclicRecedingHorizonOptimization(RecedingHorizonOptimization):
                     interpolation=InterpolationType.EACH_FRAME,
                     phase=0,
                 )
-                self.nlp[0].u_init[key].check_and_adjust_dimensions(len(self.nlp[0].controls[key]), self.nlp[0].n_controls_nodes - 1)
+                self.nlp[0].u_init[key].check_and_adjust_dimensions(
+                    len(self.nlp[0].controls[key]), self.nlp[0].n_controls_nodes - 1
+                )
 
             self.nlp[0].u_init[key].init[:, :] = controls[key][:, :]
         return True
@@ -625,7 +633,7 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
 
         for key in self.nlp[0].controls.keys():
             self.nlp[0].controls.node_index = 0
-            
+
             if self.nlp[0].u_init[key].type != InterpolationType.EACH_FRAME:
                 self.nlp[0].u_init.add(
                     key,
@@ -633,8 +641,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
                     interpolation=InterpolationType.EACH_FRAME,
                     phase=0,
                 )
-                self.nlp[0].u_init[key].check_and_adjust_dimensions(self.nlp[0].controls[key].shape, self.nlp[0].n_controls_nodes - 1)
-            
+                self.nlp[0].u_init[key].check_and_adjust_dimensions(
+                    self.nlp[0].controls[key].shape, self.nlp[0].n_controls_nodes - 1
+                )
+
             if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 frames = self.initial_guess_frames[:-1]
             elif self.nlp[0].control_type == ControlType.LINEAR_CONTINUOUS:
@@ -691,10 +701,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
 
     def export_cycles(self, sol: Solution, cycle_number: int = 0) -> tuple[dict, dict]:
         """Exports the solution of the desired cycle from the full window solution"""
-        
+
         decision_states = sol.decision_states(to_merge=SolutionMerge.NODES)
         decision_controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-        
+
         states = {}
         controls = {}
         window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len + 1)
@@ -702,10 +712,10 @@ class MultiCyclicRecedingHorizonOptimization(CyclicRecedingHorizonOptimization):
             states[key] = decision_states[key][:, window_slice]
 
         if self.nlp[0].control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
-            window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len )
+            window_slice = slice(cycle_number * self.cycle_len, (cycle_number + 1) * self.cycle_len)
         for key in self.nlp[0].controls.keys():
             controls[key] = decision_controls[key][:, window_slice]
-            
+
         return states, controls
 
     def _initialize_solution(self, dt: float, states: list, controls: list):

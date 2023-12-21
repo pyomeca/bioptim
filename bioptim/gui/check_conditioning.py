@@ -34,7 +34,7 @@ def check_conditioning(ocp):
         The control at a given time
         """
 
-        if nlp.control_type in (ControlType.CONSTANT, ):
+        if nlp.control_type in (ControlType.CONSTANT,):
             return u
         elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
@@ -168,7 +168,7 @@ def check_conditioning(ocp):
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
                 nlp.algebraic_states.node_index = node_index
-                
+
                 if constraints.multinode_penalty:
                     n_phases = ocp.n_phases
                     for phase_idx in constraints.nodes_phase:
@@ -176,8 +176,7 @@ def check_conditioning(ocp):
                 else:
                     controllers = [constraints.get_penalty_controller(ocp, nlp)]
 
-                for axis in range(constraints.function[node_index].size_out("val")[0]
-                ):
+                for axis in range(constraints.function[node_index].size_out("val")[0]):
                     # find all equality constraints
                     if constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]:
                         vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled)  # time, states, controls
@@ -192,8 +191,10 @@ def check_conditioning(ocp):
                         t0 = PenaltyHelpers.t0(constraints, controllers[0].ocp)
                         _, x, u, a = constraints.get_variable_inputs(controllers)
                         p = nlp.parameters.cx
-                        
-                        hessian_cas = hessian(constraints.function[node_index](t0, phases_dt, x, u, p, a)[axis], vertcat_obj)[0]
+
+                        hessian_cas = hessian(
+                            constraints.function[node_index](t0, phases_dt, x, u, p, a)[axis], vertcat_obj
+                        )[0]
 
                         tick_labels.append(constraints.name)
 

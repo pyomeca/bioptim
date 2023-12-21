@@ -827,9 +827,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             sensory_input = Function(
                 "tp",
-                [controller.states.mx, controller.controls.mx, controller.parameters.mx, controller.algebraic_states.mx],
-                [sensory_input]
-            )(controller.states.cx_start, controller.controls.cx_start, controller.parameters.cx, controller.algebraic_states.cx_start)
+                [
+                    controller.states.mx,
+                    controller.controls.mx,
+                    controller.parameters.mx,
+                    controller.algebraic_states.mx,
+                ],
+                [sensory_input],
+            )(
+                controller.states.cx_start,
+                controller.controls.cx_start,
+                controller.parameters.cx,
+                controller.algebraic_states.cx_start,
+            )
 
             return sensory_input - ref
 
@@ -925,7 +935,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             mx_all = [
                 controller.time.mx,
                 x_q_root_mx,
-                x_q_joints_mx, x_qdot_root_mx, x_qdot_joints_mx,
+                x_q_joints_mx,
+                x_qdot_root_mx,
+                x_qdot_joints_mx,
                 z_q_root_mx,
                 z_q_joints_mx,
                 z_qdot_root_mx,

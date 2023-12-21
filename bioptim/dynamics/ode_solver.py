@@ -231,23 +231,43 @@ class OdeSolverBase:
         """
 
         # Primary dynamics
-        dynamics = [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=0, allow_free_variables=self.allow_free_variables)]
+        dynamics = [
+            nlp.ode_solver.initialize_integrator(
+                ocp, nlp, dynamics_index=0, node_index=0, allow_free_variables=self.allow_free_variables
+            )
+        ]
         if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
             dynamics = dynamics * nlp.ns
         else:
             for node_index in range(1, nlp.ns):
-                dynamics.append(nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=node_index, allow_free_variables=self.allow_free_variables))
+                dynamics.append(
+                    nlp.ode_solver.initialize_integrator(
+                        ocp,
+                        nlp,
+                        dynamics_index=0,
+                        node_index=node_index,
+                        allow_free_variables=self.allow_free_variables,
+                    )
+                )
         nlp.dynamics = dynamics
 
         # Extra dynamics
         extra_dynamics = []
         for i in range(1, len(nlp.dynamics_func)):
-            extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True)]
+            extra_dynamics += [
+                nlp.ode_solver.initialize_integrator(
+                    ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True
+                )
+            ]
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 extra_dynamics = extra_dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
-                    extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True)]
+                    extra_dynamics += [
+                        nlp.ode_solver.initialize_integrator(
+                            ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True
+                        )
+                    ]
             # TODO include this in nlp.dynamics so the index of nlp.dynamics_func and nlp.dynamics match
             nlp.extra_dynamics.append(extra_dynamics)
 
@@ -293,7 +313,10 @@ class RK(OdeSolverBase):
         return nlp.states.scaled.cx_start
 
     def p_ode(self, nlp):
-        if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ):
+        if nlp.control_type in (
+            ControlType.CONSTANT,
+            ControlType.CONSTANT_WITH_LAST_NODE,
+        ):
             return nlp.controls.scaled.cx_start
         else:
             return horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
@@ -318,6 +341,7 @@ class OdeSolver:
         """
         A Runge-Kutta 1 solver (Forward Euler Method)
         """
+
         @property
         def integrator(self):
             return integrator.RK1
@@ -326,6 +350,7 @@ class OdeSolver:
         """
         A Runge-Kutta 2 solver (Midpoint Method)
         """
+
         @property
         def integrator(self):
             return integrator.RK2
@@ -334,6 +359,7 @@ class OdeSolver:
         """
         A Runge-Kutta 4 solver
         """
+
         @property
         def integrator(self):
             return integrator.RK4
@@ -342,6 +368,7 @@ class OdeSolver:
         """
         A Runge-Kutta 8 solver
         """
+
         @property
         def integrator(self):
             return integrator.RK8
@@ -362,7 +389,7 @@ class OdeSolver:
         @property
         def is_direct_shooting(self) -> bool:
             return True
-        
+
         @property
         def defects_type(self) -> DefectType:
             return DefectType.NOT_APPLICABLE
@@ -474,11 +501,7 @@ class OdeSolver:
                 )
 
             return super(OdeSolver.COLLOCATION, self).initialize_integrator(
-                ocp,
-                nlp,
-                **kwargs,
-                method=self.method,
-                irk_polynomial_interpolation_degree=self.polynomial_degree
+                ocp, nlp, **kwargs, method=self.method, irk_polynomial_interpolation_degree=self.polynomial_degree
             )
 
         def __str__(self):
@@ -523,7 +546,7 @@ class OdeSolver:
         @property
         def is_direct_shooting(self) -> bool:
             return True
-        
+
         @property
         def n_required_cx(self) -> int:
             return 1

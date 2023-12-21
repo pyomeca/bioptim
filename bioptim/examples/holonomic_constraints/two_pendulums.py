@@ -44,7 +44,7 @@ def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
 
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    
+
     n = states["q_u"].shape[1]
 
     q = np.zeros((bio_model.nb_q, n))
@@ -87,11 +87,7 @@ def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
             .squeeze()
         )
         qddot[:, i] = bio_model.compute_qddot(q[:, i], qdot[:, i], qddot_u_i).toarray().squeeze()
-        lambdas[:, i] = (
-            compute_lambdas_func(q[:, i], qdot[:, i], qddot[:, i], tau[:, i])
-            .toarray()
-            .squeeze()
-        )
+        lambdas[:, i] = compute_lambdas_func(q[:, i], qdot[:, i], qddot[:, i], tau[:, i]).toarray().squeeze()
 
     return q, qdot, qddot, lambdas
 

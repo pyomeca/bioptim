@@ -155,7 +155,15 @@ def test_initial_guess_update(phase_dynamics):
     np.testing.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.zeros((2, 1)))
 
     np.testing.assert_almost_equal(ocp.phase_time[0], 2)
-    np.testing.assert_almost_equal(ocp.init_vector, np.concatenate(([[0.2]], np.zeros((4 * 11 + 2 * 10, 1)), )))
+    np.testing.assert_almost_equal(
+        ocp.init_vector,
+        np.concatenate(
+            (
+                [[0.2]],
+                np.zeros((4 * 11 + 2 * 10, 1)),
+            )
+        ),
+    )
 
     new_x_init = InitialGuessList()
     new_x_init["q"] = [1] * 2
@@ -221,7 +229,9 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
 
     sol = Solution.from_initial_guess(ocp, [phases_dt, X, U, P, S])
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    states = sol.integrate(shooting_type=Shooting.MULTIPLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES)
+    states = sol.integrate(
+        shooting_type=Shooting.MULTIPLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES
+    )
 
     # Check some of the results
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
@@ -266,7 +276,9 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
     S = InitialGuessList()
 
     sol = Solution.from_initial_guess(ocp, [phases_dt, X, U, P, S])
-    states = sol.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES)
+    states = sol.integrate(
+        shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES
+    )
 
     # Check some of the results
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
@@ -274,7 +286,7 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array([-0.48327558,  0.40051344]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([-0.48327558, 0.40051344]))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((0.1, 0.2)))

@@ -176,11 +176,9 @@ def test_interpolate_multiphases(ode_solver, phase_dynamics):
     decimal = 2 if ode_solver == OdeSolver.COLLOCATION else 8
     n_steps = ocp.nlp[0].n_states_stepwise_steps(0)
     for i, key in enumerate(states[0]):
-        np.testing.assert_almost_equal(
-            sol_interp[i][key][:, [0, -1]], states[i][key][:, [0, -1]], decimal=decimal
-        )
+        np.testing.assert_almost_equal(sol_interp[i][key][:, [0, -1]], states[i][key][:, [0, -1]], decimal=decimal)
         assert sol_interp[i][key].shape == (shapes[i], n_frames)
-        assert states[i][key].shape == (shapes[i], (n_shooting [i] * n_steps) + 1)
+        assert states[i][key].shape == (shapes[i], (n_shooting[i] * n_steps) + 1)
 
     with pytest.raises(
         ValueError,
@@ -512,7 +510,11 @@ def test_integrate_all_cases(shooting, merge, integrator, ode_solver, phase_dyna
     solver.set_print_level(0)
     sol = ocp.solve(solver)
 
-    opts = {"shooting_type": shooting, "integrator": integrator, "to_merge": [SolutionMerge.NODES, SolutionMerge.PHASES if merge else None]}
+    opts = {
+        "shooting_type": shooting,
+        "integrator": integrator,
+        "to_merge": [SolutionMerge.NODES, SolutionMerge.PHASES if merge else None],
+    }
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
         with pytest.raises(
             ValueError,
@@ -596,7 +598,9 @@ def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, 
                     sol_integrated[i][key][:, [0, -1]], states[i][key][:, [0, -1]], decimal=decimal
                 )
 
-            if ode_solver != OdeSolver.COLLOCATION and (integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE):
+            if ode_solver != OdeSolver.COLLOCATION and (
+                integrator == SolutionIntegrator.OCP or shooting == Shooting.MULTIPLE
+            ):
                 np.testing.assert_almost_equal(sol_integrated[i][key], states[i][key])
 
             assert sol_integrated[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
@@ -658,7 +662,9 @@ def test_integrate_multiphase_merged(shooting, integrator, ode_solver, phase_dyn
     sol = ocp.solve(solver)
 
     opts = {
-        "shooting_type": shooting, "integrator": integrator, "to_merge": [SolutionMerge.NODES, SolutionMerge.PHASES]
+        "shooting_type": shooting,
+        "integrator": integrator,
+        "to_merge": [SolutionMerge.NODES, SolutionMerge.PHASES],
     }
 
     if ode_solver == OdeSolver.COLLOCATION and integrator == SolutionIntegrator.OCP:
@@ -677,7 +683,10 @@ def test_integrate_multiphase_merged(shooting, integrator, ode_solver, phase_dyn
     sol_integrated = sol.integrate(**opts)
 
     for key in sol_integrated.keys():
-        assert np.shape(sol_integrated[key])[1] == sol.stepwise_time(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES]).shape[0]
+        assert (
+            np.shape(sol_integrated[key])[1]
+            == sol.stepwise_time(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES]).shape[0]
+        )
 
     shapes = (3, 3)
     decimal = 0 if integrator != SolutionIntegrator.OCP else 8

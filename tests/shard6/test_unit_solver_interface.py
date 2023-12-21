@@ -37,4 +37,3 @@ def nlp_control_mx():
     nlp = NonLinearProgram(PhaseDynamics.SHARED_DURING_THE_PHASE)
     nlp.U_scaled = [MX(np.array([[1], [2], [3]]))]
     return nlp
-

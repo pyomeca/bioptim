@@ -197,10 +197,7 @@ class GraphAbstract:
                                 f"{self._squared}{self._return_line}"
                             )
                         else:
-                            mayer_str += (
-                                f"{obj.name} - {self._vector_layout(obj.target)}"
-                                f"{self._return_line}"
-                            )
+                            mayer_str += f"{obj.name} - {self._vector_layout(obj.target)}" f"{self._return_line}"
                     else:
                         if obj.quadratic:
                             mayer_str += f"({obj.name}){self._squared}{self._return_line}"

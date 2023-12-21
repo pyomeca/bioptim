@@ -223,9 +223,27 @@ class PenaltyFunctionAbstract:
                 nlp=controller.get_nlp,
             )
             # ee to cx
-            ee = Function("tp", [
-                q_root_mx, q_joints_mx, qdot_root_mx, qdot_joints_mx, controller.controls.mx, controller.parameters.mx, controller.algebraic_states.mx
-            ], [ee])(q_root, q_joints, qdot_root, qdot_joints, controller.controls.cx_start, controller.parameters.cx_start, controller.algebraic_states.cx_start)
+            ee = Function(
+                "tp",
+                [
+                    q_root_mx,
+                    q_joints_mx,
+                    qdot_root_mx,
+                    qdot_joints_mx,
+                    controller.controls.mx,
+                    controller.parameters.mx,
+                    controller.algebraic_states.mx,
+                ],
+                [ee],
+            )(
+                q_root,
+                q_joints,
+                qdot_root,
+                qdot_joints,
+                controller.controls.cx_start,
+                controller.parameters.cx_start,
+                controller.algebraic_states.cx_start,
+            )
 
             e_fb = k_matrix @ ((ee - ref) + controller.model.sensory_noise_magnitude)
             jac_e_fb_x = jacobian(e_fb, vertcat(q_joints, qdot_joints))
@@ -1117,7 +1135,10 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def state_continuity(penalty: PenaltyOption, controller: PenaltyController | list):
-            if controller.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ):
+            if controller.control_type in (
+                ControlType.CONSTANT,
+                ControlType.CONSTANT_WITH_LAST_NODE,
+            ):
                 u = controller.controls.cx_start
             elif controller.control_type == ControlType.LINEAR_CONTINUOUS:
                 # TODO: For cx_end take the previous node
@@ -1129,19 +1150,18 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("continuity should be called one node at a time")
 
             penalty.expand = controller.get_nlp.dynamics_type.expand_continuity
-            
+
             t_span = vertcat(controller.time.cx, controller.time.cx + controller.dt)
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
                 continuity -= controller.integrate(
-                    t_span=t_span,
-                    x0=cx, u=u, p=controller.parameters.cx, a=controller.algebraic_states.cx_start
+                    t_span=t_span, x0=cx, u=u, p=controller.parameters.cx, a=controller.algebraic_states.cx_start
                 )["xf"]
                 continuity = vertcat(
                     continuity,
-                    controller.integrate(t_span=t_span,
-                        x0=cx, u=u, p=controller.parameters.cx, a=controller.algebraic_states.cx_start
+                    controller.integrate(
+                        t_span=t_span, x0=cx, u=u, p=controller.parameters.cx, a=controller.algebraic_states.cx_start
                     )["defects"],
                 )
 

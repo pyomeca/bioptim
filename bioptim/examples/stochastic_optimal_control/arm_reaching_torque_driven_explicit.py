@@ -190,10 +190,24 @@ def get_cov_mat(nlp, node_index, use_sx):
         with_noise=True,
     )
     dx.dxdt = cas.Function(
-        "tp", 
-        [nlp.states.mx, nlp.controls.mx, nlp.parameters, nlp.algebraic_states.mx, nlp.model.sensory_noise_sym_mx, nlp.model.motor_noise_sym_mx], 
-        [dx.dxdt]
-    )(nlp.states.cx, nlp.controls.cx, nlp.parameters, nlp.algebraic_states.cx, nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym)
+        "tp",
+        [
+            nlp.states.mx,
+            nlp.controls.mx,
+            nlp.parameters,
+            nlp.algebraic_states.mx,
+            nlp.model.sensory_noise_sym_mx,
+            nlp.model.motor_noise_sym_mx,
+        ],
+        [dx.dxdt],
+    )(
+        nlp.states.cx,
+        nlp.controls.cx,
+        nlp.parameters,
+        nlp.algebraic_states.cx,
+        nlp.model.sensory_noise_sym,
+        nlp.model.motor_noise_sym,
+    )
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym))
     dg_dw = -ddx_dwm * dt
@@ -502,7 +516,9 @@ def prepare_socp(
     curent_index = 0
     algebraic_states_init[: n_tau * (n_q + n_qdot), :] = 0.01  # K
     a_init.add(
-        "k", initial_guess=algebraic_states_init[: n_tau * (n_q + n_qdot), :], interpolation=InterpolationType.EACH_FRAME
+        "k",
+        initial_guess=algebraic_states_init[: n_tau * (n_q + n_qdot), :],
+        interpolation=InterpolationType.EACH_FRAME,
     )
     a_bounds.add(
         "k",
@@ -534,9 +550,7 @@ def prepare_socp(
         max_bound=algebraic_states_max[curent_index : curent_index + n_states * n_states, :],
     )
 
-    integrated_value_functions = {
-        "cov": lambda nlp, node_index: get_cov_mat(nlp, node_index, use_sx)
-    }
+    integrated_value_functions = {"cov": lambda nlp, node_index: get_cov_mat(nlp, node_index, use_sx)}
 
     return StochasticOptimalControlProgram(
         bio_model,

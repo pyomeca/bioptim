@@ -23,14 +23,13 @@ class PenaltyProtocol(Protocol):
 
 
 class PenaltyHelpers:
-    
     @staticmethod
     def t0(penalty, ocp):
         """
-        This method returns the t0 of a penalty. It is currently always 0, because the time is always baked in the 
+        This method returns the t0 of a penalty. It is currently always 0, because the time is always baked in the
         penalty function
         """
-        
+
         # Time penalty is baked in the penalty declaration. No need to add it here
         # TODO WARNING THIS SHOULD NOT BE 0, BUT THE TIME OF THE NODE. THIS IS A BUG INTRODUCED TO HAVE THE TESTS PASS
         # WHATEVER THE TIME IS, IT SHOULD NOT CHANGE THE VALUE OF THE PENALTY. IT SHOULD LOOK LIKE SOMETHING LIKE THIS:
@@ -57,9 +56,9 @@ class PenaltyHelpers:
         """
         get_state_decision: Callable[int, int, slice]
             A function that returns the state decision of a given phase, node and subnodes (or steps)
-            If the subnode requests slice(0, None), it actually does not expect the very last node (equal to starting 
+            If the subnode requests slice(0, None), it actually does not expect the very last node (equal to starting
             of the next node), if it needs so, it will actively asks for slice(-1, None) to get the last node.
-            When slice(-1, None) is requested, if it is in constructing phase of the penalty, it expects cx_end. 
+            When slice(-1, None) is requested, if it is in constructing phase of the penalty, it expects cx_end.
             The slice(-1, None) will not be requested when the penalty is not being constructed (it will request
             slice(0, 1) of the following node instead)
         """
@@ -74,11 +73,11 @@ class PenaltyHelpers:
             for phase, node, sub in zip(phases, nodes, subnodes):
                 x.append(_reshape_to_vector(get_state_decision(phase, node, sub)))
             return _vertcat(x)
-        
+
         else:
             subnodes = slice(0, None if node < penalty.ns[0] and penalty.subnodes_are_decision_states[0] else 1)
             x0 = _reshape_to_vector(get_state_decision(penalty.phase, node, subnodes))
-            
+
             if is_constructing_penalty:
                 if node < penalty.ns[0]:
                     x1 = _reshape_to_vector(get_state_decision(penalty.phase, node, slice(-1, None)))
@@ -135,7 +134,7 @@ class PenaltyHelpers:
     def target(penalty, penalty_node_idx):
         if penalty.target is None:
             return np.array([])
-        
+
         if penalty.integrate:
             target0 = penalty.target[..., penalty_node_idx]
             target1 = penalty.target[..., penalty_node_idx + 1]
@@ -147,7 +146,7 @@ class PenaltyHelpers:
     def get_multinode_penalty_subnodes_starting_index(p):
         """
         Prepare the current_cx_to_get for each of the controller. Basically it finds if this penalty has more than
-        one usage. If it does, it increments a counter of the cx used, up to the maximum. 
+        one usage. If it does, it increments a counter of the cx used, up to the maximum.
         """
 
         out = []  # The cx index of the controllers in the order of the controllers
@@ -171,7 +170,7 @@ class PenaltyHelpers:
 
             is_last_node = node_idx == ns
 
-            # If the phase dynamics is not shared, we can safely use cx_start all the time since the node 
+            # If the phase dynamics is not shared, we can safely use cx_start all the time since the node
             # is never the same. This allows to have arbitrary number of nodes penalties in a single phase
             if phase_dynamics == PhaseDynamics.ONE_PER_NODE:
                 out.append(2 if is_last_node else 0)  # cx_start or cx_end
@@ -234,7 +233,7 @@ def _vertcat(v):
 
     if not isinstance(v, list):
         raise ValueError("_vertcat must be called with a list of vectors")
-    
+
     data_type = type(v[0])
     for tp in v:
         if not isinstance(tp, data_type):

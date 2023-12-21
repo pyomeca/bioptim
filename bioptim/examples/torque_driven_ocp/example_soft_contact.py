@@ -81,7 +81,9 @@ def initial_states_from_single_shooting(model, ns, tf, ode_solver):
     a = InitialGuessList()
 
     sol_from_initial_guess = Solution.from_initial_guess(ocp, [dt, x, u, p, a])
-    sol = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES)
+    sol = sol_from_initial_guess.integrate(
+        shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP, to_merge=SolutionMerge.NODES
+    )
     # s.animate()
 
     # Rolling Sphere at equilibrium

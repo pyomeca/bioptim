@@ -130,7 +130,10 @@ class NonControlledMethod:
             as_states_dot=False,
         )
 
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, my_ocp=ocp, allow_free_variables=True)
+        ConfigureProblem.configure_dynamics_function(
+            ocp, nlp, self.custom_dynamics, my_ocp=ocp, allow_free_variables=True
+        )
+
 
 def prepare_ocp(
     n_phase: int,
@@ -249,7 +252,9 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False),)
+    sol = ocp.solve(
+        Solver.IPOPT(show_online_optim=False),
+    )
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -275,12 +280,12 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     np.testing.assert_almost_equal(
         sol.decision_states(to_merge=SolutionMerge.NODES)[0]["a"],
         np.array([0.0, 1.96960231, 3.93921216, 5.90883684, 7.87848335, 9.84815843]),
-        decimal=8
+        decimal=8,
     )
     np.testing.assert_almost_equal(
         sol.decision_states(to_merge=SolutionMerge.NODES)[0]["b"],
         np.array([0.0, 0.00019337, 0.00076352, 0.00169617, 0.00297785, 0.0045958]),
-        decimal=8
+        decimal=8,
     )
     np.testing.assert_almost_equal(
         sol.decision_states(to_merge=SolutionMerge.NODES)[0]["c"],

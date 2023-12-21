@@ -17,7 +17,7 @@ class TimeAlignment(Enum):
     """
     With which decision variable the time is aligned with
     """
-    
+
     STATES = auto()
     CONTROLS = auto()
 
@@ -84,7 +84,7 @@ class SolutionData:
 
     def to_dict(self, to_merge: SolutionMerge | list[SolutionMerge, ...] = None, scaled: bool = False):
         data = self.scaled if scaled else self.unscaled
-        
+
         if to_merge is None:
             to_merge = []
 
@@ -113,16 +113,16 @@ class SolutionData:
 
         if SolutionMerge.PHASES in to_merge:
             out = self._merge_phases(out, to_merge=to_merge)
-            
+
         return out
 
     @staticmethod
     def _merge_phases(data: list, to_merge: list[SolutionMerge, ...]):
         """
-        Merge the phases by merging keys and nodes before. 
+        Merge the phases by merging keys and nodes before.
         This method does not remove the redundent nodes when merging the phase nor the nodes
         """
-        
+
         if SolutionMerge.NODES not in to_merge:
             raise ValueError("to_merge must contain SolutionMerge.NODES when merging phases")
         if SolutionMerge.KEYS not in to_merge:
@@ -137,7 +137,7 @@ class SolutionData:
         Merge the steps by merging keys before.
         """
         return np.concatenate(self._merge_keys(data, phase=phase), axis=1)
-    
+
     @staticmethod
     def _merge_nodes(data: dict, phase: int):
         """
@@ -157,7 +157,7 @@ class SolutionData:
 
         if not data[phase].keys():
             return [np.ndarray((0, 1))] * self.n_nodes[phase]
-        
+
         n_nodes = len(data[phase][list(data[phase].keys())[0]])
         out = []
         for node_idx in range(n_nodes):
@@ -236,5 +236,3 @@ def _to_scaled_values(unscaled: list, ocp, variable_type: str) -> list:
                 raise ValueError(f"Unrecognized type {type(unscaled[phase][key])} for {key}")
 
     return scaled
-
-

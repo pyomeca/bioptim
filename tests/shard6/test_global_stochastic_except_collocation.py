@@ -30,22 +30,24 @@ def test_arm_reaching_muscle_driven(use_sx):
 
     if use_sx:
         with pytest.raises(
-            RuntimeError, match=
-            re.escape("Error in Function::call for 'tp' [MXFunction] at .../casadi/core/function.cpp:339:\n"
-            ".../casadi/core/linsol_internal.cpp:65: eval_sx not defined for LinsolQr")
+            RuntimeError,
+            match=re.escape(
+                "Error in Function::call for 'tp' [MXFunction] at .../casadi/core/function.cpp:339:\n"
+                ".../casadi/core/linsol_internal.cpp:65: eval_sx not defined for LinsolQr"
+            ),
         ):
             ocp = ocp_module.prepare_socp(
-            final_time=final_time,
-            n_shooting=n_shooting,
-            hand_final_position=hand_final_position,
-            motor_noise_magnitude=motor_noise_magnitude,
-            sensory_noise_magnitude=sensory_noise_magnitude,
-            force_field_magnitude=force_field_magnitude,
-            example_type=example_type,
-            use_sx=use_sx,
-        )
+                final_time=final_time,
+                n_shooting=n_shooting,
+                hand_final_position=hand_final_position,
+                motor_noise_magnitude=motor_noise_magnitude,
+                sensory_noise_magnitude=sensory_noise_magnitude,
+                force_field_magnitude=force_field_magnitude,
+                example_type=example_type,
+                use_sx=use_sx,
+            )
         return
-    
+
     ocp = ocp_module.prepare_socp(
         final_time=final_time,
         n_shooting=n_shooting,
@@ -90,7 +92,7 @@ def test_arm_reaching_muscle_driven(use_sx):
     q, qdot, mus_activations = states["q"], states["qdot"], states["muscles"]
     mus_excitations = controls["muscles"]
     k, ref, m = algebraic_states["k"], algebraic_states["ref"], algebraic_states["m"]
-    #cov = integrated_values["cov"]
+    # cov = integrated_values["cov"]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
@@ -385,9 +387,11 @@ def test_arm_reaching_torque_driven_explicit(use_sx):
 
     if use_sx:
         with pytest.raises(
-            RuntimeError, match=
-            re.escape("Error in Function::call for 'tp' [MXFunction] at .../casadi/core/function.cpp:339:\n"
-            ".../casadi/core/linsol_internal.cpp:65: eval_sx not defined for LinsolQr")
+            RuntimeError,
+            match=re.escape(
+                "Error in Function::call for 'tp' [MXFunction] at .../casadi/core/function.cpp:339:\n"
+                ".../casadi/core/linsol_internal.cpp:65: eval_sx not defined for LinsolQr"
+            ),
         ):
             ocp = ocp_module.prepare_socp(
                 biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
@@ -437,12 +441,12 @@ def test_arm_reaching_torque_driven_explicit(use_sx):
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
-    
+
     q, qdot, qddot = states["q"], states["qdot"], states["qddot"]
     qdddot, tau = controls["qdddot"], controls["tau"]
     k, ref, m = algebraic_states["k"], algebraic_states["ref"], algebraic_states["m"]
     ocp.nlp[0].integrated_values["cov"].cx
-    
+
     # TODO Integrated value is not a proper way to go, it should be removed and recomputed at will
     # cov = integrated_values["cov"]
 
@@ -620,7 +624,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     algebraic_states = sol.decision_algebraic_states(to_merge=SolutionMerge.NODES)
-    
+
     q, qdot = states["q"], states["qdot"]
     tau = controls["tau"]
 
@@ -904,7 +908,9 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
 
             # detailed cost values
             np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 62.40222242578194, decimal=4)
-            np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.8031487750452925e-05, decimal=4)
+            np.testing.assert_almost_equal(
+                sol.detailed_cost[1]["cost_value_weighted"], 1.8031487750452925e-05, decimal=4
+            )
             np.testing.assert_almost_equal(
                 f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
             )

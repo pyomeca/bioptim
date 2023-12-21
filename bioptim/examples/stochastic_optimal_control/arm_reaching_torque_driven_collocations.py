@@ -208,9 +208,7 @@ def prepare_socp(
     n_cov = 4 * 4
 
     a_init.add("k", initial_guess=[0.01] * n_k, interpolation=InterpolationType.CONSTANT)
-    a_bounds.add(
-        "k", min_bound=[-cas.inf] * n_k, max_bound=[cas.inf] * n_k, interpolation=InterpolationType.CONSTANT
-    )
+    a_bounds.add("k", min_bound=[-cas.inf] * n_k, max_bound=[cas.inf] * n_k, interpolation=InterpolationType.CONSTANT)
 
     a_init.add("ref", initial_guess=[0.01] * n_ref, interpolation=InterpolationType.CONSTANT)
     a_bounds.add(

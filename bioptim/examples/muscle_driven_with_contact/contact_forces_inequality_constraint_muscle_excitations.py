@@ -131,7 +131,7 @@ def main():
 
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    
+
     q = states["q"]
     qdot = states["qdot"]
     activations = states["muscles"]

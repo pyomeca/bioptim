@@ -864,7 +864,9 @@ class ConfigureProblem:
             )
 
         nlp.plot["contact_forces"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, a: nlp.contact_forces_func([t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a),
+            lambda t0, phases_dt, node_idx, x, u, p, a: nlp.contact_forces_func(
+                [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a
+            ),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
             legend=all_contact_names,
@@ -927,7 +929,9 @@ class ConfigureProblem:
                     to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a: nlp.soft_contact_forces_func([t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a)[(i_sc * 6) : ((i_sc + 1) * 6), :],
+                lambda t0, phases_dt, node_idx, x, u, p, a: nlp.soft_contact_forces_func(
+                    [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a
+                )[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
                 legend=all_soft_contact_names,
@@ -1009,7 +1013,7 @@ class ConfigureProblem:
         Add a new integrated value. This creates an MX (not an optimization variable) that is integrated using the
         integrated_value_functions function provided. This integrated_value can be used in the constraints and objectives
         without having to recompute them over and over again.
-        
+
         Parameters
         ----------
         name: str

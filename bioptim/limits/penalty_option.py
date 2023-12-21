@@ -150,7 +150,7 @@ class PenaltyOption(OptionGeneric):
         self.derivative = derivative
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
-        
+
         self.extra_arguments = params
 
         if index is not None and rows is not None:
@@ -196,7 +196,7 @@ class PenaltyOption(OptionGeneric):
         self.function_non_threaded: list[Function | None, ...] = []
         self.weighted_function: list[Function | None, ...] = []
         self.weighted_function_non_threaded: list[Function | None, ...] = []
-        
+
         self.multinode_penalty = False
         self.nodes_phase = None  # This is relevant for multinodes
         self.nodes = None  # This is relevant for multinodes
@@ -208,7 +208,9 @@ class PenaltyOption(OptionGeneric):
 
         self.multi_thread = multi_thread
 
-    def set_penalty(self, penalty: MX | SX, controllers: PenaltyController | list[PenaltyController, PenaltyController]):
+    def set_penalty(
+        self, penalty: MX | SX, controllers: PenaltyController | list[PenaltyController, PenaltyController]
+    ):
         """
         Prepare the dimension and index of the penalty (including the target)
 
@@ -237,7 +239,7 @@ class PenaltyOption(OptionGeneric):
         self._set_ns(controllers)
         self._set_control_types(controllers)
         self._set_subnodes_are_decision_states(controllers)
-        
+
         self._set_penalty_function(controllers, penalty)
         self._add_penalty_to_pool(controllers)
 
@@ -279,18 +281,16 @@ class PenaltyOption(OptionGeneric):
         controller: PenaltyController
             The penalty node elements
         """
-        
+
         n_frames = len(controller.t) + (1 if self.integrate else 0)
 
         n_dim = len(self.target.shape)
         if n_dim != 2 and n_dim != 3:
-            raise RuntimeError(
-                f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)"
-            )
-        
+            raise RuntimeError(f"target cannot be a vector (it can be a matrix with time dimension equals to 1 though)")
+
         if self.target.shape[-1] == 1:
             self.target = np.repeat(self.target, n_frames, axis=-1)
-            
+
         shape = (len(self.rows), n_frames) if n_dim == 2 else (len(self.rows), len(self.cols), n_frames)
 
         if self.target.shape != shape:
@@ -377,9 +377,7 @@ class PenaltyOption(OptionGeneric):
                 )
         self.subnodes_are_decision_states = subnodes_are_decision_states
 
-    def _set_penalty_function(
-        self, controllers: list[PenaltyController, ...], fcn: MX | SX
-    ):
+    def _set_penalty_function(self, controllers: list[PenaltyController, ...], fcn: MX | SX):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
 
@@ -440,9 +438,9 @@ class PenaltyOption(OptionGeneric):
             # Perform the integration to get the final subnode
             if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
                 state_cx_end = controller.states_scaled.cx_end
-            elif self.integration_rule == QuadratureRule.TRAPEZOIDAL: 
+            elif self.integration_rule == QuadratureRule.TRAPEZOIDAL:
                 u_integrate = u.reshape((-1, 2))
-                if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE ):
+                if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                     u_integrate = u_integrate[:, 0]
                 elif self.control_types[0] in (ControlType.LINEAR_CONTINUOUS,):
                     pass
@@ -451,10 +449,10 @@ class PenaltyOption(OptionGeneric):
 
                 state_cx_end = controller.integrate(
                     t_span=controller.t_span,
-                    x0=controller.states.cx_start, 
-                    u=u_integrate, 
-                    p=controller.parameters.cx, 
-                    a=controller.algebraic_states.cx_start
+                    x0=controller.states.cx_start,
+                    u=u_integrate,
+                    p=controller.parameters.cx,
+                    a=controller.algebraic_states.cx_start,
                 )["xf"]
             else:
                 raise NotImplementedError(f"Integration rule {self.integration_rule} not implemented yet")
@@ -467,15 +465,15 @@ class PenaltyOption(OptionGeneric):
                 # controls with a constant control. This phiolosophically makes sense as the control is constant and
                 # applying a trapezoidal integration would be equivalent to applying a left rectangle integration
                 control_cx_end = controller.controls_scaled.cx_start
-            else: 
+            else:
                 if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
                     control_cx_end = controller.controls_scaled.cx_start
-                else: 
+                else:
                     control_cx_end = controller.controls_scaled.cx_end
 
             # Compute the penalty function at starting and ending of the interval
             func_at_subnode = Function(
-                name, 
+                name,
                 [time_cx, phases_dt_cx, state_cx_start, control_cx_start, param_cx, algebraic_states_start_cx],
                 [sub_fcn],
             )
@@ -485,7 +483,9 @@ class PenaltyOption(OptionGeneric):
             func_at_end = func_at_subnode(
                 time_cx + dt, phases_dt_cx, state_cx_end, control_cx_end, param_cx, algebraic_states_end_cx
             )
-            modified_fcn = ((func_at_start - target_cx[:, 0]) ** exponent + (func_at_end - target_cx[:, 1]) ** exponent) / 2
+            modified_fcn = (
+                (func_at_start - target_cx[:, 0]) ** exponent + (func_at_end - target_cx[:, 1]) ** exponent
+            ) / 2
 
             # This reimplementation is required because input sizes change. It will however produce wrong result
             # for non weighted functions
@@ -494,7 +494,7 @@ class PenaltyOption(OptionGeneric):
                 [time_cx, phases_dt_cx, x, u, param_cx, a],
                 [(func_at_start + func_at_end) / 2],
                 ["t", "dt", "x", "u", "p", "a"],
-                ["val"], 
+                ["val"],
             )
         elif self.derivative:
             # This assumes a Mayer-like penalty
@@ -503,7 +503,7 @@ class PenaltyOption(OptionGeneric):
             u_start = controller.controls_scaled.cx_start
             if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 u_end = controller.controls_scaled.cx_start
-            else: 
+            else:
                 u_end = controller.controls_scaled.cx_end
             param_cx = controller.parameters.cx
             a_start = controller.algebraic_states_scaled.cx_start
@@ -521,7 +521,10 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = Function(
                 f"{name}",
                 [time_cx, phases_dt_cx, x, u, param_cx, a],
-                [fcn_tp(time_cx, phases_dt_cx, x_end, u_end, param_cx, a_end) - fcn_tp(time_cx, phases_dt_cx, x_start, u_start, param_cx, a_start)],
+                [
+                    fcn_tp(time_cx, phases_dt_cx, x_end, u_end, param_cx, a_end)
+                    - fcn_tp(time_cx, phases_dt_cx, x_start, u_start, param_cx, a_start)
+                ],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
@@ -544,7 +547,7 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = self.function[node].expand()
 
         self.function_non_threaded[node] = self.function[node]
-        
+
         # weight is zero for constraints penalty and non-zero for objective functions
         modified_fcn = (weight_cx * modified_fcn * self.dt) if self.weight else (modified_fcn * self.dt)
 
@@ -559,7 +562,9 @@ class PenaltyOption(OptionGeneric):
 
         if controller.ocp.n_threads > 1 and self.multi_thread and len(self.node_idx) > 1:
             self.function[node] = self.function[node].map(len(self.node_idx), "thread", controller.ocp.n_threads)
-            self.weighted_function[node] = self.weighted_function[node].map(len(self.node_idx), "thread", controller.ocp.n_threads)
+            self.weighted_function[node] = self.weighted_function[node].map(
+                len(self.node_idx), "thread", controller.ocp.n_threads
+            )
         else:
             self.multi_thread = False  # Override the multi_threading, since only one node is optimized
 
@@ -568,7 +573,6 @@ class PenaltyOption(OptionGeneric):
             self.weighted_function[node] = self.weighted_function[node].expand()
 
     def _check_sanity_of_penalty_interactions(self, controller):
-
         if self.multinode_penalty and self.explicit_derivative:
             raise ValueError("multinode_penalty and explicit_derivative cannot be true simultaneously")
         if self.multinode_penalty and self.derivative:
@@ -577,9 +581,9 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("derivative and explicit_derivative cannot be true simultaneously")
 
         if controller.get_nlp.ode_solver.is_direct_collocation and (
-                controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE and
-                len(self.node_idx) > 1 and
-                controller.ns + 1 in self.node_idx
+            controller.get_nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+            and len(self.node_idx) > 1
+            and controller.ns + 1 in self.node_idx
         ):
             raise ValueError(
                 "Direct collocation with shared dynamics cannot have a more than one penalty defined at the same "
@@ -604,9 +608,24 @@ class PenaltyOption(OptionGeneric):
         ocp = controller.ocp
         penalty_idx = self.node_idx.index(controller.node_index)
 
-        x = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, n_idx, sn_idx), is_constructing_penalty=True)
-        u = PenaltyHelpers.controls(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_u(ocp, p_idx, n_idx, sn_idx), is_constructing_penalty=True)
-        a = PenaltyHelpers.states(self, penalty_idx, lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].algebraic_states, n_idx, sn_idx), is_constructing_penalty=True)
+        x = PenaltyHelpers.states(
+            self,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].states, n_idx, sn_idx),
+            is_constructing_penalty=True,
+        )
+        u = PenaltyHelpers.controls(
+            self,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: self._get_u(ocp, p_idx, n_idx, sn_idx),
+            is_constructing_penalty=True,
+        )
+        a = PenaltyHelpers.states(
+            self,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].algebraic_states, n_idx, sn_idx),
+            is_constructing_penalty=True,
+        )
 
         return controller, x, u, a
 
@@ -643,10 +662,10 @@ class PenaltyOption(OptionGeneric):
             x = vertcat(x, vertcat(states.scaled.cx_end))
             if sn_idx.stop is not None:
                 raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
-        
-        else: 
+
+        else:
             raise ValueError("The sn_idx.start should be 0 or -1")
-        
+
         return x
 
     def _get_u(self, ocp, p_idx, n_idx, sn_idx):
@@ -655,22 +674,22 @@ class PenaltyOption(OptionGeneric):
         controls.node_index = n_idx
 
         def vertcat_cx_end():
-            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ):
+            if nlp.control_type in (ControlType.LINEAR_CONTINUOUS,):
                 return vertcat(u, controls.scaled.cx_end)
             elif nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 if n_idx < nlp.n_controls_nodes - 1:
                     return vertcat(u, controls.scaled.cx_end)
-                
+
                 elif n_idx == nlp.n_controls_nodes - 1:
                     # If we are at the penultimate node, we still can use the cx_end, unless we are
                     # performing some kind of integration or derivative and this last node does not exist
-                    if nlp.control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ):
+                    if nlp.control_type in (ControlType.CONSTANT_WITH_LAST_NODE,):
                         return vertcat(u, controls.scaled.cx_end)
                     if self.integrate or self.derivative or self.explicit_derivative:
                         return u
-                    else: 
+                    else:
                         return vertcat(u, controls.scaled.cx_end)
-                    
+
                 else:
                     return u
             else:
@@ -704,9 +723,9 @@ class PenaltyOption(OptionGeneric):
                 raise ValueError("The sn_idx.stop should be None if sn_idx.start == -1")
             u = vertcat_cx_end()
 
-        else: 
+        else:
             raise ValueError("The sn_idx.start should be 0 or -1")
-        
+
         return u
 
     @staticmethod
@@ -820,21 +839,19 @@ class PenaltyOption(OptionGeneric):
 
         # The active controller is always the last one, and they all should be the same length anyway
         for node in range(len(controllers[-1])):
-            # TODO WARNING THE NEXT IF STATEMENT IS A BUG DELIBERATELY INTRODUCED TO FIT THE PREVIOUS RESULTS. 
+            # TODO WARNING THE NEXT IF STATEMENT IS A BUG DELIBERATELY INTRODUCED TO FIT THE PREVIOUS RESULTS.
             # IT SHOULD BE REMOVED AS SOON AS THE MERGE IS DONE (AND VALUES OF THE TESTS ADJUSTED)
             if self.integrate and self.target is not None:
                 self.node_idx = controllers[0].t[:-1]
                 if node not in self.node_idx:
                     continue
-            
+
             for controller in controllers:
                 controller.node_index = controller.t[node]
                 controller.cx_index_to_get = 0
 
-            penalty_function = self.type(
-                self, controllers if len(controllers) > 1 else controllers[0], **self.params
-            )
-            
+            penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
+
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):

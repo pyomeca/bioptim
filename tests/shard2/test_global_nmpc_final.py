@@ -48,15 +48,15 @@ def test_multi_cyclic_nmpc_get_final(phase_dynamics):
     # initial and final position
     np.testing.assert_equal(q.shape, (3, n_cycles_total * cycle_len + 1))
     np.testing.assert_almost_equal(q[:, 0], np.array((-12.56637061, 1.04359174, 1.03625065)))
-    np.testing.assert_almost_equal(q[:, -1], np.array([1.37753244e-40, 1.04359174e+00, 1.03625065e+00]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([1.37753244e-40, 1.04359174e00, 1.03625065e00]))
 
     # initial and final velocities
     np.testing.assert_almost_equal(qdot[:, 0], np.array((6.28293718, 2.5617072, -0.00942694)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([ 6.28293718,  2.41433059, -0.59773899]), decimal=5)
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([6.28293718, 2.41433059, -0.59773899]), decimal=5)
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.00992505, 4.88488618, 2.4400698)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([-0.00992505,  5.19414727,  2.34022319]), decimal=4)
+    np.testing.assert_almost_equal(tau[:, -1], np.array([-0.00992505, 5.19414727, 2.34022319]), decimal=4)
 
     # check time
     n_steps = nmpc.nlp[0].ode_solver.n_integration_steps

@@ -49,7 +49,7 @@ def prepare_ocp(
     if coefficients[0] * weights[0] != 0:
         objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=coefficients[0] * weights[0])
     if coefficients[1] * weights[1] != 0:
-        # Since the refactor of the objective functions, derivative on MINIMIZE_CONTROL does not have any effect 
+        # Since the refactor of the objective functions, derivative on MINIMIZE_CONTROL does not have any effect
         # when ControlType.CONSTANT is used
         objective_functions.add(
             ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", derivative=True, weight=coefficients[1] * weights[1]

@@ -284,7 +284,7 @@ def prepare_socp(
             n_threads=6,
             problem_type=problem_type,
             phase_transitions=phase_transitions,
-            use_sx=use_sx
+            use_sx=use_sx,
         )
 
     else:

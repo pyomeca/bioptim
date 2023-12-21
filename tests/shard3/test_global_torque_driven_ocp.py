@@ -4,7 +4,17 @@ Test for file IO
 import os
 import pytest
 import numpy as np
-from bioptim import OdeSolver, ConstraintList, ConstraintFcn, Node, DefectType, Solver, BiorbdModel, PhaseDynamics, SolutionMerge
+from bioptim import (
+    OdeSolver,
+    ConstraintList,
+    ConstraintFcn,
+    Node,
+    DefectType,
+    Solver,
+    BiorbdModel,
+    PhaseDynamics,
+    SolutionMerge,
+)
 from tests.utils import TestUtils
 
 

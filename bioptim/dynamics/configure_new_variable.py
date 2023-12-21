@@ -345,7 +345,9 @@ class NewVariableConfiguration:
             else [self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[0][self.name].mx]
         )
         self.mx_algebraic_states = (
-            [] if not self.copy_algebraic_states else [self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[0][self.name].mx]
+            []
+            if not self.copy_algebraic_states
+            else [self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[0][self.name].mx]
         )
 
         # todo: if mapping on variables, what do we do with mapping on the nodes
@@ -392,7 +394,9 @@ class NewVariableConfiguration:
 
     def _declare_cx_and_plot(self):
         if self.as_states:
-            for node_index in range(self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1):
+            for node_index in range(
+                self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
+            ):
                 n_cx = self.nlp.ode_solver.n_required_cx + 2
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[node_index][self.name].original_cx
@@ -414,7 +418,9 @@ class NewVariableConfiguration:
                 )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_states"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, a: x[self.nlp.states.key_index(self.name), :] if x.any() else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
+                        lambda t0, phases_dt, node_idx, x, u, p, a: x[self.nlp.states.key_index(self.name), :]
+                        if x.any()
+                        else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
@@ -422,7 +428,9 @@ class NewVariableConfiguration:
                     )
 
         if self.as_controls:
-            for node_index in range(self.nlp.n_controls_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1):
+            for node_index in range(
+                self.nlp.n_controls_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
+            ):
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[node_index][self.name].original_cx
                     if self.copy_controls
@@ -445,7 +453,9 @@ class NewVariableConfiguration:
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_controls"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, a: u[self.nlp.controls.key_index(self.name), :] if u.any() else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
+                        lambda t0, phases_dt, node_idx, x, u, p, a: u[self.nlp.controls.key_index(self.name), :]
+                        if u.any()
+                        else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
@@ -456,7 +466,8 @@ class NewVariableConfiguration:
 
         if self.as_states_dot:
             for node_index in range(
-                    self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1):
+                self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
+            ):
                 n_cx = self.nlp.ode_solver.n_required_cx + 2
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_states_dot_from_phase_idx].states_dot[node_index][self.name].original_cx
@@ -479,7 +490,8 @@ class NewVariableConfiguration:
 
         if self.as_algebraic_states:
             for node_index in range(
-                    self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1):
+                self.nlp.n_states_nodes if self.nlp.phase_dynamics == PhaseDynamics.ONE_PER_NODE else 1
+            ):
                 n_cx = 2
                 cx_scaled = (
                     self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[node_index][self.name].original_cx
@@ -559,14 +571,22 @@ def _manage_fatigue_to_new_variable(
     legend = [f"{name}_{i}" for i in name_elements]
     fatigue_plot_name = f"fatigue_{name}"
     nlp.plot[fatigue_plot_name] = CustomPlot(
-        lambda t0, phases_dt, node_idx, x, u, p, a: (x[:n_elements, :] if x.any() else np.ndarray((len(name_elements), 1))) * np.nan,
+        lambda t0, phases_dt, node_idx, x, u, p, a: (
+            x[:n_elements, :] if x.any() else np.ndarray((len(name_elements), 1))
+        )
+        * np.nan,
         plot_type=PlotType.INTEGRATED,
         legend=legend,
         bounds=Bounds(None, -1, 1),
     )
     control_plot_name = f"{name}_controls" if not multi_interface and split_controls else f"{name}"
     nlp.plot[control_plot_name] = CustomPlot(
-        lambda t0, phases_dt, node_idx, x, u, p, a: (u[:n_elements, :] if u.any() else np.ndarray((len(name_elements), 1))) * np.nan, plot_type=PlotType.STEP, legend=legend
+        lambda t0, phases_dt, node_idx, x, u, p, a: (
+            u[:n_elements, :] if u.any() else np.ndarray((len(name_elements), 1))
+        )
+        * np.nan,
+        plot_type=PlotType.STEP,
+        legend=legend,
     )
 
     var_names_with_suffix = []
@@ -581,7 +601,9 @@ def _manage_fatigue_to_new_variable(
                 var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
             )
             nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a, key: u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan,
+                lambda t0, phases_dt, node_idx, x, u, p, a, key: u[nlp.controls.key_index(key), :]
+                if u.any()
+                else np.ndarray((len(name_elements), 1)) * np.nan,
                 plot_type=PlotType.STEP,
                 combine_to=control_plot_name,
                 key=var_names_with_suffix[-1],
@@ -590,7 +612,9 @@ def _manage_fatigue_to_new_variable(
         elif i == 0:
             NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True)
             nlp.plot[f"{name}_controls"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a, key: u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan,
+                lambda t0, phases_dt, node_idx, x, u, p, a, key: u[nlp.controls.key_index(key), :]
+                if u.any()
+                else np.ndarray((len(name_elements), 1)) * np.nan,
                 plot_type=PlotType.STEP,
                 combine_to=control_plot_name,
                 key=f"{name}",
@@ -601,7 +625,9 @@ def _manage_fatigue_to_new_variable(
             name_tp = f"{var_names_with_suffix[-1]}_{params}"
             NewVariableConfiguration(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
             nlp.plot[name_tp] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a, key, mod: mod * x[nlp.states.key_index(key), :] if x.any() else np.ndarray((len(name_elements), 1)) * np.nan,
+                lambda t0, phases_dt, node_idx, x, u, p, a, key, mod: mod * x[nlp.states.key_index(key), :]
+                if x.any()
+                else np.ndarray((len(name_elements), 1)) * np.nan,
                 plot_type=PlotType.INTEGRATED,
                 combine_to=fatigue_plot_name,
                 key=name_tp,

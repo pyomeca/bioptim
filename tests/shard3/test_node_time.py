@@ -29,7 +29,7 @@ def test_node_time(ode_solver, phase_dynamics):
 
     sol = ocp.solve(solver=solver)
     all_node_time = np.array([ocp.node_time(0, i) for i in range(ocp.nlp[0].ns + 1)])
-    
+
     computed_t = Function("time", [nlp.dt for nlp in ocp.nlp], [vertcat(all_node_time)])(sol.t_span[0][-1])
     time = sol.decision_time()
     expected_t = DM([0] + [t[-1] for t in time][:-1])

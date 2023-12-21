@@ -286,7 +286,7 @@ class NonLinearProgram:
             return 1
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             return 2
-        else: 
+        else:
             raise RuntimeError("Not implemented yet")
 
     @property
