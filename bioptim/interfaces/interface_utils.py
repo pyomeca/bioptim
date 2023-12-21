@@ -277,11 +277,11 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
         else:
             tp = interface.ocp.cx()
             for idx in range(len(penalty.node_idx)):
-                nlp.states.node_index = penalty.node_idx[idx]
-                nlp.controls.node_index = penalty.node_idx[idx]
-                nlp.parameters.node_index = penalty.node_idx[idx]
-                nlp.algebraic_states.node_index = penalty.node_idx[idx]
-
+                if nlp:
+                    nlp.states.node_index = penalty.node_idx[idx]
+                    nlp.controls.node_index = penalty.node_idx[idx]
+                    nlp.parameters.node_index = penalty.node_idx[idx]
+                    nlp.algebraic_states.node_index = penalty.node_idx[idx]
                 t0, x, u, a, weight, target = _get_weighted_function_inputs(penalty, idx, ocp, nlp, scaled)
 
                 node_idx = penalty.node_idx[idx]
