@@ -10,6 +10,7 @@ from casadi import SX, MX, vertcat
 from ...misc.utils import check_version
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
+from ...optimization.solution.solution_data import SolutionMerge
 from ..utils import _q_mapping, _qdot_mapping, _qddot_mapping, bounds_from_ranges
 from .biorbd_model import BiorbdModel
 
@@ -726,6 +727,7 @@ class MultiBiorbdModel:
     def _q_mapping(self, mapping: BiMapping = None) -> dict:
         return _q_mapping(self, mapping)
 
+    #
     def _qdot_mapping(self, mapping: BiMapping = None) -> dict:
         return _qdot_mapping(self, mapping)
 
@@ -747,7 +749,7 @@ class MultiBiorbdModel:
 
         check_version(bioviz, "2.3.0", "2.4.0")
 
-        states = solution.states
+        states = solution.stepwise_states(to_merge=SolutionMerge.NODES)
         if not isinstance(states, (list, tuple)):
             states = [states]
 

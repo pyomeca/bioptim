@@ -3,7 +3,7 @@ This file contains the model used in the article.
 """
 
 from typing import Callable
-from casadi import MX, DM, sqrt, sin, cos, repmat, exp, log, horzcat, vertcat
+from casadi import MX, SX, DM, sqrt, sin, cos, repmat, exp, log, horzcat, vertcat
 import numpy as np
 
 from bioptim import NonLinearProgram, DynamicsFunctions
@@ -19,12 +19,17 @@ class LeuvenArmModel:
         sensory_noise_magnitude: np.ndarray | DM,
         motor_noise_magnitude: np.ndarray | DM,
         sensory_reference: callable,
+        use_sx: bool = False,
     ):
         self.motor_noise_magnitude = motor_noise_magnitude
         self.sensory_noise_magnitude = sensory_noise_magnitude
         self.sensory_reference = sensory_reference
-        self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
-        self.sensory_noise_sym = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0])
+
+        self.cx = SX if use_sx else MX
+        self.motor_noise_sym = self.cx.sym("motor_noise", motor_noise_magnitude.shape[0])
+        self.motor_noise_sym_mx = MX.sym("motor_noise_mx", motor_noise_magnitude.shape[0])
+        self.sensory_noise_sym = self.cx.sym("sensory_noise", sensory_noise_magnitude.shape[0])
+        self.sensory_noise_sym_mx = MX.sym("sensory_noise_mx", sensory_noise_magnitude.shape[0])
 
         n_noised_controls = 6
         n_references = 4
@@ -241,7 +246,7 @@ class LeuvenArmModel:
 
     def force_field(self, q, force_field_magnitude):
         F_forceField = force_field_magnitude * (self.l1 * cos(q[0]) + self.l2 * cos(q[0] + q[1]))
-        hand_pos = MX(2, 1)
+        hand_pos = type(q)(2, 1)
         hand_pos[0] = self.l2 * sin(q[0] + q[1]) + self.l1 * sin(q[0])
         hand_pos[1] = self.l2 * sin(q[0] + q[1])
         tau_force_field = -F_forceField @ hand_pos

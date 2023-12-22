@@ -22,6 +22,7 @@ from bioptim import (
     ObjectiveList,
     OptimalControlProgram,
     Solver,
+    SolutionMerge,
 )
 
 
@@ -40,7 +41,11 @@ def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
     -------
 
     """
-    n = sol.states["q_u"].shape[1]
+
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+
+    n = states["q_u"].shape[1]
 
     q = np.zeros((bio_model.nb_q, n))
     qdot = np.zeros((bio_model.nb_q, n))
@@ -49,9 +54,9 @@ def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
     tau = np.zeros((bio_model.nb_tau, n))
 
     for i, independent_joint_index in enumerate(bio_model.independent_joint_index):
-        tau[independent_joint_index] = sol.controls["tau"][i, :]
+        tau[independent_joint_index, :-1] = controls["tau"][i, :]
     for i, dependent_joint_index in enumerate(bio_model.dependent_joint_index):
-        tau[dependent_joint_index] = sol.controls["tau"][i, :]
+        tau[dependent_joint_index, :-1] = controls["tau"][i, :]
 
     # Partitioned forward dynamics
     q_u_sym = MX.sym("q_u_sym", bio_model.nb_independent_joints, 1)
@@ -73,29 +78,16 @@ def compute_all_states(sol, bio_model: HolonomicBiorbdModel):
     )
 
     for i in range(n):
-        q_v_i = bio_model.compute_q_v(sol.states["q_u"][:, i]).toarray()
-        q[:, i] = bio_model.state_from_partition(sol.states["q_u"][:, i][:, np.newaxis], q_v_i).toarray().squeeze()
-        qdot[:, i] = bio_model.compute_qdot(q[:, i], sol.states["qdot_u"][:, i]).toarray().squeeze()
+        q_v_i = bio_model.compute_q_v(states["q_u"][:, i]).toarray()
+        q[:, i] = bio_model.state_from_partition(states["q_u"][:, i][:, np.newaxis], q_v_i).toarray().squeeze()
+        qdot[:, i] = bio_model.compute_qdot(q[:, i], states["qdot_u"][:, i]).toarray().squeeze()
         qddot_u_i = (
-            partitioned_forward_dynamics_func(
-                sol.states["q_u"][:, i],
-                sol.states["qdot_u"][:, i],
-                tau[:, i],
-            )
+            partitioned_forward_dynamics_func(states["q_u"][:, i], states["qdot_u"][:, i], tau[:, i])
             .toarray()
             .squeeze()
         )
         qddot[:, i] = bio_model.compute_qddot(q[:, i], qdot[:, i], qddot_u_i).toarray().squeeze()
-        lambdas[:, i] = (
-            compute_lambdas_func(
-                q[:, i],
-                qdot[:, i],
-                qddot[:, i],
-                tau[:, i],
-            )
-            .toarray()
-            .squeeze()
-        )
+        lambdas[:, i] = compute_lambdas_func(q[:, i], qdot[:, i], qddot[:, i], tau[:, i]).toarray().squeeze()
 
     return q, qdot, qddot, lambdas
 
@@ -226,9 +218,10 @@ def main():
     viz.load_movement(q)
     viz.exec()
 
+    time = sol.decision_time(to_merge=SolutionMerge.NODES)
     plt.title("Lagrange multipliers of the holonomic constraint")
-    plt.plot(sol.time, lambdas[0, :], label="y")
-    plt.plot(sol.time, lambdas[1, :], label="z")
+    plt.plot(time[::2], lambdas[0, :], label="y")
+    plt.plot(time[::2], lambdas[1, :], label="z")
     plt.xlabel("Time (s)")
     plt.ylabel("Lagrange multipliers (N)")
     plt.legend()

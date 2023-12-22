@@ -204,7 +204,6 @@ class OptimizationVariableList:
             return self.elements[item]
         elif isinstance(item, str):
             if item == "all":
-                # TODO Benjamin
                 index = []
                 for elt in self.elements:
                     index.extend(list(elt.index))
@@ -246,11 +245,7 @@ class OptimizationVariableList:
             The index to set the current cx to
         """
 
-        if self.phase_dynamics == PhaseDynamics.ONE_PER_NODE:
-            self._current_cx_to_get = 0
-            return
-
-        if index < 0 or index > 2:
+        if index < -1 or index > 2:
             raise ValueError(
                 "Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
                 "add more penalties than available in a multinode constraint. You can try to split the constraints "
@@ -258,7 +253,7 @@ class OptimizationVariableList:
             )
 
         else:
-            self._current_cx_to_get = index
+            self._current_cx_to_get = index if index != -1 else 2
 
     def append_fake(self, name: str, index: MX | SX | list, mx: MX, bimapping: BiMapping):
         """
@@ -292,12 +287,13 @@ class OptimizationVariableList:
             The MX variable associated with this variable
         """
 
-        if len(cx) < 3:
-            raise NotImplementedError("cx should be of dimension 3 (start, mid, end)")
+        if len(cx) < 2:
+            raise NotImplementedError("cx should be of dimension 2 (start, [mid], end)")
 
         index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
         self._cx_start = vertcat(self._cx_start, cx[0])
-        self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1) // 2])
+        if len(cx) > 2:
+            self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1) // 2])
         self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):
@@ -328,11 +324,12 @@ class OptimizationVariableList:
             The scaled optimization variable associated with this variable
         """
 
-        if len(cx) < 3:
-            raise NotImplementedError("cx should be of dimension 3 (start, mid, end)")
+        if len(cx) < 2:
+            raise NotImplementedError("cx should be of dimension 2 (start, [mid], end)")
 
         self._cx_start = vertcat(self._cx_start, cx[0])
-        self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1) // 2])
+        if len(cx) > 2:
+            self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1) // 2])
         self._cx_end = vertcat(self._cx_end, cx[-1])
 
         for i, c in enumerate(cx[1:-1]):
@@ -373,7 +370,8 @@ class OptimizationVariableList:
         """
 
         # Recast in CX since if it happens to be empty it is transformed into a DM behind the scene
-        return self.cx_constructor([] if self.shape == 0 else self._cx_start[:, 0])
+        is_empty = self.shape == 0 or np.prod(self._cx_start.shape) == 0
+        return self.cx_constructor([] if is_empty else self._cx_start[:, 0])
 
     @property
     def cx_mid(self):
@@ -382,7 +380,8 @@ class OptimizationVariableList:
         """
 
         # Recast in CX since if it happens to be empty it is transformed into a DM behind the scene
-        return self.cx_constructor([] if self.shape == 0 else self._cx_mid[:, 0])
+        is_empty = self.shape == 0 or np.prod(self._cx_mid.shape) == 0
+        return self.cx_constructor([] if is_empty else self._cx_mid[:, 0])
 
     @property
     def cx_end(self):
@@ -391,7 +390,8 @@ class OptimizationVariableList:
         """
 
         # Recast in CX since if it happens to be empty it is transformed into a DM behind the scene
-        return self.cx_constructor([] if self.shape == 0 else self._cx_end[:, 0])
+        is_empty = self.shape == 0 or np.prod(self._cx_end.shape) == 0
+        return self.cx_constructor([] if is_empty else self._cx_end[:, 0])
 
     @property
     def cx_intermediates_list(self):
@@ -543,11 +543,14 @@ class OptimizationVariableContainer:
         return self._scaled[self.node_index]
 
     def keys(self):
-        return self.unscaled.keys()
+        return self._unscaled[0].keys()
+
+    def key_index(self, key):
+        return self._unscaled[0][key].index
 
     @property
     def shape(self):
-        return self.unscaled.shape
+        return self._unscaled[0].shape
 
     @property
     def mx(self):
@@ -556,6 +559,10 @@ class OptimizationVariableContainer:
     @property
     def mx_reduced(self):
         return self.unscaled.mx_reduced
+
+    @property
+    def cx(self):
+        return self.unscaled.cx
 
     @property
     def cx_start(self):

@@ -37,6 +37,7 @@ from bioptim import (
     Solution,
     PenaltyController,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -164,6 +165,7 @@ def prepare_ocp_first_pass(
 
 def prepare_ocp_second_pass(
     biorbd_model_path: str,
+    ns: int,
     solution: Solution,
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     use_sx: bool = True,
@@ -206,9 +208,10 @@ def prepare_ocp_second_pass(
     x_bounds["qdot"][:, 0] = 0
 
     # Initial guess
+    states = solution.decision_states(to_merge=SolutionMerge.NODES)
     x_init = InitialGuessList()
-    x_init.add("q", solution.states[0]["q"], interpolation=InterpolationType.EACH_FRAME)
-    x_init.add("qdot", solution.states[0]["qdot"], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("q", states["q"], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("qdot", states["qdot"], interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
@@ -217,8 +220,9 @@ def prepare_ocp_second_pass(
     u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
+    controls = solution.decision_controls(to_merge=SolutionMerge.NODES)
     u_init = InitialGuessList()
-    u_init.add("tau", solution.controls[0]["tau"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
+    u_init.add("tau", controls["tau"], interpolation=InterpolationType.EACH_FRAME)
 
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
@@ -230,11 +234,12 @@ def prepare_ocp_second_pass(
     constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
     constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
 
+    final_time = float(solution.decision_time(to_merge=SolutionMerge.NODES)[-1, 0])
     return OptimalControlProgram(
         bio_model,
         dynamics,
-        solution.ns,
-        solution.phase_time[-1],
+        ns,
+        final_time,
         x_init=x_init,
         u_init=u_init,
         x_bounds=x_bounds,
@@ -255,10 +260,11 @@ def main():
     # --- First pass --- #
     # --- Prepare the ocp --- #
     np.random.seed(123456)
+    n_shooting = 500
     ocp_first = prepare_ocp_first_pass(
         biorbd_model_path="models/pendulum_maze.bioMod",
         final_time=5,
-        n_shooting=500,
+        n_shooting=n_shooting,
         # change the weight to observe the impact on the continuity of the solution
         # or comment to see how the constrained program would fare
         state_continuity_weight=1_000_000,
@@ -284,7 +290,7 @@ def main():
     solver_second.set_maximum_iterations(10000)
 
     ocp_second = prepare_ocp_second_pass(
-        biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, n_threads=3
+        biorbd_model_path="models/pendulum_maze.bioMod", ns=n_shooting, solution=sol_first, n_threads=3
     )
 
     # Custom plots

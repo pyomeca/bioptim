@@ -28,8 +28,8 @@ class PenaltyController:
         x_scaled: list,
         u_scaled: list,
         p: MX | SX | list,
-        s: list,
-        s_scaled: list,
+        a: list,
+        a_scaled: list,
         node_index: int = None,
     ):
         """
@@ -51,10 +51,10 @@ class PenaltyController:
             References to the scaled control variables
         p: MX | SX | list
             References to the parameter variables
-        s: list
-            References to the stochastic variables
-        s_scaled: list
-            References to the scaled stochastic variables
+        a: list
+            References to the algebraic_states variables
+        a_scaled: list
+            References to the scaled algebraic_states variables
         node_index: int
             Current node index if nlp.phase_dynamics is SHARED_DURING_THE_PHASE,
             then node_index is expected to be set to 0
@@ -67,8 +67,8 @@ class PenaltyController:
         self.u = u
         self.x_scaled = x_scaled
         self.u_scaled = u_scaled
-        self.s = s
-        self.s_scaled = s_scaled
+        self.a = a
+        self.a_scaled = a_scaled
         self.p = vertcat(p) if p is not None else p
         self.node_index = node_index
         self.cx_index_to_get = 0
@@ -87,6 +87,19 @@ class PenaltyController:
         Unless you see no way to access what you need otherwise, we strongly suggest that you use the normal path
         """
         return self._nlp
+
+    @property
+    def t_span(self) -> list:
+        dt = self.phases_time_cx[self.phase_idx]
+        return vertcat(self.time_cx, self.time_cx + dt) + self.node_index * dt
+
+    @property
+    def phases_time_cx(self) -> list:
+        return self.ocp.dt_parameter.cx
+
+    @property
+    def time_cx(self) -> MX | SX | Callable:
+        return self._nlp.time_cx
 
     @property
     def cx(self) -> MX | SX | Callable:
@@ -113,16 +126,20 @@ class PenaltyController:
         return self._nlp.ns
 
     @property
-    def tf(self) -> int:
-        return self._nlp.tf
-
-    @property
     def mx_to_cx(self):
         return self._nlp.mx_to_cx
 
     @property
     def model(self):
         return self._nlp.model
+
+    @property
+    def dt(self) -> MX | SX:
+        return self._nlp.dt
+
+    @property
+    def tf(self) -> MX | SX:
+        return self._nlp.tf
 
     @property
     def time(self) -> OptimizationVariable:
@@ -186,16 +203,16 @@ class PenaltyController:
         return out
 
     @property
-    def stochastic_variables(self) -> OptimizationVariableList:
+    def algebraic_states(self) -> OptimizationVariableList:
         """
-        Return the stochastic_variables associated with the current node index
+        Return the algebraic_states associated with the current node index
         Returns
         -------
-        The stochastic_variables at node node_index
+        The algebraic_states at node node_index
         """
         # TODO: This variables should be renamed to "algebraic"
-        self._nlp.stochastic_variables.node_index = self.node_index
-        out = self._nlp.stochastic_variables.unscaled
+        self._nlp.algebraic_states.node_index = self.node_index
+        out = self._nlp.algebraic_states.unscaled
         out.current_cx_to_get = self.cx_index_to_get
         return out
 
@@ -281,19 +298,19 @@ class PenaltyController:
         return out
 
     @property
-    def stochastic_variables_scaled(self) -> OptimizationVariableList:
+    def algebraic_states_scaled(self) -> OptimizationVariableList:
         """
-        Return the scaled stochastic variables associated with the current node index.
+        Return the scaled algebraic_states associated with the current node index.
 
-        Warning: Most of the time, the user does not want that stochastic variables but the normal
-        `stochastic_variables`, that said, it can sometime be useful for very limited number of use case.
+        Warning: Most of the time, the user does not want that algebraic_states variables but the normal
+        `algebraic_states`, that said, it can sometime be useful for very limited number of use case.
 
         Returns
         -------
-        The scaled stochastic variables at node node_index
+        The scaled algebraic_states variables at node node_index
         """
-        self._nlp.stochastic_variables.node_index = self.node_index
-        out = self._nlp.stochastic_variables.scaled
+        self._nlp.algebraic_states.node_index = self.node_index
+        out = self._nlp.algebraic_states.scaled
         out.current_cx_to_get = self.cx_index_to_get
         return out
 
@@ -322,17 +339,17 @@ class PenaltyController:
         """
         return self._nlp.parameters.scaled
 
-    def get_time_parameter_idx(self):
-        time_idx = None
-        for i in range(self.parameters.cx.shape[0]):
-            param_name = self.parameters.cx[i].name()
-            if param_name == "time_phase_" + str(self.phase_idx):
-                time_idx = self.phase_idx
-        if time_idx is None:
-            raise RuntimeError(
-                f"Time penalty can't be established since the {self.phase_idx}th phase has no time parameter. "
-                f"\nTime parameter can be added with : "
-                f"\nobjective_functions.add(ObjectiveFcn.[Mayer or Lagrange].MINIMIZE_TIME) or "
-                f"\nwith constraints.add(ConstraintFcn.TIME_CONSTRAINT)."
-            )
-        return time_idx
+    def copy(self):
+        return PenaltyController(
+            self.ocp,
+            self._nlp,
+            self.t,
+            self.x,
+            self.u,
+            self.x_scaled,
+            self.u_scaled,
+            self.p,
+            self.a,
+            self.a_scaled,
+            self.node_index,
+        )

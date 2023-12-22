@@ -26,6 +26,7 @@ from bioptim import (
     CostType,
     MultinodeObjectiveList,
     PhaseDynamics,
+    ControlType,
 )
 
 
@@ -40,6 +41,7 @@ def prepare_ocp(
     long_optim: bool = False,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
+    control_type: ControlType = ControlType.CONSTANT,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -61,6 +63,8 @@ def prepare_ocp(
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
         (for instance IRK is not compatible with expanded dynamics)
+    control_type: ControlType
+        The type of the controls
 
     Returns
     -------
@@ -137,6 +141,7 @@ def prepare_ocp(
         constraints=constraints,
         multinode_objectives=multinode_objective,
         ode_solver=ode_solver,
+        control_type=control_type,
     )
 
 

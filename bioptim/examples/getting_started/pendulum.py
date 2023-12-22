@@ -8,6 +8,7 @@ This simple example is a good place to start investigating bioptim as it describ
 During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
+
 import platform
 
 from bioptim import (
@@ -138,12 +139,12 @@ def main():
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
-    # --- Solve the ocp --- #
+    # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
-    # sol.graphs(show_bounds=True)
-
-    # --- Show the results in a bioviz animation --- #
     sol.print_cost()
+
+    # --- Show the results (graph or animation) --- #
+    # sol.graphs(show_bounds=True)
     sol.animate(n_frames=100)
 
     # # --- Save the solution --- #

@@ -3,7 +3,7 @@ import os
 
 import pytest
 import numpy as np
-from bioptim import OdeSolver, Solver, PhaseDynamics
+from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -39,7 +39,8 @@ def test_xia_fatigable_muscles(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((552, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, ma, mr, mf = states["q"], states["qdot"], states["muscles_ma"], states["muscles_mr"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -68,19 +69,16 @@ def test_xia_fatigable_muscles(phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.80920008, 1.66855572)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.81847388, -0.85234628)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0.81847388, -0.85234628)))
 
     np.testing.assert_almost_equal(
         muscles[:, 0],
         np.array((6.22395441e-08, 4.38966513e-01, 3.80781292e-01, 2.80532297e-07, 2.80532297e-07, 2.26601989e-01)),
     )
     np.testing.assert_almost_equal(
-        muscles[:, -2],
+        muscles[:, -1],
         np.array((8.86069119e-03, 1.17337666e-08, 1.28715148e-08, 2.02340603e-02, 2.02340603e-02, 2.16517945e-088)),
     )
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -117,7 +115,8 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((552, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, ma, mr, mf = states["q"], states["qdot"], states["muscles_ma"], states["muscles_mr"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -147,19 +146,16 @@ def test_xia_stabilized_fatigable_muscles(phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((0.80920008, 1.66855572)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.81847388, -0.85234628)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0.81847388, -0.85234628)))
 
     np.testing.assert_almost_equal(
         muscles[:, 0],
         np.array((6.22395441e-08, 4.38966513e-01, 3.80781292e-01, 2.80532298e-07, 2.80532298e-07, 2.26601989e-01)),
     )
     np.testing.assert_almost_equal(
-        muscles[:, -2],
+        muscles[:, -1],
         np.array((8.86069119e-03, 1.17337666e-08, 1.28715148e-08, 2.02340603e-02, 2.02340603e-02, 2.16517945e-08)),
     )
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -198,9 +194,6 @@ def test_michaud_fatigable_muscles(phase_dynamics):
     # Check some of the results
     # TODO: add tests
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
     # simulate
     TestUtils.simulate(sol)
 
@@ -236,7 +229,8 @@ def test_effort_fatigable_muscles(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((252, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, mf = states["q"], states["qdot"], states["muscles_mf"]
     tau, muscles = controls["tau"], controls["muscles"]
 
@@ -257,19 +251,16 @@ def test_effort_fatigable_muscles(phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((1.00151692, 0.75680941)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((0.52586761, -0.65113307)))
+    np.testing.assert_almost_equal(tau[:, -1], np.array((0.52586761, -0.65113307)))
 
     np.testing.assert_almost_equal(
         muscles[:, 0],
         np.array((-3.28714697e-09, 3.22448892e-01, 2.29707231e-01, 2.48558443e-08, 2.48558443e-08, 1.68035326e-01)),
     )
     np.testing.assert_almost_equal(
-        muscles[:, -2],
+        muscles[:, -1],
         np.array((3.86483818e-02, 1.10050313e-09, 2.74222702e-09, 4.25097771e-02, 4.25097771e-02, 6.56233597e-09)),
     )
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol)
@@ -311,9 +302,6 @@ def test_fatigable_xia_torque_non_split(phase_dynamics):
     # Check some of the results
     # TODO: add tests
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_xia_torque_split(phase_dynamics):
@@ -345,7 +333,8 @@ def test_fatigable_xia_torque_split(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((160, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot = states["q"], states["qdot"]
     ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
     ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
@@ -372,12 +361,9 @@ def test_fatigable_xia_torque_split(phase_dynamics):
     np.testing.assert_almost_equal(mf_plus[:, -1], np.array((2.32187531e-02, 0)))
 
     np.testing.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)), decimal=6)
-    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-12.0660082, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, -1], np.array((-12.0660082, 0)))
     np.testing.assert_almost_equal(tau_plus[:, 0], np.array((5.2893453, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
+    np.testing.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -417,7 +403,8 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((160, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot = states["q"], states["qdot"]
     ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
     ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
@@ -444,12 +431,9 @@ def test_fatigable_xia_stabilized_torque_split(phase_dynamics):
     np.testing.assert_almost_equal(mf_plus[:, -1], np.array((2.32187531e-02, 0)))
 
     np.testing.assert_almost_equal(tau_minus[:, 0], np.array((0, 0)), decimal=6)
-    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-12.0660082, 0)))
+    np.testing.assert_almost_equal(tau_minus[:, -1], np.array((-12.0660082, 0)))
     np.testing.assert_almost_equal(tau_plus[:, 0], np.array((5.2893453, 0)))
-    np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
+    np.testing.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
 
     # simulate
     TestUtils.simulate(sol)
@@ -491,9 +475,6 @@ def test_fatigable_michaud_torque_non_split(phase_dynamics):
     # Check some of the results
     # TODO: add some tests
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_michaud_torque_split(phase_dynamics):
@@ -529,7 +510,8 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
     np.testing.assert_almost_equal(g, np.zeros((200, 1)))
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot = states["q"], states["qdot"]
     ma_minus, mr_minus, mf_minus = states["tau_minus_ma"], states["tau_minus_mr"], states["tau_minus_mf"]
     ma_plus, mr_plus, mf_plus = states["tau_plus_ma"], states["tau_plus_mr"], states["tau_plus_mf"]
@@ -556,13 +538,10 @@ def test_fatigable_michaud_torque_split(phase_dynamics):
     np.testing.assert_almost_equal(mf_plus[:, -1], np.array((0, 0)))
 
     np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-2.39672721e-07, 0)), decimal=5)
-    np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-11.53208375, 0)), decimal=5)
+    np.testing.assert_almost_equal(tau_minus[:, -1], np.array((-11.53208375, 0)), decimal=5)
     if platform.system() == "Linux":
         np.testing.assert_almost_equal(tau_plus[:, 0], np.array((5.03417919, 0)), decimal=5)
-    np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
+    np.testing.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)
@@ -604,9 +583,6 @@ def test_fatigable_effort_torque_non_split(phase_dynamics):
     # Check some of the results
     # TODO: add some tests
 
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
-
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_fatigable_effort_torque_split(phase_dynamics):
@@ -643,7 +619,9 @@ def test_fatigable_effort_torque_split(phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((80, 1)))
 
         # Check some of the results
-        states, controls = sol.states, sol.controls
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+
         q, qdot = states["q"], states["qdot"]
         mf_minus, mf_plus = states["tau_minus_mf"], states["tau_plus_mf"]
         tau_minus, tau_plus = controls["tau_minus"], controls["tau_plus"]
@@ -661,12 +639,9 @@ def test_fatigable_effort_torque_split(phase_dynamics):
         np.testing.assert_almost_equal(mf_plus[:, -1], np.array((4.31950457e-05, 0)))
 
         np.testing.assert_almost_equal(tau_minus[:, 0], np.array((-8.39444342e-08, 0)))
-        np.testing.assert_almost_equal(tau_minus[:, -2], np.array((-12.03087219, 0)))
+        np.testing.assert_almost_equal(tau_minus[:, -1], np.array((-12.03087219, 0)))
         np.testing.assert_almost_equal(tau_plus[:, 0], np.array((5.85068579, 0)))
-        np.testing.assert_almost_equal(tau_plus[:, -2], np.array((0, 0)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
+        np.testing.assert_almost_equal(tau_plus[:, -1], np.array((0, 0)))
 
     # simulate
     TestUtils.simulate(sol)

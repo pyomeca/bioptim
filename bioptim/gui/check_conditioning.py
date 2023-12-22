@@ -8,6 +8,7 @@ from ..misc.enums import (
 )
 from ..misc.enums import QuadratureRule
 from ..dynamics.ode_solver import OdeSolver
+from ..limits.penalty_helpers import PenaltyHelpers
 
 
 def check_conditioning(ocp):
@@ -33,7 +34,7 @@ def check_conditioning(ocp):
         The control at a given time
         """
 
-        if nlp.control_type in (ControlType.CONSTANT, ControlType.NONE):
+        if nlp.control_type in (ControlType.CONSTANT,):
             return u
         elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
             return u[:, 0] + (u[:, 1] - u[:, 0]) * dt
@@ -56,6 +57,7 @@ def check_conditioning(ocp):
         hessian_norm_list = []
 
         # JACOBIAN
+        phases_dt = ocp.dt_parameter.cx
         for nlp in ocp.nlp:
             list_constraints = []
 
@@ -64,33 +66,32 @@ def check_conditioning(ocp):
                 nlp.states.node_index = node_index
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
-                nlp.stochastic_variables.node_index = node_index
+                nlp.algebraic_states.node_index = node_index
                 time = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
-                for axis in range(
-                    0,
-                    constraints.function[node_index](
-                        time,
-                        nlp.states.cx_start,
-                        nlp.controls.cx_start,
-                        nlp.parameters.cx,
-                        nlp.stochastic_variables.cx_start,
-                    ).shape[0],
-                ):
+
+                if constraints.multinode_penalty:
+                    n_phases = ocp.n_phases
+                    for phase_idx in constraints.nodes_phase:
+                        controllers.append(constraints.get_penalty_controller(ocp, ocp.nlp[phase_idx % n_phases]))
+                else:
+                    controllers = [constraints.get_penalty_controller(ocp, nlp)]
+
+                for axis in range(constraints.function[node_index].size_out("val")[0]):
                     # depends if there are parameters
                     if nlp.parameters.shape == 0:
-                        vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S_scaled)
+                        vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.A_scaled)
                     else:
-                        vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.S_scaled])
+                        vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx, *nlp.A_scaled])
+
+                    for controller in controllers:
+                        controller.node_index = constraints.node_idx[0]
+                    t0 = PenaltyHelpers.t0(constraints, controllers[0].ocp)
+                    _, x, u, a = constraints.get_variable_inputs(controllers)
+                    p = nlp.parameters.cx
 
                     list_constraints.append(
                         jacobian(
-                            constraints.function[constraints.node_idx[0]](
-                                [],
-                                nlp.states.cx_start,
-                                nlp.controls.cx_start,
-                                nlp.parameters.cx,
-                                nlp.stochastic_variables.cx_start,
-                            )[axis],
+                            constraints.function[constraints.node_idx[0]](t0, phases_dt, x, u, p, a)[axis],
                             vertcat_obj,
                         )
                     )
@@ -99,9 +100,9 @@ def check_conditioning(ocp):
 
             # depends if there are parameters
             if nlp.parameters.shape == 0:
-                vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.S)
+                vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, nlp.parameters.cx, *nlp.A)
             else:
-                vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx], *nlp.S)
+                vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled, *[nlp.parameters.cx], *nlp.A)
 
             jac_func = Function(
                 "jacobian",
@@ -111,14 +112,14 @@ def check_conditioning(ocp):
 
             nb_x_init = sum([nlp.x_init[key].shape[0] for key in nlp.x_init.keys()])
             nb_u_init = sum([nlp.u_init[key].shape[0] for key in nlp.u_init.keys()])
-            nb_s_init = sum([nlp.s_init[key].shape[0] for key in nlp.s_init.keys()])
+            nb_a_init = sum([nlp.a_init[key].shape[0] for key in nlp.a_init.keys()])
 
             # evaluate jac_func at X_init, U_init, considering the parameters
             time_init = np.array([], dtype=np.float64)
             x_init = np.zeros((len(nlp.X), nb_x_init))
             u_init = np.zeros((len(nlp.U), nb_u_init))
             param_init = np.array([ocp.parameter_init[key].shape[0] for key in ocp.parameter_init.keys()])
-            s_init = np.zeros((len(nlp.S), nb_s_init))
+            a_init = np.zeros((len(nlp.A), nb_a_init))
 
             for key in nlp.states.keys():
                 nlp.x_init[key].check_and_adjust_dimensions(len(nlp.states[key]), nlp.ns + 1)
@@ -126,25 +127,27 @@ def check_conditioning(ocp):
                     nlp.states.node_index = node_index
                     x_init[node_index, nlp.states[key].index] = np.array(nlp.x_init[key].init.evaluate_at(node_index))
             for key in nlp.controls.keys():
+                if not key in nlp.controls:
+                    continue
                 nlp.u_init[key].check_and_adjust_dimensions(len(nlp.controls[key]), nlp.ns)
                 for node_index in range(nlp.ns):
                     nlp.controls.node_index = node_index
                     u_init[node_index, nlp.controls[key].index] = np.array(nlp.u_init[key].init.evaluate_at(node_index))
-            for key in nlp.stochastic_variables.keys():
-                nlp.s_init[key].check_and_adjust_dimensions(len(nlp.stochastic_variables[key]), nlp.ns)
+            for key in nlp.algebraic_states.keys():
+                nlp.a_init[key].check_and_adjust_dimensions(len(nlp.algebraic_states[key]), nlp.ns)
                 for node_index in range(nlp.ns):
-                    nlp.stochastic_variables.node_index = node_index
-                    s_init[node_index, nlp.stochastic_variables[key].index] = np.array(
-                        nlp.s_init[key].init.evaluate_at(node_index)
+                    nlp.algebraic_states.node_index = node_index
+                    a_init[node_index, nlp.algebraic_states[key].index] = np.array(
+                        nlp.a_init[key].init.evaluate_at(node_index)
                     )
 
             time_init = time_init.reshape((time_init.size, 1))
             x_init = x_init.reshape((x_init.size, 1))
             u_init = u_init.reshape((u_init.size, 1))
             param_init = param_init.reshape((param_init.size, 1))
-            s_init = s_init.reshape((s_init.size, 1))
+            a_init = a_init.reshape((a_init.size, 1))
 
-            vector_init = np.vstack((time_init, x_init, u_init, param_init, s_init))
+            vector_init = np.vstack((time_init, x_init, u_init, param_init, a_init))
             jacobian_matrix = np.array(jac_func(vector_init))
             jacobian_list.append(jacobian_matrix)
 
@@ -164,19 +167,16 @@ def check_conditioning(ocp):
                 nlp.states.node_index = node_index
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
-                nlp.stochastic_variables.node_index = node_index
-                time = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
+                nlp.algebraic_states.node_index = node_index
 
-                for axis in range(
-                    0,
-                    constraints.function[node_index](
-                        nlp.time_cx,
-                        nlp.states.cx_start,
-                        nlp.controls.cx_start,
-                        nlp.parameters.cx,
-                        nlp.stochastic_variables.cx_start,
-                    ).shape[0],
-                ):
+                if constraints.multinode_penalty:
+                    n_phases = ocp.n_phases
+                    for phase_idx in constraints.nodes_phase:
+                        controllers.append(constraints.get_penalty_controller(ocp, ocp.nlp[phase_idx % n_phases]))
+                else:
+                    controllers = [constraints.get_penalty_controller(ocp, nlp)]
+
+                for axis in range(constraints.function[node_index].size_out("val")[0]):
                     # find all equality constraints
                     if constraints.bounds.min[axis][0] == constraints.bounds.max[axis][0]:
                         vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled)  # time, states, controls
@@ -184,17 +184,16 @@ def check_conditioning(ocp):
                             vertcat_obj = vertcat(vertcat_obj, nlp.parameters.cx)
                         else:
                             vertcat_obj = vertcat(vertcat_obj, *[nlp.parameters.cx])
-                        vertcat_obj = vertcat(vertcat_obj, *nlp.S_scaled)
+                        vertcat_obj = vertcat(vertcat_obj, *nlp.A_scaled)
+
+                        for controller in controllers:
+                            controller.node_index = constraints.node_idx[0]
+                        t0 = PenaltyHelpers.t0(constraints, controllers[0].ocp)
+                        _, x, u, a = constraints.get_variable_inputs(controllers)
+                        p = nlp.parameters.cx
 
                         hessian_cas = hessian(
-                            constraints.function[node_index](
-                                time,
-                                nlp.states.cx_start,
-                                nlp.controls.cx_start,
-                                nlp.parameters.cx,
-                                nlp.stochastic_variables.cx_start,
-                            )[axis],
-                            vertcat_obj,
+                            constraints.function[node_index](t0, phases_dt, x, u, p, a)[axis], vertcat_obj
                         )[0]
 
                         tick_labels.append(constraints.name)
@@ -205,7 +204,7 @@ def check_conditioning(ocp):
                             [hessian_cas],
                         )
 
-                        vector_init = np.vstack((time_init, x_init, u_init, param_init, s_init))
+                        vector_init = np.vstack((time_init, x_init, u_init, param_init, a_init))
                         hessian_matrix = np.array(hes_func(vector_init))
                         list_hessian.append(hessian_matrix)
 
@@ -315,6 +314,7 @@ def check_conditioning(ocp):
         """
 
         hessian_obj_list = []
+        phases_dt = ocp.dt_parameter.cx
         for phase, nlp in enumerate(ocp.nlp):
             for obj in nlp.J:
                 objective = 0
@@ -323,10 +323,17 @@ def check_conditioning(ocp):
                 nlp.states.node_index = node_index
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
-                nlp.stochastic_variables.node_index = node_index
+                nlp.algebraic_states.node_index = node_index
+
+                if obj.multinode_penalty:
+                    n_phases = ocp.n_phases
+                    for phase_idx in obj.nodes_phase:
+                        controllers.append(obj.get_penalty_controller(ocp, ocp.nlp[phase_idx % n_phases]))
+                else:
+                    controllers = [obj.get_penalty_controller(ocp, nlp)]
 
                 # Test every possibility
-                if obj.multinode_penalty or obj.transition:
+                if obj.multinode_penalty:
                     phase = ocp.nlp[phase - 1]
                     nlp_post = nlp
                     time_pre = phase.time_cx_end
@@ -335,11 +342,11 @@ def check_conditioning(ocp):
                     states_post = nlp_post.states.cx_start
                     controls_pre = phase.controls.cx_end
                     controls_post = nlp_post.controls.cx_start
-                    stochastic_pre = phase.stochastic.cx_end
-                    stochastic_post = nlp_post.stochastic.cx_start
+                    algebraic_states_pre = phase.algebraic_states.cx_end
+                    algebraic_states_post = nlp_post.algebraic_states.cx_start
                     state_cx = vertcat(states_pre, states_post)
                     control_cx = vertcat(controls_pre, controls_post)
-                    stochastic_cx = vertcat(stochastic_pre, stochastic_post)
+                    algebraic_states_cx = vertcat(algebraic_states_pre, algebraic_states_post)
 
                 else:
                     if obj.integrate:
@@ -347,18 +354,18 @@ def check_conditioning(ocp):
                     else:
                         state_cx = nlp.states.cx_start
                     control_cx = nlp.controls.cx_start
-                    stochastic_cx = nlp.stochastic_variables.cx_start
+                    algebraic_states_cx = nlp.algebraic_states.cx_start
                     if obj.explicit_derivative:
                         if obj.derivative:
                             raise RuntimeError("derivative and explicit_derivative cannot be simultaneously true")
                         state_cx = horzcat(state_cx, nlp.states.cx_end)
                         control_cx = horzcat(control_cx, nlp.controls.cx_end)
-                        stochastic_cx = horzcat(stochastic_cx, nlp.stochastic.cx_end)
+                        algebraic_states_cx = horzcat(algebraic_states_cx, nlp.algebraic_states.cx_end)
 
                 if obj.derivative:
                     state_cx = horzcat(nlp.states.cx_end, nlp.states.cx_start)
                     control_cx = horzcat(nlp.controls.cx_end, nlp.controls.cx_start)
-                    stochastic_cx = horzcat(nlp.stochastic.cx_end, nlp.stochastic.cx_start)
+                    algebraic_states_cx = horzcat(nlp.algebraic_states.cx_end, nlp.algebraic_states.cx_start)
 
                 dt_cx = nlp.cx.sym("dt", 1, 1)
                 is_trapezoidal = (
@@ -377,34 +384,20 @@ def check_conditioning(ocp):
                         if nlp.control_type == ControlType.CONSTANT
                         else horzcat(nlp.controls.cx_start, nlp.controls.cx_end)
                     )
-                    stochastic_cx = (
-                        horzcat(nlp.stochastic_variables.cx_start, nlp.stochastic_variables.cx_end)
+                    algebraic_states_cx = (
+                        horzcat(nlp.algebraic_states.cx_start, nlp.algebraic_states.cx_end)
                         if obj.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL
-                        else nlp.stochastic_variables.cx_start
+                        else nlp.algebraic_states.cx_start
                     )
 
-                if obj.target is None:
-                    p = obj.weighted_function[node_index](
-                        nlp.time_cx,
-                        state_cx,
-                        control_cx,
-                        nlp.parameters.cx,
-                        stochastic_cx,
-                        obj.weight,
-                        [],
-                        obj.dt,
-                    )
-                else:
-                    p = obj.weighted_function[node_index](
-                        nlp.time_cx,
-                        state_cx,
-                        control_cx,
-                        nlp.parameters.cx,
-                        stochastic_cx,
-                        obj.weight,
-                        obj.target,
-                        obj.dt,
-                    )
+                for controller in controllers:
+                    controller.node_index = obj.node_idx[0]
+                t0 = PenaltyHelpers.t0(obj, controllers[0].ocp)
+                _, x, u, s = obj.get_variable_inputs(controllers)
+                params = nlp.parameters.cx
+                target = PenaltyHelpers.target(obj, obj.node_idx.index(node_index))
+
+                p = obj.weighted_function[node_index](t0, phases_dt, x, u, params, s, obj.weight, target)
 
                 for i in range(p.shape[0]):
                     objective += p[i] ** 2
@@ -415,8 +408,8 @@ def check_conditioning(ocp):
                 vertcat_obj = vertcat(vertcat_obj, nlp.parameters.cx)
             else:
                 vertcat_obj = vertcat(vertcat_obj, *[nlp.parameters.cx])
-            if vertcat(*nlp.S_scaled).shape[0] > 0:
-                vertcat_obj = vertcat(vertcat_obj, *nlp.S_scaled)
+            if vertcat(*nlp.A_scaled).shape[0] > 0:
+                vertcat_obj = vertcat(vertcat_obj, *nlp.A_scaled)
 
             hessian_cas = hessian(objective, vertcat_obj)[0]
 
@@ -428,14 +421,14 @@ def check_conditioning(ocp):
 
             nb_x_init = sum([nlp.x_init[key].shape[0] for key in nlp.x_init.keys()])
             nb_u_init = sum([nlp.u_init[key].shape[0] for key in nlp.u_init.keys()])
-            nb_s_init = sum([nlp.s_init[key].shape[0] for key in nlp.s_init.keys()])
+            nb_a_init = sum([nlp.a_init[key].shape[0] for key in nlp.a_init.keys()])
 
             # evaluate jac_func at X_init, U_init, considering the parameters
             time_init = np.array([], dtype=np.float64)
             x_init = np.zeros((len(nlp.X), nb_x_init))
             u_init = np.zeros((len(nlp.U), nb_u_init))
             param_init = np.array([nlp.x_init[key].shape[0] for key in ocp.parameter_init.keys()])
-            s_init = np.zeros((len(nlp.S), nb_s_init))
+            a_init = np.zeros((len(nlp.A), nb_a_init))
 
             for key in nlp.states.keys():
                 nlp.x_init[key].check_and_adjust_dimensions(len(nlp.states[key]), nlp.ns + 1)
@@ -447,27 +440,27 @@ def check_conditioning(ocp):
                 for node_index in range(nlp.ns):
                     nlp.controls.node_index = node_index
                     u_init[node_index, nlp.controls[key].index] = np.array(nlp.u_init[key].init.evaluate_at(node_index))
-            for key in nlp.stochastic_variables.keys():
-                nlp.s_init[key].check_and_adjust_dimensions(len(nlp.stochastic_variables[key]), nlp.ns)
+            for key in nlp.algebraic_states.keys():
+                nlp.a_init[key].check_and_adjust_dimensions(len(nlp.algebraic_states[key]), nlp.ns)
                 for node_index in range(nlp.ns):
-                    nlp.stochastic_variables.node_index = node_index
-                    s_init[node_index, nlp.stochastic_variables[key].index] = np.array(
-                        nlp.s_init[key].init.evaluate_at(node_index)
+                    nlp.algebraic_states.node_index = node_index
+                    a_init[node_index, nlp.algebraic_states[key].index] = np.array(
+                        nlp.a_init[key].init.evaluate_at(node_index)
                     )
 
             time_init = time_init.reshape((time_init.size, 1))
             x_init = x_init.reshape((x_init.size, 1))
             u_init = u_init.reshape((u_init.size, 1))
             param_init = param_init.reshape((param_init.size, 1))
-            s_init = s_init.reshape((s_init.size, 1))
-            vector_init = np.vstack((time_init, x_init, u_init, param_init, s_init))
+            a_init = a_init.reshape((a_init.size, 1))
+            vector_init = np.vstack((time_init, x_init, u_init, param_init, a_init))
 
             hessian_obj_matrix = np.array(hes_func(vector_init))
             hessian_obj_list.append(hessian_obj_matrix)
 
         # Convexity checking (positive semi-definite hessian)
-        # On R (convexe), the objective is convexe if and only if the hessian is positive semi definite (psd)
-        # And, as the hessian is symetric (Schwarz), the hessian is psd if and only if the eigenvalues are positive
+        # On R (convex), the objective is convex if and only if the hessian is positive semi definite (psd)
+        # And, as the hessian is symmetric (Schwarz), the hessian is psd if and only if the eigenvalues are positive
         convexity = []
         condition_number = []
         for matrix in range(len(hessian_obj_list)):

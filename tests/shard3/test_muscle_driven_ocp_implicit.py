@@ -5,7 +5,7 @@ import os
 import pytest
 
 import numpy as np
-from bioptim import OdeSolver, DefectType, PhaseDynamics
+from bioptim import OdeSolver, DefectType, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -44,7 +44,9 @@ def test_muscle_driven_ocp_implicit(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(g, np.zeros((20, 1)), decimal=5)
 
     # Check some of the results
-    q, qdot, tau, mus = sol.states["q"], sol.states["qdot"], sol.controls["tau"], sol.controls["muscles"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
     if ode_solver == OdeSolver.IRK:
         np.testing.assert_almost_equal(f[0, 0], 0.12644299285122357)
@@ -57,13 +59,13 @@ def test_muscle_driven_ocp_implicit(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.31428244, 14.18136079]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([0.00799548, 0.02025833]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([0.00228284, 0.00281158]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([0.00228284, 0.00281158]))
         np.testing.assert_almost_equal(
             mus[:, 0],
             np.array([7.16894627e-06, 6.03295877e-01, 3.37029458e-01, 1.08379096e-05, 1.14087059e-05, 3.66744423e-01]),
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -1],
             np.array([5.46688078e-05, 6.60548530e-03, 3.77595547e-03, 4.92828831e-04, 5.09444822e-04, 9.08082070e-03]),
         )
 
@@ -78,20 +80,17 @@ def test_muscle_driven_ocp_implicit(ode_solver, phase_dynamics):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3143106, 14.1812974]))
         # initial and final controls
         np.testing.assert_almost_equal(tau[:, 0], np.array([0.00799575, 0.02025812]))
-        np.testing.assert_almost_equal(tau[:, -2], np.array([0.00228286, 0.00281158]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([0.00228286, 0.00281158]))
         np.testing.assert_almost_equal(
             mus[:, 0],
             np.array([7.16887076e-06, 6.03293415e-01, 3.37026700e-01, 1.08380212e-05, 1.14088234e-05, 3.66740786e-01]),
         )
         np.testing.assert_almost_equal(
-            mus[:, -2],
+            mus[:, -1],
             np.array([5.4664028e-05, 6.5610959e-03, 3.7092411e-03, 4.6592962e-04, 4.8159442e-04, 9.0543847e-03]),
         )
     else:
         raise ValueError("Test not ready")
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, False)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)

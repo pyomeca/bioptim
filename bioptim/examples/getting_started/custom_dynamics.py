@@ -37,7 +37,7 @@ def custom_dynamics(
     states: MX | SX,
     controls: MX | SX,
     parameters: MX | SX,
-    stochastic_variables: MX | SX,
+    algebraic_states: MX | SX,
     nlp: NonLinearProgram,
     my_additional_factor=1,
 ) -> DynamicsEvaluation:
@@ -54,6 +54,8 @@ def custom_dynamics(
         The controls of the system
     parameters: MX | SX
         The parameters acting on the system
+    algebraic_states: MX | SX
+        The algebraic states of the system
     nlp: NonLinearProgram
         A reference to the phase
     my_additional_factor: int
