@@ -6,7 +6,6 @@ from scipy import interpolate as sci_interp
 from scipy.interpolate import interp1d
 from casadi import vertcat, DM
 from matplotlib import pyplot as plt
-import git
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment
 from ..optimization_vector import OptimizationVectorHelper
@@ -164,26 +163,6 @@ class Solution:
             self._stepwise_controls = SolutionData.from_scaled(ocp, u, "u")
             self._parameters = SolutionData.from_scaled(ocp, p, "p")
             self._decision_algebraic_states = SolutionData.from_scaled(ocp, a, "a")
-
-    @property
-    def bioptim_version_used(self) -> dict:
-        """
-        Returns info on the bioptim version used to generate the results for future reference.
-        """
-        repo = git.Repo(search_parent_directories=True)
-        commit_id = str(repo.commit())
-        branch = str(repo.active_branch)
-        tag = repo.git.describe("--tags")
-        bioptim_version = repo.git.version_info
-        date = repo.git.log("-1", "--format=%cd")
-        version_dic = {
-            "commit_id": commit_id,
-            "date": date,
-            "branch": branch,
-            "tag": tag,
-            "bioptim_version": bioptim_version,
-        }
-        return version_dic
 
     @classmethod
     def from_dict(cls, ocp, sol: dict):
