@@ -557,7 +557,7 @@ class COLLOCATION(Integrator):
 
     @property
     def h(self):
-        return self.t_span_sym[0] - self.t_span_sym[1]
+        return self.t_span_sym[1] - self.t_span_sym[0]
 
     @property
     def _integration_time(self):
