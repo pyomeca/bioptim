@@ -386,10 +386,13 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         Parameters
         ----------
-        controllers
+        controllers: list[PenaltyController, PenaltyController, PenaltyController]
+            The controllers of the three nodes considered in the input list.
 
         Returns
         -------
+        The symbolic MX expression of the discrete Euler Lagrange equations
+        for the integration from node i-1, i,to i+1.
 
         """
         if self.bio_model.has_holonomic_constraints:
@@ -424,18 +427,21 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         Parameters
         ----------
-        controllers
-        n_qdot
+        controllers: list[PenaltyController, PenaltyController]
+            The controllers of the two first nodes considered in the input list.
+        n_qdot:
+            The number of generalized velocities
 
         Returns
         -------
+        The symbolic MX expression of the initial continuity constraint for the integration.
 
         """
         if self.bio_model.has_holonomic_constraints:
             return controllers[0].get_nlp.implicit_dynamics_func_first_node[0](
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
-                controllers[0].parameters.cx[:n_qdot],
+                controllers[0].parameters.cx[:n_qdot],  # hardcoded
                 controllers[1].states["q"].cx,
                 controllers[0].controls["tau"].cx,
                 controllers[1].controls["tau"].cx,
@@ -445,7 +451,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             return controllers[0].get_nlp.implicit_dynamics_func_first_node[0](
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
-                controllers[0].parameters.cx[:n_qdot],
+                controllers[0].parameters.cx[:n_qdot],   # hardcoded
                 controllers[1].states["q"].cx,
                 controllers[0].controls["tau"].cx,
                 controllers[1].controls["tau"].cx,
@@ -462,11 +468,14 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         Parameters
         ----------
-        n_qdot
-        controllers
+        controllers: list[PenaltyController, PenaltyController]
+            The controllers of the two first nodes considered in the input list.
+        n_qdot:
+            The number of generalized velocities
 
         Returns
         -------
+        The symbolic MX expression of the final continuity constraint for the integration.
 
         """
         if self.bio_model.has_holonomic_constraints:
@@ -474,7 +483,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
-                controllers[0].parameters.cx[n_qdot : 2 * n_qdot],
+                controllers[0].parameters.cx[n_qdot : 2 * n_qdot],  # hardcoded
                 controllers[0].controls["tau"].cx,
                 controllers[1].controls["tau"].cx,
                 controllers[1].states["lambdas"].cx,
@@ -484,7 +493,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[0].get_nlp.dt,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
-                controllers[0].parameters.cx[n_qdot : 2 * n_qdot],
+                controllers[0].parameters.cx[n_qdot : 2 * n_qdot],  # hardcoded
                 controllers[0].controls["tau"].cx,
                 controllers[1].controls["tau"].cx,
             )

@@ -1,7 +1,7 @@
 """
 This example is inspired from the clear pike circle gymnastics skill. It is composed of two pendulums
 representing the trunk and legs segments (only the hip flexion is actuated). The objective is to minimize the
-maximum torque of the hip flexion while performing the clear pike circle motion. The maximum torque is included to the
+maximum torque (minmax) of the hip flexion while performing the clear pike circle motion. The maximum torque is included to the
 problem as a parameter, all torque interval re constrained to be smaller than this parameter, this parameter is the
 minimized.
 """
