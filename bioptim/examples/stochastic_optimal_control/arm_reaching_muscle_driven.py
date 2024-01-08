@@ -164,7 +164,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     """
     Minimize the uncertainty (covariance matrix) of the states.
     """
-    dt = controllers[0].dt
+    dt = controllers[0].dt.cx
     out = 0
     for i, ctrl in enumerate(controllers):
         cov_matrix = StochasticBioModel.reshape_to_matrix(ctrl.integrated_values["cov"].cx, ctrl.model.matrix_shape_cov)

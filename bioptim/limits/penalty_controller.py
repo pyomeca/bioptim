@@ -91,15 +91,11 @@ class PenaltyController:
     @property
     def t_span(self) -> list:
         dt = self.phases_time_cx[self.phase_idx]
-        return vertcat(self.time_cx, self.time_cx + dt) + self.node_index * dt
+        return vertcat(self.time.cx, self.time.cx + dt) + self.node_index * dt
 
     @property
     def phases_time_cx(self) -> list:
         return self.ocp.dt_parameter.cx
-
-    @property
-    def time_cx(self) -> MX | SX | Callable:
-        return self._nlp.time_cx
 
     @property
     def cx(self) -> MX | SX | Callable:
@@ -135,11 +131,14 @@ class PenaltyController:
 
     @property
     def dt(self) -> MX | SX:
-        return self._nlp.dt
-
-    @property
-    def tf(self) -> MX | SX:
-        return self._nlp.tf
+        tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        tp.append(
+            "dt",
+            mx=self._nlp.dt_mx,
+            cx=[self._nlp.dt, self._nlp.dt, self._nlp.dt],
+            bimapping=BiMapping(to_second=[0], to_first=[0]),
+        )
+        return tp["dt"]
 
     @property
     def time(self) -> OptimizationVariable:
@@ -159,6 +158,10 @@ class PenaltyController:
             bimapping=BiMapping(to_second=[0], to_first=[0]),
         )
         return tp["time"]
+
+    @property
+    def tf(self) -> MX | SX:
+        return self._nlp.tf
 
     @property
     def states(self) -> OptimizationVariableList:

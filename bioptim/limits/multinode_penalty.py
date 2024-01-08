@@ -376,7 +376,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            dt = controllers[0].dt
+            dt = controllers[0].dt.cx
 
             M_matrix = StochasticBioModel.reshape_to_matrix(
                 controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
@@ -470,7 +470,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            dt = controllers[0].dt
+            dt = controllers[0].dt.cx
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
@@ -549,7 +549,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            dt = controllers[0].dt
+            dt = controllers[0].dt.cx
 
             nb_root = controllers[0].model.nb_root
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root

@@ -661,7 +661,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             algebraic_states_sym = MX.sym("algebraic_states_sym", controller.algebraic_states.shape, 1)
 
             dx = controller.extra_dynamics(0)(
-                controller.time.mx,
+                vertcat(controller.time.mx, controller.dt.mx),
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,
                 parameters_sym,
@@ -674,7 +674,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             DF_DX_fun = Function(
                 "DF_DX_fun",
                 [
-                    controller.time.mx,
+                    vertcat(controller.time.mx, controller.dt.mx),
                     q_root,
                     q_joints,
                     qdot_root,
@@ -689,7 +689,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
 
             DF_DX = DF_DX_fun(
-                controller.time.cx,
+                vertcat(controller.time.cx, controller.dt.cx),
                 controller.states["q"].cx[:nb_root],
                 controller.states["q"].cx[nb_root:],
                 controller.states["qdot"].cx[:nb_root],
@@ -734,7 +734,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_joints = horzcat(*(controller.states.cx_intermediates_list))
 
             constraint = Mc(
-                controller.time_cx,
+                vertcat(controller.time.cx, controller.dt.cx),
                 controller.states.cx_start[:nb_root],  # x_q_root
                 controller.states.cx_start[nb_root : nb_root + nu],  # x_q_joints
                 controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],  # x_qdot_root
@@ -783,7 +783,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_joints = horzcat(*(controller.states.cx_intermediates_list))
 
             cov_next_computed = Pf(
-                controller.time_cx,
+                vertcat(controller.time.cx, controller.dt.cx),
                 controller.states.cx_start[:nb_root],  # x_q_root
                 controller.states.cx_start[nb_root : nb_root + nu],  # x_q_joints
                 controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],  # x_qdot_root
@@ -926,14 +926,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_full_mx = vertcat(z_q_root_mx, z_q_joints_mx, z_qdot_root_mx, z_qdot_joints_mx)
 
             xf, _, defects_mx = controller.integrate_extra_dynamics(0).function(
-                controller.time.mx,
+                vertcat(controller.time.mx, controller.dt.mx),
                 horzcat(x_full_mx, z_full_mx),
                 controller.controls.mx,
                 controller.parameters.mx,
                 controller.algebraic_states.mx,
             )
             mx_all = [
-                controller.time.mx,
+                vertcat(controller.time.mx, controller.dt.mx),
                 x_q_root_mx,
                 x_q_joints_mx,
                 x_qdot_root_mx,
@@ -949,7 +949,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.model.sensory_noise_sym_mx,
             ]
             cx_all = [
-                controller.time.cx,
+                vertcat(controller.time.cx, controller.dt.cx),
                 x_q_root,
                 x_q_joints,
                 x_qdot_root,
@@ -986,7 +986,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Mc = Function(
                 "M_cons",
                 [
-                    controller.time_cx,
+                    vertcat(controller.time.cx, controller.dt.cx),
                     x_q_root,
                     x_q_joints,
                     x_qdot_root,
@@ -1010,7 +1010,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Pf = Function(
                 "P_next",
                 [
-                    controller.time_cx,
+                    vertcat(controller.time.cx, controller.dt.cx),
                     x_q_root,
                     x_q_joints,
                     x_qdot_root,
