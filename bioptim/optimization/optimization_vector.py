@@ -443,7 +443,7 @@ class OptimizationVectorHelper:
             # The list is to simulate the node so it has the same structure as the states and controls
             data_parameters[param.name] = [v_array[[offset + i for i in param.index], np.newaxis]]
         data_parameters = [data_parameters]
-        offset += len(ocp.parameters)
+        offset += sum([ocp.parameters[key].shape for key in ocp.parameters.keys()])
 
         # For algebraic_states variables
         for p in range(ocp.n_phases):
