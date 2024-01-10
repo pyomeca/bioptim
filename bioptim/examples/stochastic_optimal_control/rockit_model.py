@@ -22,15 +22,12 @@ class RockitModel:
     ):
         self.socp_type = socp_type
 
-        self.motor_noise_sym = MX()
-        if motor_noise_magnitude is not None:
-            self.motor_noise_magnitude = motor_noise_magnitude
-            self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
-
+        self.motor_noise_magnitude = motor_noise_magnitude
+        
         self.sensory_noise_magnitude = (
             []
         )  # This is necessary to have the right shapes in bioptim's internal constraints
-        self.sensory_noise_sym = MX()
+        self.sensory_noise_magnitude = np.ndarray((0, 1))
         self.sensory_reference = None
 
         n_noised_states = 2
@@ -72,7 +69,7 @@ class RockitModel:
 
         motor_noise = 0
         if with_noise:
-            motor_noise = self.motor_noise_sym
+            motor_noise = parameters["motor_noise"].mx
 
         qddot = -0.1 * (1 - q**2) * qdot - q + u + motor_noise
 

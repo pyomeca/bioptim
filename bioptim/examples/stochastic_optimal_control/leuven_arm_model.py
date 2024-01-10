@@ -25,12 +25,6 @@ class LeuvenArmModel:
         self.sensory_noise_magnitude = sensory_noise_magnitude
         self.sensory_reference = sensory_reference
 
-        self.cx = SX if use_sx else MX
-        self.motor_noise_sym = self.cx.sym("motor_noise", motor_noise_magnitude.shape[0])
-        self.motor_noise_sym_mx = MX.sym("motor_noise_mx", motor_noise_magnitude.shape[0])
-        self.sensory_noise_sym = self.cx.sym("sensory_noise", sensory_noise_magnitude.shape[0])
-        self.sensory_noise_sym_mx = MX.sym("sensory_noise_mx", sensory_noise_magnitude.shape[0])
-
         n_noised_controls = 6
         n_references = 4
         n_noised_states = 10

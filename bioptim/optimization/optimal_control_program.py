@@ -615,6 +615,7 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             ConfigureProblem.initialize(self, self.nlp[i])
+            self.nlp[i].parameters = self.parameters  # This should be remove when phase parameters will be implemented
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
             if (isinstance(self.nlp[i].model, VariationalBiorbdModel)) and self.nlp[i].algebraic_states.shape > 0:
                 raise NotImplementedError(

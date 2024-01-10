@@ -175,8 +175,8 @@ def get_cov_mat(nlp, node_index, use_sx):
     M_matrix = StochasticBioModel.reshape_to_matrix(nlp.algebraic_states["m"].cx, nlp.model.matrix_shape_m)
 
     CX_eye = cas.SX_eye if use_sx else cas.DM_eye
-    sigma_w = cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym) * CX_eye(
-        cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym).shape[0]
+    sigma_w = cas.vertcat(nlp.parameters["sensory_noise"].cx, nlp.parameters["motor_noise"].cx) * CX_eye(
+        cas.vertcat(nlp.parameters["sensory_noise"].cx, nlp.parameters["motor_noise"].cx).shape[0]
     )
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
@@ -196,8 +196,6 @@ def get_cov_mat(nlp, node_index, use_sx):
             nlp.controls.mx,
             nlp.parameters,
             nlp.algebraic_states.mx,
-            nlp.model.sensory_noise_sym_mx,
-            nlp.model.motor_noise_sym_mx,
         ],
         [dx.dxdt],
     )(
@@ -205,11 +203,9 @@ def get_cov_mat(nlp, node_index, use_sx):
         nlp.controls.cx,
         nlp.parameters,
         nlp.algebraic_states.cx,
-        nlp.model.sensory_noise_sym,
-        nlp.model.motor_noise_sym,
     )
 
-    ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.model.sensory_noise_sym, nlp.model.motor_noise_sym))
+    ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.parameters["sensory_noise"].cx, nlp.parameters["motor_noise"].cx))
     dg_dw = -ddx_dwm * dt
     ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx)
     dg_dx: Any = -(ddx_dx * dt / 2 + CX_eye(ddx_dx.shape[0]))
@@ -224,8 +220,6 @@ def get_cov_mat(nlp, node_index, use_sx):
             nlp.parameters,
             nlp.algebraic_states.cx,
             cov_sym,
-            nlp.model.motor_noise_sym,
-            nlp.model.sensory_noise_sym,
         ],
         [p_next],
     )

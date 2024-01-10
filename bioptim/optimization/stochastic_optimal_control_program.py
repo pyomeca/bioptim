@@ -19,7 +19,7 @@ from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList
 from ..limits.path_conditions import BoundsList
 from ..limits.path_conditions import InitialGuessList
-from ..misc.enums import PhaseDynamics
+from ..misc.enums import PhaseDynamics, InterpolationType
 from ..misc.__version__ import __version__
 from ..misc.enums import Node, ControlType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
@@ -82,6 +82,26 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         self._a_init = a_init
         self._a_bounds = a_bounds
         self._a_scaling = a_scaling
+
+        # Parameters
+        if parameters is None:
+            parameters = ParameterList()
+        if parameter_bounds is None:
+            parameter_bounds = BoundsList()
+        if parameter_init is None:
+            parameter_init = InitialGuessList()
+
+        if "motor_noise" not in parameters.keys():
+            parameters.add("motor_noise", None, size=bio_model.motor_noise_magnitude.shape[0])
+            parameter_bounds.add("motor_noise", min_bound=bio_model.motor_noise_magnitude, max_bound=bio_model.motor_noise_magnitude, interpolation=InterpolationType.CONSTANT)
+            parameter_init.add("motor_noise", initial_guess=bio_model.motor_noise_magnitude, interpolation=InterpolationType.CONSTANT)
+        
+        if "sensory_noise" not in parameters.keys():
+            parameters.add("sensory_noise", None, size=bio_model.sensory_noise_magnitude.shape[0])
+            parameter_bounds.add("sensory_noise", min_bound=bio_model.sensory_noise_magnitude, max_bound=bio_model.sensory_noise_magnitude, interpolation=InterpolationType.CONSTANT)
+            parameter_init.add("sensory_noise", initial_guess=bio_model.sensory_noise_magnitude, interpolation=InterpolationType.CONSTANT)
+
+
 
         super(StochasticOptimalControlProgram, self).__init__(
             bio_model=bio_model,
