@@ -803,7 +803,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 z_joints[nb_root + nu : 2 * nb_root + nu, :],  # z_qdot_root
                 z_joints[2 * nb_root + nu : 2 * (nb_root + nu), :],  # z_qdot_joints
                 controller.controls.cx_start,
-                controller.parameters.cx_start,
+                parameters,
                 controller.algebraic_states.cx_start,
             )
 
@@ -898,7 +898,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             This function computes the jacobians of the collocation equation and of the continuity equation with respect to the collocation points and the noise
             """
-            sigma_ww = diag(vertcat(controller.parameters["motor_noise"].cx, controller.parameters["sensory_noise"].cx))
+            motor_noise = controller.parameters["motor_noise"].cx
+            sensory_noise = controller.parameters["sensory_noise"].cx
+            sigma_ww = diag(vertcat(motor_noise, sensory_noise))
 
             cov_matrix = StochasticBioModel.reshape_to_matrix(
                 controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
@@ -919,61 +921,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             z_q_joints = controller.cx.sym("z_q_joints", nu, polynomial_degree + 1)
             z_qdot_root = controller.cx.sym("z_qdot_root", nb_root, polynomial_degree + 1)
             z_qdot_joints = controller.cx.sym("z_qdot_joints", nu, polynomial_degree + 1)
-            x_q_root_mx = MX.sym("x_q_root", nb_root, 1)
-            x_q_joints_mx = MX.sym("x_q_joints", nu, 1)
-            x_qdot_root_mx = MX.sym("x_qdot_root", nb_root, 1)
-            x_qdot_joints_mx = MX.sym("x_qdot_joints", nu, 1)
-            z_q_root_mx = MX.sym("z_q_root", nb_root, polynomial_degree + 1)
-            z_q_joints_mx = MX.sym("z_q_joints", nu, polynomial_degree + 1)
-            z_qdot_root_mx = MX.sym("z_qdot_root", nb_root, polynomial_degree + 1)
-            z_qdot_joints_mx = MX.sym("z_qdot_joints", nu, polynomial_degree + 1)
+            x_full_cx = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
+            z_full_cx = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
 
-            x_full = vertcat(x_q_root, x_q_joints, x_qdot_root, x_qdot_joints)
-            z_full = vertcat(z_q_root, z_q_joints, z_qdot_root, z_qdot_joints)
-            x_full_mx = vertcat(x_q_root_mx, x_q_joints_mx, x_qdot_root_mx, x_qdot_joints_mx)
-            z_full_mx = vertcat(z_q_root_mx, z_q_joints_mx, z_qdot_root_mx, z_qdot_joints_mx)
-
-            xf, _, defects_mx = controller.integrate_extra_dynamics(0).function(
-                vertcat(controller.time.mx, controller.time.mx + controller.dt.mx),
-                horzcat(x_full_mx, z_full_mx),
-                controller.controls.mx,
-                controller.parameters.mx,
-                controller.algebraic_states.mx,
+            xf, _, defects = controller.integrate_extra_dynamics(0).function(
+                vertcat(controller.time.cx, controller.time.cx + controller.dt.cx),
+                horzcat(x_full_cx, z_full_cx),
+                controller.controls.cx,
+                controller.parameters.cx,
+                controller.algebraic_states.cx,
             )
-            mx_all = [
-                controller.time.mx,
-                controller.dt.mx,
-                x_q_root_mx,
-                x_q_joints_mx,
-                x_qdot_root_mx,
-                x_qdot_joints_mx,
-                z_q_root_mx,
-                z_q_joints_mx,
-                z_qdot_root_mx,
-                z_qdot_joints_mx,
-                controller.controls.mx,
-                controller.parameters.mx,
-                controller.algebraic_states.mx,
-            ]
-            cx_all = [
-                controller.time.cx,
-                controller.dt.cx,
-                x_q_root,
-                x_q_joints,
-                x_qdot_root,
-                x_qdot_joints,
-                z_q_root,
-                z_q_joints,
-                z_qdot_root,
-                z_qdot_joints,
-                controller.controls.cx_start,
-                controller.parameters.cx_start,
-                controller.algebraic_states.cx_start,
-            ]
-            defects = Function("tp", mx_all, [defects_mx])(*cx_all)
-            xf = Function("tp", mx_all, [xf])(*cx_all)
 
-            G_joints = [x_full - z_full[:, 0]]
+            G_joints = [x_full_cx - z_full_cx[:, 0]]
             nx = 2 * (nb_root + nu)
             for i in range(controller.ode_solver.polynomial_degree):
                 idx = [j + i * nx for j in joints_index]
@@ -982,10 +941,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             Gdx = jacobian(G_joints, horzcat(x_q_joints, x_qdot_joints))
             Gdz = jacobian(G_joints, horzcat(z_q_joints, z_qdot_joints))
-            Gdw = jacobian(
-                G_joints,
-                vertcat(controller.parameters["motor_noise"].cx, controller.parameters["sensory_noise"].cx),
-            )
+            Gdw = jacobian(G_joints, vertcat(motor_noise, sensory_noise))
             Fdz = jacobian(xf, horzcat(z_q_joints, z_qdot_joints))
 
             # Constraint Equality defining M

@@ -229,7 +229,6 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             If the dynamics should be expanded with casadi
         """
 
-        nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
         dynamics_eval = DynamicsEvaluation(MX(0), MX(0))

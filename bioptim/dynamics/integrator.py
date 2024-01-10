@@ -79,13 +79,7 @@ class Integrator:
         self.step_times_from_dt = self._time_xall_from_dt_func
         self.function = Function(
             "integrator",
-            [
-                self.t_span_sym,
-                self._x_sym_modified,
-                self.u_sym,
-                self.param_sym,
-                self.a_sym,
-            ],
+            [self.t_span_sym, self._x_sym_modified, self.u_sym, self.param_sym, self.a_sym],
             self.dxdt(
                 states=self.x_sym,
                 controls=self.u_sym,
@@ -618,13 +612,9 @@ class COLLOCATION(Integrator):
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
-                    t,
-                    states[j + 1],
-                    self.get_u(controls, self._integration_time[j]),
-                    params,
-                    algebraic_states,
+                    t, states[j + 1], self.get_u(controls, self._integration_time[j]), params, algebraic_states
                 )[:, self.ode_idx]
-                defects.append(xp_j - self.h * f_j)
+                defects.append(xp_j - f_j * self.h)
             elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(
                     self.implicit_fun(

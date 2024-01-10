@@ -107,7 +107,7 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 4.587065067031554)
+    np.testing.assert_almost_equal(f[0, 0], 4.6220107868123605)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -123,13 +123,13 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     m, cov = algebraic_states["m"], algebraic_states["cov"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.0, 2.91660270e00]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.0, 2.91660270e00]))
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([4.59876163, 0.33406115]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([4.59876163, 0.33406115]))
+    np.testing.assert_almost_equal(q[:, 0], np.array([-1.07999204e-27,  2.94926475e+00]))
+    np.testing.assert_almost_equal(q[:, -1], np.array([-3.76592146e-26,  2.94926475e+00]))
+    np.testing.assert_almost_equal(qdot[:, 0], np.array([3.59388215, 0.49607651]))
+    np.testing.assert_almost_equal(qdot[:, -1], np.array([3.59388215, 0.49607651]))
 
-    np.testing.assert_almost_equal(u[:, 0], np.array([3.94130314, 0.50752995]))
-    np.testing.assert_almost_equal(u[:, -1], np.array([1.37640701, 2.78054156]))
+    np.testing.assert_almost_equal(u[:, 0], np.array([2.2568354 , 1.69720657]))
+    np.testing.assert_almost_equal(u[:, -1], np.array([0.82746288, 2.89042815]))
 
     np.testing.assert_almost_equal(
         m[:, 0],

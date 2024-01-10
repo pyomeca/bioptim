@@ -80,8 +80,8 @@ def stochastic_forward_dynamics(
     motor_noise = 0
     sensory_noise = 0
     if with_noise:
-        motor_noise = DynamicsFunctions.get(nlp.parameters["motor_noise"], parameters)
-        sensory_noise = DynamicsFunctions.get(nlp.parameters["sensory_noise"], parameters)
+        motor_noise = nlp.parameters["motor_noise"].mx
+        sensory_noise = nlp.parameters["sensory_noise"].mx
 
     mus_excitations_fb = mus_excitations
     noise_torque = np.zeros(nlp.model.motor_noise_magnitude.shape)
@@ -169,6 +169,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
         cov_matrix = StochasticBioModel.reshape_to_matrix(ctrl.integrated_values["cov"].cx, ctrl.model.matrix_shape_cov)
         p_partial = cov_matrix[ctrl.states[key].index, ctrl.states[key].index]
         out += cas.trace(p_partial) * dt
+
     return out
 
 
@@ -183,14 +184,14 @@ def get_cov_mat(nlp, node_index):
     m_matrix = StochasticBioModel.reshape_to_matrix(nlp.algebraic_states["m"].cx, nlp.model.matrix_shape_m)
 
     CX_eye = cas.SX_eye if nlp.cx == cas.SX else cas.MX_eye
-    sigma_w = cas.vertcat(nlp.parameters["sensory_noise"].mx, nlp.parameters["motor_noise"].mx) * CX_eye(6)
+    sigma_w = cas.vertcat(nlp.parameters["sensory_noise"].cx, nlp.parameters["motor_noise"].cx) * CX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(
         nlp.states.mx,
         nlp.controls.mx,
-        nlp.parameters,
+        nlp.parameters.mx,
         nlp.algebraic_states.mx,
         nlp,
         force_field_magnitude=nlp.model.force_field_magnitude,
@@ -199,18 +200,10 @@ def get_cov_mat(nlp, node_index):
 
     dx.dxdt = cas.Function(
         "tp",
-        [
-            nlp.states.mx,
-            nlp.controls.mx,
-            nlp.parameters,
-            nlp.algebraic_states.mx,
-        ],
+        [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx],
         [dx.dxdt],
     )(
-        nlp.states.cx,
-        nlp.controls.cx,
-        nlp.parameters,
-        nlp.algebraic_states.cx,
+        nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx
     )
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.parameters["sensory_noise"].cx, nlp.parameters["motor_noise"].cx))
@@ -226,14 +219,7 @@ def get_cov_mat(nlp, node_index):
 
     func_eval = cas.Function(
         "p_next",
-        [
-            dt,
-            nlp.states.cx,
-            nlp.controls.cx,
-            nlp.parameters,
-            nlp.algebraic_states.cx,
-            cov_sym,
-        ],
+        [dt, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, cov_sym],
         [p_next],
     )(
         nlp.dt,
@@ -242,8 +228,6 @@ def get_cov_mat(nlp, node_index):
         parameters,
         nlp.algebraic_states.cx,
         nlp.integrated_values["cov"].cx,
-        nlp.model.motor_noise_magnitude,
-        nlp.model.sensory_noise_magnitude,
     )
     p_vector = StochasticBioModel.reshape_to_vector(func_eval)
     return p_vector
@@ -402,7 +386,6 @@ def prepare_socp(
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_reference=sensory_reference,
-        use_sx=use_sx,
     )
     bio_model.force_field_magnitude = force_field_magnitude
 

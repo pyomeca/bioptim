@@ -719,7 +719,6 @@ class ConfigureProblem:
             The function to get the derivative of the states
         """
 
-        nlp.parameters = ocp.parameters
         DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
 
         if not isinstance(dyn_func, (tuple, list)):

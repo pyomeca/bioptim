@@ -1017,6 +1017,14 @@ class Solution:
 
         return all_tracked_markers
 
+    @staticmethod
+    def _dispatch_params(params):
+        values = [params[key][0] for key in params.keys()]
+        if values:
+            return np.concatenate(values)
+        else:
+            return np.ndarray((0, 1))
+
     def _get_penalty_cost(self, nlp, penalty):
         if nlp is None:
             raise NotImplementedError("penalty cost over the full ocp is not implemented yet")
@@ -1025,9 +1033,7 @@ class Solution:
         val_weighted = []
 
         phases_dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
-        params = PenaltyHelpers.parameters(
-            penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()])
-        )
+        params = PenaltyHelpers.parameters(penalty, lambda: self._dispatch_params(self._parameters.scaled[0]))
 
         merged_x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)

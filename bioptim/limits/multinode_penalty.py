@@ -386,25 +386,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             parameters[controllers[0].parameters["motor_noise"].index] = controllers[0].model.motor_noise_magnitude
             parameters[controllers[0].parameters["sensory_noise"].index] = controllers[0].model.sensory_noise_magnitude
 
-            dx = Function(
-                "tp",
-                [
-                    controllers[0].time.mx,
-                    controllers[0].states.mx,
-                    controllers[0].controls.mx,
-                    controllers[0].parameters.mx,
-                    controllers[0].algebraic_states.mx,
-                ],
-                [
-                    controllers[0].extra_dynamics(0)(
-                        controllers[0].time.mx,
-                        controllers[0].states.mx,
-                        controllers[0].controls.mx,
-                        controllers[0].parameters.mx,
-                        controllers[0].algebraic_states.mx,
-                    )
-                ],
-            )(
+            dx = controllers[0].extra_dynamics(0)(
                 controllers[0].time.cx,
                 controllers[0].states.cx,
                 controllers[0].controls.cx,

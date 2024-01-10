@@ -156,7 +156,7 @@ class NonLinearProgram:
         self.n_threads = None
         self.ns = None
         self.ode_solver = OdeSolver.RK4()
-        self.parameters = []
+        self.parameters = []  # This is currently a clone of ocp.parameters, but should hold phase parameters
         self.par_dynamics = None
         self.phase_idx = None
         self.phase_mapping = None
