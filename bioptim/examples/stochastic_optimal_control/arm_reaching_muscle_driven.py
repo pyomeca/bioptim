@@ -156,7 +156,6 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
         dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
             time, states, controls, parameters, algebraic_states, nlp, with_noise=True
         ),
-        allow_free_variables=True,
     )
 
 

@@ -116,7 +116,6 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
             nlp,
             with_noise=True,
         ),
-        allow_free_variables=True,
     )
 
 

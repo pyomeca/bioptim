@@ -71,7 +71,6 @@ class Integrator:
         self.defects_type = ode_opt["defects_type"]
         self.control_type = ode_opt["control_type"]
         self.function = None
-        self.allow_free_variables = ode_opt["allow_free_variables"]
         self.duplicate_starting_point = ode_opt["duplicate_starting_point"]
 
         # Initialize is expected to set step_time
@@ -95,7 +94,6 @@ class Integrator:
             ),
             self._input_names,
             self._output_names,
-            {"allow_free": self.allow_free_variables},
         )
 
     @property
@@ -505,7 +503,6 @@ class COLLOCATION(Integrator):
         """
         self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
-        self.allow_free_variables = ode_opt["allow_free_variables"]
 
         # Coefficients of the collocation equation
         self._c = self.cx.zeros((self.degree + 1, self.degree + 1))

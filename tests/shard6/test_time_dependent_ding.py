@@ -166,13 +166,7 @@ class Model:
             stim = ocp.nlp[i].dt_mx * ocp.nlp[i].ns
             stim_apparition.append(stim + stim_apparition[-1])
 
-        ConfigureProblem.configure_dynamics_function(
-            ocp,
-            nlp,
-            dyn_func=self.dynamics,
-            stim_apparition=stim_apparition,
-            allow_free_variables=True if not self.time_as_states else False,
-        )
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, dyn_func=self.dynamics, stim_apparition=stim_apparition)
 
 
 def prepare_ocp(
@@ -282,9 +276,7 @@ def prepare_ocp(
         x_bounds=x_bounds,
         constraints=constraints,
         use_sx=use_sx,
-        ode_solver=OdeSolver.RK4(
-            n_integration_steps=1, allow_free_variables=True if not model.time_as_states else False
-        ),
+        ode_solver=OdeSolver.RK4(n_integration_steps=1),
     )
 
 

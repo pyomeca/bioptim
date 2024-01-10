@@ -373,7 +373,6 @@ class ConfigureProblem:
             DynamicsFunctions.stochastic_torque_driven,
             with_contact=with_contact,
             with_friction=with_friction,
-            allow_free_variables=True,
         )
 
     @staticmethod
@@ -706,7 +705,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
 
     @staticmethod
-    def configure_dynamics_function(ocp, nlp, dyn_func, allow_free_variables: bool = False, **extra_params):
+    def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):
         """
         Configure the dynamics of the system
 
@@ -718,9 +717,6 @@ class ConfigureProblem:
             A reference to the phase
         dyn_func: Callable[time, states, controls, param, algebraic_states] | tuple[Callable[time, states, controls, param, algebraic_states], ...]
             The function to get the derivative of the states
-        allow_free_variables: bool
-            If it is expected the dynamics depends on more than the variable provided by bioptim. It is therefore to the
-            user prerogative to wrap the Function around another function to lift the free variable
         """
 
         nlp.parameters = ocp.parameters
@@ -757,7 +753,6 @@ class ConfigureProblem:
                     [dynamics_dxdt],
                     ["t_span", "x", "u", "p", "a"],
                     ["xdot"],
-                    {"allow_free": allow_free_variables},
                 ),
             )
 
@@ -790,7 +785,6 @@ class ConfigureProblem:
                         [dynamics_eval.defects],
                         ["t_span", "x", "u", "p", "a", "xdot"],
                         ["defects"],
-                        {"allow_free": allow_free_variables},
                     )
                 )
                 if nlp.dynamics_type.expand_dynamics:

@@ -130,9 +130,7 @@ class NonControlledMethod:
             as_states_dot=False,
         )
 
-        ConfigureProblem.configure_dynamics_function(
-            ocp, nlp, self.custom_dynamics, my_ocp=ocp, allow_free_variables=True
-        )
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, self.custom_dynamics, my_ocp=ocp)
 
 
 def prepare_ocp(
@@ -140,7 +138,7 @@ def prepare_ocp(
     time_min: list,
     time_max: list,
     use_sx: bool,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5, allow_free_variables=True),
+    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
