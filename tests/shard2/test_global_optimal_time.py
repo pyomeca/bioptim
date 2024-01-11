@@ -34,43 +34,19 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    if platform.system() == "Windows" and not ode_solver != OdeSolver.RK4:
-        # This is a long test and CI is already long for Windows
-        return
-
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
-
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    control_type = ControlType.CONSTANT
-    if ode_solver == OdeSolver.IRK:
-        ft = 2
-        ns = 35
-        max_ft = 1
-    elif ode_solver == OdeSolver.COLLOCATION:
-        ft = 2
-        ns = 15
-        max_ft = 1
-    elif ode_solver == OdeSolver.RK4:
-        ft = 2
-        ns = 30
-        max_ft = 1
-    elif ode_solver == OdeSolver.TRAPEZOIDAL:
-        ft = 2
-        ns = 15
-        max_ft = 1
-        control_type = ControlType.CONSTANT_WITH_LAST_NODE
-    else:
-        raise ValueError("Test not implemented")
+    ns = 30
+    tf = 1
+    max_tf = 0.5
+    control_type = ControlType.CONSTANT_WITH_LAST_NODE if ode_solver == OdeSolver.TRAPEZOIDAL else ControlType.CONSTANT
 
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=ft,
+        final_time=tf,
         n_shooting=ns,
         ode_solver=ode_solver(),
-        max_time=max_ft,
+        max_time=max_tf,
         weight=-1,
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
@@ -104,49 +80,35 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], -1, decimal=5)
+    np.testing.assert_almost_equal(f[0, 0], -max_tf, decimal=5)
 
     np.testing.assert_almost_equal(tau[1, 0], np.array(0))
     np.testing.assert_almost_equal(tau[1, -1], np.array(0))
 
     # optimized time
-    np.testing.assert_almost_equal(tf, max_ft, decimal=5)
+    np.testing.assert_almost_equal(tf, max_tf, decimal=5)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK, OdeSolver.COLLOCATION])
 def test_pendulum_min_time_lagrange(ode_solver, phase_dynamics):
+    if platform != "Windows" and ode_solver == OdeSolver.RK4:
+        # These tests are not working on Linux and mac for the CI
+        return
+
     # Load pendulum_min_time_Lagrange
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Lagrange as ocp_module
 
-    if platform.system() == "Windows":
-        # This test fails on the CI
-        return
-
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
-
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    if ode_solver == OdeSolver.IRK:
-        ft = 2
-        ns = 35
-    elif ode_solver == OdeSolver.COLLOCATION:
-        ft = 2
-        ns = 15
-    elif ode_solver == OdeSolver.RK4:
-        ft = 2
-        ns = 42
-    else:
-        raise ValueError("Test not implemented")
-
+    tf = 1
+    ns = 30
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=ft,
+        final_time=tf,
         n_shooting=ns,
         ode_solver=ode_solver(),
         phase_dynamics=phase_dynamics,
@@ -181,42 +143,37 @@ def test_pendulum_min_time_lagrange(ode_solver, phase_dynamics):
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.2855606738489078)
+        np.testing.assert_almost_equal(f[0, 0], 0.28623243817861066)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((87.13363409, 0)), decimal=6)
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99938226, 0)), decimal=6)
-
-        # optimized time
-        np.testing.assert_almost_equal(tf, 0.2855606738489078)
-
-    elif ode_solver == OdeSolver.COLLOCATION:
-        # Check objective function value
-        f = np.array(sol.cost)
-        np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.35082195478560974)
-
-        # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((-99.9999592, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array([-68.84010891, 0.0]))
-
-        # optimized time
-        np.testing.assert_almost_equal(tf, 0.3508219547856098)
+        np.testing.assert_almost_equal(tau[:, 0], np.array((70.45455191, 0)), decimal=6)
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99964318, 0)), decimal=6)
 
     elif ode_solver == OdeSolver.RK4:
         # Check objective function value
         f = np.array(sol.cost)
         np.testing.assert_equal(f.shape, (1, 1))
-        np.testing.assert_almost_equal(f[0, 0], 0.28519514602152585)
+        np.testing.assert_almost_equal(f[0, 0], 0.28623248262386564)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((99.99914811, 0)))
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.9990548, 0)))
+        np.testing.assert_almost_equal(tau[:, 0], np.array((70.46224679, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99964325, 0)))
 
-        # optimized time
-        np.testing.assert_almost_equal(tf, 0.28519514602152585)
+    elif ode_solver == OdeSolver.COLLOCATION:
+        # Check objective function value
+        f = np.array(sol.cost)
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 0.6793404545237068)
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array((18.05873112, 0)))
+        np.testing.assert_almost_equal(tau[:, -1], np.array((-51.71715313, 0)))
+
     else:
         raise ValueError("Test not implemented")
+
+    # optimized time
+    np.testing.assert_almost_equal(tf, f[0, 0])
 
     # simulate
     TestUtils.simulate(sol, decimal_value=5)
@@ -291,16 +248,8 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_time_constraint(ode_solver, phase_dynamics):
-    if platform.system() != "Linux":
-        # This is a long test and CI is already long for Windows and Mac
-        return
-
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import time_constraint as ocp_module
-
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 

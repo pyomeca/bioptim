@@ -443,7 +443,7 @@ class OptimizationVectorHelper:
             # The list is to simulate the node so it has the same structure as the states and controls
             data_parameters[param.name] = [v_array[[offset + i for i in param.index], np.newaxis]]
         data_parameters = [data_parameters]
-        offset += len(ocp.parameters)
+        offset += sum([ocp.parameters[key].shape for key in ocp.parameters.keys()])
 
         # For algebraic_states variables
         for p in range(ocp.n_phases):
@@ -491,17 +491,19 @@ def _dispatch_state_bounds(nlp, states, states_bounds, states_scaling, n_steps_c
     v_bounds_max = np.ndarray((0, 1))
     for k in range(nlp.n_states_nodes):
         states.node_index = k
-        repeat = n_steps_callback(k)
 
         for p in range(repeat if k != nlp.ns else 1):
-            # This allows CONSTANT_WITH_FIRST_AND_LAST to work in collocations, but is flawed for the other ones
-            # point refers to the column to use in the bounds matrix
-            point = k if k != 0 else 0 if p == 0 else 1
-
             collapsed_values_min = np.ndarray((states.shape, 1))
             collapsed_values_max = np.ndarray((states.shape, 1))
             for key in states:
                 if key in states_bounds.keys():
+                    if states_bounds[key].type == InterpolationType.ALL_POINTS:
+                        point = k * n_steps_callback(0) + p
+                    else:
+                        # This allows CONSTANT_WITH_FIRST_AND_LAST to work in collocations, but is flawed for the other ones
+                        # point refers to the column to use in the bounds matrix
+                        point = k if k != 0 else 0 if p == 0 else 1
+
                     value_min = (
                         states_bounds[key].min.evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
                         / states_scaling[key].scaling
@@ -537,16 +539,18 @@ def _dispatch_state_initial_guess(nlp, states, states_init, states_scaling, n_st
     v_init = np.ndarray((0, 1))
     for k in range(nlp.n_states_nodes):
         states.node_index = k
-        repeat = n_steps_callback(k)
 
         for p in range(repeat if k != nlp.ns else 1):
-            # This allows CONSTANT_WITH_FIRST_AND_LAST to work in collocations, but is flawed for the other ones
-            # point refers to the column to use in the bounds matrix
-            point = k if k != 0 else 0 if p == 0 else 1
-
             collapsed_values_init = np.ndarray((states.shape, 1))
             for key in states:
                 if key in states_init.keys():
+                    if states_init[key].type == InterpolationType.ALL_POINTS:
+                        point = k * n_steps_callback(0) + p
+                    else:
+                        # This allows CONSTANT_WITH_FIRST_AND_LAST to work in collocations, but is flawed for the other ones
+                        # point refers to the column to use in the bounds matrix
+                        point = k if k != 0 else 0 if p == 0 else 1
+
                     value_init = (
                         states_init[key].init.evaluate_at(shooting_point=point, repeat=repeat)[:, np.newaxis]
                         / states_scaling[key].scaling

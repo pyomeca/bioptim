@@ -406,7 +406,7 @@ class PenaltyOption(OptionGeneric):
         node = controller.node_index
         param_cx = controller.parameters.cx
 
-        dt = controller.dt
+        dt = controller.dt.cx
         time_cx = controller.time.cx
         phases_dt_cx = controller.phases_time_cx
 

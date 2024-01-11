@@ -17,10 +17,6 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
-
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     if ode_solver == OdeSolver.IRK:
@@ -103,38 +99,21 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-# @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
 def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
-    if platform.system() != "Linux":
-        # This is a long test and CI is already long for Windows and Mac
-        return
-
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
-
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    if ode_solver == OdeSolver.COLLOCATION:
-        ft = 2
-        ns = 10
-        min_ft = 0.5
-    elif ode_solver == OdeSolver.RK4 or ode_solver == OdeSolver.IRK:
-        ft = 2
-        ns = 30
-        min_ft = 0.5
-    else:
-        raise ValueError("Test not implemented")
-
+    tf = 1
+    ns = 30
+    min_tf = 0.5
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=ft,
+        final_time=tf,
         n_shooting=ns,
         ode_solver=ode_solver(),
-        min_time=min_ft,
+        min_time=min_tf,
         phase_dynamics=phase_dynamics,
         expand_dynamics=ode_solver != OdeSolver.IRK,
     )
@@ -165,16 +144,10 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(f[0, 0], 0.9533725307316343)
-    else:
-        np.testing.assert_almost_equal(f[0, 0], min_ft, decimal=4)
+    np.testing.assert_almost_equal(f[0, 0], min_tf, decimal=4)
 
     # optimized time
-    if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_almost_equal(tf, 0.9533725307316343)
-    else:
-        np.testing.assert_almost_equal(tf, min_ft, decimal=4)
+    np.testing.assert_almost_equal(tf, min_tf, decimal=4)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)

@@ -11,13 +11,8 @@ class StochasticBioModel(BioModel):
     This class allows to define a model that can be used in a stochastic optimal control problem.
     """
 
-    sensory_noise_magnitude: float
-    motor_noise_magnitude: float
-
-    sensory_noise_sym: Union[MX.sym, SX.sym]
-    sensory_noise_sym_mx: MX.sym
-    motor_noise_sym: Union[MX.sym, SX.sym]
-    motor_noise_sym_mx: MX.sym
+    sensory_noise_magnitude: np.ndarray
+    motor_noise_magnitude: np.ndarray
 
     sensory_reference: Callable
     motor_noise_mapping: BiMappingList
@@ -32,7 +27,7 @@ class StochasticBioModel(BioModel):
     def stochastic_dynamics(self, q, qdot, tau, ref, k, with_noise=True):
         """The stochastic dynamics that should be applied to the model"""
 
-    def compute_torques_from_noise_and_feedback(self, k_matrix, sensory_input, ref):
+    def compute_torques_from_noise_and_feedback(self, sensory_noise_mx, k_matrix, sensory_input, ref):
         """Compute the torques from the sensory feedback"""
 
     @staticmethod

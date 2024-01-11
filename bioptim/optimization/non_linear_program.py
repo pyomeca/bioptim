@@ -156,7 +156,6 @@ class NonLinearProgram:
         self.n_threads = None
         self.ns = None
         self.ode_solver = OdeSolver.RK4()
-        self.parameters = []
         self.par_dynamics = None
         self.phase_idx = None
         self.phase_mapping = None
@@ -193,6 +192,10 @@ class NonLinearProgram:
         self.states = OptimizationVariableContainer(self.phase_dynamics)
         self.states_dot = OptimizationVariableContainer(self.phase_dynamics)
         self.controls = OptimizationVariableContainer(self.phase_dynamics)
+        # parameters is currently a clone of ocp.parameters, but should hold phase parameters
+        from ..optimization.parameters import ParameterList
+
+        self.parameters = ParameterList()
         self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
 

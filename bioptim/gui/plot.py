@@ -791,7 +791,7 @@ class PlotOcp:
             out = []
             for idx in range(max(custom_plot.phase_mappings.to_second.map_idx) + 1):
                 y_tp = []
-                if idx in custom_plot.phase_mappings.to_second.map_idx:
+                if idx in custom_plot.phase_mappings.to_first.map_idx:
                     for y in all_y:
                         y_tp.append(y[idx, :])
                 else:

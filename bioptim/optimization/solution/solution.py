@@ -6,7 +6,6 @@ from scipy import interpolate as sci_interp
 from scipy.interpolate import interp1d
 from casadi import vertcat, DM
 from matplotlib import pyplot as plt
-import git
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment
 from ..optimization_vector import OptimizationVectorHelper
@@ -164,26 +163,6 @@ class Solution:
             self._stepwise_controls = SolutionData.from_scaled(ocp, u, "u")
             self._parameters = SolutionData.from_scaled(ocp, p, "p")
             self._decision_algebraic_states = SolutionData.from_scaled(ocp, a, "a")
-
-    @property
-    def bioptim_version_used(self) -> dict:
-        """
-        Returns info on the bioptim version used to generate the results for future reference.
-        """
-        repo = git.Repo(search_parent_directories=True)
-        commit_id = str(repo.commit())
-        branch = str(repo.active_branch)
-        tag = repo.git.describe("--tags")
-        bioptim_version = repo.git.version_info
-        date = repo.git.log("-1", "--format=%cd")
-        version_dic = {
-            "commit_id": commit_id,
-            "date": date,
-            "branch": branch,
-            "tag": tag,
-            "bioptim_version": bioptim_version,
-        }
-        return version_dic
 
     @classmethod
     def from_dict(cls, ocp, sol: dict):
@@ -1038,6 +1017,14 @@ class Solution:
 
         return all_tracked_markers
 
+    @staticmethod
+    def _dispatch_params(params):
+        values = [params[key][0] for key in params.keys()]
+        if values:
+            return np.concatenate(values)
+        else:
+            return np.ndarray((0, 1))
+
     def _get_penalty_cost(self, nlp, penalty):
         if nlp is None:
             raise NotImplementedError("penalty cost over the full ocp is not implemented yet")
@@ -1046,9 +1033,7 @@ class Solution:
         val_weighted = []
 
         phases_dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
-        params = PenaltyHelpers.parameters(
-            penalty, lambda: np.array([self._parameters.scaled[0][key] for key in self._parameters.scaled[0].keys()])
-        )
+        params = PenaltyHelpers.parameters(penalty, lambda: self._dispatch_params(self._parameters.scaled[0]))
 
         merged_x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)

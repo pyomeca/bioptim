@@ -376,40 +376,22 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            dt = controllers[0].dt
+            dt = controllers[0].dt.cx
 
             M_matrix = StochasticBioModel.reshape_to_matrix(
                 controllers[0].algebraic_states["m"].cx, controllers[0].model.matrix_shape_m
             )
 
-            dx = Function(
-                "tp",
-                [
-                    controllers[0].time.mx,
-                    controllers[0].states.mx,
-                    controllers[0].controls.mx,
-                    controllers[0].parameters.mx,
-                    controllers[0].algebraic_states.mx,
-                    controllers[0].model.motor_noise_sym_mx,
-                    controllers[0].model.sensory_noise_sym_mx,
-                ],
-                [
-                    controllers[0].extra_dynamics(0)(
-                        controllers[0].time.mx,
-                        controllers[0].states.mx,
-                        controllers[0].controls.mx,
-                        controllers[0].parameters.mx,
-                        controllers[0].algebraic_states.mx,
-                    )
-                ],
-            )(
+            parameters = controllers[0].parameters.cx
+            parameters[controllers[0].parameters["motor_noise"].index] = controllers[0].model.motor_noise_magnitude
+            parameters[controllers[0].parameters["sensory_noise"].index] = controllers[0].model.sensory_noise_magnitude
+
+            dx = controllers[0].extra_dynamics(0)(
                 controllers[0].time.cx,
                 controllers[0].states.cx,
                 controllers[0].controls.cx,
-                controllers[0].parameters.cx,
+                parameters,
                 controllers[0].algebraic_states.cx,
-                controllers[0].model.motor_noise_magnitude,
-                controllers[0].model.sensory_noise_magnitude,
             )
 
             DdZ_DX_fun = Function(
@@ -420,20 +402,20 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].controls.cx,
                     controllers[0].parameters.cx,
                     controllers[0].algebraic_states.cx,
-                    controllers[0].model.motor_noise_sym,
-                    controllers[0].model.sensory_noise_sym,
                 ],
                 [jacobian(dx, controllers[0].states.cx)],
             )
+
+            parameters = controllers[1].parameters.cx
+            parameters[controllers[1].parameters["motor_noise"].index] = controllers[1].model.motor_noise_magnitude
+            parameters[controllers[1].parameters["sensory_noise"].index] = controllers[1].model.sensory_noise_magnitude
 
             DdZ_DX = DdZ_DX_fun(
                 controllers[1].time.cx,
                 controllers[1].states.cx,
                 controllers[1].controls.cx,
-                controllers[1].parameters.cx,
+                parameters,
                 controllers[1].algebraic_states.cx,
-                controllers[1].model.motor_noise_magnitude,
-                controllers[1].model.sensory_noise_magnitude,
             )
 
             CX_eye = SX_eye if controllers[0].cx == SX else MX_eye
@@ -470,7 +452,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            dt = controllers[0].dt
+            dt = controllers[0].dt.cx
 
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
@@ -549,7 +531,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            dt = controllers[0].dt
+            dt = controllers[0].dt.cx
 
             nb_root = controllers[0].model.nb_root
             nu = controllers[0].model.nb_q - controllers[0].model.nb_root
@@ -563,14 +545,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             qdot_root = MX.sym("qdot_root", nb_root, 1)
             qdot_joints = MX.sym("qdot_joints", nu, 1)
             tau_joints = MX.sym("tau_joints", nu, 1)
-            parameters_sym = MX.sym("parameters_sym", controllers[0].parameters.shape, 1)
             algebraic_states_sym = MX.sym("algebraic_states_sym", controllers[0].algebraic_states.shape, 1)
 
             dx = controllers[0].extra_dynamics(0)(
                 controllers[0].time.mx,
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,
-                parameters_sym,
+                controllers[0].parameters.mx,
                 algebraic_states_sym,
             )
 
@@ -587,18 +568,22 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     qdot_root,
                     qdot_joints,
                     tau_joints,
-                    parameters_sym,
+                    controllers[0].parameters.mx,
                     algebraic_states_sym,
-                    controllers[0].model.motor_noise_sym_mx,
-                    controllers[0].model.sensory_noise_sym_mx,
                 ],
                 [
                     jacobian(
                         dx[non_root_index],
-                        vertcat(controllers[0].model.motor_noise_sym_mx, controllers[0].model.sensory_noise_sym_mx),
+                        vertcat(
+                            controllers[0].parameters["motor_noise"].mx, controllers[0].parameters["sensory_noise"].mx
+                        ),
                     )
                 ],
             )
+
+            parameters = controllers[0].parameters.cx
+            parameters[controllers[0].parameters["motor_noise"].index] = controllers[0].model.motor_noise_magnitude
+            parameters[controllers[0].parameters["sensory_noise"].index] = controllers[0].model.sensory_noise_magnitude
 
             DF_DW = DF_DW_fun(
                 controllers[0].time.cx,
@@ -607,11 +592,14 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].states["qdot"].cx[:nb_root],
                 controllers[0].states["qdot"].cx[nb_root:],
                 controllers[0].controls["tau"].cx,
-                controllers[0].parameters.cx,
+                parameters,
                 controllers[0].algebraic_states.cx,
-                controllers[0].model.motor_noise_magnitude,
-                controllers[0].model.sensory_noise_magnitude,
             )
+
+            parameters = controllers[1].parameters.cx
+            parameters[controllers[1].parameters["motor_noise"].index] = controllers[1].model.motor_noise_magnitude
+            parameters[controllers[1].parameters["sensory_noise"].index] = controllers[1].model.sensory_noise_magnitude
+
             DF_DW_plus = DF_DW_fun(
                 controllers[1].time.cx,
                 controllers[1].states["q"].cx[:nb_root],
@@ -619,10 +607,8 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[1].states["qdot"].cx[:nb_root],
                 controllers[1].states["qdot"].cx[nb_root:],
                 controllers[1].controls.cx,
-                controllers[1].parameters.cx,
+                parameters,
                 controllers[1].algebraic_states.cx,
-                controllers[1].model.motor_noise_magnitude,
-                controllers[1].model.sensory_noise_magnitude,
             )
 
             out = c_matrix - (-(DF_DW + DF_DW_plus) / 2 * dt)

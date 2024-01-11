@@ -1151,19 +1151,16 @@ class PenaltyFunctionAbstract:
 
             penalty.expand = controller.get_nlp.dynamics_type.expand_continuity
 
-            t_span = vertcat(controller.time.cx, controller.time.cx + controller.dt)
+            t_span = vertcat(controller.time.cx, controller.time.cx + controller.dt.cx)
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-                continuity -= controller.integrate(
+
+                integrated = controller.integrate(
                     t_span=t_span, x0=cx, u=u, p=controller.parameters.cx, a=controller.algebraic_states.cx_start
-                )["xf"]
-                continuity = vertcat(
-                    continuity,
-                    controller.integrate(
-                        t_span=t_span, x0=cx, u=u, p=controller.parameters.cx, a=controller.algebraic_states.cx_start
-                    )["defects"],
                 )
+                continuity -= integrated["xf"]
+                continuity = vertcat(continuity, integrated["defects"])
 
                 penalty.integrate = True
 
