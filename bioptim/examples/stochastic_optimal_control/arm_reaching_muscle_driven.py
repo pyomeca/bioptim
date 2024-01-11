@@ -202,9 +202,7 @@ def get_cov_mat(nlp, node_index):
 
     dx.dxdt = cas.Function(
         "tp", [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx], [dx.dxdt]
-    )(
-        nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx
-    )
+    )(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx)
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(sensory_noise, motor_noise))
     dg_dw = -ddx_dwm * dt

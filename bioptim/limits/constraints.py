@@ -690,7 +690,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             parameters[controller.parameters["motor_noise"].index] = controller.model.motor_noise_magnitude
             parameters[controller.parameters["sensory_noise"].index] = controller.model.sensory_noise_magnitude
 
-
             DF_DX = DF_DX_fun(
                 controller.time.cx,
                 controller.dt.cx,
@@ -734,7 +733,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             nb_root = controller.model.nb_root
             nu = controller.model.nb_q - nb_root
             z_joints = horzcat(*(controller.states.cx_intermediates_list))
-            
+
             parameters = controller.parameters.cx
             parameters[controller.parameters["motor_noise"].index] = controller.model.motor_noise_magnitude
             parameters[controller.parameters["sensory_noise"].index] = controller.model.sensory_noise_magnitude

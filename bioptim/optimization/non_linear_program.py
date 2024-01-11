@@ -194,6 +194,7 @@ class NonLinearProgram:
         self.controls = OptimizationVariableContainer(self.phase_dynamics)
         # parameters is currently a clone of ocp.parameters, but should hold phase parameters
         from ..optimization.parameters import ParameterList
+
         self.parameters = ParameterList()
         self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)

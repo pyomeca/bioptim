@@ -33,6 +33,7 @@ from tests.utils import TestUtils
 def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ns = 30

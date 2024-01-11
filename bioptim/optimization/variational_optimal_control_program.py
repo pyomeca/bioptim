@@ -450,7 +450,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             return controllers[0].get_nlp.implicit_dynamics_func_first_node[0](
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
-                controllers[0].parameters.cx[:n_qdot],   # hardcoded
+                controllers[0].parameters.cx[:n_qdot],  # hardcoded
                 controllers[1].states["q"].cx,
                 controllers[0].controls["tau"].cx,
                 controllers[1].controls["tau"].cx,

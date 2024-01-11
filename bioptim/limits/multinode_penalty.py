@@ -574,7 +574,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 [
                     jacobian(
                         dx[non_root_index],
-                        vertcat(controllers[0].parameters["motor_noise"].mx, controllers[0].parameters["sensory_noise"].mx),
+                        vertcat(
+                            controllers[0].parameters["motor_noise"].mx, controllers[0].parameters["sensory_noise"].mx
+                        ),
                     )
                 ],
             )
@@ -593,7 +595,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 parameters,
                 controllers[0].algebraic_states.cx,
             )
-            
+
             parameters = controllers[1].parameters.cx
             parameters[controllers[1].parameters["motor_noise"].index] = controllers[1].model.motor_noise_magnitude
             parameters[controllers[1].parameters["sensory_noise"].index] = controllers[1].model.sensory_noise_magnitude

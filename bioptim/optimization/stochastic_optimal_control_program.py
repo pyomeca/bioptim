@@ -93,15 +93,29 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         if "motor_noise" not in parameters.keys():
             parameters.add("motor_noise", None, size=bio_model.motor_noise_magnitude.shape[0])
-            parameter_bounds.add("motor_noise", min_bound=bio_model.motor_noise_magnitude, max_bound=bio_model.motor_noise_magnitude, interpolation=InterpolationType.CONSTANT)
-            parameter_init.add("motor_noise", initial_guess=bio_model.motor_noise_magnitude, interpolation=InterpolationType.CONSTANT)
-        
+            parameter_bounds.add(
+                "motor_noise",
+                min_bound=bio_model.motor_noise_magnitude,
+                max_bound=bio_model.motor_noise_magnitude,
+                interpolation=InterpolationType.CONSTANT,
+            )
+            parameter_init.add(
+                "motor_noise", initial_guess=bio_model.motor_noise_magnitude, interpolation=InterpolationType.CONSTANT
+            )
+
         if "sensory_noise" not in parameters.keys():
             parameters.add("sensory_noise", None, size=bio_model.sensory_noise_magnitude.shape[0])
-            parameter_bounds.add("sensory_noise", min_bound=bio_model.sensory_noise_magnitude, max_bound=bio_model.sensory_noise_magnitude, interpolation=InterpolationType.CONSTANT)
-            parameter_init.add("sensory_noise", initial_guess=bio_model.sensory_noise_magnitude, interpolation=InterpolationType.CONSTANT)
-
-
+            parameter_bounds.add(
+                "sensory_noise",
+                min_bound=bio_model.sensory_noise_magnitude,
+                max_bound=bio_model.sensory_noise_magnitude,
+                interpolation=InterpolationType.CONSTANT,
+            )
+            parameter_init.add(
+                "sensory_noise",
+                initial_guess=bio_model.sensory_noise_magnitude,
+                interpolation=InterpolationType.CONSTANT,
+            )
 
         super(StochasticOptimalControlProgram, self).__init__(
             bio_model=bio_model,

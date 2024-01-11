@@ -102,6 +102,7 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
 def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
+
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     tf = 1

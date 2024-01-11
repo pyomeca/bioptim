@@ -240,7 +240,9 @@ class DynamicsFunctions:
 
         mapped_motor_noise = parameters[nlp.parameters["motor_noise"].index]
         mapped_sensory_noise = parameters[nlp.parameters["sensory_noise"].index]
-        mapped_sensory_feedback_torque = nlp.model.compute_torques_from_noise_and_feedback(mapped_sensory_noise, k_matrix, sensory_input, ref)
+        mapped_sensory_feedback_torque = nlp.model.compute_torques_from_noise_and_feedback(
+            mapped_sensory_noise, k_matrix, sensory_input, ref
+        )
 
         if "tau" in nlp.model.motor_noise_mapping.keys():
             mapped_motor_noise = nlp.model.motor_noise_mapping["tau"].to_second.map(nlp.parameters["motor_noise"].mx)

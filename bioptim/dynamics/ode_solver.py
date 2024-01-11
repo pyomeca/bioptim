@@ -159,9 +159,7 @@ class OdeSolverBase:
         """
         return nlp.parameters.cx
 
-    def initialize_integrator(
-        self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt
-    ) -> Callable:
+    def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt) -> Callable:
         """
         Initialize the integrator
 
@@ -539,9 +537,7 @@ class OdeSolver:
         def a_ode(self, nlp):
             return nlp.algebraic_states.scaled.cx
 
-        def initialize_integrator(
-            self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt
-        ):
+        def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt):
             raise NotImplementedError("CVODES is not yet implemented")
 
             if extra_opt:

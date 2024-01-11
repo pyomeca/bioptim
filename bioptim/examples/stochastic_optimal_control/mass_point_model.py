@@ -18,7 +18,7 @@ class MassPointModel:
         self.socp_type = socp_type
 
         self.motor_noise_magnitude = motor_noise_magnitude
-        
+
         # This is necessary to have the right shapes in bioptim's internal constraints
         self.sensory_noise_magnitude = np.ndarray((0, 1))
 
