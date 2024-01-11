@@ -41,7 +41,7 @@ jobs:
           mamba list
 
       - name: Install extra dependencies
-        run: mamba install pytest-cov black pytest pytest-cov codecov packaging -cconda-forge
+        run: mamba install pytest-cov black pytest pytest-cov codecov packaging rhash -cconda-forge
 
       - name: Install ACADOS on Linux
         run: |
