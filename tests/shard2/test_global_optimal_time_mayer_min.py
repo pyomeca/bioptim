@@ -17,10 +17,6 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
-
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     if ode_solver == OdeSolver.IRK:
@@ -103,18 +99,9 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
-# @pytest.mark.parametrize("ode_solver", [OdeSolver.COLLOCATION])
 def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
-    if platform.system() != "Linux":
-        # This is a long test and CI is already long for Windows and Mac
-        return
-
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
-
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 

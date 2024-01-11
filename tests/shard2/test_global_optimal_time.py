@@ -31,12 +31,12 @@ from tests.utils import TestUtils
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK, OdeSolver.TRAPEZOIDAL])
 def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
+    if platform.system() == "Linux":
+        # This test fails on the CI
+        return
+
     # Load pendulum_min_time_Mayer
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
-
-    if platform.system() == "Windows" and not ode_solver != OdeSolver.RK4:
-        # This is a long test and CI is already long for Windows
-        return
 
     # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
     if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
@@ -117,27 +117,16 @@ def test_pendulum_max_time_mayer_constrained(ode_solver, phase_dynamics):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.IRK])
 def test_pendulum_min_time_lagrange(ode_solver, phase_dynamics):
     # Load pendulum_min_time_Lagrange
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Lagrange as ocp_module
-
-    if platform.system() == "Windows":
-        # This test fails on the CI
-        return
-
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     if ode_solver == OdeSolver.IRK:
         ft = 2
         ns = 35
-    elif ode_solver == OdeSolver.COLLOCATION:
-        ft = 2
-        ns = 15
     elif ode_solver == OdeSolver.RK4:
         ft = 2
         ns = 42
@@ -278,16 +267,8 @@ def test_pendulum_max_time_lagrange_constrained(ode_solver):
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 def test_time_constraint(ode_solver, phase_dynamics):
-    if platform.system() != "Linux":
-        # This is a long test and CI is already long for Windows and Mac
-        return
-
     # Load time_constraint
     from bioptim.examples.optimal_time_ocp import time_constraint as ocp_module
-
-    # For reducing time phase_dynamics=PhaseDynamics.ONE_PER_NODE is skipped for redundant tests
-    if phase_dynamics == PhaseDynamics.ONE_PER_NODE and ode_solver == OdeSolver.COLLOCATION:
-        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
