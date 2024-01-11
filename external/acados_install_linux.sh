@@ -61,8 +61,6 @@ mkdir acados/build
 cd acados/build
 
 # Run cmake
-echo "coucou"
-which cmake
 cmake . .. \
   -DACADOS_INSTALL_DIR="$ARG2"\
   -DACADOS_PYTHON=ON\
