@@ -184,7 +184,9 @@ def get_cov_mat(nlp, node_index):
     m_matrix = StochasticBioModel.reshape_to_matrix(nlp.algebraic_states["m"].cx, nlp.model.matrix_shape_m)
 
     CX_eye = cas.SX_eye if nlp.cx == cas.SX else cas.MX_eye
-    sigma_w = cas.vertcat(nlp.parameters["sensory_noise"].cx, nlp.parameters["motor_noise"].cx) * CX_eye(6)
+    sensory_noise = nlp.parameters["sensory_noise"].cx
+    motor_noise = nlp.parameters["motor_noise"].cx
+    sigma_w = cas.vertcat(sensory_noise, motor_noise) * CX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
@@ -199,14 +201,12 @@ def get_cov_mat(nlp, node_index):
     )
 
     dx.dxdt = cas.Function(
-        "tp",
-        [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx],
-        [dx.dxdt],
+        "tp", [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx], [dx.dxdt]
     )(
         nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx
     )
 
-    ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(nlp.parameters["sensory_noise"].cx, nlp.parameters["motor_noise"].cx))
+    ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(sensory_noise, motor_noise))
     dg_dw = -ddx_dwm * dt
     ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx)
     dg_dx = -(ddx_dx * dt / 2 + CX_eye(ddx_dx.shape[0]))
@@ -568,7 +568,7 @@ def prepare_socp(
         max_bound=stochastic_max[curent_index : curent_index + n_states * n_states, :],
     )
 
-    integrated_value_functions = {"cov": lambda nlp, node_index: get_cov_mat(nlp, node_index)}
+    integrated_value_functions = {"cov": get_cov_mat}
 
     return StochasticOptimalControlProgram(
         bio_model,
@@ -712,11 +712,7 @@ def main():
             force_field_magnitude=force_field_magnitude,
             with_noise=True,
         )
-        dyn_fun = cas.Function(
-            "dyn_fun",
-            [states, controls, parameters, algebraic_states],
-            [out.dxdt],
-        )
+        dyn_fun = cas.Function("dyn_fun", [states, controls, parameters, algebraic_states], [out.dxdt])
 
         fig, axs = plt.subplots(3, 2)
         n_simulations = 30

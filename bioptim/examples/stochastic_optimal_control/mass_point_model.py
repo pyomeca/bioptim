@@ -14,13 +14,7 @@ class MassPointModel:
     This allows to generate the same model as in the paper.
     """
 
-    def __init__(
-        self,
-        motor_noise_magnitude: np.ndarray | DM = None,
-        polynomial_degree: int = 1,
-        socp_type=None,
-        use_sx: bool = False,
-    ):
+    def __init__(self, motor_noise_magnitude: np.ndarray | DM = None, polynomial_degree: int = 1, socp_type=None):
         self.socp_type = socp_type
 
         self.motor_noise_magnitude = motor_noise_magnitude

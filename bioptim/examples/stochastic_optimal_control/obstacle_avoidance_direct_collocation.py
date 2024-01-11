@@ -172,10 +172,7 @@ def prepare_socp(
     problem_type = socp_type
 
     bio_model = MassPointModel(
-        socp_type=problem_type,
-        motor_noise_magnitude=motor_noise_magnitude,
-        polynomial_degree=polynomial_degree,
-        use_sx=use_sx,
+        socp_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
     )
 
     nb_q = bio_model.nb_q
@@ -343,7 +340,7 @@ def main():
     n_shooting = 40
     final_time = 4
     motor_noise_magnitude = np.array([1, 1])
-    bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude, use_sx=use_sx)
+    bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
     q_init = np.zeros((bio_model.nb_q, (polynomial_degree + 2) * n_shooting + 1))
     zq_init = initialize_circle((polynomial_degree + 1) * n_shooting + 1)

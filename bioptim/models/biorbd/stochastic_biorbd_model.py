@@ -23,7 +23,6 @@ class StochasticBiorbdModel(BiorbdModel):
         sensory_reference: Callable,
         motor_noise_mapping: BiMappingList = BiMappingList(),
         n_collocation_points: int = 1,
-        use_sx: bool = False,
         **kwargs,
     ):
         super().__init__(bio_model if isinstance(bio_model, str) else bio_model.model, **kwargs)
