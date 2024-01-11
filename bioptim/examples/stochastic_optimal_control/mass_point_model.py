@@ -3,7 +3,7 @@ This file contains the model used in the article.
 """
 
 from typing import Callable
-from casadi import vertcat, SX, MX, DM, sqrt
+from casadi import vertcat, DM, sqrt
 import numpy as np
 
 from bioptim import DynamicsEvaluation, DynamicsFunctions

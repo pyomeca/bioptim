@@ -69,7 +69,7 @@ class RockitModel:
 
         motor_noise = 0
         if with_noise:
-            motor_noise = parameters["motor_noise"].mx
+            motor_noise = nlp.parameters["motor_noise"].mx
 
         qddot = -0.1 * (1 - q**2) * qdot - q + u + motor_noise
 

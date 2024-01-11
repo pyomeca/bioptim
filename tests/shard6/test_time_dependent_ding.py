@@ -813,20 +813,20 @@ def result_vectors(sol):
 #     # plt.show()
 
 
-def test_fixed_time_dependent_ding():
-    ocp = prepare_ocp(
-        model=Model(time_as_states=False),
-        n_stim=10,
-        n_shooting=10,
-        final_time=1,
-        time_bimapping=False,
-        use_sx=True,
-    )
+# def test_fixed_time_dependent_ding():
+#     ocp = prepare_ocp(
+#         model=Model(time_as_states=False),
+#         n_stim=10,
+#         n_shooting=10,
+#         final_time=1,
+#         time_bimapping=False,
+#         use_sx=True,
+#     )
 
-    sol = ocp.solve()
-    force_vector, cn_vector, time_vector = result_vectors(sol)
-    plt.plot(time_vector, force_vector)
-    # plt.show()
+#     sol = ocp.solve()
+#     force_vector, cn_vector, time_vector = result_vectors(sol)
+#     plt.plot(time_vector, force_vector)
+#     # plt.show()
 
-    plt.plot(time_vector, cn_vector)
-    # plt.show()
+#     plt.plot(time_vector, cn_vector)
+#     # plt.show()

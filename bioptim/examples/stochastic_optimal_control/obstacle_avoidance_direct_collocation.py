@@ -400,7 +400,7 @@ def main():
 
     ax[1, 0].plot(tgrid, q[0, :: polynomial_degree + 2], "--", label="px")
     ax[1, 0].plot(tgrid, q[1, :: polynomial_degree + 2], "-", label="py")
-    ax[1, 0].step(tgrid, u.T, "-.", label="u")
+    ax[1, 0].step(tgrid[:-1], u.T, "-.", label="u")
     ax[1, 0].set_xlabel("t")
 
     if is_stochastic:
