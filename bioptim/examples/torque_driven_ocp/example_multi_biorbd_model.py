@@ -14,6 +14,7 @@ from bioptim import (
     ObjectiveFcn,
     BiMappingList,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -87,7 +88,8 @@ def main():
     # --- Show results --- #
     show_solution_animation = False
     if show_solution_animation:
-        q = sol.states["q"]
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        q = states["q"]
         import bioviz
 
         b = bioviz.Viz("models/triple_pendulum_both_inertia.bioMod")

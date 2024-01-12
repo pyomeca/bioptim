@@ -45,8 +45,8 @@ def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinear
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, stochastic_variables, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, nlp, with_noise=False
         ),
     )
 
@@ -56,7 +56,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
-    # Stochastic variables
+    # Algebraic states variables
     ConfigureProblem.configure_stochastic_m(
         ocp, nlp, n_noised_states=2, n_collocation_points=nlp.model.polynomial_degree + 1
     )
@@ -64,22 +64,21 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, stochastic_variables, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, stochastic_variables, nlp, with_noise=True
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, nlp, with_noise=True
         ),
-        allow_free_variables=True,
     )
 
 
 def cost(controller: PenaltyController):
-    q = controller.states["q"].cx_start
+    q = controller.states["q"].cx
     return (q - 3) ** 2
 
 
@@ -88,12 +87,12 @@ def bound(t):
 
 
 def path_constraint(controller, is_robustified: bool = False):
-    t = controller.time.cx_start
-    q = controller.states["q"].cx_start
+    t = controller.time.cx
+    q = controller.states["q"].cx
     sup = bound(t)
     if is_robustified:
         P = StochasticBioModel.reshape_to_matrix(
-            controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+            controller.algebraic_states["cov"].cx, controller.model.matrix_shape_cov
         )
         sigma = cas.sqrt(cas.horzcat(1, 0) @ P @ cas.vertcat(1, 0))
         sup -= sigma
@@ -150,11 +149,11 @@ def prepare_socp(
     if is_stochastic:
         dynamics.add(
             configure_stochastic_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
-                stochastic_variables,
+                algebraic_states,
                 nlp,
                 with_noise=with_noise,
             ),
@@ -162,28 +161,30 @@ def prepare_socp(
             expand_dynamics=expand_dynamics,
         )
 
-        s_init = InitialGuessList()
-        s_init.add(
+        a_init = InitialGuessList()
+        a_init.add(
             "m",
             initial_guess=[0] * bio_model.matrix_shape_m[0] * bio_model.matrix_shape_m[1],
             interpolation=InterpolationType.CONSTANT,
         )
 
         cov0 = np.diag([0.01**2, 0.1**2]).reshape((-1,), order="F")
-        s_init.add(
+        a_init.add(
             "cov",
             initial_guess=cov0,
             interpolation=InterpolationType.CONSTANT,
         )
-        constraints.add(ConstraintFcn.TRACK_STOCHASTIC, key="cov", node=Node.START, target=cov0)
-        constraints.add(ConstraintFcn.TRACK_STOCHASTIC, key="cov", node=Node.ALL, min_bound=1e-6, max_bound=cas.inf)
+        constraints.add(ConstraintFcn.TRACK_ALGEBRAIC_STATE, key="cov", node=Node.START, target=cov0)
+        constraints.add(
+            ConstraintFcn.TRACK_ALGEBRAIC_STATE, key="cov", node=Node.ALL, min_bound=1e-6, max_bound=cas.inf
+        )
 
         return StochasticOptimalControlProgram(
             bio_model,
             dynamics,
             n_shooting,
             final_time,
-            s_init=s_init,
+            a_init=a_init,
             x_bounds=x_bounds,
             u_bounds=u_bounds,
             objective_functions=objective_functions,
@@ -195,11 +196,11 @@ def prepare_socp(
     else:
         dynamics.add(
             configure_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
-                stochastic_variables,
+                algebraic_states,
                 nlp,
                 with_noise=with_noise,
             ),
@@ -268,7 +269,7 @@ def main():
     plt.step(ts, np.squeeze(u / 40), label="u/40")
 
     if is_stochastic:
-        cov = sol_socp.stochastic_variables["cov"]
+        cov = sol_socp.decision_algebraic_states["cov"]
 
         o = np.array([[1, 0]])
         sigma = np.zeros((1, n_shooting + 1))

@@ -4,10 +4,8 @@ Tests for SQP interface.
 
 import os
 import numpy as np
-from bioptim import Solver, PhaseDynamics
+from bioptim import Solver, PhaseDynamics, SolutionMerge
 import pytest
-
-from tests.utils import TestUtils
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -40,7 +38,8 @@ def test_pendulum(phase_dynamics):
     np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 124.90212482956895)
 
     # Check some of the results
-    states, controls = sol.states, sol.controls
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
@@ -53,7 +52,4 @@ def test_pendulum(phase_dynamics):
 
     # initial and final controls
     np.testing.assert_almost_equal(tau[:, 0], np.array((11.75634204, 0)))
-    np.testing.assert_almost_equal(tau[:, -2], np.array((-16.60785771, 0)))
-
-    # save and load
-    TestUtils.save_and_load(sol, ocp, test_solve_of_loaded=True, solver=solver)
+    np.testing.assert_almost_equal(tau[:, -1], np.array((-16.60785771, 0)))

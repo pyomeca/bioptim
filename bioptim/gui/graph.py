@@ -193,14 +193,11 @@ class GraphAbstract:
                     if obj.target is not None:
                         if obj.quadratic:
                             mayer_str += (
-                                f"({obj.name} - {self._vector_layout(obj.target[0][:, obj.node_idx.index(i)])})"
+                                f"({obj.name} - {self._vector_layout(obj.target)})"
                                 f"{self._squared}{self._return_line}"
                             )
                         else:
-                            mayer_str += (
-                                f"{obj.name} - {self._vector_layout(obj.target[0][:, obj.node_idx.index(i)])}"
-                                f"{self._return_line}"
-                            )
+                            mayer_str += f"{obj.name} - {self._vector_layout(obj.target)}" f"{self._return_line}"
                     else:
                         if obj.quadratic:
                             mayer_str += f"({obj.name}){self._squared}{self._return_line}"
@@ -231,7 +228,7 @@ class GraphAbstract:
         min_bound_str = f"{self._vector_layout(self.ocp.parameter_bounds[key].min)}"
         max_bound_str = f"{self._vector_layout(self.ocp.parameter_bounds[key].max)}"
 
-        scaling = [parameter.scaling[i][0] for i in range(parameter.size)]
+        scaling = parameter.scaling.scaling
         scaling_str = f"{self._vector_layout(scaling)}"
 
         return parameter, initial_guess_str, min_bound_str, max_bound_str, scaling_str
@@ -282,7 +279,7 @@ class OcpToConsole(GraphAbstract):
             self.ocp.nlp[phase_idx].states.node_index = 0
             self.ocp.nlp[phase_idx].states_dot.node_index = 0
             self.ocp.nlp[phase_idx].controls.node_index = 0
-            self.ocp.nlp[phase_idx].stochastic_variables.node_index = 0
+            self.ocp.nlp[phase_idx].algebraic_states.node_index = 0
 
             print(f"PHASE: {phase_idx}")
             print(f"**********")
@@ -320,14 +317,14 @@ class OcpToConsole(GraphAbstract):
                 print("")
             print("")
             print(f"**********")
-            print(f"MODEL: {self.ocp.original_values['bio_model'][phase_idx]}")
+            print(f"MODEL: {self.ocp.nlp[phase_idx].model.name}")
             if isinstance(self.ocp.nlp[phase_idx].tf, (int, float)):
                 print(f"PHASE DURATION: {round(self.ocp.nlp[phase_idx].tf, 2)} s")
             else:
                 print(f"PHASE DURATION IS OPTIMIZED")
             print(f"SHOOTING NODES : {self.ocp.nlp[phase_idx].ns}")
             print(f"DYNAMICS: {self.ocp.nlp[phase_idx].dynamics_type.type.name}")
-            print(f"ODE: {self.ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}")
+            print(f"ODE: {self.ocp.nlp[phase_idx].ode_solver.integrator.__name__}")
             print(f"**********")
             print("")
 
@@ -581,7 +578,7 @@ class OcpToGraph(GraphAbstract):
             node_str += f"<b>Phase duration</b>: optimized<br/>"
         node_str += f"<b>Shooting nodes</b>: {self.ocp.nlp[phase_idx].ns}<br/>"
         node_str += f"<b>Dynamics</b>: {self.ocp.nlp[phase_idx].dynamics_type.type.name}<br/>"
-        node_str += f"<b>ODE</b>: {self.ocp.nlp[phase_idx].ode_solver.rk_integrator.__name__}<br/>"
+        node_str += f"<b>ODE</b>: {self.ocp.nlp[phase_idx].ode_solver.integrator.__name__}<br/>"
         node_str += f"<b>Control type</b>: {self.ocp.nlp[phase_idx].control_type.name}"
         g.node(f"nlp_node_{phase_idx}", f"""<{node_str}>""")
 

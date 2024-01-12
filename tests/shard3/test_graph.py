@@ -27,6 +27,7 @@ from bioptim import (
     ParameterObjectiveList,
     MultinodeObjectiveList,
     PhaseDynamics,
+    VariableScaling,
 )
 
 from bioptim.gui.graph import OcpToGraph
@@ -296,7 +297,7 @@ def prepare_ocp_parameters(
     parameter_init = InitialGuessList()
 
     if optim_gravity:
-        g_scaling = np.array([1, 1, 10.0])
+        g_scaling = VariableScaling("gravity_xyz", np.array([1, 1, 10.0]))
         parameters.add(
             "gravity_xyz",  # The name of the parameter
             my_parameter_function,  # The function that modifies the biorbd model
@@ -317,12 +318,12 @@ def prepare_ocp_parameters(
             weight=1000,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_g / g_scaling,  # Make sure your target fits the scaling
+            target=target_g / g_scaling.scaling.T,  # Make sure your target fits the scaling
             key="gravity_xyz",
         )
 
     if optim_mass:
-        m_scaling = np.array([10.0])
+        m_scaling = VariableScaling("mass", np.array([10.0]))
         parameters.add(
             "mass",  # The name of the parameter
             set_mass,  # The function that modifies the biorbd model
@@ -339,7 +340,7 @@ def prepare_ocp_parameters(
             weight=100,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_m / m_scaling,  # Make sure your target fits the scaling
+            target=target_m / m_scaling.scaling.T,  # Make sure your target fits the scaling
             key="mass",
         )
 

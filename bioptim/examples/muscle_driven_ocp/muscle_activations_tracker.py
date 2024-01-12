@@ -33,6 +33,7 @@ from bioptim import (
     Solver,
     RigidBodyDynamics,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 from bioptim.optimization.optimization_variable import OptimizationVariableContainer
@@ -171,7 +172,7 @@ def generate_data(
             states=symbolic_states,
             controls=symbolic_controls,
             parameters=symbolic_parameters,
-            stochastic_variables=MX(),
+            algebraic_states=MX(),
             nlp=nlp,
             with_contact=False,
             rigidbody_dynamics=RigidBodyDynamics.ODE,
@@ -275,7 +276,9 @@ def prepare_ocp(
     if kin_data_to_track == "markers":
         objective_functions.add(ObjectiveFcn.Lagrange.TRACK_MARKERS, weight=100, target=markers_ref[:, :, :-1])
     elif kin_data_to_track == "q":
-        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", weight=100, target=q_ref, node=Node.ALL)
+        node = Node.ALL_SHOOTING if type(ode_solver) == OdeSolver.COLLOCATION else Node.ALL
+        ref = q_ref[:, :-1] if type(ode_solver) == OdeSolver.COLLOCATION else q_ref
+        objective_functions.add(ObjectiveFcn.Lagrange.TRACK_STATE, key="q", weight=100, target=ref, node=node)
     else:
         raise RuntimeError("Wrong choice of kin_data_to_track")
 
@@ -355,7 +358,8 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show the results --- #
-    q = sol.states["q"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    q = states["q"]
     n_q = ocp.nlp[0].model.nb_q
     n_mark = ocp.nlp[0].model.nb_markers
     n_frames = q.shape[1]

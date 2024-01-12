@@ -3,7 +3,9 @@ A very simple yet meaningful optimal control program consisting in a pendulum st
 while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
 
 This simple example is a good place to start investigating bioptim as it describes the most common dynamics out there
-(the joint torque driven), it defines an objective function and some boundaries and initial guesses
+(the joint torque driven), it defines an objective function and some constraints on states and controls
+
+Similar to pendulum.py but bounds are replaced by constraints
 
 During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
@@ -11,12 +13,14 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 
 import platform
 
+import numpy as np
+
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
     Dynamics,
-    BoundsList,
-    InitialGuessList,
+    ConstraintList,
+    ConstraintFcn,
     ObjectiveFcn,
     Objective,
     OdeSolver,
@@ -26,6 +30,7 @@ from bioptim import (
     BiorbdModel,
     ControlType,
     PhaseDynamics,
+    Node,
 )
 
 
@@ -82,38 +87,41 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
-    # Path bounds
-    x_bounds = BoundsList()
-    x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["q"][:, [0, -1]] = 0  # Start and end at 0...
-    x_bounds["q"][1, -1] = 3.14  # ...but end with pendulum 180 degrees rotated
-    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
-    x_bounds["qdot"][:, [0, -1]] = 0  # Start and end without any velocity
+    # Path state constraints
+    constraints = ConstraintList()
 
-    # Initial guess (optional since it is 0, we show how to initialize anyway)
-    x_init = InitialGuessList()
-    x_init["q"] = [0] * bio_model.nb_q
-    x_init["qdot"] = [0] * bio_model.nb_qdot
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=[0, 0])  # Initial state
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=[0, 0])
 
-    # Define control path bounds
-    n_tau = bio_model.nb_tau
-    u_bounds = BoundsList()
-    u_bounds["tau"] = [-100] * n_tau, [100] * n_tau  # Limit the strength of the pendulum to (-100 to 100)...
-    u_bounds["tau"][1, :] = 0  # ...but remove the capability to actively rotate
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.END, target=0)  # Final state
+    constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=1, node=Node.END, target=3.14)
+    constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
 
-    # Initial guess (optional since it is 0, we show how to initialize anyway)
-    u_init = InitialGuessList()
-    u_init["tau"] = [0] * n_tau
+    constraints.add(
+        ConstraintFcn.BOUND_STATE,
+        key="q",
+        node=Node.MID,
+        min_bound=np.array([-1, -2 * np.pi]),
+        max_bound=np.array([5, 2 * np.pi]),
+    )  # In-between
+
+    # Control path constraint
+    constraints.add(
+        ConstraintFcn.BOUND_CONTROL,
+        key="tau",
+        index=0,
+        node=Node.ALL_SHOOTING,
+        min_bound=-100,
+        max_bound=100,
+    )
+    constraints.add(ConstraintFcn.TRACK_CONTROL, key="tau", index=1, node=Node.ALL_SHOOTING, target=0)  # Passive joint
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init=x_init,
-        u_init=u_init,
-        x_bounds=x_bounds,
-        u_bounds=u_bounds,
+        constraints=constraints,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         use_sx=use_sx,
@@ -124,7 +132,7 @@ def prepare_ocp(
 
 def main():
     """
-    If pendulum is run as a script, it will perform the optimization and animates it
+    If pendulum_constrained_states_controls is run as a script, it will perform the optimization and animates it
     """
 
     # --- Prepare the ocp --- #

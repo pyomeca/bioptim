@@ -18,6 +18,8 @@ from bioptim import (
     Shooting,
     Solver,
     SolutionIntegrator,
+    Solution,
+    SolutionMerge,
 )
 
 
@@ -36,32 +38,6 @@ class TestUtils:
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
         return module
-
-    @staticmethod
-    def save_and_load(sol, ocp, test_solve_of_loaded=False, solver=None):
-        file_path = "test"
-        ocp.save(sol, f"{file_path}.bo")
-        ocp_load, sol_load = OptimalControlProgram.load(f"{file_path}.bo")
-
-        TestUtils.deep_assert(sol, sol_load)
-        TestUtils.deep_assert(sol_load, sol)
-        if test_solve_of_loaded:
-            sol_from_load = ocp_load.solve(solver)
-            TestUtils.deep_assert(sol, sol_from_load)
-            TestUtils.deep_assert(sol_from_load, sol)
-
-        TestUtils.deep_assert(ocp_load, ocp)
-        TestUtils.deep_assert(ocp, ocp_load)
-
-        ocp.save(sol, f"{file_path}_sa.bo", stand_alone=True)
-        with open(f"{file_path}_sa.bo", "rb") as file:
-            states, controls, parameters = pickle.load(file)
-        TestUtils.deep_assert(states, sol.states)
-        TestUtils.deep_assert(controls, sol.controls)
-        TestUtils.deep_assert(parameters, sol.parameters)
-
-        os.remove(f"{file_path}.bo")
-        os.remove(f"{file_path}_sa.bo")
 
     @staticmethod
     def deep_assert(first_elem, second_elem):
@@ -96,28 +72,31 @@ class TestUtils:
         solver.set_maximum_iterations(0)
         solver.set_initialization_options(1e-10)
 
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+
         sol_warm_start = ocp.solve(solver)
+        warm_start_states = sol_warm_start.decision_states(to_merge=SolutionMerge.NODES)
+        warm_start_controls = sol_warm_start.decision_controls(to_merge=SolutionMerge.NODES)
         if ocp.n_phases > 1:
             for i in range(ocp.n_phases):
-                for key in sol.states[i]:
+                for key in states[i]:
+                    np.testing.assert_almost_equal(warm_start_states[i][key], states[i][key], decimal=state_decimal)
+                for key in controls[i]:
                     np.testing.assert_almost_equal(
-                        sol_warm_start.states[i][key], sol.states[i][key], decimal=state_decimal
-                    )
-                for key in sol.controls[i]:
-                    np.testing.assert_almost_equal(
-                        sol_warm_start.controls[i][key], sol.controls[i][key], decimal=control_decimal
+                        warm_start_controls[i][key], controls[i][key], decimal=control_decimal
                     )
         else:
-            for key in sol.states:
-                np.testing.assert_almost_equal(sol_warm_start.states[key], sol.states[key], decimal=state_decimal)
-            for key in sol.controls:
-                np.testing.assert_almost_equal(sol_warm_start.controls[key], sol.controls[key], decimal=control_decimal)
+            for key in states:
+                np.testing.assert_almost_equal(warm_start_states[key], states[key], decimal=state_decimal)
+            for key in controls:
+                np.testing.assert_almost_equal(warm_start_controls[key], controls[key], decimal=control_decimal)
+
         for key in sol_warm_start.parameters.keys():
             np.testing.assert_almost_equal(sol_warm_start.parameters[key], sol.parameters[key], decimal=param_decimal)
 
     @staticmethod
-    def simulate(sol, decimal_value=7):
-        sol_merged = sol.merge_phases()
+    def simulate(sol: Solution, decimal_value=7):
         if sum([nlp.ode_solver.is_direct_collocation for nlp in sol.ocp.nlp]):
             with pytest.raises(
                 ValueError,
@@ -127,9 +106,7 @@ class TestUtils:
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             ):
                 sol.integrate(
-                    merge_phases=True,
                     shooting_type=Shooting.SINGLE,
-                    keep_intermediate_points=True,
                     integrator=SolutionIntegrator.OCP,
                 )
             return
@@ -143,25 +120,23 @@ class TestUtils:
                 " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
             ):
                 sol.integrate(
-                    merge_phases=True,
                     shooting_type=Shooting.SINGLE,
-                    keep_intermediate_points=True,
                     integrator=SolutionIntegrator.OCP,
                 )
             return
 
         sol_single = sol.integrate(
-            merge_phases=True,
             shooting_type=Shooting.SINGLE,
-            keep_intermediate_points=True,
             integrator=SolutionIntegrator.OCP,
+            to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES],
         )
 
-        # Evaluate the final error of the single shooting integration versus the finale node
-        for key in sol_merged.states.keys():
+        # Evaluate the final error of the single shooting integration versus the final node
+        sol_merged = sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
+        for key in sol_merged.keys():
             np.testing.assert_almost_equal(
-                sol_merged.states[key][:, -1],
-                sol_single.states[key][:, -1],
+                sol_merged[key][:, -1],
+                sol_single[key][:, -1],
                 decimal=decimal_value,
             )
 

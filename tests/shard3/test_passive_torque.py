@@ -15,6 +15,7 @@ from bioptim import (
     VariableScalingList,
     ParameterList,
     PhaseDynamics,
+    SolutionMerge,
 )
 from tests.utils import TestUtils
 import os
@@ -42,6 +43,8 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -81,9 +84,9 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    time = np.random.rand(2)
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_passive_torque:
             np.testing.assert_almost_equal(
@@ -125,6 +128,8 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -165,9 +170,9 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    time = np.random.rand(2)
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
     if with_passive_torque:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -218,6 +223,8 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -255,9 +262,9 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    time = np.random.rand(2)
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
     if with_residual_torque:
         if with_passive_torque:
             np.testing.assert_almost_equal(
@@ -333,6 +340,8 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     nlp.model = BiorbdModel(TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_contact.bioMod")
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -374,9 +383,9 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    time = np.random.rand(2)
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_passive_torque:
@@ -443,7 +452,9 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
     sol = ocp.solve(solver)
 
     # Check some results
-    q, qdot, tau = sol.states["q"], sol.states["qdot"], sol.controls["tau"]
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_passive_torque:
@@ -459,7 +470,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
                 np.array([-1.071535, 0.0]),
                 decimal=6,
             )
-            np.testing.assert_almost_equal(tau[:, -2], np.array([-19.422394, 0.0]), decimal=6)
+            np.testing.assert_almost_equal(tau[:, -1], np.array([-19.422394, 0.0]), decimal=6)
 
         else:
             # initial and final position
@@ -475,7 +486,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
                 decimal=6,
             )
             np.testing.assert_almost_equal(
-                tau[:, -2],
+                tau[:, -1],
                 np.array([-18.254416, 0.0]),
                 decimal=6,
             )
@@ -495,7 +506,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
                 decimal=6,
             )
             np.testing.assert_almost_equal(
-                tau[:, -2],
+                tau[:, -1],
                 np.array([-39.19793, 0.0]),
                 decimal=6,
             )
@@ -514,7 +525,7 @@ def test_pendulum_passive_torque(rigidbody_dynamics, with_passive_torque, phase_
                 decimal=6,
             )
             np.testing.assert_almost_equal(
-                tau[:, -2],
+                tau[:, -1],
                 np.array([-24.611219, 0.0]),
                 decimal=6,
             )

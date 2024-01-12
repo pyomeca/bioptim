@@ -1,0 +1,7 @@
+currently broken:
+	- ACADOS
+	- Linear_continous control
+	- No control
+	- Collocation and objective NODE.ALL
+	- Time vector in collocation (and integration)
+	- CVODES

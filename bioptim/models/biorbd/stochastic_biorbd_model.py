@@ -1,10 +1,29 @@
 from typing import Callable
 
-from casadi import MX, DM
+from casadi import MX, DM, SX
 import numpy as np
 
 from ...misc.mapping import BiMappingList
-from .biorbd_model import BiorbdModel
+from bioptim import BiorbdModel, DynamicsFunctions, StochasticBioModel
+
+
+def _compute_torques_from_noise_and_feedback_default(
+    nlp, time, states, controls, parameters, algebraic_states, sensory_noise, motor_noise
+):
+    tau_nominal = DynamicsFunctions.get(nlp.controls["tau"], controls)
+
+    ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], algebraic_states)
+    k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
+    k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
+
+    sensory_input = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, nlp)
+    tau_fb = k_matrix @ ((sensory_input - ref) + sensory_noise)
+
+    tau_motor_noise = motor_noise
+
+    tau = tau_nominal + tau_fb + tau_motor_noise
+
+    return tau
 
 
 class StochasticBiorbdModel(BiorbdModel):
@@ -22,7 +41,7 @@ class StochasticBiorbdModel(BiorbdModel):
         sensory_noise_magnitude: np.ndarray | DM,
         motor_noise_magnitude: np.ndarray | DM,
         sensory_reference: Callable,
-        compute_torques_from_noise_and_feedback: Callable,
+        compute_torques_from_noise_and_feedback: Callable = _compute_torques_from_noise_and_feedback_default,
         motor_noise_mapping: BiMappingList = BiMappingList(),
         n_collocation_points: int = 1,
         **kwargs,
@@ -33,10 +52,9 @@ class StochasticBiorbdModel(BiorbdModel):
         self.sensory_noise_magnitude = sensory_noise_magnitude
 
         self.compute_torques_from_noise_and_feedback = compute_torques_from_noise_and_feedback
+        
         self.sensory_reference = sensory_reference
 
-        self.motor_noise_sym = MX.sym("motor_noise", motor_noise_magnitude.shape[0])
-        self.sensory_noise_sym = MX.sym("sensory_noise", sensory_noise_magnitude.shape[0])
         self.motor_noise_mapping = motor_noise_mapping
 
         self.n_references = n_references

@@ -3,13 +3,7 @@ import os
 import pytest
 
 from casadi import DM, MX, Function
-
-from bioptim import (
-    HolonomicBiorbdModel,
-    HolonomicConstraintsFcn,
-    HolonomicConstraintsList,
-    Solver,
-)
+from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
 
 from tests.utils import TestUtils
 
@@ -164,9 +158,10 @@ def test_example_two_pendulums():
 
     # --- Solve the ocp --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    states = sol.decision_states(to_merge=SolutionMerge.NODES)
 
     np.testing.assert_almost_equal(
-        sol.states["q_u"],
+        states["q_u"],
         [
             [1.54, 1.433706, 1.185046, 0.891157, 0.561607, 0.191792, -0.206511, -0.614976, -1.018383, -1.356253, -1.54],
             [1.54, 1.669722, 1.924726, 2.127746, 2.226937, 2.184007, 1.972105, 1.593534, 1.06751, 0.507334, 0.0],

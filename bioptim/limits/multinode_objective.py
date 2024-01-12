@@ -58,7 +58,7 @@ class MultinodeObjectiveFcn(FcnEnum):
     """
 
     STATES_EQUALITY = (MultinodeObjectiveFunctions.Functions.states_equality,)
-    STOCHASTIC_EQUALITY = (MultinodeObjectiveFunctions.Functions.stochastic_equality,)
+    ALGEBRAIC_STATES_EQUALITY = (MultinodeObjectiveFunctions.Functions.algebraic_states_equality,)
     CONTROLS_EQUALITY = (MultinodeObjectiveFunctions.Functions.controls_equality,)
     CUSTOM = (MultinodeObjectiveFunctions.Functions.custom,)
     COM_EQUALITY = (MultinodeObjectiveFunctions.Functions.com_equality,)

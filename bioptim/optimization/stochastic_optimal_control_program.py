@@ -24,6 +24,7 @@ from ..limits.constraints import ConstraintFunction
 from ..limits.path_conditions import BoundsList
 from ..limits.path_conditions import InitialGuessList, InitialGuess
 from ..limits.penalty_controller import PenaltyController
+from ..limits.path_conditions import InitialGuessList
 from ..misc.enums import PhaseDynamics, InterpolationType
 from ..misc.__version__ import __version__
 from ..misc.enums import Node, ControlType
@@ -50,10 +51,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         phase_time: int | float | list | tuple,
         x_bounds: BoundsList = None,
         u_bounds: BoundsList = None,
-        s_bounds: BoundsList = None,
+        a_bounds: BoundsList = None,
         x_init: InitialGuessList | None = None,
         u_init: InitialGuessList | None = None,
-        s_init: InitialGuessList | None = None,
+        a_init: InitialGuessList | None = None,
         objective_functions: Objective | ObjectiveList = None,
         constraints: Constraint | ConstraintList = None,
         parameters: ParameterList = None,
@@ -72,7 +73,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         x_scaling: VariableScalingList = None,
         xdot_scaling: VariableScalingList = None,
         u_scaling: VariableScalingList = None,
-        s_scaling: VariableScalingList = None,
+        a_scaling: VariableScalingList = None,
         n_threads: int = 1,
         use_sx: bool = False,
         integrated_value_functions: dict[str, Callable] = None,
@@ -84,9 +85,43 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         _check_has_no_phase_dynamics_shared_during_the_phase(problem_type, **kwargs)
 
         self.problem_type = problem_type
-        self._s_init = s_init
-        self._s_bounds = s_bounds
-        self._s_scaling = s_scaling
+        self._a_init = a_init
+        self._a_bounds = a_bounds
+        self._a_scaling = a_scaling
+
+        # Parameters
+        if parameters is None:
+            parameters = ParameterList()
+        if parameter_bounds is None:
+            parameter_bounds = BoundsList()
+        if parameter_init is None:
+            parameter_init = InitialGuessList()
+
+        if "motor_noise" not in parameters.keys():
+            parameters.add("motor_noise", None, size=bio_model.motor_noise_magnitude.shape[0])
+            parameter_bounds.add(
+                "motor_noise",
+                min_bound=bio_model.motor_noise_magnitude,
+                max_bound=bio_model.motor_noise_magnitude,
+                interpolation=InterpolationType.CONSTANT,
+            )
+            parameter_init.add(
+                "motor_noise", initial_guess=bio_model.motor_noise_magnitude, interpolation=InterpolationType.CONSTANT
+            )
+
+        if "sensory_noise" not in parameters.keys():
+            parameters.add("sensory_noise", None, size=bio_model.sensory_noise_magnitude.shape[0])
+            parameter_bounds.add(
+                "sensory_noise",
+                min_bound=bio_model.sensory_noise_magnitude,
+                max_bound=bio_model.sensory_noise_magnitude,
+                interpolation=InterpolationType.CONSTANT,
+            )
+            parameter_init.add(
+                "sensory_noise",
+                initial_guess=bio_model.sensory_noise_magnitude,
+                interpolation=InterpolationType.CONSTANT,
+            )
 
         super(StochasticOptimalControlProgram, self).__init__(
             bio_model=bio_model,
@@ -240,7 +275,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         integration. This is the real implementation suggested in Gillis 2013.
         """
 
-        if "ref" in self.nlp[0].stochastic_variables:
+        if "ref" in self.nlp[0].algebraic_states:
             constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
 
         # Constraints for M
@@ -266,7 +301,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             if len(self.nlp) > 1 and i_phase < len(self.nlp) - 1:
                 phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
 
-    def _set_stochastic_variables_to_original_values(
+    def _set_algebraic_states_to_original_values(
         self,
         s_init: InitialGuessList,
         s_bounds: BoundsList,
@@ -311,7 +346,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             return ref_init
 
         def get_m_init(
-            time_vector, x_guess, u_guess, p_guess, fake_stochastic_variables, nlp, variable_sizes, Fdz, Gdz
+            time_vector, x_guess, u_guess, p_guess, fake_algebraic_states, nlp, variable_sizes, Fdz, Gdz
         ):
             m_init = np.zeros((variable_sizes["n_m"], nlp.ns + 1))
             for i in range(nlp.ns):
@@ -325,7 +360,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     x_guess[:, index_this_time[1:]],
                     u_guess[:, i],
                     p_guess,
-                    fake_stochastic_variables[:, i],
+                    fake_algebraic_states[:, i],
                     nlp.model.motor_noise_magnitude,
                     nlp.model.sensory_noise_magnitude,
                 )
@@ -335,7 +370,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     x_guess[:, index_this_time[1:]],
                     u_guess[:, i],
                     p_guess,
-                    fake_stochastic_variables[:, i],
+                    fake_algebraic_states[:, i],
                     nlp.model.motor_noise_magnitude,
                     nlp.model.sensory_noise_magnitude,
                 )
@@ -351,7 +386,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             x_guess,
             u_guess,
             p_guess,
-            fake_stochastic_variables,
+            fake_algebraic_states,
             nlp,
             variable_sizes,
             m_init,
@@ -376,7 +411,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     x_guess[:, index_this_time[1:]],
                     u_guess[:, i],
                     p_guess,
-                    fake_stochastic_variables[:, i],
+                    fake_algebraic_states[:, i],
                     nlp.model.motor_noise_magnitude,
                     nlp.model.sensory_noise_magnitude,
                 )
@@ -386,7 +421,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     x_guess[:, index_this_time[1:]],
                     u_guess[:, i],
                     p_guess,
-                    fake_stochastic_variables[:, i],
+                    fake_algebraic_states[:, i],
                     nlp.model.motor_noise_magnitude,
                     nlp.model.sensory_noise_magnitude,
                 )
@@ -463,9 +498,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
             # Define the casadi functions needed to initialize m and cov
             penalty = Constraint(ConstraintFcn.STOCHASTIC_HELPER_MATRIX_COLLOCATION)
-            fake_stochastic_variables = np.zeros((variable_sizes["n_stochastic"], nlp.ns + 1))
-            fake_stochastic_variables[: variable_sizes["n_k"], :] = k_init
-            fake_stochastic_variables[
+            fake_algebraic_states = np.zeros((variable_sizes["n_stochastic"], nlp.ns + 1))
+            fake_algebraic_states[: variable_sizes["n_k"], :] = k_init
+            fake_algebraic_states[
                 variable_sizes["n_k"] : variable_sizes["n_k"] + variable_sizes["n_ref"], :
             ] = ref_init
             penalty_controller = PenaltyController(
@@ -477,14 +512,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 x_scaled=[],
                 u_scaled=[],
                 p=p_guess,
-                s=fake_stochastic_variables,
+                s=fake_algebraic_states,
                 s_scaled=[],
                 node_index=0,
             )
             _, _, Gdx, Gdz, Gdw, Fdz = ConstraintFunction.Functions.collocation_jacobians(penalty, penalty_controller)
 
             m_init = get_m_init(
-                time_vector, x_guess, u_guess, p_guess, fake_stochastic_variables, nlp, variable_sizes, Fdz, Gdz
+                time_vector, x_guess, u_guess, p_guess, fake_algebraic_states, nlp, variable_sizes, Fdz, Gdz
             )
             replace_initial_guess("m", n_m, m_init, s_init, i_phase)
 
@@ -497,7 +532,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 x_guess,
                 u_guess,
                 p_guess,
-                fake_stochastic_variables,
+                fake_algebraic_states,
                 nlp,
                 variable_sizes,
                 m_init,
@@ -571,23 +606,23 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             return OdeSolver.COLLOCATION(
                 method=self.problem_type.method,
                 polynomial_degree=self.problem_type.polynomial_degree,
-                duplicate_collocation_starting_point=True,
+                duplicate_starting_point=True,
             )
         else:
             raise RuntimeError("Wrong choice of problem_type, you must choose one of the SocpType.")
 
-    def _set_stochastic_internal_stochastic_variables(self):
+    def _set_internal_algebraic_states(self):
         """
-        Set the stochastic variables to their internal values
+        Set the algebraic_states variables to their internal values
 
         Note
         ----
         This method overrides the method in OptimalControlProgram
         """
         return (
-            self._s_init,
-            self._s_bounds,
-            self._s_scaling,
+            self._a_init,
+            self._a_bounds,
+            self._a_scaling,
         )  # Nothing to do here as they are already set before calling super().__init__
 
     def _set_nlp_is_stochastic(self):
@@ -622,7 +657,7 @@ def _check_has_no_ode_solver_defined(**kwargs):
             "OdeSolver.COLLOCATION("
             "method=problem_type.method, "
             "polynomial_degree=problem_type.polynomial_degree, "
-            "duplicate_collocation_starting_point=True"
+            "duplicate_starting_point=True"
             ")"
         )
 

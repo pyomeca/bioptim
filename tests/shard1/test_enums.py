@@ -96,7 +96,6 @@ def test_plot_type():
 
 
 def test_control_type():
-    assert ControlType.NONE.value == 0
     assert ControlType.CONSTANT.value == 1
     assert ControlType.LINEAR_CONTINUOUS.value == 2
     assert ControlType.CONSTANT_WITH_LAST_NODE.value == 3
@@ -109,11 +108,10 @@ def test_variable_type():
     assert VariableType.STATES.value == "states"
     assert VariableType.CONTROLS.value == "controls"
     assert VariableType.STATES_DOT.value == "states_dot"
-    assert VariableType.ALGEBRAIC.value == "algebraic"
-    assert VariableType.STOCHASTIC.value == "stochastic"
+    assert VariableType.ALGEBRAIC_STATES.value == "algebraic_states"
 
     # verify the number of elements
-    assert len(VariableType) == 5
+    assert len(VariableType) == 4
 
 
 def test_solution_integrator():

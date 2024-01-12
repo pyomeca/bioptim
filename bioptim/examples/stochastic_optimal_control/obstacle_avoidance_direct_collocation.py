@@ -32,6 +32,7 @@ from bioptim import (
     OdeSolver,
     PhaseDynamics,
     BoundsList,
+    SolutionMerge,
 )
 
 from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPointModel
@@ -80,8 +81,8 @@ def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinear
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, stochastic_variables, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, nlp, with_noise=False
         ),
     )
 
@@ -91,7 +92,7 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
 
-    # Stochastic variables
+    # Algebraic states variables
     ConfigureProblem.configure_stochastic_m(
         ocp, nlp, n_noised_states=4, n_collocation_points=nlp.model.polynomial_degree + 1
     )
@@ -99,23 +100,22 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, stochastic_variables, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, stochastic_variables, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, stochastic_variables, nlp, with_noise=True
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, nlp, with_noise=True
         ),
-        allow_free_variables=True,
     )
 
 
 def path_constraint(controller: PenaltyController, super_elipse_index: int, is_robustified: bool = False):
-    p_x = controller.states["q"].cx_start[0]
-    p_y = controller.states["q"].cx_start[1]
+    p_x = controller.states["q"].cx[0]
+    p_y = controller.states["q"].cx[1]
 
     h = (
         (
@@ -135,9 +135,9 @@ def path_constraint(controller: PenaltyController, super_elipse_index: int, is_r
 
     if is_robustified:
         gamma = 1
-        dh_dx = cas.jacobian(h, controller.states.cx_start)
+        dh_dx = cas.jacobian(h, controller.states.cx)
         cov = StochasticBioModel.reshape_to_matrix(
-            controller.stochastic_variables["cov"].cx_start, controller.model.matrix_shape_cov
+            controller.algebraic_states["cov"].cx, controller.model.matrix_shape_cov
         )
         safe_guard = gamma * cas.sqrt(dh_dx @ cov @ dh_dx.T)
         out -= safe_guard
@@ -162,18 +162,17 @@ def prepare_socp(
     motor_noise_magnitude: np.ndarray,
     polynomial_degree: int,
     q_init: np.ndarray,
-    is_sotchastic: bool = False,
+    is_stochastic: bool = False,
     is_robustified: bool = False,
     socp_type=SocpType.COLLOCATION(polynomial_degree=5, method="legendre"),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    use_sx: bool = False,
 ) -> StochasticOptimalControlProgram | OptimalControlProgram:
     problem_type = socp_type
 
     bio_model = MassPointModel(
-        socp_type=problem_type,
-        motor_noise_magnitude=motor_noise_magnitude,
-        polynomial_degree=polynomial_degree,
+        socp_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
     )
 
     nb_q = bio_model.nb_q
@@ -234,14 +233,14 @@ def prepare_socp(
     # Dynamics
     dynamics = DynamicsList()
 
-    if is_sotchastic:
+    if is_stochastic:
         dynamics.add(
             configure_stochastic_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
-                stochastic_variables,
+                algebraic_states,
                 nlp,
                 with_noise=with_noise,
             ),
@@ -251,15 +250,15 @@ def prepare_socp(
 
         phase_transitions.add(PhaseTransitionFcn.COVARIANCE_CYCLIC)
 
-        s_init = InitialGuessList()
-        s_init.add(
+        a_init = InitialGuessList()
+        a_init.add(
             "m",
             initial_guess=[0] * bio_model.matrix_shape_m[0] * bio_model.matrix_shape_m[1],
             interpolation=InterpolationType.CONSTANT,
         )
 
         cov0 = (np.eye(bio_model.matrix_shape_cov[0]) * 0.01).reshape((-1,), order="F")
-        s_init.add(
+        a_init.add(
             "cov",
             initial_guess=cov0,
             interpolation=InterpolationType.CONSTANT,
@@ -272,7 +271,7 @@ def prepare_socp(
             final_time,
             x_init=x_init,
             u_init=control_init,
-            s_init=s_init,
+            a_init=a_init,
             x_bounds=x_bounds,
             u_bounds=control_bounds,
             objective_functions=objective_functions,
@@ -281,16 +280,17 @@ def prepare_socp(
             n_threads=6,
             problem_type=problem_type,
             phase_transitions=phase_transitions,
+            use_sx=use_sx,
         )
 
     else:
         dynamics.add(
             configure_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, stochastic_variables, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
-                stochastic_variables,
+                algebraic_states,
                 nlp,
                 with_noise=with_noise,
             ),
@@ -300,7 +300,7 @@ def prepare_socp(
         ode_solver = OdeSolver.COLLOCATION(
             polynomial_degree=socp_type.polynomial_degree,
             method=socp_type.method,
-            duplicate_collocation_starting_point=True,
+            duplicate_starting_point=True,
         )
 
         return OptimalControlProgram(
@@ -325,6 +325,8 @@ def main():
     """
     Prepare, solve and plot the solution
     """
+
+    use_sx = True
     is_stochastic = True
     is_robust = True
     if not is_stochastic:
@@ -354,19 +356,25 @@ def main():
         polynomial_degree=polynomial_degree,
         motor_noise_magnitude=motor_noise_magnitude,
         q_init=q_init,
-        is_sotchastic=is_stochastic,
+        is_stochastic=is_stochastic,
         is_robustified=is_robust,
         socp_type=socp_type,
+        use_sx=use_sx,
     )
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
-    solver.set_linear_solver("ma57")
+    # solver.set_linear_solver("ma57")
     sol_socp = socp.solve(solver)
 
-    q = sol_socp.states["q"]
-    u = sol_socp.controls["u"]
-    Tf = sol_socp.time[-1]
+    time = sol_socp.decision_time(to_merge=SolutionMerge.NODES)
+    states = sol_socp.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol_socp.decision_controls(to_merge=SolutionMerge.NODES)
+    algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+
+    q = states["q"]
+    u = controls["u"]
+    Tf = time[-1]
     tgrid = np.linspace(0, Tf, n_shooting + 1).squeeze()
 
     fig, ax = plt.subplots(2, 2)
@@ -392,12 +400,12 @@ def main():
 
     ax[1, 0].plot(tgrid, q[0, :: polynomial_degree + 2], "--", label="px")
     ax[1, 0].plot(tgrid, q[1, :: polynomial_degree + 2], "-", label="py")
-    ax[1, 0].step(tgrid, u.T, "-.", label="u")
+    ax[1, 0].step(tgrid[:-1], u.T, "-.", label="u")
     ax[1, 0].set_xlabel("t")
 
     if is_stochastic:
-        m = sol_socp.stochastic_variables["m"]
-        cov = sol_socp.stochastic_variables["cov"]
+        m = algebraic_states["m"]
+        cov = algebraic_states["cov"]
 
         for i in range(n_shooting + 1):
             cov_i = cov[:, i]

@@ -21,6 +21,7 @@ from bioptim import (
     OdeSolverBase,
     Solver,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -126,8 +127,8 @@ def main():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     # --- Show results --- #
-    print(f"The optimized phase time is: {sol.parameters['time'][0, 0]}")
-
+    time = float(sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0])
+    print(f"The optimized phase time is: {time}")
     sol.animate()
 
 

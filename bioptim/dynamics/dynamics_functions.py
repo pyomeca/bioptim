@@ -4,7 +4,6 @@ from ..misc.enums import RigidBodyDynamics, DefectType
 from .fatigue.fatigue_dynamics import FatigueList
 from ..optimization.optimization_variable import OptimizationVariable
 from .dynamics_evaluation import DynamicsEvaluation
-from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..misc.mapping import BiMapping
 
 
@@ -44,7 +43,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def custom(
-        time: MX.sym, states: MX.sym, controls: MX.sym, parameters: MX.sym, stochastic_variables: MX.sym, nlp
+        time: MX.sym, states: MX.sym, controls: MX.sym, parameters: MX.sym, algebraic_states: MX.sym, nlp
     ) -> DynamicsEvaluation:
         """
         Interface to custom dynamic function provided by the user.
@@ -59,8 +58,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic_variables of the system
+        algebraic_states: MX.sym
+            The algebraic_states of the system
         nlp: NonLinearProgram
             The definition of the system
 
@@ -72,7 +71,7 @@ class DynamicsFunctions:
             The defects of the implicit dynamics
         """
 
-        return nlp.dynamics_type.dynamic_function(time, states, controls, parameters, stochastic_variables, nlp)
+        return nlp.dynamics_type.dynamic_function(time, states, controls, parameters, algebraic_states, nlp)
 
     @staticmethod
     def torque_driven(
@@ -80,7 +79,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
@@ -103,8 +102,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic_variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -195,7 +194,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
@@ -216,8 +215,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic_variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -272,7 +271,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         with_contact: bool,
         with_friction: bool,
@@ -290,8 +289,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic variables of the system
+        algebraic_states: MX.sym
+            The algebraic states variables of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -315,7 +314,7 @@ class DynamicsFunctions:
             states=states,
             controls=controls,
             parameters=parameters,
-            stochastic_variables=stochastic_variables,
+            algebraic_states=algebraic_states,
             sensory_noise=nlp.model.sensory_noise_sym,
             motor_noise=nlp.model.motor_noise_sym,
         )
@@ -335,7 +334,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         with_contact: bool,
         with_friction: bool,
@@ -353,8 +352,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -379,14 +378,7 @@ class DynamicsFunctions:
         n_q = q_full.shape[0]
 
         tau_joints += nlp.model.compute_torques_from_noise_and_feedback(
-            nlp=nlp,
-            time=time,
-            states=states,
-            controls=controls,
-            parameters=parameters,
-            stochastic_variables=stochastic_variables,
-            sensory_noise=nlp.model.sensory_noise_sym,
-            motor_noise=nlp.model.motor_noise_sym,
+            nlp=nlp, time=time, states=states, controls=controls, parameters=parameters, algebraic_states=algebraic_states
         )
         tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
 
@@ -461,7 +453,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
@@ -482,8 +474,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic_variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -528,7 +520,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         rigidbody_dynamics: RigidBodyDynamics,
         with_contact: bool,
@@ -549,8 +541,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic_variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
         rigidbody_dynamics: RigidBodyDynamics
@@ -607,7 +599,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
@@ -626,8 +618,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -657,7 +649,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
@@ -676,8 +668,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic_variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -707,7 +699,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool = False,
@@ -730,8 +722,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic_variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -852,7 +844,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
@@ -871,8 +863,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic_variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -905,7 +897,7 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ) -> DynamicsEvaluation:
@@ -922,8 +914,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters of the system
-        stochastic_variables: MX.sym
-            The stochastic_variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
         rigidbody_dynamics: RigidBodyDynamics
@@ -1215,12 +1207,12 @@ class DynamicsFunctions:
         states: MX.sym,
         controls: MX.sym,
         parameters: MX.sym,
-        stochastic_variables: MX.sym,
+        algebraic_states: MX.sym,
         nlp,
         external_forces: list = None,
     ) -> DynamicsEvaluation:
         """
-        The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, s)
+        The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a)
 
         Parameters
         ----------
@@ -1232,8 +1224,8 @@ class DynamicsFunctions:
             The controls of the system
         parameters: MX.sym
             The parameters acting on the system
-        stochastic_variables: MX.sym
-            The stochastic variables of the system
+        algebraic_states: MX.sym
+            The algebraic states of the system
         nlp: NonLinearProgram
             A reference to the phase
         external_forces: list[Any]
