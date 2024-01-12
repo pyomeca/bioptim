@@ -3,7 +3,9 @@ A very simple yet meaningful optimal control program consisting in a pendulum st
 while requiring the minimum of generalized forces. The solver is only allowed to move the pendulum sideways.
 
 This simple example is a good place to start investigating bioptim as it describes the most common dynamics out there
-(the joint torque driven), it defines an objective function and some constraints on states and controls and initial guesses
+(the joint torque driven), it defines an objective function and some constraints on states and controls
+
+Similar to pendulum.py but bounds are replaced by constraints
 
 During the optimization process, the graphs are updated real-time (even though it is a bit too fast and short to really
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
@@ -90,9 +92,11 @@ def prepare_ocp(
 
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", node=Node.START, target=[0, 0])  # Initial state
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.START, target=[0, 0])
+
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=0, node=Node.END, target=0)  # Final state
     constraints.add(ConstraintFcn.TRACK_STATE, key="q", index=1, node=Node.END, target=3.14)
     constraints.add(ConstraintFcn.TRACK_STATE, key="qdot", node=Node.END, target=np.array([0, 0]))
+
     constraints.add(
         ConstraintFcn.BOUND_STATE,
         key="q",
@@ -128,7 +132,7 @@ def prepare_ocp(
 
 def main():
     """
-    If pendulum is run as a script, it will perform the optimization and animates it
+    If pendulum_constrained_states_controls is run as a script, it will perform the optimization and animates it
     """
 
     # --- Prepare the ocp --- #
