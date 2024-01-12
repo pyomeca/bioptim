@@ -3,6 +3,7 @@ import pytest
 import numpy as np
 from bioptim import InterpolationType, PhaseDynamics
 
+
 ## examples/acados
 def test__acados__cube():
     from bioptim.examples.acados import cube as ocp_module
@@ -41,6 +42,7 @@ def test__acados__static_arm():
         n_threads=6,
         expand_dynamics=False,
     )
+
 
 ## examples/getting_started
 def test__getting_started__custom_bounds():
@@ -158,7 +160,9 @@ def test__getting_started__custom_plotting():
         expand_dynamics=False,
     )
 
-#todo: Add example_continuity_as_objective.py?
+
+# todo: Add example_continuity_as_objective.py?
+
 
 def test__getting_started__example_cyclic_movement():
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
@@ -185,7 +189,8 @@ def test__getting_started__example_external_forces():
         expand_dynamics=False,
     )
 
-#todo: Add example_external_forces.py?
+
+# todo: Add example_external_forces.py?
 
 
 def test__getting_started__example_inequality_constraint():
@@ -204,10 +209,13 @@ def test__getting_started__example_inequality_constraint():
         expand_dynamics=False,
     )
 
-#todo: Add example_joint_acceleratio_driven.py?
+
+# todo: Add example_joint_acceleratio_driven.py?
+
 
 def test__getting_started__example_mapping():
     from bioptim.examples.getting_started import example_mapping as ocp_module
+
 
 def test__getting_started__example_multinode_constraints():
     from bioptim.examples.getting_started import example_multinode_constraints as ocp_module
@@ -248,6 +256,7 @@ def test__getting_started__example_multinode_objective():
             expand_dynamics=False,
         )
 
+
 def test__getting_started__example_multiphase():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
 
@@ -260,7 +269,9 @@ def test__getting_started__example_multiphase():
         expand_dynamics=False,
     )
 
-#todo: Add example_multistart.py?
+
+# todo: Add example_multistart.py?
+
 
 def test__getting_started__example_optimal_time():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module
@@ -269,7 +280,9 @@ def test__getting_started__example_optimal_time():
 def test__getting_started__example_simulation():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module
 
-#todo: Add example_variable_scaling.py?
+
+# todo: Add example_variable_scaling.py?
+
 
 def test__getting_started__pendulum():
     from bioptim.examples.getting_started import pendulum as ocp_module
@@ -284,6 +297,7 @@ def test__getting_started__pendulum():
         expand_dynamics=False,
     )
 
+
 def test__getting_started__pendulum_constrained_states_controls():
     from bioptim.examples.getting_started import pendulum_constrained_states_controls as ocp_module
 
@@ -296,6 +310,7 @@ def test__getting_started__pendulum_constrained_states_controls():
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )
+
 
 ## examples/moving_horizon_estimation
 def test__moving_horizon_estimation__mhe():
