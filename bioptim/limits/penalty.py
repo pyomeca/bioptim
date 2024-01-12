@@ -215,7 +215,7 @@ class PenaltyFunctionAbstract:
             e_fb = Function(
                 "e_fb_tp",
                 [
-                    vertcat(controller.time.mx, controller.dt_mx),
+                    vertcat(controller.time.mx, controller.dt.mx),
                     controller.states.mx,
                     controller.controls.mx,
                     controller.parameters.mx,
@@ -223,7 +223,7 @@ class PenaltyFunctionAbstract:
                 ],
                 [e_fb_mx],
             )(
-                vertcat(controller.time.cx, controller.dt),
+                vertcat(controller.time.cx, controller.dt.cx),
                 controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx_start,

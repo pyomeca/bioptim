@@ -61,8 +61,8 @@ class HolonomicConstraintsFcn:
             # if local frame is provided, the markers are expressed in the same local frame
         if local_frame_index is not None:
             jcs_t = biorbd_model.homogeneous_matrices_in_global(q_sym, local_frame_index, inverse=True)
-            marker_1_sym = (jcs_t.to_mx() @ vertcat(marker_1_sym, 1))[:3]
-            marker_2_sym = (jcs_t.to_mx() @ vertcat(marker_2_sym, 1))[:3]
+            marker_1_sym = (jcs_t @ vertcat(marker_1_sym, 1))[:3]
+            marker_2_sym = (jcs_t @ vertcat(marker_2_sym, 1))[:3]
 
         # the constraint is the distance between the two markers, set to zero
         constraint = (marker_1_sym - marker_2_sym)[index]

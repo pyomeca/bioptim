@@ -196,10 +196,10 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     q_sol = sol_socp.states["q"]
     qdot_sol = sol_socp.states["qdot"]
     tau_sol = sol_socp.controls["tau"]
-    k_sol = sol_socp.stochastic_variables["k"]
-    ref_sol = sol_socp.stochastic_variables["ref"]
-    m_sol = sol_socp.stochastic_variables["m"]
-    cov_sol = sol_socp.stochastic_variables["cov"]
+    k_sol = sol_socp.algebraic_states["k"]
+    ref_sol = sol_socp.algebraic_states["ref"]
+    m_sol = sol_socp.algebraic_states["m"]
+    cov_sol = sol_socp.algebraic_states["cov"]
 
     polynomial_degree = socp.nlp[0].ode_solver.polynomial_degree
 

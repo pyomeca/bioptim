@@ -4,7 +4,7 @@ from casadi import MX, DM, SX
 import numpy as np
 
 from ...misc.mapping import BiMappingList
-from bioptim import BiorbdModel, DynamicsFunctions, StochasticBioModel
+from bioptim import BiorbdModel, DynamicsFunctions
 
 
 def _compute_torques_from_noise_and_feedback_default(
@@ -14,6 +14,7 @@ def _compute_torques_from_noise_and_feedback_default(
 
     ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], algebraic_states)
     k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
+    from bioptim import StochasticBioModel
     k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
     sensory_input = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, nlp)

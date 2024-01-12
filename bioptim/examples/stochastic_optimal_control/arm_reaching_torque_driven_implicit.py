@@ -35,9 +35,6 @@ from bioptim import (
 )
 
 
-from bioptim.examples.stochastic_optimal_control.common import compute_torques_from_noise_and_feedback
-
-
 class ExampleType(Enum):
     """
     Selection of the type of example to solve
@@ -111,7 +108,6 @@ def prepare_socp(
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_reference=sensory_reference,
-        compute_torques_from_noise_and_feedback=compute_torques_from_noise_and_feedback,
         n_references=4,  # This number must be in agreement with what is declared in sensory_reference
         n_feedbacks=4,
         n_noised_states=4,

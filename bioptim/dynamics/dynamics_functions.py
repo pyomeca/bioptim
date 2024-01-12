@@ -315,8 +315,8 @@ class DynamicsFunctions:
             controls=controls,
             parameters=parameters,
             algebraic_states=algebraic_states,
-            sensory_noise=nlp.model.sensory_noise_sym,
-            motor_noise=nlp.model.motor_noise_sym,
+            sensory_noise=nlp.parameters["sensory_noise"].mx,
+            motor_noise=nlp.parameters["motor_noise"].mx,
         )
         tau = tau + nlp.model.friction_coefficients @ qdot if with_friction else tau
 

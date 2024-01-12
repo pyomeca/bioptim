@@ -1,5 +1,4 @@
-from typing import Callable, Union
-from casadi import MX, SX
+from typing import Callable
 import numpy as np
 
 from ..protocols.biomodel import BioModel
@@ -28,11 +27,11 @@ class StochasticBioModel(BioModel):
         """The stochastic dynamics that should be applied to the model"""
 
     def compute_torques_from_noise_and_feedback(
-        self, nlp, time, states, controls, parameters, stochastic_variables, sensory_noise, motor_noise
+        self, nlp, time, states, controls, parameters, algebraic_states, sensory_noise, motor_noise
     ):
         """Compute the torques from the noises, feedbacks and feedforwards"""
 
-    def sensory_reference(self, time, states, controls, parameters, stochastic_variables, nlp):
+    def sensory_reference(self, time, states, controls, parameters, algebraic_states, nlp):
         """Compute the sensory reference"""
 
     @staticmethod

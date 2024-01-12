@@ -1374,6 +1374,8 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     )
     nlp.ns = 5
     nlp.cx = cx
+    nlp.time_mx = MX.sym("time", 1, 1)
+    nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
@@ -1507,12 +1509,12 @@ def test_torque_driven(with_contact, with_external_force, cx, phase_dynamics):
     states = np.random.rand(nlp.states.shape, nlp.ns)
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
-    stochastic_variables = np.random.rand(nlp.stochastic_variables.shape, nlp.ns)
-    time = np.random.rand(1, nlp.ns)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, stochastic_variables))
+    algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    time = np.random.rand(2, 1)
+    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, stochastic_variables))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
         if with_external_force:
             np.testing.assert_almost_equal(
                 x_out[:, 0],

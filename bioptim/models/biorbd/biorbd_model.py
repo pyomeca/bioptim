@@ -600,8 +600,11 @@ class BiorbdModel:
 
         check_version(bioviz, "2.0.0", "2.4.0")
 
-        states = solution["q"]
-
+        if "q_roots" in solution and "q_joints" in solution:
+            states = np.vstack((solution["q_roots"], solution["q_joints"]))
+        else:
+            states = solution["q"]
+            
         if not isinstance(states, (list, tuple)):
             states = [states]
 
@@ -620,12 +623,15 @@ class BiorbdModel:
             biorbd_model: BiorbdModel = nlp.model
 
             all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
-            if "q" in ocp.nlp[idx_phase].variable_mappings:
-                q = ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"])
-            else:
-                q = np.vstack((data["q_roots"], data["q_joints"]))
-            all_bioviz[-1].load_movement(q)
 
+            if "q_roots" in solution and "q_joints" in solution:
+                # TODO: Fix the mapping for this case
+                raise NotImplementedError("Mapping is not implemented for this case")
+                q = data
+            else:
+                q = ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data)
+            all_bioviz[-1].load_movement(q)
+            
             if tracked_markers[idx_phase] is not None:
                 all_bioviz[-1].load_experimental_markers(tracked_markers[idx_phase])
 
