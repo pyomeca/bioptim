@@ -4,6 +4,7 @@ import numpy as np
 from bioptim import InterpolationType, PhaseDynamics
 
 
+## examples/acados
 def test__acados__cube():
     from bioptim.examples.acados import cube as ocp_module
 
@@ -43,6 +44,7 @@ def test__acados__static_arm():
     )
 
 
+## examples/getting_started
 def test__getting_started__custom_bounds():
     from bioptim.examples.getting_started import custom_bounds as ocp_module
 
@@ -159,6 +161,9 @@ def test__getting_started__custom_plotting():
     )
 
 
+# todo: Add example_continuity_as_objective.py?
+
+
 def test__getting_started__example_cyclic_movement():
     from bioptim.examples.getting_started import example_cyclic_movement as ocp_module
 
@@ -185,6 +190,9 @@ def test__getting_started__example_external_forces():
     )
 
 
+# todo: Add example_external_forces.py?
+
+
 def test__getting_started__example_inequality_constraint():
     from bioptim.examples.getting_started import example_inequality_constraint as ocp_module
 
@@ -202,21 +210,11 @@ def test__getting_started__example_inequality_constraint():
     )
 
 
+# todo: Add example_joint_acceleratio_driven.py?
+
+
 def test__getting_started__example_mapping():
     from bioptim.examples.getting_started import example_mapping as ocp_module
-
-
-def test__getting_started__example_multiphase():
-    from bioptim.examples.getting_started import example_multiphase as ocp_module
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
-        long_optim=True,
-        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
-        expand_dynamics=False,
-    )
 
 
 def test__getting_started__example_multinode_constraints():
@@ -259,12 +257,31 @@ def test__getting_started__example_multinode_objective():
         )
 
 
+def test__getting_started__example_multiphase():
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        long_optim=True,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+        expand_dynamics=False,
+    )
+
+
+# todo: Add example_multistart.py?
+
+
 def test__getting_started__example_optimal_time():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module
 
 
 def test__getting_started__example_simulation():
     from bioptim.examples.getting_started import example_optimal_time as ocp_module
+
+
+# todo: Add example_variable_scaling.py?
 
 
 def test__getting_started__pendulum():
@@ -281,6 +298,21 @@ def test__getting_started__pendulum():
     )
 
 
+def test__getting_started__pendulum_constrained_states_controls():
+    from bioptim.examples.getting_started import pendulum_constrained_states_controls as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        final_time=3,
+        n_shooting=100,
+        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
+        expand_dynamics=False,
+    )
+
+
+## examples/moving_horizon_estimation
 def test__moving_horizon_estimation__mhe():
     from bioptim.examples.moving_horizon_estimation import mhe as ocp_module
 

@@ -1186,6 +1186,8 @@ constraint_list.add(constraint)
 ### Class: ConstraintFcn
 The `ConstraintFcn` class is the declaration of all the already available constraints in `bioptim`. 
 Since this is an Enum, it is possible to use the tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. The existing contraint functions in alphabetical order:
+- **BOUND_STATE**  &mdash; Adds bounds on states. Same aim as `bounds["state_name"] = min_bounds, max_bounds` but with a different numerical behaviour.
+- **BOUND_CONTROL**  &mdash; Adds bounds on controls. Same aim as `bounds["control_name"] = min_bounds, max_bounds` but with a different numerical behaviour.
 - **NON_SLIPPING**  &mdash; Adds a constraint of static friction at contact points constraining for small tangential forces.  
 This constraint assumes that the normal forces is positive (that is having an additional TRACK_CONTACT_FORCES with `max_bound=np.inf`). The extra parameters `tangential_component_idx: int`, `normal_component_idx: int`, and `static_friction_coefficient: float` must be passed to the `Constraint` constructor.
 - **PROPORTIONAL_CONTROL** &mdash; Links one control to another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
@@ -1996,6 +1998,12 @@ can be held in the solution. Another goal would be to reload fast a previously s
 
 ### The [pendulum.py](./bioptim/examples/getting_started/pendulum.py) file
 This example is another way to present the pendulum example of the 'Getting started' section.
+
+### The [pendulum_constrained_states_controls.py](./bioptim/examples/getting_started/pendulum_constrained_states_controls.py) file 
+This example is a clone of the pendulum.py example with the difference that the
+states and controls are constrained instead of bounded. Sometimes the OCP converges faster with constraints than boundaries. 
+
+It is designed to show how to use `bound_state` and `bound_control`.
 
 ## Torque-driven OCP
 In this section, you will find different examples showing how to implement torque-driven optimal control programs.
