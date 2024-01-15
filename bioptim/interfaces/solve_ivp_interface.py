@@ -1,4 +1,4 @@
-from typing import List, Callable, Any
+from typing import Callable, Any
 import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
