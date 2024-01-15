@@ -423,9 +423,7 @@ class PlotOcp:
                             repeat = 1
                             if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
                                 repeat = nlp.ode_solver.polynomial_degree + 1
-                            nlp.plot[variable].bounds.check_and_adjust_dimensions(
-                                len(mapping_to_first_index), nlp.ns
-                            )
+                            nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping_to_first_index), nlp.ns)
                             y_min = min(
                                 [
                                     nlp.plot[variable].bounds.min.evaluate_at(j)[mapping_to_first_index.index(ctr)]
