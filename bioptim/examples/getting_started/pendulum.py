@@ -10,9 +10,15 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 """
 
 import platform
-import pickle
 import matplotlib
 matplotlib.use('Qt5Agg')  # Use 'Qt5Agg' for PyQt5 or 'Qt6Agg' for PyQt6
+import matplotlib.pyplot as plt
+import matplotlib
+import numpy as np
+
+# Set the backend for Matplotlib to 'Qt5Agg'
+matplotlib.use('Qt5Agg') # Use 'Qt5Agg' for PyQt5 compatibility, 'Qt6Agg' if using PyQt6
+
 
 from bioptim import (
     OptimalControlProgram,
@@ -143,35 +149,115 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
     # sol.graphs(show_bounds=True)
     sol.animate(n_frames=100)
 
-    states = sol.decision_states()
-    controls = sol.decision_controls()
-    time=sol.stepwise_time()
-    final_time=ocp.phase_time
+    # Retrieve decision states from the solution object.
+    decision_states = sol.decision_states()
 
-    q_sol = states["q"]
-    qdot_sol = states["qdot"]
-    tau_sol = controls["tau"]
+    # Retrieve stepwise states from the solution object.
+    stepwise_states = sol.stepwise_states()
 
-    data = {
-        "q_sol": q_sol,
-        "qdot_sol": qdot_sol,
-        "tau_sol": tau_sol,
-        "time": time,
-        "final_time": final_time,
-    }
+    # Retrieve decision controls from the solution object.
+    decision_controls = sol.decision_controls()
 
-    # # --- Save the solution --- #
-    with open("pendulum.pkl", "wb") as file:
-        del sol.ocp
-        pickle.dump(data, file)
+    # Retrieve stepwise controls from the solution object.
+    stepwise_controls = sol.stepwise_controls()
 
+    # Retrieve stepwise time
+    stepwise_time = sol.stepwise_time()
+
+    # Retrieve the final time of the phase in the optimal control problem.
+    final_time = ocp.phase_time
+
+    # Retrieve the decision time
+    decision_time = sol.decision_time()
+
+    # Extract the position (q) and velocity (qdot) states from the decision states.
+    q_sol_decision_states = decision_states["q"]
+    qdot_sol_decision_states = decision_states["qdot"]
+
+    # Extract the position (q) and velocity (qdot) states from the stepwise states.
+    q_sol_stepwise_states = stepwise_states["q"]
+    qdot_sol_stepwise_states = stepwise_states["qdot"]
+
+    # Extract the 'tau' control from the decision controls.
+    tau_sol_decision_controls = decision_controls["tau"]
+
+    # Extract the 'tau' control  from the stepwise controls.
+    tau_sol_stepwise_controls = stepwise_controls["tau"]
+
+    # Time
+    time_tau_decision_controls = decision_time
+
+    # Time
+    time_tau_stepwise_controls = stepwise_time
+
+    # # # # # # # # # # # #
+    tau_decision_dof1 = [item[0][0] for item in tau_sol_decision_controls]
+    tau_decision_dof2 = [item[1][0] for item in tau_sol_decision_controls]
+
+    tau_stepwise_dof1 = [item[0][0] for item in tau_sol_stepwise_controls]
+    tau_stepwise_dof2 = [item[1][0] for item in tau_sol_stepwise_controls]
+
+    q_decision_dof1 = [item[0][0] for item in q_sol_decision_states]
+    q_decision_dof2 = [item[1][0] for item in q_sol_decision_states]
+
+    q_stepwise_dof1 = [item[0][0] for item in q_sol_stepwise_states]
+    q_stepwise_dof2 = [item[1][0] for item in q_sol_stepwise_states]
+
+    qdot_decision_dof1 = [item[0][0] for item in qdot_sol_decision_states]
+    qdot_decision_dof2 = [item[1][0] for item in qdot_sol_decision_states]
+
+    qdot_stepwise_dof1 = [item[0][0] for item in qdot_sol_stepwise_states]
+    qdot_stepwise_dof2 = [item[1][0] for item in qdot_sol_stepwise_states]
+
+    decision_times_np = [np.array(dm.full()).flatten() for dm in decision_time]
+    stepwise_times_np = [np.array(dm.full()).flatten() for dm in stepwise_time]
+
+    fig, ax = plt.subplots()
+    colors = ['blue', 'green', 'red', 'yellow', 'black']
+    # Plot each pair of decision times with a different color
+    for i, (start, end) in enumerate(decision_times_np[0:10]):
+        color = colors[i % len(colors)]  # Cycle through colors
+        ax.plot([start, end], [2, 2], marker='o', color=color)
+
+    # Plot each sequence of stepwise times with different colors
+    for i, times in enumerate(stepwise_times_np[0:10]):
+        color = colors[(i + len(decision_times_np)) % len(colors)]  # Different color for each sequence
+        # Full circle for the first point, empty circles for intermediate points
+        ax.plot(times[0], 1, marker='o', color=color, markersize=8)
+        ax.plot(times[1:], [1] * (len(times) - 1), marker='o', color=color, fillstyle='none', markersize=8)
+    # Set the labels and title
+    ax.set_xlabel('Time')
+    ax.set_title('Visualization of Decision and Stepwise Times')
+    ax.legend(['Decision', 'Stepwise'])
+    # Show the plot
+    plt.show()
+
+    # Create a figure and a set of subplots
+    # 3 rows for q, qdot, tau and 2 columns for each DOF
+    fig, axs = plt.subplots(3, 2, figsize=(10, 15))
+
+    # Plotting q solutions for both DOFs
+    axs[0, 0].plot(decision_times_np, q_decision_dof1)
+    axs[0, 0].plot(decision_times_np, q_stepwise_dof1)
+
+    axs[0, 0].set_title("q Solution for first DOF")
+    axs[0, 0].set_ylabel("q")
+    axs[0, 0].set_xlabel("Time")
+    axs[0, 0].legend(["Decision", "Stepwise"])
+    axs[0, 0].grid(True)
+
+    plt.tight_layout()
+    plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.3)
+
+    # Display the plot
+    plt.show()
 
 if __name__ == "__main__":
     main()
