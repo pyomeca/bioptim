@@ -50,6 +50,8 @@ class PenaltyOption(OptionGeneric):
         If the minimization is applied to derivative of the penalty [f(t, t+1)]
     integration_rule: QuadratureRule
         The integration rule to use for the penalty
+    transition: bool
+        If the penalty is a transition
     nodes_phase: tuple[int, ...]
         The index of the phases when penalty is multinodes
     penalty_type: PenaltyType
@@ -309,7 +311,13 @@ class PenaltyOption(OptionGeneric):
         terms, meaning that you have to declare the constraint h=0 and the "variation of h"=buffer ** 2 with
         is_stochastic=True independently.
         """
+
         # TODO: Charbie -> This is just a first implementation (x=[q, qdot]), it should then be generalized
+
+        nx = controller.states["q"].cx_start.shape[0]
+        n_root = controller.model.nb_root
+        n_joints = nx - n_root
+
         if "cholesky_cov" in controller.algebraic_states.keys():
             l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
                 controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
@@ -756,7 +764,7 @@ class PenaltyOption(OptionGeneric):
 
         """
 
-        def plot_function(node_idx):
+        def plot_function(t0, phases_dt, node_idx, x, u, p, a, penalty=None):
             if isinstance(node_idx, (list, tuple)):
                 return self.target_to_plot[:, [self.node_idx.index(idx) for idx in node_idx]]
             else:
