@@ -10,9 +10,6 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 """
 
 import platform
-import pickle
-import matplotlib
-matplotlib.use('Qt5Agg')  # Use 'Qt5Agg' for PyQt5 or 'Qt6Agg' for PyQt6
 
 from bioptim import (
     OptimalControlProgram,
@@ -150,27 +147,11 @@ def main():
     # sol.graphs(show_bounds=True)
     sol.animate(n_frames=100)
 
-    states = sol.decision_states()
-    controls = sol.decision_controls()
-    time=sol.stepwise_time()
-    final_time=ocp.phase_time
-
-    q_sol = states["q"]
-    qdot_sol = states["qdot"]
-    tau_sol = controls["tau"]
-
-    data = {
-        "q_sol": q_sol,
-        "qdot_sol": qdot_sol,
-        "tau_sol": tau_sol,
-        "time": time,
-        "final_time": final_time,
-    }
-
     # # --- Save the solution --- #
-    with open("pendulum.pkl", "wb") as file:
-        del sol.ocp
-        pickle.dump(data, file)
+    # import pickle
+    # with open("pendulum.pkl", "wb") as file:
+    #     del sol.ocp
+    #     pickle.dump(sol, file)
 
 
 if __name__ == "__main__":
