@@ -17,19 +17,20 @@ from bioptim import (
     DynamicsList,
     PhaseDynamics,
 )
+
 # import the custom model
 from bioptim.examples.custom_model.custom_package import MyModel
 
 
 def prepare_ocp(
-        model: MyModel,
-        final_time: float,
-        n_shooting: int,
-        configure_dynamics: callable = None,
-        ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
-        phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-        n_threads: int = 2,
-        expand_dynamics: bool = True,
+    model: MyModel,
+    final_time: float,
+    n_shooting: int,
+    configure_dynamics: callable = None,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    n_threads: int = 2,
+    expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -69,7 +70,10 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        configure_dynamics, dynamic_function=dynamics, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+        configure_dynamics,
+        dynamic_function=dynamics,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
     )
 
     # Path constraint
@@ -118,7 +122,9 @@ def main():
     """
 
     # import the custom dynamics and configuration
-    from bioptim.examples.custom_model.custom_package.custom_dynamics import custom_configure_my_dynamics
+    from bioptim.examples.custom_model.custom_package.custom_dynamics import (
+        custom_configure_my_dynamics,
+    )
 
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(

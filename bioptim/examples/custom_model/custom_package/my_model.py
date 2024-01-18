@@ -62,7 +62,7 @@ class MyModel:
         I = self.inertia
         m = self.mass
         g = 9.81
-        return 1 / (I + m * L ** 2) * (-qdot[0] * d - g * m * L * sin(q[0]) + tau[0])
+        return 1 / (I + m * L**2) * (-qdot[0] * d - g * m * L * sin(q[0]) + tau[0])
 
     # def system_dynamics(self, *args):
     # This is where you can implement your system dynamics with casadi if you are dealing with other systems

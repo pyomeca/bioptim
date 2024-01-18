@@ -205,8 +205,7 @@ def test__getting_started__example_inequality_constraint():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder
-                          + "/../torque_driven_ocp/models/2segments_4dof_2contacts.bioMod",
+        biorbd_model_path=bioptim_folder + "/../torque_driven_ocp/models/2segments_4dof_2contacts.bioMod",
         phase_time=0.3,
         n_shooting=10,
         min_bound=50,
@@ -254,10 +253,10 @@ def test__getting_started__example_multinode_objective():
     )
 
     with pytest.raises(
-            ValueError,
-            match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
-                  "add more penalties than available in a multinode constraint. You can try to split the constraints "
-                  "into more penalties or use phase_dynamics=PhaseDynamics.ONE_PER_NODE",
+        ValueError,
+        match="Valid values for setting the cx is 0, 1 or 2. If you reach this error message, you probably tried to "
+        "add more penalties than available in a multinode constraint. You can try to split the constraints "
+        "into more penalties or use phase_dynamics=PhaseDynamics.ONE_PER_NODE",
     ):
         ocp_module.prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -480,8 +479,7 @@ def test__torque_driven_ocp__multi_biorbd_model():
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/triple_pendulum.bioMod",
-        biorbd_model_path_modified_inertia=bioptim_folder
-                                           + "/models/triple_pendulum_modified_inertia.bioMod",
+        biorbd_model_path_modified_inertia=bioptim_folder + "/models/triple_pendulum_modified_inertia.bioMod",
         n_shooting=40,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
@@ -497,8 +495,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_mapping(
 
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
-        biorbd_model_path_with_translations=bioptim_folder
-                                            + "/models/double_pendulum_with_translations.bioMod",
+        biorbd_model_path_with_translations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
         n_shooting=(5, 5),
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
@@ -513,8 +510,7 @@ def test__torque_driven_ocp__phase_transition_uneven_variable_number_by_bounds()
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path_with_translations=bioptim_folder
-                                            + "/models/double_pendulum_with_translations.bioMod",
+        biorbd_model_path_with_translations=bioptim_folder + "/models/double_pendulum_with_translations.bioMod",
         n_shooting=(5, 5),
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
@@ -1492,8 +1488,7 @@ def test__contact_and_muscle_forces_example():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder
-                          + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
         phase_time=0.3,
         n_shooting=10,
         min_bound=50,
@@ -1510,8 +1505,7 @@ def test__contact_and_muscle_forces_example_excitation():
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder
-                          + "/models/2segments_4dof_2contacts_1muscle.bioMod",
+        biorbd_model_path=bioptim_folder + "/models/2segments_4dof_2contacts_1muscle.bioMod",
         phase_time=0.3,
         n_shooting=10,
         min_bound=50,
