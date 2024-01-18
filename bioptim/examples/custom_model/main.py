@@ -4,9 +4,6 @@ This an example of how to use bioptim to solve a simple pendulum problem
 """
 import numpy as np
 
-# import the custom model
-from bioptim.examples.custom_model.custom_package import MyModel
-
 from bioptim import (
     OptimalControlProgram,
     BoundsList,
@@ -20,17 +17,19 @@ from bioptim import (
     DynamicsList,
     PhaseDynamics,
 )
+# import the custom model
+from bioptim.examples.custom_model.custom_package import MyModel
 
 
 def prepare_ocp(
-    model: MyModel,
-    final_time: float,
-    n_shooting: int,
-    configure_dynamics: callable = None,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
-    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-    n_threads: int = 2,
-    expand_dynamics: bool = True,
+        model: MyModel,
+        final_time: float,
+        n_shooting: int,
+        configure_dynamics: callable = None,
+        ode_solver: OdeSolverBase = OdeSolver.RK4(n_integration_steps=5),
+        phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+        n_threads: int = 2,
+        expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp

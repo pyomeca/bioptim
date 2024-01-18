@@ -2,10 +2,9 @@
 This script implements a custom model to work with bioptim. Bioptim has a deep connection with biorbd,
 but it is possible to use bioptim without biorbd. This is an example of how to use bioptim with a custom model.
 """
-from typing import Callable
-
 import numpy as np
 from casadi import sin, MX
+from typing import Callable
 
 
 class MyModel:
@@ -63,7 +62,7 @@ class MyModel:
         I = self.inertia
         m = self.mass
         g = 9.81
-        return 1 / (I + m * L**2) * (-qdot[0] * d - g * m * L * sin(q[0]) + tau[0])
+        return 1 / (I + m * L ** 2) * (-qdot[0] * d - g * m * L * sin(q[0]) + tau[0])
 
     # def system_dynamics(self, *args):
     # This is where you can implement your system dynamics with casadi if you are dealing with other systems
