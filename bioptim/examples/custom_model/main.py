@@ -141,7 +141,7 @@ def main():
     sol = ocp.solve(solver=solver)
 
     # --- Show results --- #
-    sol.graphs(show_bounds=True)
+    # sol.graphs(show_bounds=True)
     sol.print_cost()
 
     # --- Animation --- #

@@ -1485,3 +1485,8 @@ def test_min_max_example():
     ocp_module.prepare_ocp(
         bio_model_path=bioptim_folder + "/models/double_pendulum.bioMod",
     )
+
+
+def test_custom_model():
+    from bioptim.examples.custom_model.main import main as ocp_module
+    ocp_module()

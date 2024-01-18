@@ -26,6 +26,11 @@ class MyModel:
         return MyModel, dict(com=self.com, inertia=self.inertia)
 
     # ---- Needed for the example ---- #
+
+    @property
+    def name(self) -> str:
+        return "MyModel"
+
     @property
     def nb_tau(self):
         return 1
