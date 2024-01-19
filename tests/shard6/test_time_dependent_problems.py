@@ -31,6 +31,11 @@ from bioptim import (
 )
 
 
+from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+
+bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+
 def time_dynamic(
     time: MX | SX,
     states: MX | SX,
@@ -208,243 +213,277 @@ def prepare_ocp(
     )
 
 
+def test_irk_pendulum_time_dependent_constant_control_minimize_time():
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=1,
+        ode_solver=OdeSolver.IRK(),
+        control_type=ControlType.CONSTANT,
+        minimize_time=True,
+        use_sx=False,
+    )
+    sol = ocp.solve()
+
+    np.testing.assert_almost_equal(np.array(sol.cost), np.array([[172.8834048]]))
+    np.testing.assert_almost_equal(sol.states["q"][0][10], 0.2827123610541368)
+    np.testing.assert_almost_equal(sol.controls["tau"][0][10], 1.0740355622653601)
+    np.testing.assert_almost_equal(sol.controls["tau"][0][20], -0.19302027184867174)
+    np.testing.assert_almost_equal(sol.time[-1], 1.0165215559480536)
+
+
 @pytest.mark.parametrize("n_phase", [1, 2])
-@pytest.mark.parametrize(
-    "integrator",
-    [
-        OdeSolver.IRK,
-        OdeSolver.RK4,
-        OdeSolver.COLLOCATION,
-        OdeSolver.TRAPEZOIDAL,
-    ],
-)
-@pytest.mark.parametrize("control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS])
-@pytest.mark.parametrize("minimize_time", [True, False])
-@pytest.mark.parametrize("use_sx", [False, True])
-def test_time_dependent_problem(n_phase, integrator, control_type, minimize_time, use_sx):
-    """
-    Firstly, it solves the getting_started/pendulum.py example.
-    It then creates and solves this ocp and show the results.
-    """
-    from bioptim.examples.torque_driven_ocp import example_multi_biorbd_model as ocp_module
+def test_irk_pendulum_time_dependent_constant_control_not_minimizing_time(n_phase):
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=n_phase,
+        ode_solver=OdeSolver.IRK(),
+        control_type=ControlType.CONSTANT,
+        minimize_time=False,
+        use_sx=False,
+    )
+    sol = ocp.solve()
 
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    if integrator == OdeSolver.IRK and use_sx:
-        with pytest.raises(
-            NotImplementedError,
-            match="use_sx=True and OdeSolver.IRK are not yet compatible",
-        ):
-            ocp = prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-                n_phase=n_phase,
-                ode_solver=integrator(),
-                control_type=control_type,
-                minimize_time=minimize_time,
-                use_sx=use_sx,
-            )
-
-    elif integrator == OdeSolver.TRAPEZOIDAL and control_type == ControlType.CONSTANT:
-        with pytest.raises(
-            RuntimeError,
-            match="TRAPEZOIDAL cannot be used with piece-wise constant controls, please use ControlType.CONSTANT_WITH_LAST_NODE or ControlType.LINEAR_CONTINUOUS instead.",
-        ):
-            ocp = prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-                n_phase=n_phase,
-                ode_solver=integrator(),
-                control_type=control_type,
-                minimize_time=minimize_time,
-                use_sx=use_sx,
-            )
-
-    elif integrator in (OdeSolver.COLLOCATION, OdeSolver.IRK) and control_type == ControlType.LINEAR_CONTINUOUS:
-        with pytest.raises(
-            NotImplementedError, match="ControlType.LINEAR_CONTINUOUS ControlType not implemented yet with COLLOCATION"
-        ):
-            ocp = prepare_ocp(
-                biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-                n_phase=n_phase,
-                ode_solver=integrator(),
-                control_type=control_type,
-                minimize_time=minimize_time,
-                use_sx=use_sx,
-            )
-
-    # --- Solve the program --- #
+    if n_phase == 1:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[178.92793056]]))
+        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.2947267283269733)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 1.0627378962634675)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -0.20852896653142494)
+        np.testing.assert_almost_equal(sol.time[-1], 1.0)
     else:
-        ocp = prepare_ocp(
-            biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-            n_phase=n_phase,
-            ode_solver=integrator(),
-            control_type=control_type,
-            minimize_time=minimize_time,
-            use_sx=use_sx,
-        )
-        sol = ocp.solve()
+        if platform.system() == "Linux":
+            return
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[219.56328194]]))
+        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.29472672830496854)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 1.0627378962736056)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -0.20852896657892694)
+        np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
+        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -0.8806191138987077)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.6123414728154551)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], 0.31457777214014526)
+        np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
 
-        if integrator is OdeSolver.IRK:
-            if minimize_time:
-                if control_type is ControlType.CONSTANT:
-                    if n_phase == 1:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[172.8834048]]))
-                        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.2827123610541368)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 1.0740355622653601)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -0.19302027184867174)
-                        np.testing.assert_almost_equal(sol.time[-1], 1.0165215559480536)
-                    else:
-                        return
-            else:
-                if control_type is ControlType.CONSTANT:
-                    if n_phase == 1:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[178.92793056]]))
-                        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.2947267283269733)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 1.0627378962634675)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -0.20852896653142494)
-                        np.testing.assert_almost_equal(sol.time[-1], 1.0)
-                    else:
-                        if platform.system() == "Linux":
-                            return
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[219.56328194]]))
-                        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.29472672830496854)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 1.0627378962736056)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -0.20852896657892694)
-                        np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
-                        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -0.8806191138987077)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.6123414728154551)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], 0.31457777214014526)
-                        np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
 
-        elif integrator is OdeSolver.RK4:
-            if minimize_time:
-                if control_type is ControlType.CONSTANT:
-                    if n_phase == 1:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[394.66600426]]))
-                        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5511483100068987)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.3104608832105364)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.6964645358818702)
-                        np.testing.assert_almost_equal(sol.time[-1], 1.0410501449351302)
-                    else:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[249.02062056]]))
-                        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.515465729973584)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.36085663521048567)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.5491001342038282)
-                        np.testing.assert_almost_equal(sol.time[0][-1], 1.0181503582573952)
-                        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -0.7360658513679542)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.31965099349592874)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.03411819095493515)
-                        np.testing.assert_almost_equal(sol.time[1][-1], 3.0173286199672997)
-                elif control_type is ControlType.LINEAR_CONTINUOUS:
-                    if n_phase == 1:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[192.8215926]]))
-                        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.49725527306572986)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.6933785288605654)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.09656390900731922)
-                        np.testing.assert_almost_equal(sol.time[-1], 1.016504038138323)
-                    else:
-                        if platform.system() == "Windows":
-                            return
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[1638.27930348]]))
-                        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.5107221153599056)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.7166824738415234)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.07145353235356225)
-                        np.testing.assert_almost_equal(sol.time[0][-1], 0.9288827513626345)
-                        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], 1.1315705465545554)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -0.5182190005284218)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], 1.0804115102547298)
-                        np.testing.assert_almost_equal(sol.time[1][-1], 2.841120112778656)
-            else:
-                if control_type is ControlType.CONSTANT:
-                    if n_phase == 1:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[439.46711618]]))
-                        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5399146804724992)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.3181014748510472)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.8458229444008145)
-                        np.testing.assert_almost_equal(sol.time[-1], 1.0)
-                    else:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[263.27075989]]))
-                        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.5163043019429964)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.36302465583174054)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.5619591749485324)
-                        np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
-                        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -0.9922794818013333)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.3933344616906924)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.18690024664611413)
-                        np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
-                elif control_type is ControlType.LINEAR_CONTINUOUS:
-                    if n_phase == 1:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[192.03219177]]))
-                        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5161382753215992)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.6099846721957277)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.26790239968843726)
-                        np.testing.assert_almost_equal(sol.time[-1], 1.0)
-                    else:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[235.04680652]]))
-                        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.516138275321599)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.6099846721957268)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.26790239968843604)
-                        np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
-                        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -1.0000000090290213)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.40211868315342186)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.28370338722588506)
-                        np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
+@pytest.mark.parametrize("n_phase", [1, 2])
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_rk4_pendulum_time_dependent_continuous_control_minimize_time(n_phase, use_sx):
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=n_phase,
+        ode_solver=OdeSolver.RK4(),
+        control_type=ControlType.CONSTANT,
+        minimize_time=True,
+        use_sx=use_sx,
+    )
+    sol = ocp.solve()
 
-        elif integrator is OdeSolver.COLLOCATION:
-            if minimize_time:
-                if control_type is ControlType.CONSTANT:
-                    if n_phase == 1:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[186.61842748]]))
-                        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.019120660739247904)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.2922771720859445)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.2840926049009388)
-                        np.testing.assert_almost_equal(sol.time[-1], 1.0196384456953451)
-                    else:
-                        return
-            else:
-                if control_type is ControlType.CONSTANT:
-                    if n_phase == 1:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[253.91175755]]))
-                        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.01837629161465852)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.2621255903085372)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.3940840842831783)
-                        np.testing.assert_almost_equal(sol.time[-1], 1.0)
-                    else:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[359.26094374]]))
-                        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.02243344477603267)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.1611312749047648)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.40945960507427026)
-                        np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
-                        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -0.503878161059821)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.32689719054740884)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.2131135407233949)
-                        np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
+    if n_phase == 1:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[394.66600426]]))
+        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5511483100068987)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.3104608832105364)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.6964645358818702)
+        np.testing.assert_almost_equal(sol.time[-1], 1.0410501449351302)
+    else:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[249.02062056]]))
+        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.515465729973584)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.36085663521048567)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.5491001342038282)
+        np.testing.assert_almost_equal(sol.time[0][-1], 1.0181503582573952)
+        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -0.7360658513679542)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.31965099349592874)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.03411819095493515)
+        np.testing.assert_almost_equal(sol.time[1][-1], 3.0173286199672997)
 
-        elif integrator is OdeSolver.TRAPEZOIDAL:
-            if minimize_time:
-                if control_type is ControlType.LINEAR_CONTINUOUS:
-                    if n_phase == 1:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[133.93264169]]))
-                        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5690273997201437)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.7792794037533405)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -1.4769186440398776)
-                        np.testing.assert_almost_equal(sol.time[-1], 1.0217388521900082)
-                    else:
-                        return
-            else:
-                if control_type is ControlType.LINEAR_CONTINUOUS:
-                    if n_phase == 1:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[147.72809392]]))
-                        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5677646798955323)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.8003065430295088)
-                        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -1.5700440196300944)
-                        np.testing.assert_almost_equal(sol.time[-1], 1.0)
-                    else:
-                        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[174.85917125]]))
-                        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.5677646798955326)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.8003065430295143)
-                        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -1.570044019630101)
-                        np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
-                        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -0.9987158065510906)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -0.007854806227095378)
-                        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.11333730470915207)
-                        np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
+
+@pytest.mark.parametrize("n_phase", [1, 2])
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_rk4_pendulum_time_dependent_continuous_control_not_minimizing_time(n_phase, use_sx):
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=n_phase,
+        ode_solver=OdeSolver.RK4(),
+        control_type=ControlType.CONSTANT,
+        minimize_time=False,
+        use_sx=use_sx,
+    )
+    sol = ocp.solve()
+
+    if n_phase == 1:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[439.46711618]]))
+        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5399146804724992)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.3181014748510472)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.8458229444008145)
+        np.testing.assert_almost_equal(sol.time[-1], 1.0)
+    else:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[263.27075989]]))
+        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.5163043019429964)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.36302465583174054)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.5619591749485324)
+        np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
+        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -0.9922794818013333)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.3933344616906924)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.18690024664611413)
+        np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
+
+
+@pytest.mark.parametrize("n_phase", [1, 2])
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_rk4_pendulum_time_dependent_linear_control_minimize_time(n_phase, use_sx):
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=n_phase,
+        ode_solver=OdeSolver.RK4(),
+        control_type=ControlType.LINEAR_CONTINUOUS,
+        minimize_time=True,
+        use_sx=use_sx,
+    )
+    sol = ocp.solve()
+
+    if n_phase == 1:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[192.8215926]]))
+        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.49725527306572986)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.6933785288605654)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.09656390900731922)
+        np.testing.assert_almost_equal(sol.time[-1], 1.016504038138323)
+    else:
+        if platform.system() == "Windows":
+            return
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[1638.27930348]]))
+        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.5107221153599056)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.7166824738415234)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.07145353235356225)
+        np.testing.assert_almost_equal(sol.time[0][-1], 0.9288827513626345)
+        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], 1.1315705465545554)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -0.5182190005284218)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], 1.0804115102547298)
+        np.testing.assert_almost_equal(sol.time[1][-1], 2.841120112778656)
+
+
+@pytest.mark.parametrize("n_phase", [1, 2])
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_rk4_pendulum_time_dependent_linear_control_not_minimizing_time(n_phase, use_sx):
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=n_phase,
+        ode_solver=OdeSolver.RK4(),
+        control_type=ControlType.LINEAR_CONTINUOUS,
+        minimize_time=False,
+        use_sx=use_sx,
+    )
+    sol = ocp.solve()
+
+    if n_phase == 1:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[192.03219177]]))
+        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5161382753215992)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.6099846721957277)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.26790239968843726)
+        np.testing.assert_almost_equal(sol.time[-1], 1.0)
+    else:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[235.04680652]]))
+        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.516138275321599)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.6099846721957268)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.26790239968843604)
+        np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
+        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -1.0000000090290213)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.40211868315342186)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.28370338722588506)
+        np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
+
+
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_collocation_pendulum_time_dependent_constant_control_minimize_time(use_sx):
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=1,
+        ode_solver=OdeSolver.COLLOCATION(),
+        control_type=ControlType.CONSTANT,
+        minimize_time=True,
+        use_sx=use_sx,
+    )
+    sol = ocp.solve()
+
+    np.testing.assert_almost_equal(np.array(sol.cost), np.array([[186.61842748]]))
+    np.testing.assert_almost_equal(sol.states["q"][0][10], 0.019120660739247904)
+    np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.2922771720859445)
+    np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.2840926049009388)
+    np.testing.assert_almost_equal(sol.time[-1], 1.0196384456953451)
+
+
+@pytest.mark.parametrize("n_phase", [1, 2])
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_collocation_pendulum_time_dependent_constant_control_not_minimizing_time(n_phase, use_sx):
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=n_phase,
+        ode_solver=OdeSolver.COLLOCATION(),
+        control_type=ControlType.CONSTANT,
+        minimize_time=False,
+        use_sx=use_sx,
+    )
+    sol = ocp.solve()
+
+    if n_phase == 1:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[253.91175755]]))
+        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.01837629161465852)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.2621255903085372)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][20], 0.3940840842831783)
+        np.testing.assert_almost_equal(sol.time[-1], 1.0)
+    else:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[359.26094374]]))
+        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.02243344477603267)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.1611312749047648)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], 0.40945960507427026)
+        np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
+        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -0.503878161059821)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], 0.32689719054740884)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.2131135407233949)
+        np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
+
+
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_trapezoidal_pendulum_time_dependent_linear_control_minimize_time(use_sx):
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=1,
+        ode_solver=OdeSolver.TRAPEZOIDAL(),
+        control_type=ControlType.LINEAR_CONTINUOUS,
+        minimize_time=True,
+        use_sx=use_sx,
+    )
+    sol = ocp.solve()
+
+    np.testing.assert_almost_equal(np.array(sol.cost), np.array([[133.93264169]]))
+    np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5690273997201437)
+    np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.7792794037533405)
+    np.testing.assert_almost_equal(sol.controls["tau"][0][20], -1.4769186440398776)
+    np.testing.assert_almost_equal(sol.time[-1], 1.0217388521900082)
+
+
+@pytest.mark.parametrize("n_phase", [1, 2])
+@pytest.mark.parametrize("use_sx", [False, True])
+def test_trapezoidal_pendulum_time_dependent_linear_control_not_minimizing_time(n_phase, use_sx):
+    ocp = prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
+        n_phase=n_phase,
+        ode_solver=OdeSolver.TRAPEZOIDAL(),
+        control_type=ControlType.LINEAR_CONTINUOUS,
+        minimize_time=False,
+        use_sx=use_sx,
+    )
+    sol = ocp.solve()
+
+    if n_phase == 1:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[147.72809392]]))
+        np.testing.assert_almost_equal(sol.states["q"][0][10], 0.5677646798955323)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][10], 0.8003065430295088)
+        np.testing.assert_almost_equal(sol.controls["tau"][0][20], -1.5700440196300944)
+        np.testing.assert_almost_equal(sol.time[-1], 1.0)
+    else:
+        np.testing.assert_almost_equal(np.array(sol.cost), np.array([[174.85917125]]))
+        np.testing.assert_almost_equal(sol.states[0]["q"][0][10], 0.5677646798955326)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][10], 0.8003065430295143)
+        np.testing.assert_almost_equal(sol.controls[0]["tau"][0][20], -1.570044019630101)
+        np.testing.assert_almost_equal(sol.time[0][-1], 1.0)
+        np.testing.assert_almost_equal(sol.states[1]["q"][0][10], -0.9987158065510906)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][10], -0.007854806227095378)
+        np.testing.assert_almost_equal(sol.controls[1]["tau"][0][20], -0.11333730470915207)
+        np.testing.assert_almost_equal(sol.time[1][-1], 2.0)
