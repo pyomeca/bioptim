@@ -1,7 +1,7 @@
+import pytest
 from bioptim import ControlType
 from bioptim.limits.penalty_option import _get_u
 from casadi import MX, transpose
-import pytest
 
 from ..utils import TestUtils
 

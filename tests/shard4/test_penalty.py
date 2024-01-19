@@ -1,6 +1,5 @@
-import pytest
-from casadi import DM, MX
 import numpy as np
+import pytest
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -20,11 +19,12 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
 )
-from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.limits.penalty import PenaltyOption
+from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.misc.mapping import BiMapping
 from bioptim.optimization.non_linear_program import NonLinearProgram as NLP
 from bioptim.optimization.optimization_variable import OptimizationVariableList
+from casadi import DM, MX
 from tests.utils import TestUtils
 
 
