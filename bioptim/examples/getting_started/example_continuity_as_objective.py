@@ -136,14 +136,61 @@ def prepare_ocp_first_pass(
     u_init.add_noise(bounds=u_bounds, magnitude=0.01, n_shooting=n_shooting)
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
-    constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(
+        ConstraintFcn.SUPERIMPOSE_MARKERS,
+        node=Node.END,
+        first_marker="marker_2",
+        second_marker="target_2",
+    )
+    constraints.add(
+        out_of_sphere,
+        y=-0.45,
+        z=0,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
+    constraints.add(
+        out_of_sphere,
+        y=0.05,
+        z=0,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
     # for another good example, comment out this line below here and in second pass (see HERE)
-    constraints.add(out_of_sphere, y=0.55, z=-0.85, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.75, z=0.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(
+        out_of_sphere,
+        y=0.55,
+        z=-0.85,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
+    constraints.add(
+        out_of_sphere,
+        y=0.75,
+        z=0.2,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
+    constraints.add(
+        out_of_sphere,
+        y=1.4,
+        z=0.5,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
+    constraints.add(
+        out_of_sphere,
+        y=2,
+        z=1.2,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
 
     return OptimalControlProgram(
         bio_model,
@@ -207,8 +254,10 @@ def prepare_ocp_second_pass(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add("q", solution.states[0]["q"], interpolation=InterpolationType.EACH_FRAME)
-    x_init.add("qdot", solution.states[0]["qdot"], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("q", solution.states["q"], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add(
+        "qdot", solution.states["qdot"], interpolation=InterpolationType.EACH_FRAME
+    )
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
@@ -218,17 +267,68 @@ def prepare_ocp_second_pass(
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
     u_init = InitialGuessList()
-    u_init.add("tau", solution.controls[0]["tau"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
+    u_init.add(
+        "tau",
+        solution.controls["tau"][:, :-1],
+        interpolation=InterpolationType.EACH_FRAME,
+    )
 
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
-    constraints.add(out_of_sphere, y=-0.45, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.05, z=0, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(
+        ConstraintFcn.SUPERIMPOSE_MARKERS,
+        node=Node.END,
+        first_marker="marker_2",
+        second_marker="target_2",
+    )
+    constraints.add(
+        out_of_sphere,
+        y=-0.45,
+        z=0,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
+    constraints.add(
+        out_of_sphere,
+        y=0.05,
+        z=0,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
     # HERE (referenced in first pass)
-    constraints.add(out_of_sphere, y=0.55, z=-0.85, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=0.75, z=0.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=1.4, z=0.5, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
-    constraints.add(out_of_sphere, y=2, z=1.2, min_bound=0.35, max_bound=np.inf, node=Node.ALL_SHOOTING)
+    constraints.add(
+        out_of_sphere,
+        y=0.55,
+        z=-0.85,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
+    constraints.add(
+        out_of_sphere,
+        y=0.75,
+        z=0.2,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
+    constraints.add(
+        out_of_sphere,
+        y=1.4,
+        z=0.5,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
+    constraints.add(
+        out_of_sphere,
+        y=2,
+        z=1.2,
+        min_bound=0.35,
+        max_bound=np.inf,
+        node=Node.ALL_SHOOTING,
+    )
 
     return OptimalControlProgram(
         bio_model,
@@ -266,7 +366,10 @@ def main():
     )
     # ocp_first.print(to_console=True)
 
-    solver_first = Solver.IPOPT(show_online_optim=platform.system() == "Linux", show_options=dict(show_bounds=True))
+    solver_first = Solver.IPOPT(
+        show_online_optim=platform.system() == "Linux",
+        show_options=dict(show_bounds=True),
+    )
     # change maximum iterations to affect the initial solution
     # it doesn't mather if it exits before the optimal solution, only that there is an initial guess
     solver_first.set_maximum_iterations(500)
@@ -280,7 +383,10 @@ def main():
 
     # # --- Second pass ---#
     # # --- Prepare the ocp --- #
-    solver_second = Solver.IPOPT(show_online_optim=platform.system() == "Linux", show_options=dict(show_bounds=True))
+    solver_second = Solver.IPOPT(
+        show_online_optim=platform.system() == "Linux",
+        show_options=dict(show_bounds=True),
+    )
     solver_second.set_maximum_iterations(10000)
 
     ocp_second = prepare_ocp_second_pass(
