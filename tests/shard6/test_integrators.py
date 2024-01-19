@@ -1,13 +1,12 @@
 """
-This example uses the data from the balanced pendulum example.
 This test is designed to test the different integrators behavior to time dependent dynamics.
-
+This example uses the data from the balanced pendulum example.
 """
+
 import os
 import pytest
 
 import numpy as np
-
 from casadi import MX, SX, vertcat, sin
 
 from bioptim import (
@@ -158,20 +157,25 @@ def test_rk4_integrator(control_type, use_sx):
         use_sx=use_sx,
     )
 
-    phase = 0
-    node = 0
     states = (0, 0, 0, 0)
     controls = 0
     parameters = 0
     stochastics = 0
 
+    phase0_node0_dynamics = ocp.nlp[0].dynamics[0]
+    phase0_node15_dynamics = ocp.nlp[0].dynamics[15]
+    phase0_node29_dynamics = ocp.nlp[0].dynamics[29]
+    phase1_node0_dynamics = ocp.nlp[1].dynamics[0]
+    phase1_node15_dynamics = ocp.nlp[1].dynamics[15]
+    phase1_node29_dynamics = ocp.nlp[1].dynamics[29]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node0_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0.00806965, -0.00845451, 0.478401, -0.501076]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node0_dynamics(states, controls, parameters, stochastics)[1],
         (
             np.array(
                 [
@@ -185,16 +189,15 @@ def test_rk4_integrator(control_type, use_sx):
         decimal=5,
     )
 
-    node = 15
     controls = 1
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node15_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0.00809725, -0.00563696, 0.481376, -0.331795]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node15_dynamics(states, controls, parameters, stochastics)[1],
         (
             np.array(
                 [
@@ -208,16 +211,15 @@ def test_rk4_integrator(control_type, use_sx):
         decimal=5,
     )
 
-    node = 29
     states = (1, 1, 0, 0)
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node29_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[1.00589, 0.997204, 0.354366, -0.167234]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node29_dynamics(states, controls, parameters, stochastics)[1],
         (
             np.array(
                 [
@@ -231,31 +233,28 @@ def test_rk4_integrator(control_type, use_sx):
         decimal=5,
     )
 
-    phase = 1
-    node = 0
     states = (0, 0, 0, 0)
     controls = 0
 
     np.testing.assert_almost_equal(
-        np.array(ocp.nlp[phase].dynamics[node](states, controls, 1, 0)[0]),
-        np.array(ocp.nlp[phase].dynamics[node + 15](states, controls, 0, 1)[0]),
+        np.array(phase1_node0_dynamics(states, controls, 1, 0)[0]),
+        np.array(phase1_node15_dynamics(states, controls, 0, 1)[0]),
     )
     np.testing.assert_almost_equal(
-        np.array(ocp.nlp[phase].dynamics[node](states, controls, 1, 0)[1]),
-        np.array(ocp.nlp[phase].dynamics[node + 15](states, controls, 0, 1)[1]),
+        np.array(phase1_node0_dynamics(states, controls, 1, 0)[1]),
+        np.array(phase1_node15_dynamics(states, controls, 0, 1)[1]),
     )
 
-    node = 29
     states = (0, 0, 1, 1)
     stochastics = 1
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase1_node29_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0.0428703, 0.0233604, 1.58314, 0.389636]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase1_node29_dynamics(states, controls, parameters, stochastics)[1],
         (
             np.array(
                 [
@@ -278,77 +277,77 @@ def test_irk_integrator():
         use_sx=False,
     )
 
-    phase = 0
-    node = 0
     states = (0, 0, 0, 0)
     controls = 0
     parameters = 0
     stochastics = 0
 
+    phase0_node0_dynamics = ocp.nlp[0].dynamics[0]
+    phase0_node25_dynamics = ocp.nlp[0].dynamics[25]
+    phase0_node49_dynamics = ocp.nlp[0].dynamics[49]
+    phase1_node0_dynamics = ocp.nlp[1].dynamics[0]
+    phase1_node25_dynamics = ocp.nlp[1].dynamics[25]
+    phase1_node49_dynamics = ocp.nlp[1].dynamics[49]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node0_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0.00292675, -0.00306689, 0.291485, -0.30541]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node0_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[0, 0.00292675], [0, -0.00306689], [0, 0.291485], [0, -0.30541]])),
         decimal=5,
     )
 
-    node = 25
     controls = 1
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node25_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0.00293267, -0.00194324, 0.29236, -0.19336]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node25_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[0, 0.00293267], [0, -0.00194324], [0, 0.29236], [0, -0.19336]])),
         decimal=5,
     )
 
-    node = 49
     states = (1, 1, 0, 0)
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node49_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[1.00217, 0.999049, 0.217027, -0.095098]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node49_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[1, 1.00217], [1, 0.999049], [0, 0.217027], [0, -0.095098]])),
         decimal=5,
     )
 
-    phase = 1
-    node = 0
     states = (0, 0, 0, 0)
     controls = 0
 
     np.testing.assert_almost_equal(
-        np.array(ocp.nlp[phase].dynamics[node](states, controls, 1, 0)[0]),
-        np.array(ocp.nlp[phase].dynamics[node + 25](states, controls, 0, 1)[0]),
+        np.array(phase1_node0_dynamics(states, controls, 1, 0)[0]),
+        np.array(phase1_node25_dynamics(states, controls, 0, 1)[0]),
     )
     np.testing.assert_almost_equal(
-        np.array(ocp.nlp[phase].dynamics[node](states, controls, 1, 0)[1]),
-        np.array(ocp.nlp[phase].dynamics[node + 25](states, controls, 0, 1)[1]),
+        np.array(phase1_node0_dynamics(states, controls, 1, 0)[1]),
+        np.array(phase1_node25_dynamics(states, controls, 0, 1)[1]),
     )
 
-    node = 49
     states = (0, 0, 1, 1)
     stochastics = 1
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase1_node49_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0.0233721, 0.0164765, 1.34253, 0.641881]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase1_node49_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[0, 0.0233721], [0, 0.0164765], [1, 1.34253], [1, 0.641881]])),
         decimal=5,
     )
@@ -363,25 +362,30 @@ def test_collocation_integrator(use_sx):
         use_sx=use_sx,
     )
 
-    phase = 0
-    node = 0
     states = (0, 0, 0, 0)
     controls = 0
     parameters = 0
     stochastics = 0
 
+    phase0_node0_dynamics = ocp.nlp[0].dynamics[0]
+    phase0_node15_dynamics = ocp.nlp[0].dynamics[15]
+    phase0_node29_dynamics = ocp.nlp[0].dynamics[29]
+    phase1_node0_dynamics = ocp.nlp[1].dynamics[0]
+    phase1_node15_dynamics = ocp.nlp[1].dynamics[15]
+    phase1_node29_dynamics = ocp.nlp[1].dynamics[29]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node0_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0, 0, 0, 0]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node0_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[0, 0], [0, 0], [0, 0], [0, 0]])),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[2].T,
+        phase0_node0_dynamics(states, controls, parameters, stochastics)[2].T,
         np.array(
             [
                 [
@@ -407,21 +411,20 @@ def test_collocation_integrator(use_sx):
         decimal=5,
     )
 
-    node = 15
     controls = 1
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node15_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0, 0, 0, 0]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node15_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[0, 0], [0, 0], [0, 0], [0, 0]])),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[2].T,
+        phase0_node15_dynamics(states, controls, parameters, stochastics)[2].T,
         np.array(
             [
                 [
@@ -447,21 +450,20 @@ def test_collocation_integrator(use_sx):
         decimal=5,
     )
 
-    node = 29
     states = (1, 1, 0, 0)
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node29_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[1, 1, 0, 0]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node29_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[1, 1], [1, 1], [0, 0], [0, 0]])),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[2].T,
+        phase0_node29_dynamics(states, controls, parameters, stochastics)[2].T,
         np.array(
             [
                 [
@@ -487,36 +489,33 @@ def test_collocation_integrator(use_sx):
         decimal=5,
     )
 
-    phase = 1
-    node = 0
     states = (0, 0, 0, 0)
     controls = 0
 
     np.testing.assert_almost_equal(
-        np.array(ocp.nlp[phase].dynamics[node](states, controls, 1, 0)[0]),
-        np.array(ocp.nlp[phase].dynamics[node + 15](states, controls, 0, 1)[0]),
+        np.array(phase1_node0_dynamics(states, controls, 1, 0)[0]),
+        np.array(phase1_node15_dynamics(states, controls, 0, 1)[0]),
     )
     np.testing.assert_almost_equal(
-        np.array(ocp.nlp[phase].dynamics[node](states, controls, 1, 0)[1]),
-        np.array(ocp.nlp[phase].dynamics[node + 15](states, controls, 0, 1)[1]),
+        np.array(phase1_node0_dynamics(states, controls, 1, 0)[1]),
+        np.array(phase1_node15_dynamics(states, controls, 0, 1)[1]),
     )
 
-    node = 29
     states = (0, 0, 1, 1)
     stochastics = 1
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase1_node29_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0, 0, 1, 1]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase1_node29_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[0, 0], [0, 0], [1, 1], [1, 1]])),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[2].T,
+        phase1_node29_dynamics(states, controls, parameters, stochastics)[2].T,
         np.array(
             [
                 [
@@ -552,77 +551,77 @@ def test_trapezoidal_integrator(use_sx):
         use_sx=use_sx,
     )
 
-    phase = 0
-    node = 0
     states = (0, 0, 0, 0)
     controls = 0
     parameters = 0
     stochastics = 0
 
+    phase0_node0_dynamics = ocp.nlp[0].dynamics[0]
+    phase0_node15_dynamics = ocp.nlp[0].dynamics[15]
+    phase0_node29_dynamics = ocp.nlp[0].dynamics[29]
+    phase1_node0_dynamics = ocp.nlp[1].dynamics[0]
+    phase1_node15_dynamics = ocp.nlp[1].dynamics[15]
+    phase1_node29_dynamics = ocp.nlp[1].dynamics[29]
+
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node0_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0, 0, 0.489745, -0.513252]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node0_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[0, 0], [0, 0], [0, 0.489745], [0, -0.513252]])),
         decimal=5,
     )
 
-    node = 15
     controls = 1
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node15_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0, 0, 0.490223, -0.346274]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node15_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[0, 0], [0, 0], [0, 0.490223], [0, -0.346274]])),
         decimal=5,
     )
 
-    node = 29
     states = (1, 1, 0, 0)
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase0_node29_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[1, 1, 0.351708, -0.169067]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase0_node29_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[1, 1], [1, 1], [0, 0.351708], [0, -0.169067]])),
         decimal=5,
     )
 
-    phase = 1
-    node = 0
     states = (0, 0, 0, 0)
     controls = 0
 
     np.testing.assert_almost_equal(
-        np.array(ocp.nlp[phase].dynamics[node](states, controls, 1, 0)[0]),
-        np.array(ocp.nlp[phase].dynamics[node + 15](states, controls, 0, 1)[0]),
+        np.array(phase1_node0_dynamics(states, controls, 1, 0)[0]),
+        np.array(phase1_node15_dynamics(states, controls, 0, 1)[0]),
     )
     np.testing.assert_almost_equal(
-        np.array(ocp.nlp[phase].dynamics[node](states, controls, 1, 0)[1]),
-        np.array(ocp.nlp[phase].dynamics[node + 15](states, controls, 0, 1)[1]),
+        np.array(phase1_node0_dynamics(states, controls, 1, 0)[1]),
+        np.array(phase1_node15_dynamics(states, controls, 0, 1)[1]),
     )
 
-    node = 29
     states = (0, 0, 1, 1)
     stochastics = 1
 
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[0].T,
+        phase1_node29_dynamics(states, controls, parameters, stochastics)[0].T,
         np.array([[0.0333333, 0.0333333, 1.53967, 0.436825]]),
         decimal=5,
     )
     np.testing.assert_almost_equal(
-        ocp.nlp[phase].dynamics[node](states, controls, parameters, stochastics)[1],
+        phase1_node29_dynamics(states, controls, parameters, stochastics)[1],
         (np.array([[0, 0.0333333], [0, 0.0333333], [1, 1.53967], [1, 0.436825]])),
         decimal=5,
     )
