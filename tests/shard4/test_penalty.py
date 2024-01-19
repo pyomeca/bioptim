@@ -29,12 +29,12 @@ from tests.utils import TestUtils
 
 
 def prepare_test_ocp(
-        phase_dynamics,
-        with_muscles=False,
-        with_contact=False,
-        with_actuator=False,
-        implicit=False,
-        use_sx=True,
+    phase_dynamics,
+    with_muscles=False,
+    with_contact=False,
+    with_actuator=False,
+    implicit=False,
+    use_sx=True,
 ):
     bioptim_folder = TestUtils.bioptim_folder()
     if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
@@ -1287,8 +1287,8 @@ def test_penalty_custom_with_bounds_failing_max_bound(value, phase_dynamics):
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(
-            RuntimeError,
-            match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
+        RuntimeError,
+        match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
     ):
         penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], p, s, [], 0))
 
@@ -1354,10 +1354,10 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
         np.testing.assert_almost_equal(np.array(controller.u_scaled), nlp.U)
     elif node == Node.INTERMEDIATES:
         np.testing.assert_almost_equal(controller.t, [i for i in range(1, ns - 1)])
-        np.testing.assert_almost_equal(np.array(controller.x), x_expected[1: ns - 1])
-        np.testing.assert_almost_equal(np.array(controller.u), u_expected[1: ns - 1])
-        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[1: ns - 1])
-        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[1: ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.x), x_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.u), u_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[1 : ns - 1])
+        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[1 : ns - 1])
     elif node == Node.START:
         np.testing.assert_almost_equal(controller.t, [0])
         np.testing.assert_almost_equal(np.array(controller.x), x_expected[0])

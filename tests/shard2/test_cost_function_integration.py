@@ -24,14 +24,14 @@ from bioptim import (
 
 
 def prepare_ocp(
-        biorbd_model_path: str,
-        n_shooting: int,
-        integration_rule: QuadratureRule,
-        control_type: ControlType,
-        objective: str,
-        target: np.ndarray = None,
-        ode_solver: OdeSolverBase = OdeSolver.RK4(),
-        phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    biorbd_model_path: str,
+    n_shooting: int,
+    integration_rule: QuadratureRule,
+    control_type: ControlType,
+    objective: str,
+    target: np.ndarray = None,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -283,13 +283,13 @@ def test_pendulum_collocation(control_type, integration_rule, objective, phase_d
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     if integration_rule not in (
-            QuadratureRule.RECTANGLE_LEFT,
-            QuadratureRule.TRAPEZOIDAL,
-            QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
+        QuadratureRule.RECTANGLE_LEFT,
+        QuadratureRule.TRAPEZOIDAL,
+        QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
     ):
         with pytest.raises(
-                NotImplementedError,
-                match=f"{integration_rule} has not been implemented yet for objective functions.",
+            NotImplementedError,
+            match=f"{integration_rule} has not been implemented yet for objective functions.",
         ):
             prepare_ocp(
                 biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
@@ -607,9 +607,9 @@ def test_error_mayer_trapz(integration_rule, phase_dynamics):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     with pytest.raises(
-            ValueError,
-            match="Mayer objective functions cannot be integrated, "
-                  "remove the argument integration_rule or use a Lagrange objective function",
+        ValueError,
+        match="Mayer objective functions cannot be integrated, "
+        "remove the argument integration_rule or use a Lagrange objective function",
     ):
         ocp = prepare_ocp(
             biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
