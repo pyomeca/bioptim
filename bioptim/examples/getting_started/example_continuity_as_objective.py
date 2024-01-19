@@ -15,8 +15,9 @@ User might want to start reading the script by the `main` function to get a bett
 
 import platform
 
-from casadi import sqrt
 import numpy as np
+from casadi import sqrt
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -51,15 +52,15 @@ def out_of_sphere(controller: PenaltyController, y, z):
 
 
 def prepare_ocp_first_pass(
-    biorbd_model_path: str,
-    final_time: float,
-    n_shooting: int,
-    state_continuity_weight: float,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    use_sx: bool = True,
-    n_threads: int = 1,
-    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-    expand_dynamics: bool = True,
+        biorbd_model_path: str,
+        final_time: float,
+        n_shooting: int,
+        state_continuity_weight: float,
+        ode_solver: OdeSolverBase = OdeSolver.RK4(),
+        use_sx: bool = True,
+        n_threads: int = 1,
+        phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+        expand_dynamics: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -164,12 +165,12 @@ def prepare_ocp_first_pass(
 
 
 def prepare_ocp_second_pass(
-    biorbd_model_path: str,
-    ns: int,
-    solution: Solution,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    use_sx: bool = True,
-    n_threads: int = 1,
+        biorbd_model_path: str,
+        ns: int,
+        solution: Solution,
+        ode_solver: OdeSolverBase = OdeSolver.RK4(),
+        use_sx: bool = True,
+        n_threads: int = 1,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -208,7 +209,7 @@ def prepare_ocp_second_pass(
     x_bounds["qdot"][:, 0] = 0
 
     # Initial guess
-    states = solution.decision_states(to_merge=SolutionMerge.NODES)
+    states = solution.decision_states(to_merge=SolutionMerge.NODES)["q"]
     x_init = InitialGuessList()
     x_init.add("q", states["q"], interpolation=InterpolationType.EACH_FRAME)
     x_init.add("qdot", states["qdot"], interpolation=InterpolationType.EACH_FRAME)
@@ -284,7 +285,7 @@ def main():
     sol_first = ocp_first.solve(solver_first)
     # sol_first.graphs()
 
-    # # --- Second pass ---#
+    # # --- Second pass ---
     # # --- Prepare the ocp --- #
     solver_second = Solver.IPOPT(show_online_optim=platform.system() == "Linux", show_options=dict(show_bounds=True))
     solver_second.set_maximum_iterations(10000)

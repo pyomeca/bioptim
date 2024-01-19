@@ -1,20 +1,20 @@
-from typing import Any
 from copy import deepcopy
+from typing import Any
 
 import numpy as np
-from scipy import interpolate as sci_interp
-from scipy.interpolate import interp1d
 from casadi import vertcat, DM
 from matplotlib import pyplot as plt
+from scipy import interpolate as sci_interp
+from scipy.interpolate import interp1d
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment
 from ..optimization_vector import OptimizationVectorHelper
+from ...dynamics.ode_solver import OdeSolver
+from ...interfaces.solve_ivp_interface import solve_ivp_interface
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
 from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
-from ...dynamics.ode_solver import OdeSolver
-from ...interfaces.solve_ivp_interface import solve_ivp_interface
 
 
 class Solution:
@@ -88,20 +88,20 @@ class Solution:
     """
 
     def __init__(
-        self,
-        ocp,
-        vector: np.ndarray | DM = None,
-        cost: np.ndarray | DM = None,
-        constraints: np.ndarray | DM = None,
-        lam_g: np.ndarray | DM = None,
-        lam_p: np.ndarray | DM = None,
-        lam_x: np.ndarray | DM = None,
-        inf_pr: np.ndarray | DM = None,
-        inf_du: np.ndarray | DM = None,
-        solver_time_to_optimize: float = None,
-        real_time_to_optimize: float = None,
-        iterations: int = None,
-        status: int = None,
+            self,
+            ocp,
+            vector: np.ndarray | DM = None,
+            cost: np.ndarray | DM = None,
+            constraints: np.ndarray | DM = None,
+            lam_g: np.ndarray | DM = None,
+            lam_p: np.ndarray | DM = None,
+            lam_x: np.ndarray | DM = None,
+            inf_pr: np.ndarray | DM = None,
+            inf_du: np.ndarray | DM = None,
+            solver_time_to_optimize: float = None,
+            real_time_to_optimize: float = None,
+            iterations: int = None,
+            status: int = None,
     ):
         """
         Parameters
@@ -340,10 +340,10 @@ class Solution:
         return out if len(out) > 1 else out[0]
 
     def decision_time(
-        self,
-        to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
-        time_alignment: TimeAlignment = TimeAlignment.STATES,
-        continuous: bool = False,
+            self,
+            to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
+            time_alignment: TimeAlignment = TimeAlignment.STATES,
+            continuous: bool = False,
     ) -> list | np.ndarray:
         """
         Returns the time vector at each node that matches decision_states or decision_controls
@@ -375,10 +375,10 @@ class Solution:
         return self._process_time_vector(time, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
 
     def stepwise_time(
-        self,
-        to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
-        time_alignment: TimeAlignment = TimeAlignment.STATES,
-        continuous: bool = False,
+            self,
+            to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
+            time_alignment: TimeAlignment = TimeAlignment.STATES,
+            continuous: bool = False,
     ) -> list | np.ndarray:
         """
         Returns the time vector at each node that matches stepwise_states or stepwise_controls
@@ -406,11 +406,11 @@ class Solution:
         )
 
     def _process_time_vector(
-        self,
-        times,
-        to_merge: SolutionMerge | list[SolutionMerge, ...],
-        time_alignment: TimeAlignment,
-        continuous: bool,
+            self,
+            times,
+            to_merge: SolutionMerge | list[SolutionMerge, ...],
+            time_alignment: TimeAlignment,
+            continuous: bool,
     ):
         if time_alignment != TimeAlignment.STATES:
             raise NotImplementedError("Only TimeAlignment.STATES is implemented for now")
@@ -558,7 +558,7 @@ class Solution:
         return out
 
     def decision_algebraic_states(
-        self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None
+            self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None
     ):
         """
         Returns the decision algebraic_states
@@ -624,10 +624,10 @@ class Solution:
         return new
 
     def integrate(
-        self,
-        shooting_type: Shooting = Shooting.SINGLE,
-        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
-        to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
+            self,
+            shooting_type: Shooting = Shooting.SINGLE,
+            integrator: SolutionIntegrator = SolutionIntegrator.OCP,
+            to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
     ):
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
@@ -679,14 +679,14 @@ class Solution:
         return out if len(out) > 1 else out[0]
 
     def _states_for_phase_integration(
-        self,
-        shooting_type: Shooting,
-        phase_idx: int,
-        integrated_states: np.ndarray,
-        decision_states,
-        decision_controls,
-        params,
-        decision_algebraic_states,
+            self,
+            shooting_type: Shooting,
+            phase_idx: int,
+            integrated_states: np.ndarray,
+            decision_states,
+            decision_controls,
+            params,
+            decision_algebraic_states,
     ):
         """
         Returns the states to integrate for the phase_idx phase. If there was a phase transition, the last state of the
@@ -855,12 +855,12 @@ class Solution:
         return data if len(data) > 1 else data[0]
 
     def graphs(
-        self,
-        automatically_organize: bool = True,
-        show_bounds: bool = False,
-        show_now: bool = True,
-        shooting_type: Shooting = Shooting.MULTIPLE,
-        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
+            self,
+            automatically_organize: bool = True,
+            show_bounds: bool = False,
+            show_now: bool = True,
+            shooting_type: Shooting = Shooting.MULTIPLE,
+            integrator: SolutionIntegrator = SolutionIntegrator.OCP,
     ):
         """
         Show the graphs of the simulation
@@ -885,12 +885,12 @@ class Solution:
             plt.show()
 
     def animate(
-        self,
-        n_frames: int = 0,
-        shooting_type: Shooting = None,
-        show_now: bool = True,
-        show_tracked_markers: bool = False,
-        **kwargs: Any,
+            self,
+            n_frames: int = 0,
+            shooting_type: Shooting = None,
+            show_now: bool = True,
+            show_tracked_markers: bool = False,
+            **kwargs: Any,
     ) -> None | list:
         """
         Animate the simulation
@@ -921,8 +921,8 @@ class Solution:
             for objective in self.ocp.nlp[idx_phase].J:
                 if objective.target is not None:
                     if objective.type in (
-                        ObjectiveFcn.Mayer.TRACK_MARKERS,
-                        ObjectiveFcn.Lagrange.TRACK_MARKERS,
+                            ObjectiveFcn.Mayer.TRACK_MARKERS,
+                            ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
                         n_frames += objective.target.shape[2]
                         break
@@ -994,8 +994,8 @@ class Solution:
             for objective in nlp.J:
                 if objective.target is not None:
                     if objective.type in (
-                        ObjectiveFcn.Mayer.TRACK_MARKERS,
-                        ObjectiveFcn.Lagrange.TRACK_MARKERS,
+                            ObjectiveFcn.Mayer.TRACK_MARKERS,
+                            ObjectiveFcn.Lagrange.TRACK_MARKERS,
                     ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
                         tracked_markers = np.full((3, nlp.model.nb_markers, n_states_nodes), np.nan)
 
@@ -1204,9 +1204,9 @@ class Solution:
             # Todo, min/mean/max
             print(f"\n--------- CONSTRAINTS ---------")
             if (
-                print_penalty_list(None, ocp.g_internal, True)
-                + print_penalty_list(None, ocp.g_implicit, True)
-                + print_penalty_list(None, ocp.g, True)
+                    print_penalty_list(None, ocp.g_internal, True)
+                    + print_penalty_list(None, ocp.g_implicit, True)
+                    + print_penalty_list(None, ocp.g, True)
             ):
                 print("")
 

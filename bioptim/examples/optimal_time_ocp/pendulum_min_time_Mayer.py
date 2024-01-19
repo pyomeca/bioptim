@@ -10,6 +10,7 @@ the values, while the latter is the most common way to define optimal time
 import platform
 
 import numpy as np
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -29,16 +30,16 @@ from bioptim import (
 
 
 def prepare_ocp(
-    biorbd_model_path: str,
-    final_time: float,
-    n_shooting: int,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    weight: float = 1,
-    min_time=0,
-    max_time=np.inf,
-    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-    expand_dynamics: bool = True,
-    control_type: ControlType = ControlType.CONSTANT,
+        biorbd_model_path: str,
+        final_time: float,
+        n_shooting: int,
+        ode_solver: OdeSolverBase = OdeSolver.RK4(),
+        weight: float = 1,
+        min_time=0,
+        max_time=np.inf,
+        phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+        expand_dynamics: bool = True,
+        control_type: ControlType = ControlType.CONSTANT,
 ) -> OptimalControlProgram:
     """
     Prepare the optimal control program
@@ -113,6 +114,7 @@ def prepare_ocp(
         objective_functions=objective_functions,
         ode_solver=ode_solver,
         control_type=control_type,
+        use_sx=True,
     )
 
 

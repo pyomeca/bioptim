@@ -1,15 +1,15 @@
-from time import perf_counter
 from sys import platform
+from time import perf_counter
 
-from casadi import Importer, Function
 import numpy as np
+from casadi import Importer, Function
 from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
+from bioptim.optimization.solution.solution import Solution
 from ..gui.plot import OnlineCallback
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType
-from bioptim.optimization.solution.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
 
 
@@ -45,21 +45,51 @@ def generic_solve(interface, expand_during_shake_tree=False) -> dict:
     -------
     A reference to the solution
     """
+
     v = interface.ocp.variables_vector
+
+    # change of variable
+    n_phases = interface.ocp.n_phases
+    tf = interface.ocp.cx.sym("tf", n_phases, 1)
+    #
+    all_ns = [interface.ocp.nlp[i].ns for i in range(n_phases)]
+    all_dt_of_phases = [tf[i] / all_ns[i] for i in range(n_phases)]
+    all_tf = vertcat(*all_dt_of_phases)
+
+    evaluating_v = vertcat(all_tf, v[n_phases:])
+    new_sym_v = vertcat(tf, v[n_phases:])
+    # new_sym_v = vertcat(v[n_phases:], tf)
+
     v_bounds = interface.ocp.bounds_vectors
+    v_bounds[0][:n_phases] *= np.array(all_ns)
+    v_bounds[1][:n_phases] *= np.array(all_ns)
+    # v_bounds = (
+    #     np.concatenate((v_bounds[0][n_phases:], v_bounds[0][:n_phases])),
+    #     np.concatenate((v_bounds[1][n_phases:], v_bounds[1][:n_phases]))
+    # )
+
     v_init = interface.ocp.init_vector
+    v_init[:n_phases] *= np.array(all_ns)
+    # v_init = np.concatenate((v_init[n_phases:], v_init[:n_phases]))
 
     all_objectives = interface.dispatch_obj_func()
-    all_objectives = _shake_tree_for_penalties(interface.ocp, all_objectives, v, v_bounds, expand_during_shake_tree)
+    fcn_all_objectives = Function("obj", [v], [all_objectives])
+    new_all_objectives_sym = fcn_all_objectives(evaluating_v)
+    # all_objectives = _shake_tree_for_penalties(interface.ocp, all_objectives, v, v_bounds, expand_during_shake_tree)
+    all_objectives = _shake_tree_for_penalties(interface.ocp, new_all_objectives_sym, new_sym_v, v_bounds,
+                                               expand_during_shake_tree)
 
     all_g, all_g_bounds = interface.dispatch_bounds()
-    all_g = _shake_tree_for_penalties(interface.ocp, all_g, v, v_bounds, expand_during_shake_tree)
+    fcn_all_g = Function("g", [v], [all_g])
+    new_all_g_sym = fcn_all_g(evaluating_v)
+    # all_g = _shake_tree_for_penalties(interface.ocp, all_g, v, v_bounds, expand_during_shake_tree)
+    all_g = _shake_tree_for_penalties(interface.ocp, new_all_g_sym, new_sym_v, v_bounds, expand_during_shake_tree)
 
     if interface.opts.show_online_optim:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
     # Thread here on (f and all_g) instead of individually for each function?
-    interface.sqp_nlp = {"x": v, "f": sum1(all_objectives), "g": all_g}
+    interface.sqp_nlp = {"x": new_sym_v, "f": sum1(all_objectives), "g": all_g}
     interface.c_compile = interface.opts.c_compile
     options = interface.opts.as_dict(interface)
 
@@ -134,7 +164,7 @@ def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
         except RuntimeError:
             # This happens mostly when there is a Newton decent in the penalty
             pass
-    return penalty(vertcat(*dt, v[len(dt) :]))
+    return penalty(vertcat(*dt, v[len(dt):]))
 
 
 def generic_set_lagrange_multiplier(interface, sol: Solution):
