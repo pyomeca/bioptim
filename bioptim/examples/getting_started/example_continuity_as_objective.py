@@ -37,6 +37,7 @@ from bioptim import (
     Solution,
     PenaltyController,
     PhaseDynamics,
+    SolutionMerge,
 )
 
 
@@ -131,8 +132,9 @@ def prepare_ocp_first_pass(
     u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
+    controls = solution.decision_controls(to_merge=SolutionMerge.NODES)
     u_init = InitialGuessList()
-    u_init["tau"] = [tau_init] * n_tau
+    u_init.add("tau", controls["tau"], interpolation=InterpolationType.EACH_FRAME)
     u_init.add_noise(bounds=u_bounds, magnitude=0.01, n_shooting=n_shooting)
 
     constraints = ConstraintList()
@@ -253,11 +255,10 @@ def prepare_ocp_second_pass(
     x_bounds["qdot"][:, 0] = 0
 
     # Initial guess
+    states = solution.decision_states(to_merge=SolutionMerge.NODES)
     x_init = InitialGuessList()
-    x_init.add("q", solution.states["q"], interpolation=InterpolationType.EACH_FRAME)
-    x_init.add(
-        "qdot", solution.states["qdot"], interpolation=InterpolationType.EACH_FRAME
-    )
+    x_init.add("q", states["q"], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("qdot", states["qdot"], interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
