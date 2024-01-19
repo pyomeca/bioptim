@@ -248,9 +248,128 @@ def test_main_control_type_none(use_sx, phase_dynamics):
         phase_dynamics=phase_dynamics,
     )
 
+    # Check integration results
+    # first phase, first node
+    np.testing.assert_almost_equal(
+        ocp.nlp[0].dynamics[0]((0, 0, 0), 0, 0.5, 0)[0].T,
+        np.array([[10.0003, 0.00883935, 0.00230952]]), decimal=4
+    )
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[0].dynamics[0]((0, 0, 0), 0, 0.5, 0)[1],
+        (np.array([[0, 2, 4.00002, 6.00007, 8.00016, 10.0003],
+                   [0, 0.000389643, 0.00151948, 0.00333568, 0.00579005, 0.00883935],
+                   [0, 3.93465e-06, 6.19004e-05, 0.00030844, 0.00096004, 0.00230952]])), decimal=4
+    )
+
+    # first phase, intermediate node
+    np.testing.assert_almost_equal(
+        ocp.nlp[0].dynamics[2]((4, 0, 0), 0, 0.5, 0)[0].T,
+        np.array([[14.0005, 0.0118695, 0.00559404]]), decimal=4
+    )
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[0].dynamics[2]((4, 0, 0), 0, 0.5, 0)[1],
+        (np.array([[4, 6.00001, 8.00006, 10.0001, 12.0003, 14.0005],
+                   [0, 0.00140722, 0.00332391, 0.00572289, 0.00857913, 0.0118695],
+                   [0, 7.11181e-05, 0.000407076, 0.00123765, 0.00285158, 0.00559404]])), decimal=4
+    )
+
+    # first phase, last node
+    np.testing.assert_almost_equal(
+        ocp.nlp[0].dynamics[4]((0, 3, 0), 0, 0.5, 0)[0].T,
+        np.array([[10.3002, 3.00533, 1.59925]]), decimal=4
+    )
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[0].dynamics[4]((0, 3, 0), 0, 0.5, 0)[1],
+        (np.array([[0, 2.06, 4.12001, 6.18004, 8.24009, 10.3002],
+                   [3, 3.00023, 3.00089, 3.00197, 3.00346, 3.00533],
+                   [0, 0.0622164, 0.250567, 0.567681, 1.0163, 1.59925]])), decimal=4
+    )
+
+    # intermediate phase, first node
+    np.testing.assert_almost_equal(
+        ocp.nlp[4].dynamics[0]((0, 0, 5), 0, 0.5, 0)[0].T,
+        np.array([[10.0001, 0.00194822, 5.52635]]), decimal=4
+    )
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[4].dynamics[0]((0, 0, 5), 0, 0.5, 0)[1],
+        (np.array([[0, 2, 4, 6.00001, 8.00003, 10.0001],
+                   [0, 7.95759e-05, 0.000316627, 0.000708684, 0.00125333, 0.00194822],
+                   [5, 5.10101, 5.20407, 5.30925, 5.41664, 5.52635]])), decimal=4
+    )
+
+    # intermediate phase, intermediate node
+    np.testing.assert_almost_equal(
+        ocp.nlp[4].dynamics[2]((0, 0, 0), 2, 0.5, 0)[0].T,
+        np.array([[10.0001, 0.00180737, 0.00046329]]), decimal=4
+    )
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[4].dynamics[2]((0, 0, 0), 2, 0.5, 0)[1],
+        (np.array([[0, 2, 4, 6.00001, 8.00003, 10.0001],
+                   [0, 7.37103e-05, 0.000293402, 0.000656953, 0.00116228, 0.00180737],
+                   [0, 7.40468e-07, 1.18532e-05, 6.00179e-05, 0.000189722, 0.00046329]])), decimal=4
+    )
+
+    # intermediate phase, last node
+    np.testing.assert_almost_equal(
+        ocp.nlp[4].dynamics[4]((0, 0, 0), 0, 1, 0)[0].T,
+        np.array([[20.0003, 0.00405445, 0.00424571]]), decimal=4
+    )
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[4].dynamics[4]((0, 0, 0), 0, 1, 0)[1],
+        (np.array([[0, 4, 8.00002, 12.0001, 16.0001, 20.0003],
+                   [0, 0.000165747, 0.000659351, 0.00147546, 0.00260886, 0.00405445],
+                   [0, 6.68327e-06, 0.00010743, 0.000545968, 0.00173221, 0.00424571]])), decimal=4
+    )
+
+    # last phase, first node
+    np.testing.assert_almost_equal(
+        ocp.nlp[9].dynamics[0]((0, 0, 0), 0, 0.5, 8)[0].T,
+        np.array([[10, 0.000986865, 0.000252406]]), decimal=4
+    )
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[9].dynamics[0]((0, 0, 0), 0, 0.5, 8)[1],
+        (np.array([[0, 2, 4, 6.00001, 8.00002, 10],
+                   [0, 3.98937e-05, 0.000159152, 0.000357146, 0.000633255, 0.000986865],
+                   [0, 4.00532e-07, 6.42375e-06, 3.25842e-05, 0.000103183, 0.000252406]])), decimal=4
+    )
+
+    # last phase, intermediate node
+    np.testing.assert_almost_equal(
+        ocp.nlp[9].dynamics[2]((3, 20, 10), 0, 0.5, 0)[0].T,
+        np.array([[15.0001, 20.0017, 29.773]]), decimal=4
+    )
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[9].dynamics[2]((3, 20, 10), 0, 0.5, 0)[1],
+        (np.array([[3, 5.4, 7.80001, 10.2, 12.6, 15.0001],
+                   [20, 20.0002, 20.0004, 20.0008, 20.0012, 20.0017],
+                   [10, 11.8973, 14.8027, 18.7364, 23.7195, 29.773]])), decimal=4
+    )
+
+    # last phase, last node
+    np.testing.assert_almost_equal(
+        ocp.nlp[9].dynamics[4]((3, 6, 8), 2, 1.5, 3)[0].T,
+        np.array([[34.8004, 6.00394, 48.8187]]), decimal=4
+    )
+
+    np.testing.assert_almost_equal(
+        ocp.nlp[9].dynamics[4]((3, 6, 8), 2, 1.5, 3)[1],
+        (np.array([[3, 9.36001, 15.72, 22.0801, 28.4402, 34.8004],
+                   [6, 6.00026, 6.00079, 6.00158, 6.00263, 6.00394],
+                   [8, 10.7758, 16.0834, 24.0798, 34.9323, 48.8187]])), decimal=4
+    )
+
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
 
+    # Check optimization results
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
