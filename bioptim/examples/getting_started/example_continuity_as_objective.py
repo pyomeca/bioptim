@@ -207,8 +207,8 @@ def prepare_ocp_second_pass(
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add("q", solution.states[0]["q"], interpolation=InterpolationType.EACH_FRAME)
-    x_init.add("qdot", solution.states[0]["qdot"], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("q", solution.states["q"], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add("qdot", solution.states["qdot"], interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
@@ -218,7 +218,7 @@ def prepare_ocp_second_pass(
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
     u_init = InitialGuessList()
-    u_init.add("tau", solution.controls[0]["tau"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
+    u_init.add("tau", solution.controls["tau"][:, :-1], interpolation=InterpolationType.EACH_FRAME)
 
     constraints = ConstraintList()
     constraints.add(ConstraintFcn.SUPERIMPOSE_MARKERS, node=Node.END, first_marker="marker_2", second_marker="target_2")
