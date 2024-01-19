@@ -153,8 +153,8 @@ def main():
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
-    # sol.graphs(show_bounds=True)
-    sol.animate(n_frames=100)
+    sol.graphs(show_bounds=True)
+    # sol.animate(n_frames=100)
 
     # Retrieve decision states from the solution object.
     decision_states = sol.decision_states()
@@ -191,12 +191,6 @@ def main():
     # Extract the 'tau' control  from the stepwise controls.
     tau_sol_stepwise_controls = stepwise_controls["tau"]
 
-    # Time
-    time_tau_decision_controls = decision_time
-
-    # Time
-    time_tau_stepwise_controls = stepwise_time
-
     # # # # # # # # # # # #
     tau_decision_dof1 = [item[0][0] for item in tau_sol_decision_controls]
     tau_decision_dof2 = [item[1][0] for item in tau_sol_decision_controls]
@@ -216,45 +210,82 @@ def main():
     qdot_stepwise_dof1 = [item[0][0] for item in qdot_sol_stepwise_states]
     qdot_stepwise_dof2 = [item[1][0] for item in qdot_sol_stepwise_states]
 
+    # Convert Casadi DM to NumPy and flatten
     decision_times_np = [np.array(dm.full()).flatten() for dm in decision_time]
     stepwise_times_np = [np.array(dm.full()).flatten() for dm in stepwise_time]
 
-    fig, ax = plt.subplots()
-    colors = ['blue', 'green', 'red', 'yellow', 'black']
-    # Plot each pair of decision times with a different color
-    for i, (start, end) in enumerate(decision_times_np[0:10]):
-        color = colors[i % len(colors)]  # Cycle through colors
-        ax.plot([start, end], [2, 2], marker='o', color=color)
+    stepwise_concatenated_times = np.concatenate(stepwise_times_np[:-1])
+    # Extract the first element of each sub-array and concatenate into a new NumPy array
+    decision_concatenated_times = np.array([sub_array[0] for sub_array in decision_times_np])
 
-    # Plot each sequence of stepwise times with different colors
-    for i, times in enumerate(stepwise_times_np[0:10]):
-        color = colors[(i + len(decision_times_np)) % len(colors)]  # Different color for each sequence
-        # Full circle for the first point, empty circles for intermediate points
-        ax.plot(times[0], 1, marker='o', color=color, markersize=8)
-        ax.plot(times[1:], [1] * (len(times) - 1), marker='o', color=color, fillstyle='none', markersize=8)
-    # Set the labels and title
-    ax.set_xlabel('Time')
-    ax.set_title('Visualization of Decision and Stepwise Times')
-    ax.legend(['Decision', 'Stepwise'])
-    # Show the plot
-    plt.show()
+    # Repeating the values
+    repeated_tau_stepwise_dof1 = np.repeat(tau_stepwise_dof1, 6)
+    repeated_tau_stepwise_dof2 = np.repeat(tau_stepwise_dof2, 6)
+    repeated_q_stepwise_dof1 = np.repeat(q_stepwise_dof1, 6)
+    repeated_q_stepwise_dof2 = np.repeat(q_stepwise_dof2, 6)
+    repeated_qdot_stepwise_dof1 = np.repeat(qdot_stepwise_dof1, 6)
+    repeated_qdot_stepwise_dof2 = np.repeat(qdot_stepwise_dof2, 6)
+
+    tau_decision_dof2.append(tau_decision_dof2[-1])
+    tau_decision_dof1.append(tau_decision_dof1[-1])
 
     # Create a figure and a set of subplots
-    # 3 rows for q, qdot, tau and 2 columns for each DOF
     fig, axs = plt.subplots(3, 2, figsize=(10, 15))
 
-    # Plotting q solutions for both DOFs
-    axs[0, 0].plot(decision_times_np, q_decision_dof1)
-    axs[0, 0].plot(decision_times_np, q_stepwise_dof1)
-
-    axs[0, 0].set_title("q Solution for first DOF")
+    # Plotting q (position) solutions for both DOFs
+    axs[0, 0].plot(decision_concatenated_times, q_decision_dof1, label="Decision")
+    axs[0, 0].step(stepwise_concatenated_times, repeated_q_stepwise_dof1[:len(stepwise_concatenated_times)], label="Stepwise")
+    axs[0, 0].set_title("q Solution for DOF1")
     axs[0, 0].set_ylabel("q")
     axs[0, 0].set_xlabel("Time")
-    axs[0, 0].legend(["Decision", "Stepwise"])
     axs[0, 0].grid(True)
+    axs[0, 0].legend()
 
+    axs[0, 1].plot(decision_concatenated_times, q_decision_dof2, label="Decision")
+    axs[0, 1].step(stepwise_concatenated_times, repeated_q_stepwise_dof2[:len(stepwise_concatenated_times)], label="Stepwise")
+    axs[0, 1].set_title("q Solution for DOF2")
+    axs[0, 1].set_ylabel("q")
+    axs[0, 1].set_xlabel("Time")
+    axs[0, 1].grid(True)
+    axs[0, 1].legend()
+
+    # Plotting qdot (velocity) solutions for both DOFs
+    axs[1, 0].plot(decision_concatenated_times, qdot_decision_dof1, label="Decision")
+    axs[1, 0].step(stepwise_concatenated_times, repeated_qdot_stepwise_dof1[:len(stepwise_concatenated_times)], label="Stepwise")
+    axs[1, 0].set_title("qdot Solution for DOF1")
+    axs[1, 0].set_ylabel("qdot")
+    axs[1, 0].set_xlabel("Time")
+    axs[1, 0].grid(True)
+    axs[1, 0].legend()
+
+    axs[1, 1].plot(decision_concatenated_times, qdot_decision_dof2, label="Decision")
+    axs[1, 1].step(stepwise_concatenated_times, repeated_qdot_stepwise_dof2[:len(stepwise_concatenated_times)], label="Stepwise")
+    axs[1, 1].set_title("qdot Solution for DOF2")
+    axs[1, 1].set_ylabel("qdot")
+    axs[1, 1].set_xlabel("Time")
+    axs[1, 1].grid(True)
+    axs[1, 1].legend()
+
+    # Plotting tau (control) solutions for both DOFs
+    axs[2, 0].plot(decision_concatenated_times, tau_decision_dof1, label="Decision")
+    axs[2, 0].step(stepwise_concatenated_times, repeated_tau_stepwise_dof1, label="Stepwise", where='post')
+    axs[2, 0].set_title("tau Solution for DOF1")
+    axs[2, 0].set_ylabel("tau")
+    axs[2, 0].set_xlabel("Time")
+    axs[2, 0].grid(True)
+    axs[2, 0].legend()
+
+    axs[2, 1].plot(decision_concatenated_times, tau_decision_dof2, label="Decision")
+    axs[2, 1].step(stepwise_concatenated_times, repeated_tau_stepwise_dof2, label="Stepwise", where='post')
+    axs[2, 1].set_title("tau Solution for DOF2")
+    axs[2, 1].set_ylabel("tau")
+    axs[2, 1].set_xlabel("Time")
+    axs[2, 1].grid(True)
+    axs[2, 1].legend()
+
+    # Adjust layout for clarity and display the plot
     plt.tight_layout()
-    plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.3)
+    plt.subplots_adjust(left=0.058, bottom=0.074, right=0.958, top=0.935, wspace=0.15, hspace=0.560)
 
     # Display the plot
     plt.show()
