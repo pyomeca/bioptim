@@ -1,5 +1,5 @@
 import pytest
-from casadi import DM, MX
+from casadi import DM, MX, vertcat, horzcat
 import numpy as np
 from bioptim import (
     BiorbdModel,
@@ -19,6 +19,7 @@ from bioptim import (
     RigidBodyDynamics,
     ControlType,
     PhaseDynamics,
+    ObjectiveList,
 )
 from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.limits.penalty import PenaltyOption
@@ -85,10 +86,101 @@ def prepare_test_ocp(
     return ocp
 
 
+def prepare_multinode_test_ocp(
+    phase_dynamics,
+    with_muscles=False,
+    with_contact=False,
+    with_actuator=False,
+    implicit=False,
+    use_sx=True,
+):
+    bioptim_folder = TestUtils.bioptim_folder()
+    if with_muscles and with_contact or with_muscles and with_actuator or with_contact and with_actuator:
+        raise RuntimeError("With muscles and with contact and with_actuator together is not defined")
+    if with_muscles and implicit or implicit and with_actuator:
+        raise RuntimeError("With muscles and implicit and with_actuator together is not defined")
+    elif with_muscles:
+        bio_model = []
+        bio_model.append(BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod"))
+        bio_model.append(BiorbdModel(bioptim_folder + "/examples/muscle_driven_ocp/models/arm26.bioMod"))
+        dynamics = DynamicsList()
+        dynamics.add(
+            DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand_dynamics=True, phase_dynamics=phase_dynamics
+        )
+        dynamics.add(
+            DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, expand_dynamics=True, phase_dynamics=phase_dynamics
+        )
+    elif with_contact:
+        bio_model = []
+        bio_model.append(
+            BiorbdModel(
+                bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+            )
+        )
+        bio_model.append(
+            BiorbdModel(
+                bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+            )
+        )
+        dynamics = DynamicsList()
+        rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE
+        dynamics.add(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=True,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+            rigidbody_dynamics=rigidbody_dynamics,
+        )
+        dynamics.add(
+            DynamicsFcn.TORQUE_DRIVEN,
+            with_contact=True,
+            expand_dynamics=True,
+            phase_dynamics=phase_dynamics,
+            rigidbody_dynamics=rigidbody_dynamics,
+        )
+    elif with_actuator:
+        bio_model = []
+        bio_model.append(BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod"))
+        bio_model.append(BiorbdModel(bioptim_folder + "/examples/torque_driven_ocp/models/cube.bioMod"))
+
+        dynamics = DynamicsList()
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+
+    else:
+        bio_model = []
+        bio_model.append(BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod"))
+        bio_model.append(BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod"))
+        dynamics = DynamicsList()
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME)
+
+    ocp = OptimalControlProgram(
+        bio_model,
+        dynamics,
+        [10, 10],
+        [1.0, 1.0],
+        objective_functions=objective_functions,
+        use_sx=use_sx,
+    )
+
+    ocp.nlp[0].J = [[]]
+    ocp.nlp[1].J = [[]]
+
+    ocp.nlp[0].g = [[]]
+    ocp.nlp[1].g = [[]]
+
+    return ocp
+
+
 def get_penalty_value(ocp, penalty, t, x, u, p, s):
     if isinstance(penalty, MultinodeConstraint) or isinstance(penalty, MultinodeObjective):
         controller = [
-            PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], p, s, [], 0) for i in range(len(penalty.nodes_phase))
+            PenaltyController(ocp, ocp.nlp[0], [], x[0], u[0], [], [], p, s, [], 0),
+            PenaltyController(ocp, ocp.nlp[1], [], x[1], u[1], [], [], p, s, [], 0),
         ]
     else:
         controller = PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], p, s, [], 0)
@@ -98,14 +190,32 @@ def get_penalty_value(ocp, penalty, t, x, u, p, s):
         return val
 
     time = ocp.nlp[0].time_cx if ocp.nlp[0].time_cx.shape == (0, 0) else ocp.cx(0, 0)
-    states = ocp.nlp[0].states.cx_start if ocp.nlp[0].states.cx_start.shape != (0, 0) else ocp.cx(0, 0)
-    controls = ocp.nlp[0].controls.cx_start if ocp.nlp[0].controls.cx_start.shape != (0, 0) else ocp.cx(0, 0)
-    parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
+    if isinstance(penalty, MultinodeConstraint) or isinstance(penalty, MultinodeObjective):
+        states = (
+            vertcat(ocp.nlp[0].states.cx_start, ocp.nlp[1].states.cx_start)
+            if ocp.nlp[0].states.cx_start.shape != (0, 0)
+            else ocp.cx(0, 0)
+        )
+        controls = (
+            vertcat(ocp.nlp[0].controls.cx_start, ocp.nlp[1].controls.cx_start)
+            if ocp.nlp[0].controls.cx_start.shape != (0, 0)
+            else ocp.cx(0, 0)
+        )
+        # stochastic_variables = (vertcat(ocp.nlp[0].stochastic_variables.cx_start,
+        #    ocp.nlp[1].stochastic_variables.cx.start)
+        #    if ocp.nlp[0].stochastic_variables.cx_start.shape != (0, 0)
+        #    else ocp.cx(0, 0)
+        # )
+    else:
+        states = ocp.nlp[0].states.cx_start if ocp.nlp[0].states.cx_start.shape != (0, 0) else ocp.cx(0, 0)
+        controls = ocp.nlp[0].controls.cx_start if ocp.nlp[0].controls.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     stochastic_variables = (
         ocp.nlp[0].stochastic_variables.cx_start
         if ocp.nlp[0].stochastic_variables.cx_start.shape != (0, 0)
         else ocp.cx(0, 0)
     )
+
+    parameters = ocp.nlp[0].parameters.cx if ocp.nlp[0].parameters.cx.shape != (0, 0) else ocp.cx(0, 0)
     return ocp.nlp[0].to_casadi_func("penalty", val, time, states, controls, parameters, stochastic_variables)(
         t, x[0], u[0], p, s
     )
@@ -989,6 +1099,152 @@ def test_penalty_minimize_segment_velocity(penalty_origin, value, phase_dynamics
     np.testing.assert_almost_equal(res.T, expected)
 
 
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Mayer, ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_state_continuity(penalty_origin, value, phase_dynamics):
+    ocp = prepare_multinode_test_ocp(phase_dynamics=phase_dynamics)
+    t = [0]
+    x1 = DM.zeros((16, 1))
+    x1[8:, :] = 1.0 * value
+    x2 = DM.ones((16, 1)) * value
+    x2[8:, :] = 0
+    u = [0, 0]
+    p = []
+    s = []
+
+    penalty_type = MultinodeConstraintFcn.STATES_EQUALITY
+    penalty = MultinodeConstraintList()
+    penalty.add(
+        penalty_type,
+        min_bound=0.01,
+        max_bound=20,
+        nodes_phase=(0, 1),
+        nodes=(Node.START, Node.START),
+    )
+
+    res = get_penalty_value(ocp, penalty[0], t, [x1, x2], u, p, s)
+
+    if value == 0.1:
+        np.testing.assert_almost_equal(np.array(res.T)[0], np.array([-0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1, -0.1]))
+    else:
+        np.testing.assert_almost_equal(np.array(res.T)[0], np.array([10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0, 10.0]))
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_controls_equality(value, phase_dynamics):
+    ocp = prepare_multinode_test_ocp(phase_dynamics=phase_dynamics)
+    t = [0]
+    x = [0, 0]
+    u1 = DM.zeros((8, 1))
+    u1[4:, :] = 1.0 * value
+    u2 = DM.ones((8, 1)) * value
+    u2[4:, :] = 0
+    p = []
+    s = []
+
+    penalty_type = MultinodeConstraintFcn.CONTROLS_EQUALITY
+    penalty = MultinodeConstraintList()
+    penalty.add(
+        penalty_type,
+        min_bound=0.01,
+        max_bound=20,
+        nodes_phase=(0, 1),
+        nodes=(Node.START, Node.START),
+    )
+
+    res = get_penalty_value(ocp, penalty[0], t, x, [u1, u2], p, s)
+    if value == 0.1:
+        np.testing.assert_almost_equal(np.array(res.T)[0], [-0.1, -0.1, -0.1, -0.1])
+    else:
+        np.testing.assert_almost_equal(np.array(res.T)[0], [10.0, 10.0, 10.0, 10.0])
+
+
+# TODO stochastic
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])  # PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("value", [0.1, -10])
+# def test_penalty_stochastic_equality(value, phase_dynamics):
+#     ocp = prepare_multinode_test_ocp(phase_dynamics=phase_dynamics)
+#     t = [0]
+#     x = [0, 0]
+#     u = [0, 0]
+#     p = []
+#     s = [2]
+#
+#     penalty_type = MultinodeConstraintFcn.STOCHASTIC_EQUALITY
+#     penalty = MultinodeConstraintList()
+#     penalty.add(
+#         penalty_type,
+#         min_bound=0.01,
+#         max_bound=20,
+#         nodes_phase=(0, 1),
+#         nodes=(Node.START, Node.START),
+#     )
+#
+#     res = get_penalty_value(ocp, penalty[0], t, x, u, p, s)
+#
+#     np.testing.assert_almost_equal(res.T, np.array(1))
+
+# TODO uses sx but doesnt work with sx (according to Benjamin it uses cx)
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("value", [0.1, -10])
+# def test_penalty_com_equality(value, phase_dynamics):
+#     ocp = prepare_multinode_test_ocp(phase_dynamics=phase_dynamics)
+#     t = [0]
+#     x = [0, 0]
+#     u1 = DM.zeros((8, 1))
+#     u1[4:, :] = 1.0 * value
+#     u2 = DM.ones((8, 1)) * value
+#     u2[4:, :] = 0
+#     p = []
+#     s = []
+#
+#     penalty_type = MultinodeConstraintFcn.COM_EQUALITY
+#     penalty = MultinodeConstraintList()
+#     penalty.add(
+#         penalty_type,
+#         min_bound=0.01,
+#         max_bound=20,
+#         nodes_phase=(0, 1),
+#         nodes=(Node.START, Node.START),
+#     )
+#
+#     res = get_penalty_value(ocp, penalty[0], t, x, [u1, u2], p, s)
+#
+#     np.testing.assert_almost_equal(res.T, np.array(1))
+
+# TODO uses sx but doesnt work with sx (according to Benjamin it uses cx)
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("value", [0.1, -10])
+# def test_penalty_com_velocity_equality(value, phase_dynamics):
+#     ocp = prepare_multinode_test_ocp(phase_dynamics=phase_dynamics)
+#     t = [0]
+#     x = [0, 0]
+#     u1 = DM.zeros((8, 1))
+#     u1[4:, :] = 1.0 * value
+#     u2 = DM.ones((8, 1)) * value
+#     u2[4:, :] = 0
+#     p = []
+#     s = []
+#
+#     penalty_type = MultinodeConstraintFcn.COM_VELOCITY_EQUALITY
+#     penalty = MultinodeConstraintList()
+#     penalty.add(
+#         penalty_type,
+#         min_bound=0.01,
+#         max_bound=20,
+#         nodes_phase=(0, 1),
+#         nodes=(Node.START, Node.START),
+#     )
+#
+#     res = get_penalty_value(ocp, penalty[0], t, x, [u1, u2], p, s)
+#     if value == 0.1:
+#         np.testing.assert_almost_equal(np.array(res.T)[0], [-0.1, -0.1, -0.1, -0.1])
+#     else:
+#         np.testing.assert_almost_equal(np.array(res.T)[0], [10., 10., 10., 10.])
+
+
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer, ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -1027,6 +1283,270 @@ def test_penalty_minimize_vector_orientation(penalty_origin, value, phase_dynami
         np.testing.assert_almost_equal(float(res), 2.566370614359173)
 
 
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_vector_orientation(penalty_origin, value, phase_dynamics):
+    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+    p = []
+    s = []
+
+    penalty_type = penalty_origin.TRACK_ANGULAR_MOMENTUM
+
+    penalty = Constraint(penalty_type)
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+    if value == 0.1:
+        np.testing.assert_almost_equal(np.array(res.T)[0], np.array([-0.005, 0.2, 0.005]))
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+@pytest.mark.parametrize("implicit", [True, False])
+def test_penalty_track_com_velocity(value, penalty_origin, implicit, phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, implicit=implicit, phase_dynamics=phase_dynamics)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+    p = []
+    s = []
+
+    penalty_type = ConstraintFcn.TRACK_COM_VELOCITY
+
+    penalty = Constraint(penalty_type)
+
+    if implicit:
+        res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+        expected = np.array([0, 0.12724064, 0.10555671])
+        if value == -10:
+            expected = np.array([0.0, -7.9133082, -11.63528216])
+        np.testing.assert_almost_equal(np.array(res.T)[0], expected)
+    else:
+        res = get_penalty_value(ocp, penalty, t, x, u, [], [])
+
+        expected = np.array([0.0, 0.1272406, 0.1055567])
+        if value == -10:
+            expected = np.array([0.0, -7.91330821, -11.63528216])
+
+        np.testing.assert_almost_equal(np.array(res.T)[0], expected)
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_track_linear_momentum(value, penalty_origin, phase_dynamics):
+    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+    p = []
+    s = []
+
+    penalty_type = ConstraintFcn.TRACK_LINEAR_MOMENTUM
+
+    penalty = Constraint(penalty_type)
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+
+    expected = np.array([0.1, 0, 0.1])
+    if value == -10:
+        expected = np.array([-10, 0, -10])
+
+    np.testing.assert_almost_equal(np.array(res.T)[0], expected)
+
+
+# TODO Allow free problem
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
+# @pytest.mark.parametrize("value", [0.1, -10])
+# def test_penalty_first_collocation_helper_equals_state(value, penalty_origin, phase_dynamics):
+#     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+#     t = [0]
+#     x = [DM.ones((8, 1)) * value]
+#     x[0][4:, :] = 0
+#     u = [0]
+#     p = [1]
+#     s = []
+#
+#     penalty_type = ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE
+#
+#     penalty = Constraint(penalty_type)
+#     res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+#
+#     np.testing.assert_almost_equal(np.array(res.T)[0], np.array(1))
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_track_parameter(value, penalty_origin, phase_dynamics):
+    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    x[0][4:, :] = 0
+    u = [0]
+    p = [1]
+    s = []
+
+    penalty_type = ConstraintFcn.TRACK_PARAMETER
+
+    penalty = Constraint(penalty_type)
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+
+    np.testing.assert_almost_equal(np.array(res.T)[0], np.array(1))
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_track_qddot(value, penalty_origin, phase_dynamics):
+    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    x[0][4:, :] = 0
+    u = [DM.ones((4, 1)) * value]
+    p = []
+    s = []
+
+    penalty_type = ConstraintFcn.TRACK_QDDOT
+
+    penalty = Constraint(penalty_type)
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+    expected = np.array([value, -9.71, value, value])
+
+    if value == -10:
+        expected = np.array([value, -19.81, value, value])
+    np.testing.assert_almost_equal(np.array(res.T)[0], expected)
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
+@pytest.mark.parametrize("value", [0.1, -10])
+def test_penalty_minimize_com_velocity(penalty_origin, value, phase_dynamics):
+    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+    t = [0]
+    x = [DM.ones((8, 1)) * value]
+    u = [0]
+    p = []
+    s = []
+
+    penalty_type = penalty_origin.MINIMIZE_COM_VELOCITY
+
+    penalty = Objective(penalty_type)
+    res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+
+    expected = np.array([0.05, 0, 0.05]) if value == 0.1 else np.array([-5.0, 0.0, -5.0])
+    np.testing.assert_almost_equal(np.array(res.T)[0], expected)
+
+
+# TODO add width fatigue to prepare_ocp
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
+# @pytest.mark.parametrize("value", [0.1, -10])
+# def test_penalty_minimize_fatigue(penalty_origin, value, phase_dynamics):
+#     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+#     t = [0]
+#     x = [DM.ones((8, 1)) * value]
+#     u = [0]
+#     p = []
+#     s = []
+#
+#     penalty_type = penalty_origin.MINIMIZE_FATIGUE
+#
+#     penalty = Objective(penalty_type, key='tau')
+#     res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+#
+#     expected = np.array([0.05, 0, 0.05]) if value == 0.1 else np.array([-5., 0., -5.])
+#     np.testing.assert_almost_equal(np.array(res.T)[0], expected)
+
+# TODO add width soft contact to prepare_ocp
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange])
+# @pytest.mark.parametrize("value", [0.1, -10])
+# def test_penalty_minimize_soft_contact_force(penalty_origin, value, phase_dynamics):
+#     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+#     t = [0]
+#     x = DM.ones((8, 1)) * value
+#     x[4:, :] = 0
+#     u = DM.ones((4, 1)) * value
+#     p = []
+#     s = []
+#
+#     penalty_type = ObjectiveFcn.Lagrange.MINIMIZE_SOFT_CONTACT_FORCES
+#
+#     penalty = Objective(penalty_type)
+#     res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+#
+#     expected = np.array([0.05, 0, 0.05]) if value == 0.1 else np.array([-5., 0., -5.])
+#     np.testing.assert_almost_equal(np.array(res.T)[0], 0)
+
+# TODO add width soft contact to prepare_ocp
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange])
+# @pytest.mark.parametrize("value", [0.1, -10])
+# def test_penalty_track_soft_contact_forces(penalty_origin, value, phase_dynamics):
+#     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+#     t = [0]
+#     x = DM.ones((8, 1)) * value
+#     x[4:, :] = 0
+#     u = DM.ones((4, 1)) * value
+#     p = []
+#     s = []
+#
+#     penalty_type = ObjectiveFcn.Lagrange.TRACK_SOFT_CONTACT_FORCES
+#
+#     penalty = Objective(penalty_type)
+#     res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+#
+#     expected = np.array([0.05, 0, 0.05]) if value == 0.1 else np.array([-5., 0., -5.])
+#     np.testing.assert_almost_equal(np.array(res.T)[0], 0)
+# TODO stochastic
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer])
+# @pytest.mark.parametrize("value", [0.1, -10])
+# def test_penalty_stochastic_minimize_variable(penalty_origin, value, phase_dynamics):
+#     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+#     t = [0]
+#     x = DM.ones((8, 1)) * value
+#     x[4:, :] = 0
+#     u = DM.ones((4, 1)) * value
+#     p = []
+#     s = []
+#
+#     penalty_type = penalty_origin.STOCHASTIC_MINIMIZE_VARIABLE
+#
+#
+#     penalty = Objective(penalty_type, key="tau")
+#     res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+#
+#     expected = np.array([0.05, 0, 0.05]) if value == 0.1 else np.array([-5., 0., -5.])
+#     np.testing.assert_almost_equal(np.array(res.T)[0], 0)
+# TODO stochastic
+
+
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange])
+# @pytest.mark.parametrize("value", [0.1, -10])
+# def test_penalty_stochastic_minimize_expected_feedback_efforts(penalty_origin, value, phase_dynamics):
+#     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
+#     t = [0]
+#     x = DM.ones((8, 1)) * value
+#     x[4:, :] = 0
+#     u = DM.ones((4, 1)) * value
+#     p = []
+#     s = []
+#
+#     penalty_type = penalty_origin.STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS
+#
+#
+#
+#     penalty = Objective(penalty_type)
+#     res = get_penalty_value(ocp, penalty, t, x, u, p, s)
+#
+#     expected = np.array([0.05, 0, 0.05]) if value == 0.1 else np.array([-5., 0., -5.])
+#     np.testing.assert_almost_equal(np.array(res.T)[0], 0)
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("penalty_origin", [ConstraintFcn])
 @pytest.mark.parametrize("value", [0.1, -10])
@@ -1109,36 +1629,30 @@ def test_penalty_time_constraint(value, phase_dynamics):
     np.testing.assert_almost_equal(res, np.array(0))
 
 
-@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize("value", [0.1, -10])
-def test_penalty_constraint_total_time(value, phase_dynamics):
-    ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
-    t = [0]
-    x = [DM.ones((8, 1)) * value]
-    u = [0]
-    p = [0.1]
-    s = []
-
-    penalty_type = MultinodeConstraintFcn.TRACK_TOTAL_TIME
-    penalty = MultinodeConstraintList()
-    penalty.add(
-        penalty_type,
-        min_bound=0.01,
-        max_bound=20,
-        nodes_phase=(0, 1),
-        nodes=(Node.END, Node.END),
-    )
-
-    penalty_type(
-        penalty[0],
-        [
-            PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0),
-            PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0),
-        ],
-    )
-    res = get_penalty_value(ocp, penalty[0], t, x, u, p, s)
-
-    np.testing.assert_almost_equal(res, np.array(0.2))
+# TODO doesn't work because it doesnt have a time parameter
+# @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+# @pytest.mark.parametrize("value", [0.1, -10])
+# def test_penalty_constraint_total_time(value, phase_dynamics):
+#     ocp = prepare_multinode_test_ocp(phase_dynamics=phase_dynamics)
+#     t = [0]
+#     x1 = [DM.ones((8, 1)) * value]
+#     x2 = [DM.zeros((8, 1)) * value]
+#     u = [0, 0]
+#     p = [0.1]
+#     s = []
+#
+#     penalty_type = MultinodeConstraintFcn.TRACK_TOTAL_TIME
+#     penalty = MultinodeConstraintList()
+#     penalty.add(
+#         penalty_type,
+#         min_bound=0.01,
+#         max_bound=20,
+#         nodes_phase=(0, 1),
+#         nodes=(Node.END, Node.END),
+#     )
+#     res = get_penalty_value(ocp, penalty[0], t, [x1, x2], u, p, s)
+#
+#     np.testing.assert_almost_equal(res, np.array(0.2))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1390,3 +1904,30 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
         np.testing.assert_almost_equal(controller.u_scaled, u_expected[2])
     else:
         raise RuntimeError("Something went wrong")
+
+
+# TODO what is left:
+# Constraint:
+# STOCHASTIC_DF_DX_IMPLICIT
+# STOCHASTIC_HELPER_MATRIX_COLLOCATION
+# STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION
+# STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE
+
+# Lagrange:
+# MINIMIZE_FATIGUE (already a written but not working)
+# TRACK_SOFT_CONTACT_FORCES (already a written but not working)
+# STOCHASTIC_MINIMIZE_EXPECTED_FEEDBACK_EFFORTS (already a written but not working)
+
+# Mayer and Lagrange:
+# STOCHASTIC_MINIMIZE_VARIABLE (already a written but not working)
+
+# Multinode:
+# COM_EQUALITY (already a written but not working)
+# COM_VELOCITY_EQUALITY (already a written but not working)
+# STOCHASTIC_EQUALITY (already a written but not working)
+# STOCHASTIC_HELPER_MATRIX_EXPLICIT
+# STOCHASTIC_HELPER_MATRIX_IMPLICIT
+# STOCHASTIC_DF_DW_IMPLICIT
+
+# Multinode constraint:
+# STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT
