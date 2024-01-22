@@ -17,10 +17,8 @@ from bioptim import (
     Dynamics,
     BoundsList,
     InitialGuessList,
-    ObjectiveList,
     ObjectiveFcn,
-    Objective,
-    Node,
+    ObjectiveList,
     OdeSolver,
     OdeSolverBase,
     CostType,
@@ -35,7 +33,7 @@ def prepare_ocp(
     biorbd_model_path: str,
     final_time: float,
     n_shooting: int,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    ode_solver: OdeSolverBase = OdeSolver.COLLOCATION(),
     use_sx: bool = True,
     n_threads: int = 1,
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
@@ -80,10 +78,11 @@ def prepare_ocp(
 
     # Add objective functions
 
+
     objective_functions = ObjectiveList()
-    #Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", quadratic=False, weight=-1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", quadratic=False, weight=-2)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", quadratic=False, weight= 1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", index=0, weight=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", index=1, weight=500)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", index=2, weight=500)
 
 
     # Dynamics
@@ -92,8 +91,10 @@ def prepare_ocp(
     # Path bounds
     x_bounds = BoundsList()
     x_bounds["q"] = bio_model.bounds_from_ranges("q")
+
     x_bounds["q"][:, [0, -1]] = 0  # Start and end at 0...
     x_bounds["q"][1, -1] = 3.14  # ...but end with pendulum 180 degrees rotated
+
     x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
     x_bounds["qdot"][:, [0, -1]] = 0  # Start and end without any velocity
 
@@ -105,20 +106,19 @@ def prepare_ocp(
     # Define control path bounds
     n_tau = bio_model.nb_tau
     u_bounds = BoundsList()
-    u_bounds["tau"] = [-100] * n_tau, [100] * n_tau  # Limit the strength of the pendulum to (-100 to 100)...
-    u_bounds["tau"][1, :] = 0  # ...but remove the capability to actively rotate
+    u_bounds["tau"] = [-150, -2, -2], [150, 2, 2]  # Limit the strength of the pendulum to (-100 to 100)...
 
     # Initial guess (optional since it is 0, we show how to initialize anyway)
-    u_init = InitialGuessList()
-    u_init["tau"] = [0] * n_tau
+    # u_init = InitialGuessList()
+    # u_init["tau"] = [0] * n_tau
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init=x_init,
-        u_init=u_init,
+        # x_init=x_init,
+        # u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
@@ -135,7 +135,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=400, n_threads=2)
+    ocp = prepare_ocp(biorbd_model_path="models/double_pendulum2.bioMod", final_time=1, n_shooting=100, n_threads=5)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)

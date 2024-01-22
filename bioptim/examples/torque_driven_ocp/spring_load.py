@@ -21,6 +21,7 @@ from bioptim import (
     Solver,
     DynamicsEvaluation,
     PhaseDynamics,
+    Node,
 )
 
 
@@ -55,9 +56,9 @@ def custom_dynamic(
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
     force_vector = MX.zeros(6)
-    force_vector[5] = 100 * q[0] ** 2
+    force_vector[5] = 100 * q[0] ** 2 #spring force
 
-    qddot = nlp.model.forward_dynamics(q, qdot, tau, [["Point", force_vector]])
+    qddot = nlp.model.forward_dynamics(q, qdot, tau, external_forces=[["Point", force_vector]])
 
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
@@ -89,7 +90,8 @@ def prepare_ocp(
     m.set_gravity(np.array((0, 0, 0)))
 
     # Add objective functions (high upward velocity at end point)
-    objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", index=0, weight=-1)
+    objective_functions = Objective(ObjectiveFcn.Mayer.MINIMIZE_STATE, key="qdot", index=0, weight=-1,
+                                    node=Node.END,)# quadratic=False)
 
     # Dynamics
     dynamics = Dynamics(
@@ -123,9 +125,55 @@ def prepare_ocp(
 
 def main():
     ocp = prepare_ocp()
-
+    ocp.print(to_graph=True, to_console=False)
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+
+
+
+
+    import matplotlib
+    from matplotlib import pyplot as plt
+    matplotlib.use('Qt5Agg')
+
+    states = sol.decision_states()
+    controls = sol.decision_controls()
+
+    q = np.array([item.flatten() for item in states["q"]])
+    qdot = np.array([item.flatten() for item in states["qdot"]])
+    tau = np.vstack([
+        np.array([item.flatten() for item in controls["tau"]]),
+        np.array([[np.nan]])
+    ])
+    time = np.array([item.full().flatten()[0] for item in sol.stepwise_time()])
+
+
+    fig, axs = plt.subplots(2, 2, figsize=(10, 15))
+
+    # Plotting q solutions for both DOFs
+    axs[0, 0].plot(time, q)
+    axs[0, 0].set_title("Joint coordinates")
+    axs[0, 0].set_ylabel("q")
+    axs[0, 0].set_xlabel("Time [s]")
+    axs[0, 0].grid(True)
+
+    axs[0, 1].plot(time, qdot)
+    axs[0, 1].set_title("Joint velocities")
+    axs[0, 1].set_ylabel("qdot")
+    axs[0, 1].set_xlabel("Time [s]")
+    axs[0, 1].grid(True)
+
+    axs[1, 0].step(time, tau)
+    axs[1, 0].set_title("Generalized forces")
+    axs[1, 0].set_ylabel("tau")
+    axs[1, 0].set_xlabel("Time [s]")
+    axs[1, 0].grid(True)
+
+    plt.tight_layout()
+    plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.3)
+
+    # Display the plot
+    plt.show()
 
     # --- Show results --- #
     sol.animate()
