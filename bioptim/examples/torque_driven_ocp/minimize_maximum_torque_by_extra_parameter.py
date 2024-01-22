@@ -80,8 +80,8 @@ def prepare_ocp(
 
     # Add phase independent objective functions
     parameter_objectives = ParameterObjectiveList()
-    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=10, quadratic=True)
-    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="min_tau", weight=-10, quadratic=False)
+    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=10, quadratic=False)
+    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="min_tau", weight=-10, quadratic=True)
 
     # Add objective functions
     objective_functions = ObjectiveList()

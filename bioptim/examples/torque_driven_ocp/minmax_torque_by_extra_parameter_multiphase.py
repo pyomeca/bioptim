@@ -75,7 +75,7 @@ def prepare_ocp(
     parameter_bounds = BoundsList()
     parameter_objectives = ParameterObjectiveList()
 
-    method = 1
+    method = 2
 
     if method == 1:
         parameters.add("max_tau", my_parameter_function, size=1, )
@@ -128,8 +128,8 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     # Add objective functions
     for phase in range(len(n_shooting)):
-        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1e-5, phase=phase, min_bound=0.5, max_bound=3) #was w=10
-        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1e-5, phase=phase) #was w=1
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=10, phase=phase, min_bound=0.5, max_bound=3) #was w=10
+        objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1, phase=phase) #was w=1
 
 
 
