@@ -1264,7 +1264,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return controller.parameters.cx
+            return controller.parameters.cx if key is None or key == "all" else controller.parameters[key].cx
 
     @staticmethod
     def add(ocp, nlp):
