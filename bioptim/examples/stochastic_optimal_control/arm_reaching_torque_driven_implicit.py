@@ -187,6 +187,7 @@ def prepare_socp(
         with_cholesky=with_cholesky,
         expand_dynamics=False,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+        with_friction=True,
     )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf

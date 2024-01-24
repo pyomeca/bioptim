@@ -183,7 +183,11 @@ def prepare_socp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN, problem_type=problem_type, expand_dynamics=True)
+    dynamics.add(DynamicsFcn.STOCHASTIC_TORQUE_DRIVEN,
+                 problem_type=problem_type,
+                 expand_dynamics=True,
+                 with_friction=True,
+                 )
 
     x_bounds = BoundsList()
     x_bounds.add("q", min_bound=[-cas.inf] * n_q, max_bound=[cas.inf] * n_q, interpolation=InterpolationType.CONSTANT)
