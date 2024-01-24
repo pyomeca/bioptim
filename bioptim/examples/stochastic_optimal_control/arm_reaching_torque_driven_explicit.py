@@ -40,7 +40,6 @@ from bioptim import (
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 from bioptim.examples.stochastic_optimal_control.common import (
     dynamics_torque_driven_with_feedbacks,
-    compute_torques_from_noise_and_feedback,
 )
 
 
@@ -359,7 +358,6 @@ def prepare_socp(
         motor_noise_magnitude=motor_noise_magnitude,
         friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
         sensory_reference=sensory_reference,
-        compute_torques_from_noise_and_feedback=compute_torques_from_noise_and_feedback,
     )
     bio_model.force_field_magnitude = force_field_magnitude
 

@@ -45,7 +45,6 @@ from bioptim import (
 
 from bioptim.examples.stochastic_optimal_control.leuven_arm_model import LeuvenArmModel
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
-from bioptim.examples.stochastic_optimal_control.common import compute_torques_from_noise_and_feedback
 
 
 def sensory_reference(
@@ -195,10 +194,10 @@ def get_cov_mat(nlp, node_index):
 
     dx = stochastic_forward_dynamics(
         nlp.time_cx,
-        nlp.states.cx,
-        nlp.controls.cx,
-        nlp.parameters.cx,
-        nlp.algebraic_states.cx,
+        nlp.states.mx,
+        nlp.controls.mx,
+        nlp.parameters.mx,
+        nlp.algebraic_states.mx,
         nlp,
         force_field_magnitude=nlp.model.force_field_magnitude,
         with_noise=True,
@@ -390,7 +389,6 @@ def prepare_socp(
         sensory_noise_magnitude=sensory_noise_magnitude,
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_reference=sensory_reference,
-        compute_torques_from_noise_and_feedback=compute_torques_from_noise_and_feedback,
     )
     bio_model.force_field_magnitude = force_field_magnitude
 
@@ -471,6 +469,7 @@ def prepare_socp(
     dynamics.add(
         configure_stochastic_optimal_control_problem,
         dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: stochastic_forward_dynamics(
+            time,
             states,
             controls,
             parameters,
