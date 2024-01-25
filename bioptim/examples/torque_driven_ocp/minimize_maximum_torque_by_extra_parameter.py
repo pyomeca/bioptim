@@ -3,7 +3,7 @@ This example is inspired from the giant circle gymnastics skill. It is composed 
 representing the trunk and legs segments (only the hip flexion is actuated). The objective is to minimize the
 maximum torque (minmax) of the hip flexion while performing the giant circle. The maximum torque is included to the
 problem as a parameter, all torque interval re constrained to be smaller than this parameter, this parameter is the
-minimized.
+minimized. Two options are provided and compared to define initial and final states (0: bounds; 1: constraints)
 """
 
 import numpy as np
@@ -27,7 +27,7 @@ from bioptim import (
     PenaltyController,
     ParameterObjectiveList,
 )
-
+from matplotlib import pyplot as plt
 
 
 def custom_constraint_max_tau(controller: PenaltyController) -> MX:
@@ -43,6 +43,7 @@ def my_parameter_function(bio_model: biorbd.Model, value: MX):
 
 
 def prepare_ocp(
+    method_bound_states: int = 0,
     bio_model_path: str = "models/double_pendulum.bioMod",
 ) -> OptimalControlProgram:
     bio_model = BiorbdModel(bio_model_path)
@@ -80,8 +81,8 @@ def prepare_ocp(
 
     # Add phase independent objective functions
     parameter_objectives = ParameterObjectiveList()
-    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=10, quadratic=False)
-    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="min_tau", weight=-10, quadratic=True)
+    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="max_tau", weight=10, quadratic=True)
+    parameter_objectives.add(ObjectiveFcn.Parameter.MINIMIZE_PARAMETER, key="min_tau", weight=10, quadratic=True)
 
     # Add objective functions
     objective_functions = ObjectiveList()
@@ -111,18 +112,20 @@ def prepare_ocp(
     x_bounds["q"].min[1, :] = -np.pi / 3
     x_bounds["q"].max[1, :] = np.pi / 5
 
-    x_bounds["q"][0, 0] = np.pi + 0.01
-    x_bounds["q"][1, 0] = 0
-    x_bounds["qdot"][0, 0] = 0
-    x_bounds["qdot"][1, 0] = 0
+    if method_bound_states == 0:
+        x_bounds["q"][0, 0] = np.pi + 0.01
+        x_bounds["q"][1, 0] = 0
+        x_bounds["qdot"][0, 0] = 0
+        x_bounds["qdot"][1, 0] = 0
 
-    x_bounds["q"][0, -1] = 3 * np.pi
-    x_bounds["q"][1, -1] = 0
+        x_bounds["q"][0, -1] = 3 * np.pi
+        x_bounds["q"][1, -1] = 0
+    else:
+        constraints.add(ConstraintFcn.TRACK_STATE, node=Node.START, key="q", target=[np.pi + 0.01, 0])
+        constraints.add(ConstraintFcn.TRACK_STATE, node=Node.START, key="qdot", target=[0, 0])
+        constraints.add(ConstraintFcn.TRACK_STATE, node=Node.END, key="q", target=[3 * np.pi, 0])
 
-    # Define control path constraint
-    n_tau = len(tau_mappings[0]["tau"].to_first)
-    u_bounds = BoundsList()
-    u_bounds.add(key="tau", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau, phase=0)
+
 
     return OptimalControlProgram(
         bio_model,
@@ -130,7 +133,6 @@ def prepare_ocp(
         n_shooting,
         final_time,
         x_bounds=x_bounds,
-        u_bounds=u_bounds,
         objective_functions=objective_functions,
         parameter_objectives=parameter_objectives,
         parameter_bounds=parameter_bounds,
@@ -143,70 +145,83 @@ def prepare_ocp(
 
 def main():
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp()
+    fig, axs = plt.subplots(1, 3)
+    axs[0].set_title("Joint coordinates")
+    axs[0].set_ylabel("q [°]")
+    axs[1].set_title("Joint velocities")
+    axs[1].set_ylabel("qdot [°/s]")
+    axs[2].set_title("Generalized forces")
+    axs[2].set_ylabel("tau [Nm]")
+    for ax in [0, 1, 2]:
+        axs[ax].set_xlabel("Time [s]")
+        axs[ax].grid(True)
 
-    # --- Solve the ocp --- #
-    sol = ocp.solve()
-    # sol.print_cost()
+    for method_bound_states in range(2):
+        # --- Prepare the ocp --- #
+        ocp = prepare_ocp(method_bound_states=method_bound_states)
 
-    # --- Show results --- #
-    # sol.animate()
-#    sol.graphs(show_bounds=True)
-
-
-    import matplotlib
-    from matplotlib import pyplot as plt
-    matplotlib.use('Qt5Agg')
-
-    states = sol.decision_states()
-    controls = sol.decision_controls()
-
-    q = np.array([item.flatten() for item in states["q"]])
-    qdot = np.array([item.flatten() for item in states["qdot"]])
-    tau = np.vstack([
-        np.array([item.flatten() for item in controls["tau"]]),
-        np.array([[np.nan]])
-    ])
-    time = np.array([item.full().flatten()[0] for item in sol.stepwise_time()])
+        # --- Solve the ocp --- #
+        sol = ocp.solve()
+        # sol.print_cost()
 
 
-    fig, axs = plt.subplots(2, 2, figsize=(10, 15))
+        # --- Show results --- #
+        # sol.animate()
+        #    sol.graphs(show_bounds=True)
 
-    # Plotting q solutions for both DOFs
-    axs[0, 0].plot(time, q)
-    axs[0, 0].set_title("Joint coordinates")
-    axs[0, 0].set_ylabel("q")
-    axs[0, 0].set_xlabel("Time [s]")
-    axs[0, 0].grid(True)
+        states = sol.decision_states()
+        controls = sol.decision_controls()
 
-    axs[0, 1].plot(time, qdot)
-    axs[0, 1].set_title("Joint velocities")
-    axs[0, 1].set_ylabel("qdot")
-    axs[0, 1].set_xlabel("Time [s]")
-    axs[0, 1].grid(True)
+        q = np.array([item.flatten() for item in states["q"]])
+        qdot = np.array([item.flatten() for item in states["qdot"]])
+        tau = np.vstack([np.array([item.flatten() for item in controls["tau"]]), np.array([[np.nan]])])
+        time = np.array([item.full().flatten()[0] for item in sol.stepwise_time()])
 
-    axs[1, 0].step(time, tau)
-    axs[1, 0].set_title("Generalized forces")
-    axs[1, 0].set_ylabel("tau")
-    axs[1, 0].set_xlabel("Time [s]")
-    axs[1, 0].grid(True)
-    axs[1, 0].step(axs[1, 0].get_xlim(), np.ones([2]) * sol.parameters["max_tau"], 'k--')
-    axs[1, 0].step(axs[1, 0].get_xlim(), np.ones([2]) * sol.parameters["min_tau"], 'k--')
+        print("Duration: ", time[-1])
+        print("sum tau**2 dt = ", np.nansum(tau**2 * time[1]))
+        print("min-max tau: ", np.nanmin(tau), np.nanmax(tau))
 
-    axs[1, 1].plot(sol.constraints[ocp.n_shooting * (ocp.nlp[0].model.nb_q + ocp.nlp[0].model.nb_qdot):], "o")
-    axs[1, 1].set_title("Constaints (continuity excluded)")
+        # Plotting q solutions for both DOFs
+        axs[0].plot(time, q * 180 / np.pi)
+        axs[1].plot(time, qdot * 180 / np.pi)
+        axs[2].step(time, tau)
+        xlim = np.asarray(axs[2].get_xlim())
+        xlim = np.hstack([xlim, np.nan, xlim])
+        min_max = np.hstack(
+            [np.ones([2]) * sol.parameters["min_tau"], np.nan, np.ones([2]) * sol.parameters["max_tau"]]
+        )
+        axs[2].plot(xlim, min_max, "k--")
 
     plt.tight_layout()
     plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.3)
 
     # Display the plot
+    axs[0].legend(
+        {
+            "q_0 (method 0)",
+            "q_1 (method 0)",
+            "q_0 (method 1)",
+            "q_1 (method 1)",
+        }
+    )
+    axs[1].legend(
+        {
+            "qdot_0 (method 0)",
+            "qdot_1 (method 0)",
+            "qdot_0 (method 1)",
+            "qdot_1 (method 1)",
+        }
+    )
+    axs[2].legend(
+        {
+            "tau_1 (method 0)",
+            "min-max (method 0)",
+            "tau_1 (method 1)",
+            "min-max (method 1)",
+        }
+    )
     plt.show()
-
-    print("Duration: ", time[-1])
-    print('sum tau**2 dt = ', np.nansum(tau**2 * time[1]))
-    print('min-max tau: ', np.nanmin(tau), np.nanmax(tau))
 
 
 if __name__ == "__main__":
     main()
-
