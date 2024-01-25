@@ -180,7 +180,6 @@ class PenaltyFunctionAbstract:
 
             # create the casadi function to be evaluated
             # Get the symbolic variables
-            ref = controller.algebraic_states["ref"].cx_start
             if "cholesky_cov" in controller.algebraic_states.keys():
                 l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
                     controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky

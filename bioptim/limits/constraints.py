@@ -844,6 +844,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             sensory_input = Function(
                 "tp",
                 [
+                    controller.time.mx,
+                    controller.dt.mx,  # @pariterre [dt_phase_0] are free.
                     controller.states.mx,
                     controller.controls.mx,
                     controller.parameters.mx,
@@ -851,6 +853,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 ],
                 [sensory_input],
             )(
+                controller.time.cx,
+                controller.dt.cx,
                 controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx,

@@ -586,7 +586,6 @@ class ConfigureProblem:
             DynamicsFunctions.stochastic_torque_driven_free_floating_base,
             with_contact=with_contact,
             with_friction=with_friction,
-            allow_free_variables=True,
         )
 
     @staticmethod

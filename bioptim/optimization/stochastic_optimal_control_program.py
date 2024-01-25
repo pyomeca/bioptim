@@ -322,21 +322,23 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         def get_ref_init(time_vector, x_guess, u_guess, p_guess, nlp):
             casadi_func = Function(
                 "sensory_reference",
-                [nlp.time_cx, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx_start],
+                [nlp.dt, nlp.time_cx, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx_start],
                 [
                     nlp.model.sensory_reference(
-                        nlp.time_cx,
-                        nlp.states.cx_start,
-                        nlp.controls.cx_start,
-                        nlp.parameters.cx_start,
-                        None,  # Sensory reference should not depend on stochastic variables
-                        nlp,
+                        time=nlp.time_cx,
+                        states=nlp.states.cx_start,
+                        controls=nlp.controls.cx_start,
+                        parameters=nlp.parameters.cx_start,
+                        algebraic_states=None,  # Sensory reference should not depend on stochastic variables
+                        nlp=nlp,
                     )
                 ],
             )
+
             x_guess = x_guess[:, 0 :: (self.problem_type.polynomial_degree + 2)]
             for i in range(nlp.ns + 1):
                 ref_init_this_time = casadi_func(
+                    time_vector[-1]/nlp.ns,
                     time_vector[i],
                     x_guess[:, i],
                     u_guess[:, i],

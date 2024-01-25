@@ -144,7 +144,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     x_sol = np.zeros((x_opt.shape[0], polynomial_degree + 2, socp.n_shooting))
     for i_node in range(socp.n_shooting):
         x_sol[:, :, i_node] = x_opt[:, i_node * (polynomial_degree + 2) : (i_node + 1) * (polynomial_degree + 2)]
-    s_sol = vertcat(k_sol, ref_sol, m_sol, cov_sol)
+    a_sol = vertcat(k_sol, ref_sol, m_sol, cov_sol)
 
     x_multi_thread = np.zeros((socp.nlp[0].states.shape * (polynomial_degree + 3), socp.nlp[0].ns))
     for i_node in range(socp.nlp[0].ns):
@@ -165,7 +165,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             x_multi_thread[:, 0],
             vertcat(tau_sol[:, 0], tau_sol[:, 1]),
             p_sol,
-            vertcat(s_sol[:, 0], s_sol[:, 1]),
+            vertcat(a_sol[:, 0], a_sol[:, 1]),
         )
     )
     np.testing.assert_almost_equal(constraint_value[0], shoulder_pos_initial, decimal=6)
@@ -181,7 +181,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             x_multi_thread[:, 0],
             vertcat(tau_sol[:, 0], tau_sol[:, 1]),
             p_sol,
-            vertcat(s_sol[:, 0], s_sol[:, 1]),
+            vertcat(asol[:, 0], asol[:, 1]),
         )
     )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
@@ -195,7 +195,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             x_opt[:, -1],
             tau_sol[:, -1],
             p_sol,
-            s_sol[:, -1],
+            asol[:, -1],
         )
     )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
@@ -211,7 +211,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             x_opt[:, -1],
             tau_sol[:, -1],
             p_sol,
-            s_sol[:, -1],
+            asol[:, -1],
         )
     )
     np.testing.assert_almost_equal(constraint_value[0], hand_final_position[0], decimal=6)
@@ -228,11 +228,12 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
                 x_multi_thread[:, i_node],
                 vertcat(tau_sol[:, i_node], tau_sol[:, i_node+1]),
                 p_sol,
-                vertcat(s_sol[:, i_node], s_sol[:, i_node+1]),
+                vertcat(asol[:, i_node], asol[:, i_node+1]),
             )
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
+    # @pariterre how is the new way to use these?
     # Constraint on M --------------------------------------------------------------------
     for i_node in range(socp.n_shooting):
         constraint_value = (
@@ -244,7 +245,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
                 x_multi_thread[:, i_node],
                 vertcat(tau_sol[:, i_node], tau_sol[:, i_node+1]),
                 p_sol,
-                vertcat(s_sol[:, i_node], s_sol[:, i_node+1]),
+                vertcat(a_sol[:, i_node], a_sol[:, i_node+1]),
             )
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
@@ -256,7 +257,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         x_multi_thread,
         vertcat(tau_sol[:, 1:], tau_sol[:, :-1]),
         p_sol,
-        vertcat(s_sol[:, 1:], s_sol[:, :-1]),
+        vertcat(a_sol[:, 1:], a_sol[:, :-1]),
   )
     np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -267,7 +268,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         x_multi_thread,
         vertcat(tau_sol[:, 1:], tau_sol[:, :-1]),
         p_sol,
-        vertcat(s_sol[:, 1:], s_sol[:, :-1]),
+        vertcat(a_sol[:, 1:], a_sol[:, :-1]),
     )
     np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -282,7 +283,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
                 x_multi_thread[:, i_node],
                 vertcat(tau_sol[:, i_node], tau_sol[:, i_node+1]),
                 p_sol,
-                vertcat(s_sol[:, i_node], s_sol[:, i_node+1]),
+                vertcat(a_sol[:, i_node], a_sol[:, i_node+1]),
             )
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
