@@ -110,7 +110,7 @@ class OptimizationVariable:
             )
         return self.parent_list.cx_start[self.index, :]
 
-    @property  # Pariterre: What is cx_mid?
+    @property
     def cx_mid(self):
         """
         The CX of the variable

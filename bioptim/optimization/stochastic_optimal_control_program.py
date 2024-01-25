@@ -361,8 +361,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     u_guess[:, i],
                     p_guess,
                     fake_algebraic_states[:, i],
-                    nlp.model.motor_noise_magnitude,
-                    nlp.model.sensory_noise_magnitude,
                 )
                 dg_dz = Gdz(
                     time_vector[i],
@@ -371,8 +369,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     u_guess[:, i],
                     p_guess,
                     fake_algebraic_states[:, i],
-                    nlp.model.motor_noise_magnitude,
-                    nlp.model.sensory_noise_magnitude,
                 )
 
                 m_this_time = df_dz @ np.linalg.inv(dg_dz)
@@ -412,8 +408,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     u_guess[:, i],
                     p_guess,
                     fake_algebraic_states[:, i],
-                    nlp.model.motor_noise_magnitude,
-                    nlp.model.sensory_noise_magnitude,
                 )
                 dg_dw = Gdw(
                     time_vector[i],
@@ -422,8 +416,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     u_guess[:, i],
                     p_guess,
                     fake_algebraic_states[:, i],
-                    nlp.model.motor_noise_magnitude,
-                    nlp.model.sensory_noise_magnitude,
                 )
 
                 m_matrix = StochasticBioModel.reshape_to_matrix(m_init[:, i], nlp.model.matrix_shape_m)
