@@ -378,13 +378,14 @@ class DynamicsFunctions:
         n_q = q_full.shape[0]
 
         tau_joints += nlp.model.compute_torques_from_noise_and_feedback(
-            nlp=nlp, time=time,
+            nlp=nlp,
+            time=time,
             states=states,
             controls=controls,
             parameters=parameters,
             algebraic_states=algebraic_states,
             motor_noise=nlp.parameters["motor_noise"].mx,
-            sensory_noise=nlp.parameters["sensory_noise"].mx
+            sensory_noise=nlp.parameters["sensory_noise"].mx,
         )
         tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
 

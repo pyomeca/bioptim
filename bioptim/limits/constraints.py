@@ -849,7 +849,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.states.mx,
                     controller.controls.mx,
                     controller.parameters.mx,
-                    controller.algebraic_states.mx
+                    controller.algebraic_states.mx,
                 ],
                 [sensory_input],
             )(

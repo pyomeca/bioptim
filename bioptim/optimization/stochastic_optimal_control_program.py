@@ -338,7 +338,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             x_guess = x_guess[:, 0 :: (self.problem_type.polynomial_degree + 2)]
             for i in range(nlp.ns + 1):
                 ref_init_this_time = casadi_func(
-                    time_vector[-1]/nlp.ns,
+                    time_vector[-1] / nlp.ns,
                     time_vector[i],
                     x_guess[:, i],
                     u_guess[:, i],
@@ -347,9 +347,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ref_init = ref_init_this_time if i == 0 else np.hstack((ref_init, ref_init_this_time))
             return ref_init
 
-        def get_m_init(
-            time_vector, x_guess, u_guess, p_guess, fake_algebraic_states, nlp, variable_sizes, Fdz, Gdz
-        ):
+        def get_m_init(time_vector, x_guess, u_guess, p_guess, fake_algebraic_states, nlp, variable_sizes, Fdz, Gdz):
             m_init = np.zeros((variable_sizes["n_m"], nlp.ns + 1))
             for i in range(nlp.ns):
                 index_this_time = [
@@ -376,7 +374,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 m_this_time = df_dz @ np.linalg.inv(dg_dz)
                 m_init[:, i] = np.reshape(StochasticBioModel.reshape_to_vector(m_this_time), (-1,))
 
-            m_init[:, -1] = m_init[:, -2]  # Wrong, but necessary since we do not have the collocation points at the last node
+            m_init[:, -1] = m_init[
+                :, -2
+            ]  # Wrong, but necessary since we do not have the collocation points at the last node
             return m_init
 
         def get_cov_init(
@@ -494,9 +494,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             penalty = Constraint(ConstraintFcn.STOCHASTIC_HELPER_MATRIX_COLLOCATION)
             fake_algebraic_states = np.zeros((variable_sizes["n_stochastic"], nlp.ns + 1))
             fake_algebraic_states[: variable_sizes["n_k"], :] = k_init
-            fake_algebraic_states[
-                variable_sizes["n_k"] : variable_sizes["n_k"] + variable_sizes["n_ref"], :
-            ] = ref_init
+            fake_algebraic_states[variable_sizes["n_k"] : variable_sizes["n_k"] + variable_sizes["n_ref"], :] = ref_init
             penalty_controller = PenaltyController(
                 ocp=self,
                 nlp=nlp,

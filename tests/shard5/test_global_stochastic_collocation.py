@@ -94,9 +94,21 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         cov[:, -1],  # TODO: This is probably -1 now
         np.array(
             [
-                -0.89353026, -0.66059229, -0.39031482, -0.31941486, -0.66059229,
-                -0.44897437, -0.12298423, -0.30298653, -0.39031482, -0.12298423,
-                -0.36377371, 0.05702737, -0.31941486, -0.30298653, 0.05702737,
+                -0.89353026,
+                -0.66059229,
+                -0.39031482,
+                -0.31941486,
+                -0.66059229,
+                -0.44897437,
+                -0.12298423,
+                -0.30298653,
+                -0.39031482,
+                -0.12298423,
+                -0.36377371,
+                0.05702737,
+                -0.31941486,
+                -0.30298653,
+                0.05702737,
                 -0.24391646,
             ]
         ),
@@ -135,7 +147,12 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     q_sol, qdot_sol = states["q"], states["qdot"]
     tau_sol = controls["tau"]
     p_sol = vertcat(ocp.nlp[0].model.motor_noise_magnitude, ocp.nlp[0].model.sensory_noise_magnitude)
-    k_sol, ref_sol, m_sol, cov_sol = algebraic_states["k"], algebraic_states["ref"], algebraic_states["m"], algebraic_states["cov"]
+    k_sol, ref_sol, m_sol, cov_sol = (
+        algebraic_states["k"],
+        algebraic_states["ref"],
+        algebraic_states["m"],
+        algebraic_states["cov"],
+    )
 
     polynomial_degree = socp.nlp[0].ode_solver.polynomial_degree
 
@@ -226,9 +243,9 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
                 duration,
                 dt,
                 x_multi_thread[:, i_node],
-                vertcat(tau_sol[:, i_node], tau_sol[:, i_node+1]),
+                vertcat(tau_sol[:, i_node], tau_sol[:, i_node + 1]),
                 p_sol,
-                vertcat(asol[:, i_node], asol[:, i_node+1]),
+                vertcat(asol[:, i_node], asol[:, i_node + 1]),
             )
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
@@ -243,32 +260,40 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
                 duration,
                 dt,
                 x_multi_thread[:, i_node],
-                vertcat(tau_sol[:, i_node], tau_sol[:, i_node+1]),
+                vertcat(tau_sol[:, i_node], tau_sol[:, i_node + 1]),
                 p_sol,
-                vertcat(a_sol[:, i_node], a_sol[:, i_node+1]),
+                vertcat(a_sol[:, i_node], a_sol[:, i_node + 1]),
             )
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Covariance continuity --------------------------------------------------------------------
-    constraint_value = socp.nlp[0].g[9].function[0](
-        duration,
-        dt,
-        x_multi_thread,
-        vertcat(tau_sol[:, 1:], tau_sol[:, :-1]),
-        p_sol,
-        vertcat(a_sol[:, 1:], a_sol[:, :-1]),
-  )
+    constraint_value = (
+        socp.nlp[0]
+        .g[9]
+        .function[0](
+            duration,
+            dt,
+            x_multi_thread,
+            vertcat(tau_sol[:, 1:], tau_sol[:, :-1]),
+            p_sol,
+            vertcat(a_sol[:, 1:], a_sol[:, :-1]),
+        )
+    )
     np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # States continuity --------------------------------------------------------------------
-    constraint_value = socp.nlp[0].g_internal[0].function[0](
-        duration,
-        dt,
-        x_multi_thread,
-        vertcat(tau_sol[:, 1:], tau_sol[:, :-1]),
-        p_sol,
-        vertcat(a_sol[:, 1:], a_sol[:, :-1]),
+    constraint_value = (
+        socp.nlp[0]
+        .g_internal[0]
+        .function[0](
+            duration,
+            dt,
+            x_multi_thread,
+            vertcat(tau_sol[:, 1:], tau_sol[:, :-1]),
+            p_sol,
+            vertcat(a_sol[:, 1:], a_sol[:, :-1]),
+        )
     )
     np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -281,13 +306,12 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
                 duration,
                 dt,
                 x_multi_thread[:, i_node],
-                vertcat(tau_sol[:, i_node], tau_sol[:, i_node+1]),
+                vertcat(tau_sol[:, i_node], tau_sol[:, i_node + 1]),
                 p_sol,
-                vertcat(a_sol[:, i_node], a_sol[:, i_node+1]),
+                vertcat(a_sol[:, i_node], a_sol[:, i_node + 1]),
             )
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
-
 
 
 @pytest.mark.parametrize("use_sx", [False, True])

@@ -15,6 +15,7 @@ def _compute_torques_from_noise_and_feedback_default(
     ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], algebraic_states)
     k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
     from bioptim import StochasticBioModel
+
     k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
     sensory_input = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, nlp)
@@ -53,7 +54,7 @@ class StochasticBiorbdModel(BiorbdModel):
         self.sensory_noise_magnitude = sensory_noise_magnitude
 
         self.compute_torques_from_noise_and_feedback = compute_torques_from_noise_and_feedback
-        
+
         self.sensory_reference = sensory_reference
 
         self.motor_noise_mapping = motor_noise_mapping

@@ -604,7 +604,7 @@ class BiorbdModel:
             states = np.vstack((solution["q_roots"], solution["q_joints"]))
         else:
             states = solution["q"]
-            
+
         if not isinstance(states, (list, tuple)):
             states = [states]
 
@@ -631,7 +631,7 @@ class BiorbdModel:
             else:
                 q = ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data)
             all_bioviz[-1].load_movement(q)
-            
+
             if tracked_markers[idx_phase] is not None:
                 all_bioviz[-1].load_experimental_markers(tracked_markers[idx_phase])
 
