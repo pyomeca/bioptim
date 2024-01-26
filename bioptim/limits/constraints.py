@@ -845,7 +845,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 "tp",
                 [
                     controller.time.mx,
-                    controller.dt.mx,  # @pariterre [dt_phase_0] are free.
+                    controller.dt.mx,
                     controller.states.mx,
                     controller.controls.mx,
                     controller.parameters.mx,
@@ -861,7 +861,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.algebraic_states.cx_start,
             )
 
-            return sensory_input - ref[: controller.model.n_feedbacks]
+            return sensory_input[: controller.model.n_feedbacks] - ref[: controller.model.n_feedbacks]
 
         @staticmethod
         def symmetric_matrix(

@@ -301,34 +301,24 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             if len(self.nlp) > 1 and i_phase < len(self.nlp) - 1:
                 phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
 
-    def _set_algebraic_states_to_original_values(
-        self,
-        s_init: InitialGuessList,
-        s_bounds: BoundsList,
-        s_scaling: VariableScalingList,
-    ):
-        self.original_values["s_init"] = s_init
-        self.original_values["s_bounds"] = s_bounds
-        self.original_values["s_scaling"] = s_scaling
-
-    def _auto_initialize(self, x_init, u_init, parameter_init, s_init):
-        def replace_initial_guess(key, n_var, var_init, s_init, i_phase):
+    def _auto_initialize(self, x_init, u_init, parameter_init, a_init):
+        def replace_initial_guess(key, n_var, var_init, a_init, i_phase):
             if n_var != 0:
-                if key in s_init:
-                    s_init[key] = InitialGuess(var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
+                if key in a_init:
+                    a_init[key] = InitialGuess(var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
                 else:
-                    s_init.add(key, initial_guess=var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
+                    a_init.add(key, initial_guess=var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
 
         def get_ref_init(time_vector, x_guess, u_guess, p_guess, nlp):
             casadi_func = Function(
                 "sensory_reference",
-                [nlp.dt, nlp.time_cx, nlp.states.cx_start, nlp.controls.cx_start, nlp.parameters.cx_start],
+                [nlp.dt_mx, nlp.time_mx, nlp.states.mx, nlp.controls.mx, nlp.parameters.mx],
                 [
                     nlp.model.sensory_reference(
-                        time=nlp.time_cx,
-                        states=nlp.states.cx_start,
-                        controls=nlp.controls.cx_start,
-                        parameters=nlp.parameters.cx_start,
+                        time=nlp.time_mx,
+                        states=nlp.states.mx,
+                        controls=nlp.controls.mx,
+                        parameters=nlp.parameters.mx,
                         algebraic_states=None,  # Sensory reference should not depend on stochastic variables
                         nlp=nlp,
                     )
@@ -485,10 +475,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 u_guess = np.concatenate((u_guess, u_init[i_phase][key].init[:, -1].reshape(-1, 1)), axis=1)
 
             k_init = np.ones((n_k, nlp.ns + 1)) * 0.01
-            replace_initial_guess("k", n_k, k_init, s_init, i_phase)
+            replace_initial_guess("k", n_k, k_init, a_init, i_phase)
 
             ref_init = get_ref_init(time_vector, x_guess, u_guess, p_guess, nlp)
-            replace_initial_guess("ref", n_ref, ref_init, s_init, i_phase)
+            replace_initial_guess("ref", n_ref, ref_init, a_init, i_phase)
 
             # Define the casadi functions needed to initialize m and cov
             penalty = Constraint(ConstraintFcn.STOCHASTIC_HELPER_MATRIX_COLLOCATION)
@@ -513,7 +503,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             m_init = get_m_init(
                 time_vector, x_guess, u_guess, p_guess, fake_algebraic_states, nlp, variable_sizes, Fdz, Gdz
             )
-            replace_initial_guess("m", n_m, m_init, s_init, i_phase)
+            replace_initial_guess("m", n_m, m_init, a_init, i_phase)
 
             if i_phase == 0:
                 initial_covariance = self.problem_type.initial_cov
@@ -532,19 +522,19 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 Gdw,
                 initial_covariance,
             )
-            replace_initial_guess("cov", n_cov, cov_init, s_init, i_phase)
+            replace_initial_guess("cov", n_cov, cov_init, a_init, i_phase)
 
     def _prepare_bounds_and_init(
-        self, x_bounds, u_bounds, parameter_bounds, s_bounds, x_init, u_init, parameter_init, s_init
+        self, x_bounds, u_bounds, parameter_bounds, a_bounds, x_init, u_init, parameter_init, a_init
     ):
         self.parameter_bounds = BoundsList()
         self.parameter_init = InitialGuessList()
 
         if isinstance(self.problem_type, SocpType.COLLOCATION) and self.problem_type.auto_initialization == True:
-            self._auto_initialize(x_init, u_init, parameter_init, s_init)
+            self._auto_initialize(x_init, u_init, parameter_init, a_init)
 
-        self.update_bounds(x_bounds, u_bounds, parameter_bounds, s_bounds)
-        self.update_initial_guess(x_init, u_init, parameter_init, s_init)
+        self.update_bounds(x_bounds, u_bounds, parameter_bounds, a_bounds)
+        self.update_initial_guess(x_init, u_init, parameter_init, a_init)
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
 

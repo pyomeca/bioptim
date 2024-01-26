@@ -3,7 +3,7 @@ import pytest
 
 import numpy as np
 from casadi import DM, vertcat
-from bioptim import Solver, SocpType, SolutionMerge
+from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers
 
 
 @pytest.mark.parametrize("use_sx", [False, True])
@@ -198,7 +198,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             x_multi_thread[:, 0],
             vertcat(tau_sol[:, 0], tau_sol[:, 1]),
             p_sol,
-            vertcat(asol[:, 0], asol[:, 1]),
+            vertcat(a_sol[:, 0], a_sol[:, 1]),
         )
     )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
@@ -212,7 +212,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             x_opt[:, -1],
             tau_sol[:, -1],
             p_sol,
-            asol[:, -1],
+            a_sol[:, -1],
         )
     )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
@@ -228,7 +228,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             x_opt[:, -1],
             tau_sol[:, -1],
             p_sol,
-            asol[:, -1],
+            a_sol[:, -1],
         )
     )
     np.testing.assert_almost_equal(constraint_value[0], hand_final_position[0], decimal=6)
@@ -245,7 +245,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
                 x_multi_thread[:, i_node],
                 vertcat(tau_sol[:, i_node], tau_sol[:, i_node + 1]),
                 p_sol,
-                vertcat(asol[:, i_node], asol[:, i_node + 1]),
+                vertcat(a_sol[:, i_node], a_sol[:, i_node + 1]),
             )
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
@@ -268,31 +268,56 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Covariance continuity --------------------------------------------------------------------
+    x = PenaltyHelpers.states(socp.nlp[0].g[9],
+                              0,
+                              lambda p_idx, n_idx, sn_idx: x_opt,
+                              )
+    u = PenaltyHelpers.controls(socp.nlp[0].g[9],
+                                0,
+                                lambda p_idx, n_idx, sn_idx: tau_sol,
+                                )
+    a = PenaltyHelpers.states(socp.nlp[0].g[9],
+                                        0,
+                                        lambda p_idx, n_idx, sn_idx: a_sol,
+                                        )
+
     constraint_value = (
         socp.nlp[0]
         .g[9]
         .function[0](
             duration,
             dt,
-            x_multi_thread,
-            vertcat(tau_sol[:, 1:], tau_sol[:, :-1]),
+            x,
+            u,
             p_sol,
-            vertcat(a_sol[:, 1:], a_sol[:, :-1]),
+            a,
         )
     )
     np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # States continuity --------------------------------------------------------------------
+    x = PenaltyHelpers.states(socp.nlp[0].g[9],
+                              0,
+                              lambda p_idx, n_idx, sn_idx: x_opt,
+                              )
+    u = PenaltyHelpers.controls(socp.nlp[0].g[9],
+                                0,
+                                lambda p_idx, n_idx, sn_idx: tau_sol,
+                                )
+    a = PenaltyHelpers.states(socp.nlp[0].g[9],
+                                        0,
+                                        lambda p_idx, n_idx, sn_idx: a_sol,
+                                        )
     constraint_value = (
         socp.nlp[0]
         .g_internal[0]
         .function[0](
             duration,
             dt,
-            x_multi_thread,
-            vertcat(tau_sol[:, 1:], tau_sol[:, :-1]),
+            x,
+            u,
             p_sol,
-            vertcat(a_sol[:, 1:], a_sol[:, :-1]),
+            a,
         )
     )
     np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
