@@ -340,7 +340,7 @@ def main():
 
     n_shooting = 40
     final_time = 4
-    motor_noise_magnitude = np.array([50, 50])
+    motor_noise_magnitude = np.array([20, 20])
     bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
     q_init = np.zeros((bio_model.nb_q, (polynomial_degree + 2) * n_shooting + 1))
@@ -459,7 +459,7 @@ def main():
             ])#.T
             t_span = tgrid[i:i+2]
 
-            next_x = np.empty((4, iter))
+            next_x = np.empty((nx, iter))
             for it in range(iter):
                 dynamics = lambda t, x: bio_model.dynamics_numerical(
                     states=x,
@@ -492,7 +492,7 @@ def main():
                 print(f"Something went wrong at the {i}th node. (Eigen values)")
 
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
-            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="b")
+            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y")
     plt.show()
 
 

@@ -36,7 +36,7 @@ from bioptim.examples.stochastic_optimal_control.common import (
     test_eigen_values,
     reshape_to_matrix,
 )
-
+from scipy.integrate import solve_ivp
 
 def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
@@ -229,7 +229,7 @@ def main():
     """
     Prepare, solve and plot the solution
     """
-    is_stochastic = False
+    is_stochastic = True
     is_robust = True
     if not is_stochastic:
         is_robust = False
@@ -289,13 +289,10 @@ def main():
         x_std = np.empty((nx, iter))
 
         for i in range(n_shooting):
-            x_i = np.hstack([
-                q[:, i * (polynomial_degree + 2)],
-                qdot[:, i * (polynomial_degree + 2)]
-            ])#.T
-            t_span = tgrid[i:i+2]
+            x_i = np.hstack([q[:, i],qdot[:, i]])#.T
+            t_span = time[i:i+2]
 
-            next_x = np.empty((4, iter))
+            next_x = np.empty((nx, iter))
             for it in range(iter):
                 dynamics = lambda t, x: bio_model.dynamics_numerical(
                     states=x,
@@ -308,16 +305,10 @@ def main():
             x_mean[:, i] = np.mean(next_x, axis=1)
             x_std[:, i] = np.std(next_x, axis=1)
             cov_numeric[:, :, i] = np.cov(next_x)
-            ax[0, 0].plot(next_x[0, :], next_x[1, :], ".r")
-            ax[0, 0].plot([x_mean[0, i], x_mean[0, i]],  x_mean[1, i] + [-x_std[1, i], x_std[1, i]], "-k")
-            ax[0, 0].plot(x_mean[0, i] + [-x_std[0, i], x_std[0, i]], [x_mean[1, i], x_mean[1, i]], "-k")
 
-            draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r")
+            plt.plot(np.tile(time[i + 1], 2), x_mean[0, i] + [-x_std[0, i], x_std[0, i]], "-k")
+            plt.plot(np.tile(time[i+1], iter), next_x[0, :], ".r")
 
-
-
-
-        cov = sol_socp.decision_algebraic_states["cov"]
 
         o = np.array([[1, 0]])
         sigma = np.zeros((1, n_shooting + 1))
