@@ -90,10 +90,13 @@ class MassPointModel:
         """
         The dynamics from equation (22).
         """
-        q = states[: self.nb_q]
-        qdot = states[self.nb_q :]
-        u = controls
 
+        if states.ndim == 2:
+            states = states.reshape((-1, ))
+
+        q = states[: self.nb_q]
+        qdot = states[self.nb_q:]
+        u = controls
         qddot = -self.kapa * (q - u) - self.beta * qdot * sqrt(qdot[0] ** 2 + qdot[1] ** 2 + self.c**2) + motor_noise
 
         return vertcat(qdot, qddot)

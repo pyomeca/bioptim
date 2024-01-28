@@ -42,6 +42,7 @@ from bioptim.examples.stochastic_optimal_control.common import (
     reshape_to_matrix,
 )
 
+from scipy.integrate import solve_ivp
 
 def superellipse(a=1, b=1, n=2, x_0=0, y_0=0, resolution=100):
     x = np.linspace(-2 * a + x_0, 2 * a + x_0, resolution)
@@ -364,8 +365,13 @@ def main():
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
-    # solver.set_linear_solver("ma57")
+    solver.set_linear_solver("ma57")
+
+
     sol_socp = socp.solve(solver)
+
+
+
 
     time = sol_socp.decision_time(to_merge=SolutionMerge.NODES)
     states = sol_socp.decision_states(to_merge=SolutionMerge.NODES)
@@ -373,9 +379,11 @@ def main():
     algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
 
     q = states["q"]
+    qdot = states["qdot"]
     u = controls["u"]
     Tf = time[-1]
     tgrid = np.linspace(0, Tf, n_shooting + 1).squeeze()
+
 
     fig, ax = plt.subplots(2, 2)
     for i in range(2):
@@ -407,6 +415,37 @@ def main():
         m = algebraic_states["m"]
         cov = algebraic_states["cov"]
 
+        # estimate covariance using series of noisy trials
+        iter = 1000
+        np.random.seed(42)
+        noise = np.random.normal(loc=0, scale=1, size=(bio_model.nb_tau, n_shooting, iter))
+        cov_numeric = np.empty((4, 4, iter))
+        q_noise = np.empty((4, iter))
+
+        for i in range(n_shooting):
+            x_i = np.hstack([
+                q[:, i * (polynomial_degree + 2)],
+                qdot[:, i * (polynomial_degree + 2)]
+            ]).T
+            t_span = tgrid[i:i+2]
+
+            next_x = np.empty((4, iter))
+            for it in range(iter):
+                dynamics = lambda t, x: bio_model.dynamics_numerical(
+                    states=x,
+                    controls=u[:, i].T,
+                    motor_noise=noise[:, i, it].T
+                ).full().T
+                sol_ode = solve_ivp(dynamics, t_span, x_i, method='RK45')
+                next_x[:, it] = sol_ode.y[:, -1]
+
+            q_noise[:, i] = np.mean(next_x, axis=1)
+            cov_numeric[:, :, i] = np.cov(next_x)
+
+
+        ax[0, 0].plot(q_noise[0], q_noise[1], ".r")
+
+
         for i in range(n_shooting + 1):
             cov_i = cov[:, i]
             if not test_matrix_semi_definite_positiveness(cov_i):
@@ -417,6 +456,8 @@ def main():
 
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
             draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="b")
+            draw_cov_ellipse(cov_numeric[:2, :2,i], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="b")
+
 
     plt.show()
 
