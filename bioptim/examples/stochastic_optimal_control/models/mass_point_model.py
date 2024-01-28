@@ -90,7 +90,7 @@ class MassPointModel:
         """
         The dynamics from equation (22).
         """
-
+        # to avoid dimension pb with solve_ivp
         if states.ndim == 2:
             states = states.reshape((-1, ))
 

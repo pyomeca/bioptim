@@ -35,7 +35,7 @@ from bioptim import (
     SolutionMerge,
 )
 
-from bioptim.examples.stochastic_optimal_control.mass_point_model import MassPointModel
+from bioptim.examples.stochastic_optimal_control.models.mass_point_model import MassPointModel
 from bioptim.examples.stochastic_optimal_control.common import (
     test_matrix_semi_definite_positiveness,
     test_eigen_values,
@@ -340,7 +340,7 @@ def main():
 
     n_shooting = 40
     final_time = 4
-    motor_noise_magnitude = np.array([10, 10])
+    motor_noise_magnitude = np.array([50, 50])
     bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
     q_init = np.zeros((bio_model.nb_q, (polynomial_degree + 2) * n_shooting + 1))
@@ -440,21 +440,23 @@ def main():
         cov = algebraic_states["cov"]
 
         # estimate covariance using series of noisy trials
-        iter = 1000
+        iter = 200
         np.random.seed(42)
         noise = np.vstack([
             np.random.normal(loc=0, scale=motor_noise_magnitude[0], size=(1, n_shooting, iter)),
             np.random.normal(loc=0, scale=motor_noise_magnitude[1], size=(1, n_shooting, iter))
             ])
 
-        cov_numeric = np.empty((4, 4, iter))
-        q_noise = np.empty((4, iter))
+        nx = bio_model.nb_q + bio_model.nb_qdot
+        cov_numeric = np.empty((nx, nx, iter))
+        x_mean = np.empty((nx, iter))
+        x_std = np.empty((nx, iter))
 
         for i in range(n_shooting):
             x_i = np.hstack([
                 q[:, i * (polynomial_degree + 2)],
                 qdot[:, i * (polynomial_degree + 2)]
-            ]).T
+            ])#.T
             t_span = tgrid[i:i+2]
 
             next_x = np.empty((4, iter))
@@ -467,11 +469,18 @@ def main():
                 sol_ode = solve_ivp(dynamics, t_span, x_i, method='RK45')
                 next_x[:, it] = sol_ode.y[:, -1]
 
-            q_noise[:, i] = np.mean(next_x, axis=1)
+            x_mean[:, i] = np.mean(next_x, axis=1)
+            x_std[:, i] = np.std(next_x, axis=1)
             cov_numeric[:, :, i] = np.cov(next_x)
+            ax[0, 0].plot(next_x[0, :], next_x[1, :], ".r")
+            ax[0, 0].plot([x_mean[0, i], x_mean[0, i]],  x_mean[1, i] + [-x_std[1, i], x_std[1, i]], "-k")
+            ax[0, 0].plot(x_mean[0, i] + [-x_std[0, i], x_std[0, i]], [x_mean[1, i], x_mean[1, i]], "-k")
+
+            draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r")
 
 
-        ax[0, 0].plot(q_noise[0], q_noise[1], "+r")
+        ax[0, 0].plot(x_mean[0, :], x_mean[1, :], "+r")
+
 
 
         for i in range(n_shooting + 1):
@@ -484,9 +493,6 @@ def main():
 
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
             draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="b")
-            draw_cov_ellipse(cov_numeric[:2, :2,i], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="r")
-
-
     plt.show()
 
 

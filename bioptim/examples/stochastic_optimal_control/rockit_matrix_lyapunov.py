@@ -28,8 +28,9 @@ from bioptim import (
     OdeSolver,
     StochasticBioModel,
     PhaseDynamics,
+    SolutionMerge,
 )
-from bioptim.examples.stochastic_optimal_control.rockit_model import RockitModel
+from bioptim.examples.stochastic_optimal_control.models.rockit_model import RockitModel
 from bioptim.examples.stochastic_optimal_control.common import (
     test_matrix_semi_definite_positiveness,
     test_eigen_values,
@@ -228,7 +229,7 @@ def main():
     """
     Prepare, solve and plot the solution
     """
-    is_stochastic = True
+    is_stochastic = False
     is_robust = True
     if not is_stochastic:
         is_robust = False
@@ -239,9 +240,12 @@ def main():
     socp_type = SocpType.COLLOCATION(polynomial_degree=polynomial_degree, method="legendre")
     n_shooting = 40
     final_time = 1
+    motor_noise_magnitude = np.array([1])
+    bio_model = RockitModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
+
     dt = final_time / n_shooting
     ts = np.arange(n_shooting + 1) * dt
-    motor_noise_magnitude = np.array([0])
+
 
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
@@ -258,17 +262,64 @@ def main():
     )
 
     sol_socp = socp.solve(solver)
+    time = sol_socp.decision_time(to_merge=SolutionMerge.NODES)
+    states = sol_socp.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol_socp.decision_controls(to_merge=SolutionMerge.NODES)
+    algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
+
+
     T = sol_socp.time
     q = sol_socp.states["q"]
+    qdot = sol_socp.states["qdot"]
     u = sol_socp.controls["u"]
 
     # sol_ocp.graphs()
     plt.figure()
-    plt.plot(T, bound(T), "k", label="bound")
-    plt.plot(np.squeeze(T), np.squeeze(q), label="q")
+    plt.plot(time, bound(time), "k", label="bound")
+    plt.plot(time, q, label="q")
     plt.step(ts, np.squeeze(u / 40), label="u/40")
 
     if is_stochastic:
+
+        # estimate covariance using series of noisy trials
+        iter = 200
+        np.random.seed(42)
+        noise = np.random.normal(loc=0, scale=motor_noise_magnitude, size=(1, n_shooting, iter))
+
+        nx = bio_model.nb_q + bio_model.nb_qdot
+        cov_numeric = np.empty((nx, nx, iter))
+        x_mean = np.empty((nx, iter))
+        x_std = np.empty((nx, iter))
+
+        for i in range(n_shooting):
+            x_i = np.hstack([
+                q[:, i * (polynomial_degree + 2)],
+                qdot[:, i * (polynomial_degree + 2)]
+            ])#.T
+            t_span = tgrid[i:i+2]
+
+            next_x = np.empty((4, iter))
+            for it in range(iter):
+                dynamics = lambda t, x: bio_model.dynamics_numerical(
+                    states=x,
+                    controls=u[:, i].T,
+                    motor_noise=noise[:, i, it].T
+                ).full().T
+                sol_ode = solve_ivp(dynamics, t_span, x_i, method='RK45')
+                next_x[:, it] = sol_ode.y[:, -1]
+
+            x_mean[:, i] = np.mean(next_x, axis=1)
+            x_std[:, i] = np.std(next_x, axis=1)
+            cov_numeric[:, :, i] = np.cov(next_x)
+            ax[0, 0].plot(next_x[0, :], next_x[1, :], ".r")
+            ax[0, 0].plot([x_mean[0, i], x_mean[0, i]],  x_mean[1, i] + [-x_std[1, i], x_std[1, i]], "-k")
+            ax[0, 0].plot(x_mean[0, i] + [-x_std[0, i], x_std[0, i]], [x_mean[1, i], x_mean[1, i]], "-k")
+
+            draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r")
+
+
+
+
         cov = sol_socp.decision_algebraic_states["cov"]
 
         o = np.array([[1, 0]])
