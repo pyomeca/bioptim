@@ -88,7 +88,7 @@ def bound(t):
 
 
 def path_constraint(controller, is_robustified: bool = False):
-    t = controller.time.cx
+    t = controller.t_span[0]
     q = controller.states["q"].cx
     sup = bound(t)
     if is_robustified:
@@ -262,24 +262,21 @@ def main():
     )
 
     sol_socp = socp.solve(solver)
-    time = sol_socp.decision_time(to_merge=SolutionMerge.NODES)
-    states = sol_socp.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol_socp.decision_controls(to_merge=SolutionMerge.NODES)
-    algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
-
-
-    T = sol_socp.time
-    q = sol_socp.states["q"]
-    qdot = sol_socp.states["qdot"]
-    u = sol_socp.controls["u"]
+    states = sol_socp.decision_states()
+    controls = sol_socp.decision_controls()
+    q = np.array([item.flatten()[0] for item in states["q"]])
+    qdot = np.array([item.flatten()[0] for item in states["qdot"]])
+    u = np.vstack([np.array([item.flatten() for item in controls["u"]]), np.array([[np.nan]])])
+    time = np.array([item.full().flatten()[0] for item in sol_socp.stepwise_time()])
 
     # sol_ocp.graphs()
     plt.figure()
     plt.plot(time, bound(time), "k", label="bound")
     plt.plot(time, q, label="q")
-    plt.step(ts, np.squeeze(u / 40), label="u/40")
+    plt.step(time, u / 40, label="u/40")
 
     if is_stochastic:
+        cov = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)["cov"]
 
         # estimate covariance using series of noisy trials
         iter = 200
