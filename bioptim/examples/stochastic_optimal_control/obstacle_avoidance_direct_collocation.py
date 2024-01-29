@@ -44,6 +44,7 @@ from bioptim.examples.stochastic_optimal_control.common import (
 
 from scipy.integrate import solve_ivp
 
+
 def superellipse(a=1, b=1, n=2, x_0=0, y_0=0, resolution=100):
     x = np.linspace(-2 * a + x_0, 2 * a + x_0, resolution)
     y = np.linspace(-2 * b + y_0, 2 * b + y_0, resolution)
@@ -340,7 +341,7 @@ def main():
 
     n_shooting = 40
     final_time = 4
-    motor_noise_magnitude = np.array([20, 20])
+    motor_noise_magnitude = np.array([1, 1]) * 1
     bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
     q_init = np.zeros((bio_model.nb_q, (polynomial_degree + 2) * n_shooting + 1))
@@ -369,6 +370,7 @@ def main():
 
     # Check if the file exists
     import os, pickle
+
     filename = "obstacle.pkl"
     if os.path.exists(filename):
         # Open the file and load the content
@@ -390,7 +392,7 @@ def main():
         algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
 
         data_to_save = {
-            "time":  time,
+            "time": time,
             "states": states,
             "controls": controls,
             "algebraic_states": algebraic_states,
@@ -398,16 +400,11 @@ def main():
         with open(filename, "wb") as file:
             pickle.dump(data_to_save, file)
 
-
-
-
-
     q = states["q"]
     qdot = states["qdot"]
     u = controls["u"]
     Tf = time[-1]
     tgrid = np.linspace(0, Tf, n_shooting + 1).squeeze()
-
 
     fig, ax = plt.subplots(2, 2)
     for i in range(2):
@@ -430,9 +427,27 @@ def main():
     for i in range(n_shooting):
         ax[0, 1].plot((u[0][i], q[0][i * (polynomial_degree + 2)]), (u[1][i], q[1][i * (polynomial_degree + 2)]), ":k")
 
+    ax[1, 0].step(tgrid[:-1], u.T, "-.", label=["u_0", "u_1"])
+    ax[1, 0].fill_between(
+        tgrid[:-1],
+        u.T[:, 0] - motor_noise_magnitude[0],
+        u.T[:, 0] + motor_noise_magnitude[0],
+        step="pre",
+        alpha=0.3,
+        color="#1f77b4",
+    )
+    ax[1, 0].fill_between(
+        tgrid[:-1],
+        u.T[:, 1] - motor_noise_magnitude[1],
+        u.T[:, 1] + motor_noise_magnitude[0],
+        step="pre",
+        alpha=0.3,
+        color="#ff7f0e",
+    )
+
     ax[1, 0].plot(tgrid, q[0, :: polynomial_degree + 2], "--", label="px")
     ax[1, 0].plot(tgrid, q[1, :: polynomial_degree + 2], "-", label="py")
-    ax[1, 0].step(tgrid[:-1], u.T, "-.", label="u")
+
     ax[1, 0].set_xlabel("t")
 
     if is_stochastic:
@@ -442,46 +457,66 @@ def main():
         # estimate covariance using series of noisy trials
         iter = 200
         np.random.seed(42)
-        noise = np.vstack([
-            np.random.normal(loc=0, scale=motor_noise_magnitude[0], size=(1, n_shooting, iter)),
-            np.random.normal(loc=0, scale=motor_noise_magnitude[1], size=(1, n_shooting, iter))
-            ])
+        noise = np.vstack(
+            [
+                np.random.normal(loc=0, scale=motor_noise_magnitude[0], size=(1, n_shooting, iter)),
+                np.random.normal(loc=0, scale=motor_noise_magnitude[1], size=(1, n_shooting, iter)),
+            ]
+        )
 
         nx = bio_model.nb_q + bio_model.nb_qdot
-        cov_numeric = np.empty((nx, nx, iter))
-        x_mean = np.empty((nx, iter))
-        x_std = np.empty((nx, iter))
+        cov_numeric = np.zeros((nx, nx, iter))
+        x_mean = np.zeros((nx, n_shooting + 1))
+        x_std = np.zeros((nx, n_shooting + 1))
+        dt = Tf / (n_shooting)
+
 
         for i in range(n_shooting):
-            x_i = np.hstack([
-                q[:, i * (polynomial_degree + 2)],
-                qdot[:, i * (polynomial_degree + 2)]
-            ])#.T
-            t_span = tgrid[i:i+2]
-
-            next_x = np.empty((nx, iter))
+            x_i = np.hstack([q[:, i * (polynomial_degree + 2)], qdot[:, i * (polynomial_degree + 2)]])  # .T
+            new_u = np.hstack([u[:, i:], u[:, :i]])
+            next_x = np.zeros((nx, iter))
             for it in range(iter):
-                dynamics = lambda t, x: bio_model.dynamics_numerical(
-                    states=x,
-                    controls=u[:, i].T,
-                    motor_noise=noise[:, i, it].T
-                ).full().T
-                sol_ode = solve_ivp(dynamics, t_span, x_i, method='RK45')
-                next_x[:, it] = sol_ode.y[:, -1]
+
+                x_j = x_i
+                for j in range(n_shooting):
+                    dynamics = (
+                        lambda t, x: bio_model.dynamics_numerical(
+                            states=x, controls=new_u[:, j].T, motor_noise=noise[:, j, it].T
+                        )
+                        .full()
+                        .T
+                    )
+                    sol_ode = solve_ivp(dynamics, t_span=[0, dt], y0=x_j, method="RK45")
+                    x_j = sol_ode.y[:, -1]
+
+                next_x[:, it] = x_j
 
             x_mean[:, i] = np.mean(next_x, axis=1)
             x_std[:, i] = np.std(next_x, axis=1)
+
             cov_numeric[:, :, i] = np.cov(next_x)
             ax[0, 0].plot(next_x[0, :], next_x[1, :], ".r")
-            ax[0, 0].plot([x_mean[0, i], x_mean[0, i]],  x_mean[1, i] + [-x_std[1, i], x_std[1, i]], "-k")
+            ax[0, 0].plot([x_mean[0, i], x_mean[0, i]], x_mean[1, i] + [-x_std[1, i], x_std[1, i]], "-k")
             ax[0, 0].plot(x_mean[0, i] + [-x_std[0, i], x_std[0, i]], [x_mean[1, i], x_mean[1, i]], "-k")
-
             draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r")
 
+        ax[1, 0].fill_between(
+            tgrid,
+            q[0, :: polynomial_degree + 2] - x_std[0, :],
+            q[0, :: polynomial_degree + 2] + x_std[0, :],
+            alpha=0.3,
+            color="#2ca02c",
+        )
+
+        ax[1, 0].fill_between(
+            tgrid,
+            q[1, :: polynomial_degree + 2] - x_std[1, :],
+            q[1, :: polynomial_degree + 2] + x_std[1, :],
+            alpha=0.3,
+            color="#d62728",
+        )
 
         ax[0, 0].plot(x_mean[0, :], x_mean[1, :], "+r")
-
-
 
         for i in range(n_shooting + 1):
             cov_i = cov[:, i]

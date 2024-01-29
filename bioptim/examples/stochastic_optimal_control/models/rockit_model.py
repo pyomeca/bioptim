@@ -77,7 +77,7 @@ class RockitModel:
 
     def dynamics_numerical(self, states, controls, motor_noise=0):
         q = states[: self.nb_q]
-        qdot = states[self.nb_q:]
+        qdot = states[self.nb_q :]
         u = controls
 
         qddot = -0.1 * (1 - q**2) * qdot - q + u + motor_noise

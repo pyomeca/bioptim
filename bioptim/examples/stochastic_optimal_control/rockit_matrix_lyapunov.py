@@ -38,6 +38,7 @@ from bioptim.examples.stochastic_optimal_control.common import (
 )
 from scipy.integrate import solve_ivp
 
+
 def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
@@ -246,7 +247,6 @@ def main():
     dt = final_time / n_shooting
     ts = np.arange(n_shooting + 1) * dt
 
-
     # Solver parameters
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
@@ -289,17 +289,19 @@ def main():
         x_std = np.empty((nx, iter))
 
         for i in range(n_shooting):
-            x_i = np.hstack([q[:, i],qdot[:, i]])#.T
-            t_span = time[i:i+2]
+            x_i = np.hstack([q[:, i], qdot[:, i]])  # .T
+            t_span = time[i : i + 2]
 
             next_x = np.empty((nx, iter))
             for it in range(iter):
-                dynamics = lambda t, x: bio_model.dynamics_numerical(
-                    states=x,
-                    controls=u[:, i].T,
-                    motor_noise=noise[:, i, it].T
-                ).full().T
-                sol_ode = solve_ivp(dynamics, t_span, x_i, method='RK45')
+                dynamics = (
+                    lambda t, x: bio_model.dynamics_numerical(
+                        states=x, controls=u[:, i].T, motor_noise=noise[:, i, it].T
+                    )
+                    .full()
+                    .T
+                )
+                sol_ode = solve_ivp(dynamics, t_span, x_i, method="RK45")
                 next_x[:, it] = sol_ode.y[:, -1]
 
             x_mean[:, i] = np.mean(next_x, axis=1)
@@ -307,8 +309,7 @@ def main():
             cov_numeric[:, :, i] = np.cov(next_x)
 
             plt.plot(np.tile(time[i + 1], 2), x_mean[0, i] + [-x_std[0, i], x_std[0, i]], "-k")
-            plt.plot(np.tile(time[i+1], iter), next_x[0, :], ".r")
-
+            plt.plot(np.tile(time[i + 1], iter), next_x[0, :], ".r")
 
         o = np.array([[1, 0]])
         sigma = np.zeros((1, n_shooting + 1))
