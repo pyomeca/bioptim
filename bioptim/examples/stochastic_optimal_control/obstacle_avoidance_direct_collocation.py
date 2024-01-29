@@ -475,31 +475,35 @@ def main():
         x_std = np.zeros((nx, n_shooting + 1))
         dt = Tf / (n_shooting)
 
-        next_x = np.zeros((nx, iter, n_shooting))
-        for it in range(iter):
-            for j in range(n_shooting):
-                x_j = np.hstack([q[:, j * (polynomial_degree + 2)], qdot[:, j * (polynomial_degree + 2)]])
-                new_u = np.hstack([u[:, j:], u[:, :j]])
-                dynamics = (
-                    lambda t, x: bio_model.dynamics_numerical(
-                        states=x, controls=new_u[:, j].T, motor_noise=noise[:, j, it].T
-                    )
-                    .full()
-                    .T
-                )
-                sol_ode = solve_ivp(dynamics, t_span=[0, dt], y0=x_j, method="RK45")
-                x_j = sol_ode.y[:, -1]
-
-                next_x[:, it, j] = x_j
-
-        x_mean = np.mean(next_x, axis=1)
-        x_std = np.std(next_x, axis=1)
+        x_j = np.zeros((nx, ))
         for i in range(n_shooting):
-            cov_numeric[:, :, i] = np.cov(next_x[:, :, i])
+            x_i = np.hstack([q[:, i * (polynomial_degree + 2)], qdot[:, i * (polynomial_degree + 2)]])
+            new_u = np.hstack([u[:, i:], u[:, :i]])
+            next_x = np.zeros((nx, iter))
+            for it in range(iter):
+
+                x_j[:] = x_i[:]
+                for j in range(n_shooting):
+                    dynamics = (
+                        lambda t, x: bio_model.dynamics_numerical(
+                            states=x, controls=new_u[:, j].T, motor_noise=noise[:, j, it].T
+                        )
+                        .full()
+                        .T
+                    )
+                    sol_ode = solve_ivp(dynamics, t_span=[0, dt], y0=x_j, method="RK45")
+                    x_j[:] = sol_ode.y[:, -1]
+
+                next_x[:, it] = x_j[:]
+
+            x_mean[:, i] = np.mean(next_x, axis=1)
+            x_std[:, i] = np.std(next_x, axis=1)
+
+            cov_numeric[:, :, i] = np.cov(next_x)
             if i == 0:
-                ax[0, 0].plot(next_x[0, :, i], next_x[1, :, i], ".r", label="Noisy integration")
+                ax[0, 0].plot(next_x[0, :], next_x[1, :], ".r", label="Noisy integration")
             else:
-                ax[0, 0].plot(next_x[0, :, i], next_x[1, :, i], ".r")
+                ax[0, 0].plot(next_x[0, :], next_x[1, :], ".r")
             # We can draw the X and Y covariance just for personnal reference, but the eigen vectors of the covariance matrix do not have to be aligned with the horizontal and vertical axis
             # ax[0, 0].plot([x_mean[0, i], x_mean[0, i]], x_mean[1, i] + [-x_std[1, i], x_std[1, i]], "-k", label="Numerical covariance")
             # ax[0, 0].plot(x_mean[0, i] + [-x_std[0, i], x_std[0, i]], [x_mean[1, i], x_mean[1, i]], "-k")
@@ -535,7 +539,10 @@ def main():
                 print(f"Something went wrong at the {i}th node. (Eigen values)")
 
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
-            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y", label="Optimal covariance")
+            if i == 0:
+                draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y", label="Optimal covariance")
+            else:
+                draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y")
     ax[0, 0].legend()
     plt.show()
 
