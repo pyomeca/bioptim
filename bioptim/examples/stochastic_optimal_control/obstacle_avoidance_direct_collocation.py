@@ -8,6 +8,8 @@ import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import casadi as cas
 import numpy as np
+import os
+import pickle
 
 from bioptim import (
     StochasticOptimalControlProgram,
@@ -54,7 +56,7 @@ def superellipse(a=1, b=1, n=2, x_0=0, y_0=0, resolution=100):
     return X, Y, Z
 
 
-def draw_cov_ellipse(cov, pos, ax, color="b"):
+def draw_cov_ellipse(cov, pos, ax, **kwargs):
     """
     Draw an ellipse representing the covariance at a given point.
     """
@@ -69,7 +71,7 @@ def draw_cov_ellipse(cov, pos, ax, color="b"):
 
     # Width and height are "full" widths, not radius
     width, height = 2 * np.sqrt(vals)
-    ellip = plt.matplotlib.patches.Ellipse(xy=pos, width=width, height=height, angle=theta, color=color, alpha=0.1)
+    ellip = plt.matplotlib.patches.Ellipse(xy=pos, width=width, height=height, angle=theta, alpha=0.1, **kwargs)
 
     ax.add_patch(ellip)
     return ellip
@@ -368,9 +370,6 @@ def main():
     solver = Solver.IPOPT(show_online_optim=False, show_options=dict(show_bounds=True))
     solver.set_linear_solver("ma57")
 
-    # Check if the file exists
-    import os, pickle
-
     filename = "obstacle.pkl"
     if os.path.exists(filename):
         # Open the file and load the content
@@ -416,18 +415,23 @@ def main():
 
         X, Y, Z = superellipse(a, b, n, x_0, y_0)
 
-        ax[0, 0].contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5)
+        ax[0, 0].contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5, label="Obstacles")
 
     ax[0, 0].plot(q_init[0], q_init[1], "-k", label="Initial guess")
-    ax[0, 0].plot(q[0][0], q[1][0], "og")
-    ax[0, 0].plot(q[0], q[1], "-g", label="q")
+    ax[0, 0].plot(q[0][0], q[1][0], "og", label="Optimal initial node")
+    ax[0, 0].plot(q[0], q[1], "-g", label="Optimal trajectory")
 
-    ax[0, 1].plot(q[0], q[1], "b")
-    ax[0, 1].plot(u[0], u[1], "r")
+    ax[0, 1].plot(q[0], q[1], "b", label="Optimal trajectory")
+    ax[0, 1].plot(u[0], u[1], "r", label="Optimal controls")
     for i in range(n_shooting):
-        ax[0, 1].plot((u[0][i], q[0][i * (polynomial_degree + 2)]), (u[1][i], q[1][i * (polynomial_degree + 2)]), ":k")
+        if i == 0:
+            ax[0, 1].plot((u[0][i], q[0][i * (polynomial_degree + 2)]), (u[1][i], q[1][i * (polynomial_degree + 2)]), ":k", label="Spring orientation")
+        else:
+            ax[0, 1].plot((u[0][i], q[0][i * (polynomial_degree + 2)]), (u[1][i], q[1][i * (polynomial_degree + 2)]),
+                          ":k")
+    ax[0, 1].legend()
 
-    ax[1, 0].step(tgrid[:-1], u.T, "-.", label=["u_0", "u_1"])
+    ax[1, 0].step(tgrid[:-1], u.T, "-.", label=["Optimal controls X", "Optimal controls Y"])
     ax[1, 0].fill_between(
         tgrid[:-1],
         u.T[:, 0] - motor_noise_magnitude[0],
@@ -439,16 +443,17 @@ def main():
     ax[1, 0].fill_between(
         tgrid[:-1],
         u.T[:, 1] - motor_noise_magnitude[1],
-        u.T[:, 1] + motor_noise_magnitude[0],
+        u.T[:, 1] + motor_noise_magnitude[1],
         step="pre",
         alpha=0.3,
         color="#ff7f0e",
     )
 
-    ax[1, 0].plot(tgrid, q[0, :: polynomial_degree + 2], "--", label="px")
-    ax[1, 0].plot(tgrid, q[1, :: polynomial_degree + 2], "-", label="py")
+    ax[1, 0].plot(tgrid, q[0, :: polynomial_degree + 2], "--", label="Optimal trajectory X")
+    ax[1, 0].plot(tgrid, q[1, :: polynomial_degree + 2], "-", label="Optimal trajectory Y")
 
-    ax[1, 0].set_xlabel("t")
+    ax[1, 0].set_xlabel("Time [s]")
+    ax[1, 0].legend()
 
     if is_stochastic:
         m = algebraic_states["m"]
@@ -465,40 +470,43 @@ def main():
         )
 
         nx = bio_model.nb_q + bio_model.nb_qdot
-        cov_numeric = np.zeros((nx, nx, iter))
+        cov_numeric = np.zeros((nx, nx, n_shooting))
         x_mean = np.zeros((nx, n_shooting + 1))
         x_std = np.zeros((nx, n_shooting + 1))
         dt = Tf / (n_shooting)
 
-
-        for i in range(n_shooting):
-            x_i = np.hstack([q[:, i * (polynomial_degree + 2)], qdot[:, i * (polynomial_degree + 2)]])  # .T
-            new_u = np.hstack([u[:, i:], u[:, :i]])
-            next_x = np.zeros((nx, iter))
-            for it in range(iter):
-
-                x_j = x_i
-                for j in range(n_shooting):
-                    dynamics = (
-                        lambda t, x: bio_model.dynamics_numerical(
-                            states=x, controls=new_u[:, j].T, motor_noise=noise[:, j, it].T
-                        )
-                        .full()
-                        .T
+        next_x = np.zeros((nx, iter, n_shooting))
+        for it in range(iter):
+            for j in range(n_shooting):
+                x_j = np.hstack([q[:, j * (polynomial_degree + 2)], qdot[:, j * (polynomial_degree + 2)]])
+                new_u = np.hstack([u[:, j:], u[:, :j]])
+                dynamics = (
+                    lambda t, x: bio_model.dynamics_numerical(
+                        states=x, controls=new_u[:, j].T, motor_noise=noise[:, j, it].T
                     )
-                    sol_ode = solve_ivp(dynamics, t_span=[0, dt], y0=x_j, method="RK45")
-                    x_j = sol_ode.y[:, -1]
+                    .full()
+                    .T
+                )
+                sol_ode = solve_ivp(dynamics, t_span=[0, dt], y0=x_j, method="RK45")
+                x_j = sol_ode.y[:, -1]
 
-                next_x[:, it] = x_j
+                next_x[:, it, j] = x_j
 
-            x_mean[:, i] = np.mean(next_x, axis=1)
-            x_std[:, i] = np.std(next_x, axis=1)
-
-            cov_numeric[:, :, i] = np.cov(next_x)
-            ax[0, 0].plot(next_x[0, :], next_x[1, :], ".r")
-            ax[0, 0].plot([x_mean[0, i], x_mean[0, i]], x_mean[1, i] + [-x_std[1, i], x_std[1, i]], "-k")
-            ax[0, 0].plot(x_mean[0, i] + [-x_std[0, i], x_std[0, i]], [x_mean[1, i], x_mean[1, i]], "-k")
-            draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r")
+        x_mean = np.mean(next_x, axis=1)
+        x_std = np.std(next_x, axis=1)
+        for i in range(n_shooting):
+            cov_numeric[:, :, i] = np.cov(next_x[:, :, i])
+            if i == 0:
+                ax[0, 0].plot(next_x[0, :, i], next_x[1, :, i], ".r", label="Noisy integration")
+            else:
+                ax[0, 0].plot(next_x[0, :, i], next_x[1, :, i], ".r")
+            # We can draw the X and Y covariance just for personnal reference, but the eigen vectors of the covariance matrix do not have to be aligned with the horizontal and vertical axis
+            # ax[0, 0].plot([x_mean[0, i], x_mean[0, i]], x_mean[1, i] + [-x_std[1, i], x_std[1, i]], "-k", label="Numerical covariance")
+            # ax[0, 0].plot(x_mean[0, i] + [-x_std[0, i], x_std[0, i]], [x_mean[1, i], x_mean[1, i]], "-k")
+            if i == 0:
+                draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r", label="Numerical covariance")
+            else:
+                draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r")
 
         ax[1, 0].fill_between(
             tgrid,
@@ -516,7 +524,7 @@ def main():
             color="#d62728",
         )
 
-        ax[0, 0].plot(x_mean[0, :], x_mean[1, :], "+r")
+        ax[0, 0].plot(x_mean[0, :], x_mean[1, :], "+b", label="Numerical mean")
 
         for i in range(n_shooting + 1):
             cov_i = cov[:, i]
@@ -527,7 +535,8 @@ def main():
                 print(f"Something went wrong at the {i}th node. (Eigen values)")
 
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
-            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y")
+            draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y", label="Optimal covariance")
+    ax[0, 0].legend()
     plt.show()
 
 
