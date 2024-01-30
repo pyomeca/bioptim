@@ -77,7 +77,11 @@ def prepare_ocp(
     bio_model = BiorbdModel(biorbd_model_path)
 
     # Add objective functions
-    objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
+    objective_functions = Objective(
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+        key="tau",
+        quadratic=False,
+        weight=1)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
@@ -85,7 +89,8 @@ def prepare_ocp(
     # Path bounds
     x_bounds = BoundsList()
     x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["q"][:, [0, -1]] = 0  # Start and end at 0...
+    # x_bounds["q"][:, [0, -1]] = 0  # Start and end at 0...
+    x_bounds["q"][:, 0] = 0  # Start and end at 0...
     x_bounds["q"][1, -1] = 3.14  # ...but end with pendulum 180 degrees rotated
     x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
     x_bounds["qdot"][:, [0, -1]] = 0  # Start and end without any velocity
@@ -128,7 +133,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=400, n_threads=2)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=40, n_threads=6)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
@@ -144,7 +149,7 @@ def main():
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
-    # sol.graphs(show_bounds=True)
+    sol.graphs(show_bounds=True)
     sol.animate(n_frames=100)
 
     # # --- Save the solution --- #
