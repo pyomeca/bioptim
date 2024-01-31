@@ -1,12 +1,11 @@
 """
 Test for file IO
 """
-import os
-import sys
 import io
-
-import pytest
 import numpy as np
+import os
+import pytest
+import sys
 from bioptim import (
     BiorbdModel,
     OdeSolver,
