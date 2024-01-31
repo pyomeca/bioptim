@@ -15,10 +15,7 @@ def test_continuity_as_objective(phase_dynamics):
     )
 
     np.random.seed(42)
-    model_path = (
-        TestUtils.bioptim_folder()
-        + "/examples/getting_started/models/pendulum_maze.bioMod"
-    )
+    model_path = TestUtils.bioptim_folder() + "/examples/getting_started/models/pendulum_maze.bioMod"
 
     # first pass
     ocp = ocp_module.prepare_ocp_first_pass(
@@ -58,9 +55,7 @@ def test_continuity_as_objective(phase_dynamics):
     np.testing.assert_almost_equal(sol.controls["tau"], expected_controls)
     assert sol.iterations in expected_iterations
     # second pass
-    ocp_second_pass = ocp_module.prepare_ocp_second_pass(
-        biorbd_model_path=model_path, n_threads=1, solution=sol
-    )
+    ocp_second_pass = ocp_module.prepare_ocp_second_pass(biorbd_model_path=model_path, n_threads=1, solution=sol)
     sol_second_pass = ocp_second_pass.solve()
     # check q in integrality, qdot,controls, vector, cost, iterations
 
@@ -157,10 +152,6 @@ def test_continuity_as_objective(phase_dynamics):
     np.testing.assert_almost_equal(sol_second_pass.states["q"], expected_q)
     np.testing.assert_almost_equal(sol_second_pass.states["qdot"], expected_qdot)
     np.testing.assert_almost_equal(sol_second_pass.vector.T, expected_vector, decimal=1)
-    np.testing.assert_almost_equal(
-        sol_second_pass.constraints.T, expected_constraints, decimal=1
-    )
-    np.testing.assert_almost_equal(
-        float(sol_second_pass.cost), expected_cost, decimal=2
-    )
+    np.testing.assert_almost_equal(sol_second_pass.constraints.T, expected_constraints, decimal=1)
+    np.testing.assert_almost_equal(float(sol_second_pass.cost), expected_cost, decimal=2)
     assert sol_second_pass.iterations in expected_iterations

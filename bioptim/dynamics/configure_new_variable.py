@@ -460,9 +460,11 @@ class NewVariableConfiguration:
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
-                        combine_to=f"{self.name}_states"
-                        if self.as_states and self.combine_state_control_plot
-                        else self.combine_name,
+                        combine_to=(
+                            f"{self.name}_states"
+                            if self.as_states and self.combine_state_control_plot
+                            else self.combine_name
+                        ),
                     )
 
         if self.as_states_dot:

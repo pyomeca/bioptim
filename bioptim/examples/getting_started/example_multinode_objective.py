@@ -2,6 +2,7 @@
 This example shows how to use multinode_objectives.
 It replicates the results from getting_started/pendulum.py
 """
+
 import platform
 from casadi import MX, sum1
 
