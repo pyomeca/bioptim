@@ -5,6 +5,7 @@ It tests the results of an optimal control problem with torque_driven_with_conta
 - the contact_forces_inequality constraint
 - the non_slipping constraint
 """
+
 import os
 import pytest
 

@@ -738,9 +738,9 @@ class Solution:
         s = PenaltyHelpers.states(
             penalty,
             0,
-            lambda p, n, sn: decision_algebraic_states[p][n][:, sn]
-            if n < len(decision_algebraic_states[p])
-            else np.ndarray((0, 1)),
+            lambda p, n, sn: (
+                decision_algebraic_states[p][n][:, sn] if n < len(decision_algebraic_states[p]) else np.ndarray((0, 1))
+            ),
         )
 
         dx = penalty.function[-1](t0, dt, x, u, params, s)
@@ -1043,23 +1043,23 @@ class Solution:
             x = PenaltyHelpers.states(
                 penalty,
                 idx,
-                lambda p_idx, n_idx, sn_idx: merged_x[p_idx][n_idx][:, sn_idx]
-                if n_idx < len(merged_x[p_idx])
-                else np.array(()),
+                lambda p_idx, n_idx, sn_idx: (
+                    merged_x[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_x[p_idx]) else np.array(())
+                ),
             )
             u = PenaltyHelpers.controls(
                 penalty,
                 idx,
-                lambda p_idx, n_idx, sn_idx: merged_u[p_idx][n_idx][:, sn_idx]
-                if n_idx < len(merged_u[p_idx])
-                else np.array(()),
+                lambda p_idx, n_idx, sn_idx: (
+                    merged_u[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_u[p_idx]) else np.array(())
+                ),
             )
             a = PenaltyHelpers.states(
                 penalty,
                 idx,
-                lambda p_idx, n_idx, sn_idx: merged_a[p_idx][n_idx][:, sn_idx]
-                if n_idx < len(merged_a[p_idx])
-                else np.array(()),
+                lambda p_idx, n_idx, sn_idx: (
+                    merged_a[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_a[p_idx]) else np.array(())
+                ),
             )
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
