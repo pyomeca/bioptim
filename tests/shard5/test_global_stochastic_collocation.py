@@ -144,7 +144,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     states_sol = np.zeros((4, 5, 5))
     for i in range(4):
         states_sol[:, :, i] = sol_socp.decision_states(to_merge=SolutionMerge.KEYS)[i]
-    states_sol[:, 0, 4] = np.reshape(sol_socp.decision_states(to_merge=SolutionMerge.KEYS)[4], (4, ))
+    states_sol[:, 0, 4] = np.reshape(sol_socp.decision_states(to_merge=SolutionMerge.KEYS)[4], (4,))
 
     controls = sol_socp.decision_controls(to_merge=SolutionMerge.NODES)
     tau_sol = controls["tau"]
@@ -180,56 +180,58 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
     # Initial posture
     const = socp.nlp[0].g[0]
-    x = PenaltyHelpers.states(const,
-                              0,
-                              lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
-                              )
-    u = PenaltyHelpers.controls(const,
-                                0,
-                                lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
-                                )
-    a = PenaltyHelpers.states(const,
-                              0,
-                              lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
-                              )
+    x = PenaltyHelpers.states(
+        const,
+        0,
+        lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
+    )
+    u = PenaltyHelpers.controls(
+        const,
+        0,
+        lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
+    )
+    a = PenaltyHelpers.states(
+        const,
+        0,
+        lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+    )
     shoulder_pos_initial = 0.349065850398866
     elbow_pos_initial = 2.245867726451909
-    constraint_value = (
-        const.function[0](
-            duration,
-            dt,
-            x,
-            u,
-            p_sol,
-            a,
-        )
+    constraint_value = const.function[0](
+        duration,
+        dt,
+        x,
+        u,
+        p_sol,
+        a,
     )
     np.testing.assert_almost_equal(constraint_value[0], shoulder_pos_initial, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], elbow_pos_initial, decimal=6)
 
     # Initial and final velocities
     const = socp.nlp[0].g[1]
-    x = PenaltyHelpers.states(const,
-                              0,
-                              lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
-                              )
-    u = PenaltyHelpers.controls(const,
-                                0,
-                                lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
-                                )
-    a = PenaltyHelpers.states(const,
-                              0,
-                              lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
-                              )
-    constraint_value = (
-        const.function[0](
-            duration,
-            dt,
-            x,
-            u,
-            p_sol,
-            a,
-        )
+    x = PenaltyHelpers.states(
+        const,
+        0,
+        lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
+    )
+    u = PenaltyHelpers.controls(
+        const,
+        0,
+        lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
+    )
+    a = PenaltyHelpers.states(
+        const,
+        0,
+        lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+    )
+    constraint_value = const.function[0](
+        duration,
+        dt,
+        x,
+        u,
+        p_sol,
+        a,
     )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], 0, decimal=6)
@@ -238,15 +240,13 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     x = states_sol[:, 0, -1]
     u = controls_sol[:, -1]
     a = algebraic_sol[:, -1]
-    constraint_value = (
-        const.function[-1](
-            duration,
-            dt,
-            x,
-            u,
-            p_sol,
-            a,
-        )
+    constraint_value = const.function[-1](
+        duration,
+        dt,
+        x,
+        u,
+        p_sol,
+        a,
     )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], 0, decimal=6)
@@ -256,15 +256,13 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     x = states_sol[:, 0, -1]
     u = controls_sol[:, -1]
     a = algebraic_sol[:, -1]
-    constraint_value = (
-        const.function[-1](
-            duration,
-            dt,
-            x,
-            u,
-            p_sol,
-            a,
-        )
+    constraint_value = const.function[-1](
+        duration,
+        dt,
+        x,
+        u,
+        p_sol,
+        a,
     )
     np.testing.assert_almost_equal(constraint_value[0], hand_final_position[0], decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], hand_final_position[1], decimal=6)
@@ -272,140 +270,141 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     # Reference equals mean sensory input
     const = socp.nlp[0].g[7]
     for i_node in range(socp.n_shooting):
-        x = PenaltyHelpers.states(const,
-                                  0,
-                                  lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
-                                  )
-        u = PenaltyHelpers.controls(const,
-                                    0,
-                                    lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
-                                    )
-        a = PenaltyHelpers.states(const,
-                                  0,
-                                  lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
-                                  )
-        constraint_value = (
-            const.function[i_node](
-                duration,
-                dt,
-                x,
-                u,
-                p_sol,
-                a,
-            )
+        x = PenaltyHelpers.states(
+            const,
+            0,
+            lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
+        )
+        u = PenaltyHelpers.controls(
+            const,
+            0,
+            lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
+        )
+        a = PenaltyHelpers.states(
+            const,
+            0,
+            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+        )
+        constraint_value = const.function[i_node](
+            duration,
+            dt,
+            x,
+            u,
+            p_sol,
+            a,
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Constraint on M --------------------------------------------------------------------
     const = socp.nlp[0].g[8]
     for i_node in range(socp.n_shooting):
-        x = PenaltyHelpers.states(const,
-                                  i_node,
-                                  lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
-                                  )
-        u = PenaltyHelpers.controls(const,
-                                    i_node,
-                                    lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
-                                    )
-        a = PenaltyHelpers.states(const,
-                                i_node,
-                                lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
-                                )
-        constraint_value = (
-            const
-            .function[i_node](
-                duration,
-                dt,
-                x,
-                u,
-                p_sol,
-                a,
-            )
+        x = PenaltyHelpers.states(
+            const,
+            i_node,
+            lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
+        )
+        u = PenaltyHelpers.controls(
+            const,
+            i_node,
+            lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
+        )
+        a = PenaltyHelpers.states(
+            const,
+            i_node,
+            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+        )
+        constraint_value = const.function[i_node](
+            duration,
+            dt,
+            x,
+            u,
+            p_sol,
+            a,
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Covariance continuity --------------------------------------------------------------------
     const = socp.nlp[0].g[9]
     for i_node in range(socp.n_shooting):
-        x = PenaltyHelpers.states(const,
-                                  i_node,
-                                  lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
-                                  )
-        u = PenaltyHelpers.controls(const,
-                                    i_node,
-                                    lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
-                                    )
-        a = PenaltyHelpers.states(const,
-                                i_node,
-                                lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
-                                )
+        x = PenaltyHelpers.states(
+            const,
+            i_node,
+            lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
+        )
+        u = PenaltyHelpers.controls(
+            const,
+            i_node,
+            lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
+        )
+        a = PenaltyHelpers.states(
+            const,
+            i_node,
+            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+        )
 
-        constraint_value = (
-            const
-            .function[0](
-                duration,
-                dt,
-                x,
-                u,
-                p_sol,
-                a,
-            )
+        constraint_value = const.function[0](
+            duration,
+            dt,
+            x,
+            u,
+            p_sol,
+            a,
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # States continuity --------------------------------------------------------------------
     const = socp.nlp[0].g_internal[0]
     for i_node in range(socp.n_shooting):
-        x = PenaltyHelpers.states(socp.nlp[0].g[9],
-                                  i_node,
-                                  lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
-                                  )
-        u = PenaltyHelpers.controls(socp.nlp[0].g[9],
-                                    i_node,
-                                    lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
-                                    )
-        a = PenaltyHelpers.states(socp.nlp[0].g[9],
-                                    i_node,
-                                    lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
-                                    )
-        constraint_value = (
-            const
-            .function[0](
-                duration,
-                dt,
-                x,
-                u,
-                p_sol,
-                a,
-            )
+        x = PenaltyHelpers.states(
+            socp.nlp[0].g[9],
+            i_node,
+            lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
+        )
+        u = PenaltyHelpers.controls(
+            socp.nlp[0].g[9],
+            i_node,
+            lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
+        )
+        a = PenaltyHelpers.states(
+            socp.nlp[0].g[9],
+            i_node,
+            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+        )
+        constraint_value = const.function[0](
+            duration,
+            dt,
+            x,
+            u,
+            p_sol,
+            a,
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # First collocation state is equal to the states at node
     const = socp.nlp[0].g_internal[1]
     for i_node in range(socp.n_shooting):
-        x = PenaltyHelpers.states(const,
-                                  i_node,
-                                  lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
-                                  )
-        u = PenaltyHelpers.controls(const,
-                                    i_node,
-                                    lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
-                                    )
-        a = PenaltyHelpers.states(const,
-                                    i_node,
-                                    lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
-                                    )
-        constraint_value = (
-            const
-            .function[i_node](
-                duration,
-                dt,
-                x,
-                u,
-                p_sol,
-                a,
-            )
+        x = PenaltyHelpers.states(
+            const,
+            i_node,
+            lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
+        )
+        u = PenaltyHelpers.controls(
+            const,
+            i_node,
+            lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
+        )
+        a = PenaltyHelpers.states(
+            const,
+            i_node,
+            lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
+        )
+        constraint_value = const.function[i_node](
+            duration,
+            dt,
+            x,
+            u,
+            p_sol,
+            a,
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 

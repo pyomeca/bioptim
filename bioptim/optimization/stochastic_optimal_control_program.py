@@ -484,7 +484,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             penalty = Constraint(ConstraintFcn.STOCHASTIC_HELPER_MATRIX_COLLOCATION)
             fake_algebraic_states = np.zeros((variable_sizes["n_stochastic"], nlp.ns + 1))
             fake_algebraic_states[: variable_sizes["n_k"], :] = k_init
-            fake_algebraic_states[variable_sizes["n_k"]: variable_sizes["n_k"] + variable_sizes["n_ref"], :] = ref_init
+            fake_algebraic_states[variable_sizes["n_k"] : variable_sizes["n_k"] + variable_sizes["n_ref"], :] = ref_init
             penalty_controller = PenaltyController(
                 ocp=self,
                 nlp=nlp,
