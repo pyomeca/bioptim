@@ -137,7 +137,7 @@ class Parameter(PenaltyOption):
 
         # Do not use nlp.add_casadi_func because all functions must be registered
         time_cx = ocp.cx(0, 0)
-        dt = ocp.cx(0, 0)
+        dt = ocp.dt_parameter.cx
         state_cx = ocp.cx(0, 0)
         control_cx = ocp.cx(0, 0)
         param_cx = ocp.parameters.cx

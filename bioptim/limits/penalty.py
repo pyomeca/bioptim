@@ -1218,9 +1218,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return Function("minimize_parameter", [controller.parameters.cx], [controller.parameters[key].cx])(
-                controller.parameters.cx
-            )
+            return controller.parameters.cx
 
     @staticmethod
     def add(ocp, nlp):

@@ -5,9 +5,6 @@ This an example of how to use bioptim to solve a simple pendulum problem
 
 import numpy as np
 
-# import the custom model
-from bioptim.examples.custom_model.custom_package import MyModel
-
 from bioptim import (
     OptimalControlProgram,
     BoundsList,
@@ -21,6 +18,9 @@ from bioptim import (
     DynamicsList,
     PhaseDynamics,
 )
+
+# import the custom model
+from bioptim.examples.custom_model.custom_package import MyModel
 
 
 def prepare_ocp(
@@ -71,7 +71,10 @@ def prepare_ocp(
     # Dynamics
     dynamics = DynamicsList()
     dynamics.add(
-        configure_dynamics, dynamic_function=dynamics, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics
+        configure_dynamics,
+        dynamic_function=dynamics,
+        expand_dynamics=expand_dynamics,
+        phase_dynamics=phase_dynamics,
     )
 
     # Path constraint
@@ -120,7 +123,9 @@ def main():
     """
 
     # import the custom dynamics and configuration
-    from bioptim.examples.custom_model.custom_package.custom_dynamics import custom_configure_my_dynamics
+    from bioptim.examples.custom_model.custom_package.custom_dynamics import (
+        custom_configure_my_dynamics,
+    )
 
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(
@@ -142,7 +147,7 @@ def main():
     sol = ocp.solve(solver=solver)
 
     # --- Show results --- #
-    sol.graphs(show_bounds=True)
+    # sol.graphs(show_bounds=True)
     sol.print_cost()
 
     # --- Animation --- #
