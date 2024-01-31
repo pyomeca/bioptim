@@ -1170,7 +1170,7 @@ class Solution:
                 if print_only_weighted:
                     print(f"{penalty.type}: {val_weighted}")
                 else:
-                    print(f"{penalty.type}: {val_weighted} (non weighted {val})")
+                    print(f"{penalty.type}: {val_weighted} (non weighted  {val})")
 
             return running_total
 
