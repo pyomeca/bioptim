@@ -1010,7 +1010,7 @@ class OptimalControlProgram:
                     raise RuntimeError("x_bounds should be built from a BoundsList")
                 origin_phase = 0 if len(x_bounds) == 1 else i
                 for key in x_bounds[origin_phase].keys():
-                    if key not in self.nlp[i].states:
+                    if key not in self.nlp[i].states.keys() + ["None"]:
                         raise ValueError(
                             f"{key} is not a state variable, please check for typos in the declaration of x_bounds"
                         )
@@ -1020,7 +1020,7 @@ class OptimalControlProgram:
                 if not isinstance(u_bounds, BoundsList):
                     raise RuntimeError("u_bounds should be built from a BoundsList")
                 for key in u_bounds.keys():
-                    if key not in self.nlp[i].controls:
+                    if key not in self.nlp[i].controls.keys() + ["None"]:
                         raise ValueError(
                             f"{key} is not a control variable, please check for typos in the declaration of u_bounds"
                         )
@@ -1031,7 +1031,7 @@ class OptimalControlProgram:
                 if not isinstance(a_bounds, BoundsList):
                     raise RuntimeError("a_bounds should be built from a BoundsList")
                 for key in a_bounds.keys():
-                    if key not in self.nlp[i].algebraic_states:
+                    if key not in self.nlp[i].algebraic_states.keys() + ["None"]:
                         raise ValueError(
                             f"{key} is not an algebraic variable, please check for typos in the declaration of a_bounds"
                         )
@@ -1042,7 +1042,7 @@ class OptimalControlProgram:
             if not isinstance(parameter_bounds, BoundsList):
                 raise RuntimeError("parameter_bounds should be built from a BoundsList")
             for key in parameter_bounds.keys():
-                if key not in self.parameters:
+                if key not in self.parameters.keys() + ["None"]:
                     raise ValueError(
                         f"{key} is not a parameter variable, please check for typos in the declaration of parameter_bounds"
                     )
@@ -1084,7 +1084,7 @@ class OptimalControlProgram:
                     raise RuntimeError("x_init should be built from a InitialGuessList")
                 origin_phase = 0 if len(x_init) == 1 else i
                 for key in x_init[origin_phase].keys():
-                    if key not in self.nlp[i].states:
+                    if key not in self.nlp[i].states.keys() + ["None"]:
                         raise ValueError(
                             f"{key} is not a state variable, please check for typos in the declaration of x_init"
                         )
@@ -1100,7 +1100,7 @@ class OptimalControlProgram:
                     raise RuntimeError("u_init should be built from a InitialGuessList")
                 origin_phase = 0 if len(u_init) == 1 else i
                 for key in u_init.keys():
-                    if key not in self.nlp[i].controls:
+                    if key not in self.nlp[i].controls.keys() + ["None"]:
                         raise ValueError(
                             f"{key} is not a control variable, please check for typos in the declaration of u_init"
                         )
@@ -1116,7 +1116,7 @@ class OptimalControlProgram:
                     raise RuntimeError("a_init should be built from a InitialGuessList")
                 origin_phase = 0 if len(a_init) == 1 else i
                 for key in a_init[origin_phase].keys():
-                    if key not in self.nlp[i].algebraic_states:
+                    if key not in self.nlp[i].algebraic_states.keys() + ["None"]:
                         raise ValueError(
                             f"{key} is not an algebraic variable, please check for typos in the declaration of a_init"
                         )
@@ -1126,7 +1126,7 @@ class OptimalControlProgram:
             if not isinstance(parameter_init, InitialGuessList):
                 raise RuntimeError("parameter_init should be built from a InitialGuessList")
             for key in parameter_init.keys():
-                if key not in self.parameters:
+                if key not in self.parameters.keys() + ["None"]:
                     raise ValueError(
                         f"{key} is not a parameter variable, please check for typos in the declaration of parameter_init"
                     )
