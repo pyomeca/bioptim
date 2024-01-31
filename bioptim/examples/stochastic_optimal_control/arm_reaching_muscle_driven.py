@@ -749,9 +749,23 @@ def main():
                 )
                 u = excitations_sol[:, i_node]
                 s = algebraic_states_sol[:, i_node]
-                k1 = dyn_fun(cas.vertcat(dt_actual*i_node, dt_actual), x_prev, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node])
+                k1 = dyn_fun(
+                    cas.vertcat(dt_actual * i_node, dt_actual),
+                    x_prev,
+                    u,
+                    [],
+                    s,
+                    motor_noise[:, i_node],
+                    sensory_noise[:, i_node],
+                )
                 x_next = x_prev + dt * dyn_fun(
-                    cas.vertcat(dt_actual*i_node, dt_actual), x_prev + dt / 2 * k1, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node]
+                    cas.vertcat(dt_actual * i_node, dt_actual),
+                    x_prev + dt / 2 * k1,
+                    u,
+                    [],
+                    s,
+                    motor_noise[:, i_node],
+                    sensory_noise[:, i_node],
                 )
                 q_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[:2], (2,))
                 qdot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[2:4], (2,))

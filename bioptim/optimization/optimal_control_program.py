@@ -1011,7 +1011,9 @@ class OptimalControlProgram:
                 origin_phase = 0 if len(x_bounds) == 1 else i
                 for key in x_bounds[origin_phase].keys():
                     if key not in self.nlp[i].states:
-                        raise ValueError(f"{key} is not a state variable, please check for typos in the declaration of x_bounds")
+                        raise ValueError(
+                            f"{key} is not a state variable, please check for typos in the declaration of x_bounds"
+                        )
                     self.nlp[i].x_bounds.add(key, x_bounds[origin_phase][key], phase=0)
 
             if u_bounds is not None:
@@ -1019,7 +1021,9 @@ class OptimalControlProgram:
                     raise RuntimeError("u_bounds should be built from a BoundsList")
                 for key in u_bounds.keys():
                     if key not in self.nlp[i].controls:
-                        raise ValueError(f"{key} is not a control variable, please check for typos in the declaration of u_bounds")
+                        raise ValueError(
+                            f"{key} is not a control variable, please check for typos in the declaration of u_bounds"
+                        )
                     origin_phase = 0 if len(u_bounds) == 1 else i
                     self.nlp[i].u_bounds.add(key, u_bounds[origin_phase][key], phase=0)
 
@@ -1028,7 +1032,9 @@ class OptimalControlProgram:
                     raise RuntimeError("a_bounds should be built from a BoundsList")
                 for key in a_bounds.keys():
                     if key not in self.nlp[i].algebraic_states:
-                        raise ValueError(f"{key} is not an algebraic variable, please check for typos in the declaration of a_bounds")
+                        raise ValueError(
+                            f"{key} is not an algebraic variable, please check for typos in the declaration of a_bounds"
+                        )
                     origin_phase = 0 if len(a_bounds) == 1 else i
                     self.nlp[i].a_bounds.add(key, a_bounds[origin_phase][key], phase=0)
 
@@ -1037,7 +1043,9 @@ class OptimalControlProgram:
                 raise RuntimeError("parameter_bounds should be built from a BoundsList")
             for key in parameter_bounds.keys():
                 if key not in self.parameters:
-                    raise ValueError(f"{key} is not a parameter variable, please check for typos in the declaration of parameter_bounds")
+                    raise ValueError(
+                        f"{key} is not a parameter variable, please check for typos in the declaration of parameter_bounds"
+                    )
                 self.parameter_bounds.add(key, parameter_bounds[key], phase=0)
 
         for nlp in self.nlp:
@@ -1077,7 +1085,9 @@ class OptimalControlProgram:
                 origin_phase = 0 if len(x_init) == 1 else i
                 for key in x_init[origin_phase].keys():
                     if key not in self.nlp[i].states:
-                        raise ValueError(f"{key} is not a state variable, please check for typos in the declaration of x_init")
+                        raise ValueError(
+                            f"{key} is not a state variable, please check for typos in the declaration of x_init"
+                        )
                     if (
                         not self.nlp[i].ode_solver.is_direct_collocation
                         and x_init[origin_phase].type == InterpolationType.ALL_POINTS
@@ -1091,7 +1101,9 @@ class OptimalControlProgram:
                 origin_phase = 0 if len(u_init) == 1 else i
                 for key in u_init.keys():
                     if key not in self.nlp[i].controls:
-                        raise ValueError(f"{key} is not a control variable, please check for typos in the declaration of u_init")
+                        raise ValueError(
+                            f"{key} is not a control variable, please check for typos in the declaration of u_init"
+                        )
                     if (
                         not self.nlp[i].ode_solver.is_direct_collocation
                         and x_init[origin_phase].type == InterpolationType.ALL_POINTS
@@ -1105,7 +1117,9 @@ class OptimalControlProgram:
                 origin_phase = 0 if len(a_init) == 1 else i
                 for key in a_init[origin_phase].keys():
                     if key not in self.nlp[i].algebraic_states:
-                        raise ValueError(f"{key} is not an algebraic variable, please check for typos in the declaration of a_init")
+                        raise ValueError(
+                            f"{key} is not an algebraic variable, please check for typos in the declaration of a_init"
+                        )
                     self.nlp[i].a_init.add(key, a_init[origin_phase][key], phase=0)
 
         if parameter_init is not None:
@@ -1113,7 +1127,9 @@ class OptimalControlProgram:
                 raise RuntimeError("parameter_init should be built from a InitialGuessList")
             for key in parameter_init.keys():
                 if key not in self.parameters:
-                    raise ValueError(f"{key} is not a parameter variable, please check for typos in the declaration of parameter_init")
+                    raise ValueError(
+                        f"{key} is not a parameter variable, please check for typos in the declaration of parameter_init"
+                    )
                 self.parameter_init.add(key, parameter_init[key], phase=0)
 
     def add_plot(self, fig_name: str, update_function: Callable, phase: int = -1, **parameters: Any):
