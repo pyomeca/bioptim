@@ -127,34 +127,16 @@ def prepare_ocp(
     x_bounds[1]["q_roots"][0, -1] = 3 * np.pi
     x_bounds[1]["q_joints"][0, -1] = 0
 
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add(key="q_roots", initial_guess=[0] * n_root, phase=0)
-    x_init.add(key="q_jointss", initial_guess=[0] * n_tau, phase=0)
-    x_init.add(key="qdot_roots", initial_guess=[0] * n_root, phase=0)
-    x_init.add(key="qdot_jointss", initial_guess=[0] * n_tau, phase=0)
-    x_init.add(key="q_roots", initial_guess=[0] * n_root, phase=1)
-    x_init.add(key="q_jointss", initial_guess=[0] * n_tau, phase=1)
-    x_init.add(key="qdot_roots", initial_guess=[0] * n_root, phase=1)
-    x_init.add(key="qdot_jointss", initial_guess=[0] * n_tau, phase=1)
-
     # Define control path constraint
     u_bounds = BoundsList()
     u_bounds.add(key="tau_joints", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau, phase=0)
     u_bounds.add(key="tau_joints", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau, phase=1)
-
-    # Control initial guess
-    u_init = InitialGuessList()
-    u_init.add(key="tau_joints", initial_guess=[tau_init] * n_tau, phase=0)
-    u_init.add(key="tau_joints", initial_guess=[tau_init] * n_tau, phase=1)
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,

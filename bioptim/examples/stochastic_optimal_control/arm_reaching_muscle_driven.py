@@ -702,13 +702,15 @@ def main():
         hand_pos_fcn = cas.Function("hand_pos", [q_sym], [model.end_effector_position(q_sym)])
         hand_vel_fcn = cas.Function("hand_vel", [q_sym, qdot_sym], [model.end_effector_velocity(q_sym, qdot_sym)])
 
+        time = socp.nlp[0].time.cx
+        dt = socp.nlp[0].dt.cx
         states = socp.nlp[0].states.cx
         controls = socp.nlp[0].controls.cx
         parameters = socp.nlp[0].parameters.cx
         algebraic_states = socp.nlp[0].algebraic_states.cx
         nlp = socp.nlp[0]
         out = stochastic_forward_dynamics(
-            None,
+            cas.vertcat(time, time + dt),
             states,
             controls,
             parameters,
@@ -717,7 +719,7 @@ def main():
             force_field_magnitude=force_field_magnitude,
             with_noise=True,
         )
-        dyn_fun = cas.Function("dyn_fun", [states, controls, parameters, algebraic_states], [out.dxdt])
+        dyn_fun = cas.Function("dyn_fun", [dt, time, states, controls, parameters, algebraic_states], [out.dxdt])
 
         fig, axs = plt.subplots(3, 2)
         n_simulations = 30
@@ -726,6 +728,7 @@ def main():
         mus_activation_simulated = np.zeros((n_simulations, 6, n_shooting + 1))
         hand_pos_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
         hand_vel_simulated = np.zeros((n_simulations, 2, n_shooting + 1))
+        dt_actual = final_time / n_shooting
         for i_simulation in range(n_simulations):
             motor_noise = np.random.normal(0, motor_noise_std, (2, n_shooting + 1))
             wPq = np.random.normal(0, wPq_std, (2, n_shooting + 1))
@@ -746,9 +749,9 @@ def main():
                 )
                 u = excitations_sol[:, i_node]
                 s = algebraic_states_sol[:, i_node]
-                k1 = dyn_fun(x_prev, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node])
+                k1 = dyn_fun(cas.vertcat(dt_actual*i_node, dt_actual), x_prev, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node])
                 x_next = x_prev + dt * dyn_fun(
-                    x_prev + dt / 2 * k1, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node]
+                    cas.vertcat(dt_actual*i_node, dt_actual), x_prev + dt / 2 * k1, u, [], s, motor_noise[:, i_node], sensory_noise[:, i_node]
                 )
                 q_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[:2], (2,))
                 qdot_simulated[i_simulation, :, i_node + 1] = np.reshape(x_next[2:4], (2,))

@@ -518,11 +518,14 @@ class NonLinearProgram:
             return ValueError(f"node_index out of range [0:{self.ns}]")
         return self.tf / self.ns * node_idx
 
-    def get_var_from_states_or_controls(self, key: str, states: MX.sym, controls: MX.sym) -> MX:
+    def get_var_from_states_or_controls(self, key: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None) -> MX:
         """
-        This function returns the requested variable from the states or controls.
-        If the variable is present in the states and controls, it returns the states in priority.
-        If the variable is splited in its roots and joints components, it returns the concatenation of for the states,
+        This function returns the requested variable from the states, controls, or algebraic_states.
+        If the variable is present in more than one type of variables, it returns the following priority:
+        1) states
+        2) controls
+        3) algebraic_states
+        If the variable is split in its roots and joints components, it returns the concatenation of for the states,
         and only the joints for the controls.
         Please note that this function is not meant to be used by the user directly, but should be an internal function.
 
@@ -534,6 +537,8 @@ class NonLinearProgram:
             The states
         controls: MX.sym
             The controls
+        algebraic_states: MX.sym
+            The algebraic_states
         """
         if key in self.states:
             out_nlp, out_var = (self.states[key], states)
@@ -550,6 +555,9 @@ class NonLinearProgram:
         elif f"{key}_joints" in self.controls:
             out_joints_nlp, out_joints_var = (self.controls[f"{key}_joints"], controls)
             out = DynamicsFunctions.get(out_joints_nlp, out_joints_var)
+        elif key in self.algebraic_states:
+            out_nlp, out_var = (self.algebraic_states[key], algebraic_states)
+            out = DynamicsFunctions.get(out_nlp, out_var)
         else:
             raise RuntimeError(f"{key} not found in states or controls")
         return out

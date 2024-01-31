@@ -10,6 +10,7 @@ from .penalty_controller import PenaltyController
 from ..misc.enums import Node, Axis, ControlType, QuadratureRule
 from ..misc.mapping import BiMapping
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
+from ..models.biorbd.biorbd_model import BiorbdModel
 
 
 class PenaltyFunctionAbstract:
@@ -282,6 +283,8 @@ class PenaltyFunctionAbstract:
             reference_jcs: int | str
                 The index or name of the segment to use as reference. Default [None] is the global coordinate system
             """
+
+            controller.model: BiorbdModel
 
             # Adjust the cols and rows
             PenaltyFunctionAbstract.set_idx_columns(penalty, controller, marker_index, "marker")
