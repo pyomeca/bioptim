@@ -1,5 +1,5 @@
 import pytest
-from casadi import DM, MX, vertcat, horzcat
+from casadi import vertcat, Function
 import numpy as np
 import pytest
 from bioptim import (
@@ -1648,10 +1648,10 @@ def test_penalty_time_constraint(value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_constraint_total_time(value, phase_dynamics):
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
-    t = [0]
+    t = [0.1]
     x = [DM.ones((8, 1)) * value]
     u = [0]
-    p = [0.1]
+    p = [0]
     s = []
 
     penalty_type = MultinodeConstraintFcn.TRACK_TOTAL_TIME
@@ -1664,14 +1664,18 @@ def test_penalty_constraint_total_time(value, phase_dynamics):
         nodes=(Node.END, Node.END),
     )
 
-    penalty_type(
+    controller = [
+        PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0),
+        PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0),
+    ]
+    val = penalty_type(
         penalty[0],
-        [
-            PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0),
-            PenaltyController(ocp, ocp.nlp[0], [], [], [], [], [], p, s, [], 0),
-        ],
+        controller,
     )
-    res = get_penalty_value(ocp, penalty[0], t, x, u, p, s)
+
+    time = ocp.nlp[0].tf
+    casadi_func = Function("penalty", [time], [val])
+    res = casadi_func(t)
 
     np.testing.assert_almost_equal(res, np.array(0.2))
 
