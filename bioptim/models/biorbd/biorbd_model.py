@@ -126,9 +126,16 @@ class BiorbdModel:
             raise ValueError(f"Length of tau is too big. Expected size: {self.nb_tau}, but got: {tau.shape[0]}")
 
     def check_muscle_size(self, muscle):
-        if muscle.shape[0] > self.nb_muscles:
+        if isinstance(muscle, list):
+            muscle_size = len(muscle)
+        elif hasattr(muscle, 'shape'):
+            muscle_size = muscle.shape[0]
+        else:
+            raise TypeError("Unsupported type for muscle.")
+
+        if muscle_size > self.nb_muscles:
             raise ValueError(
-                f"Length of muscle is too big. Expected size: {self.nb_muscles}, but got: {muscle.shape[0]}"
+                f"Length of muscle is too big. Expected size: {self.nb_muscles}, but got: {muscle_size}"
             )
 
     def center_of_mass(self, q) -> MX:
