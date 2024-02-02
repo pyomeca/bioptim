@@ -2,6 +2,7 @@
 This script doesn't use biorbd
 This an example of how to use bioptim to solve a simple pendulum problem
 """
+
 import numpy as np
 
 # import the custom model

@@ -255,9 +255,7 @@ def prepare_ocp_second_pass(
     # Initial guess
     x_init = InitialGuessList()
     x_init.add("q", solution.states["q"], interpolation=InterpolationType.EACH_FRAME)
-    x_init.add(
-        "qdot", solution.states["qdot"], interpolation=InterpolationType.EACH_FRAME
-    )
+    x_init.add("qdot", solution.states["qdot"], interpolation=InterpolationType.EACH_FRAME)
 
     # Define control path constraint
     n_tau = bio_model.nb_tau

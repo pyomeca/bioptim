@@ -149,19 +149,25 @@ class RK(OdeSolverBase):
         ode = {
             "x_unscaled": nlp.states.cx_start,
             "x_scaled": nlp.states.scaled.cx_start,
-            "p_unscaled": nlp.controls.cx_start
-            if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
-            else horzcat(nlp.controls.cx_start, nlp.controls.cx_end),
-            "p_scaled": nlp.controls.scaled.cx_start
-            if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
-            else horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end),
+            "p_unscaled": (
+                nlp.controls.cx_start
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
+                else horzcat(nlp.controls.cx_start, nlp.controls.cx_end)
+            ),
+            "p_scaled": (
+                nlp.controls.scaled.cx_start
+                if nlp.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.NONE)
+                else horzcat(nlp.controls.scaled.cx_start, nlp.controls.scaled.cx_end)
+            ),
             "s_unscaled": nlp.stochastic_variables.cx_start,
             "s_scaled": nlp.stochastic_variables.scaled.cx_start,
             "ode": nlp.dynamics_func[dynamics_index],
             # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
-            "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
-            if len(nlp.implicit_dynamics_func) > 0
-            else nlp.implicit_dynamics_func,
+            "implicit_ode": (
+                nlp.implicit_dynamics_func[dynamics_index]
+                if len(nlp.implicit_dynamics_func) > 0
+                else nlp.implicit_dynamics_func
+            ),
         }
 
         if ode["ode"].size2_out("xdot") != 1:
@@ -290,9 +296,11 @@ class OdeSolver:
                 "s_scaled": horzcat(nlp.stochastic_variables.scaled.cx_start, nlp.stochastic_variables.scaled.cx_end),
                 "ode": nlp.dynamics_func[dynamics_index],
                 # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
-                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
-                if len(nlp.implicit_dynamics_func) > 0
-                else nlp.implicit_dynamics_func,
+                "implicit_ode": (
+                    nlp.implicit_dynamics_func[dynamics_index]
+                    if len(nlp.implicit_dynamics_func) > 0
+                    else nlp.implicit_dynamics_func
+                ),
             }
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)
@@ -404,9 +412,11 @@ class OdeSolver:
                 "s_scaled": nlp.stochastic_variables.scaled.cx_start,
                 "ode": nlp.dynamics_func[dynamics_index],
                 # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
-                "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
-                if len(nlp.implicit_dynamics_func) > 0
-                else nlp.implicit_dynamics_func,
+                "implicit_ode": (
+                    nlp.implicit_dynamics_func[dynamics_index]
+                    if len(nlp.implicit_dynamics_func) > 0
+                    else nlp.implicit_dynamics_func
+                ),
             }
             t0 = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
             tf = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index + 1)

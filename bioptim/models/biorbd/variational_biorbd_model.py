@@ -1,6 +1,7 @@
 """
 Biorbd model for holonomic constraints and variational integrator.
 """
+
 import biorbd_casadi as biorbd
 from casadi import SX, MX, vertcat, jacobian, transpose
 

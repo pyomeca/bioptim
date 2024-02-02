@@ -1,6 +1,7 @@
 """
 Optimal control program with the variational integrator for the dynamics.
 """
+
 import numpy as np
 
 from casadi import MX, Function, vertcat

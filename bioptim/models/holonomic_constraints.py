@@ -1,6 +1,7 @@
 """
 This class contains different holonomic constraint function.
 """
+
 from typing import Any, Callable
 
 from casadi import MX, Function, jacobian, vertcat
