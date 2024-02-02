@@ -106,7 +106,6 @@ scenarios = {
         "check_qdot(T)": 1,
     },
 }
-# MINIMIZE_COM_VELOCITY
 
 
 def custom_dynamic(
