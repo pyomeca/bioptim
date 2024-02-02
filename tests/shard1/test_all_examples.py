@@ -422,7 +422,7 @@ def test__optimal_time_ocp__time_constraint():
         expand_dynamics=False,
     )
 
-
+## torque_driven_ocp_folder
 def test__symmetrical_torque_driven_ocp__symmetry_by_constraint():
     from bioptim.examples.symmetrical_torque_driven_ocp import (
         symmetry_by_constraint as ocp_module,
@@ -522,10 +522,12 @@ def test__torque_driven_ocp__spring_load():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/mass_point.bioMod",
-        expand_dynamics=False,
-    )
+    for scenario in range(8):
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/mass_point.bioMod",
+            expand_dynamics=False,
+            scenario=scenario,
+        )
 
 
 def test__track__optimal_estimation():
