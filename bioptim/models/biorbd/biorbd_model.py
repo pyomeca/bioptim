@@ -227,7 +227,9 @@ class BiorbdModel:
         self.check_qdot_size(qdot)
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
-        return self.model.torque(tau_activations, q_biorbd, qdot_biorbd).to_mx()
+        self.model.closeActuator()
+        tau_activation = self.model.torque(tau_activations, q_biorbd, qdot_biorbd)
+        return tau_activation.to_mx()
 
     def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
         self.check_q_size(q)
@@ -364,6 +366,10 @@ class BiorbdModel:
         return J @ qdot
 
     def muscle_joint_torque(self, activations, q, qdot) -> MX:
+        self.check_q_size(q)
+        self.check_qdot_size(qdot)
+        self.check_muscle_size(activations)
+
         muscles_states = self.model.stateSet()
         for k in range(self.model.nbMuscles()):
             muscles_states[k].setActivation(activations[k])

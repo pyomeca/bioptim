@@ -1,9 +1,9 @@
 import pytest
 from bioptim import BiorbdModel
 from casadi import MX
+from tests.utils import TestUtils
 
-BIORBD_MODEL_PATH = "/home/lim/Documents/Bioptim/bioptim/bioptim/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
-
+bioptim_folder = TestUtils.bioptim_folder()
 
 @pytest.fixture
 def model():
@@ -51,7 +51,8 @@ def generate_muscle_vectors(model):
 
 
 def test_center_of_mass_valid_and_too_large_q_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, q_too_large = generate_q_vectors(model)
 
     # q valid
@@ -62,7 +63,8 @@ def test_center_of_mass_valid_and_too_large_q_input(model):
 
 
 def test_center_of_mass_velocity_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -76,7 +78,8 @@ def test_center_of_mass_velocity_valid_and_too_large_q_or_qdot_input(model):
 
 
 def test_center_of_mass_acceleration_valid_and_too_large_q_or_qdot_or_qddot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, qddot_valid, q_too_large, qdot_too_large, qddot_too_large = generate_q_qdot_qddot_vectors(
         model
     )
@@ -95,7 +98,8 @@ def test_center_of_mass_acceleration_valid_and_too_large_q_or_qdot_or_qddot_inpu
 
 
 def test_body_rotation_rate_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -109,7 +113,8 @@ def test_body_rotation_rate_valid_and_too_large_q_or_qdot_input(model):
 
 
 def test_mass_matrix_valid_and_too_large_q_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, q_too_large = generate_q_vectors(model)
 
     # q valid
@@ -120,7 +125,8 @@ def test_mass_matrix_valid_and_too_large_q_input(model):
 
 
 def test_non_linear_effects_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -134,7 +140,8 @@ def test_non_linear_effects_valid_and_too_large_q_or_qdot_input(model):
 
 
 def test_angular_momentum_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -148,7 +155,8 @@ def test_angular_momentum_valid_and_too_large_q_or_qdot_input(model):
 
 
 def test_reshape_qdot_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -162,7 +170,8 @@ def test_reshape_qdot_valid_and_too_large_q_or_qdot_input(model):
 
 
 def test_segment_angular_velocity_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
     idx = 1
     # q and qdot valid
@@ -174,27 +183,9 @@ def test_segment_angular_velocity_valid_and_too_large_q_or_qdot_input(model):
     with pytest.raises(ValueError, match="Length of qdot is too big"):
         model.segment_angular_velocity(q_valid, qdot_too_large, idx)
 
-
-# def test_torque_valid_and_too_large_q_or_qdot_or_tau_input(model):
-#     model = BiorbdModel(BIORBD_MODEL_PATH)
-#     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
-#     tau_activations_valid, tau_activations_too_large = generate_tau_activations_vectors(model)
-#
-# # q, qdot and tau_activation valid
-#     model.torque(tau_activations_valid, q_valid, qdot_valid)
-# # qdot and tau_activation valid but q not valid
-#     with pytest.raises(ValueError, match="Length of q is too big"):
-#         model.torque(tau_activations_valid, q_too_large, qdot_valid)
-# # q and tau_activations_valid valid but qdot not valid
-#     with pytest.raises(ValueError, match="Length of qdot is too big"):
-#         model.torque(tau_activations_valid, q_valid, qdot_too_large)
-# # q and qdot valid but tau_activations not valid
-#     with pytest.raises(ValueError, match="Length of tau is too big"):
-#         model.torque(tau_activations_too_large, q_valid, qdot_valid)
-
-
 def test_forward_dynamics_free_floating_base_valid_and_too_large_q_or_qdot_or_qddot_joints_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     (
         q_valid,
         qdot_valid,
@@ -218,7 +209,8 @@ def test_forward_dynamics_free_floating_base_valid_and_too_large_q_or_qdot_or_qd
 
 
 def test_forward_dynamics_valid_and_too_large_q_or_qdot_or_tau_activations_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
     tau_valid, tau_too_large = generate_tau_activations_vectors(model)
 
@@ -236,7 +228,8 @@ def test_forward_dynamics_valid_and_too_large_q_or_qdot_or_tau_activations_input
 
 
 def test_constrained_forward_dynamics_valid_and_too_large_q_or_qdot_or_tau_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
     tau_valid, tau_too_large = generate_tau_activations_vectors(model)
 
@@ -254,7 +247,8 @@ def test_constrained_forward_dynamics_valid_and_too_large_q_or_qdot_or_tau_input
 
 
 def test_inverse_dynamics_valid_and_too_large_q_or_qdot_or_qddot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, qddot_valid, q_too_large, qdot_too_large, qddot_too_large = generate_q_qdot_qddot_vectors(
         model
     )
@@ -273,7 +267,8 @@ def test_inverse_dynamics_valid_and_too_large_q_or_qdot_or_qddot_input(model):
 
 
 def test_contact_forces_from_constrained_forward_dynamics_valid_and_too_large_q_or_qdot_or_tau_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
     tau_valid, tau_too_large = generate_tau_activations_vectors(model)
 
@@ -291,7 +286,8 @@ def test_contact_forces_from_constrained_forward_dynamics_valid_and_too_large_q_
 
 
 def test_qdot_from_impact_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -304,19 +300,21 @@ def test_qdot_from_impact_valid_and_too_large_q_or_qdot_input(model):
         model.qdot_from_impact(q_valid, qdot_too_large)
 
 
-# def test_muscle_activation_dot_valid_and_too_large_q_input(model):
-#     model = BiorbdModel(BIORBD_MODEL_PATH)
-#     muscle_valid, muscle_too_large = generate_q_vectors(model)
-#
-# # muscle valid
-#     model.muscle_activation_dot(muscle_valid)
-# # muscle not valid
-#     with pytest.raises(ValueError, match="Length of muscle is too big"):
-#         model.muscle_activation_dot(muscle_too_large)
+def test_muscle_activation_dot_valid_and_too_large_q_input(model):
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
+    muscle_valid, muscle_too_large = generate_muscle_vectors(model)
+
+    # muscle valid
+    model.muscle_activation_dot(muscle_valid)
+    # muscle not valid
+    with pytest.raises(ValueError, match="Length of muscle is too big"):
+        model.muscle_activation_dot(muscle_too_large)
 
 
 def test_muscle_length_jacobian_valid_and_too_large_q_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, q_too_large = generate_q_vectors(model)
 
     # q valid
@@ -327,7 +325,8 @@ def test_muscle_length_jacobian_valid_and_too_large_q_input(model):
 
 
 def test_muscle_velocity_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -340,26 +339,28 @@ def test_muscle_velocity_valid_and_too_large_q_or_qdot_input(model):
         model.muscle_velocity(q_valid, qdot_too_large)
 
 
-# def test_muscle_joint_torque_valid_and_too_large_q_or_qdot_or_qddot_input(model):
-#     model = BiorbdModel(BIORBD_MODEL_PATH)
-#     q_valid, qdot_valid, qddot_valid,  q_too_large, qdot_too_large, qddot_too_large = generate_q_qdot_qddot_vectors(model)
-#     muscle_valid, muscle_too_large = generate_q_vectors(model)
-#
-#     # q, qdot and qddot valid
-#     model.muscle_joint_torque(muscle_valid, q_valid, qdot_valid)
-# # qdot and qddot valid but q not valid
-#     with pytest.raises(ValueError, match="Length of q is too big"):
-#         model.muscle_joint_torque(muscle_valid, q_too_large, qdot_valid)
-# # q and qddot valid but qdot not valid
-#     with pytest.raises(ValueError, match="Length of qdot is too big"):
-#         model.muscle_joint_torque(muscle_valid, q_valid, qdot_too_large)
-# # q and qdot valid but qddot not valid
-#     with pytest.raises(ValueError, match="Length of qddot is too big"):
-#         model.muscle_joint_torque(muscle_too_large, q_valid, qdot_valid)
+def test_muscle_joint_torque_valid_and_too_large_q_or_qdot_or_qddot_input(model):
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
+    q_valid, qdot_valid, qddot_valid,  q_too_large, qdot_too_large, qddot_too_large = generate_q_qdot_qddot_vectors(model)
+    muscle_valid, muscle_too_large = generate_muscle_vectors(model)
+
+    # q, qdot and qddot valid
+    model.muscle_joint_torque(muscle_valid, q_valid, qdot_valid)
+# qdot and qddot valid but q not valid
+    with pytest.raises(ValueError, match="Length of q is too big"):
+        model.muscle_joint_torque(muscle_valid, q_too_large, qdot_valid)
+# q and qddot valid but qdot not valid
+    with pytest.raises(ValueError, match="Length of qdot is too big"):
+        model.muscle_joint_torque(muscle_valid, q_valid, qdot_too_large)
+# q and qdot valid but qddot not valid
+    with pytest.raises(ValueError, match="Length of muscle is too big"):
+        model.muscle_joint_torque(muscle_too_large, q_valid, qdot_valid)
 
 
 def test_markers_valid_and_too_large_q_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, q_too_large = generate_q_vectors(model)
 
     # q valid
@@ -370,7 +371,8 @@ def test_markers_valid_and_too_large_q_input(model):
 
 
 def test_marker_valid_and_too_large_q_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, q_too_large = generate_q_vectors(model)
 
     # q valid
@@ -381,7 +383,8 @@ def test_marker_valid_and_too_large_q_input(model):
 
 
 def test_marker_velocities_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -395,7 +398,8 @@ def test_marker_velocities_valid_and_too_large_q_or_qdot_input(model):
 
 
 def test_marker_accelerations_valid_and_too_large_q_or_qdot_or_qddot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, qddot_valid, q_too_large, qdot_too_large, qddot_too_large = generate_q_qdot_qddot_vectors(
         model
     )
@@ -413,22 +417,24 @@ def test_marker_accelerations_valid_and_too_large_q_or_qdot_or_qddot_input(model
         model.marker_accelerations(q_valid, qdot_valid, qddot_too_large)
 
 
-# def test_tau_max_valid_and_too_large_q_or_qdot_input(model):
-#     model = BiorbdModel(BIORBD_MODEL_PATH)
-#     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
-#
-# # q and qdot valid
-#     model.tau_max(q_valid, qdot_valid)
-# # qdot valid but q not valid
-#     with pytest.raises(ValueError, match="Length of q is too big"):
-#         model.tau_max(q_too_large, qdot_valid)
-# # q valid but qdot not valid
-#     with pytest.raises(ValueError, match="Length of qdot is too big"):
-#         model.tau_max(q_valid, qdot_too_large)
+def test_tau_max_valid_and_too_large_q_or_qdot_input(model):
+    biorbd_model_path = bioptim_folder + "/examples/optimal_time_ocp/models/cube.bioMod"
+    model = BiorbdModel(biorbd_model_path)
+    q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
+
+# q and qdot valid
+    model.tau_max(q_valid, qdot_valid)
+# qdot valid but q not valid
+    with pytest.raises(ValueError, match="Length of q is too big"):
+        model.tau_max(q_too_large, qdot_valid)
+# q valid but qdot not valid
+    with pytest.raises(ValueError, match="Length of qdot is too big"):
+        model.tau_max(q_valid, qdot_too_large)
 
 
 def test_rigid_contact_acceleration_valid_and_too_large_q_or_qdot_or_qddot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, qddot_valid, q_too_large, qdot_too_large, qddot_too_large = generate_q_qdot_qddot_vectors(
         model
     )
@@ -447,7 +453,8 @@ def test_rigid_contact_acceleration_valid_and_too_large_q_or_qdot_or_qddot_input
 
 
 def test_markers_jacobian_valid_and_too_large_q_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, q_too_large = generate_q_vectors(model)
 
     # q valid
@@ -458,7 +465,8 @@ def test_markers_jacobian_valid_and_too_large_q_input(model):
 
 
 def test_soft_contact_forces_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -472,7 +480,8 @@ def test_soft_contact_forces_valid_and_too_large_q_or_qdot_input(model):
 
 
 def test_contact_forces_valid_and_too_large_q_or_qdot_or_tau_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
     tau_valid, tau_too_large = generate_tau_activations_vectors(model)
 
@@ -490,7 +499,8 @@ def test_contact_forces_valid_and_too_large_q_or_qdot_or_tau_input(model):
 
 
 def test_passive_joint_torque_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -504,7 +514,8 @@ def test_passive_joint_torque_valid_and_too_large_q_or_qdot_input(model):
 
 
 def test_ligament_joint_torque_valid_and_too_large_q_or_qdot_input(model):
-    model = BiorbdModel(BIORBD_MODEL_PATH)
+    biorbd_model_path = bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+    model = BiorbdModel(biorbd_model_path)
     q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
 
     # q and qdot valid
@@ -515,3 +526,22 @@ def test_ligament_joint_torque_valid_and_too_large_q_or_qdot_input(model):
     # q valid but qdot not valid
     with pytest.raises(ValueError, match="Length of qdot is too big"):
         model.ligament_joint_torque(q_valid, qdot_too_large)
+
+def test_torque_valid_and_too_large_q_or_qdot_or_tau_input(model):
+    biorbd_model_path = bioptim_folder + "/examples/optimal_time_ocp/models/cube.bioMod"
+    model = BiorbdModel(biorbd_model_path)
+    q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
+    tau_activations_valid, tau_activations_too_large = generate_tau_activations_vectors(model)
+
+    # q, qdot and tau_activation valid
+    model.torque(tau_activations_valid, q_valid, qdot_valid)
+    # qdot and tau_activation valid but q not valid
+    with pytest.raises(ValueError, match="Length of q is too big"):
+        model.torque(tau_activations_valid, q_too_large, qdot_valid)
+    # q and tau_activations_valid valid but qdot not valid
+    with pytest.raises(ValueError, match="Length of qdot is too big"):
+        model.torque(tau_activations_valid, q_valid, qdot_too_large)
+    # q and qdot valid but tau_activations not valid
+    with pytest.raises(ValueError, match="Length of tau is too big"):
+        model.torque(tau_activations_too_large, q_valid, qdot_valid)
+
