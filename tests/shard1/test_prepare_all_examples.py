@@ -203,6 +203,7 @@ def test__getting_started__example_external_forces():
         expand_dynamics=False,
     )
 
+
 # todo: Add example_implicit_dynamics.py?
 
 
@@ -430,6 +431,7 @@ def test__optimal_time_ocp__time_constraint():
         time_max=1,
         expand_dynamics=False,
     )
+
 
 ## torque_driven_ocp_folder
 def test__symmetrical_torque_driven_ocp__symmetry_by_constraint():
