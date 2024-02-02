@@ -2,6 +2,9 @@
 This script implements a custom model to work with bioptim. Bioptim has a deep connection with biorbd,
 but it is possible to use bioptim without biorbd. This is an example of how to use bioptim with a custom model.
 """
+
+from typing import Callable
+
 import numpy as np
 from casadi import sin, MX
 from typing import Callable

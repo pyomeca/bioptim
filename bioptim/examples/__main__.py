@@ -122,7 +122,7 @@ examples_ = OrderedDict(
                     ("spring load", "spring_load.py"),
                     ("Track markers 2D pendulum", "track_markers_2D_pendulum.py"),
                     ("Track markers with torque actuators", "track_markers_with_torque_actuators.py"),
-                    ("Trampo quaternions", "trampo_quaternions.py"),
+                    ("quaternions", "example_quaternions.py"),
                     ("Soft contact", "example_soft_contact.py"),
                 ]
             ),

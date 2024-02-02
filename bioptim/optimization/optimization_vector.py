@@ -263,7 +263,6 @@ class OptimizationVectorHelper:
             init = _dispatch_state_initial_guess(
                 nlp, nlp.states, nlp.x_init, nlp.x_scaling, lambda n: nlp.n_states_decision_steps(n)
             )
-
             v_init = np.concatenate((v_init, init))
 
         # For controls

@@ -1378,13 +1378,13 @@ def test__torque_driven_ocp__track_markers_with_torque_actuators():
     )
 
 
-def test__torque_driven_ocp__trampo_quaternions():
-    from bioptim.examples.torque_driven_ocp import trampo_quaternions as ocp_module
+def test__torque_driven_ocp__example_quaternions():
+    from bioptim.examples.torque_driven_ocp import example_quaternions as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/TruncAnd2Arm_Quaternion.bioMod",
+        biorbd_model_path=bioptim_folder + "/models/trunk_and_2arm_quaternion.bioMod",
         n_shooting=5,
         final_time=0.25,
         expand_dynamics=False,

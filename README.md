@@ -2098,7 +2098,7 @@ Let us take a look at the structure of the code. First, tau_min, tau_max, and ta
 to -1, 1 and 0 if the integer `actuator_type` (a parameter of the `prepare_ocp` function) equals 1. 
 In this case, the dynamics function used is `DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN`. 
 
-### The [trampo_quaternions.py](./bioptim/examples/torque_driven_ocp/trampo_quaternions.py) file
+### The [example_quaternions.py](./bioptim/examples/torque_driven_ocp/example_quaternions.py) file
 This example uses a representation of a human body by a trunk_leg segment and two arms.
 It is designed to show how to use a model that has quaternions in their degrees of freedom.
 

@@ -342,6 +342,61 @@ class PenaltyController:
         """
         return self._nlp.parameters.scaled
 
+    @property
+    def q(self) -> OptimizationVariable:
+        if "q" in self.states:
+            return self.states["q"]
+        elif "q_roots" in self.states and "q_joints" in self.states:
+            cx_start = vertcat(self.states["q_roots"].cx_start, self.states["q_joints"].cx_start)
+            q_parent_list = OptimizationVariableList(
+                self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+            )
+            q_parent_list._cx_start = cx_start
+            q = OptimizationVariable(
+                name="q",
+                mx=vertcat(self.states["q_roots"].mx, self.states["q_joints"].mx),
+                cx_start=cx_start,
+                index=[i for i in range(self.states["q_roots"].shape + self.states["q_joints"].shape)],
+                mapping=BiMapping(
+                    [i for i in range(self.states["q_roots"].shape + self.states["q_joints"].shape)],
+                    [i for i in range(self.states["q_roots"].shape + self.states["q_joints"].shape)],
+                ),
+                parent_list=q_parent_list,
+            )
+            return q
+        else:
+            raise RuntimeError("q is not defined in the states")
+
+    @property
+    def qdot(self) -> OptimizationVariable:
+        if "qdot" in self.states:
+            return self.states["qdot"]
+        elif "qdot_roots" in self.states and "qdot_joints" in self.states:
+            cx_start = vertcat(self.states["qdot_roots"].cx_start, self.states["qdot_joints"].cx_start)
+            qdot_parent_list = OptimizationVariableList(
+                self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+            )
+            qdot_parent_list._cx_start = cx_start
+            qdot = OptimizationVariable(
+                name="qdot",
+                mx=vertcat(self.states["qdot_roots"].mx, self.states["qdot_joints"].mx),
+                cx_start=cx_start,
+                index=[i for i in range(self.states["qdot_roots"].shape + self.states["qdot_joints"].shape)],
+                mapping=BiMapping(
+                    [i for i in range(self.states["qdot_roots"].shape + self.states["qdot_joints"].shape)],
+                    [i for i in range(self.states["qdot_roots"].shape + self.states["qdot_joints"].shape)],
+                ),
+                parent_list=qdot_parent_list,
+            )
+            return qdot
+
+    @property
+    def tau(self) -> OptimizationVariable:
+        if "tau" in self.controls:
+            return self.controls["tau"]
+        elif "tau_joints" in self.controls:
+            return self.controls["tau_joints"]
+
     def copy(self):
         return PenaltyController(
             self.ocp,

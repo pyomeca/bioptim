@@ -3,6 +3,7 @@ This example presents how to implement an optimal control program with the varia
 The simulation is a pendulum simulation, its behaviour should be the same as the one in
 bioptim/examples/getting_started/pendulum.py
 """
+
 from bioptim import (
     BoundsList,
     InitialGuessList,

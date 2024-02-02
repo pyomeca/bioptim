@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+
 import os
 import pytest
 import numpy as np
@@ -437,7 +438,7 @@ def test_trampo_quaternions(phase_dynamics):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     # Define the problem
-    model_path = bioptim_folder + "/models/TruncAnd2Arm_Quaternion.bioMod"
+    model_path = bioptim_folder + "/models/trunk_and_2arm_quaternion.bioMod"
     final_time = 0.25
     n_shooting = 5
 
@@ -700,21 +701,20 @@ def test_example_multi_biorbd_model(phase_dynamics):
     )
     sol = ocp.solve()
 
-    # The subsequent values fail, but I suspect there was a mistake in the original code. To be investigated
     # # Check objective function value
     # f = np.array(sol.cost)
     # np.testing.assert_equal(f.shape, (1, 1))
     # np.testing.assert_almost_equal(f[0, 0], 10.697019532108447)
-    #
+
     # # Check constraints
     # g = np.array(sol.constraints)
     # np.testing.assert_equal(g.shape, (240, 1))
     # np.testing.assert_almost_equal(g, np.zeros((240, 1)), decimal=6)
-    #
+
     # # Check some of the results
     # states = sol.decision_states(to_merge=SolutionMerge.NODES)
     # controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    #
+
     # # initial and final position
     # np.testing.assert_almost_equal(
     #     states["q"][:, 0], np.array([-3.14159265, 0.0, 0.0, -3.14159265, 0.0, 0.0]), decimal=6

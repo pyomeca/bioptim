@@ -31,7 +31,7 @@ from bioptim import (
 
 
 def custom_constraint_parameters(controller: PenaltyController) -> MX:
-    tau = controller.controls["tau"].cx_start
+    tau = controller.controls["tau_joints"].cx_start
     max_param = controller.parameters["max_tau"].cx
     val = max_param - tau
     return val
@@ -50,11 +50,9 @@ def prepare_ocp(
     n_shooting = (40, 40)
     final_time = (1, 1)
     tau_min, tau_max, tau_init = -300, 300, 0
-
-    # Mapping
-    tau_mappings = BiMappingList()
-    tau_mappings.add("tau", to_second=[None, 0], to_first=[1], phase=0)
-    tau_mappings.add("tau", to_second=[None, 0], to_first=[1], phase=1)
+    n_root = bio_model[0].nb_root
+    n_q = bio_model[0].nb_q
+    n_tau = n_q - n_root
 
     # Define the parameter to optimize
     parameters = ParameterList()
@@ -83,8 +81,8 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, phase=0, min_bound=0.1, max_bound=3)
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1, phase=1, min_bound=0.1, max_bound=3)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10, phase=0)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10, phase=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_joints", weight=10, phase=0)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_joints", weight=10, phase=1)
 
     # Constraints
     constraints = ConstraintList()
@@ -92,56 +90,53 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN, with_contact=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, with_contact=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, with_contact=False)
 
     # Path constraint
     x_bounds = BoundsList()
-    x_bounds.add(key="q", bounds=bio_model[0].bounds_from_ranges("q"), phase=0)
-    x_bounds.add(key="qdot", bounds=bio_model[0].bounds_from_ranges("qdot"), phase=0)
-    x_bounds.add(key="q", bounds=bio_model[1].bounds_from_ranges("q"), phase=1)
-    x_bounds.add(key="qdot", bounds=bio_model[1].bounds_from_ranges("qdot"), phase=1)
+    q_roots_min = bio_model[0].bounds_from_ranges("q").min[:n_root, :]
+    q_roots_max = bio_model[0].bounds_from_ranges("q").max[:n_root, :]
+    q_joints_min = bio_model[0].bounds_from_ranges("q").min[n_root:, :]
+    q_joints_max = bio_model[0].bounds_from_ranges("q").max[n_root:, :]
+    qdot_roots_min = bio_model[0].bounds_from_ranges("qdot").min[:n_root, :]
+    qdot_roots_max = bio_model[0].bounds_from_ranges("qdot").max[:n_root, :]
+    qdot_joints_min = bio_model[0].bounds_from_ranges("qdot").min[n_root:, :]
+    qdot_joints_max = bio_model[0].bounds_from_ranges("qdot").max[n_root:, :]
+    x_bounds.add("q_roots", min_bound=q_roots_min, max_bound=q_roots_max, phase=0)
+    x_bounds.add("q_joints", min_bound=q_joints_min, max_bound=q_joints_max, phase=0)
+    x_bounds.add("qdot_roots", min_bound=qdot_roots_min, max_bound=qdot_roots_max, phase=0)
+    x_bounds.add("qdot_joints", min_bound=qdot_joints_min, max_bound=qdot_joints_max, phase=0)
+    x_bounds.add("q_roots", min_bound=q_roots_min, max_bound=q_roots_max, phase=1)
+    x_bounds.add("q_joints", min_bound=q_joints_min, max_bound=q_joints_max, phase=1)
+    x_bounds.add("qdot_roots", min_bound=qdot_roots_min, max_bound=qdot_roots_max, phase=1)
+    x_bounds.add("qdot_joints", min_bound=qdot_joints_min, max_bound=qdot_joints_max, phase=1)
 
     # change model bound for -pi, pi
     for i in range(len(bio_model)):
-        x_bounds[i]["q"].min[1, :] = -np.pi
-        x_bounds[i]["q"].max[1, :] = np.pi
+        x_bounds[i]["q_joints"].min[0, :] = -np.pi
+        x_bounds[i]["q_joints"].max[0, :] = np.pi
 
     # Phase 0
-    x_bounds[0]["q"][0, 0] = np.pi
-    x_bounds[0]["q"][1, 0] = 0
-    x_bounds[0]["q"].min[1, -1] = 6 * np.pi / 8 - 0.1
-    x_bounds[0]["q"].max[1, -1] = 6 * np.pi / 8 + 0.1
+    x_bounds[0]["q_roots"][0, 0] = np.pi
+    x_bounds[0]["q_joints"][0, 0] = 0
+    x_bounds[0]["q_joints"].min[0, -1] = 6 * np.pi / 8 - 0.1
+    x_bounds[0]["q_joints"].max[0, -1] = 6 * np.pi / 8 + 0.1
 
     # Phase 1
-    x_bounds[1]["q"][0, -1] = 3 * np.pi
-    x_bounds[1]["q"][1, -1] = 0
-
-    # Initial guess
-    x_init = InitialGuessList()
-    x_init.add(key="q", initial_guess=[0] * bio_model[0].nb_q, phase=0)
-    x_init.add(key="qdot", initial_guess=[0] * bio_model[0].nb_qdot, phase=0)
-    x_init.add(key="q", initial_guess=[1] * bio_model[1].nb_q, phase=1)
-    x_init.add(key="qdot", initial_guess=[1] * bio_model[1].nb_qdot, phase=1)
+    x_bounds[1]["q_roots"][0, -1] = 3 * np.pi
+    x_bounds[1]["q_joints"][0, -1] = 0
 
     # Define control path constraint
-    n_tau = len(tau_mappings[0]["tau"].to_first)
     u_bounds = BoundsList()
-    u_bounds.add(key="tau", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau, phase=0)
-    u_bounds.add(key="tau", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau, phase=1)
-
-    # Control initial guess
-    u_init = InitialGuessList()
-    u_init.add(key="tau", initial_guess=[tau_init] * n_tau, phase=0)
-    u_init.add(key="tau", initial_guess=[tau_init] * n_tau, phase=1)
+    u_bounds.add(key="tau_joints", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau, phase=0)
+    u_bounds.add(key="tau_joints", min_bound=[tau_min] * n_tau, max_bound=[tau_max] * n_tau, phase=1)
 
     return OptimalControlProgram(
         bio_model,
         dynamics,
         n_shooting,
         final_time,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         objective_functions=objective_functions,
@@ -150,7 +145,6 @@ def prepare_ocp(
         parameter_bounds=parameter_bounds,
         parameter_init=parameter_init,
         constraints=constraints,
-        variable_mappings=tau_mappings,
         parameters=parameters,
     )
 
