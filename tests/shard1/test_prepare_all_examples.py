@@ -165,7 +165,17 @@ def test__getting_started__custom_plotting():
     )
 
 
-# todo: Add example_continuity_as_objective.py?
+def test__getting_started__example_continuity_as_objective():
+    from bioptim.examples.getting_started import example_continuity_as_objective as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp_module.prepare_ocp_first_pass(
+        biorbd_model_path=bioptim_folder + "/models/pendulum_maze.bioMod",
+        final_time=1,
+        n_shooting=100,
+        state_continuity_weight=1_000_000,
+    )
 
 
 def test__getting_started__example_cyclic_movement():
@@ -194,7 +204,7 @@ def test__getting_started__example_external_forces():
     )
 
 
-# todo: Add example_external_forces.py?
+# todo: Add example_implicit_dynamics.py?
 
 
 def test__getting_started__example_inequality_constraint():
@@ -216,7 +226,7 @@ def test__getting_started__example_inequality_constraint():
     )
 
 
-# todo: Add example_joint_acceleratio_driven.py?
+# todo: Add example_joint_acceleration_driven.py?
 
 
 def test__getting_started__example_mapping():
@@ -423,6 +433,7 @@ def test__optimal_time_ocp__time_constraint():
     )
 
 
+## torque_driven_ocp_folder
 def test__symmetrical_torque_driven_ocp__symmetry_by_constraint():
     from bioptim.examples.symmetrical_torque_driven_ocp import (
         symmetry_by_constraint as ocp_module,
@@ -522,10 +533,12 @@ def test__torque_driven_ocp__spring_load():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/mass_point.bioMod",
-        expand_dynamics=False,
-    )
+    for scenario in range(8):
+        ocp_module.prepare_ocp(
+            biorbd_model_path=bioptim_folder + "/models/mass_point.bioMod",
+            expand_dynamics=False,
+            scenario=scenario,
+        )
 
 
 def test__track__optimal_estimation():
