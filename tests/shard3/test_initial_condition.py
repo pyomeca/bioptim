@@ -336,7 +336,9 @@ def test_initial_guess_error_messages(phase_dynamics):
             objective_functions=objective_functions,
         )
 
-    with pytest.raises(ValueError, match="bad_key is not a state variable, please check for typos in the declaration of x_init"):
+    with pytest.raises(
+        ValueError, match="bad_key is not a state variable, please check for typos in the declaration of x_init"
+    ):
         x_init = InitialGuessList()
         x_init.add("bad_key", [1, 2])
         bio_model = BiorbdModel(biorbd_model_path)
@@ -350,7 +352,9 @@ def test_initial_guess_error_messages(phase_dynamics):
         )
 
     del bio_model  # This is to fix a memory bug
-    with pytest.raises(ValueError, match="bad_key is not a control variable, please check for typos in the declaration of u_init"):
+    with pytest.raises(
+        ValueError, match="bad_key is not a control variable, please check for typos in the declaration of u_init"
+    ):
         u_init = InitialGuessList()
         u_init.add("bad_key", [1, 2])
         bio_model = BiorbdModel(biorbd_model_path)
