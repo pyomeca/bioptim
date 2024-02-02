@@ -199,12 +199,15 @@ def main():
     axs[1].set_ylabel("qdot [°/s]")
     axs[2].set_title("Generalized forces")
     axs[2].set_ylabel("tau [Nm]")
+
+    linestyles = ["solid", "dashed", "dotted"]
+
     for ax in [0, 1, 2]:
         axs[ax].set_xlabel("Time [s]")
         axs[ax].grid(True)
 
-    for parameter_option in range(3):
-        ocp = prepare_ocp(parameter_option=parameter_option)
+    for i, linestyle in enumerate(linestyles):
+        ocp = prepare_ocp(parameter_option=i)
 
         # --- Solve the ocp --- #
         sol = ocp.solve()
@@ -248,12 +251,22 @@ def main():
         )
 
         # Plotting q solutions for both DOFs
-        axs[0].plot(time, q * 180 / np.pi)
-        axs[1].plot(time, qdot * 180 / np.pi)
-        axs[2].step(time, tau)
+        axs[0].plot(
+            time,
+            q * 180 / np.pi,
+            linestyle=linestyle,
+            label=[f"q_0 (method {i})", f"q_1 (method {i})"],
+        )
+        axs[1].plot(
+            time,
+            qdot * 180 / np.pi,
+            linestyle=linestyle,
+            label=[f"qdot_0 (method {i})", f"qdot_1 (method {i})"],
+        )
+        axs[2].step(time, tau, linestyle=linestyle, label=f"tau (method {i})", where="post")
         xlim = np.asarray(axs[2].get_xlim())
         xlim = np.hstack([xlim, np.nan, xlim])
-        if parameter_option == 2:
+        if i == 2:
             min_max = np.hstack(
                 [
                     np.ones([2]) * sol.parameters["min_max_tau"][0],
@@ -266,44 +279,14 @@ def main():
                 [np.ones([2]) * sol.parameters["min_tau"], np.nan, np.ones([2]) * sol.parameters["max_tau"]]
             )
 
-        axs[2].plot(xlim, min_max, "k--")
+        axs[2].plot(xlim, min_max, linestyle=(0, (5, 10)), label=f"params - bounds (method {i})")
 
     plt.tight_layout()
     plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.3)
 
     # Display the plot
-    axs[0].legend(
-        {
-            "q_0 (method 0)",
-            "q_1 (method 0)",
-            "q_0 (method 1)",
-            "q_1 (method 1)",
-            "q_0 (method 2)",
-            "q_1 (method 2)",
-        }
-    )
-
-    axs[1].legend(
-        {
-            "qdot_0 (method 0)",
-            "qdot_1 (method 0)",
-            "qdot_0 (method 1)",
-            "qdot_1 (method 1)",
-            "qdot_0 (method 2)",
-            "qdot_1 (method 2)",
-        }
-    )
-
-    axs[2].legend(
-        {
-            "tau_1 (method 0)",
-            "min-max (method 0)",
-            "tau_1 (method 1)",
-            "min-max (method 1)",
-            "tau_1 (method 2)",
-            "min-max (method 2)",
-        }
-    )
+    for ax in range(3):
+        axs[ax].legend()
 
     plt.show()
 

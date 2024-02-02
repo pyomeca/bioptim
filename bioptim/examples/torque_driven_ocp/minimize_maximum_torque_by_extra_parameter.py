@@ -125,8 +125,6 @@ def prepare_ocp(
         constraints.add(ConstraintFcn.TRACK_STATE, node=Node.START, key="qdot", target=[0, 0])
         constraints.add(ConstraintFcn.TRACK_STATE, node=Node.END, key="q", target=[3 * np.pi, 0])
 
-
-
     return OptimalControlProgram(
         bio_model,
         dynamics,
@@ -156,14 +154,15 @@ def main():
         axs[ax].set_xlabel("Time [s]")
         axs[ax].grid(True)
 
-    for method_bound_states in range(2):
+    linestyles = ["solid", "dashed"]
+
+    for i, linestyle in enumerate(linestyles):
         # --- Prepare the ocp --- #
-        ocp = prepare_ocp(method_bound_states=method_bound_states)
+        ocp = prepare_ocp(method_bound_states=i)
 
         # --- Solve the ocp --- #
         sol = ocp.solve()
         # sol.print_cost()
-
 
         # --- Show results --- #
         # sol.animate()
@@ -182,44 +181,34 @@ def main():
         print("min-max tau: ", np.nanmin(tau), np.nanmax(tau))
 
         # Plotting q solutions for both DOFs
-        axs[0].plot(time, q * 180 / np.pi)
-        axs[1].plot(time, qdot * 180 / np.pi)
-        axs[2].step(time, tau)
+        axs[0].plot(
+            time,
+            q * 180 / np.pi,
+            linestyle=linestyle,
+            label=[f"q_0 (method {i})", f"q_1 (method {i})"],
+        )
+        axs[1].plot(
+            time,
+            qdot * 180 / np.pi,
+            linestyle=linestyle,
+            label=[f"qdot_0 (method {i})", f"qdot_1 (method {i})"],
+        )
+        axs[2].step(time, tau, linestyle=linestyle, label=f"tau (method {i})", where="post")
         xlim = np.asarray(axs[2].get_xlim())
         xlim = np.hstack([xlim, np.nan, xlim])
         min_max = np.hstack(
             [np.ones([2]) * sol.parameters["min_tau"], np.nan, np.ones([2]) * sol.parameters["max_tau"]]
         )
-        axs[2].plot(xlim, min_max, "k--")
+        axs[2].plot(xlim, min_max, linestyle=(0, (5, 10)), label=f"params - bounds (method {i})")
 
     plt.tight_layout()
     plt.subplots_adjust(left=None, bottom=None, right=None, top=None, wspace=None, hspace=0.3)
 
     # Display the plot
-    axs[0].legend(
-        {
-            "q_0 (method 0)",
-            "q_1 (method 0)",
-            "q_0 (method 1)",
-            "q_1 (method 1)",
-        }
-    )
-    axs[1].legend(
-        {
-            "qdot_0 (method 0)",
-            "qdot_1 (method 0)",
-            "qdot_0 (method 1)",
-            "qdot_1 (method 1)",
-        }
-    )
-    axs[2].legend(
-        {
-            "tau_1 (method 0)",
-            "min-max (method 0)",
-            "tau_1 (method 1)",
-            "min-max (method 1)",
-        }
-    )
+    axs[0].legend()
+    axs[1].legend()
+    axs[2].legend()
+
     plt.show()
 
 
