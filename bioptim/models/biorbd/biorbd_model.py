@@ -638,7 +638,10 @@ class BiorbdModel:
     @staticmethod
     def animate(
         ocp,
-        solution: "SolutionData", show_now: bool = True, tracked_markers: list[np.ndarray, ...] = None, **kwargs: Any
+        solution: "SolutionData",
+        show_now: bool = True,
+        tracked_markers: list[np.ndarray, ...] = None,
+        **kwargs: Any,
     ) -> None | list:
         try:
             import bioviz
