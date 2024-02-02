@@ -418,7 +418,6 @@ def test_arm_reaching_torque_driven_explicit(use_sx):
     )
 
 
-
 @pytest.mark.parametrize("with_cholesky", [True, False])
 @pytest.mark.parametrize("with_scaling", [True, False])
 @pytest.mark.parametrize("use_sx", [True, False])
