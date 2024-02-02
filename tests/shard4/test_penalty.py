@@ -1538,6 +1538,7 @@ def test_penalty_minimize_com_velocity(penalty_origin, value, phase_dynamics):
 #     expected = np.array([0.05, 0, 0.05]) if value == 0.1 else np.array([-5., 0., -5.])
 #     np.testing.assert_almost_equal(np.array(res.T)[0], 0)
 
+
 # TODO stochastic
 # @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 # @pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Lagrange])
@@ -1640,6 +1641,7 @@ def test_penalty_time_constraint(value, phase_dynamics):
     res = get_penalty_value(ocp, penalty, t, x, u, p, s)
 
     np.testing.assert_almost_equal(res, np.array(0))
+
 
 # TODO: update this test with multi-node instead
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
