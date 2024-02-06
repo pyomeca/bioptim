@@ -3,10 +3,29 @@ This file contains the model used in the article.
 """
 
 from typing import Callable
-from casadi import MX, SX, DM, sqrt, sin, cos, repmat, exp, log, horzcat, vertcat
+from casadi import MX, DM, sqrt, sin, cos, repmat, exp, log, horzcat, vertcat
 import numpy as np
 
-from bioptim import NonLinearProgram, DynamicsFunctions
+from bioptim import DynamicsFunctions, StochasticBioModel
+
+
+def _compute_torques_from_noise_and_feedback_default(
+    nlp, time, states, controls, parameters, algebraic_states, sensory_noise, motor_noise
+):
+    tau_nominal = DynamicsFunctions.get(nlp.controls["tau"], controls)
+
+    ref = DynamicsFunctions.get(nlp.algebraic_states["ref"], algebraic_states)
+    k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
+    k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
+
+    sensory_input = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, nlp)
+    tau_fb = k_matrix @ ((sensory_input - ref) + sensory_noise)
+
+    tau_motor_noise = motor_noise
+
+    tau = tau_nominal + tau_fb + tau_motor_noise
+
+    return tau
 
 
 class LeuvenArmModel:
@@ -18,14 +37,18 @@ class LeuvenArmModel:
         self,
         sensory_noise_magnitude: np.ndarray | DM,
         motor_noise_magnitude: np.ndarray | DM,
-        sensory_reference: callable,
+        sensory_reference: Callable,
+        compute_torques_from_noise_and_feedback: Callable = _compute_torques_from_noise_and_feedback_default,
     ):
         self.motor_noise_magnitude = motor_noise_magnitude
         self.sensory_noise_magnitude = sensory_noise_magnitude
         self.sensory_reference = sensory_reference
 
+        self.compute_torques_from_noise_and_feedback = (compute_torques_from_noise_and_feedback,)
+
         n_noised_controls = 6
         n_references = 4
+        self.n_feedbacks = 4
         n_noised_states = 10
         n_noise = motor_noise_magnitude.shape[0] + sensory_noise_magnitude.shape[0]
         self.matrix_shape_k = (n_noised_controls, n_references)

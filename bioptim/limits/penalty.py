@@ -10,6 +10,7 @@ from .penalty_controller import PenaltyController
 from ..misc.enums import Node, Axis, ControlType, QuadratureRule
 from ..misc.mapping import BiMapping
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
+from ..models.biorbd.biorbd_model import BiorbdModel
 
 
 class PenaltyFunctionAbstract:
@@ -129,14 +130,12 @@ class PenaltyFunctionAbstract:
 
             controls = controller.controls[key_control].cx_start  # select only actuacted states
             if key_control == "tau":
-                return controls * controller.states["qdot"].cx_start
+                return controls * controller.qdot.cx_start
             elif key_control == "muscles":
-                q_mx = controller.states["q"].mx
-                qdot_mx = controller.states["qdot"].mx
+                q_mx = controller.q.mx
+                qdot_mx = controller.qdot.mx
                 muscles_dot = controller.model.muscle_velocity(q_mx, qdot_mx)
-                objective = controller.mx_to_cx(
-                    "muscle_velocity", muscles_dot, controller.states["q"], controller.states["qdot"]
-                )
+                objective = controller.mx_to_cx("muscle_velocity", muscles_dot, controller.q, controller.qdot)
 
                 return controls * objective
 
@@ -182,7 +181,6 @@ class PenaltyFunctionAbstract:
 
             # create the casadi function to be evaluated
             # Get the symbolic variables
-            ref = controller.algebraic_states["ref"].cx_start
             if "cholesky_cov" in controller.algebraic_states.keys():
                 l_cov_matrix = StochasticBioModel.reshape_to_cholesky_matrix(
                     controller.algebraic_states["cholesky_cov"].cx_start, controller.model.matrix_shape_cov_cholesky
@@ -201,77 +199,41 @@ class PenaltyFunctionAbstract:
                 controller.algebraic_states["k"].cx_start, controller.model.matrix_shape_k
             )
 
-            nb_root = controller.model.nb_root
-            nu = controller.model.nb_q - controller.model.nb_root
-
-            q_root_mx = MX.sym("q_root", nb_root, 1)
-            q_joints_mx = MX.sym("q_joints", nu, 1)
-            qdot_root_mx = MX.sym("qdot_root", nb_root, 1)
-            qdot_joints_mx = MX.sym("qdot_joints", nu, 1)
-            q_root = controller.cx.sym("q_root", nb_root, 1)
-            q_joints = controller.cx.sym("q_joints", nu, 1)
-            qdot_root = controller.cx.sym("qdot_root", nb_root, 1)
-            qdot_joints = controller.cx.sym("qdot_joints", nu, 1)
-
             # Compute the expected effort
             trace_k_sensor_k = trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
-            ee = controller.model.sensory_reference(
-                states=vertcat(q_root_mx, q_joints_mx, qdot_root_mx, qdot_joints_mx),
+
+            e_fb_mx = controller.model.compute_torques_from_noise_and_feedback(
+                nlp=controller.get_nlp,
+                time=controller.time.mx,
+                states=controller.states.mx,
                 controls=controller.controls.mx,
                 parameters=controller.parameters.mx,
                 algebraic_states=controller.algebraic_states.mx,
-                nlp=controller.get_nlp,
+                sensory_noise=controller.model.sensory_noise_magnitude,
+                motor_noise=controller.model.motor_noise_magnitude,
             )
-            # ee to cx
-            ee = Function(
-                "tp",
+            e_fb = Function(
+                "e_fb_tp",
                 [
-                    q_root_mx,
-                    q_joints_mx,
-                    qdot_root_mx,
-                    qdot_joints_mx,
+                    vertcat(controller.time.mx, controller.dt.mx),
+                    controller.states.mx,
                     controller.controls.mx,
                     controller.parameters.mx,
                     controller.algebraic_states.mx,
                 ],
-                [ee],
+                [e_fb_mx],
             )(
-                q_root,
-                q_joints,
-                qdot_root,
-                qdot_joints,
+                vertcat(controller.time.cx, controller.dt.cx),
+                controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.algebraic_states.cx_start,
             )
 
-            e_fb = k_matrix @ ((ee - ref) + controller.model.sensory_noise_magnitude)
-            jac_e_fb_x = jacobian(e_fb, vertcat(q_joints, qdot_joints))
+            jac_e_fb_x = jacobian(e_fb, controller.states.cx_start)
 
-            fun_jac_e_fb_x = Function(
-                "jac_e_fb_x",
-                [
-                    q_root,
-                    q_joints,
-                    qdot_root,
-                    qdot_joints,
-                    controller.controls_scaled.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states_scaled.cx_start,
-                ],
-                [jac_e_fb_x],
-            )
+            trace_jac_p_jack = trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
 
-            eval_jac_e_fb_x = fun_jac_e_fb_x(
-                controller.states.cx_start[:nb_root],
-                controller.states.cx_start[nb_root : nb_root + nu],
-                controller.states.cx_start[nb_root + nu : 2 * nb_root + nu],
-                controller.states.cx_start[2 * nb_root + nu : 2 * (nb_root + nu)],
-                controller.controls_scaled.cx_start,
-                controller.parameters.cx_start,
-                controller.algebraic_states_scaled.cx_start,
-            )
-            trace_jac_p_jack = trace(eval_jac_e_fb_x @ cov_matrix @ eval_jac_e_fb_x.T)
             expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
             return expectedEffort_fb_mx
 
@@ -322,6 +284,8 @@ class PenaltyFunctionAbstract:
                 The index or name of the segment to use as reference. Default [None] is the global coordinate system
             """
 
+            controller.model: BiorbdModel
+
             # Adjust the cols and rows
             PenaltyFunctionAbstract.set_idx_columns(penalty, controller, marker_index, "marker")
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
@@ -330,20 +294,20 @@ class PenaltyFunctionAbstract:
             penalty.plot_target = False
 
             # Compute the position of the marker in the requested reference frame (None for global)
-            q = controller.states["q"].mx
+            q = controller.q
             model = controller.model
             jcs_t = (
                 biorbd.RotoTrans()
                 if reference_jcs is None
-                else model.homogeneous_matrices_in_global(q, reference_jcs, inverse=True)
+                else model.biorbd_homogeneous_matrices_in_global(q.mx, reference_jcs, inverse=True)
             )
 
             markers = []
-            for m in model.markers(q):
+            for m in model.markers(q.mx):
                 markers_in_jcs = jcs_t.to_mx() @ vertcat(m, 1)
                 markers = horzcat(markers, markers_in_jcs[:3])
 
-            markers_objective = controller.mx_to_cx("markers", markers, controller.states["q"])
+            markers_objective = controller.mx_to_cx("markers", markers, controller.q)
             return markers_objective
 
         @staticmethod
@@ -381,14 +345,12 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             # Add the penalty in the requested reference frame. None for global
-            q_mx = controller.states["q"].mx
-            qdot_mx = controller.states["qdot"].mx
+            q_mx = controller.q.mx
+            qdot_mx = controller.qdot.mx
 
             markers = horzcat(*controller.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs))
 
-            markers_objective = controller.mx_to_cx(
-                "markers_velocity", markers, controller.states["q"], controller.states["qdot"]
-            )
+            markers_objective = controller.mx_to_cx("markers_velocity", markers, controller.q, controller.qdot)
             return markers_objective
 
         @staticmethod
@@ -423,8 +385,8 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            q_mx = controller.states["q"].mx
-            qdot_mx = controller.states["qdot"].mx
+            q_mx = controller.q.mx
+            qdot_mx = controller.qdot.mx
             qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
 
             markers = horzcat(
@@ -472,14 +434,14 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            diff_markers = controller.model.marker(
-                controller.states["q"].mx, second_marker_idx
-            ) - controller.model.marker(controller.states["q"].mx, first_marker_idx)
+            diff_markers = controller.model.marker(controller.q.mx, second_marker_idx) - controller.model.marker(
+                controller.q.mx, first_marker_idx
+            )
 
             return controller.mx_to_cx(
                 f"diff_markers",
                 diff_markers,
-                controller.states["q"],
+                controller.q,
             )
 
         @staticmethod
@@ -520,9 +482,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            marker_velocity = controller.model.marker_velocities(
-                controller.states["q"].mx, controller.states["qdot"].mx
-            )
+            marker_velocity = controller.model.marker_velocities(controller.q.mx, controller.qdot.mx)
             marker_1 = marker_velocity[first_marker_idx][:]
             marker_2 = marker_velocity[second_marker_idx][:]
 
@@ -531,8 +491,8 @@ class PenaltyFunctionAbstract:
             return controller.mx_to_cx(
                 f"diff_markers",
                 diff_markers,
-                controller.states["q"],
-                controller.states["qdot"],
+                controller.q,
+                controller.qdot,
             )
 
         @staticmethod
@@ -656,12 +616,10 @@ class PenaltyFunctionAbstract:
             """
 
             g = controller.model.gravity[2]
-            com = controller.model.center_of_mass(controller.states["q"].mx)
-            com_dot = controller.model.center_of_mass_velocity(controller.states["q"].mx, controller.states["qdot"].mx)
+            com = controller.model.center_of_mass(controller.q.mx)
+            com_dot = controller.model.center_of_mass_velocity(controller.q.mx, controller.qdot.mx)
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
-            com_height_cx = controller.mx_to_cx(
-                "com_height", com_height, controller.states["q"], controller.states["qdot"]
-            )
+            com_height_cx = controller.mx_to_cx("com_height", com_height, controller.q, controller.qdot)
             return com_height_cx
 
         @staticmethod
@@ -685,7 +643,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            com_cx = controller.mx_to_cx("com", controller.model.center_of_mass, controller.states["q"])
+            com_cx = controller.mx_to_cx("com", controller.model.center_of_mass, controller.q)
             return com_cx
 
         @staticmethod
@@ -710,7 +668,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             com_dot_cx = controller.mx_to_cx(
-                "com_dot", controller.model.center_of_mass_velocity, controller.states["q"], controller.states["qdot"]
+                "com_dot", controller.model.center_of_mass_velocity, controller.q, controller.qdot
             )
             return com_dot_cx
 
@@ -735,8 +693,8 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            q_mx = controller.states["q"].mx
-            qdot_mx = controller.states["qdot"].mx
+            q_mx = controller.q.mx
+            qdot_mx = controller.qdot.mx
             qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
 
             marker = controller.model.center_of_mass_acceleration(q_mx, qdot_mx, qddot_mx)
@@ -765,8 +723,8 @@ class PenaltyFunctionAbstract:
             angular_momentum_cx = controller.mx_to_cx(
                 "angular_momentum",
                 controller.model.angular_momentum,
-                controller.states["q"],
-                controller.states["qdot"],
+                controller.q,
+                controller.qdot,
             )
             return angular_momentum_cx
 
@@ -793,8 +751,8 @@ class PenaltyFunctionAbstract:
             com_velocity = controller.mx_to_cx(
                 "com_velocity",
                 controller.model.center_of_mass_velocity,
-                controller.states["q"],
-                controller.states["qdot"],
+                controller.q,
+                controller.qdot,
             )
             if isinstance(com_velocity, SX):
                 mass = Function("mass", [], [controller.model.mass]).expand()
@@ -905,11 +863,11 @@ class PenaltyFunctionAbstract:
                     "The track_segment_with_custom_rt penalty can only be called with a BiorbdModel"
                 )
             model: BiorbdModel = controller.model
-            r_seg_transposed = model.model.globalJCS(controller.states["q"].mx, segment_index).rot().transpose()
-            r_rt = model.model.RT(controller.states["q"].mx, rt).rot()
+            r_seg_transposed = model.model.globalJCS(controller.q.mx, segment_index).rot().transpose()
+            r_rt = model.model.RT(controller.q.mx, rt).rot()
             angles_diff = biorbd.Rotation.toEulerAngles(r_seg_transposed * r_rt, "zyx").to_mx()
 
-            angle_objective = controller.mx_to_cx(f"track_segment", angles_diff, controller.states["q"])
+            angle_objective = controller.mx_to_cx(f"track_segment", angles_diff, controller.q)
             return angle_objective
 
         @staticmethod
@@ -947,8 +905,8 @@ class PenaltyFunctionAbstract:
             segment_idx = controller.model.segment_index(segment) if isinstance(segment, str) else segment
 
             # Get the marker in rt reference frame
-            marker = controller.model.marker(controller.states["q"].mx, marker_idx, segment_idx)
-            marker_objective = controller.mx_to_cx("marker", marker, controller.states["q"])
+            marker = controller.model.marker(controller.q.mx, marker_idx, segment_idx)
+            marker_objective = controller.mx_to_cx("marker", marker, controller.q)
 
             # To align an axis, the other must be equal to 0
             if not penalty.rows_is_set:
@@ -995,7 +953,7 @@ class PenaltyFunctionAbstract:
             if not isinstance(controller.model, BiorbdModel):
                 raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
             model: BiorbdModel = controller.model
-            jcs_segment = model.model.globalJCS(controller.states["q"].mx, segment_idx).rot()
+            jcs_segment = model.model.globalJCS(controller.q.mx, segment_idx).rot()
             angles_segment = biorbd.Rotation.toEulerAngles(jcs_segment, "xyz").to_mx()
 
             if axes is None:
@@ -1005,9 +963,7 @@ class PenaltyFunctionAbstract:
                     if not isinstance(ax, Axis):
                         raise RuntimeError("axes must be a list of bioptim.Axis")
 
-            segment_rotation_objective = controller.mx_to_cx(
-                "segment_rotation", angles_segment[axes], controller.states["q"]
-            )
+            segment_rotation_objective = controller.mx_to_cx("segment_rotation", angles_segment[axes], controller.q)
 
             return segment_rotation_objective
 
@@ -1044,9 +1000,7 @@ class PenaltyFunctionAbstract:
                     "The minimize_segments_velocity penalty can only be called with a BiorbdModel"
                 )
             model: BiorbdModel = controller.model
-            segment_angular_velocity = model.segment_angular_velocity(
-                controller.states["q"].mx, controller.states["qdot"].mx, segment_idx
-            )
+            segment_angular_velocity = model.segment_angular_velocity(controller.q.mx, controller.qdot.mx, segment_idx)
 
             if axes is None:
                 axes = [Axis.X, Axis.Y, Axis.Z]
@@ -1058,8 +1012,8 @@ class PenaltyFunctionAbstract:
             segment_velocity_objective = controller.mx_to_cx(
                 "segment_velocity",
                 segment_angular_velocity[axes],
-                controller.states["q"],
-                controller.states["qdot"],
+                controller.q,
+                controller.qdot,
             )
 
             return segment_velocity_objective
@@ -1120,10 +1074,10 @@ class PenaltyFunctionAbstract:
                 else vector_1_marker_1
             )
 
-            vector_0_marker_0_position = controller.model.marker(controller.states["q"].mx, vector_0_marker_0_idx)
-            vector_0_marker_1_position = controller.model.marker(controller.states["q"].mx, vector_0_marker_1_idx)
-            vector_1_marker_0_position = controller.model.marker(controller.states["q"].mx, vector_1_marker_0_idx)
-            vector_1_marker_1_position = controller.model.marker(controller.states["q"].mx, vector_1_marker_1_idx)
+            vector_0_marker_0_position = controller.model.marker(controller.q.mx, vector_0_marker_0_idx)
+            vector_0_marker_1_position = controller.model.marker(controller.q.mx, vector_0_marker_1_idx)
+            vector_1_marker_0_position = controller.model.marker(controller.q.mx, vector_1_marker_0_idx)
+            vector_1_marker_1_position = controller.model.marker(controller.q.mx, vector_1_marker_1_idx)
 
             vector_0 = vector_0_marker_1_position - vector_0_marker_0_position
             vector_1 = vector_1_marker_1_position - vector_1_marker_0_position
@@ -1131,7 +1085,7 @@ class PenaltyFunctionAbstract:
             cross_prod_norm = sqrt(cross_prod[0] ** 2 + cross_prod[1] ** 2 + cross_prod[2] ** 2)
             out = atan2(cross_prod_norm, dot(vector_0, vector_1))
 
-            return controller.mx_to_cx("vector_orientations_difference", out, controller.states["q"])
+            return controller.mx_to_cx("vector_orientations_difference", out, controller.q)
 
         @staticmethod
         def state_continuity(penalty: PenaltyOption, controller: PenaltyController | list):
@@ -1264,7 +1218,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
             penalty.multi_thread = True if penalty.multi_thread is None else penalty.multi_thread
 
-            return controller.parameters.cx
+            return controller.parameters.cx if key is None or key == "all" else controller.parameters[key].cx
 
     @staticmethod
     def add(ocp, nlp):
@@ -1439,7 +1393,7 @@ class PenaltyFunctionAbstract:
                 getattr(controller.controls, attribute),
                 getattr(controller.parameters, attribute),
                 getattr(controller.algebraic_states, attribute),
-            )[controller.states["qdot"].index, :]
+            )[controller.qdot.index, :]
 
         source = controller.states if "qddot" in controller.states else controller.controls
         return getattr(source["qddot"], attribute)
@@ -1473,7 +1427,7 @@ class PenaltyFunctionAbstract:
             markers,
             controller.time,
             controller.parameters,
-            controller.states["q"],
-            controller.states["qdot"],
+            controller.q,
+            controller.qdot,
             last_param,
         )

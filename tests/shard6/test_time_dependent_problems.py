@@ -5,6 +5,7 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 
 Note that the final node is not tracked.
 """
+
 import os
 import pytest
 import platform

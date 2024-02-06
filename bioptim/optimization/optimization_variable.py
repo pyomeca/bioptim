@@ -136,6 +136,14 @@ class OptimizationVariable:
             )
         return self.parent_list.cx_end[self.index, :]
 
+    @property
+    def cx_intermediates_list(self):
+        """
+        The cx of all elements together (starting point)
+        """
+
+        return [collocation_point[self.index, :] for collocation_point in self.parent_list.cx_intermediates_list]
+
 
 class OptimizationVariableList:
     """

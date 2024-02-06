@@ -208,7 +208,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             key: str = "all",
         ):
             """
-            The most common continuity function, that is the covariance before equals covariance after for algebraic_states ocp
+            Continuity function, that is the algebraic states before algebraic states after for algebraic_states ocp
 
             Parameters
             ----------

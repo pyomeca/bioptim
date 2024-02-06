@@ -1,5 +1,4 @@
-from typing import Callable, Union
-from casadi import MX, SX
+from typing import Callable
 import numpy as np
 
 from ..protocols.biomodel import BioModel
@@ -27,14 +26,23 @@ class StochasticBioModel(BioModel):
     def stochastic_dynamics(self, q, qdot, tau, ref, k, with_noise=True):
         """The stochastic dynamics that should be applied to the model"""
 
-    def compute_torques_from_noise_and_feedback(self, sensory_noise_mx, k_matrix, sensory_input, ref):
-        """Compute the torques from the sensory feedback"""
+    def compute_torques_from_noise_and_feedback(
+        self, nlp, time, states, controls, parameters, algebraic_states, sensory_noise, motor_noise
+    ):
+        """Compute the torques from the noises, feedbacks and feedforwards"""
+
+    def sensory_reference(self, time, states, controls, parameters, algebraic_states, nlp):
+        """Compute the sensory reference"""
 
     @staticmethod
     def reshape_to_matrix(var, shape):
         """
         Restore the matrix form of the variables
         """
+
+        if var.shape[0] != shape[0] * shape[1]:
+            raise RuntimeError(f"Cannot reshape: the variable shape is {var.shape} and the expected shape is {shape}")
+
         shape_0, shape_1 = shape
         if isinstance(var, np.ndarray):
             matrix = np.zeros((shape_0, shape_1))
@@ -50,9 +58,20 @@ class StochasticBioModel(BioModel):
         """
         Restore the lower diagonal matrix form of the variables vector
         """
-
         shape_0, _ = shape
         matrix = type(var).zeros(shape_0, shape_0)
+
+        i = 0
+        for s0 in range(shape_0):
+            for s1 in range(s0 + 1):
+                matrix[s1, s0] = var[i]
+                i += 1
+
+        if var.shape[0] != i:
+            raise RuntimeError(
+                f"Cannot reshape: the variable shape is {var.shape} and the expected shape is the number of element in a triangular matrix of size {shape_0}, which means {i} elements"
+            )
+
         i = 0
         for s0 in range(shape_0):
             for s1 in range(s0 + 1):

@@ -188,6 +188,7 @@ from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, 
 from .limits.path_conditions import BoundsList, InitialGuessList
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_controller import PenaltyController
+from .limits.penalty_helpers import PenaltyHelpers
 from .misc.enums import (
     Axis,
     Node,
