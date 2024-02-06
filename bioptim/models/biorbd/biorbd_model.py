@@ -30,6 +30,12 @@ class BiorbdModel:
         self._friction_coefficients = friction_coefficients
 
     @property
+    def name(self) -> str:
+        # parse the path and split to get the .bioMod name
+        return self.model.path().absolutePath().to_string().split("/")[-1]
+
+
+    @property
     def path(self) -> str:
         return self.model.path().relativePath().to_string()
 
@@ -268,7 +274,6 @@ class BiorbdModel:
         self.check_qdot_size(qdot)
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
-        self.model.closeActuator()
         tau_activation = self.model.torque(tau_activations, q_biorbd, qdot_biorbd)
         return tau_activation.to_mx()
 

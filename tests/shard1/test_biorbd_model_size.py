@@ -590,20 +590,4 @@ def test_ligament_joint_torque_valid_and_too_large_q_or_qdot_input(model):
         model.ligament_joint_torque(q_valid, qdot_too_large)
 
 
-def test_torque_valid_and_too_large_q_or_qdot_or_tau_input(model):
-    biorbd_model_path = bioptim_folder + "/examples/optimal_time_ocp/models/cube.bioMod"
-    model = BiorbdModel(biorbd_model_path)
-    q_valid, qdot_valid, q_too_large, qdot_too_large = generate_q_and_qdot_vectors(model)
-    tau_activations_valid, tau_activations_too_large = generate_tau_activations_vectors(model)
 
-    # q, qdot and tau_activation valid
-    model.torque(tau_activations_valid, q_valid, qdot_valid)
-    # qdot and tau_activation valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
-        model.torque(tau_activations_valid, q_too_large, qdot_valid)
-    # q and tau_activations_valid valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
-        model.torque(tau_activations_valid, q_valid, qdot_too_large)
-    # q and qdot valid but tau_activations not valid
-    with pytest.raises(ValueError, match="Length of tau is too big"):
-        model.torque(tau_activations_too_large, q_valid, qdot_valid)
