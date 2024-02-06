@@ -3,6 +3,7 @@ This script implements a custom dynamics to work with bioptim. Bioptim has a dee
 but it is possible to use bioptim without biorbd.
 This is an example of how to use bioptim with a custom dynamics.
 """
+
 from casadi import MX, vertcat
 
 from bioptim import (

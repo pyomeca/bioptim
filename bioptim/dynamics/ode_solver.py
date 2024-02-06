@@ -204,9 +204,11 @@ class OdeSolverBase:
             "param": self.param_ode(nlp),
             "ode": nlp.dynamics_func[dynamics_index],
             # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
-            "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
-            if len(nlp.implicit_dynamics_func) > 0
-            else nlp.implicit_dynamics_func,
+            "implicit_ode": (
+                nlp.implicit_dynamics_func[dynamics_index]
+                if len(nlp.implicit_dynamics_func) > 0
+                else nlp.implicit_dynamics_func
+            ),
         }
 
         return nlp.ode_solver.integrator(ode, ode_opt)

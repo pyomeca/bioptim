@@ -306,8 +306,6 @@ def test_initial_guess_error_messages(phase_dynamics):
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
     biorbd_model_path = bioptim_folder + "/models/pendulum.bioMod"
-    bio_model = BiorbdModel(biorbd_model_path)
-    n_q = bio_model.nb_q
 
     # Add objective functions
     objective_functions = Objective(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau")
@@ -317,6 +315,7 @@ def test_initial_guess_error_messages(phase_dynamics):
 
     # check the error messages
     with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessList"):
+        bio_model = BiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
             dynamics,
@@ -325,12 +324,45 @@ def test_initial_guess_error_messages(phase_dynamics):
             x_init=1,
             objective_functions=objective_functions,
         )
+
     with pytest.raises(RuntimeError, match="u_init should be built from a InitialGuessList"):
+        bio_model = BiorbdModel(biorbd_model_path)
         OptimalControlProgram(
             bio_model,
             dynamics,
             n_shooting=5,
             phase_time=1,
             u_init=1,
+            objective_functions=objective_functions,
+        )
+
+    with pytest.raises(
+        ValueError, match="bad_key is not a state variable, please check for typos in the declaration of x_init"
+    ):
+        x_init = InitialGuessList()
+        x_init.add("bad_key", [1, 2])
+        bio_model = BiorbdModel(biorbd_model_path)
+        OptimalControlProgram(
+            bio_model,
+            dynamics,
+            n_shooting=5,
+            phase_time=1,
+            x_init=x_init,
+            objective_functions=objective_functions,
+        )
+
+    del bio_model  # This is to fix a memory bug
+    with pytest.raises(
+        ValueError, match="bad_key is not a control variable, please check for typos in the declaration of u_init"
+    ):
+        u_init = InitialGuessList()
+        u_init.add("bad_key", [1, 2])
+        bio_model = BiorbdModel(biorbd_model_path)
+        OptimalControlProgram(
+            bio_model,
+            dynamics,
+            n_shooting=5,
+            phase_time=1,
+            u_init=u_init,
             objective_functions=objective_functions,
         )

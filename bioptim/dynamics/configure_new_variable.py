@@ -418,9 +418,11 @@ class NewVariableConfiguration:
                 )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_states"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, a: x[self.nlp.states.key_index(self.name), :]
-                        if x.any()
-                        else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
+                        lambda t0, phases_dt, node_idx, x, u, p, a: (
+                            x[self.nlp.states.key_index(self.name), :]
+                            if x.any()
+                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                        ),
                         plot_type=PlotType.INTEGRATED,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
@@ -453,15 +455,19 @@ class NewVariableConfiguration:
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_controls"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, a: u[self.nlp.controls.key_index(self.name), :]
-                        if u.any()
-                        else np.ndarray((cx[0][0].shape[0], 1)) * np.nan,
+                        lambda t0, phases_dt, node_idx, x, u, p, a: (
+                            u[self.nlp.controls.key_index(self.name), :]
+                            if u.any()
+                            else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
+                        ),
                         plot_type=plot_type,
                         axes_idx=self.axes_idx,
                         legend=self.legend,
-                        combine_to=f"{self.name}_states"
-                        if self.as_states and self.combine_state_control_plot
-                        else self.combine_name,
+                        combine_to=(
+                            f"{self.name}_states"
+                            if self.as_states and self.combine_state_control_plot
+                            else self.combine_name
+                        ),
                     )
 
         if self.as_states_dot:
@@ -601,9 +607,9 @@ def _manage_fatigue_to_new_variable(
                 var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
             )
             nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a, key: u[nlp.controls.key_index(key), :]
-                if u.any()
-                else np.ndarray((len(name_elements), 1)) * np.nan,
+                lambda t0, phases_dt, node_idx, x, u, p, a, key: (
+                    u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan
+                ),
                 plot_type=PlotType.STEP,
                 combine_to=control_plot_name,
                 key=var_names_with_suffix[-1],
@@ -612,9 +618,9 @@ def _manage_fatigue_to_new_variable(
         elif i == 0:
             NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True)
             nlp.plot[f"{name}_controls"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a, key: u[nlp.controls.key_index(key), :]
-                if u.any()
-                else np.ndarray((len(name_elements), 1)) * np.nan,
+                lambda t0, phases_dt, node_idx, x, u, p, a, key: (
+                    u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan
+                ),
                 plot_type=PlotType.STEP,
                 combine_to=control_plot_name,
                 key=f"{name}",
@@ -625,9 +631,9 @@ def _manage_fatigue_to_new_variable(
             name_tp = f"{var_names_with_suffix[-1]}_{params}"
             NewVariableConfiguration(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
             nlp.plot[name_tp] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a, key, mod: mod * x[nlp.states.key_index(key), :]
-                if x.any()
-                else np.ndarray((len(name_elements), 1)) * np.nan,
+                lambda t0, phases_dt, node_idx, x, u, p, a, key, mod: (
+                    mod * x[nlp.states.key_index(key), :] if x.any() else np.ndarray((len(name_elements), 1)) * np.nan
+                ),
                 plot_type=PlotType.INTEGRATED,
                 combine_to=fatigue_plot_name,
                 key=name_tp,

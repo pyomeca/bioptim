@@ -136,7 +136,6 @@ def prepare_ocp(
         parameter_bounds=parameter_bounds,
         parameter_init=parameter_init,
         constraints=constraints,
-        variable_mappings=tau_mappings,
         parameters=parameters,
     )
 

@@ -3,6 +3,7 @@ Test for file IO.
 It tests the results of an optimal control problem with acados regarding the proper functioning of :
 - the handling of mayer and lagrange obj
 """
+
 import os
 import shutil
 import pytest
@@ -736,10 +737,6 @@ def test_acados_bounds_not_implemented(failing):
     n_cycles = 3
     window_len = 5
     window_duration = 0.2
-    x_init = InitialGuessList()
-    x_init["final"] = np.zeros((nq * 2, 1))
-    u_init = InitialGuessList()
-    u_init["final"] = np.zeros((ntau, 1))
     if failing == "u_bounds":
         x_bounds = BoundsList()
         x_bounds.add("q", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)))
@@ -769,8 +766,6 @@ def test_acados_bounds_not_implemented(failing):
         Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True),
         window_len,
         window_duration,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,
