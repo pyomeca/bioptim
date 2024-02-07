@@ -1,5 +1,6 @@
 from typing import Any
 from math import inf
+from numpy import tile
 import inspect
 
 import biorbd_casadi as biorbd
@@ -173,6 +174,7 @@ class PenaltyFunctionAbstract:
             controller : PenaltyController
                 Controller to be used to compute the expected effort.
             """
+            polynomial_degree = controller.ocp.nlp[0].ode_solver.polynomial_degree
 
             CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
             sensory_noise_matrix = controller.model.sensory_noise_magnitude * CX_eye(
@@ -205,10 +207,10 @@ class PenaltyFunctionAbstract:
             e_fb_mx = controller.model.compute_torques_from_noise_and_feedback(
                 nlp=controller.get_nlp,
                 time=controller.time.mx,
-                states=controller.states.mx,
-                controls=controller.controls.mx,
-                parameters=controller.parameters.mx,
-                algebraic_states=controller.algebraic_states.mx,
+                states=controller.states_scaled.mx,
+                controls=controller.controls_scaled.mx,
+                parameters=controller.parameters.mx,  # @pariterre: parameters_scaled does not exist ?
+                algebraic_states=controller.algebraic_states_scaled.mx,
                 sensory_noise=controller.model.sensory_noise_magnitude,
                 motor_noise=controller.model.motor_noise_magnitude,
             )
@@ -216,21 +218,22 @@ class PenaltyFunctionAbstract:
                 "e_fb_tp",
                 [
                     vertcat(controller.time.mx, controller.dt.mx),
-                    controller.states.mx,
-                    controller.controls.mx,
-                    controller.parameters.mx,
-                    controller.algebraic_states.mx,
+                    controller.states_scaled.mx,
+                    controller.controls_scaled.mx,
+                    controller.parameters.mx,  # @pariterre: parameters_scaled does not exist ?
+                    controller.algebraic_states_scaled.mx,
                 ],
                 [e_fb_mx],
             )(
                 vertcat(controller.time.cx, controller.dt.cx),
                 controller.states.cx_start,
                 controller.controls.cx_start,
-                controller.parameters.cx_start,
+                controller.parameters.cx_start,  # @pariterre: parameters_scaled does not exist ?
                 controller.algebraic_states.cx_start,
             )
 
-            jac_e_fb_x = jacobian(e_fb, controller.states.cx_start)
+            states_scaling = tile(controller.ocp.nlp[0].x_scaling.to_vector(), polynomial_degree + 1).T
+            jac_e_fb_x = jacobian(e_fb, controller.states_scaled.cx_start) * 1 / states_scaling
 
             trace_jac_p_jack = trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
 

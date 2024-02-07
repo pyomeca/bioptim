@@ -910,6 +910,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             This function computes the jacobians of the collocation equation and of the continuity equation with respect to the collocation points and the noise
             """
+
             motor_noise = controller.parameters["motor_noise"].cx
             sensory_noise = controller.parameters["sensory_noise"].cx
             sigma_ww = diag(vertcat(motor_noise, sensory_noise))
@@ -923,30 +924,30 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             xf, _, defects = controller.integrate_extra_dynamics(0).function(
                 vertcat(controller.time.cx, controller.time.cx + controller.dt.cx),
-                horzcat(controller.states.cx, horzcat(*controller.states.cx_intermediates_list)),
-                controller.controls.cx,
-                controller.parameters.cx,
-                controller.algebraic_states.cx,
+                horzcat(controller.states_scaled.cx, horzcat(*controller.states_scaled.cx_intermediates_list)),
+                controller.controls_scaled.cx,
+                controller.parameters.cx,  # @pariterre: parameters_scaled does not exist?
+                controller.algebraic_states_scaled.cx,
             )
 
-            initial_defect = controller.states.cx_start - controller.states.cx_intermediates_list[0]
+            initial_defect = controller.states_scaled.cx_start - controller.states_scaled.cx_intermediates_list[0]
             defects = vertcat(initial_defect, defects)
 
-            Gdx = jacobian(defects, controller.states.cx)
-            Gdz = jacobian(defects, horzcat(*controller.states.cx_intermediates_list))
+            Gdx = jacobian(defects, controller.states_scaled.cx)
+            Gdz = jacobian(defects, horzcat(*controller.states_scaled.cx_intermediates_list))
             Gdw = jacobian(defects, vertcat(motor_noise, sensory_noise))
-            Fdz = jacobian(xf, horzcat(*controller.states.cx_intermediates_list))
+            Fdz = jacobian(xf, horzcat(*controller.states_scaled.cx_intermediates_list))
 
             # Constraint Equality defining M
             Mc = Function(
                 "M_cons",
                 [
                     vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # @pariterre: parameters_scaled does not exist?
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [Fdz.T - Gdz.T @ m_matrix.T],
             )
@@ -958,11 +959,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 "P_next",
                 [
                     vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # @pariterre: parameters_scaled does not exist?
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T],
             )
@@ -973,11 +974,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 "Gdx_fun",
                 [
                     vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # @pariterre: parameters_scaled does not exist?
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [Gdx],
             )
@@ -986,11 +987,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 "Gdz_fun",
                 [
                     vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # @pariterre: parameters_scaled does not exist?
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [Gdz],
             )
@@ -999,11 +1000,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 "Gdw_fun",
                 [
                     vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # @pariterre: parameters_scaled does not exist?
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [Gdw],
             )
@@ -1012,11 +1013,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 "Fdz_fun",
                 [
                     vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # @pariterre: parameters_scaled does not exist?
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [Fdz],
             )
