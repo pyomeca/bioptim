@@ -741,11 +741,9 @@ class BiorbdModel:
                         qddot_range for qddot_range in segment.QDDotRanges()
                     ]
 
-        if variable == "q" or variable == "q_roots" or variable == "q_joints":
+        if variable in ["q", "q_roots", "q_joints"]:
             return q_ranges
-        elif (
-            variable == "qdot" or variable == "qdot_roots" or variable == "qdot_joints"
-        ):
+        elif variable in ["qdot", "qdot_roots", "qdot_joints"]:
             return qdot_ranges
         elif variable == "qddot" or variable == "qddot_joints":
             return qddot_ranges
