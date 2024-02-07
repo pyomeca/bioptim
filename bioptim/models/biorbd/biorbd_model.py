@@ -22,15 +22,11 @@ class BiorbdModel:
     This class wraps the biorbd model and allows the user to call the biorbd functions from the biomodel protocol
     """
 
-    def __init__(
-        self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None
-    ):
+    def __init__(self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
-        self.model = (
-            biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
-        )
+        self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
         self._friction_coefficients = friction_coefficients
 
     @property
@@ -99,9 +95,7 @@ class BiorbdModel:
     def segments(self) -> tuple[biorbd.Segment]:
         return self.model.segments()
 
-    def biorbd_homogeneous_matrices_in_global(
-        self, q, segment_idx, inverse=False
-    ) -> tuple:
+    def biorbd_homogeneous_matrices_in_global(self, q, segment_idx, inverse=False) -> tuple:
         """
         Returns a biorbd object containing the roto-translation matrix of the segment in the global reference frame.
         This is useful if you want to interact with biorbd directly later on.
@@ -113,9 +107,7 @@ class BiorbdModel:
         """
         Returns the roto-translation matrix of the segment in the global reference frame.
         """
-        return self.biorbd_homogeneous_matrices_in_global(
-            q, segment_idx, inverse
-        ).to_mx()
+        return self.biorbd_homogeneous_matrices_in_global(q, segment_idx, inverse).to_mx()
 
     def homogeneous_matrices_in_child(self, segment_id) -> MX:
         return self.model.localJCS(segment_id).to_mx()
@@ -126,21 +118,15 @@ class BiorbdModel:
 
     def check_q_size(self, q):
         if q.shape[0] > self.nb_q:
-            raise ValueError(
-                f"Length of q is too big. Expected size: {self.nb_q}, but got: {q.shape[0]}"
-            )
+            raise ValueError(f"Length of q is too big. Expected size: {self.nb_q}, but got: {q.shape[0]}")
 
     def check_qdot_size(self, qdot):
         if qdot.shape[0] > self.nb_qdot:
-            raise ValueError(
-                f"Length of qdot is too big. Expected size: {self.nb_qdot}, but got: {qdot.shape[0]}"
-            )
+            raise ValueError(f"Length of qdot is too big. Expected size: {self.nb_qdot}, but got: {qdot.shape[0]}")
 
     def check_qddot_size(self, qddot):
         if qddot.shape[0] > self.nb_qddot:
-            raise ValueError(
-                f"Length of qddot is too big. Expected size: {self.nb_qddot}, but got: {qddot.shape[0]}"
-            )
+            raise ValueError(f"Length of qddot is too big. Expected size: {self.nb_qddot}, but got: {qddot.shape[0]}")
 
     def check_qddot_joints_size(self, qddot_joints):
         nb_qddot_joints = self.nb_q - self.nb_root
@@ -151,9 +137,7 @@ class BiorbdModel:
 
     def check_tau_size(self, tau):
         if tau.shape[0] > self.nb_tau:
-            raise ValueError(
-                f"Length of tau is too big. Expected size: {self.nb_tau}, but got: {tau.shape[0]}"
-            )
+            raise ValueError(f"Length of tau is too big. Expected size: {self.nb_tau}, but got: {tau.shape[0]}")
 
     def check_muscle_size(self, muscle):
         if isinstance(muscle, list):
@@ -164,9 +148,7 @@ class BiorbdModel:
             raise TypeError("Unsupported type for muscle.")
 
         if muscle_size > self.nb_muscles:
-            raise ValueError(
-                f"Length of muscle is too big. Expected size: {self.nb_muscles}, but got: {muscle_size}"
-            )
+            raise ValueError(f"Length of muscle is too big. Expected size: {self.nb_muscles}, but got: {muscle_size}")
 
     def center_of_mass(self, q) -> MX:
         self.check_q_size(q)
@@ -232,9 +214,7 @@ class BiorbdModel:
         self.check_qdot_size(qdot)
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
-        return self.model.segmentAngularVelocity(
-            q_biorbd, qdot_biorbd, idx, True
-        ).to_mx()
+        return self.model.segmentAngularVelocity(q_biorbd, qdot_biorbd, idx, True).to_mx()
 
     def segment_orientation(self, q, idx) -> MX:
         """
@@ -301,9 +281,7 @@ class BiorbdModel:
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         qddot_joints_biorbd = GeneralizedAcceleration(qddot_joints)
-        return self.model.ForwardDynamicsFreeFloatingBase(
-            q_biorbd, qdot_biorbd, qddot_joints_biorbd
-        ).to_mx()
+        return self.model.ForwardDynamicsFreeFloatingBase(q_biorbd, qdot_biorbd, qddot_joints_biorbd).to_mx()
 
     @staticmethod
     def reorder_qddot_root_joints(qddot_root, qddot_joints) -> MX:
@@ -351,35 +329,23 @@ class BiorbdModel:
         if translational_forces is not None:
             for elements in translational_forces:
                 values, name, point_of_application = extract_elements(elements)
-                external_forces_set.addTranslationalForce(
-                    values, name, point_of_application
-                )
+                external_forces_set.addTranslationalForce(values, name, point_of_application)
 
         return external_forces_set
 
-    def forward_dynamics(
-        self, q, qdot, tau, external_forces=None, translational_forces=None
-    ) -> MX:
+    def forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
         self.check_q_size(q)
         self.check_qdot_size(qdot)
         self.check_tau_size(tau)
-        external_forces_set = self._dispatch_forces(
-            external_forces, translational_forces
-        )
+        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
 
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         tau_biorbd = GeneralizedTorque(tau)
-        return self.model.ForwardDynamics(
-            q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set
-        ).to_mx()
+        return self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
 
-    def constrained_forward_dynamics(
-        self, q, qdot, tau, external_forces=None, translational_forces=None
-    ) -> MX:
-        external_forces_set = self._dispatch_forces(
-            external_forces, translational_forces
-        )
+    def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
+        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
         self.check_q_size(q)
         self.check_qdot_size(qdot)
         self.check_tau_size(tau)
@@ -391,12 +357,8 @@ class BiorbdModel:
             q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set
         ).to_mx()
 
-    def inverse_dynamics(
-        self, q, qdot, qddot, external_forces=None, translational_forces=None
-    ) -> MX:
-        external_forces_set = self._dispatch_forces(
-            external_forces, translational_forces
-        )
+    def inverse_dynamics(self, q, qdot, qddot, external_forces=None, translational_forces=None) -> MX:
+        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
         self.check_q_size(q)
         self.check_qdot_size(qdot)
         self.check_qddot_size(qddot)
@@ -404,16 +366,12 @@ class BiorbdModel:
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         qddot_biorbd = GeneralizedAcceleration(qddot)
-        return self.model.InverseDynamics(
-            q_biorbd, qdot_biorbd, qddot_biorbd, external_forces_set
-        ).to_mx()
+        return self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd, external_forces_set).to_mx()
 
     def contact_forces_from_constrained_forward_dynamics(
         self, q, qdot, tau, external_forces=None, translational_forces=None
     ) -> MX:
-        external_forces_set = self._dispatch_forces(
-            external_forces, translational_forces
-        )
+        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
         self.check_q_size(q)
         self.check_qdot_size(qdot)
         self.check_tau_size(tau)
@@ -430,9 +388,7 @@ class BiorbdModel:
         self.check_qdot_size(qdot_pre_impact)
         q_biorbd = GeneralizedCoordinates(q)
         qdot_pre_impact_biorbd = GeneralizedVelocity(qdot_pre_impact)
-        return self.model.ComputeConstraintImpulsesDirect(
-            q_biorbd, qdot_pre_impact_biorbd
-        ).to_mx()
+        return self.model.ComputeConstraintImpulsesDirect(q_biorbd, qdot_pre_impact_biorbd).to_mx()
 
     def muscle_activation_dot(self, muscle_excitations) -> MX:
         self.check_muscle_size(muscle_excitations)
@@ -462,9 +418,7 @@ class BiorbdModel:
             muscles_states[k].setActivation(activations[k])
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
-        return self.model.muscularJointTorque(
-            muscles_states, q_biorbd, qdot_biorbd
-        ).to_mx()
+        return self.model.muscularJointTorque(muscles_states, q_biorbd, qdot_biorbd).to_mx()
 
     def markers(self, q) -> list[MX]:
         self.check_q_size(q)
@@ -481,9 +435,7 @@ class BiorbdModel:
         self.check_q_size(q)
         marker = self.model.marker(GeneralizedCoordinates(q), index)
         if reference_segment_index is not None:
-            global_homogeneous_matrix = self.model.globalJCS(
-                GeneralizedCoordinates(q), reference_segment_index
-            )
+            global_homogeneous_matrix = self.model.globalJCS(GeneralizedCoordinates(q), reference_segment_index)
             marker.applyRT(global_homogeneous_matrix.transpose())
         return marker.to_mx()
 
@@ -539,9 +491,7 @@ class BiorbdModel:
                 reference_index,
                 inverse=True,
             )
-            for m in self.model.markersVelocity(
-                GeneralizedCoordinates(q), GeneralizedVelocity(qdot)
-            ):
+            for m in self.model.markersVelocity(GeneralizedCoordinates(q), GeneralizedVelocity(qdot)):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     out.append(m.to_mx())
 
@@ -588,24 +538,20 @@ class BiorbdModel:
         torque_max, torque_min = self.model.torqueMax(q_biorbd, qdot_biorbd)
         return torque_max.to_mx(), torque_min.to_mx()
 
-    def rigid_contact_acceleration(
-        self, q, qdot, qddot, contact_index, contact_axis
-    ) -> MX:
+    def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
         self.check_q_size(q)
         self.check_qdot_size(qdot)
         self.check_qddot_size(qddot)
         q_biorbd = GeneralizedCoordinates(q)
         qdot_biorbd = GeneralizedVelocity(qdot)
         qddot_biorbd = GeneralizedAcceleration(qddot)
-        return self.model.rigidContactAcceleration(
-            q_biorbd, qdot_biorbd, qddot_biorbd, contact_index, True
-        ).to_mx()[contact_axis]
+        return self.model.rigidContactAcceleration(q_biorbd, qdot_biorbd, qddot_biorbd, contact_index, True).to_mx()[
+            contact_axis
+        ]
 
     def markers_jacobian(self, q) -> list[MX]:
         self.check_q_size(q)
-        return [
-            m.to_mx() for m in self.model.markersJacobian(GeneralizedCoordinates(q))
-        ]
+        return [m.to_mx() for m in self.model.markersJacobian(GeneralizedCoordinates(q))]
 
     @property
     def marker_names(self) -> tuple[str, ...]:
@@ -622,9 +568,7 @@ class BiorbdModel:
             soft_contact = self.soft_contact(i_sc)
 
             soft_contact_forces[i_sc * 6 : (i_sc + 1) * 6, :] = (
-                biorbd.SoftContactSphere(soft_contact)
-                .computeForceAtOrigin(self.model, q_biorbd, qdot_biorbd)
-                .to_mx()
+                biorbd.SoftContactSphere(soft_contact).computeForceAtOrigin(self.model, q_biorbd, qdot_biorbd).to_mx()
             )
 
         return soft_contact_forces
@@ -634,13 +578,7 @@ class BiorbdModel:
         f_contact_vec = []
         for i in range(self.nb_rigid_contacts):
             contact = self.model.rigidContact(i)
-            parent_name = (
-                self.model.segment(
-                    self.model.getBodyRbdlIdToBiorbdId(contact.parentId())
-                )
-                .name()
-                .to_string()
-            )
+            parent_name = self.model.segment(self.model.getBodyRbdlIdToBiorbdId(contact.parentId())).name().to_string()
 
             tp = MX.zeros(3)
             used_axes = [i for i, val in enumerate(contact.axes()) if val]
@@ -673,9 +611,7 @@ class BiorbdModel:
         quat_number = 0
         for j in range(self.nb_segments):
             if self.segments[j].isRotationAQuaternion():
-                quat_idx.append(
-                    [n_dof, n_dof + 1, n_dof + 2, self.nb_dof + quat_number]
-                )
+                quat_idx.append([n_dof, n_dof + 1, n_dof + 2, self.nb_dof + quat_number])
                 quat_number += 1
             n_dof += self.segments[j].nbDof()
         return quat_idx
@@ -687,15 +623,11 @@ class BiorbdModel:
         if external_forces is not None and len(external_forces) != 0:
             all_forces = MX()
             for i, f_ext in enumerate(external_forces):
-                force = self.contact_forces_from_constrained_forward_dynamics(
-                    q, qdot, tau, external_forces=f_ext
-                )
+                force = self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=f_ext)
                 all_forces = horzcat(all_forces, force)
             return all_forces
         else:
-            return self.contact_forces_from_constrained_forward_dynamics(
-                q, qdot, tau, external_forces=None
-            )
+            return self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=None)
 
     def passive_joint_torque(self, q, qdot) -> MX:
         self.check_q_size(q)
@@ -737,9 +669,7 @@ class BiorbdModel:
                 qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
             elif variable == "qddot_joints":
                 if segment.parent().to_string().lower() != "root":
-                    qddot_ranges += [
-                        qddot_range for qddot_range in segment.QDDotRanges()
-                    ]
+                    qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
 
         if variable in ["q", "q_roots", "q_joints"]:
             return q_ranges
@@ -758,9 +688,7 @@ class BiorbdModel:
     ) -> dict:
         return _var_mapping(key, range_for_mapping, mapping)
 
-    def bounds_from_ranges(
-        self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None
-    ) -> Bounds:
+    def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
 
     def lagrangian(self, q: MX | SX, qdot: MX | SX) -> MX | SX:
@@ -768,12 +696,8 @@ class BiorbdModel:
         qdot_biorbd = GeneralizedVelocity(qdot)
         return self.model.Lagrangian(q_biorbd, qdot_biorbd).to_mx()
 
-    def partitioned_forward_dynamics(
-        self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None
-    ):
-        raise NotImplementedError(
-            "partitioned_forward_dynamics is not implemented for BiorbdModel"
-        )
+    def partitioned_forward_dynamics(self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None):
+        raise NotImplementedError("partitioned_forward_dynamics is not implemented for BiorbdModel")
 
     @staticmethod
     def animate(
@@ -804,9 +728,7 @@ class BiorbdModel:
         all_bioviz = []
         for idx_phase, data in enumerate(states):
             if not isinstance(solution.ocp.nlp[idx_phase].model, BiorbdModel):
-                raise NotImplementedError(
-                    "Animation is only implemented for biorbd models"
-                )
+                raise NotImplementedError("Animation is only implemented for biorbd models")
 
             # This calls each of the function that modify the internal dynamic model based on the parameters
             nlp = solution.ocp.nlp[idx_phase]
@@ -815,11 +737,7 @@ class BiorbdModel:
             biorbd_model: BiorbdModel = nlp.model
 
             all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
-            all_bioviz[-1].load_movement(
-                solution.ocp.nlp[idx_phase]
-                .variable_mappings["q"]
-                .to_second.map(data["q"])
-            )
+            all_bioviz[-1].load_movement(solution.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
 
             if "q_roots" in solution and "q_joints" in solution:
                 # TODO: Fix the mapping for this case
