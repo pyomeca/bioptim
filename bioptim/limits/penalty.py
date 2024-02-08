@@ -1,6 +1,5 @@
 from typing import Any
 from math import inf
-from numpy import tile
 import inspect
 
 import biorbd_casadi as biorbd
@@ -174,8 +173,6 @@ class PenaltyFunctionAbstract:
             controller : PenaltyController
                 Controller to be used to compute the expected effort.
             """
-            polynomial_degree = controller.ocp.nlp[0].ode_solver.polynomial_degree
-
             CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
             sensory_noise_matrix = controller.model.sensory_noise_magnitude * CX_eye(
                 controller.model.sensory_noise_magnitude.shape[0]
@@ -215,7 +212,7 @@ class PenaltyFunctionAbstract:
                 motor_noise=controller.model.motor_noise_magnitude,
             )
 
-            jac_e_fb_x = jacobian(e_fb_mx, controller.states_scaled.cx_start)
+            jac_e_fb_x = jacobian(e_fb_mx, controller.states_scaled.mx)
 
             jac_e_fb_x_cx = Function(
                 "jac_e_fb_x",
