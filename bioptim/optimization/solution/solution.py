@@ -343,7 +343,7 @@ class Solution:
         self,
         to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
         time_alignment: TimeAlignment = TimeAlignment.STATES,
-        continuous: bool = False,
+        continuous: bool = True,
     ) -> list | np.ndarray:
         """
         Returns the time vector at each node that matches decision_states or decision_controls
@@ -355,30 +355,20 @@ class Solution:
             is completely useless to merge KEYS
         time_alignment: TimeAlignment
             The type of alignment to perform. If TimeAlignment.STATES, then the time vector is aligned with the states
-            (i.e. the last node time is present). If TimeAlignment.CONTROLS, then the time vector is aligned with the
-            controls (i.e. the last node time is not present for CONSTANT controls).
+            (i.e. all the subnodes and the last node time are present). If TimeAlignment.CONTROLS, then the time vector
+            is aligned with the controls (i.e. only starting of the node without the last node if CONTROL constant).
         continuous: bool
             If the time should be continuous throughout the whole ocp. If False, then the time is reset at the
-            beginning of each phases.
+            beginning of each phase.
         """
 
-        if time_alignment != TimeAlignment.STATES:
-            raise NotImplementedError("Only TimeAlignment.STATES is implemented for now")
-
-        time = []
-        for nlp in self.ocp.nlp:
-            if nlp.ode_solver.is_direct_collocation:
-                time.append(self._stepwise_times[nlp.phase_idx])
-            else:
-                time.append(self._t_span[nlp.phase_idx])
-
-        return self._process_time_vector(time, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
+        return self._process_time_vector(is_stepwise=False, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
 
     def stepwise_time(
         self,
         to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
         time_alignment: TimeAlignment = TimeAlignment.STATES,
-        continuous: bool = False,
+        continuous: bool = True,
     ) -> list | np.ndarray:
         """
         Returns the time vector at each node that matches stepwise_states or stepwise_controls
@@ -390,36 +380,60 @@ class Solution:
             is completely useless to merge KEYS
         time_alignment: TimeAlignment
             The type of alignment to perform. If TimeAlignment.STATES, then the time vector is aligned with the states
-            (i.e. the last node time is present). If TimeAlignment.CONTROLS, then the time vector is aligned with the
-            controls (i.e. the last node time is not present for CONSTANT controls).
+            (i.e. all the subnodes and the last node time are present). If TimeAlignment.CONTROLS, then the time vector
+            is aligned with the controls (i.e. only starting of the node without the last node if CONTROL constant).
         continuous: bool
             If the time should be continuous throughout the whole ocp. If False, then the time is reset at the
-            beginning of each phases.
+            beginning of each phase.
 
         Returns
         -------
         The time vector at each node that matches stepwise_states or stepwise_controls
         """
 
-        return self._process_time_vector(
-            self._stepwise_times, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous
-        )
+        return self._process_time_vector(is_stepwise=True, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
 
     def _process_time_vector(
         self,
-        times,
+        is_stepwise: bool,
         to_merge: SolutionMerge | list[SolutionMerge, ...],
         time_alignment: TimeAlignment,
         continuous: bool,
     ):
-        if time_alignment != TimeAlignment.STATES:
-            raise NotImplementedError("Only TimeAlignment.STATES is implemented for now")
-
         if to_merge is None or isinstance(to_merge, SolutionMerge):
             to_merge = [to_merge]
 
         # Make sure to not return internal structure
-        times = deepcopy(times)
+        times_tp = deepcopy(self._stepwise_times)
+
+        # Select the appropriate time matrix
+        times = []
+        for nlp in self.ocp.nlp:
+            if time_alignment == TimeAlignment.STATES:
+                if nlp.ode_solver.is_direct_collocation:
+                    if nlp.ode_solver.duplicate_starting_point:
+                        times.append([t if t.shape == (1, 1) else vertcat(t[0], t[:-1]) for t in times_tp[nlp.phase_idx]])
+                    else:
+                        times.append([t if t.shape == (1, 1) else t[:-1] for t in times_tp[nlp.phase_idx]])
+
+                elif is_stepwise:
+                    times.append(times_tp[nlp.phase_idx])
+
+                else:
+                    times.append([t[0] for t in times_tp[nlp.phase_idx]])
+
+            elif time_alignment == TimeAlignment.CONTROLS:
+                if nlp.control_type == ControlType.CONSTANT:
+                    times.append([t[0] for t in times_tp[nlp.phase_idx]][:-1])
+                elif nlp.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+                    times.append([t[0] for t in times_tp[nlp.phase_idx]])
+                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                    times.append([t[[0, -1]] for t in times_tp[nlp.phase_idx]])
+                else:
+                    raise ValueError(f"Unrecognized control type {nlp.control_type}")
+
+            else:
+                raise ValueError("time_alignment should be either TimeAlignment.STATES or TimeAlignment.CONTROLS")
 
         if continuous:
             for phase_idx, phase_time in enumerate(times):
@@ -430,7 +444,7 @@ class Solution:
 
         if SolutionMerge.NODES in to_merge:
             for phase_idx in range(len(times)):
-                times[phase_idx] = np.concatenate(times[phase_idx])
+                times[phase_idx] = np.concatenate((np.concatenate(times[phase_idx][:-1]), times[phase_idx][-1]))
 
         if SolutionMerge.PHASES in to_merge and SolutionMerge.NODES not in to_merge:
             raise ValueError("Cannot merge phases without nodes")
@@ -765,6 +779,7 @@ class Solution:
         """
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
+        # t = self.decision_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.CONTROLS)
         x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
@@ -774,7 +789,7 @@ class Solution:
             integrated_sol = solve_ivp_interface(
                 shooting_type=Shooting.MULTIPLE,
                 nlp=nlp,
-                t=self._t_span[p],
+                t=self._t_span[p],  # TODO: THIS!!!
                 x=x[p],
                 u=u[p],
                 a=a[p],

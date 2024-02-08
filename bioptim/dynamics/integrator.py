@@ -634,7 +634,8 @@ class COLLOCATION(Integrator):
 
         # Concatenate constraints
         defects = vertcat(*defects)
-        return states_end, horzcat(*states), defects
+        collocation_states = horzcat(*states) if self.duplicate_starting_point else horzcat(*states[1:])
+        return states_end, collocation_states, defects
 
 
 class IRK(COLLOCATION):
