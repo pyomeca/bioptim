@@ -24,12 +24,18 @@ class PenaltyProtocol(Protocol):
 
 class PenaltyHelpers:
     @staticmethod
-    def t0(penalty, ocp, index, get_t0: Callable):
+    def t0(penalty, index, get_t0: Callable):
         """
         This method returns the t0 of a penalty.
         """
 
-        return get_t0(penalty.phase, penalty.node_idx[index])
+        if penalty.multinode_penalty:
+            phases, nodes, _ = _get_multinode_indices(penalty, is_constructing_penalty=False)
+            phase, node = phases[0], nodes[0]
+        else:
+            phase, node = penalty.phase, penalty.node_idx[index]
+
+        return get_t0(phase, node)
 
     @staticmethod
     def phases_dt(penalty, ocp, get_all_dt: Callable):

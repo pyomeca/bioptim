@@ -400,7 +400,7 @@ class PenaltyOption(OptionGeneric):
             .replace("__", "_")
         )
 
-        controller, x, u, a = self.get_variable_inputs(controllers)
+        controller, _, x, u, a = self.get_variable_inputs(controllers)
 
         # Alias some variables
         node = controller.node_index
@@ -608,6 +608,7 @@ class PenaltyOption(OptionGeneric):
         ocp = controller.ocp
         penalty_idx = self.node_idx.index(controller.node_index)
 
+        t0 = PenaltyHelpers.t0(self, penalty_idx, lambda p, n: ocp.node_time(phase_idx=p, node_idx=n))
         x = PenaltyHelpers.states(
             self,
             penalty_idx,
@@ -627,7 +628,7 @@ class PenaltyOption(OptionGeneric):
             is_constructing_penalty=True,
         )
 
-        return controller, x, u, a
+        return controller, t0, x, u, a
 
     @staticmethod
     def _get_states(ocp, states, n_idx, sn_idx):
