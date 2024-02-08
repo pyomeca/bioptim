@@ -68,7 +68,7 @@ def test_center_of_mass_valid_and_too_large_q_input(model):
     # q valid
     model.center_of_mass(q_valid)
     # q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.center_of_mass(q_too_large)
 
 
@@ -82,10 +82,10 @@ def test_center_of_mass_velocity_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.center_of_mass_velocity(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.center_of_mass_velocity(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.center_of_mass_velocity(q_valid, qdot_too_large)
 
 
@@ -108,13 +108,13 @@ def test_center_of_mass_acceleration_valid_and_too_large_q_or_qdot_or_qddot_inpu
     # q, qdot and qddot valid
     model.center_of_mass_acceleration(q_valid, qdot_valid, qddot_valid)
     # qdot and qddot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.center_of_mass_acceleration(q_too_large, qdot_valid, qddot_valid)
     # q and qddot valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.center_of_mass_acceleration(q_valid, qdot_too_large, qddot_valid)
     # q and qdot valid but qddot not valid
-    with pytest.raises(ValueError, match="Length of qddot is too big"):
+    with pytest.raises(ValueError, match="Length of qddot size should be: 4, but got: 5"):
         model.center_of_mass_acceleration(q_valid, qdot_valid, qddot_too_large)
 
 
@@ -128,10 +128,10 @@ def test_body_rotation_rate_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.body_rotation_rate(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.body_rotation_rate(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.body_rotation_rate(q_valid, qdot_too_large)
 
 
@@ -145,7 +145,7 @@ def test_mass_matrix_valid_and_too_large_q_input(model):
     # q valid
     model.mass_matrix(q_valid)
     # q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.mass_matrix(q_too_large)
 
 
@@ -159,10 +159,10 @@ def test_non_linear_effects_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.non_linear_effects(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.non_linear_effects(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.non_linear_effects(q_valid, qdot_too_large)
 
 
@@ -176,10 +176,10 @@ def test_angular_momentum_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.angular_momentum(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.angular_momentum(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.angular_momentum(q_valid, qdot_too_large)
 
 
@@ -193,10 +193,10 @@ def test_reshape_qdot_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.reshape_qdot(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.reshape_qdot(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.reshape_qdot(q_valid, qdot_too_large)
 
 
@@ -210,10 +210,10 @@ def test_segment_angular_velocity_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.segment_angular_velocity(q_valid, qdot_valid, idx)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.segment_angular_velocity(q_too_large, qdot_valid, idx)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.segment_angular_velocity(q_valid, qdot_too_large, idx)
 
 
@@ -236,13 +236,13 @@ def test_forward_dynamics_free_floating_base_valid_and_too_large_q_or_qdot_or_qd
     # q, qdot and qddot_joints valid
     model.forward_dynamics_free_floating_base(q_valid, qdot_valid, qddot_joints_valid)
     # qdot and qddot_joints valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.forward_dynamics_free_floating_base(q_too_large, qdot_valid, qddot_joints_valid)
     # q and qddot_joints valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.forward_dynamics_free_floating_base(q_valid, qdot_too_large, qddot_joints_valid)
     # q and qdot valid but qddot_joints not valid
-    with pytest.raises(ValueError, match="Length of qddot is too big"):
+    with pytest.raises(ValueError, match="Length of qddot_joints size should be: 1, but got: 5"):
         model.forward_dynamics_free_floating_base(q_valid, qdot_valid, qddot_joints_too_large)
 
 
@@ -257,13 +257,13 @@ def test_forward_dynamics_valid_and_too_large_q_or_qdot_or_tau_activations_input
     # q, qdot and tau valid
     model.forward_dynamics(q_valid, qdot_valid, tau_valid)
     # qdot and tau valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.forward_dynamics(q_too_large, qdot_valid, tau_valid)
     # q and tau valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.forward_dynamics(q_valid, qdot_too_large, tau_valid)
     # q and qdot valid but tau not valid
-    with pytest.raises(ValueError, match="Length of tau is too big"):
+    with pytest.raises(ValueError, match="Length of tau size should be: 4, but got: 5"):
         model.forward_dynamics(q_valid, qdot_valid, tau_too_large)
 
 
@@ -278,13 +278,13 @@ def test_constrained_forward_dynamics_valid_and_too_large_q_or_qdot_or_tau_input
     # q, qdot and tau valid
     model.constrained_forward_dynamics(q_valid, qdot_valid, tau_valid)
     # qdot and tau valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.constrained_forward_dynamics(q_too_large, qdot_valid, tau_valid)
     # q and tau valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.constrained_forward_dynamics(q_valid, qdot_too_large, tau_valid)
     # q and qdot valid but tau not valid
-    with pytest.raises(ValueError, match="Length of tau is too big"):
+    with pytest.raises(ValueError, match="Length of tau size should be: 4, but got: 5"):
         model.constrained_forward_dynamics(q_valid, qdot_valid, tau_too_large)
 
 
@@ -305,13 +305,13 @@ def test_inverse_dynamics_valid_and_too_large_q_or_qdot_or_qddot_input(model):
     # q, qdot and qddot valid
     model.inverse_dynamics(q_valid, qdot_valid, qddot_valid)
     # qdot and qddot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.inverse_dynamics(q_too_large, qdot_valid, qddot_valid)
     # q and qddot valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.inverse_dynamics(q_valid, qdot_too_large, qddot_valid)
     # q and qdot valid but qddot not valid
-    with pytest.raises(ValueError, match="Length of qddot is too big"):
+    with pytest.raises(ValueError, match="Length of qddot size should be: 4, but got: 5"):
         model.inverse_dynamics(q_valid, qdot_valid, qddot_too_large)
 
 
@@ -328,13 +328,13 @@ def test_contact_forces_from_constrained_forward_dynamics_valid_and_too_large_q_
     # q, qdot and tau valid
     model.contact_forces_from_constrained_forward_dynamics(q_valid, qdot_valid, tau_valid)
     # qdot and tau valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.contact_forces_from_constrained_forward_dynamics(q_too_large, qdot_valid, tau_valid)
     # q and tau valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.contact_forces_from_constrained_forward_dynamics(q_valid, qdot_too_large, tau_valid)
     # q and qdot valid but tau not valid
-    with pytest.raises(ValueError, match="Length of tau is too big"):
+    with pytest.raises(ValueError, match="Length of tau size should be: 4, but got: 5"):
         model.contact_forces_from_constrained_forward_dynamics(q_valid, qdot_valid, tau_too_large)
 
 
@@ -348,10 +348,10 @@ def test_qdot_from_impact_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.qdot_from_impact(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.qdot_from_impact(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.qdot_from_impact(q_valid, qdot_too_large)
 
 
@@ -365,7 +365,7 @@ def test_muscle_activation_dot_valid_and_too_large_q_input(model):
     # muscle valid
     model.muscle_activation_dot(muscle_valid)
     # muscle not valid
-    with pytest.raises(ValueError, match="Length of muscle is too big"):
+    with pytest.raises(ValueError, match="Length of muscle size should be: 1, but got: 2"):
         model.muscle_activation_dot(muscle_too_large)
 
 
@@ -379,7 +379,7 @@ def test_muscle_length_jacobian_valid_and_too_large_q_input(model):
     # q valid
     model.muscle_length_jacobian(q_valid)
     # q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.muscle_length_jacobian(q_too_large)
 
 
@@ -393,10 +393,10 @@ def test_muscle_velocity_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.muscle_velocity(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.muscle_velocity(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.muscle_velocity(q_valid, qdot_too_large)
 
 
@@ -418,13 +418,13 @@ def test_muscle_joint_torque_valid_and_too_large_q_or_qdot_or_qddot_input(model)
     # q, qdot and qddot valid
     model.muscle_joint_torque(muscle_valid, q_valid, qdot_valid)
     # qdot and qddot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.muscle_joint_torque(muscle_valid, q_too_large, qdot_valid)
     # q and qddot valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.muscle_joint_torque(muscle_valid, q_valid, qdot_too_large)
     # q and qdot valid but qddot not valid
-    with pytest.raises(ValueError, match="Length of muscle is too big"):
+    with pytest.raises(ValueError, match="Length of muscle size should be: 1, but got: 2"):
         model.muscle_joint_torque(muscle_too_large, q_valid, qdot_valid)
 
 
@@ -438,7 +438,7 @@ def test_markers_valid_and_too_large_q_input(model):
     # q valid
     model.markers(q_valid)
     # q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.markers(q_too_large)
 
 
@@ -452,7 +452,7 @@ def test_marker_valid_and_too_large_q_input(model):
     # q valid
     model.marker(q_valid, 1)
     # q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.marker(q_too_large, 1)
 
 
@@ -466,10 +466,10 @@ def test_marker_velocities_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.marker_velocities(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.marker_velocities(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.marker_velocities(q_valid, qdot_too_large)
 
 
@@ -490,13 +490,13 @@ def test_marker_accelerations_valid_and_too_large_q_or_qdot_or_qddot_input(model
     # q, qdot and qddot valid
     model.marker_accelerations(q_valid, qdot_valid, qddot_valid)
     # qdot and qddot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.marker_accelerations(q_too_large, qdot_valid, qddot_valid)
     # q and qddot valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.marker_accelerations(q_valid, qdot_too_large, qddot_valid)
     # q and qdot valid but qddot not valid
-    with pytest.raises(ValueError, match="Length of qddot is too big"):
+    with pytest.raises(ValueError, match="Length of qddot size should be: 4, but got: 5"):
         model.marker_accelerations(q_valid, qdot_valid, qddot_too_large)
 
 
@@ -508,10 +508,10 @@ def test_tau_max_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.tau_max(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 3, but got: 4"):
         model.tau_max(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 3, but got: 4"):
         model.tau_max(q_valid, qdot_too_large)
 
 
@@ -532,13 +532,13 @@ def test_rigid_contact_acceleration_valid_and_too_large_q_or_qdot_or_qddot_input
     # q, qdot and qddot valid
     model.rigid_contact_acceleration(q_valid, qdot_valid, qddot_valid, 0, 0)
     # qdot and qddot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.rigid_contact_acceleration(q_too_large, qdot_valid, qddot_valid, 0, 0)
     # q and qddot valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.rigid_contact_acceleration(q_valid, qdot_too_large, qddot_valid, 0, 0)
     # q and qdot valid but qddot not valid
-    with pytest.raises(ValueError, match="Length of qddot is too big"):
+    with pytest.raises(ValueError, match="Length of qddot size should be: 4, but got: 5"):
         model.rigid_contact_acceleration(q_valid, qdot_valid, qddot_too_large, 0, 0)
 
 
@@ -552,7 +552,7 @@ def test_markers_jacobian_valid_and_too_large_q_input(model):
     # q valid
     model.markers_jacobian(q_valid)
     # q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.markers_jacobian(q_too_large)
 
 
@@ -566,10 +566,10 @@ def test_soft_contact_forces_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.soft_contact_forces(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.soft_contact_forces(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.soft_contact_forces(q_valid, qdot_too_large)
 
 
@@ -584,13 +584,13 @@ def test_contact_forces_valid_and_too_large_q_or_qdot_or_tau_input(model):
     # q, qdot and tau valid
     model.contact_forces(q_valid, qdot_valid, tau_valid)
     # qdot and tau valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.contact_forces(q_too_large, qdot_valid, tau_valid)
     # q and tau valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.contact_forces(q_valid, qdot_too_large, tau_valid)
     # q and qdot valid but tau not valid
-    with pytest.raises(ValueError, match="Length of tau is too big"):
+    with pytest.raises(ValueError, match="Length of tau size should be: 4, but got: 5"):
         model.contact_forces(q_valid, qdot_valid, tau_too_large)
 
 
@@ -604,10 +604,10 @@ def test_passive_joint_torque_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.passive_joint_torque(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.passive_joint_torque(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.passive_joint_torque(q_valid, qdot_too_large)
 
 
@@ -621,8 +621,8 @@ def test_ligament_joint_torque_valid_and_too_large_q_or_qdot_input(model):
     # q and qdot valid
     model.ligament_joint_torque(q_valid, qdot_valid)
     # qdot valid but q not valid
-    with pytest.raises(ValueError, match="Length of q is too big"):
+    with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
         model.ligament_joint_torque(q_too_large, qdot_valid)
     # q valid but qdot not valid
-    with pytest.raises(ValueError, match="Length of qdot is too big"):
+    with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
         model.ligament_joint_torque(q_valid, qdot_too_large)
