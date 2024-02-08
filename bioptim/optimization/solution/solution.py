@@ -724,7 +724,7 @@ class Solution:
 
         penalty = self.ocp.phase_transitions[phase_idx - 1]
 
-        t0 = PenaltyHelpers.t0(penalty, self.ocp)
+        t0 = PenaltyHelpers.t0(penalty, self.ocp, 0, lambda p, n: self._stepwise_times[p][n][0])
         dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
         # Compute the error between the last state of the previous phase and the first state of the next phase
         # based on the phase transition objective or constraint function. That is why we need to concatenate
@@ -1039,7 +1039,7 @@ class Solution:
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         for idx in range(len(penalty.node_idx)):
-            t0 = PenaltyHelpers.t0(penalty, self.ocp)
+            t0 = PenaltyHelpers.t0(penalty, self.ocp, idx, lambda p, n: self._stepwise_times[p][n][0])
             x = PenaltyHelpers.states(
                 penalty,
                 idx,

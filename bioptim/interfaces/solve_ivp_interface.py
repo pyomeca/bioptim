@@ -46,10 +46,7 @@ def solve_ivp_interface(
     y = []
     control_type = nlp.control_type
     for node in range(nlp.ns):
-        # TODO WARNING NEXT LINE IS A BUG DELIBERATELY INTRODUCED TO HAVE THE TESTS PASS. TIME SHOULD BE HANDLED
-        # PROPERLY AS THE COMMENTED LINE SUGGEST
-        t_span = t[0]
-        # t_span = t[node]
+        t_span = t[node]
         t_eval = np.linspace(float(t_span[0]), float(t_span[1]), nlp.n_states_stepwise_steps(node))
 
         # If multiple shooting, we need to set the first x0, otherwise use the previous answer
