@@ -112,13 +112,6 @@ class VariableScalingList(OptionDict):
     def param_when_copying(self):
         return {}
 
-    def to_vector(self):
-        """
-        Repeat the scaling to match the variables vector format
-        """
-
-        return np.concatenate([self[key].to_vector(repeats=1) for key in self.keys()], axis=0)
-
     def __contains__(self, item):
         return item in self.options[0]
 

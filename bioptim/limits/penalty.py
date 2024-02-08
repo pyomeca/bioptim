@@ -214,8 +214,11 @@ class PenaltyFunctionAbstract:
                 sensory_noise=controller.model.sensory_noise_magnitude,
                 motor_noise=controller.model.motor_noise_magnitude,
             )
-            e_fb = Function(
-                "e_fb_tp",
+
+            jac_e_fb_x = jacobian(e_fb_mx, controller.states_scaled.cx_start)
+
+            jac_e_fb_x_cx = Function(
+                "jac_e_fb_x",
                 [
                     vertcat(controller.time.mx, controller.dt.mx),
                     controller.states_scaled.mx,
@@ -223,7 +226,7 @@ class PenaltyFunctionAbstract:
                     controller.parameters.mx,  # TODO: fix parameter scaling
                     controller.algebraic_states_scaled.mx,
                 ],
-                [e_fb_mx],
+                [jac_e_fb_x],
             )(
                 vertcat(controller.time.cx, controller.dt.cx),
                 controller.states.cx_start,
@@ -232,12 +235,10 @@ class PenaltyFunctionAbstract:
                 controller.algebraic_states.cx_start,
             )
 
-            states_scaling = tile(controller.ocp.nlp[0].x_scaling.to_vector(), polynomial_degree + 1).T
-            jac_e_fb_x = jacobian(e_fb, controller.states_scaled.cx_start) * 1 / states_scaling
-
-            trace_jac_p_jack = trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
+            trace_jac_p_jack = trace(jac_e_fb_x_cx @ cov_matrix @ jac_e_fb_x_cx.T)
 
             expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
+
             return expectedEffort_fb_mx
 
         @staticmethod
