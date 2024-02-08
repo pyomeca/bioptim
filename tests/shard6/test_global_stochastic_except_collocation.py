@@ -428,7 +428,9 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
         return
     if not with_cholesky and not with_scaling and not use_sx:
         return
-    if with_scaling and use_sx:
+    if with_cholesky and with_scaling and use_sx:
+        return
+    if with_cholesky and with_scaling and not use_sx:
         return
 
     final_time = 0.8
