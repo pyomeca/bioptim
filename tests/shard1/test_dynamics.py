@@ -1388,9 +1388,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     NonLinearProgram.add(
         ocp,
         "dynamics_type",
-        Dynamics(
-            DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, expand_dynamics=True, phase_dynamics=phase_dynamics
-        ),
+        Dynamics(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, expand_dynamics=True, phase_dynamics=phase_dynamics),
         False,
     )
     phase_index = [i for i in range(ocp.n_phases)]

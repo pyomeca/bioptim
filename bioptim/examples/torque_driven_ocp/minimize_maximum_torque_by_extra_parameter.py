@@ -90,8 +90,8 @@ def prepare_ocp(
 
     # Dynamics
     dynamics = DynamicsList()
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, with_contact=False)
-    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE, with_contact=False)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE)
+    dynamics.add(DynamicsFcn.TORQUE_DRIVEN_FREE_FLOATING_BASE)
 
     # Path constraint
     x_bounds = BoundsList()
