@@ -329,7 +329,7 @@ class Solution:
 
     @property
     def _t_span(self):
-        return [[vertcat(t[0], t[-1]) for t in self._stepwise_times[p]] for p in range(self.ocp.n_phases)]
+        return [[vertcat(t[0], t[-1]) for t in self._stepwise_times[p][:-1]] for p in range(self.ocp.n_phases)]
 
     @property
     def t_span(self):
@@ -428,7 +428,7 @@ class Solution:
                 elif nlp.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                     times.append([t[0] for t in times_tp[nlp.phase_idx]])
                 elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                    times.append([t[[0, -1]] for t in times_tp[nlp.phase_idx]])
+                    times.append([t if t.shape == (1, 1) else t[[0, -1]] for t in times_tp[nlp.phase_idx]])
                 else:
                     raise ValueError(f"Unrecognized control type {nlp.control_type}")
 
@@ -444,6 +444,7 @@ class Solution:
 
         if SolutionMerge.NODES in to_merge:
             for phase_idx in range(len(times)):
+                np.concatenate((np.concatenate(times[phase_idx][:-1]), times[phase_idx][-1]))
                 times[phase_idx] = np.concatenate((np.concatenate(times[phase_idx][:-1]), times[phase_idx][-1]))
 
         if SolutionMerge.PHASES in to_merge and SolutionMerge.NODES not in to_merge:
@@ -779,7 +780,7 @@ class Solution:
         """
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
-        # t = self.decision_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.CONTROLS)
+        t_spans = self.t_span
         x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
@@ -789,7 +790,7 @@ class Solution:
             integrated_sol = solve_ivp_interface(
                 shooting_type=Shooting.MULTIPLE,
                 nlp=nlp,
-                t=self._t_span[p],  # TODO: THIS!!!
+                t=t_spans[p],  # TODO: Make this continous
                 x=x[p],
                 u=u[p],
                 a=a[p],

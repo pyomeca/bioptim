@@ -186,3 +186,5 @@ def test_get_time_aligned_with_controls_single_phase(ode_solver, control_type, c
     controls = sol.stepwise_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS])
     time = sol.stepwise_time(to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS], time_alignment=TimeAlignment.CONTROLS)
     assert time.shape[0] == controls.shape[1]
+
+# TODO: Multiphase
