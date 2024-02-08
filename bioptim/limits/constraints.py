@@ -916,10 +916,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             sigma_ww = diag(vertcat(motor_noise, sensory_noise))
 
             cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
+                controller.algebraic_states_scaled["cov"].cx_start, controller.model.matrix_shape_cov
             )
             m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["m"].cx_start, controller.model.matrix_shape_m
+                controller.algebraic_states_scaled["m"].cx_start, controller.model.matrix_shape_m
             )
 
             xf, _, defects = controller.integrate_extra_dynamics(0).function(
