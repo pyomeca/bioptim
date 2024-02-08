@@ -209,7 +209,7 @@ class PenaltyFunctionAbstract:
                 time=controller.time.mx,
                 states=controller.states_scaled.mx,
                 controls=controller.controls_scaled.mx,
-                parameters=controller.parameters.mx,  # @pariterre: parameters_scaled does not exist ?
+                parameters=controller.parameters.mx,  # TODO: fix parameter scaling
                 algebraic_states=controller.algebraic_states_scaled.mx,
                 sensory_noise=controller.model.sensory_noise_magnitude,
                 motor_noise=controller.model.motor_noise_magnitude,
@@ -220,7 +220,7 @@ class PenaltyFunctionAbstract:
                     vertcat(controller.time.mx, controller.dt.mx),
                     controller.states_scaled.mx,
                     controller.controls_scaled.mx,
-                    controller.parameters.mx,  # @pariterre: parameters_scaled does not exist ?
+                    controller.parameters.mx,  # TODO: fix parameter scaling
                     controller.algebraic_states_scaled.mx,
                 ],
                 [e_fb_mx],
@@ -228,7 +228,7 @@ class PenaltyFunctionAbstract:
                 vertcat(controller.time.cx, controller.dt.cx),
                 controller.states.cx_start,
                 controller.controls.cx_start,
-                controller.parameters.cx_start,  # @pariterre: parameters_scaled does not exist ?
+                controller.parameters.cx_start,
                 controller.algebraic_states.cx_start,
             )
 
