@@ -91,7 +91,6 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
     # TODO: cov is still too sensitive to be properly tested, we need to test it otherwise
 
-
     # Test the automatic initialization of the stochastic variables
     socp = ocp_module.prepare_socp(
         biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
