@@ -30,7 +30,7 @@ from matplotlib import pyplot as plt
 # 1: maximize downward speed - expected kinematics: positive torque to get as high as possible and release
 # 2: minimize quadratic speed - expected kinematics: no torque no move
 # 3: maximize quadratic speed - as in 1
-# 4-7 same as 0-3 but for COM
+# 4-7 same as 0-3 but for COMdot
 
 scenarios = {
     0: {
