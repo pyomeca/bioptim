@@ -196,11 +196,9 @@ class DynamicsFunctions:
         parameters: MX.sym,
         algebraic_states: MX.sym,
         nlp,
-        with_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
         with_friction: bool,
-        external_forces: list = None,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques without actuation of the free floating base, optional external forces can be declared.
@@ -219,16 +217,12 @@ class DynamicsFunctions:
             The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_contact: bool
-            If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with friction should be used
-        external_forces: list[Any]
-            The external forces
 
         Returns
         ----------
@@ -256,7 +250,7 @@ class DynamicsFunctions:
 
         tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
 
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full, tau_full, with_contact, external_forces)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full, tau_full, with_contact=False)
         dxdt = MX(n_q + n_qdot, ddq.shape[1])
         dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[n_q:, :] = ddq
