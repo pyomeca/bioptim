@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 from casadi import vertcat, DM
 from matplotlib import pyplot as plt
 
-from .solution_data import SolutionData, SolutionMerge, TimeAlignment
+from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
 from ..optimization_vector import OptimizationVectorHelper
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
@@ -327,21 +327,64 @@ class Solution:
 
         return cls(ocp=ocp)
 
-    @property
-    def _t_span(self):
-        return [[vertcat(t[0], t[-1]) for t in self._stepwise_times[p][:-1]] for p in range(self.ocp.n_phases)]
+    def time(
+        self,
+        time_resolution: TimeResolution = TimeResolution.DECISION,
+        time_alignment: TimeAlignment = TimeAlignment.STATES,
+        to_merge: SolutionMerge | list[SolutionMerge] = None,
+        continuous: bool = True,
+    ) -> list | np.ndarray:
+        """
+        Returns the time vector at each node that matches stepwise_states or stepwise_controls
 
-    @property
-    def t_span(self):
+        Parameters
+        ----------
+        time_resolution: TimeResolution
+            The type of time vector to return
+        time_alignment: TimeAlignment
+            The type of alignment to perform. If TimeAlignment.STATES, then the time vector is aligned with the states
+            (i.e. all the subnodes and the last node time are present). If TimeAlignment.CONTROLS, then the time vector
+            is aligned with the controls (i.e. only starting of the node without the last node if CONTROL constant).
+        to_merge: SolutionMerge | list[SolutionMerge, ...]
+            The type of merge to perform. If None, then no merge is performed. It is often useful to merge NODES, but
+            is completely useless to merge KEYS
+        continuous: bool
+            If the time should be continuous throughout the whole ocp. If False, then the time is reset at the
+            beginning of each phase.
+
+        Returns
+        -------
+        The time vector at each node that matches stepwise_states or stepwise_controls
+        """
+
+        if time_resolution == TimeResolution.DECISION:
+            return self.decision_time(to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
+        elif time_resolution == TimeResolution.STEPWISE:
+            return self.stepwise_time(to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
+        elif time_resolution == TimeResolution.NODE_SPAN:
+            return self.t_span(to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
+        else:
+            raise ValueError("Unrecognized time_resolution")
+
+    def t_span(
+        self,
+        to_merge: SolutionMerge | list[SolutionMerge] = None,
+        time_alignment: TimeAlignment = TimeAlignment.STATES,
+        continuous: bool = True,
+    ):
         """
         Returns the time span at each node of each phases
         """
-        out = self._t_span
-        return out if len(out) > 1 else out[0]
+        return self._process_time_vector(
+            time_resolution=TimeResolution.NODE_SPAN,
+            to_merge=to_merge,
+            time_alignment=time_alignment,
+            continuous=continuous,
+        )
 
     def decision_time(
         self,
-        to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
+        to_merge: SolutionMerge | list[SolutionMerge] = None,
         time_alignment: TimeAlignment = TimeAlignment.STATES,
         continuous: bool = True,
     ) -> list | np.ndarray:
@@ -362,11 +405,16 @@ class Solution:
             beginning of each phase.
         """
 
-        return self._process_time_vector(is_stepwise=False, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
+        return self._process_time_vector(
+            time_resolution=TimeResolution.DECISION,
+            to_merge=to_merge,
+            time_alignment=time_alignment,
+            continuous=continuous,
+        )
 
     def stepwise_time(
         self,
-        to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
+        to_merge: SolutionMerge | list[SolutionMerge] = None,
         time_alignment: TimeAlignment = TimeAlignment.STATES,
         continuous: bool = True,
     ) -> list | np.ndarray:
@@ -391,12 +439,17 @@ class Solution:
         The time vector at each node that matches stepwise_states or stepwise_controls
         """
 
-        return self._process_time_vector(is_stepwise=True, to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
+        return self._process_time_vector(
+            time_resolution=TimeResolution.STEPWISE,
+            to_merge=to_merge,
+            time_alignment=time_alignment,
+            continuous=continuous,
+        )
 
     def _process_time_vector(
         self,
-        is_stepwise: bool,
-        to_merge: SolutionMerge | list[SolutionMerge, ...],
+        time_resolution: TimeResolution,
+        to_merge: SolutionMerge | list[SolutionMerge],
         time_alignment: TimeAlignment,
         continuous: bool,
     ):
@@ -409,31 +462,43 @@ class Solution:
         # Select the appropriate time matrix
         times = []
         for nlp in self.ocp.nlp:
-            if time_alignment == TimeAlignment.STATES:
-                if nlp.ode_solver.is_direct_collocation:
-                    if nlp.ode_solver.duplicate_starting_point:
-                        times.append([t if t.shape == (1, 1) else vertcat(t[0], t[:-1]) for t in times_tp[nlp.phase_idx]])
-                    else:
-                        times.append([t if t.shape == (1, 1) else t[:-1] for t in times_tp[nlp.phase_idx]])
-
-                elif is_stepwise:
-                    times.append(times_tp[nlp.phase_idx])
-
-                else:
-                    times.append([t[0] for t in times_tp[nlp.phase_idx]])
-
-            elif time_alignment == TimeAlignment.CONTROLS:
-                if nlp.control_type == ControlType.CONSTANT:
-                    times.append([t[0] for t in times_tp[nlp.phase_idx]][:-1])
-                elif nlp.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-                    times.append([t[0] for t in times_tp[nlp.phase_idx]])
-                elif nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+            if time_resolution == TimeResolution.NODE_SPAN:
+                if time_alignment == TimeAlignment.STATES:
                     times.append([t if t.shape == (1, 1) else t[[0, -1]] for t in times_tp[nlp.phase_idx]])
-                else:
-                    raise ValueError(f"Unrecognized control type {nlp.control_type}")
-
+                elif time_alignment == TimeAlignment.CONTROLS:
+                    times.append([t[[0, -1]] for t in times_tp[nlp.phase_idx][:-1]])
             else:
-                raise ValueError("time_alignment should be either TimeAlignment.STATES or TimeAlignment.CONTROLS")
+                if time_alignment == TimeAlignment.STATES:
+                    if nlp.ode_solver.is_direct_collocation:
+                        if nlp.ode_solver.duplicate_starting_point:
+                            times.append(
+                                [t if t.shape == (1, 1) else vertcat(t[0], t[:-1]) for t in times_tp[nlp.phase_idx]]
+                            )
+                        else:
+                            times.append([t if t.shape == (1, 1) else t[:-1] for t in times_tp[nlp.phase_idx]])
+
+                    else:
+                        if time_resolution == TimeResolution.STEPWISE:
+                            times.append(times_tp[nlp.phase_idx])
+
+                        elif time_resolution == TimeResolution.DECISION:
+                            times.append([t[0] for t in times_tp[nlp.phase_idx]])
+
+                        else:
+                            raise ValueError("Unrecognized time_resolution")
+
+                elif time_alignment == TimeAlignment.CONTROLS:
+                    if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                        times.append([t if t.shape == (1, 1) else t[[0, -1]] for t in times_tp[nlp.phase_idx]])
+                    elif nlp.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+                        times.append([t[0] for t in times_tp[nlp.phase_idx]])
+                    elif nlp.control_type == ControlType.CONSTANT:
+                        times.append([t[0] for t in times_tp[nlp.phase_idx]][:-1])
+                    else:
+                        raise ValueError(f"Unrecognized control type {nlp.control_type}")
+
+                else:
+                    raise ValueError("time_alignment should be either TimeAlignment.STATES or TimeAlignment.CONTROLS")
 
         if continuous:
             for phase_idx, phase_time in enumerate(times):
@@ -456,7 +521,7 @@ class Solution:
 
         return times if len(times) > 1 else times[0]
 
-    def decision_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
+    def decision_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         """
         Returns the decision states
 
@@ -478,7 +543,7 @@ class Solution:
             return data
         return data if len(data) > 1 else data[0]
 
-    def stepwise_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
+    def stepwise_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         """
         Returns the stepwise integrated states
 
@@ -503,10 +568,10 @@ class Solution:
             return data
         return data if len(data) > 1 else data[0]
 
-    def decision_controls(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
+    def decision_controls(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         return self.stepwise_controls(scaled=scaled, to_merge=to_merge)
 
-    def stepwise_controls(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
+    def stepwise_controls(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         """
         Returns the controls. Note the final control is always present but set to np.nan if it is not defined
 
@@ -536,7 +601,7 @@ class Solution:
 
         return self.decision_parameters(scaled=False)
 
-    def decision_parameters(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None):
+    def decision_parameters(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         """
         Returns the decision parameters
 
@@ -572,9 +637,7 @@ class Solution:
 
         return out
 
-    def decision_algebraic_states(
-        self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge, ...] = None
-    ):
+    def decision_algebraic_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         """
         Returns the decision algebraic_states
 
@@ -642,7 +705,7 @@ class Solution:
         self,
         shooting_type: Shooting = Shooting.SINGLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
-        to_merge: SolutionMerge | list[SolutionMerge, ...] = None,
+        to_merge: SolutionMerge | list[SolutionMerge] = None,
     ):
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
@@ -663,6 +726,9 @@ class Solution:
             )
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
+        t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
+        if len(self.ocp.nlp) == 1:
+            t_spans = [t_spans]
         x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
@@ -674,7 +740,7 @@ class Solution:
             integrated_sol = solve_ivp_interface(
                 shooting_type=shooting_type,
                 nlp=nlp,
-                t=self._t_span[p],
+                t=t_spans[p],
                 x=next_x,
                 u=u[p],
                 a=a[p],
@@ -780,7 +846,9 @@ class Solution:
         """
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
-        t_spans = self.t_span
+        t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
+        if len(self.ocp.nlp) == 1:
+            t_spans = [t_spans]
         x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
@@ -790,7 +858,7 @@ class Solution:
             integrated_sol = solve_ivp_interface(
                 shooting_type=Shooting.MULTIPLE,
                 nlp=nlp,
-                t=t_spans[p],  # TODO: Make this continous
+                t=t_spans[p],
                 x=x[p],
                 u=u[p],
                 a=a[p],
