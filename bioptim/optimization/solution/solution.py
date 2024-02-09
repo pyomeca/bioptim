@@ -928,6 +928,7 @@ class Solution:
                 "or a list of int of the number of phases dimension"
             )
         else:
+            # TODO: use stepwise times
             t_all = [np.concatenate(self._stepwise_times[p]) for p in range(len(self.ocp.nlp))]
             states = self._stepwise_states.to_dict(scaled=scaled, to_merge=[SolutionMerge.KEYS, SolutionMerge.NODES])
 

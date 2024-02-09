@@ -159,7 +159,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     j_printed = sum_cost_function_output(sol)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     tau = controls["tau"]
-    dt = sol.t_span[0][-1]
+    dt = sol.t_span()[0][-1]
 
     # Check objective function value
     f = np.array(sol.cost)
