@@ -2,12 +2,13 @@ import os
 
 import pytest
 import numpy as np
-from casadi import Function, vertcat, DM
 
 from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge, TimeAlignment, ControlType, Solution
 
 
-def _get_solution(ode_solver, control_type, collocation_type, duplicate_first, is_multi_phase) -> Solution | None:
+def _get_solution(
+    phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first, is_multi_phase
+) -> Solution | None:
     if ode_solver == OdeSolver.COLLOCATION:
         if collocation_type == "none":
             return None  # This collocation needs a specific collocation type
@@ -26,6 +27,7 @@ def _get_solution(ode_solver, control_type, collocation_type, duplicate_first, i
         model_path = bioptim_folder + "/models/cube.bioMod"
         prepare_args = {
             "biorbd_model_path": model_path,
+            "phase_dynamics": phase_dynamics,
             "ode_solver": ode_solver_instance,
             "control_type": control_type,
         }
@@ -38,6 +40,7 @@ def _get_solution(ode_solver, control_type, collocation_type, duplicate_first, i
             "biorbd_model_path": model_path,
             "final_time": 2,
             "n_shooting": 10,
+            "phase_dynamics": phase_dynamics,
             "ode_solver": ode_solver_instance,
             "phase_dynamics": PhaseDynamics.SHARED_DURING_THE_PHASE,
             "control_type": control_type,
@@ -51,6 +54,13 @@ def _get_solution(ode_solver, control_type, collocation_type, duplicate_first, i
             ocp_module.prepare_ocp(**prepare_args)
         return None
 
+    elif is_multi_phase and ode_solver == OdeSolver.COLLOCATION and duplicate_first and phase_dynamics:
+        with pytest.raises(RuntimeError):
+            # There is currently a bug with the duplicate_first option which creates a Casadi free variable
+            # When solve, this pytest.raises should be removed
+            ocp_module.prepare_ocp(**prepare_args)
+        return None
+
     ocp = ocp_module.prepare_ocp(**prepare_args)
     solver = Solver.IPOPT(show_online_optim=False)
     solver.set_maximum_iterations(0)
@@ -59,14 +69,19 @@ def _get_solution(ode_solver, control_type, collocation_type, duplicate_first, i
     return ocp.solve(solver=solver)
 
 
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 @pytest.mark.parametrize(
     "control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE]
 )
 @pytest.mark.parametrize("collocation_type", ["none", "radau", "legendre"])
 @pytest.mark.parametrize("duplicate_first", [False, True])
-def test_get_time_aligned_with_states_single_phase(ode_solver, control_type, collocation_type, duplicate_first):
-    sol = _get_solution(ode_solver, control_type, collocation_type, duplicate_first, is_multi_phase=False)
+def test_get_time_aligned_with_states_single_phase(
+    phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first
+):
+    sol = _get_solution(
+        phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first, is_multi_phase=False
+    )
     if sol is None:
         return
 
@@ -113,14 +128,19 @@ def test_get_time_aligned_with_states_single_phase(ode_solver, control_type, col
     assert time.shape[0] == states.shape[1]
 
 
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 @pytest.mark.parametrize(
     "control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE]
 )
 @pytest.mark.parametrize("collocation_type", ["none", "radau", "legendre"])
 @pytest.mark.parametrize("duplicate_first", [False, True])
-def test_get_time_aligned_with_controls_single_phase(ode_solver, control_type, collocation_type, duplicate_first):
-    sol = _get_solution(ode_solver, control_type, collocation_type, duplicate_first, is_multi_phase=False)
+def test_get_time_aligned_with_controls_single_phase(
+    phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first
+):
+    sol = _get_solution(
+        phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first, is_multi_phase=False
+    )
     if sol is None:
         return
 
@@ -167,31 +187,20 @@ def test_get_time_aligned_with_controls_single_phase(ode_solver, control_type, c
     assert time.shape[0] == controls.shape[1]
 
 
-@pytest.mark.parametrize(
-    "ode_solver",
-    [
-        # OdeSolver.RK4,
-        OdeSolver.COLLOCATION,
-        # OdeSolver.IRK,
-    ],
-)
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
 @pytest.mark.parametrize(
     "control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE]
 )
-@pytest.mark.parametrize(
-    "collocation_type",
-    [
-        # "none",
-        "radau",
-        "legendre",
-    ],
-)
+@pytest.mark.parametrize("collocation_type", ["none", "radau", "legendre"])
 @pytest.mark.parametrize("duplicate_first", [False, True])
 @pytest.mark.parametrize("continuous", [False, True])
 def test_get_time_aligned_with_states_multi_phases(
-    ode_solver, control_type, collocation_type, duplicate_first, continuous
+    phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first, continuous
 ):
-    sol = _get_solution(ode_solver, control_type, collocation_type, duplicate_first, is_multi_phase=True)
+    sol = _get_solution(
+        phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first, is_multi_phase=True
+    )
     if sol is None:
         return
 
@@ -256,7 +265,7 @@ def test_get_time_aligned_with_states_multi_phases(
     )
     assert time.shape[0] == states["q"].shape[1]
     if continuous:
-        assert time[-1] == 8
+        assert time[-1] == 11
     else:
         assert time[-1] == 4
 
@@ -268,7 +277,7 @@ def test_get_time_aligned_with_states_multi_phases(
     )
     assert time.shape[0] == states.shape[1]
     if continuous:
-        assert time[-1] == 8
+        assert time[-1] == 11
     else:
         assert time[-1] == 4
 
@@ -333,7 +342,7 @@ def test_get_time_aligned_with_states_multi_phases(
     )
     assert time.shape[0] == states["q"].shape[1]
     if continuous:
-        assert time[-1] == 8
+        assert time[-1] == 11
     else:
         assert time[-1] == 4
 
@@ -345,6 +354,207 @@ def test_get_time_aligned_with_states_multi_phases(
     )
     assert time.shape[0] == states.shape[1]
     if continuous:
-        assert time[-1] == 8
+        assert time[-1] == 11
     else:
         assert time[-1] == 4
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.COLLOCATION, OdeSolver.IRK])
+@pytest.mark.parametrize(
+    "control_type", [ControlType.CONSTANT, ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE]
+)
+@pytest.mark.parametrize("collocation_type", ["none", "radau", "legendre"])
+@pytest.mark.parametrize("duplicate_first", [False, True])
+@pytest.mark.parametrize("continuous", [False, True])
+def test_get_time_aligned_with_controls_multi_phases(
+    phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first, continuous
+):
+    sol = _get_solution(
+        phase_dynamics, ode_solver, control_type, collocation_type, duplicate_first, is_multi_phase=True
+    )
+    if sol is None:
+        return
+    phases_time = [2, 5, 4]
+
+    # Test all the merged combinations against the time for the decision variables
+    controls_phases = sol.decision_controls(to_merge=[])
+    times_phases = sol.decision_time(to_merge=[], time_alignment=TimeAlignment.CONTROLS, continuous=continuous)
+    for phase, (time, controls) in enumerate(zip(times_phases, controls_phases)):
+        assert len(time) == len(controls["tau"])
+        for t, tau in zip(time, controls["tau"]):
+            assert t.shape[0] == tau.shape[1]
+
+        if phase != 0:
+            if continuous:
+                assert times_phases[phase][0][0] == sum(phases_time[:phase])
+            else:
+                assert times_phases[phase][0][0] == 0
+
+    controls_phases = sol.decision_controls(to_merge=SolutionMerge.KEYS)
+    times_phases = sol.decision_time(
+        to_merge=SolutionMerge.KEYS, time_alignment=TimeAlignment.CONTROLS, continuous=continuous
+    )
+    for phase, (time, controls) in enumerate(zip(times_phases, controls_phases)):
+        assert len(time) == len(controls)
+        for t, tau in zip(time, controls):
+            assert t.shape[0] == tau.shape[1]
+
+        if phase != 0:
+            if continuous:
+                assert times_phases[phase][0][0] == sum(phases_time[:phase])
+            else:
+                assert times_phases[phase][0][0] == 0
+
+    controls_phases = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    times_phases = sol.decision_time(
+        to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.CONTROLS, continuous=continuous
+    )
+    for phase, (time, controls) in enumerate(zip(times_phases, controls_phases)):
+        assert time.shape[0] == controls["tau"].shape[1]
+
+        if phase != 0:
+            if continuous:
+                assert times_phases[phase][0] == sum(phases_time[:phase])
+            else:
+                assert times_phases[phase][0] == 0
+
+    controls_phases = sol.decision_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS])
+    times_phases = sol.decision_time(
+        to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS], time_alignment=TimeAlignment.CONTROLS, continuous=continuous
+    )
+    for phase, (time, controls) in enumerate(zip(times_phases, controls_phases)):
+        assert time.shape[0] == controls.shape[1]
+
+        if phase != 0:
+            if continuous:
+                assert times_phases[phase][0] == sum(phases_time[:phase])
+            else:
+                assert times_phases[phase][0] == 0
+
+    controls = sol.decision_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES])
+    time = sol.decision_time(
+        to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES],
+        time_alignment=TimeAlignment.CONTROLS,
+        continuous=continuous,
+    )
+    assert time.shape[0] == controls["tau"].shape[1]
+    if continuous:
+        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+            assert time[-1] == 11
+        else:
+            assert time[-1] == 10.8
+    else:
+        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+            np.testing.assert_almost_equal(time[-1, 0], 4.0)
+        else:
+            np.testing.assert_almost_equal(time[-1, 0], 3.8)
+
+    controls = sol.decision_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES, SolutionMerge.KEYS])
+    time = sol.decision_time(
+        to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES, SolutionMerge.KEYS],
+        time_alignment=TimeAlignment.CONTROLS,
+        continuous=continuous,
+    )
+    assert time.shape[0] == controls.shape[1]
+    if continuous:
+        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+            assert time[-1] == 11
+        else:
+            assert time[-1] == 10.8
+    else:
+        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+            np.testing.assert_almost_equal(time[-1, 0], 4.0)
+        else:
+            np.testing.assert_almost_equal(time[-1, 0], 3.8)
+
+    # Test all the merged combinations against the time for the stepwise variables
+    controls_phases = sol.stepwise_controls(to_merge=[])
+    times_phases = sol.stepwise_time(to_merge=[], time_alignment=TimeAlignment.CONTROLS, continuous=continuous)
+    for phase, (time, controls) in enumerate(zip(times_phases, controls_phases)):
+        assert len(time) == len(controls["tau"])
+        for t, tau in zip(time, controls["tau"]):
+            assert t.shape[0] == tau.shape[1]
+
+        if phase != 0:
+            if continuous:
+                assert times_phases[phase][0][0] == sum(phases_time[:phase])
+            else:
+                assert times_phases[phase][0][0] == 0
+
+    controls_phases = sol.stepwise_controls(to_merge=SolutionMerge.KEYS)
+    times_phases = sol.stepwise_time(
+        to_merge=SolutionMerge.KEYS, time_alignment=TimeAlignment.CONTROLS, continuous=continuous
+    )
+    for phase, (time, controls) in enumerate(zip(times_phases, controls_phases)):
+        assert len(time) == len(controls)
+        for t, tau in zip(time, controls):
+            assert t.shape[0] == tau.shape[1]
+
+        if phase != 0:
+            if continuous:
+                assert times_phases[phase][0][0] == sum(phases_time[:phase])
+            else:
+                assert times_phases[phase][0][0] == 0
+
+    controls_phases = sol.stepwise_controls(to_merge=SolutionMerge.NODES)
+    times_phases = sol.stepwise_time(
+        to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.CONTROLS, continuous=continuous
+    )
+    for phase, (time, controls) in enumerate(zip(times_phases, controls_phases)):
+        assert time.shape[0] == controls["tau"].shape[1]
+
+        if phase != 0:
+            if continuous:
+                assert times_phases[phase][0] == sum(phases_time[:phase])
+            else:
+                assert times_phases[phase][0] == 0
+
+    controls_phases = sol.stepwise_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS])
+    times_phases = sol.stepwise_time(
+        to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS], time_alignment=TimeAlignment.CONTROLS, continuous=continuous
+    )
+    for phase, (time, controls) in enumerate(zip(times_phases, controls_phases)):
+        assert time.shape[0] == controls.shape[1]
+
+        if phase != 0:
+            if continuous:
+                assert times_phases[phase][0][0] == sum(phases_time[:phase])
+            else:
+                assert times_phases[phase][0][0] == 0
+
+    controls = sol.stepwise_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES])
+    time = sol.stepwise_time(
+        to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES],
+        time_alignment=TimeAlignment.CONTROLS,
+        continuous=continuous,
+    )
+    assert time.shape[0] == controls["tau"].shape[1]
+    if continuous:
+        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+            assert time[-1] == 11
+        else:
+            assert time[-1] == 10.8
+    else:
+        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+            np.testing.assert_almost_equal(time[-1, 0], 4.0)
+        else:
+            np.testing.assert_almost_equal(time[-1, 0], 3.8)
+
+    controls = sol.stepwise_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES, SolutionMerge.KEYS])
+    time = sol.stepwise_time(
+        to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES, SolutionMerge.KEYS],
+        time_alignment=TimeAlignment.CONTROLS,
+        continuous=continuous,
+    )
+    assert time.shape[0] == controls.shape[1]
+    if continuous:
+        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+            assert time[-1] == 11
+        else:
+            assert time[-1] == 10.8
+    else:
+        if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
+            np.testing.assert_almost_equal(time[-1, 0], 4.0)
+        else:
+            np.testing.assert_almost_equal(time[-1, 0], 3.8)

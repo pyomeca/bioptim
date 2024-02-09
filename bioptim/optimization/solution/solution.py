@@ -12,7 +12,16 @@ from ..optimization_vector import OptimizationVectorHelper
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
-from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
+from ...misc.enums import (
+    ControlType,
+    CostType,
+    Shooting,
+    InterpolationType,
+    SolverType,
+    SolutionIntegrator,
+    Node,
+    PhaseDynamics,
+)
 from ...dynamics.ode_solver import OdeSolver
 from ...interfaces.solve_ivp_interface import solve_ivp_interface
 
@@ -460,8 +469,11 @@ class Solution:
         times_tp = deepcopy(self._stepwise_times)
 
         # Select the appropriate time matrix
+        phases_tf = []
         times = []
         for nlp in self.ocp.nlp:
+            phases_tf.append(times_tp[nlp.phase_idx][-1])
+
             if time_resolution == TimeResolution.NODE_SPAN:
                 if time_alignment == TimeAlignment.STATES:
                     times.append([t if t.shape == (1, 1) else t[[0, -1]] for t in times_tp[nlp.phase_idx]])
@@ -489,7 +501,10 @@ class Solution:
 
                 elif time_alignment == TimeAlignment.CONTROLS:
                     if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                        times.append([t if t.shape == (1, 1) else t[[0, -1]] for t in times_tp[nlp.phase_idx]])
+                        times.append([(t if t.shape == (1, 1) else t[[0, -1]]) for t in times_tp[nlp.phase_idx]])
+                        if len(times) < len(self.ocp.nlp):
+                            # The point is duplicated for internal phases, but not the last one
+                            times[-1][-1] = times[-1][-1][[0, 0]].T
                     elif nlp.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
                         times.append([t[0] for t in times_tp[nlp.phase_idx]])
                     elif nlp.control_type == ControlType.CONSTANT:
@@ -504,7 +519,7 @@ class Solution:
             for phase_idx, phase_time in enumerate(times):
                 if phase_idx == 0:
                     continue
-                previous_tf = times[phase_idx - 1][-1]
+                previous_tf = sum(phases_tf[:phase_idx])
                 times[phase_idx] = [t + previous_tf for t in phase_time]
 
         if SolutionMerge.NODES in to_merge:
