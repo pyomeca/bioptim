@@ -22,12 +22,12 @@ from bioptim import (
 )
 
 
-def multinode_min_controls(controllers: list[PenaltyController]) -> MX:
+def multinode_min_controls(controllers: list[PenaltyController]):
     """
     This function mimics the ObjectiveFcn.MINIMIZE_CONTROLS with a multinode objective.
     Note that it is better to use ObjectiveFcn.MINIMIZE_CONTROLS, here is juste a toy example.
     """
-    dt = controllers[0].tf / controllers[0].ns
+    dt = controllers[0].dt.cx
     out = 0
     for i, ctrl in enumerate(controllers):
         out += sum1(ctrl.controls["tau"].cx_start ** 2) * dt

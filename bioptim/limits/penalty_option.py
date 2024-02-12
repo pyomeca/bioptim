@@ -408,7 +408,7 @@ class PenaltyOption(OptionGeneric):
 
         dt = controller.dt.cx
         time_cx = controller.time.cx
-        phases_dt_cx = controller.phases_time_cx
+        phases_dt_cx = controller.phases_dt.cx
 
         # Sanity check on outputs
         if len(self.function) <= node:
@@ -448,7 +448,7 @@ class PenaltyOption(OptionGeneric):
                     raise NotImplementedError(f"Control type {self.control_types[0]} not implemented yet")
 
                 state_cx_end = controller.integrate(
-                    t_span=controller.t_span,
+                    t_span=controller.t_span.cx,
                     x0=controller.states.cx_start,
                     u=u_integrate,
                     p=controller.parameters.cx,
@@ -462,7 +462,7 @@ class PenaltyOption(OptionGeneric):
             control_cx_start = controller.controls_scaled.cx_start
             if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 # This effectively equates a TRAPEZOIDAL integration into a LEFT_RECTANGLE for penalties that targets
-                # controls with a constant control. This phiolosophically makes sense as the control is constant and
+                # controls with a constant control. This philosophically makes sense as the control is constant and
                 # applying a trapezoidal integration would be equivalent to applying a left rectangle integration
                 control_cx_end = controller.controls_scaled.cx_start
             else:
