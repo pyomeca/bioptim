@@ -400,11 +400,10 @@ class PenaltyOption(OptionGeneric):
             .replace("__", "_")
         )
 
-        controller, x, u, a = self.get_variable_inputs(controllers)
+        controller, x, u, p, a = self.get_variable_inputs(controllers)
 
         # Alias some variables
         node = controller.node_index
-        param_cx = controller.parameters.cx
 
         dt = controller.dt.cx
         time_cx = controller.time.cx
@@ -431,6 +430,7 @@ class PenaltyOption(OptionGeneric):
         if is_trapezoidal:
             # Hypothesis for APPROXIMATE_TRAPEZOIDAL: the function is continuous on states
             # it neglects the discontinuities at the beginning of the optimization
+            param_cx = controller.parameters_scaled.cx_start
             state_cx_start = controller.states_scaled.cx_start
             algebraic_states_start_cx = controller.algebraic_states_scaled.cx_start
             algebraic_states_end_cx = controller.algebraic_states_scaled.cx_end
@@ -491,7 +491,7 @@ class PenaltyOption(OptionGeneric):
             # for non weighted functions
             self.function[node] = Function(
                 name,
-                [time_cx, phases_dt_cx, x, u, param_cx, a],
+                [time_cx, phases_dt_cx, x, u, p, a],
                 [(func_at_start + func_at_end) / 2],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
@@ -505,13 +505,13 @@ class PenaltyOption(OptionGeneric):
                 u_end = controller.controls_scaled.cx_start
             else:
                 u_end = controller.controls_scaled.cx_end
-            param_cx = controller.parameters.cx
+            param_cx = controller.parameters_scaled.cx_start  ###### ici
             a_start = controller.algebraic_states_scaled.cx_start
             a_end = controller.algebraic_states_scaled.cx_end
 
             fcn_tp = self.function[node] = Function(
                 name,
-                [time_cx, phases_dt_cx, x_start, u_start, param_cx, a_start],
+                [time_cx, phases_dt_cx, x_start, u_start, p, a_start],
                 [sub_fcn],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
@@ -520,28 +520,28 @@ class PenaltyOption(OptionGeneric):
             # TODO: Charbie -> this is False, add algebraic_states for start, mid AND end
             self.function[node] = Function(
                 f"{name}",
-                [time_cx, phases_dt_cx, x, u, param_cx, a],
+                [time_cx, phases_dt_cx, x, u, p, a],
                 [
-                    fcn_tp(time_cx, phases_dt_cx, x_end, u_end, param_cx, a_end)
-                    - fcn_tp(time_cx, phases_dt_cx, x_start, u_start, param_cx, a_start)
+                    fcn_tp(time_cx, phases_dt_cx, x_end, u_end, p, a_end)
+                    - fcn_tp(time_cx, phases_dt_cx, x_start, u_start, p, a_start)
                 ],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
 
-            modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, a) - target_cx) ** exponent
+            modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, p, a) - target_cx) ** exponent
 
         else:
             # TODO Add error message if there are free variables to guide the user? For instance controls with last node
             self.function[node] = Function(
                 name,
-                [time_cx, phases_dt_cx, x, u, param_cx, a],
+                [time_cx, phases_dt_cx, x, u, p, a],
                 [sub_fcn],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
 
-            modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, param_cx, a) - target_cx) ** exponent
+            modified_fcn = (self.function[node](time_cx, phases_dt_cx, x, u, p, a) - target_cx) ** exponent
 
         if self.expand:
             self.function[node] = self.function[node].expand()
@@ -553,7 +553,7 @@ class PenaltyOption(OptionGeneric):
 
         self.weighted_function[node] = Function(
             name,
-            [time_cx, phases_dt_cx, x, u, param_cx, a, weight_cx, target_cx],
+            [time_cx, phases_dt_cx, x, u, p, a, weight_cx, target_cx],
             [modified_fcn],
             ["t", "dt", "x", "u", "p", "a", "weight", "target"],
             ["val"],
@@ -626,8 +626,9 @@ class PenaltyOption(OptionGeneric):
             lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].algebraic_states, n_idx, sn_idx),
             is_constructing_penalty=True,
         )
+        p = controller.parameters.scaled.cx_start
 
-        return controller, x, u, a
+        return controller, x, u, p, a
 
     @staticmethod
     def _get_states(ocp, states, n_idx, sn_idx):
