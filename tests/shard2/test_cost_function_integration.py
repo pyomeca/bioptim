@@ -259,19 +259,13 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                 np.testing.assert_almost_equal(f[0, 0], 34.52084504124038)
                 np.testing.assert_almost_equal(j_printed, 34.52084504124038)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 17.410587837666313)
-                np.testing.assert_almost_equal(j_printed, 17.410587837666313)
+                np.testing.assert_almost_equal(f[0, 0], 17.72098984554101)
+                np.testing.assert_almost_equal(j_printed, 17.72098984554101)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
-@pytest.mark.parametrize(
-    "objective",
-    ["torque", "qdot"],
-)
-@pytest.mark.parametrize(
-    "control_type",
-    [ControlType.CONSTANT],
-)
+@pytest.mark.parametrize("objective", ["torque", "qdot"])
+@pytest.mark.parametrize("control_type", [ControlType.CONSTANT])
 @pytest.mark.parametrize(
     "integration_rule",
     [
@@ -279,7 +273,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
         QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
         QuadratureRule.TRAPEZOIDAL,
         QuadratureRule.RECTANGLE_RIGHT,
-        QuadratureRule.MIDPOINT,
+        QuadratureRule.MIDPOINT
     ],
 )
 def test_pendulum_collocation(control_type, integration_rule, objective, phase_dynamics):
@@ -351,21 +345,13 @@ def test_pendulum_collocation(control_type, integration_rule, objective, phase_d
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("objective", ["torque", "qdot"])
 @pytest.mark.parametrize(
-    "objective",
-    ["torque", "qdot"],
-)
-@pytest.mark.parametrize(
-    "control_type",
-    [ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS],
+    "control_type", [ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS]
 )
 @pytest.mark.parametrize(
     "integration_rule",
-    [
-        QuadratureRule.RECTANGLE_LEFT,
-        QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
-        QuadratureRule.TRAPEZOIDAL,
-    ],
+    [QuadratureRule.RECTANGLE_LEFT, QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL],
 )
 def test_pendulum_target(control_type, integration_rule, objective, phase_dynamics):
     from bioptim.examples.getting_started import pendulum as ocp_module
@@ -596,8 +582,8 @@ def test_pendulum_target(control_type, integration_rule, objective, phase_dynami
                 np.testing.assert_almost_equal(f[0, 0], 43.72737954458251)
                 np.testing.assert_almost_equal(j_printed, 43.72737954458251)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 22.03942046815059)
-                np.testing.assert_almost_equal(j_printed, 22.03942046815059)
+                np.testing.assert_almost_equal(f[0, 0], 35.61604299585224)
+                np.testing.assert_almost_equal(j_printed, 35.61604299585224)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

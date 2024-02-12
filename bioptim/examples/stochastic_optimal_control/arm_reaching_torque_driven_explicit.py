@@ -127,7 +127,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
     """
     Minimize the uncertainty (covariance matrix) of the states "key".
     """
-    dt = controllers[0].tf / controllers[0].ns
+    dt = controllers[0].dt.cx
     out: Any = 0
     for i, ctrl in enumerate(controllers):
         cov_matrix = StochasticBioModel.reshape_to_matrix(ctrl.integrated_values["cov"].cx, ctrl.model.matrix_shape_cov)
@@ -270,7 +270,7 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
         List of controllers to be used to compute the expected effort.
     """
 
-    dt = controllers[0].tf / controllers[0].ns
+    dt = controllers[0].dt.cx
     sensory_noise_matrix = controllers[0].model.sensory_noise_magnitude * cas.MX_eye(4)
 
     # create the casadi function to be evaluated
