@@ -12,16 +12,7 @@ from ..optimization_vector import OptimizationVectorHelper
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
-from ...misc.enums import (
-    ControlType,
-    CostType,
-    Shooting,
-    InterpolationType,
-    SolverType,
-    SolutionIntegrator,
-    Node,
-    PhaseDynamics,
-)
+from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
 from ...dynamics.ode_solver import OdeSolver
 from ...interfaces.solve_ivp_interface import solve_ivp_interface
 
@@ -522,15 +513,15 @@ class Solution:
                 previous_tf = sum(phases_tf[:phase_idx])
                 times[phase_idx] = [t + previous_tf for t in phase_time]
 
-        if SolutionMerge.NODES in to_merge:
+        if SolutionMerge.NODES in to_merge or SolutionMerge.ALL in to_merge:
             for phase_idx in range(len(times)):
                 np.concatenate((np.concatenate(times[phase_idx][:-1]), times[phase_idx][-1]))
                 times[phase_idx] = np.concatenate((np.concatenate(times[phase_idx][:-1]), times[phase_idx][-1]))
 
-        if SolutionMerge.PHASES in to_merge and SolutionMerge.NODES not in to_merge:
+        if (SolutionMerge.PHASES in to_merge and SolutionMerge.NODES not in to_merge) and SolutionMerge.ALL not in to_merge:
             raise ValueError("Cannot merge phases without nodes")
 
-        if SolutionMerge.PHASES in to_merge:
+        if SolutionMerge.PHASES in to_merge or SolutionMerge.ALL in to_merge:
             # NODES is necessarily in to_merge if PHASES is in to_merge
             times = np.concatenate(times)
 
@@ -912,24 +903,20 @@ class Solution:
 
         # Get the states, but do not bother the duplicates now
         if isinstance(n_frames, int):  # So merge phases
-            t_all = []
-            last_t = 0
-            for p in range(len(self.ocp.nlp)):
-                t_all.append(np.concatenate(self._stepwise_times[p]) + last_t)
-                last_t = t_all[-1][-1]
-            t_all = [np.concatenate(t_all)]
-
+            t_all = [self.stepwise_time(to_merge=[SolutionMerge.ALL])]
             states = [self._stepwise_states.to_dict(scaled=scaled, to_merge=SolutionMerge.ALL)]
             n_frames = [n_frames]
 
         elif not isinstance(n_frames, (list, tuple)) or len(n_frames) != len(self._stepwise_states.unscaled):
             raise ValueError(
-                "n_frames should either be a int to merge_phases phases "
+                "n_frames should either be an int to merge_phases phases "
                 "or a list of int of the number of phases dimension"
             )
+
         else:
-            # TODO: use stepwise times
-            t_all = [np.concatenate(self._stepwise_times[p]) for p in range(len(self.ocp.nlp))]
+            t_all = self.stepwise_time(to_merge=[SolutionMerge.NODES])
+            if len(self.ocp.nlp) == 1:
+                t_all = [t_all]
             states = self._stepwise_states.to_dict(scaled=scaled, to_merge=[SolutionMerge.KEYS, SolutionMerge.NODES])
 
         data = []
