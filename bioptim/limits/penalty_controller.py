@@ -151,7 +151,7 @@ class PenaltyController:
             "phases_dt",
             mx=self.ocp.dt_parameter.mx,
             cx=[self.ocp.dt_parameter.cx, self.ocp.dt_parameter.cx, self.ocp.dt_parameter.cx],
-            bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val))
+            bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
 
         return tp["phases_dt"]
@@ -168,7 +168,7 @@ class PenaltyController:
             "dt",
             mx=self._nlp.dt_mx,
             cx=[self._nlp.dt, self._nlp.dt, self._nlp.dt],
-            bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val))
+            bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
         return tp["dt"]
 
@@ -200,7 +200,7 @@ class PenaltyController:
             "tf",
             mx=self._nlp.tf_mx,
             cx=[self._nlp.tf, self._nlp.tf, self._nlp.tf],
-            bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val))
+            bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
 
         return tp["tf"]

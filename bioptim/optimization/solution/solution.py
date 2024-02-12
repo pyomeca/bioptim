@@ -518,7 +518,9 @@ class Solution:
                 np.concatenate((np.concatenate(times[phase_idx][:-1]), times[phase_idx][-1]))
                 times[phase_idx] = np.concatenate((np.concatenate(times[phase_idx][:-1]), times[phase_idx][-1]))
 
-        if (SolutionMerge.PHASES in to_merge and SolutionMerge.NODES not in to_merge) and SolutionMerge.ALL not in to_merge:
+        if (
+            SolutionMerge.PHASES in to_merge and SolutionMerge.NODES not in to_merge
+        ) and SolutionMerge.ALL not in to_merge:
             raise ValueError("Cannot merge phases without nodes")
 
         if SolutionMerge.PHASES in to_merge or SolutionMerge.ALL in to_merge:

@@ -273,7 +273,7 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
         QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
         QuadratureRule.TRAPEZOIDAL,
         QuadratureRule.RECTANGLE_RIGHT,
-        QuadratureRule.MIDPOINT
+        QuadratureRule.MIDPOINT,
     ],
 )
 def test_pendulum_collocation(control_type, integration_rule, objective, phase_dynamics):

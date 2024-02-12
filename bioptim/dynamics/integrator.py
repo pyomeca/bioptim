@@ -564,9 +564,7 @@ class COLLOCATION(Integrator):
 
     @property
     def _time_xall_from_dt_func(self) -> Function:
-        return Function(
-            "step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._integration_time + [1]) * self.h]
-        )
+        return Function("step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._integration_time + [1]) * self.h])
 
     def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
         """
