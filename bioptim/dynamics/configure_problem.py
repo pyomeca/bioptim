@@ -558,7 +558,7 @@ class ConfigureProblem:
         ConfigureProblem.torque_driven_free_floating_base(
             ocp=ocp,
             nlp=nlp,
-            with_contact=with_contact,
+            with_contact=with_contact,  # TODO : this should be removed
             with_friction=with_friction,
         )
 

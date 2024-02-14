@@ -327,45 +327,6 @@ class Solution:
 
         return cls(ocp=ocp)
 
-    def time(
-        self,
-        time_resolution: TimeResolution = TimeResolution.DECISION,
-        time_alignment: TimeAlignment = TimeAlignment.STATES,
-        to_merge: SolutionMerge | list[SolutionMerge] = None,
-        continuous: bool = True,
-    ) -> list | np.ndarray:
-        """
-        Returns the time vector at each node that matches stepwise_states or stepwise_controls
-
-        Parameters
-        ----------
-        time_resolution: TimeResolution
-            The type of time vector to return
-        time_alignment: TimeAlignment
-            The type of alignment to perform. If TimeAlignment.STATES, then the time vector is aligned with the states
-            (i.e. all the subnodes and the last node time are present). If TimeAlignment.CONTROLS, then the time vector
-            is aligned with the controls (i.e. only starting of the node without the last node if CONTROL constant).
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
-            The type of merge to perform. If None, then no merge is performed. It is often useful to merge NODES, but
-            is completely useless to merge KEYS
-        continuous: bool
-            If the time should be continuous throughout the whole ocp. If False, then the time is reset at the
-            beginning of each phase.
-
-        Returns
-        -------
-        The time vector at each node that matches stepwise_states or stepwise_controls
-        """
-
-        if time_resolution == TimeResolution.DECISION:
-            return self.decision_time(to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
-        elif time_resolution == TimeResolution.STEPWISE:
-            return self.stepwise_time(to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
-        elif time_resolution == TimeResolution.NODE_SPAN:
-            return self.t_span(to_merge=to_merge, time_alignment=time_alignment, continuous=continuous)
-        else:
-            raise ValueError("Unrecognized time_resolution")
-
     def t_span(
         self,
         to_merge: SolutionMerge | list[SolutionMerge] = None,
@@ -529,39 +490,6 @@ class Solution:
 
         return times if len(times) > 1 else times[0]
 
-    def states(
-        self,
-        time_resolution: TimeResolution = TimeResolution.DECISION,
-        to_merge: SolutionMerge | list[SolutionMerge] = None,
-        scaled: bool = False,
-    ):
-        """
-        Returns the states
-
-        Parameters
-        ----------
-        time_resolution: TimeResolution
-            The time resolution to return the states
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
-            The type of merge to perform. If None, then no merge is performed.
-        scaled: bool
-            If the states should be scaled or not (note that scaled is as Ipopt received them, while unscaled is as the
-            model needs temps). If you don't know what it means, you probably want the unscaled version.
-
-        Returns
-        -------
-        The states
-        """
-
-        if time_resolution == TimeResolution.STEPWISE:
-            return self.stepwise_states(to_merge=to_merge, scaled=scaled)
-        elif time_resolution == TimeResolution.DECISION:
-            return self.decision_states(to_merge=to_merge, scaled=scaled)
-        elif time_resolution == TimeResolution.NODE_SPAN:
-            raise NotImplementedError("NODE_SPAN is not implemented for states")
-        else:
-            raise ValueError("Unrecognized time_resolution")
-
     def decision_states(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         """
         Returns the decision states
@@ -608,39 +536,6 @@ class Solution:
         if not isinstance(data, list):
             return data
         return data if len(data) > 1 else data[0]
-
-    def controls(
-        self,
-        time_resolution: TimeResolution = TimeResolution.DECISION,
-        to_merge: SolutionMerge | list[SolutionMerge] = None,
-        scaled: bool = False,
-    ):
-        """
-        Returns the controls
-
-        Parameters
-        ----------
-        time_resolution: TimeResolution
-            The time resolution to return the controls
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
-            The type of merge to perform. If None, then no merge is performed.
-        scaled: bool
-            If the controls should be scaled or not (note that scaled is as Ipopt received them, while unscaled is as the
-            model needs temps). If you don't know what it means, you probably want the unscaled version.
-
-        Returns
-        -------
-        The controls
-        """
-
-        if time_resolution == TimeResolution.STEPWISE:
-            return self.stepwise_controls(to_merge=to_merge, scaled=scaled)
-        elif time_resolution == TimeResolution.DECISION:
-            return self.decision_controls(to_merge=to_merge, scaled=scaled)
-        elif time_resolution == TimeResolution.NODE_SPAN:
-            raise NotImplementedError("NODE_SPAN is not implemented for controls")
-        else:
-            raise ValueError("Unrecognized time_resolution")
 
     def decision_controls(self, scaled: bool = False, to_merge: SolutionMerge | list[SolutionMerge] = None):
         """

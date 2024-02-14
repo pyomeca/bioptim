@@ -129,10 +129,8 @@ class PenaltyController:
         -------
 
         """
-        dt_mx = self.dt.mx
-        mx = vertcat(self.time.mx, dt_mx)
-        dt_cx = self.dt.cx
-        cx = vertcat(self.time.cx, dt_cx)
+        mx = vertcat(self.time.mx, self.dt.mx)
+        cx = vertcat(self.time.cx, self.dt.cx)
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
         n_val = cx.shape[0]

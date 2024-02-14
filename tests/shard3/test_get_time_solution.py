@@ -42,7 +42,6 @@ def _get_solution(
             "n_shooting": 10,
             "phase_dynamics": phase_dynamics,
             "ode_solver": ode_solver_instance,
-            "phase_dynamics": PhaseDynamics.SHARED_DURING_THE_PHASE,
             "control_type": control_type,
             "use_sx": False,
         }

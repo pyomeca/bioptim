@@ -126,7 +126,7 @@ def test_penalty_targets_shapes():
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_minimize_time(penalty_origin, value, phase_dynamics):
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
-    t = [0]
+    t = [0.05 * ocp.nlp[0].ns]
     phases_dt = [0.05]
     x = [DM.ones((8, 1)) * value]
     u = [0]
