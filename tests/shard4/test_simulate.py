@@ -142,7 +142,7 @@ def test_interpolate(phase_dynamics):
 
     with pytest.raises(
         ValueError,
-        match="n_frames should either be a int to merge_phases phases or a "
+        match="n_frames should either be an int to merge_phases phases or a "
         "list of int of the number of phases dimension",
     ):
         sol.interpolate([n_frames, n_frames])
@@ -182,7 +182,7 @@ def test_interpolate_multiphases(ode_solver, phase_dynamics):
 
     with pytest.raises(
         ValueError,
-        match="n_frames should either be a int to merge_phases phases or a "
+        match="n_frames should either be an int to merge_phases phases or a "
         "list of int of the number of phases dimension",
     ):
         sol.interpolate([n_frames, n_frames])

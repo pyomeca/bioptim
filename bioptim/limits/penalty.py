@@ -217,7 +217,7 @@ class PenaltyFunctionAbstract:
             jac_e_fb_x_cx = Function(
                 "jac_e_fb_x",
                 [
-                    vertcat(controller.time.mx, controller.dt.mx),
+                    controller.t_span.mx,
                     controller.states_scaled.mx,
                     controller.controls_scaled.mx,
                     controller.parameters.mx,  # TODO: fix parameter scaling
@@ -225,7 +225,7 @@ class PenaltyFunctionAbstract:
                 ],
                 [jac_e_fb_x],
             )(
-                vertcat(controller.time.cx, controller.dt.cx),
+                controller.t_span.cx,
                 controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
@@ -1106,7 +1106,7 @@ class PenaltyFunctionAbstract:
 
             penalty.expand = controller.get_nlp.dynamics_type.expand_continuity
 
-            t_span = vertcat(controller.time.cx, controller.time.cx + controller.dt.cx)
+            t_span = controller.t_span.cx
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))

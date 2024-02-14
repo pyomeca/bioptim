@@ -250,7 +250,7 @@ class ObjectiveFunction:
                     taken into account elsewhere in the code)
                 """
 
-                return controller.tf
+                return controller.time.cx
 
         @staticmethod
         def get_dt(_):

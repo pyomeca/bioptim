@@ -67,7 +67,6 @@ def check_conditioning(ocp):
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
                 nlp.algebraic_states.node_index = node_index
-                time = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
 
                 if constraints.multinode_penalty:
                     n_phases = ocp.n_phases
@@ -85,8 +84,8 @@ def check_conditioning(ocp):
 
                     for controller in controllers:
                         controller.node_index = constraints.node_idx[0]
-                    t0 = PenaltyHelpers.t0(constraints, controllers[0].ocp)
-                    _, x, u, a = constraints.get_variable_inputs(controllers)
+
+                    _, t0, x, u, a = constraints.get_variable_inputs(controllers)
                     p = nlp.parameters.cx
 
                     list_constraints.append(
@@ -188,8 +187,7 @@ def check_conditioning(ocp):
 
                         for controller in controllers:
                             controller.node_index = constraints.node_idx[0]
-                        t0 = PenaltyHelpers.t0(constraints, controllers[0].ocp)
-                        _, x, u, a = constraints.get_variable_inputs(controllers)
+                        _, t0, x, u, a = constraints.get_variable_inputs(controllers)
                         p = nlp.parameters.cx
 
                         hessian_cas = hessian(
@@ -392,8 +390,7 @@ def check_conditioning(ocp):
 
                 for controller in controllers:
                     controller.node_index = obj.node_idx[0]
-                t0 = PenaltyHelpers.t0(obj, controllers[0].ocp)
-                _, x, u, s = obj.get_variable_inputs(controllers)
+                _, t0, x, u, s = obj.get_variable_inputs(controllers)
                 params = nlp.parameters.cx
                 target = PenaltyHelpers.target(obj, obj.node_idx.index(node_index))
 

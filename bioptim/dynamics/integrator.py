@@ -252,7 +252,7 @@ class RK(Integrator):
 
     @property
     def h(self):
-        return (self.t_span_sym[1] - self.t_span_sym[0]) / self._n_step
+        return self.t_span_sym[1] / self._n_step
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX) -> MX | SX:
         """
@@ -431,7 +431,7 @@ class TRAPEZOIDAL(Integrator):
 
     @property
     def h(self):
-        return self.t_span_sym[1] - self.t_span_sym[0]
+        return self.t_span_sym[1]
 
     def dxdt(
         self,
@@ -548,7 +548,7 @@ class COLLOCATION(Integrator):
 
     @property
     def h(self):
-        return self.t_span_sym[1] - self.t_span_sym[0]
+        return self.t_span_sym[1]
 
     @property
     def _integration_time(self):
@@ -564,9 +564,7 @@ class COLLOCATION(Integrator):
 
     @property
     def _time_xall_from_dt_func(self) -> Function:
-        return Function(
-            "step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._integration_time + [1]) * self.t_span_sym[1]]
-        )
+        return Function("step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._integration_time + [1]) * self.h])
 
     def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
         """
@@ -634,7 +632,8 @@ class COLLOCATION(Integrator):
 
         # Concatenate constraints
         defects = vertcat(*defects)
-        return states_end, horzcat(*states), defects
+        collocation_states = horzcat(*states) if self.duplicate_starting_point else horzcat(*states[1:])
+        return states_end, collocation_states, defects
 
 
 class IRK(COLLOCATION):

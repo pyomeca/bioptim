@@ -455,7 +455,7 @@ def test_multiphase_time_constraint(ode_solver, phase_dynamics):
     states = sol.stepwise_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
     controls = sol.stepwise_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-    tf_all = [t[-1, 0] for t in sol.decision_time(to_merge=SolutionMerge.NODES)]
+    tf_all = [t[-1, 0] for t in sol.decision_time(to_merge=SolutionMerge.NODES, continuous=False)]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))
@@ -532,7 +532,7 @@ def test_multiphase_time_constraint_with_phase_time_equality(ode_solver, phase_d
     states = sol.stepwise_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
     controls = sol.stepwise_controls(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
-    tf_all = [t[-1, 0] for t in sol.decision_time(to_merge=SolutionMerge.NODES)]
+    tf_all = [t[-1, 0] for t in sol.decision_time(to_merge=SolutionMerge.NODES, continuous=False)]
 
     # initial and final position
     np.testing.assert_almost_equal(q[:, 0], np.array((1, 0, 0)))

@@ -22,8 +22,18 @@ class TimeAlignment(Enum):
     CONTROLS = auto()
 
 
+class TimeResolution(Enum):
+    """
+    The resolution of the time
+    """
+
+    STEPWISE = auto()
+    DECISION = auto()
+    NODE_SPAN = auto()
+
+
 class SolutionData:
-    def __init__(self, unscaled, scaled, n_nodes: list[int, ...]):
+    def __init__(self, unscaled, scaled, n_nodes: list[int]):
         """
         Parameters
         ----------
@@ -82,7 +92,7 @@ class SolutionData:
     def keys(self, phase: int = 0):
         return self.unscaled[phase].keys()
 
-    def to_dict(self, to_merge: SolutionMerge | list[SolutionMerge, ...] = None, scaled: bool = False):
+    def to_dict(self, to_merge: SolutionMerge | list[SolutionMerge] = None, scaled: bool = False):
         data = self.scaled if scaled else self.unscaled
 
         if to_merge is None:
@@ -117,7 +127,7 @@ class SolutionData:
         return out
 
     @staticmethod
-    def _merge_phases(data: list, to_merge: list[SolutionMerge, ...]):
+    def _merge_phases(data: list, to_merge: list[SolutionMerge]):
         """
         Merge the phases by merging keys and nodes before.
         This method does not remove the redundent nodes when merging the phase nor the nodes
