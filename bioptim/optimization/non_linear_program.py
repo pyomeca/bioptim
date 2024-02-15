@@ -260,7 +260,10 @@ class NonLinearProgram:
         """
         if node_idx >= self.ns:
             return 1
-        return self.dynamics[node_idx].shape_xall[1]
+        if self.ode_solver.is_direct_collocation:
+            return self.dynamics[node_idx].shape_xall[1] - (1 if not self.ode_solver.duplicate_starting_point else 0)
+        else:
+            return self.dynamics[node_idx].shape_xall[1]
 
     @property
     def n_controls_nodes(self) -> int:

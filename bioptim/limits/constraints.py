@@ -342,7 +342,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            return controller.tf
+            return controller.tf.cx
 
         @staticmethod
         def bound_state(
@@ -651,7 +651,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             ) * CX_eye(
                 vertcat(controller.model.sensory_noise_magnitude, controller.model.motor_noise_magnitude).shape[0]
             )
-            dt = controller.tf / controller.ns
+            dt = controller.dt.cx
             dg_dw = -dt * c_matrix
             dg_dx = -CX_eye(a_matrix.shape[0]) - dt / 2 * a_matrix
 
@@ -677,7 +677,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if not controller.get_nlp.is_stochastic:
                 raise RuntimeError("This function is only valid for stochastic problems")
 
-            dt = controller.tf / controller.ns
+            dt = controller.dt.cx
 
             nb_root = controller.model.nb_root
             # TODO: Charbie -> This is only True for x=[q, qdot], u=[tau] (have to think on how to generalize it)
@@ -695,7 +695,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             algebraic_states_sym = MX.sym("algebraic_states_sym", controller.algebraic_states.shape, 1)
 
             dx = controller.extra_dynamics(0)(
-                vertcat(controller.time.mx, controller.time.mx + controller.dt.mx),
+                controller.t_span.mx,
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,
                 controller.parameters.mx,
@@ -708,7 +708,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             DF_DX_fun = Function(
                 "DF_DX_fun",
                 [
-                    vertcat(controller.time.mx, controller.dt.mx),
+                    controller.t_span.mx,
                     q_root,
                     q_joints,
                     qdot_root,
@@ -725,7 +725,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             parameters[controller.parameters["sensory_noise"].index] = controller.model.sensory_noise_magnitude
 
             DF_DX = DF_DX_fun(
-                vertcat(controller.time.cx, controller.dt.cx),
+                controller.t_span.cx,
                 controller.q.cx[:nb_root],
                 controller.q.cx[nb_root:],
                 controller.qdot.cx[:nb_root],
@@ -766,7 +766,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             parameters[controller.parameters["sensory_noise"].index] = controller.model.sensory_noise_magnitude
 
             constraint = Mc(
-                vertcat(controller.time.cx, controller.dt.cx),
+                controller.t_span.cx,
                 controller.states.cx_start,
                 horzcat(*(controller.states.cx_intermediates_list)),
                 controller.controls.cx_start,
@@ -804,7 +804,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             parameters[controller.parameters["sensory_noise"].index] = controller.model.sensory_noise_magnitude
 
             cov_next_computed = Pf(
-                vertcat(controller.time.cx, controller.dt.cx),
+                controller.t_span.cx,
                 controller.states.cx_start,
                 horzcat(*(controller.states.cx_intermediates_list)),
                 controller.controls.cx_start,
@@ -844,8 +844,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             sensory_input = Function(
                 "tp",
                 [
-                    controller.time.mx,
-                    controller.dt.mx,
+                    controller.t_span.mx,
                     controller.states.mx,
                     controller.controls.mx,
                     controller.parameters.mx,
@@ -853,8 +852,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 ],
                 [sensory_input],
             )(
-                controller.time.cx,
-                controller.dt.cx,
+                controller.t_span.cx,
                 controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx,
@@ -910,43 +908,44 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             """
             This function computes the jacobians of the collocation equation and of the continuity equation with respect to the collocation points and the noise
             """
+
             motor_noise = controller.parameters["motor_noise"].cx
             sensory_noise = controller.parameters["sensory_noise"].cx
             sigma_ww = diag(vertcat(motor_noise, sensory_noise))
 
             cov_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["cov"].cx_start, controller.model.matrix_shape_cov
+                controller.algebraic_states_scaled["cov"].cx_start, controller.model.matrix_shape_cov
             )
             m_matrix = StochasticBioModel.reshape_to_matrix(
-                controller.algebraic_states["m"].cx_start, controller.model.matrix_shape_m
+                controller.algebraic_states_scaled["m"].cx_start, controller.model.matrix_shape_m
             )
 
             xf, _, defects = controller.integrate_extra_dynamics(0).function(
-                vertcat(controller.time.cx, controller.time.cx + controller.dt.cx),
-                horzcat(controller.states.cx, horzcat(*controller.states.cx_intermediates_list)),
-                controller.controls.cx,
-                controller.parameters.cx,
-                controller.algebraic_states.cx,
+                vertcat(controller.t_span.cx),
+                horzcat(controller.states_scaled.cx, horzcat(*controller.states_scaled.cx_intermediates_list)),
+                controller.controls_scaled.cx,
+                controller.parameters.cx,  # TODO: fix parameter scaling
+                controller.algebraic_states_scaled.cx,
             )
 
-            initial_defect = controller.states.cx_start - controller.states.cx_intermediates_list[0]
+            initial_defect = controller.states_scaled.cx_start - controller.states_scaled.cx_intermediates_list[0]
             defects = vertcat(initial_defect, defects)
 
-            Gdx = jacobian(defects, controller.states.cx)
-            Gdz = jacobian(defects, horzcat(*controller.states.cx_intermediates_list))
+            Gdx = jacobian(defects, controller.states_scaled.cx)
+            Gdz = jacobian(defects, horzcat(*controller.states_scaled.cx_intermediates_list))
             Gdw = jacobian(defects, vertcat(motor_noise, sensory_noise))
-            Fdz = jacobian(xf, horzcat(*controller.states.cx_intermediates_list))
+            Fdz = jacobian(xf, horzcat(*controller.states_scaled.cx_intermediates_list))
 
             # Constraint Equality defining M
             Mc = Function(
                 "M_cons",
                 [
-                    vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.t_span.cx,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [Fdz.T - Gdz.T @ m_matrix.T],
             )
@@ -957,12 +956,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Pf = Function(
                 "P_next",
                 [
-                    vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.t_span.cx,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T],
             )
@@ -972,12 +971,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Gdx_fun = Function(
                 "Gdx_fun",
                 [
-                    vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.t_span.cx,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [Gdx],
             )
@@ -985,12 +984,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Gdz_fun = Function(
                 "Gdz_fun",
                 [
-                    vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.t_span.cx,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [Gdz],
             )
@@ -998,12 +997,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Gdw_fun = Function(
                 "Gdw_fun",
                 [
-                    vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.t_span.cx,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [Gdw],
             )
@@ -1011,12 +1010,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             Fdz_fun = Function(
                 "Fdz_fun",
                 [
-                    vertcat(controller.time.cx, controller.dt.cx),
-                    controller.states.cx_start,
-                    horzcat(*controller.states.cx_intermediates_list),
-                    controller.controls.cx_start,
-                    controller.parameters.cx_start,
-                    controller.algebraic_states.cx_start,
+                    controller.t_span.cx,
+                    controller.states_scaled.cx_start,
+                    horzcat(*controller.states_scaled.cx_intermediates_list),
+                    controller.controls_scaled.cx_start,
+                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.algebraic_states_scaled.cx_start,
                 ],
                 [Fdz],
             )

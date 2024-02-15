@@ -400,14 +400,14 @@ class PenaltyOption(OptionGeneric):
             .replace("__", "_")
         )
 
-        controller, x, u, p, a = self.get_variable_inputs(controllers)
+        controller, _, x, u, p, a = self.get_variable_inputs(controllers)
 
         # Alias some variables
         node = controller.node_index
 
         dt = controller.dt.cx
         time_cx = controller.time.cx
-        phases_dt_cx = controller.phases_time_cx
+        phases_dt_cx = controller.phases_dt.cx
 
         # Sanity check on outputs
         if len(self.function) <= node:
@@ -448,7 +448,7 @@ class PenaltyOption(OptionGeneric):
                     raise NotImplementedError(f"Control type {self.control_types[0]} not implemented yet")
 
                 state_cx_end = controller.integrate(
-                    t_span=controller.t_span,
+                    t_span=controller.t_span.cx,
                     x0=controller.states.cx_start,
                     u=u_integrate,
                     p=controller.parameters.cx,
@@ -462,7 +462,7 @@ class PenaltyOption(OptionGeneric):
             control_cx_start = controller.controls_scaled.cx_start
             if self.control_types[0] in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
                 # This effectively equates a TRAPEZOIDAL integration into a LEFT_RECTANGLE for penalties that targets
-                # controls with a constant control. This phiolosophically makes sense as the control is constant and
+                # controls with a constant control. This philosophically makes sense as the control is constant and
                 # applying a trapezoidal integration would be equivalent to applying a left rectangle integration
                 control_cx_end = controller.controls_scaled.cx_start
             else:
@@ -608,6 +608,7 @@ class PenaltyOption(OptionGeneric):
         ocp = controller.ocp
         penalty_idx = self.node_idx.index(controller.node_index)
 
+        t0 = PenaltyHelpers.t0(self, penalty_idx, lambda p, n: ocp.node_time(phase_idx=p, node_idx=n))
         x = PenaltyHelpers.states(
             self,
             penalty_idx,
@@ -628,7 +629,7 @@ class PenaltyOption(OptionGeneric):
         )
         p = controller.parameters.scaled.cx_start
 
-        return controller, x, u, p, a
+        return controller, t0, x, u, p, a
 
     @staticmethod
     def _get_states(ocp, states, n_idx, sn_idx):

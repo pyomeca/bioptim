@@ -284,7 +284,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
     sensory_noise_magnitude : cas.DM
         Magnitude of the sensory noise.
     """
-    dt = controllers[0].tf / controllers[0].ns
+    dt = controllers[0].dt.cx
     sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
 
     # create the casadi function to be evaluated

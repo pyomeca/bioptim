@@ -173,7 +173,6 @@ class PenaltyFunctionAbstract:
             controller : PenaltyController
                 Controller to be used to compute the expected effort.
             """
-
             CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
             sensory_noise_matrix = controller.model.sensory_noise_magnitude * CX_eye(
                 controller.model.sensory_noise_magnitude.shape[0]
@@ -205,36 +204,38 @@ class PenaltyFunctionAbstract:
             e_fb_mx = controller.model.compute_torques_from_noise_and_feedback(
                 nlp=controller.get_nlp,
                 time=controller.time.mx,
-                states=controller.states.mx,
-                controls=controller.controls.mx,
-                parameters=controller.parameters.mx,
-                algebraic_states=controller.algebraic_states.mx,
+                states=controller.states_scaled.mx,
+                controls=controller.controls_scaled.mx,
+                parameters=controller.parameters.mx,  # TODO: fix parameter scaling
+                algebraic_states=controller.algebraic_states_scaled.mx,
                 sensory_noise=controller.model.sensory_noise_magnitude,
                 motor_noise=controller.model.motor_noise_magnitude,
             )
-            e_fb = Function(
-                "e_fb_tp",
+
+            jac_e_fb_x = jacobian(e_fb_mx, controller.states_scaled.mx)
+
+            jac_e_fb_x_cx = Function(
+                "jac_e_fb_x",
                 [
-                    vertcat(controller.time.mx, controller.dt.mx),
-                    controller.states.mx,
-                    controller.controls.mx,
-                    controller.parameters.mx,
-                    controller.algebraic_states.mx,
+                    controller.t_span.mx,
+                    controller.states_scaled.mx,
+                    controller.controls_scaled.mx,
+                    controller.parameters.mx,  # TODO: fix parameter scaling
+                    controller.algebraic_states_scaled.mx,
                 ],
-                [e_fb_mx],
+                [jac_e_fb_x],
             )(
-                vertcat(controller.time.cx, controller.dt.cx),
+                controller.t_span.cx,
                 controller.states.cx_start,
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.algebraic_states.cx_start,
             )
 
-            jac_e_fb_x = jacobian(e_fb, controller.states.cx_start)
-
-            trace_jac_p_jack = trace(jac_e_fb_x @ cov_matrix @ jac_e_fb_x.T)
+            trace_jac_p_jack = trace(jac_e_fb_x_cx @ cov_matrix @ jac_e_fb_x_cx.T)
 
             expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
+
             return expectedEffort_fb_mx
 
         @staticmethod
@@ -1105,7 +1106,7 @@ class PenaltyFunctionAbstract:
 
             penalty.expand = controller.get_nlp.dynamics_type.expand_continuity
 
-            t_span = vertcat(controller.time.cx, controller.time.cx + controller.dt.cx)
+            t_span = controller.t_span.cx
             continuity = controller.states.cx_end
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))

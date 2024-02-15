@@ -449,9 +449,7 @@ def test__symmetrical_torque_driven_ocp__symmetry_by_constraint():
 
 
 def test__symmetrical_torque_driven_ocp__symmetry_by_mapping():
-    from bioptim.examples.symmetrical_torque_driven_ocp import (
-        symmetry_by_mapping as ocp_module,
-    )
+    from bioptim.examples.symmetrical_torque_driven_ocp import symmetry_by_mapping as ocp_module
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
