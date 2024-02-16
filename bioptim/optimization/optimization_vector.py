@@ -131,13 +131,14 @@ class OptimizationVectorHelper:
         x_scaled = []
         u_scaled = []
         a_scaled = []
+        param_scaled = ocp.parameters.scaled.cx
 
         for nlp in ocp.nlp:
             x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
             u_scaled += nlp.U_scaled
             a_scaled += [a.reshape((-1, 1)) for a in nlp.A_scaled]
 
-        return vertcat(t_scaled, *x_scaled, *u_scaled, ocp.parameters.cx, *a_scaled)
+        return vertcat(t_scaled, *x_scaled, *u_scaled, param_scaled, *a_scaled)
 
     @staticmethod
     def bounds_vectors(ocp) -> tuple[np.ndarray, np.ndarray]:

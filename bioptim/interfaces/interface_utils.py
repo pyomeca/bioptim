@@ -306,15 +306,17 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
         u = PenaltyHelpers.controls(
             penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_u(ocp, p_idx, n_idx, sn_idx, scaled)
         )
+        p = PenaltyHelpers.parameters(penalty, lambda: _get_p(ocp, scaled))
         a = PenaltyHelpers.states(
             penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled)
         )
     else:
         x = []
         u = []
+        p = []
         a = []
 
-    return t0, x, u, a, weight, target
+    return t0, x, u, p, a, weight, target
 
 
 def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):
@@ -326,6 +328,8 @@ def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].U_scaled if scaled else ocp.nlp[phase_idx].U
     return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
 
+def _get_p(ocp, scaled):
+    return ocp.parameters.scaled if scaled else ocp.parameters.scaled
 
 def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].A_scaled if scaled else ocp.nlp[phase_idx].A

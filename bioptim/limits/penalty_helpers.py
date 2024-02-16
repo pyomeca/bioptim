@@ -123,8 +123,8 @@ class PenaltyHelpers:
         return u
 
     @staticmethod
-    def parameters(penalty, get_parameter: Callable):
-        p = get_parameter()
+    def parameters(penalty, get_parameter_decision: Callable):
+        p = get_parameter_decision(None, None, None)
         return _reshape_to_vector(p)
 
     @staticmethod
