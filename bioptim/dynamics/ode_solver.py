@@ -190,7 +190,6 @@ class OdeSolverBase:
             "cx": nlp.cx,
             "control_type": nlp.control_type,
             "defects_type": self.defects_type,
-            "param_scaling": vertcat(*[nlp.parameters[key].scaling.scaling for key in nlp.parameters.keys()]),
             "ode_index": node_index if nlp.dynamics_func[dynamics_index].size2_out("xdot") > 1 else 0,
             "duplicate_starting_point": self.duplicate_starting_point,
             **extra_opt,
