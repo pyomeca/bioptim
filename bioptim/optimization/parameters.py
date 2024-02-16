@@ -28,7 +28,7 @@ class Parameter(OptimizationVariable):
                  size: int = None,
                  cx_type: Callable | MX | SX = None,
                  scaling: VariableScaling = None,
-                 **params: Any,
+                 **kwargs: Any,
                  ):
 
         """
@@ -40,7 +40,7 @@ class Parameter(OptimizationVariable):
             The MX variable associated with this variable
         index: [range, list]
             The indices to find this variable
-        parent_list: OptimizationVariableList
+        parent_list: ParameterList
             The list the OptimizationVariable is in
         """
         super(Parameter, self).__init__(name, mx, cx_start, index, mapping, parent_list)
@@ -60,7 +60,7 @@ class Parameter(OptimizationVariable):
 
         self.scaling = scaling
         self.index = index
-        self.params = params
+        self.kwargs = kwargs
 
     @property
     def cx(self):
@@ -80,7 +80,7 @@ class Parameter(OptimizationVariable):
                 "Parameter must have been created by ParameterList to have a cx. "
                 "Typically 'all' cannot be used"
             )
-        return self.parent_list.cx_start
+        return self.parent_list.cx_start[self.index]
 
     def cx_mid(self):
         raise RuntimeError(
@@ -102,9 +102,9 @@ class ParameterList(OptimizationVariableList):
     A list of Parameters.
     """
 
-    def __init__(self, use_sx: bool, phase_dynamics: PhaseDynamics):
+    def __init__(self, use_sx: bool):
         cx_constructor = SX if use_sx else MX
-        super(ParameterList, self).__init__(cx_constructor, phase_dynamics)
+        super(ParameterList, self).__init__(cx_constructor, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
         self.cx_type = cx_constructor
         self._cx_mid = None  # del ?
         self._cx_end = None
@@ -122,7 +122,7 @@ class ParameterList(OptimizationVariableList):
             "current_cx_to_get is not changable for parameters, only cx_start is accepted (current_cx_to_get is always 0)."
         )
 
-    def add(self, name: str, function: callable, size: int, scaling: VariableScaling, mapping: BiMapping = None, phase: int = -1, **params: Any):
+    def add(self, name: str, function: callable, size: int, scaling: VariableScaling, mapping: BiMapping = None, phase: int = -1, allow_reserved_name: bool = False, **kwargs: Any):
         """
         Add a new Parameter to the list
         This function should be called by the user. It will create the parameter and add it to the list
@@ -137,13 +137,19 @@ class ParameterList(OptimizationVariableList):
             The number of variables this parameter has
         scaling: VariableScaling
             The scaling of the parameter
-        params: dict
+        kwargs: dict
             Any argument that should be passed to the user defined function
         """
 
-        # TODO: deal with reserved names ?
+        if not allow_reserved_name and name == "dt":
+            raise KeyError("It is not possible to declare a parameter with the key 'dt' as it is a reserved name.")
+
+        if "phase" in kwargs:
+            raise ValueError(
+                "Parameters are declared for all phases at once. You must therefore not use "
+                "'phase' but 'list_index' instead.")
+
         cx = [self.cx_constructor.sym(name, size)]
-        mx = MX.sym(name, size)
 
         if len(cx) != 1:
             raise NotImplementedError("cx should be of dimension 1 for parameters (there is no mid or end)")
@@ -152,14 +158,12 @@ class ParameterList(OptimizationVariableList):
         index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
         self._cx_start = vertcat(self._cx_start, cx[0])
         self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
-        self.elements.append(Parameter(name, mx, cx, index, mapping, size=size, parent_list=self, function=function, cx_type=self.cx_type, scaling=scaling, **params))
+        mx = MX.sym(name, size)
+        self.elements.append(Parameter(name=name, mx=mx, cx_start=cx, index=index, mapping=mapping, size=size, parent_list=self, function=function, cx_type=self.cx_type, scaling=scaling, **kwargs))
 
     # TODO
-    def append_from_scaled(
+    def to_unscaled(
         self,
-        name: str,
-        cx: list,
-        scaled_optimization_variable: "OptimizationVariableList",
     ):
         """
         Add a new variable to the list
@@ -170,28 +174,30 @@ class ParameterList(OptimizationVariableList):
             The name of the variable
         cx: list
             The list of SX or MX variable associated with this variable
-        scaled_optimization_variable: OptimizationVariable
+        scaled_parameter: OptimizationVariable
             The scaled optimization variable associated with this variable
         """
 
-        if len(cx) < 2:
-            raise NotImplementedError("cx should be of dimension 2 (start, [mid], end)")
+        unscaled_parameter = ParameterList(use_sx=(True if self.cx_type == SX else False))
+        for element in self.elements:
+            unscaled_parameter.elements.append(Parameter(
+                name=element.name,
+                mx=element.mx * element.scaling.scaling,
+                cx_start=element.cx_start * element.scaling.scaling,
+                index=element.index,
+                mapping=element.mapping,
+                parent_list=element.parent_list,
+                function=element.function,
+                size=element.size,
+                cx_type=element.cx_type,
+                scaling=VariableScaling(key=element.name, scaling=np.ones((element.size, 1))),
+                **element.kwargs
+                )
+            )
+            unscaled_parameter._cx_start = vertcat(unscaled_parameter._cx_start, element.cx_start * element.scaling.scaling)
+            unscaled_parameter.mx_reduced = vertcat(unscaled_parameter.mx_reduced, element.mx * element.scaling.scaling)
 
-        self._cx_start = vertcat(self._cx_start, cx[0])
-        if len(cx) > 2:
-            self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1) // 2])
-        self._cx_end = vertcat(self._cx_end, cx[-1])
-
-        for i, c in enumerate(cx[1:-1]):
-            if i >= len(self._cx_intermediates):
-                self._cx_intermediates.append(c)
-            else:
-                self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
-
-        self.mx_reduced = scaled_optimization_variable.mx_reduced
-        var = scaled_optimization_variable[name]
-        self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self))
-
+        return unscaled_parameter
 
     def cx_mid(self):
         raise RuntimeError(
@@ -368,10 +374,10 @@ class ParameterContainer(OptimizationVariableContainer):
     """
     A parameter container (i.e., the list of scaled parameters and a list of unscaled parameters).
     """
-    def __init__(self, phase_dynamics):
-        super(ParameterContainer, self).__init__(phase_dynamics)
-        self._scaled: list[ParameterList, ...] = []
-        self._unscaled: list[ParameterList, ...] = []
+    def __init__(self):
+        super(ParameterContainer, self).__init__(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
+        self._scaled: ParameterList = None
+        self._unscaled: ParameterList = None
 
     @property
     def node_index(self):
@@ -383,8 +389,16 @@ class ParameterContainer(OptimizationVariableContainer):
             "node_index is not changable for parameters since it is the same for every node."
         )
 
-    def initialize(self, cx):
-        # TODO
+    def initialize(self, parameters: ParameterList):
+        """
+        Initialize the Container so the dimensions are correct.
+
+        Parameters
+        ----------
+
+        """
+        self._scaled = parameters
+        self._unscaled = parameters.to_unscaled()
         return
 
     def initialize_from_shooting(self, n_shooting: int, cx: Callable):
@@ -405,6 +419,16 @@ class ParameterContainer(OptimizationVariableContainer):
         This method allows to intercept the scaled item and return the current node_index
         """
         return self._scaled
+
+    def keys(self):
+        return self._unscaled.keys()
+
+    def key_index(self, key):
+        return self._unscaled[key].index
+
+    @property
+    def shape(self):
+        return self._unscaled.shape
 
     @property
     def cx_intermediates_list(self):

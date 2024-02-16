@@ -196,7 +196,7 @@ class NonLinearProgram:
         # parameters is currently a clone of ocp.parameters, but should hold phase parameters
         from ..optimization.parameters import ParameterList
 
-        self.parameters = ParameterList(self.cx, self.phase_dynamics)
+        self.parameters = ParameterList(use_sx=True if self.cx == SX else False)
         self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
 

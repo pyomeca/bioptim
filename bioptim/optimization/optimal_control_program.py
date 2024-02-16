@@ -54,10 +54,10 @@ from ..misc.enums import (
 )
 from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
-from ..optimization.parameters import ParameterList, Parameter
+from ..optimization.parameters import ParameterList, Parameter, ParameterContainer
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
-from ..optimization.variable_scaling import VariableScalingList
+from ..optimization.variable_scaling import VariableScalingList, VariableScaling
 from ..gui.check_conditioning import check_conditioning
 
 
@@ -457,7 +457,7 @@ class OptimalControlProgram:
             raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
 
         if parameters is None:
-            parameters = ParameterList()
+            parameters = ParameterList(use_sx=use_sx)
         elif not isinstance(parameters, ParameterList):
             raise RuntimeError("parameters should be built from an ParameterList")
 
@@ -567,8 +567,7 @@ class OptimalControlProgram:
         self._define_time(self.phase_time, objective_functions, constraints)
 
         # Declare and fill the parameters
-        self.parameters = ParameterList()
-        self._declare_parameters(parameters)
+        self._declare_parameters(parameters, use_sx=use_sx)
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
@@ -962,26 +961,23 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
 
-    def _declare_parameters(self, new_parameters: ParameterList):
+    def _declare_parameters(self, parameters: ParameterList, use_sx: bool):
         """
         The main user interface to add or modify parameters in the ocp
 
         Parameters
         ----------
-        new_parameters: ParameterList
+        parameters: ParameterList
             The parameters to add to the ocp
+        use_sx: bool
+            Weather to use SX (True) or MX (False)
         """
 
-        if not isinstance(new_parameters, ParameterList):
+        if not isinstance(parameters, ParameterList):
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-        self.parameters.cx_type = self.cx
-
-        offset = 0
-        for param in new_parameters:
-            param.index = list(range(offset, offset + param.size))
-            self.parameters.add(param)
-            offset += param.size
+        self.parameters = ParameterContainer()
+        self.parameters.initialize(parameters)
 
     def update_bounds(
         self,
@@ -1560,12 +1556,17 @@ class OptimalControlProgram:
         NLP.add(self, "tf_mx", [nlp.dt_mx * max(nlp.ns, 1) for nlp in self.nlp], False)
 
         # Otherwise, add the time to the Parameters
-        params = vertcat(*[dt_cx[i] for i in self.time_phase_mapping.to_first.map_idx])
-        self.dt_parameter = Parameter(
-            function=lambda model, values: None, name="dt", size=params.shape[0], allow_reserved_name=True, cx=self.cx
+        params_cx = vertcat(*[dt_cx[i] for i in self.time_phase_mapping.to_first.map_idx])
+        params_mx = vertcat(*[dt_mx[i] for i in self.time_phase_mapping.to_first.map_idx])
+        self.dt_parameter = ParameterList(use_sx=(True if self.cx == SX else False))
+        self.dt_parameter.add(
+            name="dt",
+            function=lambda model, values: None,
+            size=params_cx.shape[0],
+            mapping=self.time_phase_mapping,
+            scaling=VariableScaling("name", np.array([1])),
+            allow_reserved_name=True,
         )
-        self.dt_parameter.cx = params
-        self.dt_parameter.index = [nlp.time_index for nlp in self.nlp]
 
         self.dt_parameter_bounds = Bounds(
             "dt_bounds",

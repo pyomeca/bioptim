@@ -176,7 +176,7 @@ def prepare_ocp(
     u_bounds["tau"][1, :] = 0
 
     # Define the parameter to optimize
-    parameters = ParameterList(use_sx=use_sx, phase_dynamics=phase_dynamics)
+    parameters = ParameterList(use_sx=use_sx)
     parameter_objectives = ParameterObjectiveList()
     parameter_bounds = BoundsList()
     parameter_init = InitialGuessList()
