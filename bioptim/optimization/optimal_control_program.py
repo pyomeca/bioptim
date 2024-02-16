@@ -1608,7 +1608,7 @@ class OptimalControlProgram:
         if not new_penalty:
             return
 
-        self.parameters[0].add_or_replace_to_penalty_pool(self, new_penalty)
+        new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[new_penalty.phase])
         self.program_changed = True
 
     def node_time(self, phase_idx: int, node_idx: int):

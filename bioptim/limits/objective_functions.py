@@ -570,7 +570,7 @@ class ParameterObjectiveList(OptionList):
             self.copy(parameter_objective)
         else:
             super(ParameterObjectiveList, self)._add(
-                option_type=ParameterObjective, parameter_objective=parameter_objective, **extra_arguments
+                option_type=ParameterObjective, parameter_objective=parameter_objective, node=Node.START, **extra_arguments
             )
 
     def print(self):

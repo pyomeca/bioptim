@@ -1004,10 +1004,11 @@ class DynamicsFunctions:
             The definition of the system
         """
 
-        for param in nlp.parameters:
+        for param_key in nlp.parameters:
             # Call the pre dynamics function
-            if param.function[0]:
-                param.function[0](nlp.model, parameters[param.index], **param.params)
+            if nlp.parameters[param_key].function:
+                param = nlp.parameters[param_key]
+                param.function(nlp.model, parameters[param.index], **param.kwargs)
 
     @staticmethod
     def compute_qdot(nlp, q: MX | SX, qdot: MX | SX):
