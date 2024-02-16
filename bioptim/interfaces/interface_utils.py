@@ -328,8 +328,10 @@ def _get_u(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].U_scaled if scaled else ocp.nlp[phase_idx].U
     return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
 
+
 def _get_p(ocp, scaled):
     return ocp.parameters.scaled if scaled else ocp.parameters.scaled
+
 
 def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].A_scaled if scaled else ocp.nlp[phase_idx].A

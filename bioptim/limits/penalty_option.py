@@ -520,10 +520,7 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = Function(
                 f"{name}",
                 [time_cx, dt, x, u, p, a],
-                [
-                    fcn_tp(time_cx, dt, x_end, u_end, p, a_end)
-                    - fcn_tp(time_cx, dt, x_start, u_start, p, a_start)
-                ],
+                [fcn_tp(time_cx, dt, x_end, u_end, p, a_end) - fcn_tp(time_cx, dt, x_start, u_start, p, a_start)],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
@@ -534,7 +531,7 @@ class PenaltyOption(OptionGeneric):
             # TODO Add error message if there are free variables to guide the user? For instance controls with last node
             self.function[node] = Function(
                 name,
-                [time_cx, dt, x, u, p, a],   # replace all by dt ????
+                [time_cx, dt, x, u, p, a],  # replace all by dt ????
                 [sub_fcn],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],

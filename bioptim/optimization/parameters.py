@@ -8,7 +8,11 @@ from ..limits.penalty import PenaltyOption
 from ..misc.options import UniquePerProblemOptionList
 from ..misc.mapping import BiMapping
 from ..optimization.variable_scaling import VariableScaling, VariableScalingList
-from ..optimization.optimization_variable import OptimizationVariable, OptimizationVariableList, OptimizationVariableContainer
+from ..optimization.optimization_variable import (
+    OptimizationVariable,
+    OptimizationVariableList,
+    OptimizationVariableContainer,
+)
 from ..misc.enums import PhaseDynamics
 
 
@@ -17,20 +21,20 @@ class Parameter(OptimizationVariable):
     A Parameter.
     """
 
-    def __init__(self,
-                 name: str,
-                 mx: MX,
-                 cx_start: list | None,
-                 index: [range, list],
-                 mapping: BiMapping = None,
-                 parent_list=None,
-                 function: Callable = None,
-                 size: int = None,
-                 cx_type: Callable | MX | SX = None,
-                 scaling: VariableScaling = None,
-                 **kwargs: Any,
-                 ):
-
+    def __init__(
+        self,
+        name: str,
+        mx: MX,
+        cx_start: list | None,
+        index: [range, list],
+        mapping: BiMapping = None,
+        parent_list=None,
+        function: Callable = None,
+        size: int = None,
+        cx_type: Callable | MX | SX = None,
+        scaling: VariableScaling = None,
+        **kwargs: Any,
+    ):
         """
         Parameters
         ----------
@@ -77,25 +81,19 @@ class Parameter(OptimizationVariable):
 
         if self.parent_list is None:
             raise RuntimeError(
-                "Parameter must have been created by ParameterList to have a cx. "
-                "Typically 'all' cannot be used"
+                "Parameter must have been created by ParameterList to have a cx. " "Typically 'all' cannot be used"
             )
         return self.parent_list.cx_start[self.index]
 
     def cx_mid(self):
-        raise RuntimeError(
-            "cx_mid is not available for parameters, only cx_start is accepted."
-        )
+        raise RuntimeError("cx_mid is not available for parameters, only cx_start is accepted.")
 
     def cx_end(self):
-        raise RuntimeError(
-            "cx_end is not available for parameters, only cx_start is accepted."
-        )
+        raise RuntimeError("cx_end is not available for parameters, only cx_start is accepted.")
 
     def cx_intermediates_list(self):
-        raise RuntimeError(
-            "cx_intermediates_list is not available for parameters, only cx_start is accepted."
-        )
+        raise RuntimeError("cx_intermediates_list is not available for parameters, only cx_start is accepted.")
+
 
 class ParameterList(OptimizationVariableList):
     """
@@ -122,7 +120,17 @@ class ParameterList(OptimizationVariableList):
             "current_cx_to_get is not changable for parameters, only cx_start is accepted (current_cx_to_get is always 0)."
         )
 
-    def add(self, name: str, function: callable, size: int, scaling: VariableScaling, mapping: BiMapping = None, phase: int = -1, allow_reserved_name: bool = False, **kwargs: Any):
+    def add(
+        self,
+        name: str,
+        function: callable,
+        size: int,
+        scaling: VariableScaling,
+        mapping: BiMapping = None,
+        phase: int = -1,
+        allow_reserved_name: bool = False,
+        **kwargs: Any,
+    ):
         """
         Add a new Parameter to the list
         This function should be called by the user. It will create the parameter and add it to the list
@@ -147,7 +155,8 @@ class ParameterList(OptimizationVariableList):
         if "phase" in kwargs:
             raise ValueError(
                 "Parameters are declared for all phases at once. You must therefore not use "
-                "'phase' but 'list_index' instead.")
+                "'phase' but 'list_index' instead."
+            )
 
         cx = [self.cx_constructor.sym(name, size)]
 
@@ -159,7 +168,21 @@ class ParameterList(OptimizationVariableList):
         self._cx_start = vertcat(self._cx_start, cx[0])
         self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
         mx = MX.sym(name, size)
-        self.elements.append(Parameter(name=name, mx=mx, cx_start=cx, index=index, mapping=mapping, size=size, parent_list=self, function=function, cx_type=self.cx_type, scaling=scaling, **kwargs))
+        self.elements.append(
+            Parameter(
+                name=name,
+                mx=mx,
+                cx_start=cx,
+                index=index,
+                mapping=mapping,
+                size=size,
+                parent_list=self,
+                function=function,
+                cx_type=self.cx_type,
+                scaling=scaling,
+                **kwargs,
+            )
+        )
 
     # TODO
     def to_unscaled(
@@ -180,40 +203,36 @@ class ParameterList(OptimizationVariableList):
 
         unscaled_parameter = ParameterList(use_sx=(True if self.cx_type == SX else False))
         for element in self.elements:
-            unscaled_parameter.elements.append(Parameter(
-                name=element.name,
-                mx=element.mx * element.scaling.scaling,
-                cx_start=element.cx_start * element.scaling.scaling,
-                index=element.index,
-                mapping=element.mapping,
-                parent_list=element.parent_list,
-                function=element.function,
-                size=element.size,
-                cx_type=element.cx_type,
-                scaling=VariableScaling(key=element.name, scaling=np.ones((element.size, 1))),
-                **element.kwargs
+            unscaled_parameter.elements.append(
+                Parameter(
+                    name=element.name,
+                    mx=element.mx * element.scaling.scaling,
+                    cx_start=element.cx_start * element.scaling.scaling,
+                    index=element.index,
+                    mapping=element.mapping,
+                    parent_list=element.parent_list,
+                    function=element.function,
+                    size=element.size,
+                    cx_type=element.cx_type,
+                    scaling=VariableScaling(key=element.name, scaling=np.ones((element.size, 1))),
+                    **element.kwargs,
                 )
             )
-            unscaled_parameter._cx_start = vertcat(unscaled_parameter._cx_start, element.cx_start * element.scaling.scaling)
+            unscaled_parameter._cx_start = vertcat(
+                unscaled_parameter._cx_start, element.cx_start * element.scaling.scaling
+            )
             unscaled_parameter.mx_reduced = vertcat(unscaled_parameter.mx_reduced, element.mx * element.scaling.scaling)
 
         return unscaled_parameter
 
     def cx_mid(self):
-        raise RuntimeError(
-            "cx_mid is not available for parameters, only cx_start is accepted."
-        )
+        raise RuntimeError("cx_mid is not available for parameters, only cx_start is accepted.")
 
     def cx_end(self):
-        raise RuntimeError(
-            "cx_end is not available for parameters, only cx_start is accepted."
-        )
+        raise RuntimeError("cx_end is not available for parameters, only cx_start is accepted.")
 
     def cx_intermediates_list(self):
-        raise RuntimeError(
-            "cx_intermediates_list is not available for parameters, only cx_start is accepted."
-        )
-
+        raise RuntimeError("cx_intermediates_list is not available for parameters, only cx_start is accepted.")
 
 
 #     def add(
@@ -369,11 +388,11 @@ class ParameterList(OptimizationVariableList):
 #         return sum([p.shape for p in self])
 
 
-
 class ParameterContainer(OptimizationVariableContainer):
     """
     A parameter container (i.e., the list of scaled parameters and a list of unscaled parameters).
     """
+
     def __init__(self):
         super(ParameterContainer, self).__init__(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
         self._scaled: ParameterList = None
@@ -385,9 +404,7 @@ class ParameterContainer(OptimizationVariableContainer):
 
     @node_index.setter
     def node_index(self, value):
-        raise RuntimeError(
-            "node_index is not changable for parameters since it is the same for every node."
-        )
+        raise RuntimeError("node_index is not changable for parameters since it is the same for every node.")
 
     def initialize(self, parameters: ParameterList):
         """
@@ -402,9 +419,7 @@ class ParameterContainer(OptimizationVariableContainer):
         return
 
     def initialize_from_shooting(self, n_shooting: int, cx: Callable):
-        raise RuntimeError(
-            "initialize_from_shooting is not available for parameters, only initialize is accepted."
-        )
+        raise RuntimeError("initialize_from_shooting is not available for parameters, only initialize is accepted.")
 
     @property
     def unscaled(self):
@@ -432,18 +447,12 @@ class ParameterContainer(OptimizationVariableContainer):
 
     @property
     def cx_intermediates_list(self):
-        raise RuntimeError(
-            "cx_intermediates_list is not available for parameters, only cx_start is accepted."
-        )
+        raise RuntimeError("cx_intermediates_list is not available for parameters, only cx_start is accepted.")
 
     @property
     def cx_mid(self):
-        raise RuntimeError(
-            "cx_mid is not available for parameters, only cx_start is accepted."
-        )
+        raise RuntimeError("cx_mid is not available for parameters, only cx_start is accepted.")
 
     @property
     def cx_end(self):
-        raise RuntimeError(
-            "cx_end is not available for parameters, only cx_start is accepted."
-        )
+        raise RuntimeError("cx_end is not available for parameters, only cx_start is accepted.")
