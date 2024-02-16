@@ -276,6 +276,10 @@ class ObjectiveFunction:
         def penalty_nature() -> str:
             return "parameter_objectives"
 
+        @staticmethod
+        def get_dt(nlp) -> int:
+            return 1
+
     @staticmethod
     def update_target(ocp_or_nlp: Any, list_index: int, new_target: Any):
         """

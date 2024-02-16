@@ -157,7 +157,7 @@ class OdeSolverBase:
         -------
         The symbolic parameters
         """
-        return nlp.parameters.cx
+        return nlp.parameters.scaled.cx_start
 
     def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt) -> Callable:
         """

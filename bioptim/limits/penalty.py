@@ -1354,7 +1354,7 @@ class PenaltyFunctionAbstract:
     @staticmethod
     def get_dt(nlp):
         """
-        Return the dt of the penalty (abstract
+        Return the dt of the penalty (abstract)
         """
 
         raise RuntimeError("get_dt cannot be called from an abstract class")

@@ -123,8 +123,9 @@ class PenaltyHelpers:
         return u
 
     @staticmethod
-    def parameters(penalty, get_parameter_decision: Callable):
-        p = get_parameter_decision(None, None, None)
+    def parameters(penalty, index, get_parameter_decision: Callable):
+        node = penalty.node_idx[index]
+        p = get_parameter_decision(penalty.phase, node, None)
         return _reshape_to_vector(p)
 
     @staticmethod

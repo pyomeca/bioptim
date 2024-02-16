@@ -1564,7 +1564,7 @@ class OptimalControlProgram:
             function=lambda model, values: None,
             size=params_cx.shape[0],
             mapping=self.time_phase_mapping,
-            scaling=VariableScaling("name", np.array([1])),
+            scaling=VariableScaling("dt", np.array([1])),
             allow_reserved_name=True,
         )
 

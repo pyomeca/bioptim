@@ -394,10 +394,10 @@ def check_conditioning(ocp):
                 params = nlp.parameters.cx
                 target = PenaltyHelpers.target(obj, obj.node_idx.index(node_index))
 
-                p = obj.weighted_function[node_index](t0, phases_dt, x, u, params, s, obj.weight, target)
+                penalty = obj.weighted_function[node_index](t0, phases_dt, x, u, params, s, obj.weight, target)
 
-                for i in range(p.shape[0]):
-                    objective += p[i] ** 2
+                for i in range(penalty.shape[0]):
+                    objective += penalty[i] ** 2
 
             # create function to build the hessian
             vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled)  # time, states, controls
