@@ -914,7 +914,7 @@ class ConfigureProblem:
             The function to get the derivative of the states
         """
 
-        DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
+        DynamicsFunctions.apply_parameters(nlp)
 
         if not isinstance(dyn_func, (tuple, list)):
             dyn_func = (dyn_func,)
@@ -924,8 +924,8 @@ class ConfigureProblem:
                 nlp.time_mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
-                nlp.parameters.scaled.mx,
-                nlp.algebraic_states.scaled.mx,
+                nlp.parameters.scaled.mx_reduced,
+                nlp.algebraic_states.scaled.mx_reduced,
                 nlp,
                 **extra_params,
             )
@@ -941,8 +941,8 @@ class ConfigureProblem:
                         time_span_sym,
                         nlp.states.scaled.mx_reduced,
                         nlp.controls.scaled.mx_reduced,
-                        nlp.parameters.scaled.mx,
-                        nlp.algebraic_states.scaled.mx,
+                        nlp.parameters.scaled.mx_reduced,
+                        nlp.algebraic_states.scaled.mx_reduced,
                     ],
                     [dynamics_dxdt],
                     ["t_span", "x", "u", "p", "a"],
@@ -972,8 +972,8 @@ class ConfigureProblem:
                             time_span_sym,
                             nlp.states.scaled.mx_reduced,
                             nlp.controls.scaled.mx_reduced,
-                            nlp.parameters.scaled.mx,
-                            nlp.algebraic_states.scaled.mx,
+                            nlp.parameters.scaled.mx_reduced,
+                            nlp.algebraic_states.scaled.mx_reduced,
                             nlp.states_dot.scaled.mx_reduced,
                         ],
                         [dynamics_eval.defects],
@@ -1079,10 +1079,11 @@ class ConfigureProblem:
         global_soft_contact_force_func = nlp.model.soft_contact_forces(
             nlp.states["q"].mapping.to_second.map(q), nlp.states["qdot"].mapping.to_second.map(qdot)
         )
-        # @pariterre: what do we do with this ? nlp.parameters.mx is not symbolic and mx_reduced is not the one passed to the model
+
+        # TODO: do not declare unuseful functions!
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
-            [nlp.time_mx, nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+            [nlp.time_mx, nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced, nlp.parameters.scaled.mx_reduced],
             [global_soft_contact_force_func],
             ["t", "x", "u", "p"],
             ["soft_contact_forces"],

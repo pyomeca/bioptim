@@ -992,7 +992,7 @@ class DynamicsFunctions:
         return var.mapping.to_second.map(cx[var.index, :])
 
     @staticmethod
-    def apply_parameters(parameters: MX.sym, nlp):
+    def apply_parameters(nlp):
         """
         Apply the parameter variables to the model. This should be called before calling the dynamics
 
@@ -1008,7 +1008,9 @@ class DynamicsFunctions:
             # Call the pre dynamics function
             if nlp.parameters[param_key].function:
                 param = nlp.parameters[param_key]
-                param.function(nlp.model, parameters[param.index], **param.kwargs)
+                param_scaling = nlp.parameters[param_key].scaling.scaling
+                param_reduced = nlp.parameters.scaled.mx_reduced[param.index]
+                param.function(nlp.model, param_reduced * param_scaling, **param.kwargs)
 
     @staticmethod
     def compute_qdot(nlp, q: MX | SX, qdot: MX | SX):

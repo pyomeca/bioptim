@@ -214,7 +214,7 @@ class ParameterList(OptimizationVariableList):
                     function=element.function,
                     size=element.size,
                     cx_type=element.cx_type,
-                    scaling=VariableScaling(key=element.name, scaling=np.ones((element.size, 1))),
+                    scaling=VariableScaling(key=element.name, scaling=element.scaling.scaling),
                     **element.kwargs,
                 )
             )
