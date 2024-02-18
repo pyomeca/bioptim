@@ -22,7 +22,7 @@ class VariableScaling(OptionGeneric):
         if len(scaling.shape) == 1:
             scaling = scaling[:, np.newaxis]
         elif len(scaling.shape) > 2:
-            raise ValueError(f"Scaling must be a 1- or 2- dimensional numpy array")
+            raise ValueError(f"Scaling must be a 1- or 2- dimensional numpy array")  # Pariterre: in which case do we want 2D?
 
         if (scaling < 0).any():
             raise ValueError(f"Scaling factors must be strictly greater than zero.")
@@ -91,16 +91,18 @@ class VariableScalingList(OptionDict):
 
         if isinstance(scaling, VariableScaling):
             self.add(key=scaling.key, scaling=scaling.scaling, phase=phase)
+        elif isinstance(scaling, list) or isinstance(scaling, np.ndarray):
+                for i, elt in enumerate(scaling):
+                    if elt <= 0:
+                        raise RuntimeError(
+                            f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0."
+                        )
+                super(VariableScalingList, self)._add(key=key, phase=phase, scaling=scaling)
         else:
             if scaling is None:
                 raise ValueError("Scaling cannot be None")
-
-            for i, elt in enumerate(scaling):
-                if elt <= 0:
-                    raise RuntimeError(
-                        f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0."
-                    )
-            super(VariableScalingList, self)._add(key=key, phase=phase, scaling=scaling)
+            else:
+                raise ValueError(f"Scaling must be a VariableScaling, a list or a numpy array, not {type(scaling)}")
 
     def copy(self):
         out = VariableScalingList()

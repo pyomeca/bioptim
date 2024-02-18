@@ -82,8 +82,8 @@ def stochastic_forward_dynamics(
     motor_noise = 0
     sensory_noise = 0
     if with_noise:
-        motor_noise = nlp.parameters["motor_noise"].mx
-        sensory_noise = nlp.parameters["sensory_noise"].mx
+        motor_noise = DynamicsFunctions.get(nlp.parameters["motor_noise"], parameters)
+        sensory_noise = DynamicsFunctions.get(nlp.parameters["sensory_noise"], parameters)
 
     mus_excitations_fb = mus_excitations
     noise_torque = np.zeros(nlp.model.motor_noise_magnitude.shape)
@@ -186,8 +186,8 @@ def get_cov_mat(nlp, node_index):
     m_matrix = StochasticBioModel.reshape_to_matrix(nlp.algebraic_states["m"].cx, nlp.model.matrix_shape_m)
 
     CX_eye = cas.SX_eye if nlp.cx == cas.SX else cas.MX_eye
-    sensory_noise = nlp.parameters["sensory_noise"].cx
-    motor_noise = nlp.parameters["motor_noise"].cx
+    sensory_noise = nlp.parameters["sensory_noise"].cx_reduced
+    motor_noise = nlp.parameters["motor_noise"].cx_reduced
     sigma_w = cas.vertcat(sensory_noise, motor_noise) * CX_eye(6)
     cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)

@@ -157,9 +157,10 @@ class ParameterList(OptimizationVariableList):
         if not isinstance(scaling, VariableScaling):
             raise ValueError("Scaling must be a VariableScaling, not " + str(type(scaling)))
         else:
-            if len(scaling.shape) != 1:
-                raise ValueError("Parameter scaling must have exactly one column")
-            elif scaling.shape[0] != size:
+            if len(scaling.scaling.shape) != 1:
+                if scaling.scaling.shape[1] != 1:
+                    raise ValueError("Parameter scaling must have exactly one column")
+            elif scaling.scaling.shape[0] != size:
                 raise ValueError(f"Parameter scaling must be of size {size}, not {scaling.shape[0]}.")
         cx = [self.cx_constructor.sym(name, size)]
 

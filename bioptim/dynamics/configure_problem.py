@@ -1016,16 +1016,16 @@ class ConfigureProblem:
                 time_span_sym,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
-                nlp.parameters.scaled.mx,
-                nlp.algebraic_states.scaled.mx,
+                nlp.parameters.scaled.mx_reduced,
+                nlp.algebraic_states.scaled.mx_reduced,
             ],
             [
                 dyn_func(
                     time_span_sym,
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
-                    nlp.parameters.scaled.mx,
-                    nlp.algebraic_states.scaled.mx,
+                    nlp.parameters.scaled.mx_reduced,
+                    nlp.algebraic_states.scaled.mx_reduced,
                     nlp,
                     **extra_params,
                 )

@@ -127,7 +127,7 @@ class OptimizationVectorHelper:
         The vector of all variables
         """
 
-        t_scaled = ocp.dt_parameter.cx
+        t_scaled = ocp.dt_parameter["dt"].cx
         x_scaled = []
         u_scaled = []
         a_scaled = []
@@ -402,7 +402,7 @@ class OptimizationVectorHelper:
         data_parameters = {key: None for key in ocp.parameters.keys()}
 
         # For states
-        offset = ocp.dt_parameter.size
+        offset = ocp.dt_parameter["dt"].size
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
             nx = nlp.states.shape
@@ -439,9 +439,9 @@ class OptimizationVectorHelper:
                     data_controls[p][key][node] = u_array[nlp.controls.key_index(key), :]
 
         # For parameters
-        for param in ocp.parameters:
+        for i_param, key in enumerate(ocp.parameters):
             # The list is to simulate the node so it has the same structure as the states and controls
-            data_parameters[param.name] = [v_array[[offset + i for i in param.index], np.newaxis]]
+            data_parameters[key] = [v_array[[offset + i for i in ocp.parameters[key].index], np.newaxis]]
         data_parameters = [data_parameters]
         offset += sum([ocp.parameters[key].shape for key in ocp.parameters.keys()])
 
