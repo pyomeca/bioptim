@@ -127,7 +127,7 @@ class OptimizationVectorHelper:
         The vector of all variables
         """
 
-        t_scaled = ocp.dt_parameter["dt"].cx
+        t_scaled = ocp.dt_parameter.cx
         x_scaled = []
         u_scaled = []
         a_scaled = []
@@ -341,7 +341,7 @@ class OptimizationVectorHelper:
         -------
         The dt values
         """
-        out = data[ocp.dt_parameter["dt"].index]
+        out = data[range(len(ocp.dt_parameter))]
         if isinstance(out, (DM, SX, MX)):
             return out.toarray()[:, 0].tolist()
         return list(out[:, 0])
@@ -402,7 +402,7 @@ class OptimizationVectorHelper:
         data_parameters = {key: None for key in ocp.parameters.keys()}
 
         # For states
-        offset = ocp.dt_parameter["dt"].size
+        offset = len(ocp.dt_parameter)
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
             nx = nlp.states.shape

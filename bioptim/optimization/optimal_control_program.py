@@ -1528,22 +1528,28 @@ class OptimalControlProgram:
         self.phase_time = phase_time if isinstance(phase_time, (tuple, list)) else [phase_time]
 
         self.dt_parameter = ParameterList(use_sx=(True if self.cx == SX else False))
-        self.dt_parameter.add(
-            name="dt",
-            function=lambda model, values: None,
-            size=self.n_phases,  # Charbie: Is this OK ?
-            mapping=self.time_phase_mapping,
-            scaling=VariableScaling("dt", np.array([1])),
-            allow_reserved_name=True,
-        )
+        for i_phase in range(self.n_phases):
+            self.dt_parameter.add(
+                name=f"dt_phase{i_phase}",
+                function=lambda model, values: None,
+                size=1,
+                mapping=BiMapping([1], [1]),
+                scaling=VariableScaling("dt", np.ones((1, ))),
+                allow_reserved_name=True,
+            )
 
         dt_bounds = {}
         dt_initial_guess = {}
+        dt_cx = []
+        dt_mx = []
         for i in range(self.n_phases):
             if i in self.time_phase_mapping.to_first.map_idx:
                 dt = self.phase_time[i] / self.nlp[i].ns
                 dt_bounds[f"dt_phase_{i}"] = {"min": dt, "max": dt}
                 dt_initial_guess[f"dt_phase_{i}"] = dt
+
+            dt_cx.append(self.dt_parameter.cx[self.time_phase_mapping.to_second.map_idx[i]])
+            dt_mx.append(self.dt_parameter.mx[self.time_phase_mapping.to_second.map_idx[i]])
 
         has_penalty = define_parameters_phase_time(self, objective_functions)
         define_parameters_phase_time(self, constraints, has_penalty)
@@ -1552,8 +1558,8 @@ class OptimalControlProgram:
         NLP.add(self, "time_index", self.time_phase_mapping.to_second.map_idx, True)
         NLP.add(self, "time_cx", self.cx.sym("time", 1, 1), True)
         NLP.add(self, "time_mx", MX.sym("time", 1, 1), True)
-        NLP.add(self, "dt", self.dt_parameter.cx, False)
-        NLP.add(self, "dt_mx", self.dt_parameter.mx, False)
+        NLP.add(self, "dt", dt_cx, False)
+        NLP.add(self, "dt_mx", dt_mx, False)
         NLP.add(self, "tf", [nlp.dt * max(nlp.ns, 1) for nlp in self.nlp], False)
         NLP.add(self, "tf_mx", [nlp.dt_mx * max(nlp.ns, 1) for nlp in self.nlp], False)
 
