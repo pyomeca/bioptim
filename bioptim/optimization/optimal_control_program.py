@@ -1527,21 +1527,23 @@ class OptimalControlProgram:
 
         self.phase_time = phase_time if isinstance(phase_time, (tuple, list)) else [phase_time]
 
+        self.dt_parameter = ParameterList(use_sx=(True if self.cx == SX else False))
+        self.dt_parameter.add(
+            name="dt",
+            function=lambda model, values: None,
+            size=self.n_phases,  # Charbie: Is this OK ?
+            mapping=self.time_phase_mapping,
+            scaling=VariableScaling("dt", np.array([1])),
+            allow_reserved_name=True,
+        )
+
         dt_bounds = {}
         dt_initial_guess = {}
-        dt_cx = []
-        dt_mx = []
         for i in range(self.n_phases):
             if i in self.time_phase_mapping.to_first.map_idx:
-                dt_cx.append(self.cx.sym(f"dt_phase_{i}", 1, 1))
-                dt_mx.append(MX.sym(f"dt_phase_{i}", 1, 1))
-
                 dt = self.phase_time[i] / self.nlp[i].ns
                 dt_bounds[f"dt_phase_{i}"] = {"min": dt, "max": dt}
                 dt_initial_guess[f"dt_phase_{i}"] = dt
-            else:
-                dt_cx.append(dt_cx[self.time_phase_mapping.to_second.map_idx[i]])
-                dt_mx.append(dt_mx[self.time_phase_mapping.to_second.map_idx[i]])
 
         has_penalty = define_parameters_phase_time(self, objective_functions)
         define_parameters_phase_time(self, constraints, has_penalty)
@@ -1550,23 +1552,10 @@ class OptimalControlProgram:
         NLP.add(self, "time_index", self.time_phase_mapping.to_second.map_idx, True)
         NLP.add(self, "time_cx", self.cx.sym("time", 1, 1), True)
         NLP.add(self, "time_mx", MX.sym("time", 1, 1), True)
-        NLP.add(self, "dt", dt_cx, False)
+        NLP.add(self, "dt", self.dt_parameter.cx, False)
+        NLP.add(self, "dt_mx", self.dt_parameter.mx, False)
         NLP.add(self, "tf", [nlp.dt * max(nlp.ns, 1) for nlp in self.nlp], False)
-        NLP.add(self, "dt_mx", dt_mx, False)
         NLP.add(self, "tf_mx", [nlp.dt_mx * max(nlp.ns, 1) for nlp in self.nlp], False)
-
-        # Otherwise, add the time to the Parameters
-        params_cx = vertcat(*[dt_cx[i] for i in self.time_phase_mapping.to_first.map_idx])
-        params_mx = vertcat(*[dt_mx[i] for i in self.time_phase_mapping.to_first.map_idx])
-        self.dt_parameter = ParameterList(use_sx=(True if self.cx == SX else False))
-        self.dt_parameter.add(
-            name="dt",
-            function=lambda model, values: None,
-            size=params_cx.shape[0],
-            mapping=self.time_phase_mapping,
-            scaling=VariableScaling("dt", np.array([1])),
-            allow_reserved_name=True,
-        )
 
         self.dt_parameter_bounds = Bounds(
             "dt_bounds",
