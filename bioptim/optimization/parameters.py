@@ -124,7 +124,6 @@ class ParameterList(OptimizationVariableList):
         size: int,
         scaling: VariableScaling,
         mapping: BiMapping = None,
-        phase: int = -1,
         allow_reserved_name: bool = False,
         **kwargs: Any,
     ):
@@ -155,12 +154,19 @@ class ParameterList(OptimizationVariableList):
                 "'phase' but 'list_index' instead."
             )
 
+        if not isinstance(scaling, VariableScaling):
+            raise ValueError("Scaling must be a VariableScaling, not " + str(type(scaling)))
+        else:
+            if len(scaling.shape) != 1:
+                raise ValueError("Parameter scaling must have exactly one column")
+            elif scaling.shape[0] != size:
+                raise ValueError(f"Parameter scaling must be of size {size}, not {scaling.shape[0]}.")
         cx = [self.cx_constructor.sym(name, size)]
 
         if len(cx) != 1:
             raise NotImplementedError("cx should be of dimension 1 for parameters (there is no mid or end)")
 
-        self.scaling.add(key=name, scaling=scaling, phase=phase)
+        self.scaling.add(key=name, scaling=scaling)
         index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
         self._cx_start = vertcat(self._cx_start, cx[0])
         self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
