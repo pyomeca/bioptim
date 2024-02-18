@@ -246,8 +246,8 @@ class ParameterContainer(OptimizationVariableContainer):
 
     def __init__(self):
         super(ParameterContainer, self).__init__(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
-        self._scaled: ParameterList = None
-        self._unscaled: ParameterList = None
+        self._scaled: ParameterList = ParameterList(use_sx=True)
+        self._unscaled: ParameterList = ParameterList(use_sx=True)
 
     @property
     def node_index(self):

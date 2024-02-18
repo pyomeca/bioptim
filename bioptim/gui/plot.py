@@ -768,7 +768,7 @@ class PlotOcp:
                     idx,
                     lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)),
                 )
-                p_node = PenaltyHelpers.parameters(penalty, lambda: np.array(p))
+                p_node = PenaltyHelpers.parameters(penalty, 0, lambda p_idx, n_idx, sn_idx: np.array(p))
                 a_node = PenaltyHelpers.states(
                     penalty,
                     idx,

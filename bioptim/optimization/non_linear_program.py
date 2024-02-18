@@ -63,7 +63,7 @@ class NonLinearProgram:
         The number of shooting points
     ode_solver: OdeSolverBase
         The chosen ode solver
-    parameters: ParameterList
+    parameters: ParameterContainer
         Reference to the optimized parameters in the underlying ocp
     par_dynamics: casadi.Function
         The casadi function of the threaded dynamics
@@ -194,9 +194,9 @@ class NonLinearProgram:
         self.states_dot = OptimizationVariableContainer(self.phase_dynamics)
         self.controls = OptimizationVariableContainer(self.phase_dynamics)
         # parameters is currently a clone of ocp.parameters, but should hold phase parameters
-        from ..optimization.parameters import ParameterList
+        from ..optimization.parameters import ParameterContainer
 
-        self.parameters = ParameterList(use_sx=True if self.cx == SX else False)
+        self.parameters = ParameterContainer()
         self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
 
@@ -446,8 +446,6 @@ class NonLinearProgram:
                 cx += [var.mapping.to_second.map(var.cx_start)]
             elif hasattr(var, "cx_start"):
                 cx += [var.cx_start]
-            else:
-                cx += [var.cx]  # This is a temporary hack until parameters are included as OptimizationVariables
 
         return NonLinearProgram.to_casadi_func(name, symbolic_expression, *mx)(*cx)
 

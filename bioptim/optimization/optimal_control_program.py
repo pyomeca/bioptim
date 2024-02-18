@@ -567,7 +567,7 @@ class OptimalControlProgram:
         self._define_time(self.phase_time, objective_functions, constraints)
 
         # Declare and fill the parameters
-        self._declare_parameters(parameters, use_sx=use_sx)
+        self._declare_parameters(parameters)
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
@@ -961,7 +961,7 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
 
-    def _declare_parameters(self, parameters: ParameterList, use_sx: bool):
+    def _declare_parameters(self, parameters: ParameterList):
         """
         The main user interface to add or modify parameters in the ocp
 
@@ -969,8 +969,6 @@ class OptimalControlProgram:
         ----------
         parameters: ParameterList
             The parameters to add to the ocp
-        use_sx: bool
-            Weather to use SX (True) or MX (False)
         """
 
         if not isinstance(parameters, ParameterList):

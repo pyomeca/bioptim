@@ -16,6 +16,7 @@ from bioptim import (
     Dynamics,
     DynamicsEvaluation,
     ConstraintList,
+    ParameterContainer,
     ParameterList,
     PhaseDynamics,
 )
@@ -24,12 +25,14 @@ from tests.utils import TestUtils
 
 
 class OptimalControlProgram:
-    def __init__(self, nlp):
+    def __init__(self, nlp, use_sx):
         self.cx = nlp.cx
         self.phase_dynamics = PhaseDynamics.SHARED_DURING_THE_PHASE
         self.n_phases = 1
         self.nlp = [nlp]
-        self.parameters = ParameterList()
+        parameters_list = ParameterList(use_sx=use_sx)
+        self.parameters = ParameterContainer()
+        self.parameters.initialize(parameters_list)
         self.implicit_constraints = ConstraintList()
         self.n_threads = 1
 
@@ -143,7 +146,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
         else None
     )
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -302,7 +305,7 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
 
     NonLinearProgram.add(
@@ -376,7 +379,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
 
     NonLinearProgram.add(
@@ -450,7 +453,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
 
     external_forces = (
@@ -682,7 +685,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx, phase_dynamics):
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -788,7 +791,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -882,7 +885,7 @@ def test_soft_contacts_dynamics_errors(dynamics, phase_dynamics):
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
     nlp.u_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -921,7 +924,7 @@ def test_implicit_dynamics_errors(dynamics, phase_dynamics):
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
     nlp.u_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -1056,7 +1059,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
         else None
     )
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -1259,7 +1262,7 @@ def test_torque_activation_driven_with_residual_torque(
         else None
     )
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -1383,7 +1386,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -1528,7 +1531,7 @@ def test_muscle_driven(
         else None
     )
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -2038,7 +2041,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
 
     NonLinearProgram.add(
@@ -2122,7 +2125,7 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
