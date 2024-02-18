@@ -1534,7 +1534,7 @@ class OptimalControlProgram:
                 function=lambda model, values: None,
                 size=1,
                 mapping=BiMapping([1], [1]),
-                scaling=VariableScaling("dt", np.ones((1, ))),
+                scaling=VariableScaling("dt", np.ones((1,))),
                 allow_reserved_name=True,
             )
 

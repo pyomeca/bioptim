@@ -1094,7 +1094,9 @@ class Solution:
         val_weighted = []
 
         phases_dt = PenaltyHelpers.phases_dt(penalty, self.ocp, lambda p: np.array([self.phases_dt[idx] for idx in p]))
-        params = PenaltyHelpers.parameters(penalty, 0, lambda p_idx, n_idx, sn_idx: self._dispatch_params(self._parameters.scaled[0]))
+        params = PenaltyHelpers.parameters(
+            penalty, 0, lambda p_idx, n_idx, sn_idx: self._dispatch_params(self._parameters.scaled[0])
+        )
 
         merged_x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
         merged_u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)
