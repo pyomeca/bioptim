@@ -451,7 +451,7 @@ class PenaltyOption(OptionGeneric):
                     t_span=controller.t_span.cx,
                     x0=controller.states.cx_start,
                     u=u_integrate,
-                    p=controller.parameters.cx_start,
+                    p=controller.parameters.cx,
                     a=controller.algebraic_states.cx_start,
                 )["xf"]
             else:
@@ -474,14 +474,14 @@ class PenaltyOption(OptionGeneric):
             # Compute the penalty function at starting and ending of the interval
             func_at_subnode = Function(
                 name,
-                [time, dt, state_cx_start, control_cx_start, param_cx_start, algebraic_states_start_cx],
+                [time, phases_dt, state_cx_start, control_cx_start, param_cx_start, algebraic_states_start_cx],
                 [sub_fcn],
             )
             func_at_start = func_at_subnode(
-                time, dt, state_cx_start, control_cx_start, param_cx_start, algebraic_states_start_cx
+                time, phases_dt, state_cx_start, control_cx_start, param_cx_start, algebraic_states_start_cx
             )
             func_at_end = func_at_subnode(
-                time + dt, dt, state_cx_end, control_cx_end, param_cx_start, algebraic_states_end_cx
+                time + dt, phases_dt, state_cx_end, control_cx_end, param_cx_start, algebraic_states_end_cx
             )
             modified_fcn = (
                 (func_at_start - target_cx[:, 0]) ** exponent + (func_at_end - target_cx[:, 1]) ** exponent
@@ -491,7 +491,7 @@ class PenaltyOption(OptionGeneric):
             # for non weighted functions
             self.function[node] = Function(
                 name,
-                [time, dt, x, u, p, a],
+                [time, phases_dt, x, u, p, a],
                 [(func_at_start + func_at_end) / 2],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
@@ -511,7 +511,7 @@ class PenaltyOption(OptionGeneric):
 
             fcn_tp = self.function[node] = Function(
                 name,
-                [time, dt, x_start, u_start, p_start, a_start],
+                [time, phases_dt, x_start, u_start, p_start, a_start],
                 [sub_fcn],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
@@ -520,24 +520,24 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = Function(
                 f"{name}",
                 [time, dt, x, u, p, a],
-                [fcn_tp(time, dt, x_end, u_end, p, a_end) - fcn_tp(time, dt, x_start, u_start, p, a_start)],
+                [fcn_tp(time, phases_dt, x_end, u_end, p, a_end) - fcn_tp(time, dt, x_start, u_start, p, a_start)],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
 
-            modified_fcn = (self.function[node](time, dt, x, u, p, a) - target_cx) ** exponent
+            modified_fcn = (self.function[node](time, phases_dt, x, u, p, a) - target_cx) ** exponent
 
         else:
             # TODO Add error message if there are free variables to guide the user? For instance controls with last node
             self.function[node] = Function(
                 name,
-                [time, dt, x, u, p, a],  # replace all by dt ????
+                [time, phases_dt, x, u, p, a],
                 [sub_fcn],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )
 
-            modified_fcn = (self.function[node](time, dt, x, u, p, a) - target_cx) ** exponent
+            modified_fcn = (self.function[node](time, phases_dt, x, u, p, a) - target_cx) ** exponent
 
         if self.expand:
             self.function[node] = self.function[node].expand()
@@ -549,7 +549,7 @@ class PenaltyOption(OptionGeneric):
 
         self.weighted_function[node] = Function(
             name,
-            [time, dt, x, u, p, a, weight_cx, target_cx],
+            [time, phases_dt, x, u, p, a, weight_cx, target_cx],
             [modified_fcn],
             ["t", "dt", "x", "u", "p", "a", "weight", "target"],
             ["val"],

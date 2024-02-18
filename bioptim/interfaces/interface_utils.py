@@ -241,7 +241,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
             continue
 
         phases_dt = PenaltyHelpers.phases_dt(penalty, interface.ocp, lambda _: interface.ocp.dt_parameter.cx)
-        p = PenaltyHelpers.parameters(penalty, 0, lambda p_idx, n_idx, sn_idx: interface.ocp.parameters.cx)
+        _, _, _, p, _, _, _ = _get_weighted_function_inputs(penalty, 0, ocp, nlp, scaled)
 
         if penalty.multi_thread:
             if penalty.target is not None and len(penalty.target.shape) != 2:
@@ -254,7 +254,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
             weight = np.ndarray((1, 0))
             target = nlp.cx()
             for idx in range(len(penalty.node_idx)):
-                t0_tp, x_tp, u_tp, p_tp, a_tp, weight_tp, target_tp = _get_weighted_function_inputs(
+                t0_tp, x_tp, u_tp, _, a_tp, weight_tp, target_tp = _get_weighted_function_inputs(
                     penalty, idx, ocp, nlp, scaled
                 )
 
@@ -293,7 +293,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
 
 
 def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
-    t0 = PenaltyHelpers.t0(penalty, penalty_idx, lambda p_idx, n_idx: ocp.node_time(phase_idx=p, node_idx=n))
+    t0 = PenaltyHelpers.t0(penalty, penalty_idx, lambda p_idx, n_idx: ocp.node_time(phase_idx=p_idx, node_idx=n_idx))
 
     weight = PenaltyHelpers.weight(penalty)
     target = PenaltyHelpers.target(penalty, penalty_idx)
