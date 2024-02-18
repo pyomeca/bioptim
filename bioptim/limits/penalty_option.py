@@ -520,7 +520,10 @@ class PenaltyOption(OptionGeneric):
             self.function[node] = Function(
                 f"{name}",
                 [time, phases_dt, x, u, p, a],
-                [fcn_tp(time, phases_dt, x_end, u_end, p, a_end) - fcn_tp(time, phases_dt, x_start, u_start, p, a_start)],
+                [
+                    fcn_tp(time, phases_dt, x_end, u_end, p, a_end)
+                    - fcn_tp(time, phases_dt, x_start, u_start, p, a_start)
+                ],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
             )

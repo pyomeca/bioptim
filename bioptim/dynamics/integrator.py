@@ -62,7 +62,7 @@ class Integrator:
         self.cx = ode_opt["cx"]
         self.t_span_sym = ode["t"]
         self.x_sym = ode["x"]
-        self.u_sym = ode["p"]  #TODO: @ pariterre could we put ode["u"] instead?
+        self.u_sym = ode["p"]  # TODO: @ pariterre could we put ode["u"] instead?
         self.param_sym = ode["param"]
         self.a_sym = ode["a"]
         self.fun = ode["ode"]

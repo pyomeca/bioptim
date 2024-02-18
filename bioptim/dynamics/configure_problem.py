@@ -1083,7 +1083,12 @@ class ConfigureProblem:
         # TODO: do not declare unuseful functions!
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
-            [nlp.time_mx, nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced, nlp.parameters.scaled.mx_reduced],
+            [
+                nlp.time_mx,
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.scaled.mx_reduced,
+            ],
             [global_soft_contact_force_func],
             ["t", "x", "u", "p"],
             ["soft_contact_forces"],
