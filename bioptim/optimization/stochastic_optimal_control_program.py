@@ -99,12 +99,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         if "motor_noise" not in parameters.keys():
             n_motor_noise = bio_model.motor_noise_magnitude.shape[0]
-            parameters.add("motor_noise",
-                           function=None,
-                           size=n_motor_noise,
-                           scaling=VariableScaling("motor_noise", np.ones((n_motor_noise, ))),
-                           mapping=BiMapping(range(n_motor_noise), range(n_motor_noise)),
-                           )
+            parameters.add(
+                "motor_noise",
+                function=None,
+                size=n_motor_noise,
+                scaling=VariableScaling("motor_noise", np.ones((n_motor_noise,))),
+                mapping=BiMapping(range(n_motor_noise), range(n_motor_noise)),
+            )
             parameter_bounds.add(
                 "motor_noise",
                 min_bound=bio_model.motor_noise_magnitude,
@@ -117,12 +118,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         if "sensory_noise" not in parameters.keys():
             n_sensory_noise = bio_model.sensory_noise_magnitude.shape[0]
-            parameters.add("sensory_noise",
-                           function=None,
-                           size=n_sensory_noise,
-                           scaling=VariableScaling("sensory_noise", np.ones((n_sensory_noise, ))),
-                           mapping=BiMapping(range(n_sensory_noise), range(n_sensory_noise)),
-                           )
+            parameters.add(
+                "sensory_noise",
+                function=None,
+                size=n_sensory_noise,
+                scaling=VariableScaling("sensory_noise", np.ones((n_sensory_noise,))),
+                mapping=BiMapping(range(n_sensory_noise), range(n_sensory_noise)),
+            )
             parameter_bounds.add(
                 "sensory_noise",
                 min_bound=bio_model.sensory_noise_magnitude,
