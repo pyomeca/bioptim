@@ -341,7 +341,7 @@ class OptimizationVectorHelper:
         -------
         The dt values
         """
-        out = data[ocp.dt_parameter.index]
+        out = data[ocp.dt_parameter["dt"].index]
         if isinstance(out, (DM, SX, MX)):
             return out.toarray()[:, 0].tolist()
         return list(out[:, 0])
