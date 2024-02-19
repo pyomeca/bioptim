@@ -112,11 +112,7 @@ def prepare_ocp(phase_time_constraint, use_parameter, phase_dynamics):
         max_g = -6
         target_g = -8
         parameters.add(
-            "gravity_z",
-            my_parameter_function,
-            size=1,
-            extra_value=1,
-            scaling=VariableScaling("gravity_z", [1])
+            "gravity_z", my_parameter_function, size=1, extra_value=1, scaling=VariableScaling("gravity_z", [1])
         )
         parameter_objectives.add(
             my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g
