@@ -446,6 +446,8 @@ class NonLinearProgram:
                 cx += [var.mapping.to_second.map(var.cx_start)]
             elif hasattr(var, "cx_start"):
                 cx += [var.cx_start]
+            else:
+                raise RuntimeError(f"Variable {var} is not of the good type ({type(var)}), it should be an OptimizationVariable or a Parameter.")
 
         return NonLinearProgram.to_casadi_func(name, symbolic_expression, *mx)(*cx)
 

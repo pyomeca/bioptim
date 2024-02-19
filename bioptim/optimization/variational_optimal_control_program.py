@@ -20,6 +20,7 @@ from ..limits.path_conditions import BoundsList, InitialGuessList
 from ..limits.penalty_controller import PenaltyController
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.parameters import ParameterList
+from ..optimization.variable_scaling import VariableScaling
 
 
 class VariationalOptimalControlProgram(OptimalControlProgram):
@@ -43,6 +44,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         parameter_objectives: ParameterObjectiveList = None,
         parameter_constraints: ParameterConstraintList = None,
         multinode_constraints: MultinodeConstraintList = None,
+        use_sx: bool = False,
         **kwargs,
     ):
         if type(bio_model) != VariationalBiorbdModel:
@@ -122,7 +124,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         # Declare parameters for the initial and final velocities
         if parameters is None:
-            parameters = ParameterList()
+            parameters = ParameterList(use_sx=use_sx)
         if not isinstance(parameters, ParameterList):
             raise ValueError("parameters must be a ParameterList")
 
@@ -156,11 +158,13 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             "qdot_start",  # The name of the parameter
             function=self.qdot_function,  # The function that modifies the biorbd model
             size=n_qdot,  # The number of elements this particular parameter vector has
+            scaling=VariableScaling("qdot_start", np.ones((n_qdot, 1))),
         )
         parameters.add(
             "qdot_end",  # The name of the parameter
             function=self.qdot_function,  # The function that modifies the biorbd model
             size=n_qdot,  # The number of elements this particular parameter vector has
+            scaling=VariableScaling("qdot_end", np.ones((n_qdot, 1))),
         )
 
         for key in qdot_bounds.keys():
@@ -197,6 +201,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             parameter_bounds=parameter_bounds,
             multinode_constraints=multinode_constraints,
             control_type=ControlType.LINEAR_CONTINUOUS,
+            use_sx=use_sx,
             **kwargs,
         )
 
@@ -230,7 +235,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             If the dynamics should be expanded with casadi
         """
 
-        DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
+        DynamicsFunctions.apply_parameters(nlp)
 
         dynamics_eval = DynamicsEvaluation(MX(0), MX(0))
         dynamics_dxdt = dynamics_eval.dxdt

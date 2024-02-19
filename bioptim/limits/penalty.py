@@ -1427,7 +1427,6 @@ class PenaltyFunctionAbstract:
             "com_ddot" if CoM else "markers_acceleration",
             markers,
             controller.time,
-            controller.parameters,
             controller.q,
             controller.qdot,
             last_param,

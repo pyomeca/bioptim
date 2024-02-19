@@ -164,8 +164,8 @@ class AcadosInterface(SolverInterface):
         p = ocp.nlp[0].parameters.cx
         a = ocp.nlp[0].algebraic_states.cx_start
         if ocp.parameters:
-            for param in ocp.parameters:
-                if str(param.cx)[:11] == f"time_phase_":
+            for key in ocp.parameters:
+                if str(ocp.parameters[key].cx)[:11] == f"time_phase_":
                     raise RuntimeError("Time constraint not implemented yet with Acados.")
 
         self.nparams = ocp.nlp[0].parameters.shape
