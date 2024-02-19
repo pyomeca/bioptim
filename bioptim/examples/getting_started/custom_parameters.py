@@ -230,11 +230,6 @@ def prepare_ocp(
             key="mass",
         )
 
-    # TODO: Charbie, remove before PR
-    x_scaling = VariableScalingList()
-    x_scaling.add("q", [3.14, 3.14])
-    x_scaling.add("qdot", [10, 10])
-
     return OptimalControlProgram(
         bio_model,
         dynamics,
@@ -242,7 +237,6 @@ def prepare_ocp(
         final_time,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
-        x_scaling=x_scaling,
         objective_functions=objective_functions,
         parameters=parameters,
         parameter_objectives=parameter_objectives,
