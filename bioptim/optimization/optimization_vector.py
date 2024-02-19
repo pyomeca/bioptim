@@ -343,7 +343,7 @@ class OptimizationVectorHelper:
         """
         out = data[range(len(ocp.time_phase_mapping.to_first.map_idx))]
         if isinstance(out, (DM, SX, MX)):
-            return out.toarray()[:, 0].tolist()
+            return ocp.time_phase_mapping.to_second.map(out.toarray()[:, 0].tolist())
         return list(out[:, 0])
 
     @staticmethod

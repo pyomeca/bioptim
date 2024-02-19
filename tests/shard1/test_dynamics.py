@@ -2125,7 +2125,7 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     nlp.u_scaling = VariableScalingList()
     nlp.a_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
+    ocp = OptimalControlProgram(nlp, use_sx=False)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
