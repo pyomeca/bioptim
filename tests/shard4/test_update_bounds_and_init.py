@@ -13,6 +13,7 @@ from bioptim import (
     OdeSolver,
     MagnitudeType,
     PhaseDynamics,
+    VariableScaling,
 )
 
 from tests.utils import TestUtils
@@ -137,7 +138,7 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
     dynamics = DynamicsList()
     dynamics.add(DynamicsFcn.TORQUE_DRIVEN, phase_dynamics=phase_dynamics)
 
-    parameters = ParameterList()
+    parameters = ParameterList(use_sx=False)
     parameter_bounds = BoundsList()
     parameter_init = InitialGuessList()
 
@@ -146,6 +147,7 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
         my_parameter_function,
         size=1,
         extra_value=1,
+        scaling=VariableScaling("gravity_z", np.array([1])),
     )
     parameter_bounds.add("gravity_z", min_bound=[g_min], max_bound=[g_max], interpolation=InterpolationType.CONSTANT)
     parameter_init["gravity_z"] = [g_init]

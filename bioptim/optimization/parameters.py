@@ -188,7 +188,6 @@ class ParameterList(OptimizationVariableList):
             )
         )
 
-    # TODO
     def to_unscaled(
         self,
     ):
@@ -238,6 +237,8 @@ class ParameterList(OptimizationVariableList):
     def cx_intermediates_list(self):
         raise RuntimeError("cx_intermediates_list is not available for parameters, only cx_start is accepted.")
 
+    def add_a_copied_element(self, element_to_copy_index):
+        self.elements.append(self.elements[element_to_copy_index])
 
 class ParameterContainer(OptimizationVariableContainer):
     """

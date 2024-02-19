@@ -1527,27 +1527,30 @@ class OptimalControlProgram:
 
         self.dt_parameter = ParameterList(use_sx=(True if self.cx == SX else False))
         for i_phase in range(self.n_phases):
-            self.dt_parameter.add(
-                name=f"dt_phase{i_phase}",
-                function=lambda model, values: None,
-                size=1,
-                mapping=BiMapping([1], [1]),
-                scaling=VariableScaling("dt", np.ones((1,))),
-                allow_reserved_name=True,
-            )
+            if i_phase != self.time_phase_mapping.to_second.map_idx[i_phase]:
+                self.dt_parameter.add_a_copied_element(self.time_phase_mapping.to_second.map_idx[i_phase])
+            else:
+                self.dt_parameter.add(
+                    name=f"dt_phase{i_phase}",
+                    function=lambda model, values: None,
+                    size=1,
+                    mapping=BiMapping([1], [1]),
+                    scaling=VariableScaling("dt", np.ones((1,))),
+                    allow_reserved_name=True,
+                )
 
         dt_bounds = {}
         dt_initial_guess = {}
         dt_cx = []
         dt_mx = []
-        for i in range(self.n_phases):
-            if i in self.time_phase_mapping.to_first.map_idx:
-                dt = self.phase_time[i] / self.nlp[i].ns
-                dt_bounds[f"dt_phase_{i}"] = {"min": dt, "max": dt}
-                dt_initial_guess[f"dt_phase_{i}"] = dt
+        for i_phase in range(self.n_phases):
+            if i_phase == self.time_phase_mapping.to_second.map_idx[i_phase]:
+                dt = self.phase_time[i_phase] / self.nlp[i_phase].ns
+                dt_bounds[f"dt_phase_{i_phase}"] = {"min": dt, "max": dt}
+                dt_initial_guess[f"dt_phase_{i_phase}"] = dt
 
-            dt_cx.append(self.dt_parameter.cx[self.time_phase_mapping.to_second.map_idx[i]])
-            dt_mx.append(self.dt_parameter.mx[self.time_phase_mapping.to_second.map_idx[i]])
+            dt_cx.append(self.dt_parameter[self.time_phase_mapping.to_second.map_idx[i_phase]].cx)
+            dt_mx.append(self.dt_parameter[self.time_phase_mapping.to_second.map_idx[i_phase]].mx)
 
         has_penalty = define_parameters_phase_time(self, objective_functions)
         define_parameters_phase_time(self, constraints, has_penalty)

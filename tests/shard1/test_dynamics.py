@@ -924,7 +924,7 @@ def test_implicit_dynamics_errors(dynamics, phase_dynamics):
     nlp.u_bounds = np.zeros((nlp.model.nb_q * 4, 1))
     nlp.u_scaling = VariableScalingList()
 
-    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
+    ocp = OptimalControlProgram(nlp, use_sx=True)
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,

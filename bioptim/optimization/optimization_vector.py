@@ -341,7 +341,7 @@ class OptimizationVectorHelper:
         -------
         The dt values
         """
-        out = data[range(len(ocp.dt_parameter))]
+        out = data[range(len(ocp.time_phase_mapping.to_first.map_idx))]
         if isinstance(out, (DM, SX, MX)):
             return out.toarray()[:, 0].tolist()
         return list(out[:, 0])
@@ -402,7 +402,7 @@ class OptimizationVectorHelper:
         data_parameters = {key: None for key in ocp.parameters.keys()}
 
         # For states
-        offset = len(ocp.dt_parameter)
+        offset = len(ocp.time_phase_mapping.to_first.map_idx)
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
             nx = nlp.states.shape
