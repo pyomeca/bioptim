@@ -24,7 +24,7 @@ class VariableScaling(OptionGeneric):
         elif len(scaling.shape) > 2:
             raise ValueError(
                 f"Scaling must be a 1- or 2- dimensional numpy array"
-            )  # Pariterre: in which case do we want 2D?
+            )
 
         if (scaling < 0).any():
             raise ValueError(f"Scaling factors must be strictly greater than zero.")

@@ -101,7 +101,7 @@ class ParameterList(OptimizationVariableList):
         cx_constructor = SX if use_sx else MX
         super(ParameterList, self).__init__(cx_constructor, phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
         self.cx_type = cx_constructor
-        self._cx_mid = None  # del ?
+        self._cx_mid = None
         self._cx_end = None
         self._cx_intermediates = None
         self.function = []
@@ -239,6 +239,21 @@ class ParameterList(OptimizationVariableList):
 
     def add_a_copied_element(self, element_to_copy_index):
         self.elements.append(self.elements[element_to_copy_index])
+
+    @property
+    def mx(self):
+        """
+        Returns
+        -------
+        The MX of all variable concatenated together
+        """
+        out = MX()
+        for elt in self.elements:
+            if type(elt.mx) == MX:
+                out = vertcat(out, elt.mx)
+            else:
+                out = vertcat(out, MX())
+        return out
 
 
 class ParameterContainer(OptimizationVariableContainer):

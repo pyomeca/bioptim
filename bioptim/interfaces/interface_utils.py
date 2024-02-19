@@ -241,7 +241,6 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
             continue
 
         phases_dt = PenaltyHelpers.phases_dt(penalty, interface.ocp, lambda _: interface.ocp.dt_parameter.cx)
-        _, _, _, p, _, _, _ = _get_weighted_function_inputs(penalty, 0, ocp, nlp, scaled)
 
         if penalty.multi_thread:
             if penalty.target is not None and len(penalty.target.shape) != 2:
@@ -254,7 +253,7 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
             weight = np.ndarray((1, 0))
             target = nlp.cx()
             for idx in range(len(penalty.node_idx)):
-                t0_tp, x_tp, u_tp, _, a_tp, weight_tp, target_tp = _get_weighted_function_inputs(
+                t0_tp, x_tp, u_tp, p, a_tp, weight_tp, target_tp = _get_weighted_function_inputs(
                     penalty, idx, ocp, nlp, scaled
                 )
 

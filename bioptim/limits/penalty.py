@@ -206,7 +206,7 @@ class PenaltyFunctionAbstract:
                 time=controller.time.mx,
                 states=controller.states_scaled.mx,
                 controls=controller.controls_scaled.mx,
-                parameters=controller.parameters.mx,  # TODO: fix parameter scaling
+                parameters=controller.parameters_scaled.mx,
                 algebraic_states=controller.algebraic_states_scaled.mx,
                 sensory_noise=controller.model.sensory_noise_magnitude,
                 motor_noise=controller.model.motor_noise_magnitude,
@@ -220,7 +220,7 @@ class PenaltyFunctionAbstract:
                     controller.t_span.mx,
                     controller.states_scaled.mx,
                     controller.controls_scaled.mx,
-                    controller.parameters.mx,  # TODO: fix parameter scaling
+                    controller.parameters_scaled.mx,
                     controller.algebraic_states_scaled.mx,
                 ],
                 [jac_e_fb_x],
@@ -1427,6 +1427,7 @@ class PenaltyFunctionAbstract:
             "com_ddot" if CoM else "markers_acceleration",
             markers,
             controller.time,
+            controller.parameters.unscaled,
             controller.q,
             controller.qdot,
             last_param,

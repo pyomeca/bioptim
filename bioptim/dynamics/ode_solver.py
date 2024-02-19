@@ -198,7 +198,7 @@ class OdeSolverBase:
         ode = {
             "t": self.t_ode(nlp),
             "x": self.x_ode(nlp),
-            "p": self.p_ode(nlp),
+            "u": self.p_ode(nlp),
             "a": self.a_ode(nlp),
             "param": self.param_ode(nlp),
             "ode": nlp.dynamics_func[dynamics_index],

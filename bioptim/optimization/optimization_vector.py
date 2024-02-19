@@ -439,7 +439,7 @@ class OptimizationVectorHelper:
                     data_controls[p][key][node] = u_array[nlp.controls.key_index(key), :]
 
         # For parameters
-        for i_param, key in enumerate(ocp.parameters):
+        for key in ocp.parameters.keys():
             # The list is to simulate the node so it has the same structure as the states and controls
             data_parameters[key] = [v_array[[offset + i for i in ocp.parameters[key].index], np.newaxis]]
         data_parameters = [data_parameters]
