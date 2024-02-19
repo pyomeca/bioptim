@@ -159,10 +159,10 @@ class AcadosInterface(SolverInterface):
 
         # Declare model variables
         t = ocp.nlp[0].time_cx
-        x = ocp.nlp[0].states.cx_start
-        u = ocp.nlp[0].controls.cx_start
+        x = ocp.nlp[0].states.scaled.cx_start
+        u = ocp.nlp[0].controls.scaled.cx_start
         p = ocp.nlp[0].parameters.scaled.cx
-        a = ocp.nlp[0].algebraic_states.cx_start
+        a = ocp.nlp[0].algebraic_states.scaled.cx_start
         if ocp.parameters:
             for key in ocp.parameters:
                 if str(ocp.parameters[key].cx)[:11] == f"time_phase_":
