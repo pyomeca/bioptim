@@ -22,9 +22,7 @@ class VariableScaling(OptionGeneric):
         if len(scaling.shape) == 1:
             scaling = scaling[:, np.newaxis]
         elif len(scaling.shape) > 2:
-            raise ValueError(
-                f"Scaling must be a 1- or 2- dimensional numpy array"
-            )
+            raise ValueError(f"Scaling must be a 1- or 2- dimensional numpy array")
 
         if (scaling < 0).any():
             raise ValueError(f"Scaling factors must be strictly greater than zero.")
