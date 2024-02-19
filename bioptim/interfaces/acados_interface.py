@@ -161,7 +161,7 @@ class AcadosInterface(SolverInterface):
         t = ocp.nlp[0].time_cx
         x = ocp.nlp[0].states.cx_start
         u = ocp.nlp[0].controls.cx_start
-        p = ocp.nlp[0].parameters.cx
+        p = ocp.nlp[0].parameters.scaled.cx
         a = ocp.nlp[0].algebraic_states.cx_start
         if ocp.parameters:
             for key in ocp.parameters:
