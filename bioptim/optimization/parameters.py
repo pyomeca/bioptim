@@ -240,6 +240,7 @@ class ParameterList(OptimizationVariableList):
     def add_a_copied_element(self, element_to_copy_index):
         self.elements.append(self.elements[element_to_copy_index])
 
+
 class ParameterContainer(OptimizationVariableContainer):
     """
     A parameter container (i.e., the list of scaled parameters and a list of unscaled parameters).
