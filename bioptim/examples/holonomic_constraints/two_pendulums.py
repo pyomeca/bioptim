@@ -221,8 +221,8 @@ def main():
 
     time = sol.decision_time(to_merge=SolutionMerge.NODES)
     plt.title("Lagrange multipliers of the holonomic constraint")
-    plt.plot(time[::2], lambdas[0, :], label="y")
-    plt.plot(time[::2], lambdas[1, :], label="z")
+    plt.plot(time, lambdas[0, :], label="y")
+    plt.plot(time, lambdas[1, :], label="z")
     plt.xlabel("Time (s)")
     plt.ylabel("Lagrange multipliers (N)")
     plt.legend()
