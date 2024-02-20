@@ -192,10 +192,10 @@ class PenaltyOption(OptionGeneric):
         self.multinode_idx = None
         self.dt = 0
         self.weight = weight
-        self.function: list[Function | None, ...] = []
-        self.function_non_threaded: list[Function | None, ...] = []
-        self.weighted_function: list[Function | None, ...] = []
-        self.weighted_function_non_threaded: list[Function | None, ...] = []
+        self.function: list[Function | None] = []
+        self.function_non_threaded: list[Function | None] = []
+        self.weighted_function: list[Function | None] = []
+        self.weighted_function_non_threaded: list[Function | None] = []
 
         self.multinode_penalty = False
         self.nodes_phase = None  # This is relevant for multinodes
@@ -344,7 +344,7 @@ class PenaltyOption(OptionGeneric):
                 )
         self.phase_dynamics = phase_dynamics
 
-    def _set_ns(self, controllers: list[PenaltyController, ...]):
+    def _set_ns(self, controllers: list[PenaltyController]):
         ns = [c.ns for c in controllers]
         if self.ns:
             # If it was already set (e.g. for multinode), we want to make sure it is consistent
@@ -355,7 +355,7 @@ class PenaltyOption(OptionGeneric):
                 )
         self.ns = ns
 
-    def _set_control_types(self, controllers: list[PenaltyController, ...]):
+    def _set_control_types(self, controllers: list[PenaltyController]):
         control_types = [c.control_type for c in controllers]
         if self.control_types:
             # If it was already set (e.g. for multinode), we want to make sure it is consistent
@@ -366,7 +366,7 @@ class PenaltyOption(OptionGeneric):
                 )
         self.control_types = control_types
 
-    def _set_subnodes_are_decision_states(self, controllers: list[PenaltyController, ...]):
+    def _set_subnodes_are_decision_states(self, controllers: list[PenaltyController]):
         subnodes_are_decision_states = [c.get_nlp.ode_solver.is_direct_collocation for c in controllers]
         if self.subnodes_are_decision_states:
             # If it was already set (e.g. for multinode), we want to make sure it is consistent
@@ -377,7 +377,7 @@ class PenaltyOption(OptionGeneric):
                 )
         self.subnodes_are_decision_states = subnodes_are_decision_states
 
-    def _set_penalty_function(self, controllers: list[PenaltyController, ...], fcn: MX | SX):
+    def _set_penalty_function(self, controllers: list[PenaltyController], fcn: MX | SX):
         """
         Finalize the preparation of the penalty (setting function and weighted_function)
 
@@ -590,7 +590,7 @@ class PenaltyOption(OptionGeneric):
                 "Node.ALL_SHOOTING."
             )
 
-    def get_variable_inputs(self, controllers: list[PenaltyController, ...]):
+    def get_variable_inputs(self, controllers: list[PenaltyController]):
         if self.multinode_penalty:
             controller = controllers[0]  # Recast controller as a normal variable (instead of a list)
             self.node_idx[0] = controller.node_index
@@ -859,7 +859,7 @@ class PenaltyOption(OptionGeneric):
 
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
-    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
+    def _add_penalty_to_pool(self, controller: list[PenaltyController]):
         """
         Return the penalty pool for the specified penalty (abstract)
 
