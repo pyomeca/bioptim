@@ -306,7 +306,7 @@ class RK1(RK):
     """
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX) -> MX | SX:
-        return x_prev + self.h * self.fun(t0, x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
+        return x_prev + self.h * self.fun(vertcat(t0, self.h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
 
 
 class RK2(RK):
@@ -318,7 +318,7 @@ class RK2(RK):
         h = self.h
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
-        return x_prev + h * self.fun(t0, x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
+        return x_prev + h * self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
 
 
 class RK4(RK):
@@ -421,8 +421,8 @@ class TRAPEZOIDAL(Integrator):
         a_prev: MX | SX,
         a_next: MX | SX,
     ):
-        dx = self.fun(t0, x_prev, u_prev, p, a_prev)[:, self.ode_idx]
-        dx_next = self.fun(t0, x_next, u_next, p, a_next)[:, self.ode_idx]
+        dx = self.fun(vertcat(t0, self.h), x_prev, u_prev, p, a_prev)[:, self.ode_idx]
+        dx_next = self.fun(vertcat(t0 + self.h, self.h), x_next, u_next, p, a_next)[:, self.ode_idx]
         return x_prev + (dx + dx_next) * self.h / 2
 
     @property
@@ -610,7 +610,7 @@ class COLLOCATION(Integrator):
         states_end = self._d[0] * states[1]
         defects = []
         for j in range(1, self.degree + 1):
-            t = vertcat(self.t_span_sym[0] + self._integration_time[j - 1] * self.h, self.h)
+            t = vertcat(self.t_span_sym[0] + self._integration_time[j] * self.h, self.h)
 
             # Expression for the state derivative at the collocation point
             xp_j = 0
