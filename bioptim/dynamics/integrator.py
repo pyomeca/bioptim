@@ -332,7 +332,6 @@ class RK4(RK):
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX):
         h = self.h
-        t = vertcat(t0, h)
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
         k2 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
@@ -348,7 +347,6 @@ class RK8(RK4):
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX):
         h = self.h
-        t = vertcat(t0, h)
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
         k2 = self.fun(vertcat(t0 + h * 4 / 27, h), x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + h * (4 / 27)), p, a)[
