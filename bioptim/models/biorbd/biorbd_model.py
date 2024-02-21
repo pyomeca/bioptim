@@ -1,6 +1,7 @@
 from typing import Callable, Any
 
 import biorbd_casadi as biorbd
+import numpy as np
 from biorbd_casadi import (
     GeneralizedCoordinates,
     GeneralizedVelocity,
@@ -8,11 +9,11 @@ from biorbd_casadi import (
     GeneralizedAcceleration,
 )
 from casadi import SX, MX, vertcat, horzcat, norm_fro
-import numpy as np
-from ...limits.path_conditions import Bounds
-from ...misc.utils import check_version
-from ...misc.mapping import BiMapping, BiMappingList
+
 from ..utils import _var_mapping, bounds_from_ranges
+from ...limits.path_conditions import Bounds
+from ...misc.mapping import BiMapping, BiMappingList
+from ...misc.utils import check_version
 
 check_version(biorbd, "1.10.0", "1.11.0")
 
@@ -727,17 +728,17 @@ class BiorbdModel:
 
         all_bioviz = []
         for idx_phase, data in enumerate(states):
-            if not isinstance(solution.ocp.nlp[idx_phase].model, BiorbdModel):
+            if not isinstance(ocp.nlp[idx_phase].model, BiorbdModel):
                 raise NotImplementedError("Animation is only implemented for biorbd models")
 
             # This calls each of the function that modify the internal dynamic model based on the parameters
-            nlp = solution.ocp.nlp[idx_phase]
+            nlp = ocp.nlp[idx_phase]
 
             # noinspection PyTypeChecker
             biorbd_model: BiorbdModel = nlp.model
 
             all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
-            all_bioviz[-1].load_movement(solution.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
+            all_bioviz[-1].load_movement(ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(solution["q"]))
 
             if "q_roots" in solution and "q_joints" in solution:
                 # TODO: Fix the mapping for this case
