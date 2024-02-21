@@ -1503,11 +1503,7 @@ class OptimalControlProgram:
                 for pen_fun in penalty_functions_phase:
                     if not pen_fun:
                         continue
-                    if pen_fun.type in (
-                        ObjectiveFcn.Mayer.MINIMIZE_TIME,
-                        ObjectiveFcn.Lagrange.MINIMIZE_TIME,
-                        ConstraintFcn.TIME_CONSTRAINT,
-                    ):
+                    if pen_fun.type in (ObjectiveFcn.Mayer.MINIMIZE_TIME, ConstraintFcn.TIME_CONSTRAINT):
                         if _has_penalty[i]:
                             raise RuntimeError("Time constraint/objective cannot be declared more than once per phase")
                         _has_penalty[i] = True

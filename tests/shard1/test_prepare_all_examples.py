@@ -390,22 +390,6 @@ def test__optimal_time_ocp__multiphase_time_constraint():
     )
 
 
-def test__optimal_time_ocp__pendulum_min_time_Lagrange():
-    from bioptim.examples.optimal_time_ocp import (
-        pendulum_min_time_Lagrange as ocp_module,
-    )
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=2,
-        n_shooting=50,
-        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
-        expand_dynamics=False,
-    )
-
-
 def test__optimal_time_ocp__pendulum_min_time_Mayer():
     from bioptim.examples.optimal_time_ocp import pendulum_min_time_Mayer as ocp_module
 

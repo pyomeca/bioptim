@@ -91,7 +91,6 @@ examples_ = OrderedDict(
             OrderedDict(
                 [
                     ("Multiphase time constraint", "multiphase_time_constraint.py"),
-                    ("Pendulum min time Lagrange", "pendulum_min_time_Lagrange.py"),
                     ("Pendulum min time Mayer", "pendulum_min_time_Mayer.py"),
                     ("Time constraint", "time_constraint.py"),
                 ]

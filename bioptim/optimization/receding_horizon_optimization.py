@@ -381,7 +381,6 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                         continue
                     if (
                         pen_fun.type == ObjectiveFcn.Mayer.MINIMIZE_TIME
-                        or pen_fun.type == ObjectiveFcn.Lagrange.MINIMIZE_TIME
                         or pen_fun.type == ConstraintFcn.TIME_CONSTRAINT
                     ):
                         raise ValueError("Time cannot be optimized in Receding Horizon Optimization")

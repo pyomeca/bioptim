@@ -2253,24 +2253,6 @@ if n_phases == 3:
     )
 ```
 
-### The [pendulum_min_time_Lagrange.py](./bioptim/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py) file
-This is a clone of the example/getting_started/pendulum.py where a pendulum must be balanced. The difference is that
-the time to perform the task is now free and minimized by the solver, as shown in the definition of the objective 
-function used for this example:
-
-```python
-objective_functions = ObjectiveList()
-objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=1)
-```
-
-Please note that a weight of -1 will maximize time. 
-
-This example shows how to define such an optimal
-control program with a Lagrange criterion (integral of dt).
-
-The difference between Mayer and Lagrange minimization time is that the former can define bounds to
-the values, while the latter is the most common way to define optimal time. 
-
 ### The [pendulum_min_time_Mayer.py](./bioptim/examples/optimal_time_ocp/pendulum_min_time_Mayer.py)  file
 This is a clone of the example/getting_started/pendulum.py where a pendulum must be balanced. The difference is that
 the time to perform the task is now free and minimized by the solver, as shown in the definition of the objective 
