@@ -642,7 +642,7 @@ class PlotOcp:
         Finds the intersection between the phases
         """
 
-        return list(accumulate([t[-1][-1] for t in self.t_integrated]))[:-1]
+        return list([t[-1][-1] for t in self.t_integrated])[:-1]
 
     @staticmethod
     def show():
