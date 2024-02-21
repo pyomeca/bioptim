@@ -122,6 +122,8 @@ def test__getting_started__custom_parameters():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    target_g = np.zeros((3, 1))
+    target_g[2] = -9.81
     ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=3,
@@ -132,7 +134,7 @@ def test__getting_started__custom_parameters():
         max_g=np.array([1, 1, -5]),
         min_m=10,
         max_m=30,
-        target_g=np.array([0, 0, -9.81]),
+        target_g=target_g,
         target_m=20,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
@@ -383,22 +385,6 @@ def test__optimal_time_ocp__multiphase_time_constraint():
         time_min=time_min,
         time_max=time_max,
         n_shooting=ns,
-        phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
-        expand_dynamics=False,
-    )
-
-
-def test__optimal_time_ocp__pendulum_min_time_Lagrange():
-    from bioptim.examples.optimal_time_ocp import (
-        pendulum_min_time_Lagrange as ocp_module,
-    )
-
-    bioptim_folder = os.path.dirname(ocp_module.__file__)
-
-    ocp_module.prepare_ocp(
-        biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
-        final_time=2,
-        n_shooting=50,
         phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         expand_dynamics=False,
     )

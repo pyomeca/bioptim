@@ -187,7 +187,7 @@ def prepare_ocp(
     objective_functions.add(
         ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau_joints", node=Node.ALL_SHOOTING, weight=100
     )
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=1)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
 
     # Add constraints
     constraints = ConstraintList()

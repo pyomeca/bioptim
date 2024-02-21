@@ -306,8 +306,8 @@ class OcpToConsole(GraphAbstract):
             print(f"**********")
             print(f"PARAMETERS: ")
             print("")
-            for parameter in self.ocp.nlp[phase_idx].parameters:
-                parameter, initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(parameter.name)
+            for key in self.ocp.nlp[phase_idx].parameters:
+                parameter, initial_guess, min_bound, max_bound, scaling = self._scaling_parameter(key)
                 print(f"Name: {parameter.name}")
                 print(f"Size: {parameter.size}")
                 print(f"Initial_guess: {initial_guess}")
@@ -673,8 +673,8 @@ class OcpToGraph(GraphAbstract):
 
             if len(self.ocp.nlp[phase_idx].parameters) > 0:
                 param_idx = 0
-                for param in self.ocp.nlp[phase_idx].parameters:
-                    self._draw_parameter_node(g, phase_idx, param_idx, param.name)
+                for key in self.ocp.nlp[phase_idx].parameters:
+                    self._draw_parameter_node(g, phase_idx, param_idx, key)
                     param_idx += 1
             else:
                 node_str = "<u><b>Parameters</b></u><br/> No parameter set"

@@ -91,16 +91,18 @@ class VariableScalingList(OptionDict):
 
         if isinstance(scaling, VariableScaling):
             self.add(key=scaling.key, scaling=scaling.scaling, phase=phase)
-        else:
-            if scaling is None:
-                raise ValueError("Scaling cannot be None")
-
+        elif isinstance(scaling, list) or isinstance(scaling, np.ndarray):
             for i, elt in enumerate(scaling):
                 if elt <= 0:
                     raise RuntimeError(
                         f"Scaling factors must be strictly greater than zero. {i}th element {elt} is not > 0."
                     )
             super(VariableScalingList, self)._add(key=key, phase=phase, scaling=scaling)
+        else:
+            if scaling is None:
+                raise ValueError("Scaling cannot be None")
+            else:
+                raise ValueError(f"Scaling must be a VariableScaling, a list or a numpy array, not {type(scaling)}")
 
     def copy(self):
         out = VariableScalingList()

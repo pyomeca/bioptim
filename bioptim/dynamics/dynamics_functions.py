@@ -301,6 +301,8 @@ class DynamicsFunctions:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        motor_noise = DynamicsFunctions.get(nlp.parameters["motor_noise"], parameters)
+        sensory_noise = DynamicsFunctions.get(nlp.parameters["sensory_noise"], parameters)
 
         tau += nlp.model.compute_torques_from_noise_and_feedback(
             nlp=nlp,
@@ -309,8 +311,8 @@ class DynamicsFunctions:
             controls=controls,
             parameters=parameters,
             algebraic_states=algebraic_states,
-            sensory_noise=nlp.parameters["sensory_noise"].mx,
-            motor_noise=nlp.parameters["motor_noise"].mx,
+            sensory_noise=sensory_noise,
+            motor_noise=motor_noise,
         )
         tau = tau + nlp.model.friction_coefficients @ qdot if with_friction else tau
 
@@ -366,6 +368,8 @@ class DynamicsFunctions:
         qdot_roots = DynamicsFunctions.get(nlp.states["qdot_roots"], states)
         qdot_joints = DynamicsFunctions.get(nlp.states["qdot_joints"], states)
         tau_joints = DynamicsFunctions.get(nlp.controls["tau_joints"], controls)
+        motor_noise = DynamicsFunctions.get(nlp.parameters["motor_noise"], parameters)
+        sensory_noise = DynamicsFunctions.get(nlp.parameters["sensory_noise"], parameters)
 
         q_full = vertcat(q_roots, q_joints)
         qdot_full = vertcat(qdot_roots, qdot_joints)
@@ -378,8 +382,8 @@ class DynamicsFunctions:
             controls=controls,
             parameters=parameters,
             algebraic_states=algebraic_states,
-            motor_noise=nlp.parameters["motor_noise"].mx,
-            sensory_noise=nlp.parameters["sensory_noise"].mx,
+            motor_noise=motor_noise,
+            sensory_noise=sensory_noise,
         )
         tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
 
@@ -992,7 +996,7 @@ class DynamicsFunctions:
         return var.mapping.to_second.map(cx[var.index, :])
 
     @staticmethod
-    def apply_parameters(parameters: MX.sym, nlp):
+    def apply_parameters(nlp):
         """
         Apply the parameter variables to the model. This should be called before calling the dynamics
 
@@ -1004,10 +1008,13 @@ class DynamicsFunctions:
             The definition of the system
         """
 
-        for param in nlp.parameters:
+        for param_key in nlp.parameters:
             # Call the pre dynamics function
-            if param.function[0]:
-                param.function[0](nlp.model, parameters[param.index], **param.params)
+            if nlp.parameters[param_key].function:
+                param = nlp.parameters[param_key]
+                param_scaling = nlp.parameters[param_key].scaling.scaling
+                param_reduced = nlp.parameters.scaled.mx_reduced[param.index]
+                param.function(nlp.model, param_reduced * param_scaling, **param.kwargs)
 
     @staticmethod
     def compute_qdot(nlp, q: MX | SX, qdot: MX | SX):

@@ -34,7 +34,7 @@ from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
 from ..optimization.solution.solution import Solution
-from ..optimization.variable_scaling import VariableScalingList
+from ..optimization.variable_scaling import VariableScalingList, VariableScaling
 
 
 class StochasticOptimalControlProgram(OptimalControlProgram):
@@ -91,14 +91,21 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         # Parameters
         if parameters is None:
-            parameters = ParameterList()
+            parameters = ParameterList(use_sx=use_sx)
         if parameter_bounds is None:
             parameter_bounds = BoundsList()
         if parameter_init is None:
             parameter_init = InitialGuessList()
 
         if "motor_noise" not in parameters.keys():
-            parameters.add("motor_noise", None, size=bio_model.motor_noise_magnitude.shape[0])
+            n_motor_noise = bio_model.motor_noise_magnitude.shape[0]
+            parameters.add(
+                "motor_noise",
+                function=None,
+                size=n_motor_noise,
+                scaling=VariableScaling("motor_noise", np.ones((n_motor_noise,))),
+                mapping=BiMapping(range(n_motor_noise), range(n_motor_noise)),
+            )
             parameter_bounds.add(
                 "motor_noise",
                 min_bound=bio_model.motor_noise_magnitude,
@@ -110,7 +117,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             )
 
         if "sensory_noise" not in parameters.keys():
-            parameters.add("sensory_noise", None, size=bio_model.sensory_noise_magnitude.shape[0])
+            n_sensory_noise = bio_model.sensory_noise_magnitude.shape[0]
+            parameters.add(
+                "sensory_noise",
+                function=None,
+                size=n_sensory_noise,
+                scaling=VariableScaling("sensory_noise", np.ones((n_sensory_noise,))),
+                mapping=BiMapping(range(n_sensory_noise), range(n_sensory_noise)),
+            )
             parameter_bounds.add(
                 "sensory_noise",
                 min_bound=bio_model.sensory_noise_magnitude,

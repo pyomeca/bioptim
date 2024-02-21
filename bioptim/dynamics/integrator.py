@@ -62,9 +62,8 @@ class Integrator:
         self.cx = ode_opt["cx"]
         self.t_span_sym = ode["t"]
         self.x_sym = ode["x"]
-        self.u_sym = ode["p"]
+        self.u_sym = ode["u"]
         self.param_sym = ode["param"]
-        self.param_scaling = ode_opt["param_scaling"]
         self.a_sym = ode["a"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
@@ -83,7 +82,7 @@ class Integrator:
             self.dxdt(
                 states=self.x_sym,
                 controls=self.u_sym,
-                params=self.param_sym * self.param_scaling,
+                params=self.param_sym,
                 algebraic_states=self.a_sym,
             ),
             self._input_names,

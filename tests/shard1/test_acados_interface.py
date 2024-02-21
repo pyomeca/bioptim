@@ -424,6 +424,8 @@ def test_acados_one_parameter():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    target_g = np.zeros((3, 1))
+    target_g[2] = -9.81
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
@@ -434,7 +436,7 @@ def test_acados_one_parameter():
         max_g=np.array([1, 1, -5]),
         min_m=10,
         max_m=30,
-        target_g=np.array([0, 0, -9.81])[:, np.newaxis],
+        target_g=target_g,
         target_m=20,
         use_sx=True,
         expand_dynamics=True,
@@ -494,6 +496,8 @@ def test_acados_several_parameter():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    target_g = np.zeros((3, 1))
+    target_g[2] = -9.81
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
@@ -504,7 +508,7 @@ def test_acados_several_parameter():
         max_g=np.array([1, 1, -5]),
         min_m=10,
         max_m=30,
-        target_g=np.array([0, 0, -9.81]),
+        target_g=target_g,
         target_m=20,
         use_sx=True,
         expand_dynamics=True,

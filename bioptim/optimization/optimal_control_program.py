@@ -54,10 +54,10 @@ from ..misc.enums import (
 )
 from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
-from ..optimization.parameters import ParameterList, Parameter
+from ..optimization.parameters import ParameterList, Parameter, ParameterContainer
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
-from ..optimization.variable_scaling import VariableScalingList
+from ..optimization.variable_scaling import VariableScalingList, VariableScaling
 from ..gui.check_conditioning import check_conditioning
 
 
@@ -457,7 +457,7 @@ class OptimalControlProgram:
             raise RuntimeError("constraints should be built from an Constraint or ConstraintList")
 
         if parameters is None:
-            parameters = ParameterList()
+            parameters = ParameterList(use_sx=use_sx)
         elif not isinstance(parameters, ParameterList):
             raise RuntimeError("parameters should be built from an ParameterList")
 
@@ -567,7 +567,6 @@ class OptimalControlProgram:
         self._define_time(self.phase_time, objective_functions, constraints)
 
         # Declare and fill the parameters
-        self.parameters = ParameterList()
         self._declare_parameters(parameters)
 
         # Prepare path constraints and dynamics of the program
@@ -962,26 +961,21 @@ class OptimalControlProgram:
         else:
             raise RuntimeError("new_constraint must be a ParameterConstraint or a ParameterConstraintList")
 
-    def _declare_parameters(self, new_parameters: ParameterList):
+    def _declare_parameters(self, parameters: ParameterList):
         """
         The main user interface to add or modify parameters in the ocp
 
         Parameters
         ----------
-        new_parameters: ParameterList
+        parameters: ParameterList
             The parameters to add to the ocp
         """
 
-        if not isinstance(new_parameters, ParameterList):
+        if not isinstance(parameters, ParameterList):
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-        self.parameters.cx_type = self.cx
-
-        offset = 0
-        for param in new_parameters:
-            param.index = list(range(offset, offset + param.size))
-            self.parameters.add(param)
-            offset += param.size
+        self.parameters = ParameterContainer()
+        self.parameters.initialize(parameters)
 
     def update_bounds(
         self,
@@ -1509,11 +1503,7 @@ class OptimalControlProgram:
                 for pen_fun in penalty_functions_phase:
                     if not pen_fun:
                         continue
-                    if pen_fun.type in (
-                        ObjectiveFcn.Mayer.MINIMIZE_TIME,
-                        ObjectiveFcn.Lagrange.MINIMIZE_TIME,
-                        ConstraintFcn.TIME_CONSTRAINT,
-                    ):
+                    if pen_fun.type in (ObjectiveFcn.Mayer.MINIMIZE_TIME, ConstraintFcn.TIME_CONSTRAINT):
                         if _has_penalty[i]:
                             raise RuntimeError("Time constraint/objective cannot be declared more than once per phase")
                         _has_penalty[i] = True
@@ -1531,21 +1521,32 @@ class OptimalControlProgram:
 
         self.phase_time = phase_time if isinstance(phase_time, (tuple, list)) else [phase_time]
 
+        self.dt_parameter = ParameterList(use_sx=(True if self.cx == SX else False))
+        for i_phase in range(self.n_phases):
+            if i_phase != self.time_phase_mapping.to_second.map_idx[i_phase]:
+                self.dt_parameter.add_a_copied_element(self.time_phase_mapping.to_second.map_idx[i_phase])
+            else:
+                self.dt_parameter.add(
+                    name=f"dt_phase{i_phase}",
+                    function=lambda model, values: None,
+                    size=1,
+                    mapping=BiMapping([1], [1]),
+                    scaling=VariableScaling("dt", np.ones((1,))),
+                    allow_reserved_name=True,
+                )
+
         dt_bounds = {}
         dt_initial_guess = {}
         dt_cx = []
         dt_mx = []
-        for i in range(self.n_phases):
-            if i in self.time_phase_mapping.to_first.map_idx:
-                dt_cx.append(self.cx.sym(f"dt_phase_{i}", 1, 1))
-                dt_mx.append(MX.sym(f"dt_phase_{i}", 1, 1))
+        for i_phase in range(self.n_phases):
+            if i_phase == self.time_phase_mapping.to_second.map_idx[i_phase]:
+                dt = self.phase_time[i_phase] / self.nlp[i_phase].ns
+                dt_bounds[f"dt_phase_{i_phase}"] = {"min": dt, "max": dt}
+                dt_initial_guess[f"dt_phase_{i_phase}"] = dt
 
-                dt = self.phase_time[i] / self.nlp[i].ns
-                dt_bounds[f"dt_phase_{i}"] = {"min": dt, "max": dt}
-                dt_initial_guess[f"dt_phase_{i}"] = dt
-            else:
-                dt_cx.append(dt_cx[self.time_phase_mapping.to_second.map_idx[i]])
-                dt_mx.append(dt_mx[self.time_phase_mapping.to_second.map_idx[i]])
+            dt_cx.append(self.dt_parameter[self.time_phase_mapping.to_second.map_idx[i_phase]].cx)
+            dt_mx.append(self.dt_parameter[self.time_phase_mapping.to_second.map_idx[i_phase]].mx)
 
         has_penalty = define_parameters_phase_time(self, objective_functions)
         define_parameters_phase_time(self, constraints, has_penalty)
@@ -1555,17 +1556,9 @@ class OptimalControlProgram:
         NLP.add(self, "time_cx", self.cx.sym("time", 1, 1), True)
         NLP.add(self, "time_mx", MX.sym("time", 1, 1), True)
         NLP.add(self, "dt", dt_cx, False)
-        NLP.add(self, "tf", [nlp.dt * max(nlp.ns, 1) for nlp in self.nlp], False)
         NLP.add(self, "dt_mx", dt_mx, False)
+        NLP.add(self, "tf", [nlp.dt * max(nlp.ns, 1) for nlp in self.nlp], False)
         NLP.add(self, "tf_mx", [nlp.dt_mx * max(nlp.ns, 1) for nlp in self.nlp], False)
-
-        # Otherwise, add the time to the Parameters
-        params = vertcat(*[dt_cx[i] for i in self.time_phase_mapping.to_first.map_idx])
-        self.dt_parameter = Parameter(
-            function=lambda model, values: None, name="dt", size=params.shape[0], allow_reserved_name=True, cx=self.cx
-        )
-        self.dt_parameter.cx = params
-        self.dt_parameter.index = [nlp.time_index for nlp in self.nlp]
 
         self.dt_parameter_bounds = Bounds(
             "dt_bounds",
@@ -1607,7 +1600,7 @@ class OptimalControlProgram:
         if not new_penalty:
             return
 
-        self.parameters[0].add_or_replace_to_penalty_pool(self, new_penalty)
+        new_penalty.add_or_replace_to_penalty_pool(self, self.nlp[new_penalty.phase])
         self.program_changed = True
 
     def node_time(self, phase_idx: int, node_idx: int):

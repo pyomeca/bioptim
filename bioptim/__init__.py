@@ -87,6 +87,8 @@ ObjectiveList
 # --- Managing the parameters --- #
 ParameterList
     A list of Parameter
+ParameterConstrainer
+    A placeholder for the ParameterList
 
 
 # --- Managing the boundaries of the variables --- #
@@ -217,7 +219,7 @@ from .optimization.receding_horizon_optimization import (
     CyclicMovingHorizonEstimator,
     MultiCyclicNonlinearModelPredictiveControl,
 )
-from .optimization.parameters import ParameterList
+from .optimization.parameters import ParameterList, ParameterContainer
 from .optimization.solution.solution import Solution
 from .optimization.solution.solution_data import SolutionMerge, TimeAlignment
 from .optimization.optimization_variable import OptimizationVariableList

@@ -82,8 +82,8 @@ def stochastic_forward_dynamics(
     motor_noise = 0
     sensory_noise = 0
     if with_noise:
-        motor_noise = nlp.parameters["motor_noise"].mx
-        sensory_noise = nlp.parameters["sensory_noise"].mx
+        motor_noise = DynamicsFunctions.get(nlp.parameters["motor_noise"], parameters)
+        sensory_noise = DynamicsFunctions.get(nlp.parameters["sensory_noise"], parameters)
 
     mus_excitations_fb = mus_excitations
     noise_torque = np.zeros(nlp.model.motor_noise_magnitude.shape)

@@ -1,6 +1,6 @@
 from typing import Any, Callable
 
-from casadi import MX, SX, vertcat
+from casadi import MX, SX, DM, vertcat
 
 from ..dynamics.ode_solver import OdeSolver
 from ..misc.enums import ControlType, PhaseDynamics
@@ -380,7 +380,7 @@ class PenaltyController:
         -------
         The scaled parameters
         """
-        return self._nlp.parameters.scaled
+        return MX() if type(self._nlp.parameters.scaled) == DM else self._nlp.parameters.scaled
 
     @property
     def q(self) -> OptimizationVariable:

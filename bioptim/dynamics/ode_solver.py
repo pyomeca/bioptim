@@ -157,7 +157,7 @@ class OdeSolverBase:
         -------
         The symbolic parameters
         """
-        return nlp.parameters.cx
+        return nlp.parameters.scaled.cx_start
 
     def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt) -> Callable:
         """
@@ -190,7 +190,6 @@ class OdeSolverBase:
             "cx": nlp.cx,
             "control_type": nlp.control_type,
             "defects_type": self.defects_type,
-            "param_scaling": vertcat(*[nlp.parameters[key].scaling.scaling for key in nlp.parameters.keys()]),
             "ode_index": node_index if nlp.dynamics_func[dynamics_index].size2_out("xdot") > 1 else 0,
             "duplicate_starting_point": self.duplicate_starting_point,
             **extra_opt,
@@ -199,7 +198,7 @@ class OdeSolverBase:
         ode = {
             "t": self.t_ode(nlp),
             "x": self.x_ode(nlp),
-            "p": self.p_ode(nlp),
+            "u": self.p_ode(nlp),
             "a": self.a_ode(nlp),
             "param": self.param_ode(nlp),
             "ode": nlp.dynamics_func[dynamics_index],

@@ -26,6 +26,7 @@ from bioptim import (
     BiorbdModel,
     PenaltyController,
     ParameterObjectiveList,
+    VariableScaling,
 )
 from matplotlib import pyplot as plt
 
@@ -58,20 +59,12 @@ def prepare_ocp(
     tau_mappings.add("tau", to_second=[None, 0], to_first=[1])
 
     # Define the parameter to optimize
-    parameters = ParameterList()
+    parameters = ParameterList(use_sx=False)
     parameter_init = InitialGuessList()
     parameter_bounds = BoundsList()
 
-    parameters.add(
-        "max_tau",
-        my_parameter_function,
-        size=1,
-    )
-    parameters.add(
-        "min_tau",
-        my_parameter_function,
-        size=1,
-    )
+    parameters.add("max_tau", my_parameter_function, size=1, scaling=VariableScaling("max_tau", [1]))
+    parameters.add("min_tau", my_parameter_function, size=1, scaling=VariableScaling("min_tau", [1]))
 
     parameter_init["max_tau"] = 1
     parameter_init["min_tau"] = -1
