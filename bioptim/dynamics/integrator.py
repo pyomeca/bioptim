@@ -331,9 +331,9 @@ class RK4(RK):
         t = vertcat(t0, h)
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
-        k2 = self.fun(vertcat(t0 + h/2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
-        k3 = self.fun(vertcat(t0 + h/2, h), x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
-        k4 = self.fun(vertcat(t0 +h, h), x_prev + h * k3, self.get_u(u, t0 + h), p, a)[:, self.ode_idx]
+        k2 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
+        k3 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
+        k4 = self.fun(vertcat(t0 + h, h), x_prev + h * k3, self.get_u(u, t0 + h), p, a)[:, self.ode_idx]
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
@@ -347,12 +347,24 @@ class RK8(RK4):
         t = vertcat(t0, h)
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
-        k2 = self.fun(vertcat(t0 + h * 4 / 27, h), x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + h * (4 / 27)), p, a)[:, self.ode_idx]
-        k3 = self.fun(vertcat(t0 + h / 18, h), x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + h * (2 / 9)), p, a)[:, self.ode_idx]
-        k4 = self.fun(vertcat(t0 + h / 12, h), x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t0 + h * (1 / 3)), p, a)[:, self.ode_idx]
-        k5 = self.fun(vertcat(t0 + h / 8, h), x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t0 + h * (1 / 2)), p, a)[:, self.ode_idx]
+        k2 = self.fun(vertcat(t0 + h * 4 / 27, h), x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + h * (4 / 27)), p, a)[
+            :, self.ode_idx
+        ]
+        k3 = self.fun(
+            vertcat(t0 + h / 18, h), x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + h * (2 / 9)), p, a
+        )[:, self.ode_idx]
+        k4 = self.fun(
+            vertcat(t0 + h / 12, h), x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t0 + h * (1 / 3)), p, a
+        )[:, self.ode_idx]
+        k5 = self.fun(vertcat(t0 + h / 8, h), x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t0 + h * (1 / 2)), p, a)[
+            :, self.ode_idx
+        ]
         k6 = self.fun(
-            vertcat(t0 + h / 54, h), x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t0 + h * (2 / 3)), p, a
+            vertcat(t0 + h / 54, h),
+            x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5),
+            self.get_u(u, t0 + h * (2 / 3)),
+            p,
+            a,
         )[:, self.ode_idx]
         k7 = self.fun(
             vertcat(t0 + h / 4320, h),
