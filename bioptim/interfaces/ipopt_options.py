@@ -92,6 +92,7 @@ class IPOPT(GenericSolver):
     _bound_frac: float = 0.01
     _print_level: int = 5
     _c_compile: bool = False
+    _check_derivatives_for_naninf: str = "no"  # "no", "yes"
 
     @property
     def tol(self):
@@ -189,6 +190,10 @@ class IPOPT(GenericSolver):
     def c_compile(self):
         return self._c_compile
 
+    @property
+    def check_derivatives_for_naninf(self):
+        return self._check_derivatives_for_naninf
+
     def set_tol(self, val: float):
         self._tol = val
 
@@ -260,6 +265,9 @@ class IPOPT(GenericSolver):
 
     def set_c_compile(self, val: bool):
         self._c_compile = val
+
+    def set_check_derivatives_for_naninf(self, val: str):
+        self._check_derivatives_for_naninf = val
 
     def set_convergence_tolerance(self, val: float):
         self._tol = val
