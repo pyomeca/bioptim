@@ -332,7 +332,6 @@ class DynamicsFunctions:
         parameters: MX.sym,
         algebraic_states: MX.sym,
         nlp,
-        with_contact: bool,
         with_friction: bool,
     ) -> DynamicsEvaluation:
         """
@@ -352,8 +351,6 @@ class DynamicsFunctions:
             The algebraic states of the system
         nlp: NonLinearProgram
             The definition of the system
-        with_contact: bool
-            If the dynamic with contact should be used
         with_friction: bool
             If the dynamic with friction should be used
 
@@ -390,7 +387,7 @@ class DynamicsFunctions:
         tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q_full, qdot_full)
-        ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full, tau_full, with_contact)
+        ddq = DynamicsFunctions.forward_dynamics(nlp, q_full, qdot_full, tau_full, with_contact=False)
         dxdt = MX(nlp.states.shape, ddq.shape[1])
         dxdt[:n_q, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
         dxdt[n_q:, :] = ddq
