@@ -63,7 +63,7 @@ class NonLinearProgram:
         The number of shooting points
     ode_solver: OdeSolverBase
         The chosen ode solver
-    parameters: ParameterList
+    parameters: ParameterContainer
         Reference to the optimized parameters in the underlying ocp
     par_dynamics: casadi.Function
         The casadi function of the threaded dynamics
@@ -194,9 +194,9 @@ class NonLinearProgram:
         self.states_dot = OptimizationVariableContainer(self.phase_dynamics)
         self.controls = OptimizationVariableContainer(self.phase_dynamics)
         # parameters is currently a clone of ocp.parameters, but should hold phase parameters
-        from ..optimization.parameters import ParameterList
+        from ..optimization.parameters import ParameterContainer
 
-        self.parameters = ParameterList()
+        self.parameters = ParameterContainer()
         self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
 
@@ -260,7 +260,10 @@ class NonLinearProgram:
         """
         if node_idx >= self.ns:
             return 1
-        return self.dynamics[node_idx].shape_xall[1]
+        if self.ode_solver.is_direct_collocation:
+            return self.dynamics[node_idx].shape_xall[1] - (1 if not self.ode_solver.duplicate_starting_point else 0)
+        else:
+            return self.dynamics[node_idx].shape_xall[1]
 
     @property
     def n_controls_nodes(self) -> int:
@@ -444,7 +447,9 @@ class NonLinearProgram:
             elif hasattr(var, "cx_start"):
                 cx += [var.cx_start]
             else:
-                cx += [var.cx]  # This is a temporary hack until parameters are included as OptimizationVariables
+                raise RuntimeError(
+                    f"Variable {var} is not of the good type ({type(var)}), it should be an OptimizationVariable or a Parameter."
+                )
 
         return NonLinearProgram.to_casadi_func(name, symbolic_expression, *mx)(*cx)
 
@@ -518,11 +523,16 @@ class NonLinearProgram:
             return ValueError(f"node_index out of range [0:{self.ns}]")
         return self.tf / self.ns * node_idx
 
-    def get_var_from_states_or_controls(self, key: str, states: MX.sym, controls: MX.sym) -> MX:
+    def get_var_from_states_or_controls(
+        self, key: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None
+    ) -> MX:
         """
-        This function returns the requested variable from the states or controls.
-        If the variable is present in the states and controls, it returns the states in priority.
-        If the variable is splited in its roots and joints components, it returns the concatenation of for the states,
+        This function returns the requested variable from the states, controls, or algebraic_states.
+        If the variable is present in more than one type of variables, it returns the following priority:
+        1) states
+        2) controls
+        3) algebraic_states
+        If the variable is split in its roots and joints components, it returns the concatenation of for the states,
         and only the joints for the controls.
         Please note that this function is not meant to be used by the user directly, but should be an internal function.
 
@@ -534,6 +544,8 @@ class NonLinearProgram:
             The states
         controls: MX.sym
             The controls
+        algebraic_states: MX.sym
+            The algebraic_states
         """
         if key in self.states:
             out_nlp, out_var = (self.states[key], states)
@@ -550,6 +562,9 @@ class NonLinearProgram:
         elif f"{key}_joints" in self.controls:
             out_joints_nlp, out_joints_var = (self.controls[f"{key}_joints"], controls)
             out = DynamicsFunctions.get(out_joints_nlp, out_joints_var)
+        elif key in self.algebraic_states:
+            out_nlp, out_var = (self.algebraic_states[key], algebraic_states)
+            out = DynamicsFunctions.get(out_nlp, out_var)
         else:
             raise RuntimeError(f"{key} not found in states or controls")
         return out

@@ -77,7 +77,7 @@ class Objective(PenaltyOption):
             penalty=objective, phase=phase, custom_function=custom_function, is_stochastic=is_stochastic, **params
         )
 
-    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
+    def _add_penalty_to_pool(self, controller: list[PenaltyController]):
         controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
@@ -250,7 +250,7 @@ class ObjectiveFunction:
                     taken into account elsewhere in the code)
                 """
 
-                return controller.tf
+                return controller.time.cx
 
         @staticmethod
         def get_dt(_):
@@ -275,6 +275,10 @@ class ObjectiveFunction:
         @staticmethod
         def penalty_nature() -> str:
             return "parameter_objectives"
+
+        @staticmethod
+        def get_dt(nlp) -> int:
+            return 1
 
     @staticmethod
     def update_target(ocp_or_nlp: Any, list_index: int, new_target: Any):
@@ -486,17 +490,13 @@ class ParameterObjective(PenaltyOption):
 
         super(ParameterObjective, self).__init__(penalty=parameter_objective, custom_function=custom_function, **params)
 
-    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
+    def _add_penalty_to_pool(self, controller: list[PenaltyController]):
         controller = controller[0]  # This is a special case of Node.TRANSITION
 
         if self.penalty_type == PenaltyType.INTERNAL:
-            pool = (
-                controller.get_nlp.J_internal
-                if controller is not None and controller.get_nlp
-                else controller.ocp.J_internal
-            )
+            pool = controller.ocp.J_internal
         elif self.penalty_type == PenaltyType.USER:
-            pool = controller.get_nlp.J if controller is not None and controller.get_nlp else controller.ocp.J
+            pool = controller.ocp.J
         else:
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
         pool[self.list_index] = self
@@ -514,9 +514,9 @@ class ParameterObjective(PenaltyOption):
         """
 
         if self.penalty_type == PenaltyType.INTERNAL:
-            J_to_add_to = nlp.J_internal if nlp else ocp.J_internal
+            J_to_add_to = ocp.J_internal
         elif self.penalty_type == PenaltyType.USER:
-            J_to_add_to = nlp.J if nlp else ocp.J
+            J_to_add_to = ocp.J
         else:
             raise ValueError(f"Invalid Type of objective {self.penalty_type}")
 
@@ -570,7 +570,10 @@ class ParameterObjectiveList(OptionList):
             self.copy(parameter_objective)
         else:
             super(ParameterObjectiveList, self)._add(
-                option_type=ParameterObjective, parameter_objective=parameter_objective, **extra_arguments
+                option_type=ParameterObjective,
+                parameter_objective=parameter_objective,
+                node=Node.START,
+                **extra_arguments,
             )
 
     def print(self):

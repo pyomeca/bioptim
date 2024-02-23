@@ -67,7 +67,6 @@ def check_conditioning(ocp):
                 nlp.states_dot.node_index = node_index
                 nlp.controls.node_index = node_index
                 nlp.algebraic_states.node_index = node_index
-                time = ocp.node_time(phase_idx=nlp.phase_idx, node_idx=node_index)
 
                 if constraints.multinode_penalty:
                     n_phases = ocp.n_phases
@@ -85,9 +84,8 @@ def check_conditioning(ocp):
 
                     for controller in controllers:
                         controller.node_index = constraints.node_idx[0]
-                    t0 = PenaltyHelpers.t0(constraints, controllers[0].ocp)
-                    _, x, u, a = constraints.get_variable_inputs(controllers)
-                    p = nlp.parameters.cx
+
+                    _, t0, x, u, p, a = constraints.get_variable_inputs(controllers)
 
                     list_constraints.append(
                         jacobian(
@@ -188,9 +186,7 @@ def check_conditioning(ocp):
 
                         for controller in controllers:
                             controller.node_index = constraints.node_idx[0]
-                        t0 = PenaltyHelpers.t0(constraints, controllers[0].ocp)
-                        _, x, u, a = constraints.get_variable_inputs(controllers)
-                        p = nlp.parameters.cx
+                        _, t0, x, u, p, a = constraints.get_variable_inputs(controllers)
 
                         hessian_cas = hessian(
                             constraints.function[node_index](t0, phases_dt, x, u, p, a)[axis], vertcat_obj
@@ -392,15 +388,14 @@ def check_conditioning(ocp):
 
                 for controller in controllers:
                     controller.node_index = obj.node_idx[0]
-                t0 = PenaltyHelpers.t0(obj, controllers[0].ocp)
-                _, x, u, s = obj.get_variable_inputs(controllers)
-                params = nlp.parameters.cx
+                _, t0, x, u, p, a = obj.get_variable_inputs(controllers)
+
                 target = PenaltyHelpers.target(obj, obj.node_idx.index(node_index))
 
-                p = obj.weighted_function[node_index](t0, phases_dt, x, u, params, s, obj.weight, target)
+                penalty = obj.weighted_function[node_index](t0, phases_dt, x, u, p, a, obj.weight, target)
 
-                for i in range(p.shape[0]):
-                    objective += p[i] ** 2
+                for i in range(penalty.shape[0]):
+                    objective += penalty[i] ** 2
 
             # create function to build the hessian
             vertcat_obj = vertcat([], *nlp.X_scaled, *nlp.U_scaled)  # time, states, controls

@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+
 import os
 
 from bioptim import PhaseDynamics, SolutionMerge

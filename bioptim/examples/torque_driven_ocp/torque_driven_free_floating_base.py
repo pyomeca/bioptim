@@ -3,6 +3,7 @@ This file examplifies how to  use the torque driven free floating base dynamics.
 The advantage of this formulation is that yo do not need to specify a mapping to constrain the root to be unactuated.
 This specific problem generates one somersault in straight position with 1 twist.
 """
+
 import numpy as np
 import platform
 

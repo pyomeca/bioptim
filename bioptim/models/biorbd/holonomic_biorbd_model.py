@@ -7,8 +7,8 @@ from biorbd_casadi import (
 )
 from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv
 
-from ..holonomic_constraints import HolonomicConstraintsList
 from .biorbd_model import BiorbdModel
+from ..holonomic_constraints import HolonomicConstraintsList
 
 
 class HolonomicBiorbdModel(BiorbdModel):
@@ -277,6 +277,8 @@ class HolonomicBiorbdModel(BiorbdModel):
 
     def coupling_matrix(self, q: MX) -> MX:
         """
+        Also denoted as Bvu in the literature.
+
         Sources
         -------
         Docquier, N., Poncelet, A., and Fisette, P.:
@@ -325,6 +327,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         return q
 
     def compute_q_v(self, q_u: MX | DM, q_v_init: MX | DM = None) -> MX | DM:
+        """
+        Compute the dependent joint positions from the independent joint positions.
+        This function might be misleading because it can be used for numerical purpose with DM
+        or for symbolic purpose with MX. The return type is not enforced.
+        """
         decision_variables = MX.sym("decision_variables", self.nb_dependent_joints)
         q = self.state_from_partition(q_u, decision_variables)
         mx_residuals = self.holonomic_constraints(q)

@@ -22,8 +22,8 @@ def dynamics_torque_driven_with_feedbacks(time, states, controls, parameters, al
         k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
         k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
-        motor_noise = nlp.parameters["motor_noise"].mx
-        sensory_noise = nlp.parameters["sensory_noise"].mx
+        motor_noise = DynamicsFunctions.get(nlp.parameters["motor_noise"], parameters)
+        sensory_noise = DynamicsFunctions.get(nlp.parameters["sensory_noise"], parameters)
         end_effector = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, nlp)
 
         tau_feedback = get_excitation_with_feedback(k_matrix, end_effector, ref, sensory_noise)

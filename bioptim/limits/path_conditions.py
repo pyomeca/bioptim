@@ -575,8 +575,8 @@ class BoundsList(OptionDict):
         self,
         key,
         bounds: Bounds = None,
-        min_bound: PathCondition | np.ndarray | list | tuple | Callable = None,
-        max_bound: PathCondition | np.ndarray | list | tuple | Callable = None,
+        min_bound: PathCondition | np.ndarray | float | list | tuple | Callable = None,
+        max_bound: PathCondition | np.ndarray | float | list | tuple | Callable = None,
         interpolation: InterpolationType = InterpolationType.CONSTANT_WITH_FIRST_AND_LAST_DIFFERENT,
         phase: int = -1,
         **extra_arguments: Any,
@@ -941,9 +941,12 @@ class NoisedInitialGuess(InitialGuess):
         super(NoisedInitialGuess, self).__init__(
             key=key,
             initial_guess=self.noised_initial_guess,
-            interpolation=interpolation
-            if interpolation == InterpolationType.ALL_POINTS  # interpolation should always be done at each data point
-            else InterpolationType.EACH_FRAME,
+            interpolation=(
+                interpolation
+                if interpolation
+                == InterpolationType.ALL_POINTS  # interpolation should always be done at each data point
+                else InterpolationType.EACH_FRAME
+            ),
             **parameters,
         )
 
@@ -1052,9 +1055,9 @@ class NoisedInitialGuess(InitialGuess):
         init_instance = InitialGuess(
             "noised",
             initial_guess_matrix,
-            interpolation=interpolation
-            if interpolation == InterpolationType.ALL_POINTS
-            else InterpolationType.EACH_FRAME,
+            interpolation=(
+                interpolation if interpolation == InterpolationType.ALL_POINTS else InterpolationType.EACH_FRAME
+            ),
         )
 
         self.noised_initial_guess = init_instance.init + self.noise

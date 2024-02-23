@@ -160,27 +160,34 @@ class AcadosInterface(SolverInterface):
         # Declare model variables
         t = ocp.nlp[0].time_cx
         x = ocp.nlp[0].states.cx_start
+        x_sym = ocp.nlp[0].states.scaled.cx_start
         u = ocp.nlp[0].controls.cx_start
+        u_sym = ocp.nlp[0].controls.scaled.cx_start
         p = ocp.nlp[0].parameters.cx
+        p_sym = ocp.nlp[0].parameters.scaled.cx
         a = ocp.nlp[0].algebraic_states.cx_start
+        a_sym = ocp.nlp[0].algebraic_states.scaled.cx_start
+
         if ocp.parameters:
-            for param in ocp.parameters:
-                if str(param.cx)[:11] == f"time_phase_":
+            for key in ocp.parameters:
+                if str(ocp.parameters[key].cx)[:11] == f"time_phase_":
                     raise RuntimeError("Time constraint not implemented yet with Acados.")
+        if a_sym.shape[0] != 0:
+            raise RuntimeError("Algebraic states not implemented yet with Acados.")
 
         self.nparams = ocp.nlp[0].parameters.shape
 
-        x = vertcat(p, x)
-        x_dot = SX.sym("x_dot", x.shape[0], x.shape[1])
+        x_sym = vertcat(p_sym, x_sym)
+        x_dot_sym = SX.sym("x_dot", x_sym.shape[0], x_sym.shape[1])
 
-        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func[0](t, x[self.nparams :, :], u, p, a))
-        f_impl = x_dot - f_expl
+        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func[0](t, x, u, p, a))
+        f_impl = x_dot_sym - f_expl
 
         self.acados_model.f_impl_expr = f_impl
         self.acados_model.f_expl_expr = f_expl
-        self.acados_model.x = x
-        self.acados_model.xdot = x_dot
-        self.acados_model.u = u
+        self.acados_model.x = x_sym
+        self.acados_model.xdot = x_dot_sym
+        self.acados_model.u = u_sym
         self.acados_model.con_h_expr = np.zeros((0, 0))
         self.acados_model.con_h_expr_e = np.zeros((0, 0))
         self.acados_model.p = []
@@ -333,8 +340,8 @@ class AcadosInterface(SolverInterface):
         param_bounds_max = []
         param_bounds_min = []
 
-        for key in self.ocp.parameter_bounds.keys():
-            param_bounds_scale = self.ocp.parameter_bounds[key].scale(self.ocp.parameters[key].scaling.scaling)
+        for key in ocp.parameter_bounds.keys():
+            param_bounds_scale = ocp.parameter_bounds[key].scale(ocp.parameters[key].scaling.scaling)
             param_bounds_max = np.concatenate((param_bounds_max, param_bounds_scale.max[:, 0]))
             param_bounds_min = np.concatenate((param_bounds_min, param_bounds_scale.min[:, 0]))
 
@@ -343,7 +350,7 @@ class AcadosInterface(SolverInterface):
             self.x_bound_min[: self.nparams, :] = np.repeat(param_bounds_min[:, np.newaxis], 3, axis=1)
 
         for key in ocp.nlp[0].states.keys():
-            x_tp = ocp.nlp[0].x_bounds[key]
+            x_tp = ocp.nlp[0].x_bounds[key].scale(ocp.nlp[0].x_scaling[key].scaling)
             index = [i + self.nparams for i in ocp.nlp[0].states[key].index]
             for i in range(3):
                 self.x_bound_max[index, i] = x_tp.max[:, i]
@@ -353,7 +360,7 @@ class AcadosInterface(SolverInterface):
         u_bounds_max = np.ndarray((self.acados_ocp.dims.nu, 1))
         u_bounds_min = np.ndarray((self.acados_ocp.dims.nu, 1))
         for key in ocp.nlp[0].controls.keys():
-            u_tp = ocp.nlp[0].u_bounds[key]
+            u_tp = ocp.nlp[0].u_bounds[key].scale(ocp.nlp[0].u_scaling[key].scaling)
             index = ocp.nlp[0].controls[key].index
             u_bounds_max[index, 0] = np.array(u_tp.max[:, 0])
             u_bounds_min[index, 0] = np.array(u_tp.min[:, 0])
@@ -642,10 +649,10 @@ class AcadosInterface(SolverInterface):
                             J,
                             nlp.time_cx,
                             nlp.dt,
-                            nlp.states.cx_start,
-                            nlp.controls.cx_start,
-                            nlp.parameters.cx,
-                            nlp.algebraic_states.cx_start,
+                            nlp.states.scaled.cx_start,
+                            nlp.controls.scaled.cx_start,
+                            nlp.parameters.scaled.cx,
+                            nlp.algebraic_states.scaled.cx_start,
                         )
 
                         # Deal with first and last node
@@ -654,10 +661,10 @@ class AcadosInterface(SolverInterface):
                             J,
                             nlp.time_cx,
                             nlp.dt,
-                            nlp.states.cx_start,
-                            nlp.controls.cx_start,
-                            nlp.parameters.cx,
-                            nlp.algebraic_states.cx_start,
+                            nlp.states.scaled.cx_start,
+                            nlp.controls.scaled.cx_start,
+                            nlp.parameters.scaled.cx,
+                            nlp.algebraic_states.scaled.cx_start,
                         )
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
@@ -666,10 +673,10 @@ class AcadosInterface(SolverInterface):
                             J,
                             nlp.time_cx,
                             nlp.dt,
-                            nlp.states.cx_start,
-                            nlp.controls.cx_start,
-                            nlp.parameters.cx,
-                            nlp.algebraic_states.cx_start,
+                            nlp.states.scaled.cx_start,
+                            nlp.controls.scaled.cx_start,
+                            nlp.parameters.scaled.cx,
+                            nlp.algebraic_states.scaled.cx_start,
                         )
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
@@ -685,10 +692,10 @@ class AcadosInterface(SolverInterface):
                         J,
                         nlp.time_cx,
                         nlp.dt,
-                        nlp.states.cx_start,
-                        nlp.controls.cx_start,
-                        nlp.parameters.cx,
-                        nlp.algebraic_states.cx_start,
+                        nlp.states.scaled.cx_start,
+                        nlp.controls.scaled.cx_start,
+                        nlp.parameters.scaled.cx,
+                        nlp.algebraic_states.scaled.cx_start,
                     )
 
             # Set costs
@@ -754,13 +761,15 @@ class AcadosInterface(SolverInterface):
             # self.ocp_solver.cost_set(n, "W", self.W)
 
             # The x_init need to be ordered by index that's why we use a for loop
-            x_init = np.ndarray((self.ocp.nlp[0].states.shape,))
+            x_init = np.ndarray((self.ocp.nlp[0].states.shape))
             for key in self.ocp.nlp[0].states.keys():
                 index = self.ocp.nlp[0].states[key].index
                 self.ocp.nlp[0].x_init[key].check_and_adjust_dimensions(
                     self.ocp.nlp[0].states[key].shape, self.ocp.nlp[0].ns
                 )
-                x_init[index] = self.ocp.nlp[0].x_init[key].init.evaluate_at(n)
+                x_init[index] = (
+                    self.ocp.nlp[0].x_init[key].init.evaluate_at(n) / self.ocp.nlp[0].x_scaling[key].scaling[:, 0]
+                )
 
             self.ocp_solver.set(n, "x", np.concatenate((param_init, x_init)))
 
@@ -771,7 +780,9 @@ class AcadosInterface(SolverInterface):
                 self.ocp.nlp[0].u_init[key].check_and_adjust_dimensions(
                     self.ocp.nlp[0].controls[key].shape, self.ocp.nlp[0].ns - 1
                 )
-                u_init[index, 0] = self.ocp.nlp[0].u_init[key].init.evaluate_at(n)
+                u_init[index, 0] = (
+                    self.ocp.nlp[0].u_init[key].init.evaluate_at(n) / self.ocp.nlp[0].u_scaling[key].scaling[:, 0]
+                )
 
             self.ocp_solver.set(n, "u", u_init)
 

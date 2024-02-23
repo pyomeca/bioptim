@@ -1,6 +1,6 @@
 from typing import Any, Callable
 
-from casadi import MX, SX, vertcat
+from casadi import MX, SX, DM, vertcat
 
 from ..dynamics.ode_solver import OdeSolver
 from ..misc.enums import ControlType, PhaseDynamics
@@ -89,15 +89,6 @@ class PenaltyController:
         return self._nlp
 
     @property
-    def t_span(self) -> list:
-        dt = self.phases_time_cx[self.phase_idx]
-        return vertcat(self.time.cx, self.time.cx + dt) + self.node_index * dt
-
-    @property
-    def phases_time_cx(self) -> list:
-        return self.ocp.dt_parameter.cx
-
-    @property
     def cx(self) -> MX | SX | Callable:
         return self._nlp.cx
 
@@ -130,38 +121,87 @@ class PenaltyController:
         return self._nlp.model
 
     @property
-    def dt(self) -> MX | SX:
+    def t_span(self) -> OptimizationVariable:
+        """
+        Return the time span associated with the current node index. This value is the one that is used to integrate
+
+        Returns
+        -------
+
+        """
+        mx = vertcat(self.time.mx, self.dt.mx)
+        cx = vertcat(self.time.cx, self.dt.cx)
+
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        n_val = cx.shape[0]
+        tp.append("t_span", mx=mx, cx=[cx, cx, cx], bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)))
+        return tp["t_span"]
+
+    @property
+    def phases_dt(self) -> OptimizationVariable:
+        """
+        Return the delta time associated with all the phases
+        """
+
+        tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        n_val = self.ocp.dt_parameter.mx.shape[0]
+        tp.append(
+            "phases_dt",
+            mx=self.ocp.dt_parameter.mx,
+            cx=[self.ocp.dt_parameter.cx, self.ocp.dt_parameter.cx, self.ocp.dt_parameter.cx],
+            bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
+        )
+
+        return tp["phases_dt"]
+
+    @property
+    def dt(self) -> OptimizationVariable:
+        """
+        Return the delta time associated with the current phase
+        """
+
+        tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        n_val = self._nlp.dt_mx.shape[0]
         tp.append(
             "dt",
             mx=self._nlp.dt_mx,
             cx=[self._nlp.dt, self._nlp.dt, self._nlp.dt],
-            bimapping=BiMapping(to_second=[0], to_first=[0]),
+            bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
         return tp["dt"]
 
     @property
     def time(self) -> OptimizationVariable:
         """
-        Return the time associated with the current node index
-
-        Returns
-        -------
-        The time at node node_index
+        Return the t0 associated with the current node index
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        n_val = self._nlp.time_mx.shape[0]
         tp.append(
             "time",
             mx=self._nlp.time_mx,
             cx=[self._nlp.time_cx, self._nlp.time_cx, self._nlp.time_cx],
-            bimapping=BiMapping(to_second=[0], to_first=[0]),
+            bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
         return tp["time"]
 
     @property
-    def tf(self) -> MX | SX:
-        return self._nlp.tf
+    def tf(self) -> OptimizationVariable:
+        """
+        Return the final time of the current phase
+        """
+
+        tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
+        n_val = self._nlp.tf_mx.shape[0]
+        tp.append(
+            "tf",
+            mx=self._nlp.tf_mx,
+            cx=[self._nlp.tf, self._nlp.tf, self._nlp.tf],
+            bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
+        )
+
+        return tp["tf"]
 
     @property
     def states(self) -> OptimizationVariableList:
@@ -340,7 +380,7 @@ class PenaltyController:
         -------
         The scaled parameters
         """
-        return self._nlp.parameters.scaled
+        return MX() if type(self._nlp.parameters.scaled) == DM else self._nlp.parameters.scaled
 
     @property
     def q(self) -> OptimizationVariable:

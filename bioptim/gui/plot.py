@@ -380,12 +380,14 @@ class PlotOcp:
                 else:
                     nb_subplots = max(
                         [
-                            max(
-                                len(nlp.plot[variable].phase_mappings.to_second.map_idx),
-                                max(nlp.plot[variable].phase_mappings.to_second.map_idx) + 1,
+                            (
+                                max(
+                                    len(nlp.plot[variable].phase_mappings.to_first.map_idx),
+                                    max(nlp.plot[variable].phase_mappings.to_first.map_idx) + 1,
+                                )
+                                if variable in nlp.plot
+                                else 0
                             )
-                            if variable in nlp.plot
-                            else 0
                             for nlp in self.ocp.nlp
                         ]
                     )
@@ -404,8 +406,7 @@ class PlotOcp:
                     continue
 
                 mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
-                mapping_range_index = list(range(max(nlp.plot[variable].phase_mappings.to_second.map_idx) + 1))
-                for ctr in mapping_range_index:
+                for ctr in mapping_to_first_index:
                     ax = axes[ctr]
                     if ctr in mapping_to_first_index:
                         index_legend = mapping_to_first_index.index(ctr)
@@ -413,43 +414,41 @@ class PlotOcp:
                             ax.set_title(nlp.plot[variable].legend[index_legend])
                     ax.grid(**self.plot_options["grid"])
                     ax.set_xlim(self.t[-1][[0, -1]])
-                    if ctr in mapping_to_first_index:
-                        if nlp.plot[variable].ylim:
-                            ax.set_ylim(nlp.plot[variable].ylim)
-                        elif self.show_bounds and nlp.plot[variable].bounds:
-                            if nlp.plot[variable].bounds.type != InterpolationType.CUSTOM:
-                                y_min = nlp.plot[variable].bounds.min[mapping_to_first_index.index(ctr), :].min()
-                                y_max = nlp.plot[variable].bounds.max[mapping_to_first_index.index(ctr), :].max()
-                            else:
-                                repeat = 1
-                                if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
-                                    repeat = nlp.ode_solver.polynomial_degree + 1
-                                nlp.plot[variable].bounds.check_and_adjust_dimensions(
-                                    len(mapping_to_first_index), nlp.ns
-                                )
-                                y_min = min(
-                                    [
-                                        nlp.plot[variable].bounds.min.evaluate_at(j)[mapping_to_first_index.index(ctr)]
-                                        for j in range(nlp.ns * repeat)
-                                    ]
-                                )
-                                y_max = max(
-                                    [
-                                        nlp.plot[variable].bounds.max.evaluate_at(j)[mapping_to_first_index.index(ctr)]
-                                        for j in range(nlp.ns * repeat)
-                                    ]
-                                )
-                            if y_min.__array__()[0] < y_min_all[var_idx][mapping_to_first_index.index(ctr)]:
-                                y_min_all[var_idx][mapping_to_first_index.index(ctr)] = y_min
-                            if y_max.__array__()[0] > y_max_all[var_idx][mapping_to_first_index.index(ctr)]:
-                                y_max_all[var_idx][mapping_to_first_index.index(ctr)] = y_max
 
-                            y_range, _ = self.__compute_ylim(
-                                y_min_all[var_idx][mapping_to_first_index.index(ctr)],
-                                y_max_all[var_idx][mapping_to_first_index.index(ctr)],
-                                1.25,
+                    if nlp.plot[variable].ylim:
+                        ax.set_ylim(nlp.plot[variable].ylim)
+                    elif self.show_bounds and nlp.plot[variable].bounds:
+                        if nlp.plot[variable].bounds.type != InterpolationType.CUSTOM:
+                            y_min = nlp.plot[variable].bounds.min[mapping_to_first_index.index(ctr), :].min()
+                            y_max = nlp.plot[variable].bounds.max[mapping_to_first_index.index(ctr), :].max()
+                        else:
+                            repeat = 1
+                            if isinstance(nlp.ode_solver, OdeSolver.COLLOCATION):
+                                repeat = nlp.ode_solver.polynomial_degree + 1
+                            nlp.plot[variable].bounds.check_and_adjust_dimensions(len(mapping_to_first_index), nlp.ns)
+                            y_min = min(
+                                [
+                                    nlp.plot[variable].bounds.min.evaluate_at(j)[mapping_to_first_index.index(ctr)]
+                                    for j in range(nlp.ns * repeat)
+                                ]
                             )
-                            ax.set_ylim(y_range)
+                            y_max = max(
+                                [
+                                    nlp.plot[variable].bounds.max.evaluate_at(j)[mapping_to_first_index.index(ctr)]
+                                    for j in range(nlp.ns * repeat)
+                                ]
+                            )
+                        if y_min.__array__()[0] < y_min_all[var_idx][mapping_to_first_index.index(ctr)]:
+                            y_min_all[var_idx][mapping_to_first_index.index(ctr)] = y_min
+                        if y_max.__array__()[0] > y_max_all[var_idx][mapping_to_first_index.index(ctr)]:
+                            y_max_all[var_idx][mapping_to_first_index.index(ctr)] = y_max
+
+                        y_range, _ = self.__compute_ylim(
+                            y_min_all[var_idx][mapping_to_first_index.index(ctr)],
+                            y_max_all[var_idx][mapping_to_first_index.index(ctr)],
+                            1.25,
+                        )
+                        ax.set_ylim(y_range)
 
                     plot_type = self.custom_plots[variable][i].type
                     t = self.t[i][nlp.plot[variable].node_idx] if plot_type == PlotType.POINT else self.t[i]
@@ -643,7 +642,7 @@ class PlotOcp:
         Finds the intersection between the phases
         """
 
-        return list(accumulate([t[-1][-1] for t in self.t_integrated]))[:-1]
+        return list([t[-1][-1] for t in self.t_integrated])[:-1]
 
     @staticmethod
     def show():
@@ -707,7 +706,10 @@ class PlotOcp:
                 )
                 if y_data is None:
                     continue
-                self._append_to_ydata(y_data)
+                mapped_y_data = []
+                for i in nlp.plot[key].phase_mappings.to_first.map_idx:
+                    mapped_y_data.append(y_data[i])
+                self._append_to_ydata(mapped_y_data)
 
         self.__update_axes()
 
@@ -727,7 +729,9 @@ class PlotOcp:
             The time vector of each phase
         dt
             The delta times of the current phase
-        x
+        x_decision
+            The states of the current phase (decision)
+        x_stepwise
             The states of the current phase (stepwise)
         u
             The controls of the current phase
@@ -752,7 +756,7 @@ class PlotOcp:
             node_idx = custom_plot.node_idx[idx]
             if "penalty" in custom_plot.parameters:
                 penalty = custom_plot.parameters["penalty"]
-                t0 = PenaltyHelpers.t0(penalty, self.ocp)
+                t0 = PenaltyHelpers.t0(penalty, idx, lambda p_idx, n_idx: time_stepwise[p_idx][n_idx][0])
 
                 x_node = PenaltyHelpers.states(
                     penalty,
@@ -764,7 +768,7 @@ class PlotOcp:
                     idx,
                     lambda p_idx, n_idx, sn_idx: u[n_idx][:, sn_idx] if n_idx < len(u) else np.ndarray((0, 1)),
                 )
-                p_node = PenaltyHelpers.parameters(penalty, lambda: np.array(p))
+                p_node = PenaltyHelpers.parameters(penalty, 0, lambda p_idx, n_idx, sn_idx: np.array(p))
                 a_node = PenaltyHelpers.states(
                     penalty,
                     idx,
@@ -784,27 +788,24 @@ class PlotOcp:
             y_tp = np.ndarray((max(custom_plot.phase_mappings.to_first.map_idx) + 1, tp.shape[1])) * np.nan
             for ctr, axe_index in enumerate(custom_plot.phase_mappings.to_first.map_idx):
                 y_tp[axe_index, :] = tp[ctr, :]
-            all_y.append(y_tp)
+            all_y.append(tp)
 
         # Dispatch the values so they will by properly dispatched to the correct axes later
         if custom_plot.type == PlotType.INTEGRATED:
-            out = []
-            for idx in range(max(custom_plot.phase_mappings.to_second.map_idx) + 1):
+            out = [[] for _ in range(max(np.abs(custom_plot.phase_mappings.to_first.map_idx)) + 1)]
+            for idx in custom_plot.phase_mappings.to_first.map_idx:
                 y_tp = []
-                if idx in custom_plot.phase_mappings.to_first.map_idx:
-                    for y in all_y:
-                        y_tp.append(y[idx, :])
-                else:
-                    y_tp = None
-                out.append(y_tp)
+                for y in all_y:
+                    y_tp.append(y[custom_plot.phase_mappings.to_first.map_idx.index(idx), :])
+                out[idx] = y_tp
             return out
 
         elif custom_plot.type in (PlotType.PLOT, PlotType.STEP, PlotType.POINT):
             all_y = np.concatenate([tp[:, 0:1] for tp in all_y], axis=1)
-            y = []
-            for i in range(all_y.shape[0]):
-                y.append(all_y[i, :])
-            return y
+            out = [[] for _ in range(max(np.abs(custom_plot.phase_mappings.to_first.map_idx)) + 1)]
+            for idx in custom_plot.phase_mappings.to_first.map_idx:
+                out[idx] = all_y[custom_plot.phase_mappings.to_first.map_idx.index(idx), :]
+            return out
         else:
             raise RuntimeError(f"Plot type {custom_plot.type} not implemented yet")
 

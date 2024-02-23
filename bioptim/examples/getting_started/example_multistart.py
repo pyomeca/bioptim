@@ -2,6 +2,7 @@
 An example of how to use multi-start to find local minima from different initial guesses.
 This example is a variation of the pendulum example in getting_started/pendulum.py.
 """
+
 import pickle
 import os
 import shutil

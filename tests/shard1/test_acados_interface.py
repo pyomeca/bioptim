@@ -3,6 +3,7 @@ Test for file IO.
 It tests the results of an optimal control problem with acados regarding the proper functioning of :
 - the handling of mayer and lagrange obj
 """
+
 import os
 import shutil
 import pytest
@@ -423,6 +424,8 @@ def test_acados_one_parameter():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    target_g = np.zeros((3, 1))
+    target_g[2] = -9.81
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
@@ -433,7 +436,7 @@ def test_acados_one_parameter():
         max_g=np.array([1, 1, -5]),
         min_m=10,
         max_m=30,
-        target_g=np.array([0, 0, -9.81])[:, np.newaxis],
+        target_g=target_g,
         target_m=20,
         use_sx=True,
         expand_dynamics=True,
@@ -493,6 +496,8 @@ def test_acados_several_parameter():
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
+    target_g = np.zeros((3, 1))
+    target_g[2] = -9.81
     ocp = ocp_module.prepare_ocp(
         biorbd_model_path=bioptim_folder + "/models/pendulum.bioMod",
         final_time=1,
@@ -503,7 +508,7 @@ def test_acados_several_parameter():
         max_g=np.array([1, 1, -5]),
         min_m=10,
         max_m=30,
-        target_g=np.array([0, 0, -9.81]),
+        target_g=target_g,
         target_m=20,
         use_sx=True,
         expand_dynamics=True,
@@ -736,10 +741,6 @@ def test_acados_bounds_not_implemented(failing):
     n_cycles = 3
     window_len = 5
     window_duration = 0.2
-    x_init = InitialGuessList()
-    x_init["final"] = np.zeros((nq * 2, 1))
-    u_init = InitialGuessList()
-    u_init["final"] = np.zeros((ntau, 1))
     if failing == "u_bounds":
         x_bounds = BoundsList()
         x_bounds.add("q", min_bound=np.zeros((nq, 1)), max_bound=np.zeros((nq, 1)))
@@ -769,8 +770,6 @@ def test_acados_bounds_not_implemented(failing):
         Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True),
         window_len,
         window_duration,
-        x_init=x_init,
-        u_init=u_init,
         x_bounds=x_bounds,
         u_bounds=u_bounds,
         n_threads=4,

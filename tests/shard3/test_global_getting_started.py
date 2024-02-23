@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+
 import os
 import pickle
 import re
@@ -1075,7 +1076,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
     weight = 10
     target = []
     fun = ocp.nlp[0].J_internal[0].weighted_function
-    dt = sol.t_span[0][-1]
+    dt = sol.t_span()[0][-1]
     t_out = []
     x_out = np.ndarray((0, 1))
     u_out = np.ndarray((0, 1))

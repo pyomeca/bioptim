@@ -9,9 +9,10 @@ is to validate the dynamics of multiple shooting. If they both are equal, it usu
 can be held in the solution.
 """
 
-from bioptim import InitialGuess, Solution, Shooting, InterpolationType, SolutionIntegrator
 import numpy as np
+
 import pendulum
+from bioptim import InitialGuessList, Solution, Shooting, InterpolationType, SolutionIntegrator
 
 
 def main():
@@ -24,22 +25,31 @@ def main():
 
     # Simulation the Initial Guess
     # Interpolation: Constant
-    X = InitialGuess([0, 0, 0, 0])
-    U = InitialGuess([-1, 1])
+    X = InitialGuessList()
+    X["q"] = [0] * 2
+    X["qdot"] = [0] * 2
 
-    sol_from_initial_guess = Solution.from_initial_guess(ocp, [X, U])
+    U = InitialGuessList()
+    U["tau"] = [-1, 1]
+
+    sol_from_initial_guess = Solution.from_initial_guess(
+        ocp, [np.array([1 / 30]), X, U, InitialGuessList(), InitialGuessList()]
+    )
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
-    print(f"Final position of q from single shooting of initial guess = {s.states['q'][:, -1]}")
+    print(f"Final position of q from single shooting of initial guess = {s['q'][-1]}")
     # Uncomment the next line to animate the integration
     # s.animate()
 
     # Interpolation: Each frame (for instance, values from a previous optimization or from measured data)
-    U = np.random.rand(2, 31)
-    U = InitialGuess(U, interpolation=InterpolationType.EACH_FRAME)
+    random_u = np.random.rand(2, 30)
+    U = InitialGuessList()
+    U.add("tau", random_u, interpolation=InterpolationType.EACH_FRAME)
 
-    sol_from_initial_guess = Solution.from_initial_guess(ocp, [X, U])
+    sol_from_initial_guess = Solution.from_initial_guess(
+        ocp, [np.array([1 / 30]), X, U, InitialGuessList(), InitialGuessList()]
+    )
     s = sol_from_initial_guess.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
-    print(f"Final position of q from single shooting of initial guess = {s.states['q'][:, -1]}")
+    print(f"Final position of q from single shooting of initial guess = {s['q'][-1]}")
     # Uncomment the next line to animate the integration
     # s.animate()
 
@@ -53,15 +63,15 @@ def main():
     s_single = sol.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.OCP)
     # Uncomment the next line to animate the integration
     # s_single.animate()
-    print(f"Final position of q from single shooting of the solution = {s_single.states['q'][:, -1]}")
-    s_multiple = sol.integrate(
-        shooting_type=Shooting.MULTIPLE, keep_intermediate_points=True, integrator=SolutionIntegrator.OCP
-    )
-    print(f"Final position of q from multiple shooting of the solution = {s_multiple.states['q'][:, -1]}")
+    print(f"Final position of q from single shooting of the solution = {s_single['q'][-1]}")
+    s_multiple = sol.integrate(shooting_type=Shooting.MULTIPLE, integrator=SolutionIntegrator.OCP)
+    print(f"Final position of q from multiple shooting of the solution = {s_multiple['q'][-1]}")
 
     # Uncomment the following lines to graph the solution from the actual solution
     # sol.graphs(shooting_type=Shooting.SINGLE)
     # sol.graphs(shooting_type=Shooting.MULTIPLE)
+
+    return s, s_single, s_multiple
 
 
 if __name__ == "__main__":

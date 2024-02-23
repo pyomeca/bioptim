@@ -131,13 +131,14 @@ class OptimizationVectorHelper:
         x_scaled = []
         u_scaled = []
         a_scaled = []
+        p_scaled = ocp.parameters.scaled.cx
 
         for nlp in ocp.nlp:
             x_scaled += [x.reshape((-1, 1)) for x in nlp.X_scaled]
             u_scaled += nlp.U_scaled
             a_scaled += [a.reshape((-1, 1)) for a in nlp.A_scaled]
 
-        return vertcat(t_scaled, *x_scaled, *u_scaled, ocp.parameters.cx, *a_scaled)
+        return vertcat(t_scaled, *x_scaled, *u_scaled, p_scaled, *a_scaled)
 
     @staticmethod
     def bounds_vectors(ocp) -> tuple[np.ndarray, np.ndarray]:
@@ -340,9 +341,9 @@ class OptimizationVectorHelper:
         -------
         The dt values
         """
-        out = data[ocp.dt_parameter.index]
+        out = data[range(len(ocp.time_phase_mapping.to_first.map_idx))]
         if isinstance(out, (DM, SX, MX)):
-            return out.toarray()[:, 0].tolist()
+            return ocp.time_phase_mapping.to_second.map(out.toarray()[:, 0].tolist())
         return list(out[:, 0])
 
     @staticmethod
@@ -401,7 +402,7 @@ class OptimizationVectorHelper:
         data_parameters = {key: None for key in ocp.parameters.keys()}
 
         # For states
-        offset = ocp.dt_parameter.size
+        offset = len(ocp.time_phase_mapping.to_first.map_idx)
         for p in range(ocp.n_phases):
             nlp = ocp.nlp[p]
             nx = nlp.states.shape
@@ -438,9 +439,9 @@ class OptimizationVectorHelper:
                     data_controls[p][key][node] = u_array[nlp.controls.key_index(key), :]
 
         # For parameters
-        for param in ocp.parameters:
+        for key in ocp.parameters.keys():
             # The list is to simulate the node so it has the same structure as the states and controls
-            data_parameters[param.name] = [v_array[[offset + i for i in param.index], np.newaxis]]
+            data_parameters[key] = [v_array[[offset + i for i in ocp.parameters[key].index], np.newaxis]]
         data_parameters = [data_parameters]
         offset += sum([ocp.parameters[key].shape for key in ocp.parameters.keys()])
 

@@ -34,7 +34,7 @@ from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
 from ..optimization.solution.solution import Solution
-from ..optimization.variable_scaling import VariableScalingList
+from ..optimization.variable_scaling import VariableScalingList, VariableScaling
 
 
 class StochasticOptimalControlProgram(OptimalControlProgram):
@@ -91,14 +91,21 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
 
         # Parameters
         if parameters is None:
-            parameters = ParameterList()
+            parameters = ParameterList(use_sx=use_sx)
         if parameter_bounds is None:
             parameter_bounds = BoundsList()
         if parameter_init is None:
             parameter_init = InitialGuessList()
 
         if "motor_noise" not in parameters.keys():
-            parameters.add("motor_noise", None, size=bio_model.motor_noise_magnitude.shape[0])
+            n_motor_noise = bio_model.motor_noise_magnitude.shape[0]
+            parameters.add(
+                "motor_noise",
+                function=None,
+                size=n_motor_noise,
+                scaling=VariableScaling("motor_noise", np.ones((n_motor_noise,))),
+                mapping=BiMapping(range(n_motor_noise), range(n_motor_noise)),
+            )
             parameter_bounds.add(
                 "motor_noise",
                 min_bound=bio_model.motor_noise_magnitude,
@@ -110,7 +117,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             )
 
         if "sensory_noise" not in parameters.keys():
-            parameters.add("sensory_noise", None, size=bio_model.sensory_noise_magnitude.shape[0])
+            n_sensory_noise = bio_model.sensory_noise_magnitude.shape[0]
+            parameters.add(
+                "sensory_noise",
+                function=None,
+                size=n_sensory_noise,
+                scaling=VariableScaling("sensory_noise", np.ones((n_sensory_noise,))),
+                mapping=BiMapping(range(n_sensory_noise), range(n_sensory_noise)),
+            )
             parameter_bounds.add(
                 "sensory_noise",
                 min_bound=bio_model.sensory_noise_magnitude,
@@ -345,7 +359,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     for j in range(self.problem_type.polynomial_degree + 2)
                 ]
                 df_dz = Fdz(
-                    time_vector[i],
+                    vertcat(time_vector[i], time_vector[i + 1] - time_vector[i]),
                     x_guess[:, index_this_time[0]],
                     x_guess[:, index_this_time[1:]],
                     u_guess[:, i],
@@ -353,7 +367,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     fake_algebraic_states[:, i],
                 )
                 dg_dz = Gdz(
-                    time_vector[i],
+                    vertcat(time_vector[i], time_vector[i + 1] - time_vector[i]),
                     x_guess[:, index_this_time[0]],
                     x_guess[:, index_this_time[1:]],
                     u_guess[:, i],
@@ -394,7 +408,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     for j in range(self.problem_type.polynomial_degree + 2)
                 ]
                 dg_dx = Gdx(
-                    time_vector[i],
+                    vertcat(time_vector[i], time_vector[i + 1] - time_vector[i]),
                     x_guess[:, index_this_time[0]],
                     x_guess[:, index_this_time[1:]],
                     u_guess[:, i],
@@ -402,7 +416,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     fake_algebraic_states[:, i],
                 )
                 dg_dw = Gdw(
-                    time_vector[i],
+                    vertcat(time_vector[i], time_vector[i + 1] - time_vector[i]),
                     x_guess[:, index_this_time[0]],
                     x_guess[:, index_this_time[1:]],
                     u_guess[:, i],
@@ -458,10 +472,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
             # concatenate u_init into a single matrix
             if nlp.control_type == ControlType.CONSTANT:
                 u_guess = np.zeros((0, nlp.ns))
-            elif (
-                nlp.control_type == ControlType.LINEAR_CONTINUOUS
-                or nlp.control_type == ControlType.CONSTANT_WITH_LAST_NODE
-            ):
+            elif nlp.control_type in (ControlType.LINEAR_CONTINUOUS, ControlType.CONSTANT_WITH_LAST_NODE):
                 u_guess = np.zeros((0, nlp.ns + 1))
             elif nlp.control_type == ControlType.NONE:
                 u_guess = np.zeros((0, 0))

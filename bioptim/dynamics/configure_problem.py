@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from casadi import vertcat, Function, DM, MX
+from casadi import vertcat, Function, DM
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
@@ -302,11 +302,9 @@ class ConfigureProblem:
     def torque_driven_free_floating_base(
         ocp,
         nlp,
-        with_contact: bool = False,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
-        external_forces: list = None,
     ):
         """
         Configure the dynamics for a torque driven program with a free floating base.
@@ -320,21 +318,13 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficients * qdot)
-        external_forces: list[Any]
-            A list of external forces
         """
-
-        _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
-        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
 
         nb_q = nlp.model.nb_q
         nb_qdot = nlp.model.nb_qdot
@@ -424,17 +414,9 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.torque_driven_free_floating_base,
-                with_contact=with_contact,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
                 with_friction=with_friction,
-                external_forces=external_forces,
-            )
-
-        # Configure the contact forces
-        if with_contact:
-            ConfigureProblem.configure_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces
             )
 
     @staticmethod
@@ -576,7 +558,6 @@ class ConfigureProblem:
         ConfigureProblem.torque_driven_free_floating_base(
             ocp=ocp,
             nlp=nlp,
-            with_contact=with_contact,
             with_friction=with_friction,
         )
 
@@ -584,7 +565,6 @@ class ConfigureProblem:
             ocp,
             nlp,
             DynamicsFunctions.stochastic_torque_driven_free_floating_base,
-            with_contact=with_contact,
             with_friction=with_friction,
         )
 
@@ -932,7 +912,7 @@ class ConfigureProblem:
             The function to get the derivative of the states
         """
 
-        DynamicsFunctions.apply_parameters(nlp.parameters.mx, nlp)
+        DynamicsFunctions.apply_parameters(nlp)
 
         if not isinstance(dyn_func, (tuple, list)):
             dyn_func = (dyn_func,)
@@ -942,8 +922,8 @@ class ConfigureProblem:
                 nlp.time_mx,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
-                nlp.parameters.mx,
-                nlp.algebraic_states.scaled.mx,
+                nlp.parameters.scaled.mx_reduced,
+                nlp.algebraic_states.scaled.mx_reduced,
                 nlp,
                 **extra_params,
             )
@@ -959,8 +939,8 @@ class ConfigureProblem:
                         time_span_sym,
                         nlp.states.scaled.mx_reduced,
                         nlp.controls.scaled.mx_reduced,
-                        nlp.parameters.mx,
-                        nlp.algebraic_states.scaled.mx,
+                        nlp.parameters.scaled.mx_reduced,
+                        nlp.algebraic_states.scaled.mx_reduced,
                     ],
                     [dynamics_dxdt],
                     ["t_span", "x", "u", "p", "a"],
@@ -990,8 +970,8 @@ class ConfigureProblem:
                             time_span_sym,
                             nlp.states.scaled.mx_reduced,
                             nlp.controls.scaled.mx_reduced,
-                            nlp.parameters.mx,
-                            nlp.algebraic_states.scaled.mx,
+                            nlp.parameters.scaled.mx_reduced,
+                            nlp.algebraic_states.scaled.mx_reduced,
                             nlp.states_dot.scaled.mx_reduced,
                         ],
                         [dynamics_eval.defects],
@@ -1034,16 +1014,16 @@ class ConfigureProblem:
                 time_span_sym,
                 nlp.states.scaled.mx_reduced,
                 nlp.controls.scaled.mx_reduced,
-                nlp.parameters.mx,
-                nlp.algebraic_states.scaled.mx,
+                nlp.parameters.scaled.mx_reduced,
+                nlp.algebraic_states.scaled.mx_reduced,
             ],
             [
                 dyn_func(
                     time_span_sym,
                     nlp.states.scaled.mx_reduced,
                     nlp.controls.scaled.mx_reduced,
-                    nlp.parameters.mx,
-                    nlp.algebraic_states.scaled.mx,
+                    nlp.parameters.scaled.mx_reduced,
+                    nlp.algebraic_states.scaled.mx_reduced,
                     nlp,
                     **extra_params,
                 )
@@ -1092,13 +1072,21 @@ class ConfigureProblem:
         """
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
+        q = nlp.states.mx_reduced[nlp.states["q"].index]
+        qdot = nlp.states.mx_reduced[nlp.states["qdot"].index]
         global_soft_contact_force_func = nlp.model.soft_contact_forces(
-            nlp.states.mx_reduced[nlp.states["q"].index],
-            nlp.states.mx_reduced[nlp.states["qdot"].index],
+            nlp.states["q"].mapping.to_second.map(q), nlp.states["qdot"].mapping.to_second.map(qdot)
         )
+
+        # TODO: do not declare unuseful functions!
         nlp.soft_contact_forces_func = Function(
             "soft_contact_forces_func",
-            [nlp.time_mx, nlp.states.mx_reduced, nlp.controls.mx_reduced, nlp.parameters.mx],
+            [
+                nlp.time_mx,
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.scaled.mx_reduced,
+            ],
             [global_soft_contact_force_func],
             ["t", "x", "u", "p"],
             ["soft_contact_forces"],

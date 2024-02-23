@@ -4,6 +4,7 @@ The simulation is a pendulum simulation, the model has been freed in translation
 constrains the z-distance between two markers to remain null.
 The behaviour of the pendulum should be the same as the one in bioptim/examples/getting_started/pendulum.py
 """
+
 from bioptim import (
     BoundsList,
     HolonomicConstraintsFcn,

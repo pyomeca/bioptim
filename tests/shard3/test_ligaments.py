@@ -16,17 +16,20 @@ from bioptim import (
     ParameterList,
     PhaseDynamics,
     SolutionMerge,
+    ParameterContainer,
 )
 from tests.utils import TestUtils
 import os
 
 
 class OptimalControlProgram:
-    def __init__(self, nlp):
+    def __init__(self, nlp, use_sx):
         self.cx = nlp.cx
         self.n_phases = 1
         self.nlp = [nlp]
-        self.parameters = ParameterList()
+        parameters_list = ParameterList(use_sx=use_sx)
+        self.parameters = ParameterContainer()
+        self.parameters.initialize(parameters_list)
         self.implicit_constraints = ConstraintList()
         self.n_threads = 1
 
@@ -52,7 +55,7 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -114,7 +117,7 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
 
     NonLinearProgram.add(
@@ -177,7 +180,7 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
     nlp.a_scaling = VariableScalingList()
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,
@@ -240,7 +243,7 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 2 + nlp.model.nb_muscles, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_muscles, 1))
 
-    ocp = OptimalControlProgram(nlp)
+    ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
     nlp.control_type = ControlType.CONSTANT
     NonLinearProgram.add(
         ocp,

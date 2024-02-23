@@ -84,7 +84,7 @@ class OptimizationVariable:
         return len(self)
 
     @property
-    def cx(self):
+    def cx(self) -> MX | SX:
         if self.parent_list is not None:
             if self.parent_list.current_cx_to_get == 0:
                 return self.cx_start
@@ -95,10 +95,10 @@ class OptimizationVariable:
             else:
                 raise NotImplementedError("This cx is not implemented. Please contact a programmer")
         else:
-            return self.cx_start()
+            return self.cx_start
 
     @property
-    def cx_start(self):
+    def cx_start(self) -> MX | SX:
         """
         The CX of the variable
         """
@@ -111,7 +111,7 @@ class OptimizationVariable:
         return self.parent_list.cx_start[self.index, :]
 
     @property
-    def cx_mid(self):
+    def cx_mid(self) -> MX | SX:
         """
         The CX of the variable
         """
@@ -124,7 +124,7 @@ class OptimizationVariable:
         return self.parent_list.cx_mid[self.index, :]
 
     @property
-    def cx_end(self):
+    def cx_end(self) -> MX | SX:
         """
         The CX of the variable
         """
@@ -137,7 +137,7 @@ class OptimizationVariable:
         return self.parent_list.cx_end[self.index, :]
 
     @property
-    def cx_intermediates_list(self):
+    def cx_intermediates_list(self) -> list:
         """
         The cx of all elements together (starting point)
         """

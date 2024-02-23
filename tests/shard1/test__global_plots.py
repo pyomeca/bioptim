@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+
 import io
 import sys
 import os
@@ -260,14 +261,14 @@ def test_console_objective_functions(phase_dynamics):
         "\n"
         "---- COST FUNCTION VALUES ----\n"
         "PHASE 0\n"
-        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
+        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.0)\n"
         "\n"
         "PHASE 1\n"
-        "MultinodeObjectiveFcn.CUSTOM: 6.0 (non weighted  3.00)\n"
-        "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.00)\n"
+        "MultinodeObjectiveFcn.CUSTOM: 6.0 (non weighted  3.0)\n"
+        "Lagrange.MINIMIZE_CONTROL: 180.0 (non weighted  90.0)\n"
         "\n"
         "PHASE 2\n"
-        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.00)\n"
+        "Lagrange.MINIMIZE_CONTROL: 120.0 (non weighted  60.0)\n"
         "\n"
         "Sum cost functions: 426.0\n"
         "------------------------------\n"
