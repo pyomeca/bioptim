@@ -6,6 +6,7 @@ import numpy as np
 from .penalty_controller import PenaltyController
 from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
 from ..misc.options import OptionGeneric
+from ..misc.mapping import BiMapping
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..limits.penalty_helpers import PenaltyHelpers
 
@@ -730,8 +731,8 @@ class PenaltyOption(OptionGeneric):
         return u
 
     @staticmethod
-    def define_target_mapping(controller: PenaltyController, key: str):
-        target_mapping = controller.get_nlp.variable_mappings[key]
+    def define_target_mapping(controller: PenaltyController, key: str, rows):
+        target_mapping = BiMapping(range(len(controller.get_nlp.variable_mappings[key].to_first.map_idx)), list(rows))
         return target_mapping
 
     def add_target_to_plot(self, controller: PenaltyController, combine_to: str):
@@ -777,7 +778,7 @@ class PenaltyOption(OptionGeneric):
             else:
                 plot_type = PlotType.POINT
 
-            target_mapping = self.define_target_mapping(controller, self.params["key"])
+            target_mapping = self.define_target_mapping(controller, self.params["key"], self.rows)
             controller.ocp.add_plot(
                 self.target_plot_name,
                 plot_function,
@@ -785,7 +786,7 @@ class PenaltyOption(OptionGeneric):
                 color="tab:red",
                 plot_type=plot_type,
                 phase=controller.get_nlp.phase_idx,
-                axes_idx=target_mapping,  # TODO verify if not all elements has target
+                axes_idx=target_mapping,
                 node_idx=controller.t,
             )
 

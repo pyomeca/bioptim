@@ -88,13 +88,6 @@ class PenaltyFunctionAbstract:
             """
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
-            if key in controller.get_nlp.variable_mappings:
-                target_mapping = controller.get_nlp.variable_mappings[key]
-            else:
-                target_mapping = BiMapping(
-                    to_first=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
-                    to_second=list(range(controller.get_nlp.controls[key].cx_start.shape[0])),
-                )  # TODO: why if condition, target_mapping not used (Pariterre?)
 
             if penalty.integration_rule == QuadratureRule.RECTANGLE_LEFT:
                 # TODO: for trapezoidal integration (This should not be done here but in _set_penalty_function)
