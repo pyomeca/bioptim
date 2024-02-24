@@ -1049,6 +1049,9 @@ class OptimalControlProgram:
             for key in nlp.controls.keys():
                 if f"{key}_controls" in nlp.plot and key in nlp.u_bounds.keys():
                     nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[key]
+            for key in nlp.algebraic_states.keys():
+                if f"{key}_algebraic" in nlp.plot and key in nlp.a_bounds.keys():
+                    nlp.plot[f"{key}_algebraic"].bounds = nlp.a_bounds[key]
 
     def update_initial_guess(
         self,

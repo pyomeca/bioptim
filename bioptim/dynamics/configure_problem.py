@@ -1369,7 +1369,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_algebraic_states=True,
-            skip_plot=True,
         )
 
     @staticmethod
@@ -1493,7 +1492,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_algebraic_states=True,
-            skip_plot=True,
         )
 
     @staticmethod
@@ -1525,7 +1523,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_algebraic_states=True,
-            skip_plot=True,
         )
 
     @staticmethod
@@ -1554,7 +1551,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_algebraic_states=True,
-            skip_plot=True,
         )
 
     @staticmethod
@@ -1589,7 +1585,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_algebraic_states=True,
-            skip_plot=True,
         )
 
     @staticmethod
