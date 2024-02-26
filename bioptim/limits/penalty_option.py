@@ -846,7 +846,7 @@ class PenaltyOption(OptionGeneric):
         # The active controller is always the last one, and they all should be the same length anyway
         for node in range(len(controllers[-1])):
             # TODO WARNING THE NEXT IF STATEMENT IS A BUG DELIBERATELY INTRODUCED TO FIT THE PREVIOUS RESULTS.
-            # IT SHOULD BE REMOVED AS SOON AS THE MERGE IS DONE (AND VALUES OF THE TESTS ADJUSTED)
+            # IT SHOULD BE REMOVED AS SOON AS THE MERGE IS DONE (AND VALUES OF THE TESTS ADJUSTED)  # @pariterre, can we remove?
             if self.integrate and self.target is not None:
                 self.node_idx = controllers[0].t[:-1]
                 if node not in self.node_idx:
@@ -857,6 +857,10 @@ class PenaltyOption(OptionGeneric):
                 controller.cx_index_to_get = 0
 
             penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
+
+            if len(penalty_function.shape) > 1:
+                if penalty_function.shape[0] != 1 and penalty_function.shape[1] != 1:  # @pariterre: is it only the first condition or both?
+                    raise RuntimeError("The penalty must return a vector not a matrix.")
 
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
