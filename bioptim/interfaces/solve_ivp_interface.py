@@ -5,7 +5,7 @@ import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
-from ..misc.enums import Shooting, ControlType, SolutionIntegrator
+from ..misc.enums import Shooting, ControlType, SolutionIntegrator, PhaseDynamics
 
 
 def solve_ivp_interface(
@@ -17,6 +17,7 @@ def solve_ivp_interface(
     p: list[np.ndarray],
     a: list[np.ndarray],
     method: SolutionIntegrator = SolutionIntegrator.SCIPY_RK45,
+    noised: bool = False,
 ):
     """
     This function solves the initial value problem with the dynamics_func built by bioptim
@@ -75,7 +76,11 @@ def solve_ivp_interface(
             if len(x0i.shape) > 1:
                 x0i = x0i[:, 0]
 
-            func = nlp.dynamics_func[0] if len(nlp.dynamics_func) == 1 else nlp.dynamics_func[node]
+            # This is weird for ONE_PER_NODE and stochastic!
+            if noised:
+                func = nlp.dynamics_func[1] if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else nlp.dynamics_func[node]
+            else:
+                func = nlp.dynamics_func[0] if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else nlp.dynamics_func[node]
             result = _solve_ivp_scipy_interface(
                 lambda t, x: np.array(func(t, x, _control_function(control_type, t, t_span, u[node]), p, a[node]))[
                     :, 0

@@ -237,8 +237,16 @@ def _to_scaled_values(unscaled: list, ocp, variable_type: str) -> list:
             if isinstance(unscaled[phase][key], list):  # Nodes are not merged
                 scaled[phase][key] = []
                 for node in range(len(unscaled[phase][key])):
-                    value = unscaled[phase][key][node]
-                    scaled[phase][key].append(value / scale_factor.to_array(value.shape[1]))
+                    scaled[phase][key].append(np.zeros((unscaled[phase][key][node].shape[0], unscaled[phase][key][node].shape[1])))
+                    if len(unscaled[phase][key][node].shape) == 3:  # if in noisy_integrate
+                        for random in range(unscaled[phase][key][node].shape[2]):
+                            value = unscaled[phase][key][node][:, :, random]
+                            scaled[phase][key][node] = np.hstack((scaled[phase][key][node], value / scale_factor.to_array(value.shape[1])))
+                        scaled[phase][key][node] = scaled[phase][key][node][:, :, 1:]
+                    else:
+                        value = unscaled[phase][key][node]
+                        scaled[phase][key][node] = value / scale_factor.to_array(value.shape[1])
+
             elif isinstance(unscaled[phase][key], np.ndarray):  # Nodes are merged
                 value = unscaled[phase][key]
                 scaled[phase][key] = value / scale_factor.to_array(value.shape[1])

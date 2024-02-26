@@ -786,17 +786,13 @@ class Solution:
         cov_matrix = StochasticBioModel.reshape_to_matrix(a[0][0][cov_index, :], self.ocp.nlp[0].model.matrix_shape_cov)
         first_x = np.random.multivariate_normal(x[0][0][:, 0], cov_matrix, size=size).T
         for p, nlp in enumerate(self.ocp.nlp):
-            noised_u = [np.zeros((len(u[p][0]), size)) for _ in range(nlp.ns)]
-            for i_dof in range(len(u[p][0])):
-                for i_node in range(nlp.ns):
-                    noised_u[i_node][i_dof, :] = np.random.normal(u[p][i_node][i_dof], nlp.model.motor_noise_magnitude[i_dof], size=size)
             for i_random in range(size):
                 integrated_sol = solve_ivp_interface(
                     shooting_type=Shooting.SINGLE,
                     nlp=nlp,
                     t=t_spans[p],
                     x=[np.reshape(first_x[:, i_random], (-1, 1))],
-                    u=[noised_u[i_node][:, i_random] for i_node in range(nlp.ns)],
+                    u=u[p], # Nos need to add noise on the controls, the extra_dynamics should do it for us
                     a=a[p],
                     p=params,
                     method=integrator,
