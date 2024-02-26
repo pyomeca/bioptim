@@ -15,6 +15,7 @@ from ...limits.penalty_helpers import PenaltyHelpers
 from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
 from ...dynamics.ode_solver import OdeSolver
 from ...interfaces.solve_ivp_interface import solve_ivp_interface
+from ...models.protocols.stochastic_biomodel import StochasticBioModel
 
 
 class Solution:
@@ -681,12 +682,16 @@ class Solution:
             new._parameters = deepcopy(self._parameters)
         return new
 
-    def integrate(
-        self,
-        shooting_type: Shooting = Shooting.SINGLE,
-        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
-        to_merge: SolutionMerge | list[SolutionMerge] = None,
-    ):
+    def prepare_integrate(self, integrator: SolutionIntegrator):
+        """
+        Prepare the variables for the states integration and checks if the integrator is compatible with the ocp.
+
+        Parameters
+        ----------
+        integrator: SolutionIntegrator
+            The integrator to use for the integration
+        """
+
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
             raise ValueError(
@@ -712,16 +717,26 @@ class Solution:
         x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
+        return t_spans, x, u, params, a
+
+    def integrate(
+        self,
+        shooting_type: Shooting = Shooting.SINGLE,
+        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
+        to_merge: SolutionMerge | list[SolutionMerge] = None,
+    ):
+
+        t_spans, x, u, params, a = self.prepare_integrate(integrator=integrator)
 
         out: list = [None] * len(self.ocp.nlp)
         integrated_sol = None
         for p, nlp in enumerate(self.ocp.nlp):
-            next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
+            first_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
             integrated_sol = solve_ivp_interface(
                 shooting_type=shooting_type,
                 nlp=nlp,
                 t=t_spans[p],
-                x=next_x,
+                x=first_x,
                 u=u[p],
                 a=a[p],
                 p=params,
@@ -738,6 +753,64 @@ class Solution:
             out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
 
         return out if len(out) > 1 else out[0]
+
+
+    def noisy_integrate(
+        self,
+        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
+        to_merge: SolutionMerge | list[SolutionMerge] = None,
+        size: int = 100,
+    ):
+        """
+        TODO: Charbie!
+        """
+        if "cov" not in self.ocp.nlp[0].algebraic_states.keys():
+            # Importing StochasticOptimalControlProgram creates a circular import
+            raise ValueError("This method is only available for StochasticOptimalControlProgram, thus 'cov' must exist in the algebraic_states to call noisy_integrate.")
+
+        t_spans, x, u, params, a = self.prepare_integrate(integrator=integrator)
+
+        cov_index = self.ocp.nlp[0].algebraic_states["cov"].index
+        n_sub_nodes = x[0][0].shape[1]
+
+        # initialize the out dictionary
+        out = [None] * len(self.ocp.nlp)
+        for p, nlp in enumerate(self.ocp.nlp):
+            out[p] = {}
+            for key in self.ocp.nlp[0].states.keys():
+                out[p][key] = [None] * nlp.n_states_nodes
+                for i_node in range(nlp.ns):
+                    out[p][key][i_node] = np.zeros((len(nlp.states[key].index), n_sub_nodes, size))
+                out[p][key][nlp.ns] = np.zeros((len(nlp.states[key].index), 1, size))
+
+        cov_matrix = StochasticBioModel.reshape_to_matrix(a[0][0][cov_index, :], self.ocp.nlp[0].model.matrix_shape_cov)
+        first_x = np.random.multivariate_normal(x[0][0][:, 0], cov_matrix, size=size).T
+        for p, nlp in enumerate(self.ocp.nlp):
+            noised_u = [np.zeros((len(u[p][0]), size)) for _ in range(nlp.ns)]
+            for i_dof in range(len(u[p][0])):
+                for i_node in range(nlp.ns):
+                    noised_u[i_node][i_dof, :] = np.random.normal(u[p][i_node][i_dof], nlp.model.motor_noise_magnitude[i_dof], size=size)
+            for i_random in range(size):
+                integrated_sol = solve_ivp_interface(
+                    shooting_type=Shooting.SINGLE,
+                    nlp=nlp,
+                    t=t_spans[p],
+                    x=[np.reshape(first_x[:, i_random], (-1, 1))],
+                    u=[noised_u[i_node][:, i_random] for i_node in range(nlp.ns)],
+                    a=a[p],
+                    p=params,
+                    method=integrator,
+                    noised=True,
+                )
+                for i_node in range(nlp.ns + 1):
+                    for key in nlp.states.keys():
+                        out[p][key][i_node][:, :, i_random] = integrated_sol[i_node][nlp.states[key].index, :]
+                first_x[:, i_random] = np.reshape(integrated_sol[-1], (-1, ))
+        if to_merge:
+            out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
+
+        return out if len(out) > 1 else out[0]
+
 
     def _states_for_phase_integration(
         self,
