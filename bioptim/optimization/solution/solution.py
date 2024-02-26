@@ -772,6 +772,8 @@ class Solution:
 
         cov_index = self.ocp.nlp[0].algebraic_states["cov"].index
         n_sub_nodes = x[0][0].shape[1]
+        motor_noise_index = self.ocp.nlp[0].parameters["motor_noise"].index
+        sensory_noise_index = self.ocp.nlp[0].parameters["sensory_noise"].index if len(list(self.ocp.nlp[0].parameters["sensory_noise"].index)) > 0 else None
 
         # initialize the out dictionary
         out = [None] * len(self.ocp.nlp)
@@ -785,16 +787,27 @@ class Solution:
 
         cov_matrix = StochasticBioModel.reshape_to_matrix(a[0][0][cov_index, :], self.ocp.nlp[0].model.matrix_shape_cov)
         first_x = np.random.multivariate_normal(x[0][0][:, 0], cov_matrix, size=size).T
+        motor_noise = np.zeros((len(params[motor_noise_index]), size))
+        for i in range(len(params[motor_noise_index])):
+            motor_noise[i, :] = np.random.normal(0, params[motor_noise_index[i]], size=size)
+        sensory_noise = np.zeros((len(params[sensory_noise_index]), size)) if sensory_noise_index is not None else None
+        if sensory_noise_index is not None:
+            for i in range(len(params[sensory_noise_index])):
+                sensory_noise[i, :] = np.random.normal(0, params[sensory_noise_index[i]], size=size)
         for p, nlp in enumerate(self.ocp.nlp):
             for i_random in range(size):
+                params_this_time = params.copy()
+                params_this_time[motor_noise_index] = motor_noise[:, i_random].reshape((-1, 1))
+                if sensory_noise_index is not None:
+                    params_this_time[sensory_noise_index] = sensory_noise[i_random].reshape((-1, 1))
                 integrated_sol = solve_ivp_interface(
                     shooting_type=Shooting.SINGLE,
                     nlp=nlp,
                     t=t_spans[p],
                     x=[np.reshape(first_x[:, i_random], (-1, 1))],
-                    u=u[p], # Nos need to add noise on the controls, the extra_dynamics should do it for us
+                    u=u[p],  # No need to add noise on the controls, the extra_dynamics should do it for us
                     a=a[p],
-                    p=params,
+                    p=params_this_time,
                     method=integrator,
                     noised=True,
                 )

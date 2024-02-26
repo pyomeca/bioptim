@@ -76,7 +76,7 @@ def solve_ivp_interface(
             if len(x0i.shape) > 1:
                 x0i = x0i[:, 0]
 
-            # This is weird for ONE_PER_NODE and stochastic!
+            # @pariterre: This is weird for ONE_PER_NODE and stochastic!
             if noised:
                 func = nlp.dynamics_func[1] if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else nlp.dynamics_func[node]
             else:

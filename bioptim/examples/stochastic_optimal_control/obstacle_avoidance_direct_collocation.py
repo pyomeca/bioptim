@@ -35,6 +35,8 @@ from bioptim import (
     PhaseDynamics,
     BoundsList,
     SolutionMerge,
+    SolutionIntegrator,
+    Shooting,
 )
 
 from bioptim.examples.stochastic_optimal_control.models.mass_point_model import MassPointModel
@@ -71,7 +73,7 @@ def draw_cov_ellipse(cov, pos, ax, **kwargs):
 
     # Width and height are "full" widths, not radius
     width, height = 2 * np.sqrt(vals)
-    ellip = plt.matplotlib.patches.Ellipse(xy=pos, width=width, height=height, angle=theta, alpha=0.1, **kwargs)
+    ellip = plt.matplotlib.patches.Ellipse(xy=pos, width=width, height=height, angle=theta, alpha=0.5, **kwargs)
 
     ax.add_patch(ellip)
     return ellip
@@ -406,6 +408,7 @@ def main():
     tgrid = np.linspace(0, Tf, n_shooting + 1).squeeze()
 
     fig, ax = plt.subplots(2, 2)
+    fig_comparison, ax_comparison = plt.subplots(1, 1)
     for i in range(2):
         a = bio_model.super_ellipse_a[i]
         b = bio_model.super_ellipse_b[i]
@@ -416,6 +419,7 @@ def main():
         X, Y, Z = superellipse(a, b, n, x_0, y_0)
 
         ax[0, 0].contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5, label="Obstacles")
+        ax_comparison.contourf(X, Y, Z, levels=[-1000, 0], colors=["#DA1984"], alpha=0.5, label="Obstacles")
 
     ax[0, 0].plot(q_init[0], q_init[1], "-k", label="Initial guess")
     ax[0, 0].plot(q[0][0], q[1][0], "og", label="Optimal initial node")
@@ -509,8 +513,10 @@ def main():
             # ax[0, 0].plot(x_mean[0, i] + [-x_std[0, i], x_std[0, i]], [x_mean[1, i], x_mean[1, i]], "-k")
             if i == 0:
                 draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r", label="Numerical covariance")
+                draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax_comparison, color="r", label="Numerical covariance")
             else:
                 draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r")
+                draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax_comparison, color="r")
 
         ax[1, 0].fill_between(
             tgrid,
@@ -541,11 +547,36 @@ def main():
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
             if i == 0:
                 draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y", label="Optimal covariance")
+                draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax_comparison, color="y", label="Optimal covariance")
             else:
                 draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y")
+                draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax_comparison, color="y")
     ax[0, 0].legend()
-    plt.show()
 
+    # Integrate the nominal dynamics (as if it was deterministic)
+    integrated_sol = sol_socp.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES)
+    # Integrate the stochastic dynamics (considering the feedback and the motor and sensory noises)
+    noisy_integrated_sol = sol_socp.noisy_integrate(integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES)
+
+    # compare with noisy integration
+    import matplotlib.cm as cm
+    cov_integrated = np.zeros((2, 2, n_shooting + 1))
+    mean_integrated = np.zeros((2, n_shooting + 1))
+    i_node = 0
+    for i in range(noisy_integrated_sol["q"][0].shape[0]):
+        if i == 0:
+            ax_comparison.plot(noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :], ".", color=cm.viridis(i/noisy_integrated_sol["q"][0].shape[0]), alpha=0.1, label='Noisy integration')
+        else:
+            ax_comparison.plot(noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :], ".", color=cm.viridis(i/noisy_integrated_sol["q"][0].shape[0]), alpha=0.1)
+        if i % 7 == 0:
+            cov_integrated[:, :, i_node] = np.cov(np.vstack((noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :])))
+            mean_integrated[:, i_node] = np.mean(np.vstack((noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :])), axis=1)
+            draw_cov_ellipse(cov_integrated[:2, :2, i_node], mean_integrated[:, i_node], ax_comparison, color="b", label="Noisy integration covariance")
+            i_node += 1
+    ax_comparison.legend()
+    fig_comparison.tight_layout()
+    fig_comparison.savefig("comparison.png")
+    plt.show()
 
 if __name__ == "__main__":
     main()
