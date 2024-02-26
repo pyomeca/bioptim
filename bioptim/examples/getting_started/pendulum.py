@@ -145,7 +145,7 @@ def main():
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
-    # sol.graphs(show_bounds=True)
+    # sol.graphs(show_bounds=True, save_name="results.png")
     sol.animate(n_frames=100)
 
     # # --- Save the solution --- #

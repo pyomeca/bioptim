@@ -1004,6 +1004,7 @@ class Solution:
         show_now: bool = True,
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
+        save_name: str = None,
     ):
         """
         Show the graphs of the simulation
@@ -1020,10 +1021,18 @@ class Solution:
             The type of interpolation
         integrator: SolutionIntegrator
             Use the scipy solve_ivp integrator for RungeKutta 45 instead of currently defined integrator
+        save_name: str
+            If a name is provided, the figures will be saved with this name
         """
 
         plot_ocp = self.ocp.prepare_plots(automatically_organize, show_bounds, shooting_type, integrator)
         plot_ocp.update_data(self.vector)
+        if save_name:
+            if save_name.endswith(".png"):
+                save_name = save_name[:-4]
+            for i_fig, name_fig in enumerate(plt.get_figlabels()):
+                fig = plt.figure(i_fig+1)
+                fig.savefig(f"{save_name}_{name_fig}.png", format="png")
         if show_now:
             plt.show()
 
