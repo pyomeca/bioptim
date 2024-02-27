@@ -373,33 +373,32 @@ def main():
     solver.set_linear_solver("ma57")
 
     filename = "obstacle.pkl"
-    if os.path.exists(filename):
-        # Open the file and load the content
-        with open(filename, "rb") as file:
-            data_loaded = pickle.load(file)
-        # Extract variables from the loaded data
-        time = data_loaded["time"]
-        states = data_loaded["states"]
-        controls = data_loaded["controls"]
-        algebraic_states = data_loaded["algebraic_states"]
-        print("File loaded successfully.")
+    # if os.path.exists(filename):
+    #     # Open the file and load the content
+    #     with open(filename, "rb") as file:
+    #         data_loaded = pickle.load(file)
+    #     # Extract variables from the loaded data
+    #     time = data_loaded["time"]
+    #     states = data_loaded["states"]
+    #     controls = data_loaded["controls"]
+    #     algebraic_states = data_loaded["algebraic_states"]
+    #     print("File loaded successfully.")
+    # else:
+    sol_socp = socp.solve(solver)
 
-    else:
-        sol_socp = socp.solve(solver)
+    time = sol_socp.decision_time(to_merge=SolutionMerge.NODES)
+    states = sol_socp.decision_states(to_merge=SolutionMerge.NODES)
+    controls = sol_socp.decision_controls(to_merge=SolutionMerge.NODES)
+    algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
 
-        time = sol_socp.decision_time(to_merge=SolutionMerge.NODES)
-        states = sol_socp.decision_states(to_merge=SolutionMerge.NODES)
-        controls = sol_socp.decision_controls(to_merge=SolutionMerge.NODES)
-        algebraic_states = sol_socp.decision_algebraic_states(to_merge=SolutionMerge.NODES)
-
-        data_to_save = {
-            "time": time,
-            "states": states,
-            "controls": controls,
-            "algebraic_states": algebraic_states,
-        }
-        with open(filename, "wb") as file:
-            pickle.dump(data_to_save, file)
+    data_to_save = {
+        "time": time,
+        "states": states,
+        "controls": controls,
+        "algebraic_states": algebraic_states,
+    }
+    with open(filename, "wb") as file:
+        pickle.dump(data_to_save, file)
 
     q = states["q"]
     qdot = states["qdot"]

@@ -792,19 +792,20 @@ class Solution:
 
         cov_matrix = StochasticBioModel.reshape_to_matrix(a[0][0][cov_index, :], self.ocp.nlp[0].model.matrix_shape_cov)
         first_x = np.random.multivariate_normal(x[0][0][:, 0], cov_matrix, size=size).T
-        motor_noise = np.zeros((len(params[motor_noise_index]), size))
-        for i in range(len(params[motor_noise_index])):
-            motor_noise[i, :] = np.random.normal(0, params[motor_noise_index[i]], size=size)
-        sensory_noise = np.zeros((len(params[sensory_noise_index]), size)) if sensory_noise_index is not None else None
-        if sensory_noise_index is not None:
-            for i in range(len(params[sensory_noise_index])):
-                sensory_noise[i, :] = np.random.normal(0, params[sensory_noise_index[i]], size=size)
         for p, nlp in enumerate(self.ocp.nlp):
+            motor_noise = np.zeros((len(params[motor_noise_index]), nlp.ns, size))
+            for i in range(len(params[motor_noise_index])):
+                motor_noise[i, :] = np.random.normal(0, params[motor_noise_index[i]], size=(nlp.ns, size))
+            sensory_noise = np.zeros(
+                (len(params[sensory_noise_index]), size)) if sensory_noise_index is not None else None
+            if sensory_noise_index is not None:
+                for i in range(len(params[sensory_noise_index])):
+                    sensory_noise[i, :] = np.random.normal(0, params[sensory_noise_index[i]], size=(nlp.ns, size))
             for i_random in range(size):
-                params_this_time = params.copy()
-                params_this_time[motor_noise_index] = motor_noise[:, i_random].reshape((-1, 1))
+                params_this_time = np.repeat(params, nlp.ns, axis=1)
+                params_this_time[motor_noise_index, :] = motor_noise[:, :, i_random]
                 if sensory_noise_index is not None:
-                    params_this_time[sensory_noise_index] = sensory_noise[i_random].reshape((-1, 1))
+                    params_this_time[sensory_noise_index, :] = sensory_noise[:, :, i_random]
                 integrated_sol = solve_ivp_interface(
                     shooting_type=Shooting.SINGLE,
                     nlp=nlp,
@@ -812,7 +813,7 @@ class Solution:
                     x=[np.reshape(first_x[:, i_random], (-1, 1))],
                     u=u[p],  # No need to add noise on the controls, the extra_dynamics should do it for us
                     a=a[p],
-                    p=params_this_time,
+                    p=[params_this_time[:, i_node] for i_node in range(nlp.ns)],
                     method=integrator,
                     noised=True,
                 )

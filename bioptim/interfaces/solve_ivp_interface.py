@@ -83,14 +83,16 @@ def solve_ivp_interface(
                     if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     else nlp.dynamics_func[node]
                 )
+                current_p = p[node]
             else:
                 func = (
                     nlp.dynamics_func[0]
                     if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
                     else nlp.dynamics_func[node]
                 )
+                current_p = p
             result = _solve_ivp_scipy_interface(
-                lambda t, x: np.array(func(t, x, _control_function(control_type, t, t_span, u[node]), p, a[node]))[
+                lambda t, x: np.array(func(t, x, _control_function(control_type, t, t_span, u[node]), current_p, a[node]))[
                     :, 0
                 ],
                 x0=x0i,
