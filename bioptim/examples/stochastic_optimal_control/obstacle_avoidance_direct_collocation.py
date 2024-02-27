@@ -429,10 +429,16 @@ def main():
     ax[0, 1].plot(u[0], u[1], "r", label="Optimal controls")
     for i in range(n_shooting):
         if i == 0:
-            ax[0, 1].plot((u[0][i], q[0][i * (polynomial_degree + 2)]), (u[1][i], q[1][i * (polynomial_degree + 2)]), ":k", label="Spring orientation")
+            ax[0, 1].plot(
+                (u[0][i], q[0][i * (polynomial_degree + 2)]),
+                (u[1][i], q[1][i * (polynomial_degree + 2)]),
+                ":k",
+                label="Spring orientation",
+            )
         else:
-            ax[0, 1].plot((u[0][i], q[0][i * (polynomial_degree + 2)]), (u[1][i], q[1][i * (polynomial_degree + 2)]),
-                          ":k")
+            ax[0, 1].plot(
+                (u[0][i], q[0][i * (polynomial_degree + 2)]), (u[1][i], q[1][i * (polynomial_degree + 2)]), ":k"
+            )
     ax[0, 1].legend()
 
     ax[1, 0].step(tgrid[:-1], u.T, "-.", label=["Optimal controls X", "Optimal controls Y"])
@@ -479,7 +485,7 @@ def main():
         x_std = np.zeros((nx, n_shooting + 1))
         dt = Tf / (n_shooting)
 
-        x_j = np.zeros((nx, ))
+        x_j = np.zeros((nx,))
         for i in range(n_shooting):
             x_i = np.hstack([q[:, i * (polynomial_degree + 2)], qdot[:, i * (polynomial_degree + 2)]])
             new_u = np.hstack([u[:, i:], u[:, :i]])
@@ -512,8 +518,12 @@ def main():
             # ax[0, 0].plot([x_mean[0, i], x_mean[0, i]], x_mean[1, i] + [-x_std[1, i], x_std[1, i]], "-k", label="Numerical covariance")
             # ax[0, 0].plot(x_mean[0, i] + [-x_std[0, i], x_std[0, i]], [x_mean[1, i], x_mean[1, i]], "-k")
             if i == 0:
-                draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r", label="Numerical covariance")
-                draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax_comparison, color="r", label="Numerical covariance")
+                draw_cov_ellipse(
+                    cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r", label="Numerical covariance"
+                )
+                draw_cov_ellipse(
+                    cov_numeric[:2, :2, i], x_mean[:, i], ax_comparison, color="r", label="Numerical covariance"
+                )
             else:
                 draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax[0, 0], color="r")
                 draw_cov_ellipse(cov_numeric[:2, :2, i], x_mean[:, i], ax_comparison, color="r")
@@ -546,37 +556,74 @@ def main():
 
             cov_i = reshape_to_matrix(cov_i, (bio_model.matrix_shape_cov))
             if i == 0:
-                draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y", label="Optimal covariance")
-                draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax_comparison, color="y", label="Optimal covariance")
+                draw_cov_ellipse(
+                    cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y", label="Optimal covariance"
+                )
+                draw_cov_ellipse(
+                    cov_i[:2, :2],
+                    q[:, i * (polynomial_degree + 2)],
+                    ax_comparison,
+                    color="y",
+                    label="Optimal covariance",
+                )
             else:
                 draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax[0, 0], color="y")
                 draw_cov_ellipse(cov_i[:2, :2], q[:, i * (polynomial_degree + 2)], ax_comparison, color="y")
     ax[0, 0].legend()
 
     # Integrate the nominal dynamics (as if it was deterministic)
-    integrated_sol = sol_socp.integrate(shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES)
+    integrated_sol = sol_socp.integrate(
+        shooting_type=Shooting.SINGLE, integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES
+    )
     # Integrate the stochastic dynamics (considering the feedback and the motor and sensory noises)
-    noisy_integrated_sol = sol_socp.noisy_integrate(integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES)
+    noisy_integrated_sol = sol_socp.noisy_integrate(
+        integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES
+    )
 
     # compare with noisy integration
     import matplotlib.cm as cm
+
     cov_integrated = np.zeros((2, 2, n_shooting + 1))
     mean_integrated = np.zeros((2, n_shooting + 1))
     i_node = 0
     for i in range(noisy_integrated_sol["q"][0].shape[0]):
         if i == 0:
-            ax_comparison.plot(noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :], ".", color=cm.viridis(i/noisy_integrated_sol["q"][0].shape[0]), alpha=0.1, label='Noisy integration')
+            ax_comparison.plot(
+                noisy_integrated_sol["q"][0][i, :],
+                noisy_integrated_sol["q"][1][i, :],
+                ".",
+                color=cm.viridis(i / noisy_integrated_sol["q"][0].shape[0]),
+                alpha=0.1,
+                label="Noisy integration",
+            )
         else:
-            ax_comparison.plot(noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :], ".", color=cm.viridis(i/noisy_integrated_sol["q"][0].shape[0]), alpha=0.1)
+            ax_comparison.plot(
+                noisy_integrated_sol["q"][0][i, :],
+                noisy_integrated_sol["q"][1][i, :],
+                ".",
+                color=cm.viridis(i / noisy_integrated_sol["q"][0].shape[0]),
+                alpha=0.1,
+            )
         if i % 7 == 0:
-            cov_integrated[:, :, i_node] = np.cov(np.vstack((noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :])))
-            mean_integrated[:, i_node] = np.mean(np.vstack((noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :])), axis=1)
-            draw_cov_ellipse(cov_integrated[:2, :2, i_node], mean_integrated[:, i_node], ax_comparison, color="b", label="Noisy integration covariance")
+            cov_integrated[:, :, i_node] = np.cov(
+                np.vstack((noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :]))
+            )
+            mean_integrated[:, i_node] = np.mean(
+                np.vstack((noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :])), axis=1
+            )
+            draw_cov_ellipse(
+                cov_integrated[:2, :2, i_node],
+                mean_integrated[:, i_node],
+                ax_comparison,
+                color="b",
+                label="Noisy integration covariance",
+            )
             i_node += 1
     ax_comparison.legend()
     fig_comparison.tight_layout()
     fig_comparison.savefig("comparison.png")
     plt.show()
+
 
 if __name__ == "__main__":
     main()

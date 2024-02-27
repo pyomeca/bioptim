@@ -153,7 +153,7 @@ def main():
     # import pickle
     # import git
     # from datetime import date
-    # 
+    #
     # # Save the version of bioptim and the date of the optimization for future reference
     # repo = git.Repo(search_parent_directories=True)
     # commit_id = str(repo.commit())
@@ -169,16 +169,16 @@ def main():
     #     "bioptim_version": bioptim_version,
     #     "date_of_the_optimization": date.today().strftime("%b-%d-%Y-%H-%M-%S"),
     # }
-    # 
+    #
     # q = sol.decision_states(to_merge=SolutionMerge.NODES)["q"]
     # qdot = sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"]
     # tau = sol.decision_controls(to_merge=SolutionMerge.NODES)["tau"]
-    # 
+    #
     # # Do everything you need with the solution here before we delete ocp
     # integrated_sol = sol.integrate(to_merge=SolutionMerge.NODES)
     # q_integrated = integrated_sol["q"]
     # qdot_integrated = integrated_sol["qdot"]
-    # 
+    #
     # # Save the output of the optimization
     # with open("pendulum_data.pkl", "wb") as file:
     #     data = {"q": q,
@@ -189,7 +189,7 @@ def main():
     #             "q_integrated": q_integrated,
     #             "qdot_integrated": qdot_integrated}
     #     pickle.dump(data, file)
-    # 
+    #
     # # Save the solution for future use, you will only need to do sol.ocp = prepare_ocp() to get the same solution object as above.
     # with open("pendulum_sol.pkl", "wb") as file:
     #     del sol.ocp

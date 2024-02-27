@@ -428,7 +428,11 @@ class PlotOcp:
 
                     if nlp.plot[variable].ylim:
                         ax.set_ylim(nlp.plot[variable].ylim)
-                    elif self.show_bounds and nlp.plot[variable].bounds and not nlp.plot[variable].all_variables_in_one_subplot:
+                    elif (
+                        self.show_bounds
+                        and nlp.plot[variable].bounds
+                        and not nlp.plot[variable].all_variables_in_one_subplot
+                    ):
                         if nlp.plot[variable].bounds.type != InterpolationType.CUSTOM:
                             y_min = nlp.plot[variable].bounds.min[mapping_to_first_index.index(ctr), :].min()
                             y_max = nlp.plot[variable].bounds.max[mapping_to_first_index.index(ctr), :].max()
@@ -663,13 +667,15 @@ class PlotOcp:
 
         plt.show()
 
-    def update_data(self,
-                    v: np.ndarray,
-                    objective: np.ndarray,
-                    constraints: np.ndarray,
-                    lam_x: np.ndarray,
-                    lam_g: np.ndarray,
-                    lam_p: np.ndarray):
+    def update_data(
+        self,
+        v: np.ndarray,
+        objective: np.ndarray,
+        constraints: np.ndarray,
+        lam_x: np.ndarray,
+        lam_g: np.ndarray,
+        lam_p: np.ndarray,
+    ):
         """
         Update ydata from the variable a solution structure
 

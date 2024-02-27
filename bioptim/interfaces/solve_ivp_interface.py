@@ -78,9 +78,17 @@ def solve_ivp_interface(
 
             # @pariterre: This is weird for ONE_PER_NODE and stochastic!
             if noised:
-                func = nlp.dynamics_func[1] if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else nlp.dynamics_func[node]
+                func = (
+                    nlp.dynamics_func[1]
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                    else nlp.dynamics_func[node]
+                )
             else:
-                func = nlp.dynamics_func[0] if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE else nlp.dynamics_func[node]
+                func = (
+                    nlp.dynamics_func[0]
+                    if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
+                    else nlp.dynamics_func[node]
+                )
             result = _solve_ivp_scipy_interface(
                 lambda t, x: np.array(func(t, x, _control_function(control_type, t, t_span, u[node]), p, a[node]))[
                     :, 0

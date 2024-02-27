@@ -754,7 +754,6 @@ class Solution:
 
         return out if len(out) > 1 else out[0]
 
-
     def noisy_integrate(
         self,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
@@ -766,14 +765,20 @@ class Solution:
         """
         if "cov" not in self.ocp.nlp[0].algebraic_states.keys():
             # Importing StochasticOptimalControlProgram creates a circular import
-            raise ValueError("This method is only available for StochasticOptimalControlProgram, thus 'cov' must exist in the algebraic_states to call noisy_integrate.")
+            raise ValueError(
+                "This method is only available for StochasticOptimalControlProgram, thus 'cov' must exist in the algebraic_states to call noisy_integrate."
+            )
 
         t_spans, x, u, params, a = self.prepare_integrate(integrator=integrator)
 
         cov_index = self.ocp.nlp[0].algebraic_states["cov"].index
         n_sub_nodes = x[0][0].shape[1]
         motor_noise_index = self.ocp.nlp[0].parameters["motor_noise"].index
-        sensory_noise_index = self.ocp.nlp[0].parameters["sensory_noise"].index if len(list(self.ocp.nlp[0].parameters["sensory_noise"].index)) > 0 else None
+        sensory_noise_index = (
+            self.ocp.nlp[0].parameters["sensory_noise"].index
+            if len(list(self.ocp.nlp[0].parameters["sensory_noise"].index)) > 0
+            else None
+        )
 
         # initialize the out dictionary
         out = [None] * len(self.ocp.nlp)
@@ -814,12 +819,11 @@ class Solution:
                 for i_node in range(nlp.ns + 1):
                     for key in nlp.states.keys():
                         out[p][key][i_node][:, :, i_random] = integrated_sol[i_node][nlp.states[key].index, :]
-                first_x[:, i_random] = np.reshape(integrated_sol[-1], (-1, ))
+                first_x[:, i_random] = np.reshape(integrated_sol[-1], (-1,))
         if to_merge:
             out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
 
         return out if len(out) > 1 else out[0]
-
 
     def _states_for_phase_integration(
         self,
@@ -1031,7 +1035,7 @@ class Solution:
             if save_name.endswith(".png"):
                 save_name = save_name[:-4]
             for i_fig, name_fig in enumerate(plt.get_figlabels()):
-                fig = plt.figure(i_fig+1)
+                fig = plt.figure(i_fig + 1)
                 fig.savefig(f"{save_name}_{name_fig}.png", format="png")
         if show_now:
             plt.show()

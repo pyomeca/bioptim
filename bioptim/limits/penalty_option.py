@@ -859,7 +859,9 @@ class PenaltyOption(OptionGeneric):
             penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
 
             if len(penalty_function.shape) > 1:
-                if penalty_function.shape[0] != 1 and penalty_function.shape[1] != 1:  # @pariterre: is it only the first condition or both?
+                if (
+                    penalty_function.shape[0] != 1 and penalty_function.shape[1] != 1
+                ):  # @pariterre: is it only the first condition or both?
                     raise RuntimeError("The penalty must return a vector not a matrix.")
 
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])

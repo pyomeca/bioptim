@@ -1450,10 +1450,7 @@ def test_bad_shape_output_penalty():
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
         objective_functions = ObjectiveList()
-        objective_functions.add(bad_custom_function,
-                                custom_type=ObjectiveFcn.Mayer,
-                                node=Node.START,
-                                quadratic=True)
+        objective_functions.add(bad_custom_function, custom_type=ObjectiveFcn.Mayer, node=Node.START, quadratic=True)
 
         ocp = OptimalControlProgram(
             bio_model,
@@ -1466,5 +1463,3 @@ def test_bad_shape_output_penalty():
 
     with pytest.raises(RuntimeError, match="The penalty must return a vector not a matrix."):
         ocp = prepare_test_ocp_error()
-
-
