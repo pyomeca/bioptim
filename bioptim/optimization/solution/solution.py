@@ -796,8 +796,9 @@ class Solution:
             motor_noise = np.zeros((len(params[motor_noise_index]), nlp.ns, size))
             for i in range(len(params[motor_noise_index])):
                 motor_noise[i, :] = np.random.normal(0, params[motor_noise_index[i]], size=(nlp.ns, size))
-            sensory_noise = np.zeros(
-                (len(params[sensory_noise_index]), size)) if sensory_noise_index is not None else None
+            sensory_noise = (
+                np.zeros((len(params[sensory_noise_index]), size)) if sensory_noise_index is not None else None
+            )
             if sensory_noise_index is not None:
                 for i in range(len(params[sensory_noise_index])):
                     sensory_noise[i, :] = np.random.normal(0, params[sensory_noise_index[i]], size=(nlp.ns, size))
