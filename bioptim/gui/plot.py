@@ -663,7 +663,13 @@ class PlotOcp:
 
         plt.show()
 
-    def update_data(self, v: np.ndarray):
+    def update_data(self,
+                    v: np.ndarray,
+                    objective: np.ndarray,
+                    constraints: np.ndarray,
+                    lam_x: np.ndarray,
+                    lam_g: np.ndarray,
+                    lam_p: np.ndarray):
         """
         Update ydata from the variable a solution structure
 
@@ -1115,9 +1121,13 @@ class OnlineCallback(Callback):
         -------
         A list of error index
         """
+        darg = {}
+        for i, s in enumerate(nlpsol_out()):
+            darg[s] = arg[i]
+
         send = self.queue.put
-        send(arg[0])
-        return [0]
+        send([darg["x"], darg["f"], darg["g"], darg["lam_x"], darg["lam_g"], darg["lam_p"]])
+        return [darg["x"], darg["f"], darg["g"], darg["lam_x"], darg["lam_g"], darg["lam_p"]]
 
     class ProcessPlotter(object):
         """
@@ -1177,8 +1187,8 @@ class OnlineCallback(Callback):
             """
 
             while not self.pipe.empty():
-                v = self.pipe.get()
-                self.plot.update_data(v)
+                v, objective, constraints, lam_x, lam_g, lam_p = self.pipe.get()
+                self.plot.update_data(v, objective, constraints, lam_x, lam_g, lam_p)
 
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()
