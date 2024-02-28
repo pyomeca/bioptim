@@ -230,14 +230,14 @@ class Solution:
                 "an InitialGuess[List] of len 4 (states, controls, parameters, algebraic_states), "
                 "or a None"
             )
-        if sum([len(s) != len(all_ns) if p != 4 else False for p, s in enumerate(sol)]) != 0:
-            raise ValueError("The InitialGuessList len must match the number of phases")
-        if n_param != 0:
-            if len(sol) != 3 and len(sol[3]) != 1 and sol[3][0].shape != (n_param, 1):
-                raise ValueError(
-                    "The 3rd element is the InitialGuess of the parameter and "
-                    "should be a unique vector of size equal to n_param"
-                )
+        # if sum([len(s) != len(all_ns) if p != 4 else False for p, s in enumerate(sol)]) != 0:
+        #     raise ValueError("The InitialGuessList len must match the number of phases")
+        # if n_param != 0:
+        #     if len(sol) != 3 and len(sol[3]) != 1 and sol[3][0].shape != (n_param, 1):
+        #         raise ValueError(
+        #             "The 3rd element is the InitialGuess of the parameter and "
+        #             "should be a unique vector of size equal to n_param"
+        #         )
 
         dt, sol_states, sol_controls, sol_params, sol_algebraic_states = sol
 
@@ -281,7 +281,9 @@ class Solution:
         # For parameters
         if n_param:
             for p, ss in enumerate(sol_params):
-                vector = np.concatenate((vector, np.repeat(ss.init, all_ns[p] + 1)[:, np.newaxis]))
+                for key in ss.keys():
+                    # vector = np.concatenate((vector, np.repeat(ss[key].init, all_ns[p] + 1)[:, np.newaxis]))
+                    vector = np.concatenate((vector, np.repeat(ss[key].init, 1)[:, np.newaxis]))
 
         # For algebraic_states variables
         for p, ss in enumerate(sol_algebraic_states):
@@ -733,6 +735,12 @@ class Solution:
                 out[p][key] = [None] * nlp.n_states_nodes
                 for ns, sol_ns in enumerate(integrated_sol):
                     out[p][key][ns] = sol_ns[nlp.states[key].index, :]
+
+            if shooting_type == Shooting.SINGLE and p < len(self.ocp.nlp) - 1:
+                state_list = []
+                for key in nlp.states.keys():
+                    state_list.append(out[p][key][-1][0])
+                x[p+1][0] = np.array(state_list)
 
         if to_merge:
             out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
