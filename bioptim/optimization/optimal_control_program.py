@@ -1307,41 +1307,79 @@ class OptimalControlProgram:
         """
         TODO
         """
-        import os
-        import threading
-        import re
-        import time
+        import multiprocessing as mp
+        import matplotlib.cm as cm
 
-        def run_ipopt_subprocess():
-            # current_path = os.path.dirname(os.path.abspath(__file__))
-            # with subprocess.Popen([current_path + "/nothing.py"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True) as process:
-            #     for line in process.stdout:
-            #         print(line, end="")
-            #
-            #         # pattern = re.compile(r"(\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)")
-            #         # match = pattern.match(line)
-            #         # if match:
-            #         #     num_iter, objective, inf_pr, inf_du, lg_mu, d_norm, lg_rg, alpha_du, alpha_pr, ls = match.group()
-            #         #     print(num_iter, objective, inf_pr, inf_du, lg_mu, d_norm, lg_rg, alpha_du, alpha_pr, ls)
+        def run_ipopt_subprocess(queue, fig, ax, plot_lines):
 
             file_name = "/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/optimization/ipopt_output.txt"
-            # i = 0
-            # fig = plt.figure()
+            file_lines = []
+
+            restoration = []
+            num_iter = []
+            objective = []
+            inf_pr = []
+            inf_du = []
+            lg_mu = []
+            d_norm = []
+            lg_rg = []
+            alpha_du = []
+            alpha_pr = []
+            ls = []
             while True:
                 with open(file_name, 'r') as file:
-                    print(file.read())
-                    # file.seek(0, 2)  # Go to the end of the file
-                    # line = file.readline()
-                    # if not line:
-                    #     time.sleep(0.1)  # Sleep briefly
-                    #     continue
-                    # else:
-                    #     print(line)
-                    #     # plt.plot(i, i, 'ro')
-                    #     # i+=1
-                    #     # fig.canvas.draw()
+                    lines = file.readlines()
+                    if len(lines) > 0 and lines[-1] not in file_lines:
+                        splited_line = lines[-30].split(' ')
+                        parsed_line = [splited_line[i] for i in range(len(splited_line)) if len(splited_line[i]) > 0]
+                        if len(parsed_line) != 10 or parsed_line[0] == 'iter':
+                            continue
+                        if parsed_line[0].startswith('r'):
+                            restoration.append(True)
+                            num_iter.append(int(parsed_line[0][1:]))
+                        else:
+                            restoration.append(False)
+                            num_iter.append(int(parsed_line[0]))
+                        objective.append(float(parsed_line[1]))
+                        inf_pr.append(float(parsed_line[2]))
+                        inf_du.append(float(parsed_line[3]))
+                        # lg_mu.append(float(parsed_line[4]))
+                        d_norm.append(float(parsed_line[5]))
+                        # lg_rg.append(parsed_line[6])
+                        alpha_du.append(float(parsed_line[7]))
+                        alpha_pr.append(float(parsed_line[8]))
+                        ls.append(int(parsed_line[9][:-2]))
 
-        self.ipopt_output_process = threading.Thread(target=run_ipopt_subprocess)
+                        for i in range(6):
+                            plot_lines[i].set_xdata(num_iter)
+                        plot_lines[0].set_ydata(objective)
+                        plot_lines[1].set_ydata(inf_pr)
+                        plot_lines[2].set_ydata(inf_du)
+                        plot_lines[3].set_ydata(d_norm)
+                        plot_lines[4].set_ydata(alpha_du)
+                        plot_lines[5].set_ydata(alpha_pr)
+                        ax.relim()
+                        ax.autoscale_view(True, True, True)
+                        fig.canvas.draw()
+                        fig.canvas.flush_events()
+
+        colors = [cm.viridis(i/5) for i in range(6)]
+        plt.ion()
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+        ax.set_title('IPOPT output')
+        ax.set_xlabel('Iteration')
+        objective_line = ax.plot(0, 0, 'o', color=colors[0], label='objective')
+        inf_pr_line = ax.plot(0, 0, 'o', color=colors[1], label='inf_pr')
+        inf_du_line = ax.plot(0, 0, 'o', color=colors[2], label='inf_du')
+        d_norm_line = ax.plot(0, 0, 'o', color=colors[3], label='d_norm')
+        alpha_du_line = ax.plot(0, 0, 'o', color=colors[4], label='alpha_du')
+        alpha_pr_line = ax.plot(0, 0, 'o', color=colors[5], label='alpha_pr')
+        restoration_squares = ax.fill_between([0, 1], 0, 1, color='k', label='is in restoration')
+        plot_lines = [objective_line, inf_pr_line, inf_du_line, d_norm_line, alpha_du_line, alpha_pr_line, restoration_squares]
+
+        self.ipopt_output_queue = mp.Queue()
+        self.ipopt_output_process = mp.Process(target=run_ipopt_subprocess, args=(self.ipopt_output_queue, fig, ax, plot_lines), daemon=True)
         self.ipopt_output_process.start()
 
     def prepare_plots(

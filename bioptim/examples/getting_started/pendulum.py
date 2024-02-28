@@ -133,6 +133,10 @@ def main():
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
+
+
+    import sys
+    sys.stdout = open('/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/optimization/ipopt_output.txt', 'w')
     ocp.add_plot_ipopt_outputs()
 
     # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
@@ -141,20 +145,16 @@ def main():
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
-    import sys
-    sys.stdout = open('/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/optimization/ipopt_output.txt', 'w')
-
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     ocp.ipopt_output_process.join()
 
-    sys.stdout.close()
-
     sol.print_cost()
+    sys.stdout.close()
 
     # --- Show the results (graph or animation) --- #
     # sol.graphs(show_bounds=True, save_name="results.png")
-    sol.animate(n_frames=100)
+    # sol.animate(n_frames=100)
 
     # # --- Save the solution --- #
     # Here is an example of how we recommend to save the solution. Please note that sol.ocp is not picklable and that sol will be loaded using the current bioptim version, not the version at the time of the generation of the results.
