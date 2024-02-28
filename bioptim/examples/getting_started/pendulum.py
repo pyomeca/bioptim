@@ -133,6 +133,7 @@ def main():
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
+    ocp.add_plot_ipopt_outputs()
 
     # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
     # ocp.check_conditioning()
@@ -140,8 +141,15 @@ def main():
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
+    import sys
+    sys.stdout = open('/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/optimization/ipopt_output.txt', 'w')
+
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    ocp.ipopt_output_process.join()
+
+    sys.stdout.close()
+
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #

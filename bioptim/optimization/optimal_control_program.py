@@ -4,8 +4,9 @@ from math import inf
 import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, sum1, horzcat, vertcat
+from casadi import MX, SX, sum1, horzcat
 from matplotlib import pyplot as plt
+import subprocess
 
 from .optimization_vector import OptimizationVectorHelper
 from .non_linear_program import NonLinearProgram as NLP
@@ -582,6 +583,9 @@ class OptimalControlProgram:
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
         NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
+
+        # Initialize the placeholder for the subprocess reading Ipopt's output
+        self.ipopt_output_process = None
 
         return (
             constraints,
@@ -1298,6 +1302,47 @@ class OptimalControlProgram:
             add_penalty(penalties_internal)
             add_penalty(penalties_implicit)
         return
+
+    def add_plot_ipopt_outputs(self):
+        """
+        TODO
+        """
+        import os
+        import threading
+        import re
+        import time
+
+        def run_ipopt_subprocess():
+            # current_path = os.path.dirname(os.path.abspath(__file__))
+            # with subprocess.Popen([current_path + "/nothing.py"], shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True) as process:
+            #     for line in process.stdout:
+            #         print(line, end="")
+            #
+            #         # pattern = re.compile(r"(\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+) (\d+)")
+            #         # match = pattern.match(line)
+            #         # if match:
+            #         #     num_iter, objective, inf_pr, inf_du, lg_mu, d_norm, lg_rg, alpha_du, alpha_pr, ls = match.group()
+            #         #     print(num_iter, objective, inf_pr, inf_du, lg_mu, d_norm, lg_rg, alpha_du, alpha_pr, ls)
+
+            file_name = "/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/optimization/ipopt_output.txt"
+            # i = 0
+            # fig = plt.figure()
+            while True:
+                with open(file_name, 'r') as file:
+                    print(file.read())
+                    # file.seek(0, 2)  # Go to the end of the file
+                    # line = file.readline()
+                    # if not line:
+                    #     time.sleep(0.1)  # Sleep briefly
+                    #     continue
+                    # else:
+                    #     print(line)
+                    #     # plt.plot(i, i, 'ro')
+                    #     # i+=1
+                    #     # fig.canvas.draw()
+
+        self.ipopt_output_process = threading.Thread(target=run_ipopt_subprocess)
+        self.ipopt_output_process.start()
 
     def prepare_plots(
         self,

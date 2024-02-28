@@ -1,7 +1,7 @@
 from typing import Callable, Any
 import multiprocessing as mp
 import tkinter
-from itertools import accumulate
+import re
 
 import numpy as np
 from matplotlib import pyplot as plt, lines
@@ -670,11 +670,11 @@ class PlotOcp:
     def update_data(
         self,
         v: np.ndarray,
-        objective: np.ndarray,
-        constraints: np.ndarray,
-        lam_x: np.ndarray,
-        lam_g: np.ndarray,
-        lam_p: np.ndarray,
+        # objective: np.ndarray,
+        # constraints: np.ndarray,
+        # lam_x: np.ndarray,
+        # lam_g: np.ndarray,
+        # lam_p: np.ndarray,
     ):
         """
         Update ydata from the variable a solution structure
@@ -1132,8 +1132,9 @@ class OnlineCallback(Callback):
             darg[s] = arg[i]
 
         send = self.queue.put
-        send([darg["x"], darg["f"], darg["g"], darg["lam_x"], darg["lam_g"], darg["lam_p"]])
-        return [darg["x"], darg["f"], darg["g"], darg["lam_x"], darg["lam_g"], darg["lam_p"]]
+        # send([darg["x"], darg["f"], darg["g"], darg["lam_x"], darg["lam_g"], darg["lam_p"]])
+        send(arg[0])
+        return [0]
 
     class ProcessPlotter(object):
         """
@@ -1193,8 +1194,12 @@ class OnlineCallback(Callback):
             """
 
             while not self.pipe.empty():
-                v, objective, constraints, lam_x, lam_g, lam_p = self.pipe.get()
-                self.plot.update_data(v, objective, constraints, lam_x, lam_g, lam_p)
+                # v, objective, constraints, lam_x, lam_g, lam_p = self.pipe.get()
+                v = self.pipe.get()
+                self.plot.update_data(v)  #  objective, constraints, lam_x, lam_g, lam_p
+
+
+
 
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()
