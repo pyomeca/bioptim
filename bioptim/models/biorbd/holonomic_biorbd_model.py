@@ -33,10 +33,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         self._newton_tol = newton_tol
 
     def set_holonomic_configuration(
-            self,
-            constraints_list: HolonomicConstraintsList,
-            dependent_joint_index: list[int] = None,
-            independent_joint_index: list[int] = None,
+        self,
+        constraints_list: HolonomicConstraintsList,
+        dependent_joint_index: list[int] = None,
+        independent_joint_index: list[int] = None,
     ):
         """
         The joint indexes are not mandatory because a HolonomicBiorbdModel can be used without the partitioned dynamics,
@@ -90,11 +90,13 @@ class HolonomicBiorbdModel(BiorbdModel):
     def check_dependant_jacobian(self):
         q_test = MX.sym("q_test", self.nb_q)
         partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q_test)
-        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints:]
+        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
         shape = partitioned_constraints_jacobian_v.shape
         if shape[0] != shape[1]:
-            raise ValueError(f"The shape of the dependent joint Jacobian should be square. Got: {shape}."
-                             f"Please consider checking the dimension of the holonomic constraints Jacobian.")
+            raise ValueError(
+                f"The shape of the dependent joint Jacobian should be square. Got: {shape}."
+                f"Please consider checking the dimension of the holonomic constraints Jacobian."
+            )
 
     @property
     def nb_independent_joints(self):
@@ -113,10 +115,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         return self._independent_joint_index
 
     def _add_holonomic_constraint(
-            self,
-            constraints: Function | Callable[[GeneralizedCoordinates], MX],
-            constraints_jacobian: Function | Callable[[GeneralizedCoordinates], MX],
-            constraints_double_derivative: Function | Callable[[GeneralizedCoordinates], MX],
+        self,
+        constraints: Function | Callable[[GeneralizedCoordinates], MX],
+        constraints_jacobian: Function | Callable[[GeneralizedCoordinates], MX],
+        constraints_double_derivative: Function | Callable[[GeneralizedCoordinates], MX],
     ):
         self._holonomic_constraints.append(constraints)
         self._holonomic_constraints_jacobians.append(constraints_jacobian)
@@ -234,7 +236,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         return horzcat(constrained_jacobian_u, constrained_jacobian_v)
 
     def partitioned_forward_dynamics(
-            self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None
+        self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None
     ) -> MX:
         """
         Sources
@@ -254,35 +256,35 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         partitioned_mass_matrix = self.partitioned_mass_matrix(q)
         m_uu = partitioned_mass_matrix[: self.nb_independent_joints, : self.nb_independent_joints]
-        m_uv = partitioned_mass_matrix[: self.nb_independent_joints, self.nb_independent_joints:]
-        m_vu = partitioned_mass_matrix[self.nb_independent_joints:, : self.nb_independent_joints]
-        m_vv = partitioned_mass_matrix[self.nb_independent_joints:, self.nb_independent_joints:]
+        m_uv = partitioned_mass_matrix[: self.nb_independent_joints, self.nb_independent_joints :]
+        m_vu = partitioned_mass_matrix[self.nb_independent_joints :, : self.nb_independent_joints]
+        m_vv = partitioned_mass_matrix[self.nb_independent_joints :, self.nb_independent_joints :]
 
         coupling_matrix_vu = self.coupling_matrix(q)
         modified_mass_matrix = (
-                m_uu
-                + m_uv @ coupling_matrix_vu
-                + coupling_matrix_vu.T @ m_vu
-                + coupling_matrix_vu.T @ m_vv @ coupling_matrix_vu
+            m_uu
+            + m_uv @ coupling_matrix_vu
+            + coupling_matrix_vu.T @ m_vu
+            + coupling_matrix_vu.T @ m_vv @ coupling_matrix_vu
         )
         second_term = m_uv + coupling_matrix_vu.T @ m_vv
 
         # compute the non-linear effect
         non_linear_effect = self.partitioned_non_linear_effect(q, qdot, external_forces, f_contacts)
         non_linear_effect_u = non_linear_effect[: self.nb_independent_joints]
-        non_linear_effect_v = non_linear_effect[self.nb_independent_joints:]
+        non_linear_effect_v = non_linear_effect[self.nb_independent_joints :]
 
         modified_non_linear_effect = non_linear_effect_u + coupling_matrix_vu.T @ non_linear_effect_v
 
         # compute the tau
         partitioned_tau = self.partitioned_tau(tau)
         tau_u = partitioned_tau[: self.nb_independent_joints]
-        tau_v = partitioned_tau[self.nb_independent_joints:]
+        tau_v = partitioned_tau[self.nb_independent_joints :]
 
         modified_generalized_forces = tau_u + coupling_matrix_vu.T @ tau_v
 
         qddot_u = inv(modified_mass_matrix) @ (
-                modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
+            modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
         )
 
         return qddot_u
@@ -298,7 +300,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
         partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
-        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints:]
+        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
         partitioned_constraints_jacobian_v_inv = inv(partitioned_constraints_jacobian_v)  # inv_minor otherwise ?
 
         partitioned_constraints_jacobian_u = partitioned_constraints_jacobian[:, : self.nb_independent_joints]
@@ -316,7 +318,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         The right term of the equation (15) in the paper.
         """
         partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
-        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints:]
+        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
         partitioned_constraints_jacobian_v_inv = inv(partitioned_constraints_jacobian_v)
 
         return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
@@ -420,7 +422,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         return self.state_from_partition(qddot_u, qddot_v)
 
     def compute_the_lagrangian_multipliers(
-            self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
+        self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
     ) -> MX:
         """
         Sources
@@ -435,22 +437,22 @@ class HolonomicBiorbdModel(BiorbdModel):
         if f_contacts is not None:
             raise NotImplementedError("Contact forces are not implemented yet.")
         partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
-        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints:]
+        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
         partitioned_constraints_jacobian_v_t_inv = inv(partitioned_constraints_jacobian_v.T)
 
         partitioned_mass_matrix = self.partitioned_mass_matrix(q)
-        m_vu = partitioned_mass_matrix[self.nb_independent_joints:, : self.nb_independent_joints]
-        m_vv = partitioned_mass_matrix[self.nb_independent_joints:, self.nb_independent_joints:]
+        m_vu = partitioned_mass_matrix[self.nb_independent_joints :, : self.nb_independent_joints]
+        m_vv = partitioned_mass_matrix[self.nb_independent_joints :, self.nb_independent_joints :]
 
         qddot_u = qddot[self._independent_joint_index]
         qddot_v = qddot[self._dependent_joint_index]
 
         non_linear_effect = self.partitioned_non_linear_effect(q, qdot, external_forces, f_contacts)
-        non_linear_effect_v = non_linear_effect[self.nb_independent_joints:]
+        non_linear_effect_v = non_linear_effect[self.nb_independent_joints :]
 
         partitioned_tau = self.partitioned_tau(tau)
-        partitioned_tau_v = partitioned_tau[self.nb_independent_joints:]
+        partitioned_tau_v = partitioned_tau[self.nb_independent_joints :]
 
         return partitioned_constraints_jacobian_v_t_inv @ (
-                m_vu @ qddot_u + m_vv @ qddot_v + non_linear_effect_v - partitioned_tau_v
+            m_vu @ qddot_u + m_vv @ qddot_v + non_linear_effect_v - partitioned_tau_v
         )
