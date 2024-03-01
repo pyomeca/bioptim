@@ -152,5 +152,6 @@ def main():
     # sol.graphs(show_bounds=True)
     sol.animate(n_frames=100)
 
+
 if __name__ == "__main__":
     main()

@@ -5,6 +5,7 @@ This example shows how to extract the data from the Solution object and plot it 
 import matplotlib.pyplot as plt
 from bioptim.examples.getting_started.pendulum import prepare_ocp
 from bioptim import Solver, SolutionMerge, TimeAlignment
+
 """
 If pendulum is run as a script, it will perform the optimization and animates it
 """
@@ -23,7 +24,7 @@ fig, axs = plt.subplots(2, 2, figsize=(10, 15))
 decision_time = sol.decision_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.STATES)
 decision_states = sol.decision_states(to_merge=SolutionMerge.NODES)
 for i in range(2):
-    axs[0, i].step(decision_time, decision_states["q"][i, :], label="Decision q", where='post')
+    axs[0, i].step(decision_time, decision_states["q"][i, :], label="Decision q", where="post")
 
 # Retrieve stepwise states from the solution object.
 stepwise_time = sol.stepwise_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.STATES)
@@ -35,7 +36,7 @@ for i in range(2):
 decision_time = sol.decision_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.CONTROLS)
 decision_controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 for i in range(2):
-    axs[0, i].step(decision_time, decision_controls["tau"][i, :], label="Decision tau", where='post')
+    axs[0, i].step(decision_time, decision_controls["tau"][i, :], label="Decision tau", where="post")
     axs[0, i].set_xlabel("Time [s]")
     axs[0, i].grid(True)
     axs[0, i].legend()
@@ -44,7 +45,7 @@ for i in range(2):
 stepwise_time = sol.stepwise_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.CONTROLS)
 stepwise_controls = sol.stepwise_controls(to_merge=SolutionMerge.NODES)
 for i in range(2):
-    axs[1, i].step(stepwise_time, stepwise_controls["tau"][i, :],  label="Stepwise tau", where='post')
+    axs[1, i].step(stepwise_time, stepwise_controls["tau"][i, :], label="Stepwise tau", where="post")
     axs[1, i].set_xlabel("Time [s]")
     axs[1, i].grid(True)
     axs[1, i].legend()
