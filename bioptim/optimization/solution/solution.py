@@ -232,6 +232,12 @@ class Solution:
             )
         # if sum([len(s) != len(all_ns) if p != 4 else False for p, s in enumerate(sol)]) != 0:
         #     raise ValueError("The InitialGuessList len must match the number of phases")
+
+        # p!=3 : pour les paramètres
+
+        # TODO : allow empty num
+        # Donner autant d'initial guess vide que de phase
+
         # if n_param != 0:
         #     if len(sol) != 3 and len(sol[3]) != 1 and sol[3][0].shape != (n_param, 1):
         #         raise ValueError(
@@ -688,6 +694,7 @@ class Solution:
         shooting_type: Shooting = Shooting.SINGLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
         to_merge: SolutionMerge | list[SolutionMerge] = None,
+        return_time: bool = False,
     ):
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
@@ -715,11 +722,14 @@ class Solution:
         u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
 
+        time_vector = []
         out: list = [None] * len(self.ocp.nlp)
         integrated_sol = None
         for p, nlp in enumerate(self.ocp.nlp):
             next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
-            integrated_sol = solve_ivp_interface(
+
+            # TODO: Get the actual time vector
+            phase_times, integrated_sol = solve_ivp_interface(
                 shooting_type=shooting_type,
                 nlp=nlp,
                 t=t_spans[p],
@@ -730,22 +740,32 @@ class Solution:
                 method=integrator,
             )
 
+            time_vector.append(phase_times)
             out[p] = {}
             for key in nlp.states.keys():
                 out[p][key] = [None] * nlp.n_states_nodes
                 for ns, sol_ns in enumerate(integrated_sol):
                     out[p][key][ns] = sol_ns[nlp.states[key].index, :]
 
-            if shooting_type == Shooting.SINGLE and p < len(self.ocp.nlp) - 1:
-                state_list = []
-                for key in nlp.states.keys():
-                    state_list.append(out[p][key][-1][0])
-                x[p+1][0] = np.array(state_list)
-
         if to_merge:
             out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
 
-        return out if len(out) > 1 else out[0]
+            # Make a _remove_integrated_duplicates(out) function
+            if (
+                shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE)
+                and SolutionMerge.NODES in to_merge
+            ):
+                for p in range(len(out)):
+                    _, index_duplicate = np.unique(time_vector[p])
+                    # Remove the duplicate for both merged keys and non-merged keys
+                    # Something like out[p][key] = out[p][key][index_duplicate]
+
+                    # Also deal with the Discontinuous and non-discontinuous phases if phase is merged
+
+        if return_time:
+            return out if len(out) > 1 else out[0], time_vector if len(time_vector) > 1 else time_vector[0]
+        else:
+            return out if len(out) > 1 else out[0]
 
     def _states_for_phase_integration(
         self,
@@ -791,6 +811,15 @@ class Solution:
         if phase_idx == 0:
             return [decision_states[phase_idx][0]]
 
+        # if shooting_type == Shooting.SINGLE and p < len(self.ocp.nlp) - 1:
+        #     state_list = []
+        #     for key in nlp.states.keys():
+        #         state_list.append(out[p][key][-1][0])
+        #     x[p+1][0] = np.array(state_list)
+
+        # TODO A mettre ici
+
+
         penalty = self.ocp.phase_transitions[phase_idx - 1]
 
         t0 = PenaltyHelpers.t0(penalty, 0, lambda p, n: self._stepwise_times[p][n][0])
@@ -799,6 +828,9 @@ class Solution:
         # based on the phase transition objective or constraint function. That is why we need to concatenate
         # twice the last state
         x = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: integrated_states[-1])
+
+        # x = decision_phase x - 1
+
         u = PenaltyHelpers.controls(
             penalty,
             0,
@@ -820,7 +852,7 @@ class Solution:
                 f"please integrate with Shooting.SINGLE_DISCONTINUOUS_PHASE."
             )
 
-        return [decision_states[phase_idx][0] + dx]
+        return [(integrated_states[-1] if shooting_type == Shooting.SINGLE else decision_states[phase_idx]) + dx]
 
     def _integrate_stepwise(self) -> None:
         """
