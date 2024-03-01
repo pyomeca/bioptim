@@ -134,9 +134,9 @@ def main():
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)
 
-
     import sys
-    sys.stdout = open('/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/optimization/ipopt_output.txt', 'w')
+
+    sys.stdout = open("/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/optimization/ipopt_output.txt", "w")
     ocp.add_plot_ipopt_outputs()
 
     # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #

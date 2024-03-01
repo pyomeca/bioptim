@@ -1198,9 +1198,6 @@ class OnlineCallback(Callback):
                 v = self.pipe.get()
                 self.plot.update_data(v)  #  objective, constraints, lam_x, lam_g, lam_p
 
-
-
-
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()
             return True

@@ -1327,14 +1327,14 @@ class OptimalControlProgram:
             alpha_pr = []
             ls = []
             while True:
-                with open(file_name, 'r') as file:
+                with open(file_name, "r") as file:
                     lines = file.readlines()
                     if len(lines) > 0 and lines[-1] not in file_lines:
-                        splited_line = lines[-30].split(' ')
+                        splited_line = lines[-30].split(" ")
                         parsed_line = [splited_line[i] for i in range(len(splited_line)) if len(splited_line[i]) > 0]
-                        if len(parsed_line) != 10 or parsed_line[0] == 'iter':
+                        if len(parsed_line) != 10 or parsed_line[0] == "iter":
                             continue
-                        if parsed_line[0].startswith('r'):
+                        if parsed_line[0].startswith("r"):
                             restoration.append(True)
                             num_iter.append(int(parsed_line[0][1:]))
                         else:
@@ -1363,23 +1363,33 @@ class OptimalControlProgram:
                         fig.canvas.draw()
                         fig.canvas.flush_events()
 
-        colors = [cm.viridis(i/5) for i in range(6)]
+        colors = [cm.viridis(i / 5) for i in range(6)]
         plt.ion()
         fig = plt.figure()
         ax = fig.add_subplot(111)
-        ax.set_title('IPOPT output')
-        ax.set_xlabel('Iteration')
-        objective_line = ax.plot(0, 0, 'o', color=colors[0], label='objective')
-        inf_pr_line = ax.plot(0, 0, 'o', color=colors[1], label='inf_pr')
-        inf_du_line = ax.plot(0, 0, 'o', color=colors[2], label='inf_du')
-        d_norm_line = ax.plot(0, 0, 'o', color=colors[3], label='d_norm')
-        alpha_du_line = ax.plot(0, 0, 'o', color=colors[4], label='alpha_du')
-        alpha_pr_line = ax.plot(0, 0, 'o', color=colors[5], label='alpha_pr')
-        restoration_squares = ax.fill_between([0, 1], 0, 1, color='k', label='is in restoration')
-        plot_lines = [objective_line, inf_pr_line, inf_du_line, d_norm_line, alpha_du_line, alpha_pr_line, restoration_squares]
+        ax.set_title("IPOPT output")
+        ax.set_xlabel("Iteration")
+        objective_line = ax.plot(0, 0, "o", color=colors[0], label="objective")
+        inf_pr_line = ax.plot(0, 0, "o", color=colors[1], label="inf_pr")
+        inf_du_line = ax.plot(0, 0, "o", color=colors[2], label="inf_du")
+        d_norm_line = ax.plot(0, 0, "o", color=colors[3], label="d_norm")
+        alpha_du_line = ax.plot(0, 0, "o", color=colors[4], label="alpha_du")
+        alpha_pr_line = ax.plot(0, 0, "o", color=colors[5], label="alpha_pr")
+        restoration_squares = ax.fill_between([0, 1], 0, 1, color="k", label="is in restoration")
+        plot_lines = [
+            objective_line,
+            inf_pr_line,
+            inf_du_line,
+            d_norm_line,
+            alpha_du_line,
+            alpha_pr_line,
+            restoration_squares,
+        ]
 
         self.ipopt_output_queue = mp.Queue()
-        self.ipopt_output_process = mp.Process(target=run_ipopt_subprocess, args=(self.ipopt_output_queue, fig, ax, plot_lines), daemon=True)
+        self.ipopt_output_process = mp.Process(
+            target=run_ipopt_subprocess, args=(self.ipopt_output_queue, fig, ax, plot_lines), daemon=True
+        )
         self.ipopt_output_process.start()
 
     def prepare_plots(
