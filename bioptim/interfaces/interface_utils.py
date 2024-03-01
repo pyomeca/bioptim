@@ -1,15 +1,15 @@
-from time import perf_counter
 from sys import platform
+from time import perf_counter
 
-from casadi import Importer, Function
 import numpy as np
+from casadi import Importer, Function
 from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
-from ..gui.plot import OnlineCallback
+from bioptim.optimization.solution.solution import Solution
+from ..gui.online_callback import OnlineCallback
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType
-from bioptim.optimization.solution.solution import Solution
 from ..optimization.non_linear_program import NonLinearProgram
 
 
@@ -134,7 +134,7 @@ def _shake_tree_for_penalties(ocp, penalties_cx, v, v_bounds, expand):
         except RuntimeError:
             # This happens mostly when there is a Newton decent in the penalty
             pass
-    return penalty(vertcat(*dt, v[len(dt) :]))
+    return penalty(vertcat(*dt, v[len(dt):]))
 
 
 def generic_set_lagrange_multiplier(interface, sol: Solution):
