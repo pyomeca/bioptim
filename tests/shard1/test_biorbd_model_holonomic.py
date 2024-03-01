@@ -1,10 +1,10 @@
-import numpy as np
 import os
+
+import numpy as np
 import pytest
-
 from casadi import DM, MX, Function
-from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
 
+from bioptim import HolonomicBiorbdModel, HolonomicConstraintsFcn, HolonomicConstraintsList, Solver, SolutionMerge
 from tests.utils import TestUtils
 
 
@@ -34,8 +34,9 @@ def test_model_holonomic():
     )
 
     with pytest.raises(
-        ValueError,
-        match="You need to specify both dependent_joint_index and independent_joint_index or none of them.",
+            ValueError,
+            match="The sum of the number of dependent and independent joints "
+                  "should be equal to the number of DoF of the model",
     ):
         model.set_holonomic_configuration(holonomic_constrains, [1])
 
@@ -72,6 +73,18 @@ def test_model_holonomic():
         model.set_holonomic_configuration(holonomic_constrains, [0], [2, 1])
 
     model.set_holonomic_configuration(holonomic_constrains, [1, 2], [0])
+
+    with pytest.raises(
+            ValueError,
+            match="Length of state u size should be: 1. Got: 3",
+    ):
+        model.state_from_partition(MX([1, 2, 3]), MX([4]))
+
+    with pytest.raises(
+            ValueError,
+            match="Length of state v size should be: 2. Got: 3",
+    ):
+        model.state_from_partition(MX([1]), MX([4, 5, 3]))
 
     np.testing.assert_equal(model.nb_independent_joints, 1)
     np.testing.assert_equal(model.nb_dependent_joints, 2)
