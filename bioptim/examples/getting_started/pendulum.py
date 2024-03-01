@@ -10,14 +10,8 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 """
 
 import platform
-import matplotlib
-matplotlib.use('Qt5Agg')  # Use 'Qt5Agg' for PyQt5 or 'Qt6Agg' for PyQt6
 import matplotlib.pyplot as plt
-import matplotlib
 import numpy as np
-
-# Set the backend for Matplotlib to 'Qt5Agg'
-matplotlib.use('Qt5Agg') # Use 'Qt5Agg' for PyQt5 compatibility, 'Qt6Agg' if using PyQt6
 
 
 from bioptim import (
@@ -35,6 +29,8 @@ from bioptim import (
     BiorbdModel,
     ControlType,
     PhaseDynamics,
+    SolutionMerge,
+    TimeAlignment,
 )
 
 
@@ -149,145 +145,51 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
-    sol.graphs(show_bounds=True)
+    # sol.graphs(show_bounds=True)
     # sol.animate(n_frames=100)
 
-    # Retrieve decision states from the solution object.
-    decision_states = sol.decision_states()
-
-    # Retrieve stepwise states from the solution object.
-    stepwise_states = sol.stepwise_states()
-
-    # Retrieve decision controls from the solution object.
-    decision_controls = sol.decision_controls()
-
-    # Retrieve stepwise controls from the solution object.
-    stepwise_controls = sol.stepwise_controls()
-
-    # Retrieve stepwise time
-    stepwise_time = sol.stepwise_time()
-
-    # Retrieve the final time of the phase in the optimal control problem.
-    final_time = ocp.phase_time
-
-    # Retrieve the decision time
-    decision_time = sol.decision_time()
-
-    # Extract the position (q) and velocity (qdot) states from the decision states.
-    q_sol_decision_states = decision_states["q"]
-    qdot_sol_decision_states = decision_states["qdot"]
-
-    # Extract the position (q) and velocity (qdot) states from the stepwise states.
-    q_sol_stepwise_states = stepwise_states["q"]
-    qdot_sol_stepwise_states = stepwise_states["qdot"]
-
-    # Extract the 'tau' control from the decision controls.
-    tau_sol_decision_controls = decision_controls["tau"]
-
-    # Extract the 'tau' control  from the stepwise controls.
-    tau_sol_stepwise_controls = stepwise_controls["tau"]
-
-    # # # # # # # # # # # #
-    tau_decision_dof1 = [item[0][0] for item in tau_sol_decision_controls]
-    tau_decision_dof2 = [item[1][0] for item in tau_sol_decision_controls]
-
-    tau_stepwise_dof1 = [item[0][0] for item in tau_sol_stepwise_controls]
-    tau_stepwise_dof2 = [item[1][0] for item in tau_sol_stepwise_controls]
-
-    q_decision_dof1 = [item[0][0] for item in q_sol_decision_states]
-    q_decision_dof2 = [item[1][0] for item in q_sol_decision_states]
-
-    q_stepwise_dof1 = [item[0][0] for item in q_sol_stepwise_states]
-    q_stepwise_dof2 = [item[1][0] for item in q_sol_stepwise_states]
-
-    qdot_decision_dof1 = [item[0][0] for item in qdot_sol_decision_states]
-    qdot_decision_dof2 = [item[1][0] for item in qdot_sol_decision_states]
-
-    qdot_stepwise_dof1 = [item[0][0] for item in qdot_sol_stepwise_states]
-    qdot_stepwise_dof2 = [item[1][0] for item in qdot_sol_stepwise_states]
-
-    # Convert Casadi DM to NumPy and flatten
-    decision_times_np = [np.array(dm.full()).flatten() for dm in decision_time]
-    stepwise_times_np = [np.array(dm.full()).flatten() for dm in stepwise_time]
-
-    stepwise_concatenated_times = np.concatenate(stepwise_times_np[:-1])
-    # Extract the first element of each sub-array and concatenate into a new NumPy array
-    decision_concatenated_times = np.array([sub_array[0] for sub_array in decision_times_np])
-
-    # Repeating the values
-    repeated_tau_stepwise_dof1 = np.repeat(tau_stepwise_dof1, 6)
-    repeated_tau_stepwise_dof2 = np.repeat(tau_stepwise_dof2, 6)
-    repeated_q_stepwise_dof1 = np.repeat(q_stepwise_dof1, 6)
-    repeated_q_stepwise_dof2 = np.repeat(q_stepwise_dof2, 6)
-    repeated_qdot_stepwise_dof1 = np.repeat(qdot_stepwise_dof1, 6)
-    repeated_qdot_stepwise_dof2 = np.repeat(qdot_stepwise_dof2, 6)
-
-    tau_decision_dof2.append(tau_decision_dof2[-1])
-    tau_decision_dof1.append(tau_decision_dof1[-1])
 
     # Create a figure and a set of subplots
-    fig, axs = plt.subplots(3, 2, figsize=(10, 15))
+    fig, axs = plt.subplots(2, 2, figsize=(10, 15))
 
-    # Plotting q (position) solutions for both DOFs
-    axs[0, 0].plot(decision_concatenated_times, q_decision_dof1, label="Decision")
-    axs[0, 0].step(stepwise_concatenated_times, repeated_q_stepwise_dof1[:len(stepwise_concatenated_times)], label="Stepwise")
-    axs[0, 0].set_title("q Solution for DOF1")
-    axs[0, 0].set_ylabel("q")
-    axs[0, 0].set_xlabel("Time")
-    axs[0, 0].grid(True)
-    axs[0, 0].legend()
+    # Plotting the solution for decision  
+    decision_time = sol.decision_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.STATES)
+    decision_states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    for i in range(2):
+        axs[0, i].step(decision_time, decision_states["q"][i, :], label="Decision q", where='post')
 
-    axs[0, 1].plot(decision_concatenated_times, q_decision_dof2, label="Decision")
-    axs[0, 1].step(stepwise_concatenated_times, repeated_q_stepwise_dof2[:len(stepwise_concatenated_times)], label="Stepwise")
-    axs[0, 1].set_title("q Solution for DOF2")
-    axs[0, 1].set_ylabel("q")
-    axs[0, 1].set_xlabel("Time")
-    axs[0, 1].grid(True)
-    axs[0, 1].legend()
+    # Retrieve stepwise states from the solution object.  
+    stepwise_time = sol.stepwise_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.STATES)
+    stepwise_states = sol.stepwise_states(to_merge=SolutionMerge.NODES)
+    for i in range(2):
+        axs[1, i].plot(stepwise_time, stepwise_states["q"][i, :], label="Stepwise q")
 
-    # Plotting qdot (velocity) solutions for both DOFs
-    axs[1, 0].plot(decision_concatenated_times, qdot_decision_dof1, label="Decision")
-    axs[1, 0].step(stepwise_concatenated_times, repeated_qdot_stepwise_dof1[:len(stepwise_concatenated_times)], label="Stepwise")
-    axs[1, 0].set_title("qdot Solution for DOF1")
-    axs[1, 0].set_ylabel("qdot")
-    axs[1, 0].set_xlabel("Time")
-    axs[1, 0].grid(True)
-    axs[1, 0].legend()
+    # Plotting the solution for decision
+    decision_time = sol.decision_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.CONTROLS)
+    decision_controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+    for i in range(2):
+        axs[0, i].step(decision_time, decision_controls["tau"][i, :], label="Decision tau", where='post')
+        axs[0, i].set_xlabel("Time [s]")
+        axs[0, i].grid(True)
+        axs[0, i].legend()
 
-    axs[1, 1].plot(decision_concatenated_times, qdot_decision_dof2, label="Decision")
-    axs[1, 1].step(stepwise_concatenated_times, repeated_qdot_stepwise_dof2[:len(stepwise_concatenated_times)], label="Stepwise")
-    axs[1, 1].set_title("qdot Solution for DOF2")
-    axs[1, 1].set_ylabel("qdot")
-    axs[1, 1].set_xlabel("Time")
-    axs[1, 1].grid(True)
-    axs[1, 1].legend()
+    # Retrieve stepwise states from the solution object.
+    stepwise_time = sol.stepwise_time(to_merge=SolutionMerge.NODES, time_alignment=TimeAlignment.CONTROLS)
+    stepwise_controls = sol.stepwise_controls(to_merge=SolutionMerge.NODES)
+    for i in range(2):
+        axs[1, i].step(stepwise_time, stepwise_controls["tau"][i, :],  label="Stepwise tau", where='post')
+        axs[1, i].set_xlabel("Time [s]")
+        axs[1, i].grid(True)
+        axs[1, i].legend()
 
-    # Plotting tau (control) solutions for both DOFs
-    axs[2, 0].plot(decision_concatenated_times, tau_decision_dof1, label="Decision")
-    axs[2, 0].step(stepwise_concatenated_times, repeated_tau_stepwise_dof1, label="Stepwise", where='post')
-    axs[2, 0].set_title("tau Solution for DOF1")
-    axs[2, 0].set_ylabel("tau")
-    axs[2, 0].set_xlabel("Time")
-    axs[2, 0].grid(True)
-    axs[2, 0].legend()
-
-    axs[2, 1].plot(decision_concatenated_times, tau_decision_dof2, label="Decision")
-    axs[2, 1].step(stepwise_concatenated_times, repeated_tau_stepwise_dof2, label="Stepwise", where='post')
-    axs[2, 1].set_title("tau Solution for DOF2")
-    axs[2, 1].set_ylabel("tau")
-    axs[2, 1].set_xlabel("Time")
-    axs[2, 1].grid(True)
-    axs[2, 1].legend()
-
-    # Adjust layout for clarity and display the plot
-    plt.tight_layout()
-    plt.subplots_adjust(left=0.058, bottom=0.074, right=0.958, top=0.935, wspace=0.15, hspace=0.560)
-
-    # Display the plot
+    axs[0, 0].set_title("DoF 1")
+    axs[0, 1].set_title("DoF 2")
+    axs[0, 0].set_ylabel("Decision")
+    axs[1, 0].set_ylabel("Stepwise")
     plt.show()
 
 if __name__ == "__main__":
