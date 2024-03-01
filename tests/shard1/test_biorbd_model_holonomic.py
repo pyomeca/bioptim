@@ -34,9 +34,9 @@ def test_model_holonomic():
     )
 
     with pytest.raises(
-            ValueError,
-            match="The sum of the number of dependent and independent joints "
-                  "should be equal to the number of DoF of the model",
+        ValueError,
+        match="The sum of the number of dependent and independent joints "
+        "should be equal to the number of DoF of the model",
     ):
         model.set_holonomic_configuration(holonomic_constrains, [1])
 
@@ -75,14 +75,14 @@ def test_model_holonomic():
     model.set_holonomic_configuration(holonomic_constrains, [1, 2], [0])
 
     with pytest.raises(
-            ValueError,
-            match="Length of state u size should be: 1. Got: 3",
+        ValueError,
+        match="Length of state u size should be: 1. Got: 3",
     ):
         model.state_from_partition(MX([1, 2, 3]), MX([4]))
 
     with pytest.raises(
-            ValueError,
-            match="Length of state v size should be: 2. Got: 3",
+        ValueError,
+        match="Length of state v size should be: 2. Got: 3",
     ):
         model.state_from_partition(MX([1]), MX([4, 5, 3]))
 
