@@ -62,16 +62,14 @@ class Integrator:
         self.cx = ode_opt["cx"]
         self.t_span_sym = ode["t"]
         self.x_sym = ode["x"]
-        self.u_sym = ode["p"]
+        self.u_sym = ode["u"]
         self.param_sym = ode["param"]
-        self.param_scaling = ode_opt["param_scaling"]
         self.a_sym = ode["a"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
         self.defects_type = ode_opt["defects_type"]
         self.control_type = ode_opt["control_type"]
         self.function = None
-        self.allow_free_variables = ode_opt["allow_free_variables"]
         self.duplicate_starting_point = ode_opt["duplicate_starting_point"]
 
         # Initialize is expected to set step_time
@@ -80,22 +78,15 @@ class Integrator:
         self.step_times_from_dt = self._time_xall_from_dt_func
         self.function = Function(
             "integrator",
-            [
-                self.t_span_sym,
-                self._x_sym_modified,
-                self.u_sym,
-                self.param_sym,
-                self.a_sym,
-            ],
+            [self.t_span_sym, self._x_sym_modified, self.u_sym, self.param_sym, self.a_sym],
             self.dxdt(
                 states=self.x_sym,
                 controls=self.u_sym,
-                params=self.param_sym * self.param_scaling,
+                params=self.param_sym,
                 algebraic_states=self.a_sym,
             ),
             self._input_names,
             self._output_names,
-            {"allow_free": self.allow_free_variables},
         )
 
     @property
@@ -260,7 +251,7 @@ class RK(Integrator):
 
     @property
     def h(self):
-        return (self.t_span_sym[1] - self.t_span_sym[0]) / self._n_step
+        return self.t_span_sym[1] / self._n_step
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX) -> MX | SX:
         """
@@ -314,7 +305,7 @@ class RK1(RK):
     """
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX) -> MX | SX:
-        return x_prev + self.h * self.fun(t0, x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
+        return x_prev + self.h * self.fun(vertcat(t0, self.h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
 
 
 class RK2(RK):
@@ -326,7 +317,11 @@ class RK2(RK):
         h = self.h
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
-        return x_prev + h * self.fun(t0, x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
+        return (
+            x_prev
+            + h
+            * self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
+        )
 
 
 class RK4(RK):
@@ -336,12 +331,11 @@ class RK4(RK):
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX):
         h = self.h
-        t = vertcat(t0, h)
 
-        k1 = self.fun(t, x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
-        k2 = self.fun(t, x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
-        k3 = self.fun(t, x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
-        k4 = self.fun(t, x_prev + h * k3, self.get_u(u, t0 + h), p, a)[:, self.ode_idx]
+        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
+        k2 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
+        k3 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
+        k4 = self.fun(vertcat(t0 + h, h), x_prev + h * k3, self.get_u(u, t0 + h), p, a)[:, self.ode_idx]
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
@@ -352,39 +346,50 @@ class RK8(RK4):
 
     def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX):
         h = self.h
-        t = vertcat(t0, h)
 
-        k1 = self.fun(t, x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
-        k2 = self.fun(t, x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + h * (4 / 27)), p, a)[:, self.ode_idx]
-        k3 = self.fun(t, x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + h * (2 / 9)), p, a)[:, self.ode_idx]
-        k4 = self.fun(t, x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t0 + h * (1 / 3)), p, a)[:, self.ode_idx]
-        k5 = self.fun(t, x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t0 + h * (1 / 2)), p, a)[:, self.ode_idx]
+        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
+        k2 = self.fun(vertcat(t0 + h * 4 / 27, h), x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + h * (4 / 27)), p, a)[
+            :, self.ode_idx
+        ]
+        k3 = self.fun(
+            vertcat(t0 + h / 18, h), x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + h * (2 / 9)), p, a
+        )[:, self.ode_idx]
+        k4 = self.fun(
+            vertcat(t0 + h / 12, h), x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t0 + h * (1 / 3)), p, a
+        )[:, self.ode_idx]
+        k5 = self.fun(vertcat(t0 + h / 8, h), x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t0 + h * (1 / 2)), p, a)[
+            :, self.ode_idx
+        ]
         k6 = self.fun(
-            t, x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5), self.get_u(u, t0 + h * (2 / 3)), p, a
+            vertcat(t0 + h / 54, h),
+            x_prev + (h / 54) * (13 * k1 - 27 * k3 + 42 * k4 + 8 * k5),
+            self.get_u(u, t0 + h * (2 / 3)),
+            p,
+            a,
         )[:, self.ode_idx]
         k7 = self.fun(
-            t,
+            vertcat(t0 + h / 4320, h),
             x_prev + (h / 4320) * (389 * k1 - 54 * k3 + 966 * k4 - 824 * k5 + 243 * k6),
             self.get_u(u, t0 + h * (1 / 6)),
             p,
             a,
         )[:, self.ode_idx]
         k8 = self.fun(
-            t,
+            vertcat(t0 + h / 20, h),
             x_prev + (h / 20) * (-234 * k1 + 81 * k3 - 1164 * k4 + 656 * k5 - 122 * k6 + 800 * k7),
             self.get_u(u, t0 + h),
             p,
             a,
         )[:, self.ode_idx]
         k9 = self.fun(
-            t,
+            vertcat(t0 + h / 288, h),
             x_prev + (h / 288) * (-127 * k1 + 18 * k3 - 678 * k4 + 456 * k5 - 9 * k6 + 576 * k7 + 4 * k8),
             self.get_u(u, t0 + h * (5 / 6)),
             p,
             a,
         )[:, self.ode_idx]
         k10 = self.fun(
-            t,
+            vertcat(t0 + h / 820, h),
             x_prev
             + (h / 820) * (1481 * k1 - 81 * k3 + 7104 * k4 - 3376 * k5 + 72 * k6 - 5040 * k7 - 60 * k8 + 720 * k9),
             self.get_u(u, t0 + h),
@@ -417,8 +422,8 @@ class TRAPEZOIDAL(Integrator):
         a_prev: MX | SX,
         a_next: MX | SX,
     ):
-        dx = self.fun(t0, x_prev, u_prev, p, a_prev)[:, self.ode_idx]
-        dx_next = self.fun(t0, x_next, u_next, p, a_next)[:, self.ode_idx]
+        dx = self.fun(vertcat(t0, self.h), x_prev, u_prev, p, a_prev)[:, self.ode_idx]
+        dx_next = self.fun(vertcat(t0 + self.h, self.h), x_next, u_next, p, a_next)[:, self.ode_idx]
         return x_prev + (dx + dx_next) * self.h / 2
 
     @property
@@ -439,7 +444,7 @@ class TRAPEZOIDAL(Integrator):
 
     @property
     def h(self):
-        return self.t_span_sym[1] - self.t_span_sym[0]
+        return self.t_span_sym[1]
 
     def dxdt(
         self,
@@ -505,7 +510,6 @@ class COLLOCATION(Integrator):
         """
         self.method = ode_opt["method"]
         self.degree = ode_opt["irk_polynomial_interpolation_degree"]
-        self.allow_free_variables = ode_opt["allow_free_variables"]
 
         # Coefficients of the collocation equation
         self._c = self.cx.zeros((self.degree + 1, self.degree + 1))
@@ -557,7 +561,7 @@ class COLLOCATION(Integrator):
 
     @property
     def h(self):
-        return self.t_span_sym[1] - self.t_span_sym[0]
+        return self.t_span_sym[1]
 
     @property
     def _integration_time(self):
@@ -573,9 +577,7 @@ class COLLOCATION(Integrator):
 
     @property
     def _time_xall_from_dt_func(self) -> Function:
-        return Function(
-            "step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._integration_time + [1]) * self.t_span_sym[1]]
-        )
+        return Function("step_time", [self.t_span_sym], [self.t_span_sym[0] + (self._integration_time + [1]) * self.h])
 
     def get_u(self, u: np.ndarray, t: float | MX | SX) -> np.ndarray:
         """
@@ -609,7 +611,7 @@ class COLLOCATION(Integrator):
         states_end = self._d[0] * states[1]
         defects = []
         for j in range(1, self.degree + 1):
-            t = vertcat(self.t_span_sym[0] + self._integration_time[j - 1] * self.h, self.h)
+            t = vertcat(self.t_span_sym[0] + self._integration_time[j] * self.h, self.h)
 
             # Expression for the state derivative at the collocation point
             xp_j = 0
@@ -621,13 +623,9 @@ class COLLOCATION(Integrator):
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
-                    t,
-                    states[j + 1],
-                    self.get_u(controls, self._integration_time[j]),
-                    params,
-                    algebraic_states,
+                    t, states[j + 1], self.get_u(controls, self._integration_time[j]), params, algebraic_states
                 )[:, self.ode_idx]
-                defects.append(xp_j - self.h * f_j)
+                defects.append(xp_j - f_j * self.h)
             elif self.defects_type == DefectType.IMPLICIT:
                 defects.append(
                     self.implicit_fun(
@@ -647,7 +645,8 @@ class COLLOCATION(Integrator):
 
         # Concatenate constraints
         defects = vertcat(*defects)
-        return states_end, horzcat(*states), defects
+        collocation_states = horzcat(*states) if self.duplicate_starting_point else horzcat(*states[1:])
+        return states_end, collocation_states, defects
 
 
 class IRK(COLLOCATION):

@@ -24,17 +24,18 @@ class PenaltyProtocol(Protocol):
 
 class PenaltyHelpers:
     @staticmethod
-    def t0(penalty, ocp):
+    def t0(penalty, index, get_t0: Callable):
         """
-        This method returns the t0 of a penalty. It is currently always 0, because the time is always baked in the
-        penalty function
+        This method returns the t0 of a penalty.
         """
 
-        # Time penalty is baked in the penalty declaration. No need to add it here
-        # TODO WARNING THIS SHOULD NOT BE 0, BUT THE TIME OF THE NODE. THIS IS A BUG INTRODUCED TO HAVE THE TESTS PASS
-        # WHATEVER THE TIME IS, IT SHOULD NOT CHANGE THE VALUE OF THE PENALTY. IT SHOULD LOOK LIKE SOMETHING LIKE THIS:
-        # t0 = ocp.node_time(phase_idx=penalty.phase_idx, node_idx=penalty.node_index)
-        return 0
+        if penalty.multinode_penalty:
+            phases, nodes, _ = _get_multinode_indices(penalty, is_constructing_penalty=False)
+            phase, node = phases[0], nodes[0]
+        else:
+            phase, node = penalty.phase, penalty.node_idx[index]
+
+        return get_t0(phase, node)
 
     @staticmethod
     def phases_dt(penalty, ocp, get_all_dt: Callable):
@@ -122,8 +123,9 @@ class PenaltyHelpers:
         return u
 
     @staticmethod
-    def parameters(penalty, get_parameter: Callable):
-        p = get_parameter()
+    def parameters(penalty, index, get_parameter_decision: Callable):
+        node = penalty.node_idx[index]
+        p = get_parameter_decision(penalty.phase, node, None)
         return _reshape_to_vector(p)
 
     @staticmethod

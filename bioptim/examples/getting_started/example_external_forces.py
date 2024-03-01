@@ -9,6 +9,7 @@ Please note that the point of application of the external forces are defined fro
 It is expected to act on a segment in the global_reference_frame. BiorbdBioptim expect a list of list[segment_name, vector]
 where the vector is a 6x1 array (Mx, My, Mz, Fx, Fy, Fz)
 """
+
 import platform
 
 from bioptim import (
@@ -75,8 +76,8 @@ def prepare_ocp(
     dynamics = DynamicsList()
     dynamics.add(
         # This must be PhaseDynamics.ONE_PER_NODE since external forces change at each node within the phase
-        DynamicsFcn.TORQUE_DRIVEN, 
-        expand_dynamics=expand_dynamics, 
+        DynamicsFcn.TORQUE_DRIVEN,
+        expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         external_forces=external_forces,
     )

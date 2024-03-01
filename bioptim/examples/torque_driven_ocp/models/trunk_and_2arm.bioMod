@@ -29,8 +29,8 @@ endsegment
 
 segment	RightArm
     parent	Pelvis
-    RT 0 0 0 xyz 0.1875 0.0205 0.4719
-    rotations	q
+    RT 0 0 0 xyz -0.1875 0.0205 0.4719
+    rotations	y
     mass	3.106
     inertia
         0.0910283	0.00000	    0.00000
@@ -58,7 +58,7 @@ endsegment
 segment	LeftArm
     parent	Pelvis
     RT 0 0 0 xyz 0.1875 0.0205 0.4719
-    rotations	q
+    rotations	y
     mass	3.106
     inertia
         0.0910283	0.00000	    0.00000

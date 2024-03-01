@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+
 import pytest
 import numpy as np
 from bioptim import (

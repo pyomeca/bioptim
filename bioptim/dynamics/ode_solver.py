@@ -18,16 +18,14 @@ class OdeSolverBase:
         Properly set the integration in an nlp
     """
 
-    def __init__(self, allow_free_variables: bool = False, duplicate_starting_point: bool = False):
+    def __init__(self, duplicate_starting_point: bool = False):
         """
         Parameters
         ----------
-        allow_free_variables: bool
-            If the free variables are allowed in the integrator's casadi function
         duplicate_starting_point: bool
             If the starting point should be duplicated in the integrator's casadi function
         """
-        self.allow_free_variables = allow_free_variables
+
         self.duplicate_starting_point = duplicate_starting_point
 
     @property
@@ -159,11 +157,9 @@ class OdeSolverBase:
         -------
         The symbolic parameters
         """
-        return nlp.parameters.cx
+        return nlp.parameters.scaled.cx_start
 
-    def initialize_integrator(
-        self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False, **extra_opt
-    ) -> Callable:
+    def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt) -> Callable:
         """
         Initialize the integrator
 
@@ -177,8 +173,6 @@ class OdeSolverBase:
             The current dynamics to resolve (that can be referred to nlp.dynamics_func[index])
         node_index
             The index of the node currently initialized
-        allow_free_variables
-            If the free variables are allowed in the integrator's casadi function
         extra_opt
             Any extra options to pass to the integrator
 
@@ -196,8 +190,6 @@ class OdeSolverBase:
             "cx": nlp.cx,
             "control_type": nlp.control_type,
             "defects_type": self.defects_type,
-            "allow_free_variables": allow_free_variables,
-            "param_scaling": vertcat(*[nlp.parameters[key].scaling.scaling for key in nlp.parameters.keys()]),
             "ode_index": node_index if nlp.dynamics_func[dynamics_index].size2_out("xdot") > 1 else 0,
             "duplicate_starting_point": self.duplicate_starting_point,
             **extra_opt,
@@ -206,14 +198,16 @@ class OdeSolverBase:
         ode = {
             "t": self.t_ode(nlp),
             "x": self.x_ode(nlp),
-            "p": self.p_ode(nlp),
+            "u": self.p_ode(nlp),
             "a": self.a_ode(nlp),
             "param": self.param_ode(nlp),
             "ode": nlp.dynamics_func[dynamics_index],
             # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
-            "implicit_ode": nlp.implicit_dynamics_func[dynamics_index]
-            if len(nlp.implicit_dynamics_func) > 0
-            else nlp.implicit_dynamics_func,
+            "implicit_ode": (
+                nlp.implicit_dynamics_func[dynamics_index]
+                if len(nlp.implicit_dynamics_func) > 0
+                else nlp.implicit_dynamics_func
+            ),
         }
 
         return nlp.ode_solver.integrator(ode, ode_opt)
@@ -231,43 +225,23 @@ class OdeSolverBase:
         """
 
         # Primary dynamics
-        dynamics = [
-            nlp.ode_solver.initialize_integrator(
-                ocp, nlp, dynamics_index=0, node_index=0, allow_free_variables=self.allow_free_variables
-            )
-        ]
+        dynamics = [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=0)]
         if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
             dynamics = dynamics * nlp.ns
         else:
             for node_index in range(1, nlp.ns):
-                dynamics.append(
-                    nlp.ode_solver.initialize_integrator(
-                        ocp,
-                        nlp,
-                        dynamics_index=0,
-                        node_index=node_index,
-                        allow_free_variables=self.allow_free_variables,
-                    )
-                )
+                dynamics.append(nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=0, node_index=node_index))
         nlp.dynamics = dynamics
 
         # Extra dynamics
         extra_dynamics = []
         for i in range(1, len(nlp.dynamics_func)):
-            extra_dynamics += [
-                nlp.ode_solver.initialize_integrator(
-                    ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True
-                )
-            ]
+            extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0)]
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 extra_dynamics = extra_dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
-                    extra_dynamics += [
-                        nlp.ode_solver.initialize_integrator(
-                            ocp, nlp, dynamics_index=i, node_index=0, allow_free_variables=True
-                        )
-                    ]
+                    extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0)]
             # TODO include this in nlp.dynamics so the index of nlp.dynamics_func and nlp.dynamics match
             nlp.extra_dynamics.append(extra_dynamics)
 
@@ -564,9 +538,7 @@ class OdeSolver:
         def a_ode(self, nlp):
             return nlp.algebraic_states.scaled.cx
 
-        def initialize_integrator(
-            self, ocp, nlp, dynamics_index: int, node_index: int, allow_free_variables: bool = False, **extra_opt
-        ):
+        def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt):
             raise NotImplementedError("CVODES is not yet implemented")
 
             if extra_opt:
@@ -610,7 +582,6 @@ class OdeSolver:
                     ),
                     ["t_span", "x0", "u", "p", "a"],
                     ["xf", "xall"],
-                    {"allow_free": allow_free_variables},
                 )
             ]
 

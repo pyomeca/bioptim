@@ -87,6 +87,8 @@ ObjectiveList
 # --- Managing the parameters --- #
 ParameterList
     A list of Parameter
+ParameterConstrainer
+    A placeholder for the ParameterList
 
 
 # --- Managing the boundaries of the variables --- #
@@ -188,6 +190,7 @@ from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, 
 from .limits.path_conditions import BoundsList, InitialGuessList
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_controller import PenaltyController
+from .limits.penalty_helpers import PenaltyHelpers
 from .misc.enums import (
     Axis,
     Node,
@@ -216,7 +219,7 @@ from .optimization.receding_horizon_optimization import (
     CyclicMovingHorizonEstimator,
     MultiCyclicNonlinearModelPredictiveControl,
 )
-from .optimization.parameters import ParameterList
+from .optimization.parameters import ParameterList, ParameterContainer
 from .optimization.solution.solution import Solution
 from .optimization.solution.solution_data import SolutionMerge, TimeAlignment
 from .optimization.optimization_variable import OptimizationVariableList

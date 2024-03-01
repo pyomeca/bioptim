@@ -85,15 +85,6 @@ class BioModel(Protocol):
         """Get all segments"""
         return ()
 
-    def homogeneous_matrices_in_global(self, q, segment_id, inverse=False) -> tuple:
-        """
-        Get the homogeneous matrices of all segments in the world frame,
-        such as: P_R0 = T_R0_R1 * P_R1
-        with P_R0 the position of any point P in the world frame,
-        T_R0_R1 the homogeneous matrix that transform any point in R1 frame to R0.
-        P_R1 the position of any point P in the segment R1 frame.
-        """
-
     def homogeneous_matrices_in_child(self, segment_id) -> MX:
         """
         Get the homogeneous matrices of one segment in its parent frame,

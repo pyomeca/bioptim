@@ -45,6 +45,7 @@ class ExampleType(Enum):
 
 
 def sensory_reference(
+    time: cas.MX | cas.SX,
     states: cas.MX | cas.SX,
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
@@ -108,10 +109,10 @@ def prepare_socp(
         motor_noise_magnitude=motor_noise_magnitude,
         sensory_reference=sensory_reference,
         n_references=4,  # This number must be in agreement with what is declared in sensory_reference
+        n_feedbacks=4,
         n_noised_states=4,
         n_noised_controls=2,
         friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
-        use_sx=use_sx,
     )
 
     n_tau = bio_model.nb_tau
@@ -186,6 +187,7 @@ def prepare_socp(
         with_cholesky=with_cholesky,
         expand_dynamics=False,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+        with_friction=True,
     )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf

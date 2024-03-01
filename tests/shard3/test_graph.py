@@ -49,7 +49,7 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
 
     # noinspection PyTypeChecker
     model: BiorbdModel = controller.model
-    markers = controller.mx_to_cx("markers", model.model.markers, controller.states["q"])
+    markers = controller.mx_to_cx("markers", model.model.markers, controller.q)
     return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
 
@@ -291,7 +291,7 @@ def prepare_ocp_parameters(
     u_bounds["tau"][1, :] = 0
 
     # Define the parameter to optimize
-    parameters = ParameterList()
+    parameters = ParameterList(use_sx=use_sx)
     parameter_objectives = ParameterObjectiveList()
     parameter_bounds = BoundsList()
     parameter_init = InitialGuessList()
@@ -318,7 +318,7 @@ def prepare_ocp_parameters(
             weight=1000,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_g / g_scaling.scaling.T,  # Make sure your target fits the scaling
+            target=target_g / g_scaling.scaling,  # Make sure your target fits the scaling
             key="gravity_xyz",
         )
 
@@ -340,7 +340,7 @@ def prepare_ocp_parameters(
             weight=100,
             quadratic=True,
             custom_type=ObjectiveFcn.Parameter,
-            target=target_m / m_scaling.scaling.T,  # Make sure your target fits the scaling
+            target=target_m / m_scaling.scaling,  # Make sure your target fits the scaling
             key="mass",
         )
 
@@ -478,6 +478,8 @@ def test_parameters(phase_dynamics):
     optim_mass = True
     bioptim_folder = TestUtils.bioptim_folder()
     model_path = bioptim_folder + "/examples/getting_started/models/pendulum.bioMod"
+    target_g = np.zeros((3, 1))
+    target_g[2] = -9.81
     ocp = prepare_ocp_parameters(
         biorbd_model_path=model_path,
         final_time=3,
@@ -488,7 +490,7 @@ def test_parameters(phase_dynamics):
         max_g=np.array([1, 1, -5]),
         min_m=10,
         max_m=30,
-        target_g=np.array([0, 0, -9.81]),
+        target_g=target_g,
         target_m=20,
         phase_dynamics=phase_dynamics,
     )

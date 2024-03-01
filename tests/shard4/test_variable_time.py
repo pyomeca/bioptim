@@ -21,6 +21,7 @@ from bioptim import (
     PenaltyController,
     PhaseDynamics,
     SolutionMerge,
+    VariableScaling,
 )
 from bioptim.optimization.solution.solution import Solution
 
@@ -93,7 +94,7 @@ def prepare_ocp(phase_time_constraint, use_parameter, phase_dynamics):
     u_bounds.add("tau", min_bound=[tau_min] * bio_model[1].nb_tau, max_bound=[tau_max] * bio_model[1].nb_tau, phase=1)
     u_bounds.add("tau", min_bound=[tau_min] * bio_model[2].nb_tau, max_bound=[tau_max] * bio_model[2].nb_tau, phase=2)
 
-    parameters = ParameterList()
+    parameters = ParameterList(use_sx=False)
     parameter_bounds = BoundsList()
     parameter_init = InitialGuessList()
     parameter_objectives = ParameterObjectiveList()
@@ -111,10 +112,7 @@ def prepare_ocp(phase_time_constraint, use_parameter, phase_dynamics):
         max_g = -6
         target_g = -8
         parameters.add(
-            "gravity_z",
-            my_parameter_function,
-            size=1,
-            extra_value=1,
+            "gravity_z", my_parameter_function, size=1, extra_value=1, scaling=VariableScaling("gravity_z", [1])
         )
         parameter_objectives.add(
             my_target_function, weight=10, quadratic=True, custom_type=ObjectiveFcn.Parameter, target=target_g

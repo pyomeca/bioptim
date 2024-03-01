@@ -3,6 +3,7 @@ This example presents how to implement a holonomic constraint in bioptim.
 The simulation is two single pendulum that are forced to be coherent with a holonomic constraint. It is then a double
 pendulum simulation.
 """
+
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -220,8 +221,8 @@ def main():
 
     time = sol.decision_time(to_merge=SolutionMerge.NODES)
     plt.title("Lagrange multipliers of the holonomic constraint")
-    plt.plot(time[::2], lambdas[0, :], label="y")
-    plt.plot(time[::2], lambdas[1, :], label="z")
+    plt.plot(time, lambdas[0, :], label="y")
+    plt.plot(time, lambdas[1, :], label="z")
     plt.xlabel("Time (s)")
     plt.ylabel("Lagrange multipliers (N)")
     plt.legend()

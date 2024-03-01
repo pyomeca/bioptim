@@ -1,7 +1,7 @@
 from typing import Callable, Any
 
 import casadi
-from casadi import SX, MX, Function, horzcat
+from casadi import SX, MX, Function, horzcat, vertcat
 
 from .optimization_variable import OptimizationVariable, OptimizationVariableContainer
 from ..dynamics.ode_solver import OdeSolver
@@ -10,6 +10,7 @@ from ..misc.enums import ControlType, PhaseDynamics
 from ..misc.options import OptionList
 from ..misc.mapping import NodeMapping
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
+from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..models.protocols.biomodel import BioModel
 from ..models.protocols.holonomic_biomodel import HolonomicBioModel
 from ..models.protocols.variational_biomodel import VariationalBioModel
@@ -62,7 +63,7 @@ class NonLinearProgram:
         The number of shooting points
     ode_solver: OdeSolverBase
         The chosen ode solver
-    parameters: ParameterList
+    parameters: ParameterContainer
         Reference to the optimized parameters in the underlying ocp
     par_dynamics: casadi.Function
         The casadi function of the threaded dynamics
@@ -156,7 +157,6 @@ class NonLinearProgram:
         self.n_threads = None
         self.ns = None
         self.ode_solver = OdeSolver.RK4()
-        self.parameters = []
         self.par_dynamics = None
         self.phase_idx = None
         self.phase_mapping = None
@@ -193,6 +193,10 @@ class NonLinearProgram:
         self.states = OptimizationVariableContainer(self.phase_dynamics)
         self.states_dot = OptimizationVariableContainer(self.phase_dynamics)
         self.controls = OptimizationVariableContainer(self.phase_dynamics)
+        # parameters is currently a clone of ocp.parameters, but should hold phase parameters
+        from ..optimization.parameters import ParameterContainer
+
+        self.parameters = ParameterContainer()
         self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
 
@@ -256,7 +260,10 @@ class NonLinearProgram:
         """
         if node_idx >= self.ns:
             return 1
-        return self.dynamics[node_idx].shape_xall[1]
+        if self.ode_solver.is_direct_collocation:
+            return self.dynamics[node_idx].shape_xall[1] - (1 if not self.ode_solver.duplicate_starting_point else 0)
+        else:
+            return self.dynamics[node_idx].shape_xall[1]
 
     @property
     def n_controls_nodes(self) -> int:
@@ -440,7 +447,9 @@ class NonLinearProgram:
             elif hasattr(var, "cx_start"):
                 cx += [var.cx_start]
             else:
-                cx += [var.cx]  # This is a temporary hack until parameters are included as OptimizationVariables
+                raise RuntimeError(
+                    f"Variable {var} is not of the good type ({type(var)}), it should be an OptimizationVariable or a Parameter."
+                )
 
         return NonLinearProgram.to_casadi_func(name, symbolic_expression, *mx)(*cx)
 
@@ -496,3 +505,66 @@ class NonLinearProgram:
                 )
 
         return func.expand() if expand else func
+
+    def node_time(self, node_idx: int):
+        """
+        Gives the time for a specific index
+
+        Parameters
+        ----------
+        node_idx: int
+          Index of the node
+
+        Returns
+        -------
+        The time for a specific index
+        """
+        if node_idx < 0 or node_idx > self.ns:
+            return ValueError(f"node_index out of range [0:{self.ns}]")
+        return self.tf / self.ns * node_idx
+
+    def get_var_from_states_or_controls(
+        self, key: str, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym = None
+    ) -> MX:
+        """
+        This function returns the requested variable from the states, controls, or algebraic_states.
+        If the variable is present in more than one type of variables, it returns the following priority:
+        1) states
+        2) controls
+        3) algebraic_states
+        If the variable is split in its roots and joints components, it returns the concatenation of for the states,
+        and only the joints for the controls.
+        Please note that this function is not meant to be used by the user directly, but should be an internal function.
+
+        Parameters
+        ----------
+        key: str
+            The name of the variable to return
+        states: MX.sym
+            The states
+        controls: MX.sym
+            The controls
+        algebraic_states: MX.sym
+            The algebraic_states
+        """
+        if key in self.states:
+            out_nlp, out_var = (self.states[key], states)
+            out = DynamicsFunctions.get(out_nlp, out_var)
+        elif f"{key}_roots" in self.states and f"{key}_joints" in self.states:
+            out_roots_nlp, out_roots_var = (self.states[f"{key}_roots"], states)
+            out_roots = DynamicsFunctions.get(out_roots_nlp, out_roots_var)
+            out_joints_nlp, out_joints_var = (self.states[f"{key}_joints"], states)
+            out_joints = DynamicsFunctions.get(out_joints_nlp, out_joints_var)
+            out = vertcat(out_roots, out_joints)
+        elif key in self.controls:
+            out_nlp, out_var = (self.controls[key], controls)
+            out = DynamicsFunctions.get(out_nlp, out_var)
+        elif f"{key}_joints" in self.controls:
+            out_joints_nlp, out_joints_var = (self.controls[f"{key}_joints"], controls)
+            out = DynamicsFunctions.get(out_joints_nlp, out_joints_var)
+        elif key in self.algebraic_states:
+            out_nlp, out_var = (self.algebraic_states[key], algebraic_states)
+            out = DynamicsFunctions.get(out_nlp, out_var)
+        else:
+            raise RuntimeError(f"{key} not found in states or controls")
+        return out

@@ -91,7 +91,6 @@ examples_ = OrderedDict(
             OrderedDict(
                 [
                     ("Multiphase time constraint", "multiphase_time_constraint.py"),
-                    ("Pendulum min time Lagrange", "pendulum_min_time_Lagrange.py"),
                     ("Pendulum min time Mayer", "pendulum_min_time_Mayer.py"),
                     ("Time constraint", "time_constraint.py"),
                 ]
@@ -122,7 +121,7 @@ examples_ = OrderedDict(
                     ("spring load", "spring_load.py"),
                     ("Track markers 2D pendulum", "track_markers_2D_pendulum.py"),
                     ("Track markers with torque actuators", "track_markers_with_torque_actuators.py"),
-                    ("Trampo quaternions", "trampo_quaternions.py"),
+                    ("quaternions", "example_quaternions.py"),
                     ("Soft contact", "example_soft_contact.py"),
                 ]
             ),

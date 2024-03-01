@@ -1186,6 +1186,8 @@ constraint_list.add(constraint)
 ### Class: ConstraintFcn
 The `ConstraintFcn` class is the declaration of all the already available constraints in `bioptim`. 
 Since this is an Enum, it is possible to use the tab key on the keyboard to dynamically list them all, depending on the capabilities of your IDE. The existing contraint functions in alphabetical order:
+- **BOUND_STATE**  &mdash; Adds bounds on states. Same aim as `bounds["state_name"] = min_bounds, max_bounds` but with a different numerical behaviour.
+- **BOUND_CONTROL**  &mdash; Adds bounds on controls. Same aim as `bounds["control_name"] = min_bounds, max_bounds` but with a different numerical behaviour.
 - **NON_SLIPPING**  &mdash; Adds a constraint of static friction at contact points constraining for small tangential forces.  
 This constraint assumes that the normal forces is positive (that is having an additional TRACK_CONTACT_FORCES with `max_bound=np.inf`). The extra parameters `tangential_component_idx: int`, `normal_component_idx: int`, and `static_friction_coefficient: float` must be passed to the `Constraint` constructor.
 - **PROPORTIONAL_CONTROL** &mdash; Links one control to another, such that `u[first_dof] - first_dof_intercept = coef * (u[second_dof] - second_dof_intercept)`. The extra parameters `first_dof: int` and `second_dof: int` must be passed to the `Constraint` constructor.
@@ -1997,6 +1999,12 @@ can be held in the solution. Another goal would be to reload fast a previously s
 ### The [pendulum.py](./bioptim/examples/getting_started/pendulum.py) file
 This example is another way to present the pendulum example of the 'Getting started' section.
 
+### The [pendulum_constrained_states_controls.py](./bioptim/examples/getting_started/pendulum_constrained_states_controls.py) file 
+This example is a clone of the pendulum.py example with the difference that the
+states and controls are constrained instead of bounded. Sometimes the OCP converges faster with constraints than boundaries. 
+
+It is designed to show how to use `bound_state` and `bound_control`.
+
 ## Torque-driven OCP
 In this section, you will find different examples showing how to implement torque-driven optimal control programs.
 
@@ -2090,7 +2098,7 @@ Let us take a look at the structure of the code. First, tau_min, tau_max, and ta
 to -1, 1 and 0 if the integer `actuator_type` (a parameter of the `prepare_ocp` function) equals 1. 
 In this case, the dynamics function used is `DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN`. 
 
-### The [trampo_quaternions.py](./bioptim/examples/torque_driven_ocp/trampo_quaternions.py) file
+### The [example_quaternions.py](./bioptim/examples/torque_driven_ocp/example_quaternions.py) file
 This example uses a representation of a human body by a trunk_leg segment and two arms.
 It is designed to show how to use a model that has quaternions in their degrees of freedom.
 
@@ -2244,24 +2252,6 @@ if n_phases == 3:
         ConstraintFcn.TIME_CONSTRAINT, node=Node.END, min_bound=time_min[2], max_bound=time_max[2], phase=2
     )
 ```
-
-### The [pendulum_min_time_Lagrange.py](./bioptim/examples/optimal_time_ocp/pendulum_min_time_Lagrange.py) file
-This is a clone of the example/getting_started/pendulum.py where a pendulum must be balanced. The difference is that
-the time to perform the task is now free and minimized by the solver, as shown in the definition of the objective 
-function used for this example:
-
-```python
-objective_functions = ObjectiveList()
-objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_TIME, weight=1)
-```
-
-Please note that a weight of -1 will maximize time. 
-
-This example shows how to define such an optimal
-control program with a Lagrange criterion (integral of dt).
-
-The difference between Mayer and Lagrange minimization time is that the former can define bounds to
-the values, while the latter is the most common way to define optimal time. 
 
 ### The [pendulum_min_time_Mayer.py](./bioptim/examples/optimal_time_ocp/pendulum_min_time_Mayer.py)  file
 This is a clone of the example/getting_started/pendulum.py where a pendulum must be balanced. The difference is that

@@ -1,6 +1,7 @@
 """
 Test for file IO
 """
+
 import os
 import pickle
 import re
@@ -133,15 +134,6 @@ def test_pendulum(ode_solver, use_sx, n_threads, phase_dynamics):
         return
 
     sol = ocp.solve()
-
-    # Test the bioptim version feature (this is the only test)
-    version_dic = sol.bioptim_version_used
-    print(version_dic["commit_id"])
-    print(version_dic["date"])
-    print(version_dic["branch"])
-    print(version_dic["tag"].split("-")[0])
-    print(version_dic["bioptim_version"])
-    print(sol.bioptim_version_used)
 
     # Check objective function value
     f = np.array(sol.cost)
@@ -1084,7 +1076,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
     weight = 10
     target = []
     fun = ocp.nlp[0].J_internal[0].weighted_function
-    dt = sol.t_span[0][-1]
+    dt = sol.t_span()[0][-1]
     t_out = []
     x_out = np.ndarray((0, 1))
     u_out = np.ndarray((0, 1))

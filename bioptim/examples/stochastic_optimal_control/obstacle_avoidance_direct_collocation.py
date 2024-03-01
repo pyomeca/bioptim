@@ -110,7 +110,6 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
         dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
             time, states, controls, parameters, algebraic_states, nlp, with_noise=True
         ),
-        allow_free_variables=True,
     )
 
 
@@ -173,10 +172,7 @@ def prepare_socp(
     problem_type = socp_type
 
     bio_model = MassPointModel(
-        socp_type=problem_type,
-        motor_noise_magnitude=motor_noise_magnitude,
-        polynomial_degree=polynomial_degree,
-        use_sx=use_sx,
+        socp_type=problem_type, motor_noise_magnitude=motor_noise_magnitude, polynomial_degree=polynomial_degree
     )
 
     nb_q = bio_model.nb_q
@@ -187,7 +183,7 @@ def prepare_socp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=1)
     objective_functions.add(
-        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+        ObjectiveFcn.Mayer.MINIMIZE_CONTROL,
         key="u",
         weight=1e-2 / (2 * n_shooting),
         node=Node.ALL_SHOOTING,
@@ -344,7 +340,7 @@ def main():
     n_shooting = 40
     final_time = 4
     motor_noise_magnitude = np.array([1, 1])
-    bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude, use_sx=use_sx)
+    bio_model = MassPointModel(socp_type=socp_type, motor_noise_magnitude=motor_noise_magnitude)
 
     q_init = np.zeros((bio_model.nb_q, (polynomial_degree + 2) * n_shooting + 1))
     zq_init = initialize_circle((polynomial_degree + 1) * n_shooting + 1)
@@ -404,7 +400,7 @@ def main():
 
     ax[1, 0].plot(tgrid, q[0, :: polynomial_degree + 2], "--", label="px")
     ax[1, 0].plot(tgrid, q[1, :: polynomial_degree + 2], "-", label="py")
-    ax[1, 0].step(tgrid, u.T, "-.", label="u")
+    ax[1, 0].step(tgrid[:-1], u.T, "-.", label="u")
     ax[1, 0].set_xlabel("t")
 
     if is_stochastic:

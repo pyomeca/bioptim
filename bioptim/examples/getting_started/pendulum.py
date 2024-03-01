@@ -91,7 +91,7 @@ def prepare_ocp(
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
 
-    # Path constraint
+    # Path bounds
     x_bounds = BoundsList()
     x_bounds["q"] = bio_model.bounds_from_ranges("q")
     x_bounds["q"][:, [0, -1]] = 0  # Start and end at 0...
@@ -104,7 +104,7 @@ def prepare_ocp(
     x_init["q"] = [0] * bio_model.nb_q
     x_init["qdot"] = [0] * bio_model.nb_qdot
 
-    # Define control path constraint
+    # Define control path bounds
     n_tau = bio_model.nb_tau
     u_bounds = BoundsList()
     u_bounds["tau"] = [-100] * n_tau, [100] * n_tau  # Limit the strength of the pendulum to (-100 to 100)...
