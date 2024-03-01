@@ -42,10 +42,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         The joint indexes are not mandatory because a HolonomicBiorbdModel can be used without the partitioned dynamics,
         for instance in VariationalOptimalControlProgram.
         """
-        if dependent_joint_index is None and independent_joint_index is None:
-            dependent_joint_index = []
-            independent_joint_index = [i for i in range(self.nb_q)]
-        elif dependent_joint_index is None or independent_joint_index is None:
+        dependent_joint_index = dependent_joint_index or []
+        independent_joint_index = independent_joint_index or [i for i in range(self.nb_q)]
+
+        if (dependent_joint_index is None) != (independent_joint_index is None):
             raise ValueError(
                 "You need to specify both dependent_joint_index and independent_joint_index or none of them."
             )
@@ -82,6 +82,20 @@ class HolonomicBiorbdModel(BiorbdModel):
                 constraints_list[constraints_name]["constraints"],
                 constraints_list[constraints_name]["constraints_jacobian"],
                 constraints_list[constraints_name]["constraints_double_derivative"],
+            )
+
+        if dependent_joint_index and independent_joint_index:
+            self.check_dependant_jacobian()
+
+    def check_dependant_jacobian(self):
+        q_test = MX.sym("q_test", self.nb_q)
+        partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q_test)
+        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
+        shape = partitioned_constraints_jacobian_v.shape
+        if shape[0] != shape[1]:
+            raise ValueError(
+                f"The shape of the dependent joint Jacobian should be square. Got: {shape}."
+                f"Please consider checking the dimension of the holonomic constraints Jacobian."
             )
 
     @property
@@ -317,6 +331,9 @@ class HolonomicBiorbdModel(BiorbdModel):
         ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
         https://doi.org/10.5194/ms-4-199-2013, 2013.
         """
+        self.check_state_u_size(state_u)
+        self.check_state_v_size(state_v)
+
         q = MX() if isinstance(state_u, MX) else DM()
         for i in range(self.nb_q):
             if i in self._independent_joint_index:
@@ -325,6 +342,14 @@ class HolonomicBiorbdModel(BiorbdModel):
                 q = vertcat(q, state_v[self._dependent_joint_index.index(i)])
 
         return q
+
+    def check_state_u_size(self, state_u):
+        if state_u.shape[0] != self.nb_independent_joints:
+            raise ValueError(f"Length of state u size should be: {self.nb_independent_joints}. Got: {state_u.shape[0]}")
+
+    def check_state_v_size(self, state_v):
+        if state_v.shape[0] != self.nb_dependent_joints:
+            raise ValueError(f"Length of state v size should be: {self.nb_dependent_joints}. Got: {state_v.shape[0]}")
 
     def compute_q_v(self, q_u: MX | DM, q_v_init: MX | DM = None) -> MX | DM:
         """
