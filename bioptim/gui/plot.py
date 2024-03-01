@@ -20,15 +20,10 @@ DEFAULT_COLORS = {
     PlotType.PLOT: "tab:green",
     PlotType.INTEGRATED: "tab:brown",
     PlotType.STEP: "tab:orange",
-    PlotType.POINT: "tab:purple"
+    PlotType.POINT: "tab:purple",
 }
 
-DEFAULT_LINESTYLES = {
-    PlotType.PLOT: "-",
-    PlotType.INTEGRATED: None,
-    PlotType.STEP: "-",
-    PlotType.POINT: None
-}
+DEFAULT_LINESTYLES = {PlotType.PLOT: "-", PlotType.INTEGRATED: None, PlotType.STEP: "-", PlotType.POINT: None}
 
 
 class CustomPlot:
@@ -62,21 +57,21 @@ class CustomPlot:
     """
 
     def __init__(
-            self,
-            update_function: Callable,
-            plot_type: PlotType = PlotType.PLOT,
-            axes_idx: BiMapping | tuple | list = None,
-            legend: tuple | list = None,
-            combine_to: str = None,
-            color: str = None,
-            linestyle: str = None,
-            ylim: tuple | list = None,
-            bounds: Bounds = None,
-            node_idx: list | slice | range = None,
-            label: list = None,
-            compute_derivative: bool = False,
-            integration_rule: QuadratureRule = QuadratureRule.RECTANGLE_LEFT,
-            **parameters: Any,
+        self,
+        update_function: Callable,
+        plot_type: PlotType = PlotType.PLOT,
+        axes_idx: BiMapping | tuple | list = None,
+        legend: tuple | list = None,
+        combine_to: str = None,
+        color: str = None,
+        linestyle: str = None,
+        ylim: tuple | list = None,
+        bounds: Bounds = None,
+        node_idx: list | slice | range = None,
+        label: list = None,
+        compute_derivative: bool = False,
+        integration_rule: QuadratureRule = QuadratureRule.RECTANGLE_LEFT,
+        **parameters: Any,
     ):
         """
         Parameters
@@ -206,12 +201,12 @@ class PlotOcp:
     """
 
     def __init__(
-            self,
-            ocp,
-            automatically_organize: bool = True,
-            show_bounds: bool = False,
-            shooting_type: Shooting = Shooting.MULTIPLE,
-            integrator: SolutionIntegrator = SolutionIntegrator.OCP,
+        self,
+        ocp,
+        automatically_organize: bool = True,
+        show_bounds: bool = False,
+        shooting_type: Shooting = Shooting.MULTIPLE,
+        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
     ):
         """
         Prepares the figures during the simulation
@@ -470,8 +465,11 @@ class PlotOcp:
                     else:
                         label = None
 
-                    color = (self.custom_plots[variable][i].color if self.custom_plots[variable][i].color else
-                             DEFAULT_COLORS[plot_type])
+                    color = (
+                        self.custom_plots[variable][i].color
+                        if self.custom_plots[variable][i].color
+                        else DEFAULT_COLORS[plot_type]
+                    )
 
                     if plot_type == PlotType.PLOT:
                         zero = np.zeros((t.shape[0], 1))
@@ -710,7 +708,7 @@ class PlotOcp:
         self.__update_axes()
 
     def _compute_y_from_plot_func(
-            self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a
+        self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a
     ):
         """
         Compute the y data from the plot function
