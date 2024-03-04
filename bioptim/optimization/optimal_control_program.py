@@ -1,20 +1,19 @@
-from typing import Callable, Any
 from math import inf
+from typing import Callable, Any
 
-import numpy as np
 import biorbd_casadi as biorbd
 import casadi
-from casadi import MX, SX, sum1, horzcat, vertcat
+import numpy as np
+from casadi import MX, SX, sum1, horzcat
 from matplotlib import pyplot as plt
 
-from .optimization_vector import OptimizationVectorHelper
 from .non_linear_program import NonLinearProgram as NLP
+from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProblem
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
-from ..gui.plot import CustomPlot, PlotOcp
+from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
-from ..models.protocols.biomodel import BioModel
-from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
+from ..gui.plot import CustomPlot, PlotOcp
 from ..interfaces import Solver
 from ..interfaces.abstract_options import GenericSolver
 from ..limits.constraints import (
