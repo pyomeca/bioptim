@@ -31,12 +31,10 @@ def test_continuity_as_objective(phase_dynamics):
     sol = ocp.solve()
 
     expected_q = [[0.0, -0.1820716, 0.0502083, -0.1376], [0.0, 0.2059882, -0.3885045, 2.9976372]]
-
     expected_qdot = [[0.0, 0.13105439, -3.43794783, -23.6570729], [0.0, -0.66178869, 3.07970721, -19.12526049]]
-
     expected_controls = [[-1.49607534, -0.24541618, -19.12881238], [0.0, 0.0, 0.0]]
-    #
     expected_iterations = range(300, 600)  # 436 on my laptop @ipuch
+
     np.testing.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["q"], expected_q)
     np.testing.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"], expected_qdot)
     np.testing.assert_almost_equal(sol.decision_controls(to_merge=SolutionMerge.NODES)["tau"], expected_controls)
@@ -51,7 +49,6 @@ def test_continuity_as_objective(phase_dynamics):
         minimize_time=False,
     )
     sol_second_pass = ocp_second_pass.solve()
-    # check q in integrality, qdot,controls, vector, cost, iterations
 
     expected_q = [[0.0, -0.12359617, 0.21522375, -0.1376], [0.0, 0.06184961, -0.37118107, 2.9976372]]
     expected_qdot = [[0.0, 0.14235975, -1.10526128, -4.21797828], [0.0, -0.55992744, 1.17407988, -1.06473819]]
@@ -119,7 +116,6 @@ def test_continuity_as_objective(phase_dynamics):
     ]
 
     expected_cost = 261.095
-
     expected_detailed_cost = [
         {
             "name": "Lagrange.MINIMIZE_CONTROL",
@@ -127,8 +123,8 @@ def test_continuity_as_objective(phase_dynamics):
             "cost_value": -28.003864114406223,
         }
     ]
-
     expected_iterations = range(5, 35)  # 20 on my laptop @ipuch
+
     np.testing.assert_almost_equal(sol_second_pass.decision_states(to_merge=SolutionMerge.NODES)["q"], expected_q)
     np.testing.assert_almost_equal(sol_second_pass.decision_states(to_merge=SolutionMerge.NODES)["qdot"], expected_qdot)
     np.testing.assert_almost_equal(sol_second_pass.decision_controls(to_merge=SolutionMerge.NODES)["tau"], expected_tau)
