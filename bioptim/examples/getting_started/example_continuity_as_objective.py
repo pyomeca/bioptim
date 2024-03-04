@@ -15,8 +15,9 @@ User might want to start reading the script by the `main` function to get a bett
 
 import platform
 
-from casadi import sqrt
 import numpy as np
+from casadi import sqrt
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -51,15 +52,16 @@ def out_of_sphere(controller: PenaltyController, y, z):
 
 
 def prepare_ocp_first_pass(
-    biorbd_model_path: str,
-    final_time: float,
-    n_shooting: int,
-    state_continuity_weight: float,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    use_sx: bool = True,
-    n_threads: int = 1,
-    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-    expand_dynamics: bool = True,
+        biorbd_model_path: str,
+        final_time: float,
+        n_shooting: int,
+        state_continuity_weight: float,
+        ode_solver: OdeSolverBase = OdeSolver.RK4(),
+        use_sx: bool = True,
+        n_threads: int = 1,
+        phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+        expand_dynamics: bool = True,
+        minimize_time: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -89,6 +91,8 @@ def prepare_ocp_first_pass(
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
         (for instance IRK is not compatible with expanded dynamics)
+    minimize_time: bool
+        If the time should be minimized
 
     Returns
     -------
@@ -100,7 +104,8 @@ def prepare_ocp_first_pass(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=1, key="tau")
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100)
+    if minimize_time:
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100 / n_shooting)
 
     # Dynamics
     dynamics = Dynamics(
@@ -122,7 +127,7 @@ def prepare_ocp_first_pass(
     n_qdot = bio_model.nb_qdot
     x_init = InitialGuessList()
     x_init["q"] = [0] * n_q
-    x_init["qdot"] = [0] * n_q
+    x_init["qdot"] = [0] * n_qdot
     x_init.add_noise(bounds=x_bounds, magnitude=0.001, n_shooting=n_shooting + 1)
 
     # Define control path constraint
@@ -132,9 +137,8 @@ def prepare_ocp_first_pass(
     u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
     u_bounds["tau"][1, :] = 0  # Prevent the model from actively rotate
 
-    controls = solution.decision_controls(to_merge=SolutionMerge.NODES)
     u_init = InitialGuessList()
-    u_init.add("tau", controls["tau"], interpolation=InterpolationType.EACH_FRAME)
+    u_init["tau"] = [tau_init] * n_tau
     u_init.add_noise(bounds=u_bounds, magnitude=0.01, n_shooting=n_shooting)
 
     constraints = ConstraintList()
@@ -212,11 +216,13 @@ def prepare_ocp_first_pass(
 
 
 def prepare_ocp_second_pass(
-    biorbd_model_path: str,
-    solution: Solution,
-    ode_solver: OdeSolverBase = OdeSolver.RK4(),
-    use_sx: bool = True,
-    n_threads: int = 1,
+        biorbd_model_path: str,
+        n_shooting: int,
+        solution: Solution,
+        ode_solver: OdeSolverBase = OdeSolver.RK4(),
+        use_sx: bool = True,
+        n_threads: int = 1,
+        minimize_time: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -225,12 +231,18 @@ def prepare_ocp_second_pass(
     ----------
     biorbd_model_path: str
         The path to the biorbd model
+    n_shooting: int
+        The number of shooting points to define int the direct multiple shooting program
+    solution: Solution
+        The first pass solution
     ode_solver: OdeSolverBase = OdeSolver.RK4()
         Which type of OdeSolver to use
     use_sx: bool
         If the SX variable should be used instead of MX (can be extensive on RAM)
     n_threads: int
         The number of threads to use in the paralleling (1 = no parallel computing)
+    minimize_time: bool
+        If the time should be minimized
 
     Returns
     -------
@@ -242,7 +254,8 @@ def prepare_ocp_second_pass(
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, weight=1, key="tau")
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100)
+    if minimize_time:
+        objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=100 / n_shooting)
 
     # Dynamics
     dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN)
@@ -255,10 +268,15 @@ def prepare_ocp_second_pass(
     x_bounds["qdot"][:, 0] = 0
 
     # Initial guess
-    states = solution.decision_states(to_merge=SolutionMerge.NODES)
     x_init = InitialGuessList()
-    x_init.add("q", states["q"], interpolation=InterpolationType.EACH_FRAME)
-    x_init.add("qdot", states["qdot"], interpolation=InterpolationType.EACH_FRAME)
+    x_init.add(
+        "q", solution.decision_states(to_merge=SolutionMerge.NODES)["q"], interpolation=InterpolationType.EACH_FRAME
+    )
+    x_init.add(
+        "qdot",
+        solution.decision_states(to_merge=SolutionMerge.NODES)["qdot"],
+        interpolation=InterpolationType.EACH_FRAME,
+    )
 
     # Define control path constraint
     n_tau = bio_model.nb_tau
@@ -270,7 +288,7 @@ def prepare_ocp_second_pass(
     u_init = InitialGuessList()
     u_init.add(
         "tau",
-        solution.controls["tau"][:, :-1],
+        solution.decision_controls(to_merge=SolutionMerge.NODES)["tau"],
         interpolation=InterpolationType.EACH_FRAME,
     )
 
@@ -331,11 +349,13 @@ def prepare_ocp_second_pass(
         node=Node.ALL_SHOOTING,
     )
 
+    final_time = float(solution.decision_time(to_merge=SolutionMerge.NODES)[-1, 0])
+
     return OptimalControlProgram(
         bio_model,
         dynamics,
-        solution.ns,
-        solution.phase_time[-1],
+        n_shooting,
+        final_time,
         x_init=x_init,
         u_init=u_init,
         x_bounds=x_bounds,
@@ -391,7 +411,7 @@ def main():
     solver_second.set_maximum_iterations(10000)
 
     ocp_second = prepare_ocp_second_pass(
-        biorbd_model_path="models/pendulum_maze.bioMod", solution=sol_first, n_threads=3
+        biorbd_model_path="models/pendulum_maze.bioMod", n_shooting=500, solution=sol_first, n_threads=3
     )
 
     # Custom plots
