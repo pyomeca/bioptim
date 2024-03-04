@@ -763,10 +763,10 @@ class Solution:
         """
         TODO: Charbie!
         """
-        if "cov" not in self.ocp.nlp[0].algebraic_states.keys():
-            # Importing StochasticOptimalControlProgram creates a circular import
+        from ...optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
+        if not isinstance(self.ocp, StochasticOptimalControlProgram):
             raise ValueError(
-                "This method is only available for StochasticOptimalControlProgram, thus 'cov' must exist in the algebraic_states to call noisy_integrate."
+                "This method is only available for StochasticOptimalControlProgram."
             )
 
         t_spans, x, u, params, a = self.prepare_integrate(integrator=integrator)
