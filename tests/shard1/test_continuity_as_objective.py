@@ -33,7 +33,7 @@ def test_continuity_as_objective(phase_dynamics):
     expected_q = [[0.0, -0.1820716, 0.0502083, -0.1376], [0.0, 0.2059882, -0.3885045, 2.9976372]]
     expected_qdot = [[0.0, 0.13105439, -3.43794783, -23.6570729], [0.0, -0.66178869, 3.07970721, -19.12526049]]
     expected_controls = [[-1.49607534, -0.24541618, -19.12881238], [0.0, 0.0, 0.0]]
-    expected_iterations = range(300, 600)  # 436 on my laptop @ipuch
+    expected_iterations = range(300, 700)  # 436 on my laptop @ipuch, 639 on Windows Github CI
 
     np.testing.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["q"], expected_q)
     np.testing.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"], expected_qdot)
@@ -55,67 +55,67 @@ def test_continuity_as_objective(phase_dynamics):
     expected_tau = [[-1.16548046, 1.10283517, -27.94121882], [0.0, 0.0, 0.0]]
 
     expected_vector = [
-        0.333333,
-        0,
-        0,
-        0,
-        0,
-        -0.123596,
-        0.0618496,
-        0.14236,
-        -0.559927,
-        0.215224,
-        -0.371181,
-        -1.10526,
-        1.17408,
-        -0.1376,
-        2.99764,
-        -4.21798,
-        -1.06474,
-        -1.16548,
-        0,
-        1.10284,
-        0,
-        -27.9412,
-        0,
+        [0.333333333333333],
+        [0.0],
+        [0.0],
+        [0.0],
+        [0.0],
+        [-0.123596172283089],
+        [0.06184960919155],
+        [0.142359752273267],
+        [-0.559927440453811],
+        [0.215223745187429],
+        [-0.371181072742915],
+        [-1.105261281320264],
+        [1.174079883672672],
+        [-0.137599999999438],
+        [2.99763720171466],
+        [-4.217978284100386],
+        [-1.064738187592947],
+        [-1.16548046161843],
+        [0.0],
+        [1.102835170494119],
+        [0.0],
+        [-27.94121882328191],
+        [0.0],
     ]
     expected_constraints = [
-        1.90126e-15,
-        1.99146e-15,
-        -3.33067e-16,
-        -1.11022e-16,
-        6.10623e-16,
-        5.60663e-15,
-        1.55431e-15,
-        -1.33227e-15,
-        -1.47937e-14,
-        -5.77316e-15,
-        -1.1573e-12,
-        -5.08926e-13,
-        0,
-        -1.30451e-15,
-        -4.04121e-14,
-        1.08612,
-        1.05124,
-        0.991253,
-        0.954385,
-        0.949236,
-        0.9216,
-        0.492353,
-        0.554696,
-        0.620095,
-        1.34023,
-        1.36917,
-        1.38148,
-        1.97149,
-        2.0114,
-        2.03747,
-        2.89311,
-        2.93228,
-        2.95656,
+        [0.000000000000002],
+        [0.000000000000002],
+        [-0.0],
+        [-0.0],
+        [0.000000000000001],
+        [0.000000000000006],
+        [0.000000000000002],
+        [-0.000000000000001],
+        [-0.000000000000015],
+        [-0.000000000000006],
+        [-0.000000000001157],
+        [-0.000000000000509],
+        [0.0],
+        [-0.000000000000001],
+        [-0.00000000000004],
+        [1.086117433798022],
+        [1.051237343203642],
+        [0.991252668915217],
+        [0.954385184294056],
+        [0.949235691291338],
+        [0.921600419952798],
+        [0.492352597230887],
+        [0.554696150939241],
+        [0.620095068306614],
+        [1.340227995529119],
+        [1.369169603766323],
+        [1.381480510093951],
+        [1.97149463098432],
+        [2.011400546027982],
+        [2.037470886662517],
+        [2.893114425666568],
+        [2.932275980994855],
+        [2.956560343780495],
     ]
 
-    expected_cost = 261.095
+    expected_cost = 261.0954331500721
     expected_detailed_cost = [
         {
             "name": "Lagrange.MINIMIZE_CONTROL",
@@ -129,9 +129,9 @@ def test_continuity_as_objective(phase_dynamics):
     np.testing.assert_almost_equal(sol_second_pass.decision_states(to_merge=SolutionMerge.NODES)["qdot"], expected_qdot)
     np.testing.assert_almost_equal(sol_second_pass.decision_controls(to_merge=SolutionMerge.NODES)["tau"], expected_tau)
 
-    np.testing.assert_almost_equal(sol_second_pass.vector, np.array([expected_vector]).T, decimal=4)
-    np.testing.assert_almost_equal(sol_second_pass.constraints, np.array([expected_constraints]).T, decimal=4)
-    np.testing.assert_almost_equal(float(sol_second_pass.cost), expected_cost, decimal=2)
+    np.testing.assert_almost_equal(sol_second_pass.vector, expected_vector)
+    np.testing.assert_almost_equal(sol_second_pass.constraints, expected_constraints)
+    np.testing.assert_almost_equal(float(sol_second_pass.cost), expected_cost)
 
     assert sol_second_pass.detailed_cost[0]["name"] == expected_detailed_cost[0]["name"]
     np.testing.assert_almost_equal(
