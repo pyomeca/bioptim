@@ -233,7 +233,15 @@ class Solution:
 
         if len(sol[0]) != len(all_ns):
             raise ValueError("The time step dt array len must match the number of phases")
-        if sum([len(s) != len(all_ns) if p != 3 and len(sol[p + 1].keys()) != 0 else False for p, s in enumerate(sol[:1])]) != 0:
+        if (
+            sum(
+                [
+                    len(s) != len(all_ns) if p != 3 and len(sol[p + 1].keys()) != 0 else False
+                    for p, s in enumerate(sol[:1])
+                ]
+            )
+            != 0
+        ):
             raise ValueError("The InitialGuessList len must match the number of phases")
 
         if n_param != 0:
@@ -832,27 +840,30 @@ class Solution:
         return [(integrated_states[-1] if shooting_type == Shooting.SINGLE else decision_states[phase_idx]) + dx]
 
     def _remove_integrated_duplicates(self, time_vector, out, shooting_type, to_merge):
-        if (
-                shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE)
-                and SolutionMerge.NODES in to_merge
-        ):
+        if shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE) and SolutionMerge.NODES in to_merge:
             if SolutionMerge.PHASES in to_merge:
                 redundant_index = []
                 merged_out = {}
                 for i in range(len(self.ocp.nlp)):
                     redundant_index.append(
-                        (np.linspace(1, self.ocp.nlp[0].ns * 2 + 1, self.ocp.nlp[0].ns + 1, dtype=int) +
-                         redundant_index[-1][-1]).tolist() if i != 0 else np.linspace(1, self.ocp.nlp[0].ns * 2 + 1,
-                                                                          self.ocp.nlp[0].ns + 1, dtype=int).tolist())
+                        (
+                            np.linspace(1, self.ocp.nlp[0].ns * 2 + 1, self.ocp.nlp[0].ns + 1, dtype=int)
+                            + redundant_index[-1][-1]
+                        ).tolist()
+                        if i != 0
+                        else np.linspace(1, self.ocp.nlp[0].ns * 2 + 1, self.ocp.nlp[0].ns + 1, dtype=int).tolist()
+                    )
                 redundant_index = np.array(redundant_index).flatten().tolist()
                 for key in out.keys():
-                    merged_out[key] = np.delete(out[key][0], redundant_index[:-1])[:-1]
+                    merged_out[key] = np.delete(out[key][0], redundant_index[:-1])[:-1][np.newaxis, :]
                 time_vector = [i for time_vector_sub in time_vector for i in time_vector_sub]
 
             else:
                 merged_out = []
                 for i in range(len(out)):
-                    redundant_index = np.linspace(1, self.ocp.nlp[0].ns * 2 + 1, self.ocp.nlp[0].ns + 1, dtype=int).tolist()
+                    redundant_index = np.linspace(
+                        1, self.ocp.nlp[0].ns * 2 + 1, self.ocp.nlp[0].ns + 1, dtype=int
+                    ).tolist()
                     redundant_index = [0] + redundant_index[:-1]
                     out_per_phase = {}
                     for key in out[i].keys():
@@ -863,7 +874,6 @@ class Solution:
             merged_out = out
 
         return time_vector, merged_out
-
 
     def _integrate_stepwise(self) -> None:
         """
@@ -886,7 +896,7 @@ class Solution:
 
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
-            integrated_sol = solve_ivp_interface(
+            phase_times, integrated_sol = solve_ivp_interface(
                 shooting_type=Shooting.MULTIPLE,
                 nlp=nlp,
                 t=t_spans[p],
