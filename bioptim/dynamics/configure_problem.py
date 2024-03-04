@@ -908,32 +908,28 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states] | tuple[Callable[time, states, controls, param, algebraic_states], ...]
+        dyn_func: Callable[time, states, controls, param, algebraic_states]
             The function to get the derivative of the states
         """
 
         DynamicsFunctions.apply_parameters(nlp)
 
-        if not isinstance(dyn_func, (tuple, list)):
-            dyn_func = (dyn_func,)
+        dynamics_eval = dyn_func(
+            nlp.time_mx,
+            nlp.states.scaled.mx_reduced,
+            nlp.controls.scaled.mx_reduced,
+            nlp.parameters.scaled.mx_reduced,
+            nlp.algebraic_states.scaled.mx_reduced,
+            nlp,
+            **extra_params,
+        )
+        dynamics_dxdt = dynamics_eval.dxdt
+        if isinstance(dynamics_dxdt, (list, tuple)):
+            dynamics_dxdt = vertcat(*dynamics_dxdt)
 
-        for func in dyn_func:
-            dynamics_eval = func(
-                nlp.time_mx,
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.scaled.mx_reduced,
-                nlp.algebraic_states.scaled.mx_reduced,
-                nlp,
-                **extra_params,
-            )
-            dynamics_dxdt = dynamics_eval.dxdt
-            if isinstance(dynamics_dxdt, (list, tuple)):
-                dynamics_dxdt = vertcat(*dynamics_dxdt)
-
-            time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
-            nlp.dynamics_func.append(
-                Function(
+        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
+        if nlp.dynamics_func is None:
+            nlp.dynamics_func = Function(
                     "ForwardDyn",
                     [
                         time_span_sym,
@@ -945,13 +941,12 @@ class ConfigureProblem:
                     [dynamics_dxdt],
                     ["t_span", "x", "u", "p", "a"],
                     ["xdot"],
-                ),
-            )
+                )
 
             # TODO: allow expand for each dynamics independently
             if nlp.dynamics_type.expand_dynamics:
                 try:
-                    nlp.dynamics_func[-1] = nlp.dynamics_func[-1].expand()
+                    nlp.dynamics_func = nlp.dynamics_func.expand()
                 except Exception as me:
                     RuntimeError(
                         f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -962,6 +957,7 @@ class ConfigureProblem:
                         f"{me}"
                     )
 
+            # Only possible for regular dynamics, not for extra_dynamics
             if dynamics_eval.defects is not None:
                 nlp.implicit_dynamics_func.append(
                     Function(
@@ -981,7 +977,7 @@ class ConfigureProblem:
                 )
                 if nlp.dynamics_type.expand_dynamics:
                     try:
-                        nlp.implicit_dynamics_func[-1] = nlp.implicit_dynamics_func[-1].expand()
+                        nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
                     except Exception as me:
                         RuntimeError(
                             f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -991,6 +987,37 @@ class ConfigureProblem:
                             "Original casadi error message:\n"
                             f"{me}"
                         )
+        else:
+            nlp.extra_dynamics_func.append(
+                Function(
+                    "ForwardDyn",
+                    [
+                        time_span_sym,
+                        nlp.states.scaled.mx_reduced,
+                        nlp.controls.scaled.mx_reduced,
+                        nlp.parameters.scaled.mx_reduced,
+                        nlp.algebraic_states.scaled.mx_reduced,
+                    ],
+                    [dynamics_dxdt],
+                    ["t_span", "x", "u", "p", "a"],
+                    ["xdot"],
+                ),
+            )
+
+            # TODO: allow expand for each dynamics independently
+            if nlp.dynamics_type.expand_dynamics:
+                try:
+                    nlp.extra_dynamics_func[-1] = nlp.dynamics_funcextra_dynamics_func[-1].expand()
+                except Exception as me:
+                    RuntimeError(
+                        f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                        f"Please review the following casadi error message for more details.\n"
+                        "Several factors could be causing this issue. One of the most likely is the inability to "
+                        "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                        "Original casadi error message:\n"
+                        f"{me}"
+                    )
+
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):

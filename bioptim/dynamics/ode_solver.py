@@ -159,7 +159,7 @@ class OdeSolverBase:
         """
         return nlp.parameters.scaled.cx_start
 
-    def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt) -> Callable:
+    def initialize_integrator(self, ocp, nlp, node_index: int, dynamics_index: int = 0, is_extra_dynamics: bool = False,  **extra_opt) -> Callable:
         """
         Initialize the integrator
 
@@ -169,10 +169,12 @@ class OdeSolverBase:
             The Optimal control program handler
         nlp
             The NonLinearProgram handler
-        dynamics_index
-            The current dynamics to resolve (that can be referred to nlp.dynamics_func[index])
         node_index
             The index of the node currently initialized
+        dynamics_index
+            The current extra dynamics to resolve (that can be referred to nlp.extra_dynamics_func[index])
+        is_extra_dynamics
+            If the dynamics is an extra dynamics
         extra_opt
             Any extra options to pass to the integrator
 
@@ -181,16 +183,20 @@ class OdeSolverBase:
         The initialized integrator function
         """
 
+        if dynamics_index > 0 and not is_extra_dynamics:
+            raise RuntimeError("dynamics_index should be 0 if is_extra_dynamics is False")
+
         nlp.states.node_index = node_index
         nlp.states_dot.node_index = node_index
         nlp.controls.node_index = node_index
         nlp.algebraic_states.node_index = node_index
+        dynamics_func = nlp.dynamics_func if not is_extra_dynamics else nlp.extra_dynamics_func[dynamics_index]
         ode_opt = {
             "model": nlp.model,
             "cx": nlp.cx,
             "control_type": nlp.control_type,
             "defects_type": self.defects_type,
-            "ode_index": node_index if nlp.dynamics_func[dynamics_index].size2_out("xdot") > 1 else 0,
+            "ode_index": node_index if dynamics_func.size2_out("xdot") > 1 else 0,
             "duplicate_starting_point": self.duplicate_starting_point,
             **extra_opt,
         }
@@ -201,13 +207,8 @@ class OdeSolverBase:
             "u": self.p_ode(nlp),
             "a": self.a_ode(nlp),
             "param": self.param_ode(nlp),
-            "ode": nlp.dynamics_func[dynamics_index],
-            # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
-            "implicit_ode": (
-                nlp.implicit_dynamics_func[dynamics_index]
-                if len(nlp.implicit_dynamics_func) > 0
-                else nlp.implicit_dynamics_func
-            ),
+            "ode": dynamics_func,
+            "implicit_ode": nlp.implicit_dynamics_func,
         }
 
         return nlp.ode_solver.integrator(ode, ode_opt)
@@ -235,14 +236,13 @@ class OdeSolverBase:
 
         # Extra dynamics
         extra_dynamics = []
-        for i in range(1, len(nlp.dynamics_func)):
-            extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0)]
+        for i in range(len(nlp.extra_dynamics_func)):
+            extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True)]
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 extra_dynamics = extra_dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
                     extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=node_index, is_extra_dynamics=True)]
-            # TODO include this in nlp.dynamics so the index of nlp.dynamics_func and nlp.dynamics match
             nlp.extra_dynamics.append(extra_dynamics)
 
 
@@ -538,7 +538,7 @@ class OdeSolver:
         def a_ode(self, nlp):
             return nlp.algebraic_states.scaled.cx
 
-        def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt):
+        def initialize_integrator(self, ocp, nlp, node_index: int, dynamics_index: int = 0, is_extra_dynamics: bool = False, **extra_opt):
             raise NotImplementedError("CVODES is not yet implemented")
 
             if extra_opt:
@@ -560,10 +560,11 @@ class OdeSolver:
                 raise RuntimeError("CVODES cannot be used with algebraic_states variables")
 
             t = [self.t_ode(nlp)[0], self.t_ode(nlp)[1] - self.t_ode(nlp)[0]]
+            dynamics_func = nlp.dynamics_func if not is_extra_dynamics else nlp.extra_dynamics_func[dynamics_index]
             ode = {
                 "x": nlp.states.scaled.cx_start,
                 "u": nlp.controls.scaled.cx_start,  # todo: add p=parameters
-                "ode": nlp.dynamics_func[dynamics_index](
+                "ode": dynamics_func(
                     vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.a_ode(nlp)
                 ),
             }
