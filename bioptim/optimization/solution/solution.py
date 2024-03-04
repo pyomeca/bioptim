@@ -4,7 +4,7 @@ from copy import deepcopy
 import numpy as np
 from scipy import interpolate as sci_interp
 from scipy.interpolate import interp1d
-from casadi import vertcat, DM
+from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
@@ -12,7 +12,7 @@ from ..optimization_vector import OptimizationVectorHelper
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
-from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
+from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node, PhaseDynamics
 from ...dynamics.ode_solver import OdeSolver
 from ...interfaces.solve_ivp_interface import solve_ivp_interface
 from ...models.protocols.stochastic_biomodel import StochasticBioModel
@@ -732,7 +732,13 @@ class Solution:
         integrated_sol = None
         for p, nlp in enumerate(self.ocp.nlp):
             first_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
+
+            if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                list_of_dynamics = [nlp.dynamics_func[0]] * nlp.ns
+            else:
+                list_of_dynamics = nlp.dynamics_func
             integrated_sol = solve_ivp_interface(
+                list_of_dynamics=list_of_dynamics,
                 shooting_type=shooting_type,
                 nlp=nlp,
                 t=t_spans[p],
@@ -802,21 +808,41 @@ class Solution:
             if sensory_noise_index is not None:
                 for i in range(len(params[sensory_noise_index])):
                     sensory_noise[i, :] = np.random.normal(0, params[sensory_noise_index[i]], size=(nlp.ns, size))
+
+            without_noise_idx = [i for i in range(len(params)) if i not in motor_noise_index and i not in sensory_noise_index]
+            parameters_cx = nlp.parameters.cx[without_noise_idx]
+            parameters = params[without_noise_idx]
             for i_random in range(size):
-                params_this_time = np.repeat(params, nlp.ns, axis=1)
-                params_this_time[motor_noise_index, :] = motor_noise[:, :, i_random]
-                if sensory_noise_index is not None:
-                    params_this_time[sensory_noise_index, :] = sensory_noise[:, :, i_random]
+                params_this_time = []
+                list_of_dynamics = []
+                for node in range(nlp.ns):
+                    params_this_time += [nlp.parameters.cx]
+                    params_this_time[node][motor_noise_index, :] = motor_noise[:, node, i_random]
+                    if sensory_noise_index is not None:
+                        params_this_time[node][sensory_noise_index, :] = sensory_noise[:, node, i_random]
+
+                    # This new casadi function is used to add noise to the dynamics
+                    for node in range(nlp.ns):
+                        if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                            cas_func = Function("noised_extra_dynamics",
+                                                [nlp.time.cx, nlp.states.cx, nlp.controls.cx, parameters_cx, nlp.algebraic_states],
+                                                [nlp.extra_dynamics_func[0](nlp.time.cx, nlp.states.cx, nlp.controls.cx, params_this_time[node], nlp.algebraic_states)])
+                        else:
+                            cas_func = Function("noised_extra_dynamics",
+                                                [nlp.time_cx, nlp.states.cx, nlp.controls.cx, parameters_cx, nlp.algebraic_states],
+                                                [nlp.extra_dynamics_func[node](nlp.time.cx, nlp.states.cx, nlp.controls.cx, params_this_time[node], nlp.algebraic_states)])
+                        list_of_dynamics += [cas_func]
+
                 integrated_sol = solve_ivp_interface(
+                    list_of_dynamics=nlp.extra_dynamics,
                     shooting_type=Shooting.SINGLE,
                     nlp=nlp,
                     t=t_spans[p],
                     x=[np.reshape(first_x[:, i_random], (-1, 1))],
                     u=u[p],  # No need to add noise on the controls, the extra_dynamics should do it for us
                     a=a[p],
-                    p=[params_this_time[:, i_node] for i_node in range(nlp.ns)],
+                    p = parameters,
                     method=integrator,
-                    noised=True,
                 )
                 for i_node in range(nlp.ns + 1):
                     for key in nlp.states.keys():
@@ -923,7 +949,14 @@ class Solution:
 
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
+
+            if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
+                list_of_dynamics = [nlp.dynamics_func[0]] * nlp.ns
+            else:
+                list_of_dynamics = nlp.dynamics_func
+
             integrated_sol = solve_ivp_interface(
+                list_of_dynamics=list_of_dynamics,
                 shooting_type=Shooting.MULTIPLE,
                 nlp=nlp,
                 t=t_spans[p],
