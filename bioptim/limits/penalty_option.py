@@ -1,14 +1,14 @@
 from typing import Any, Callable
 
-from casadi import vertcat, Function, MX, SX, jacobian, diag
 import numpy as np
+from casadi import vertcat, Function, MX, SX, jacobian, diag
 
 from .penalty_controller import PenaltyController
-from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
-from ..misc.options import OptionGeneric
-from ..misc.mapping import BiMapping
-from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..limits.penalty_helpers import PenaltyHelpers
+from ..misc.enums import Node, PlotType, ControlType, PenaltyType, QuadratureRule, PhaseDynamics
+from ..misc.mapping import BiMapping
+from ..misc.options import OptionGeneric
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
 class PenaltyOption(OptionGeneric):
@@ -51,8 +51,6 @@ class PenaltyOption(OptionGeneric):
         If the minimization is applied to derivative of the penalty [f(t, t+1)]
     integration_rule: QuadratureRule
         The integration rule to use for the penalty
-    transition: bool
-        If the penalty is a transition
     nodes_phase: tuple[int, ...]
         The index of the phases when penalty is multinodes
     penalty_type: PenaltyType
