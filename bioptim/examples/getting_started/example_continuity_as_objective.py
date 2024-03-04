@@ -52,16 +52,16 @@ def out_of_sphere(controller: PenaltyController, y, z):
 
 
 def prepare_ocp_first_pass(
-        biorbd_model_path: str,
-        final_time: float,
-        n_shooting: int,
-        state_continuity_weight: float,
-        ode_solver: OdeSolverBase = OdeSolver.RK4(),
-        use_sx: bool = True,
-        n_threads: int = 1,
-        phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-        expand_dynamics: bool = True,
-        minimize_time: bool = True,
+    biorbd_model_path: str,
+    final_time: float,
+    n_shooting: int,
+    state_continuity_weight: float,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    use_sx: bool = True,
+    n_threads: int = 1,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+    expand_dynamics: bool = True,
+    minimize_time: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
@@ -169,13 +169,13 @@ def prepare_ocp_first_pass(
 
 
 def prepare_ocp_second_pass(
-        biorbd_model_path: str,
-        n_shooting: int,
-        solution: Solution,
-        ode_solver: OdeSolverBase = OdeSolver.RK4(),
-        use_sx: bool = True,
-        n_threads: int = 1,
-        minimize_time: bool = True,
+    biorbd_model_path: str,
+    n_shooting: int,
+    solution: Solution,
+    ode_solver: OdeSolverBase = OdeSolver.RK4(),
+    use_sx: bool = True,
+    n_threads: int = 1,
+    minimize_time: bool = True,
 ) -> OptimalControlProgram:
     """
     The initialization of an ocp
