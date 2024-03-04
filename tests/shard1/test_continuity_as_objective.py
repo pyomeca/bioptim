@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 import pytest
 
@@ -30,15 +32,29 @@ def test_continuity_as_objective(phase_dynamics):
     )
     sol = ocp.solve()
 
-    expected_q = [[0.0, -0.1820716, 0.0502083, -0.1376], [0.0, 0.2059882, -0.3885045, 2.9976372]]
-    expected_qdot = [[0.0, 0.13105439, -3.43794783, -23.6570729], [0.0, -0.66178869, 3.07970721, -19.12526049]]
-    expected_controls = [[-1.49607534, -0.24541618, -19.12881238], [0.0, 0.0, 0.0]]
-    expected_iterations = range(300, 700)  # 436 on my laptop @ipuch, 639 on Windows Github CI
+    if os.sys.platform == "windows":
+        expected_q = [[0.0, -0.1820716, 0.0502083, -0.1376], [0.0, 0.2059882, -0.3885045, 2.9976372]]
+        expected_qdot = [[0.0, 0.13105439, -3.43794783, -23.6570729], [0.0, -0.66178869, 3.07970721, -19.12526049]]
+        expected_controls = [[-1.49607534, -0.24541618, -19.12881238], [0.0, 0.0, 0.0]]
+        expected_iterations = range(300, 700)  # 436 on my laptop @ipuch, 639 on Windows Github CI
 
+    if os.sys.platform == "linux" or os.sys.platform == "darwin":
+        np.printoptions(precision=15, suppress=True)
+
+        print(sol.decision_states(to_merge=SolutionMerge.NODES)["q"])
+        print(sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"])
+        print(sol.decision_controls(to_merge=SolutionMerge.NODES)["tau"])
+        print(sol.iterations)
+
+        expected_q = [[0.0, -0.1820716, 0.0502083, -0.1376], [0.0, 0.2059882, -0.3885045, 2.9976372]]
+        expected_qdot = [[0.0, 0.13105439, -3.43794783, -23.6570729], [0.0, -0.66178869, 3.07970721, -19.12526049]]
+        expected_controls = [[-1.49607534, -0.24541618, -19.12881238], [0.0, 0.0, 0.0]]
+        expected_iterations = range(300, 700)
+
+    assert sol.iterations in expected_iterations
     np.testing.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["q"], expected_q)
     np.testing.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"], expected_qdot)
     np.testing.assert_almost_equal(sol.decision_controls(to_merge=SolutionMerge.NODES)["tau"], expected_controls)
-    assert sol.iterations in expected_iterations
 
     # second pass
     ocp_second_pass = ocp_module.prepare_ocp_second_pass(
