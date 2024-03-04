@@ -24,7 +24,6 @@ from ..limits.constraints import (
     ParameterConstraintList,
     ParameterConstraint,
 )
-from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import (
@@ -34,11 +33,13 @@ from ..limits.objective_functions import (
     ParameterObjectiveList,
     ParameterObjective,
 )
+from ..limits.objective_functions import ObjectiveFunction
 from ..limits.path_conditions import BoundsList, Bounds
 from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.penalty import PenaltyOption
 from ..limits.penalty_helpers import PenaltyHelpers
-from ..limits.objective_functions import ObjectiveFunction
+from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
+from ..limits.phase_transtion_builder import PhaseTransitionBuilder
 from ..misc.__version__ import __version__
 from ..misc.enums import (
     ControlType,
@@ -53,11 +54,12 @@ from ..misc.enums import (
 )
 from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
+from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
+from ..models.protocols.biomodel import BioModel
 from ..optimization.parameters import ParameterList, Parameter, ParameterContainer
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
 from ..optimization.variable_scaling import VariableScalingList, VariableScaling
-from ..gui.check_conditioning import check_conditioning
 
 
 class OptimalControlProgram:
@@ -660,7 +662,8 @@ class OptimalControlProgram:
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
-        self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
+        self.phase_transitions = PhaseTransitionBuilder(self).prepare_phase_transitions(phase_transitions)
+        # self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
 
         # Skipping creates an OCP without built-in continuity constraints, make sure you declared constraints elsewhere
         self._declare_continuity()
@@ -817,42 +820,50 @@ class OptimalControlProgram:
         """
 
         for nlp in self.nlp:  # Inner-phase
-            if nlp.dynamics_type.skip_continuity:
-                continue
+            self._declare_inner_phase_continuity(nlp)
 
-            if nlp.dynamics_type.state_continuity_weight is None:
-                # Continuity as constraints
+        for pt in self.phase_transitions:  # Inter-phase
+            self._declare_phase_transition_continuity(pt)
+
+    def _declare_inner_phase_continuity(self, nlp: NLP) -> None:
+        """Declare the continuity function for the state variables in a phase"""
+        if nlp.dynamics_type.skip_continuity:
+            return
+
+        if nlp.dynamics_type.state_continuity_weight is None:
+            # Continuity as constraints
+            penalty = Constraint(
+                ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
+            )
+            penalty.add_or_replace_to_penalty_pool(self, nlp)
+            if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_starting_point:
                 penalty = Constraint(
-                    ConstraintFcn.STATE_CONTINUITY, node=Node.ALL_SHOOTING, penalty_type=PenaltyType.INTERNAL
-                )
-                penalty.add_or_replace_to_penalty_pool(self, nlp)
-                if nlp.ode_solver.is_direct_collocation and nlp.ode_solver.duplicate_starting_point:
-                    penalty = Constraint(
-                        ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
-                        node=Node.ALL_SHOOTING,
-                        penalty_type=PenaltyType.INTERNAL,
-                    )
-                    penalty.add_or_replace_to_penalty_pool(self, nlp)
-
-            else:
-                # Continuity as objectives
-                penalty = Objective(
-                    ObjectiveFcn.Mayer.STATE_CONTINUITY,
-                    weight=nlp.dynamics_type.state_continuity_weight,
-                    quadratic=True,
+                    ConstraintFcn.FIRST_COLLOCATION_HELPER_EQUALS_STATE,
                     node=Node.ALL_SHOOTING,
                     penalty_type=PenaltyType.INTERNAL,
                 )
                 penalty.add_or_replace_to_penalty_pool(self, nlp)
 
-        for pt in self.phase_transitions:
-            # Phase transition as constraints
-            if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
-                continue
-            # Dynamics must be respected between phases
-            pt.name = f"PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
-            pt.list_index = -1
-            pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
+        else:
+            # Continuity as objectives
+            penalty = Objective(
+                ObjectiveFcn.Mayer.STATE_CONTINUITY,
+                weight=nlp.dynamics_type.state_continuity_weight,
+                quadratic=True,
+                node=Node.ALL_SHOOTING,
+                penalty_type=PenaltyType.INTERNAL,
+            )
+            penalty.add_or_replace_to_penalty_pool(self, nlp)
+
+    def _declare_phase_transition_continuity(self, pt):
+        """Declare the continuity function for the variables between phases, mainly for the state variables"""
+        # Phase transition as constraints
+        if pt.type == PhaseTransitionFcn.DISCONTINUOUS:
+            return
+        # Dynamics must be respected between phases
+        pt.name = f"PHASE_TRANSITION ({pt.type.name}) {pt.nodes_phase[0] % self.n_phases}->{pt.nodes_phase[1] % self.n_phases}"
+        pt.list_index = -1
+        pt.add_or_replace_to_penalty_pool(self, self.nlp[pt.nodes_phase[0]])
 
     def update_objectives(self, new_objective_function: Objective | ObjectiveList):
         """

@@ -3,15 +3,15 @@ from warnings import warn
 
 from casadi import vertcat, MX
 
-from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
 from .multinode_constraint import MultinodeConstraint
-from .path_conditions import Bounds
+from .multinode_penalty import MultinodePenalty, MultinodePenaltyFunctions
 from .objective_functions import ObjectiveFunction
+from .path_conditions import Bounds
 from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
-from ..misc.enums import Node, PenaltyType, InterpolationType
+from ..misc.enums import Node, PenaltyType, InterpolationType, ControlType
 from ..misc.fcn_enum import FcnEnum
-from ..misc.options import UniquePerPhaseOptionList
 from ..misc.mapping import BiMapping
+from ..misc.options import UniquePerPhaseOptionList
 
 
 class PhaseTransition(MultinodePenalty):
@@ -126,48 +126,6 @@ class PhaseTransitionList(UniquePerPhaseOptionList):
         Print the PhaseTransitionList to the console
         """
         raise NotImplementedError("Printing of PhaseTransitionList is not ready yet")
-
-    def prepare_phase_transitions(self, ocp) -> list:
-        """
-        Configure all the phase transitions and put them in a list
-
-        Parameters
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp
-
-        Returns
-        -------
-        The list of all the transitions prepared
-        """
-
-        # By default it assume Continuous. It can be change later
-        full_phase_transitions = [
-            PhaseTransition(
-                phase_pre_idx=i,
-                transition=PhaseTransitionFcn.CONTINUOUS,
-                weight=ocp.nlp[i].dynamics_type.state_continuity_weight,
-            )
-            for i in range(ocp.n_phases - 1)
-        ]
-
-        existing_phases = []
-
-        for pt in self:
-            idx_phase = pt.nodes_phase[0]
-            if idx_phase >= ocp.n_phases:
-                raise RuntimeError("Phase index of the phase transition is higher than the number of phases")
-            existing_phases.append(idx_phase)
-
-            if pt.weight:
-                pt.base = ObjectiveFunction.MayerFunction
-
-            if idx_phase % ocp.n_phases == ocp.n_phases - 1:
-                # Add a cyclic constraint or objective
-                full_phase_transitions.append(pt)
-            else:
-                full_phase_transitions[idx_phase] = pt
-        return full_phase_transitions
 
 
 class PhaseTransitionFunctions(PenaltyFunctionAbstract):
