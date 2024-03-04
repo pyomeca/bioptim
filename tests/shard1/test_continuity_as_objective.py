@@ -41,13 +41,7 @@ def test_continuity_as_objective(phase_dynamics):
         expected_controls = [[-1.49607534, -0.24541618, -19.12881238], [0.0, 0.0, 0.0]]
 
     if platform.system() == "Linux" or platform.system() == "Darwin":
-        np.printoptions(precision=15, suppress=True)
-
-        print(sol.decision_states(to_merge=SolutionMerge.NODES)["q"])
-        print(sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"])
-        print(sol.decision_controls(to_merge=SolutionMerge.NODES)["tau"])
-        print(sol.iterations)
-
+        # it lands on another local minima
         expected_q = [[0.0, -0.17103307, 0.07459213, -0.1376], [0.0, 0.20294463, -0.38390195, 2.9976372]]
         expected_qdot = [[0.0, 0.14587462, -3.35487788, 7.53981222], [0.0, -0.66021714, 3.02208876, 9.54451337]]
         expected_controls = [[-1.47014529, -0.22059134, -18.23601047], [0.0, 0.0, 0.0]]
