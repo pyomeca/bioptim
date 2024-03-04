@@ -143,10 +143,8 @@ def main():
 
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
-    ocp.ipopt_output_process.join()
 
     sol.print_cost()
-    sys.stdout.close()
 
     # --- Show the results (graph or animation) --- #
     # sol.graphs(show_bounds=True, save_name="results.png")

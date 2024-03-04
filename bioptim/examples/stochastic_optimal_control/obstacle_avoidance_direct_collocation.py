@@ -261,13 +261,22 @@ def plot_results(sol_socp, states, controls, time, algebraic_states, bio_model, 
             mean_integrated[:, i_node] = np.mean(
                 np.vstack((noisy_integrated_sol["q"][0][i, :], noisy_integrated_sol["q"][1][i, :])), axis=1
             )
-            draw_cov_ellipse(
+
+            if i == 0:
+                draw_cov_ellipse(
                 cov_integrated[:2, :2, i_node],
                 mean_integrated[:, i_node],
                 ax_comparison,
                 color="b",
                 label="Noisy integration covariance",
-            )
+                )
+            else:
+                draw_cov_ellipse(
+                cov_integrated[:2, :2, i_node],
+                mean_integrated[:, i_node],
+                ax_comparison,
+                color="b",
+                )
             i_node += 1
     ax_comparison.legend()
     fig_comparison.tight_layout()
