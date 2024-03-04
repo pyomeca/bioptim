@@ -39,6 +39,22 @@ class PhaseTransitionBuilder:
             for i in range(self.ocp.n_phases - 1)
         ]
 
+    def extend_transitions_for_linear_continuous_controls(self):
+        """Add phase transitions for linear continuous controls.
+        This is a special case where the controls are continuous"""
+        for phase, nlp in enumerate(self.ocp.nlp):
+            if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
+                self.full_phase_transitions.extend(
+                    [
+                        PhaseTransition(
+                            phase_pre_idx=i,
+                            transition=PhaseTransitionFcn.CONTINUOUS_CONTROLS,
+                            weight=None,
+                        )
+                        for i in range(self.ocp.n_phases - 1)
+                    ]
+                )
+
     def update_existing_transitions(self, phase_transition_list) -> list[PhaseTransition]:
         """Update the existing phase transitions with Mayer functions and add cyclic transitions."""
         existing_phases = []
@@ -72,4 +88,5 @@ class PhaseTransitionBuilder:
         list[PhaseTransition]
             The list of all the transitions prepared
         """
+        self.extend_transitions_for_linear_continuous_controls()
         return self.update_existing_transitions(phase_transition_list)
