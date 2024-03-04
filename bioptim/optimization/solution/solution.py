@@ -230,20 +230,18 @@ class Solution:
                 "an InitialGuess[List] of len 4 (states, controls, parameters, algebraic_states), "
                 "or a None"
             )
-        # if sum([len(s) != len(all_ns) if p != 4 else False for p, s in enumerate(sol)]) != 0:
-        #     raise ValueError("The InitialGuessList len must match the number of phases")
 
-        # p!=3 : pour les paramètres
+        if len(sol[0]) != len(all_ns):
+            raise ValueError("The time step dt array len must match the number of phases")
+        if sum([len(s) != len(all_ns) if p != 3 and len(sol[p + 1].keys()) != 0 else False for p, s in enumerate(sol[:1])]) != 0:
+            raise ValueError("The InitialGuessList len must match the number of phases")
 
-        # TODO : allow empty num
-        # Donner autant d'initial guess vide que de phase
-
-        # if n_param != 0:
-        #     if len(sol) != 3 and len(sol[3]) != 1 and sol[3][0].shape != (n_param, 1):
-        #         raise ValueError(
-        #             "The 3rd element is the InitialGuess of the parameter and "
-        #             "should be a unique vector of size equal to n_param"
-        #         )
+        if n_param != 0:
+            if len(sol) != 3 and len(sol[3]) != 1 and sol[3][0].shape != (n_param, 1):
+                raise ValueError(
+                    "The 3rd element is the InitialGuess of the parameter and "
+                    "should be a unique vector of size equal to n_param"
+                )
 
         dt, sol_states, sol_controls, sol_params, sol_algebraic_states = sol
 
@@ -290,6 +288,8 @@ class Solution:
                 for key in ss.keys():
                     # vector = np.concatenate((vector, np.repeat(ss[key].init, all_ns[p] + 1)[:, np.newaxis]))
                     vector = np.concatenate((vector, np.repeat(ss[key].init, 1)[:, np.newaxis]))
+                    # TODO : ask pariterre about this modification (the previous version did not enable the parameters
+                    #  to be taken into consideration for each phase)
 
         # For algebraic_states variables
         for p, ss in enumerate(sol_algebraic_states):
@@ -728,7 +728,6 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
 
-            # TODO: Get the actual time vector
             phase_times, integrated_sol = solve_ivp_interface(
                 shooting_type=shooting_type,
                 nlp=nlp,
@@ -749,18 +748,7 @@ class Solution:
 
         if to_merge:
             out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
-
-            # Make a _remove_integrated_duplicates(out) function
-            if (
-                shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE)
-                and SolutionMerge.NODES in to_merge
-            ):
-                for p in range(len(out)):
-                    _, index_duplicate = np.unique(time_vector[p])
-                    # Remove the duplicate for both merged keys and non-merged keys
-                    # Something like out[p][key] = out[p][key][index_duplicate]
-
-                    # Also deal with the Discontinuous and non-discontinuous phases if phase is merged
+            time_vector, out = self._remove_integrated_duplicates(time_vector, out, shooting_type, to_merge)
 
         if return_time:
             return out if len(out) > 1 else out[0], time_vector if len(time_vector) > 1 else time_vector[0]
@@ -811,15 +799,6 @@ class Solution:
         if phase_idx == 0:
             return [decision_states[phase_idx][0]]
 
-        # if shooting_type == Shooting.SINGLE and p < len(self.ocp.nlp) - 1:
-        #     state_list = []
-        #     for key in nlp.states.keys():
-        #         state_list.append(out[p][key][-1][0])
-        #     x[p+1][0] = np.array(state_list)
-
-        # TODO A mettre ici
-
-
         penalty = self.ocp.phase_transitions[phase_idx - 1]
 
         t0 = PenaltyHelpers.t0(penalty, 0, lambda p, n: self._stepwise_times[p][n][0])
@@ -828,8 +807,6 @@ class Solution:
         # based on the phase transition objective or constraint function. That is why we need to concatenate
         # twice the last state
         x = PenaltyHelpers.states(penalty, 0, lambda p, n, sn: integrated_states[-1])
-
-        # x = decision_phase x - 1
 
         u = PenaltyHelpers.controls(
             penalty,
@@ -853,6 +830,40 @@ class Solution:
             )
 
         return [(integrated_states[-1] if shooting_type == Shooting.SINGLE else decision_states[phase_idx]) + dx]
+
+    def _remove_integrated_duplicates(self, time_vector, out, shooting_type, to_merge):
+        if (
+                shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE)
+                and SolutionMerge.NODES in to_merge
+        ):
+            if SolutionMerge.PHASES in to_merge:
+                redundant_index = []
+                merged_out = {}
+                for i in range(len(self.ocp.nlp)):
+                    redundant_index.append(
+                        (np.linspace(1, self.ocp.nlp[0].ns * 2 + 1, self.ocp.nlp[0].ns + 1, dtype=int) +
+                         redundant_index[-1][-1]).tolist() if i != 0 else np.linspace(1, self.ocp.nlp[0].ns * 2 + 1,
+                                                                          self.ocp.nlp[0].ns + 1, dtype=int).tolist())
+                redundant_index = np.array(redundant_index).flatten().tolist()
+                for key in out.keys():
+                    merged_out[key] = np.delete(out[key][0], redundant_index[:-1])[:-1]
+                time_vector = [i for time_vector_sub in time_vector for i in time_vector_sub]
+
+            else:
+                merged_out = []
+                for i in range(len(out)):
+                    redundant_index = np.linspace(1, self.ocp.nlp[0].ns * 2 + 1, self.ocp.nlp[0].ns + 1, dtype=int).tolist()
+                    redundant_index = [0] + redundant_index[:-1]
+                    out_per_phase = {}
+                    for key in out[i].keys():
+                        out_per_phase[key] = np.delete(out[i][key][0], redundant_index)
+                    merged_out.append(out_per_phase)
+
+        else:
+            merged_out = out
+
+        return time_vector, merged_out
+
 
     def _integrate_stepwise(self) -> None:
         """
