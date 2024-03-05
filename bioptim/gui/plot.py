@@ -292,6 +292,10 @@ class PlotOcp:
         if self.ocp.plot_ipopt_outputs:
             self._create_ipopt_output_plot()
 
+        if self.plot_conditionning:
+            self._create_conditionning_plot()
+
+
     def _update_time_vector(self, phase_times):
         """
         Setup the time and time integrated vector, which is the x-axes of the graphs
@@ -1050,3 +1054,4 @@ class PlotOcp:
 
             for i in range(5):
                 self.ipopt_plots.plots[i].set_xdata(range(len(self.ipopt_plots["x"])))
+

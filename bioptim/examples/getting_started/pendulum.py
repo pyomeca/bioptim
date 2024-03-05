@@ -133,10 +133,11 @@ def main():
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)  # This will display the objectives and constraints at the current iteration
-    ocp.add_plot_ipopt_outputs()  # This will display the solver's output at the current iteration
+    # ocp.add_plot_ipopt_outputs()  # This will display the solver's output at the current iteration
+    # ocp.add_plot_check_conditioning()  # This will display the conditioning of the problem at the current iteration
 
     # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
-    # ocp.check_conditioning()
+    ocp.check_conditioning()
 
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)

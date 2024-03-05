@@ -1306,6 +1306,9 @@ class OptimalControlProgram:
     def add_plot_ipopt_outputs(self):
         self.plot_ipopt_outputs = True
 
+    def add_plot_check_conditioning(self):
+        self.plot_conditionning = True
+
     def prepare_plots(
         self,
         automatically_organize: bool = True,
