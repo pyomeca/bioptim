@@ -27,6 +27,7 @@ from bioptim import (
     MultinodeObjectiveList,
     PhaseDynamics,
     ControlType,
+    QuadratureRule,
 )
 
 
@@ -42,6 +43,7 @@ def prepare_ocp(
     phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
     expand_dynamics: bool = True,
     control_type: ControlType = ControlType.CONSTANT,
+    quadrature_rule: QuadratureRule = QuadratureRule.RECTANGLE_LEFT,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -65,6 +67,8 @@ def prepare_ocp(
         (for instance IRK is not compatible with expanded dynamics)
     control_type: ControlType
         The type of the controls
+    quadrature_rule: QuadratureRule
+        The quadrature method to use to integrate the objective functions
 
     Returns
     -------
@@ -83,9 +87,27 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=0)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100, phase=2)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+        key="tau",
+        weight=100,
+        phase=0,
+        integration_rule=quadrature_rule,
+    )
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+        key="tau",
+        weight=100,
+        phase=1,
+        integration_rule=quadrature_rule,
+    )
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.MINIMIZE_CONTROL,
+        key="tau",
+        weight=100,
+        phase=2,
+        integration_rule=quadrature_rule,
+    )
 
     multinode_objective = MultinodeObjectiveList()
     multinode_objective.add(
