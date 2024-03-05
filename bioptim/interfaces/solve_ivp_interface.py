@@ -56,7 +56,7 @@ def solve_ivp_interface(
         else:
             t_span = t[node]
         t_eval = np.linspace(float(t_span[0]), float(t_span[1]), nlp.n_states_stepwise_steps(node))
-        integration_time_vector.append(t_eval[0])
+        integration_time_vector.append(np.linspace(float(t[node][0]), float(t[node][1]), nlp.n_states_stepwise_steps(node)))
 
         # If multiple shooting, we need to set the first x0, otherwise use the previous answer
         x0i = np.array(x[node] if node == 0 or shooting_type == Shooting.MULTIPLE else y[-1][:, -1])
@@ -94,6 +94,7 @@ def solve_ivp_interface(
         y.append(result)
 
     y.append(x[-1] if shooting_type == Shooting.MULTIPLE else y[-1][:, -1][:, np.newaxis])
+    integration_time_vector = np.concatenate(integration_time_vector, axis=0)
 
     return integration_time_vector, y
 
