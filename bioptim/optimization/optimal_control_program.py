@@ -662,8 +662,7 @@ class OptimalControlProgram:
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
-        self.phase_transitions = PhaseTransitionBuilder(self).prepare_phase_transitions(phase_transitions)
-        # self.phase_transitions = phase_transitions.prepare_phase_transitions(self)
+        self.phase_transitions = PhaseTransitionBuilder(ocp=self).prepare_phase_transitions(phase_transitions)
 
         # Skipping creates an OCP without built-in continuity constraints, make sure you declared constraints elsewhere
         self._declare_continuity()
