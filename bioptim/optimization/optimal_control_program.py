@@ -584,8 +584,8 @@ class OptimalControlProgram:
 
         NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
 
-        # Initialize the placeholder for the subprocess reading Ipopt's output
-        self.ipopt_output_process = None
+        # If we want to plot what is printed by IPOPT in the console
+        self.plot_ipopt_outputs = False
 
         return (
             constraints,
@@ -1304,93 +1304,7 @@ class OptimalControlProgram:
         return
 
     def add_plot_ipopt_outputs(self):
-        """
-        TODO
-        """
-        import multiprocessing as mp
-        import matplotlib.cm as cm
-
-        def run_ipopt_subprocess(queue, fig, ax, plot_lines):
-
-            file_name = "/home/charbie/Documents/Programmation/BiorbdOptim/bioptim/optimization/ipopt_output.txt"
-            file_lines = []
-
-            restoration = []
-            num_iter = []
-            objective = []
-            inf_pr = []
-            inf_du = []
-            lg_mu = []
-            d_norm = []
-            lg_rg = []
-            alpha_du = []
-            alpha_pr = []
-            ls = []
-            while True:
-                with open(file_name, "r") as file:
-                    lines = file.readlines()
-                    if len(lines) > 0 and lines[-1] not in file_lines:
-                        splited_line = lines[-30].split(" ")
-                        parsed_line = [splited_line[i] for i in range(len(splited_line)) if len(splited_line[i]) > 0]
-                        if len(parsed_line) != 10 or parsed_line[0] == "iter":
-                            continue
-                        if parsed_line[0].startswith("r"):
-                            restoration.append(True)
-                            num_iter.append(int(parsed_line[0][1:]))
-                        else:
-                            restoration.append(False)
-                            num_iter.append(int(parsed_line[0]))
-                        objective.append(float(parsed_line[1]))
-                        inf_pr.append(float(parsed_line[2]))
-                        inf_du.append(float(parsed_line[3]))
-                        # lg_mu.append(float(parsed_line[4]))
-                        d_norm.append(float(parsed_line[5]))
-                        # lg_rg.append(parsed_line[6])
-                        alpha_du.append(float(parsed_line[7]))
-                        alpha_pr.append(float(parsed_line[8]))
-                        ls.append(int(parsed_line[9][:-2]))
-
-                        for i in range(6):
-                            plot_lines[i].set_xdata(num_iter)
-                        plot_lines[0].set_ydata(objective)
-                        plot_lines[1].set_ydata(inf_pr)
-                        plot_lines[2].set_ydata(inf_du)
-                        plot_lines[3].set_ydata(d_norm)
-                        plot_lines[4].set_ydata(alpha_du)
-                        plot_lines[5].set_ydata(alpha_pr)
-                        ax.relim()
-                        ax.autoscale_view(True, True, True)
-                        fig.canvas.draw()
-                        fig.canvas.flush_events()
-
-        colors = [cm.viridis(i / 5) for i in range(6)]
-        plt.ion()
-        fig = plt.figure()
-        ax = fig.add_subplot(111)
-        ax.set_title("IPOPT output")
-        ax.set_xlabel("Iteration")
-        objective_line = ax.plot(0, 0, "o", color=colors[0], label="objective")
-        inf_pr_line = ax.plot(0, 0, "o", color=colors[1], label="inf_pr")
-        inf_du_line = ax.plot(0, 0, "o", color=colors[2], label="inf_du")
-        d_norm_line = ax.plot(0, 0, "o", color=colors[3], label="d_norm")
-        alpha_du_line = ax.plot(0, 0, "o", color=colors[4], label="alpha_du")
-        alpha_pr_line = ax.plot(0, 0, "o", color=colors[5], label="alpha_pr")
-        restoration_squares = ax.fill_between([0, 1], 0, 1, color="k", label="is in restoration")
-        plot_lines = [
-            objective_line,
-            inf_pr_line,
-            inf_du_line,
-            d_norm_line,
-            alpha_du_line,
-            alpha_pr_line,
-            restoration_squares,
-        ]
-
-        self.ipopt_output_queue = mp.Queue()
-        self.ipopt_output_process = mp.Process(
-            target=run_ipopt_subprocess, args=(self.ipopt_output_queue, fig, ax, plot_lines), daemon=True
-        )
-        self.ipopt_output_process.start()
+        self.plot_ipopt_outputs = True
 
     def prepare_plots(
         self,

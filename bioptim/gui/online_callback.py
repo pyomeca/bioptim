@@ -160,7 +160,10 @@ class OnlineCallback(Callback):
         A list of error index
         """
         send = self.queue.put
-        send(arg[0])
+        args_dict = {}
+        for (i, s) in enumerate(nlpsol_out()):
+            args_dict[s] = arg[i]
+        send(args_dict)
         return [0]
 
     class ProcessPlotter(object):
@@ -221,8 +224,8 @@ class OnlineCallback(Callback):
             """
 
             while not self.pipe.empty():
-                v = self.pipe.get()
-                self.plot.update_data(v)
+                args = self.pipe.get()
+                self.plot.update_data(args)
 
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()

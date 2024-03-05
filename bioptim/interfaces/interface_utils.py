@@ -45,6 +45,7 @@ def generic_solve(interface, expand_during_shake_tree=False) -> dict:
     -------
     A reference to the solution
     """
+
     v = interface.ocp.variables_vector
     v_bounds = interface.ocp.bounds_vectors
     v_init = interface.ocp.init_vector

@@ -132,8 +132,8 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=400, n_threads=2)
 
     # Custom plots
-    ocp.add_plot_penalty(CostType.ALL)
-    ocp.add_plot_ipopt_outputs()
+    ocp.add_plot_penalty(CostType.ALL)  # This will display the objectives and constraints at the current iteration
+    ocp.add_plot_ipopt_outputs()  # This will display the solver's output at the current iteration
 
     # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
     # ocp.check_conditioning()
@@ -142,13 +142,13 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
     # sol.graphs(show_bounds=True, save_name="results.png")
-    # sol.animate(n_frames=100)
+    sol.animate(n_frames=100)
 
     # # --- Save the solution --- #
     # Here is an example of how we recommend to save the solution. Please note that sol.ocp is not picklable and that sol will be loaded using the current bioptim version, not the version at the time of the generation of the results.
