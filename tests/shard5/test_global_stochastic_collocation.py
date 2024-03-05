@@ -545,10 +545,9 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     np.random.seed(42)
     integrated_states = sol.noisy_integrate(integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES)
     integrated_stated_covariance = np.cov(integrated_states["q"][:, -1, :])
-    np.testing.assert_almost_equal(integrated_stated_covariance, np.array([[0.00404452, -0.00100082],
-       [-0.00100082,  0.00382313]]), decimal=6)
-    np.testing.assert_almost_equal(cov[:, -1].reshape(4, 4)[:2, :2], np.array([[0.00266764, -0.0005587],
-       [-0.0005587,  0.00134316]]), decimal=6)
-
-
-
+    np.testing.assert_almost_equal(
+        integrated_stated_covariance, np.array([[0.00404452, -0.00100082], [-0.00100082, 0.00382313]]), decimal=6
+    )
+    np.testing.assert_almost_equal(
+        cov[:, -1].reshape(4, 4)[:2, :2], np.array([[0.00266764, -0.0005587], [-0.0005587, 0.00134316]]), decimal=6
+    )

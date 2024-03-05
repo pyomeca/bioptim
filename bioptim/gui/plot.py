@@ -971,15 +971,15 @@ class PlotOcp:
         This function creates the plots for the ipopt output: x, f, g, inf_pr, inf_du.
         """
         fig, axs = plt.subplots(5, 1, num="IPOPT output")
-        axs[0].set_ylabel("x", fontweight='bold')
-        axs[1].set_ylabel("f", fontweight='bold')
-        axs[2].set_ylabel("g", fontweight='bold')
-        axs[3].set_ylabel("inf_pr", fontweight='bold')
-        axs[4].set_ylabel("inf_du", fontweight='bold')
+        axs[0].set_ylabel("x", fontweight="bold")
+        axs[1].set_ylabel("f", fontweight="bold")
+        axs[2].set_ylabel("g", fontweight="bold")
+        axs[3].set_ylabel("inf_pr", fontweight="bold")
+        axs[4].set_ylabel("inf_du", fontweight="bold")
 
         colors = get_cmap("viridis")
         for i in range(5):
-            axs[i].plot([0], [0], linestyle="-", markersize=3, color=colors(i/5))
+            axs[i].plot([0], [0], linestyle="-", markersize=3, color=colors(i / 5))
             axs[i].get_xaxis().set_visible(False)
             axs[i].grid(True)
 

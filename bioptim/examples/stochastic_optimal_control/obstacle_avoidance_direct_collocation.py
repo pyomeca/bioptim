@@ -48,7 +48,20 @@ from bioptim.examples.stochastic_optimal_control.common import (
 
 from scipy.integrate import solve_ivp
 
-def plot_results(sol_socp, states, controls, time, algebraic_states, bio_model, motor_noise_magnitude, n_shooting, polynomial_degree, is_stochastic, q_init):
+
+def plot_results(
+    sol_socp,
+    states,
+    controls,
+    time,
+    algebraic_states,
+    bio_model,
+    motor_noise_magnitude,
+    n_shooting,
+    polynomial_degree,
+    is_stochastic,
+    q_init,
+):
     """
     This function plots the reintegration of the optimal solution considering the motor noise.
     The plot compares the covariance obtained numerically by doing 100 orbits, the covariance obtained by the optimal control problem and the covariance obtained by the noisy integration.
@@ -264,18 +277,18 @@ def plot_results(sol_socp, states, controls, time, algebraic_states, bio_model, 
 
             if i == 0:
                 draw_cov_ellipse(
-                cov_integrated[:2, :2, i_node],
-                mean_integrated[:, i_node],
-                ax_comparison,
-                color="b",
-                label="Noisy integration covariance",
+                    cov_integrated[:2, :2, i_node],
+                    mean_integrated[:, i_node],
+                    ax_comparison,
+                    color="b",
+                    label="Noisy integration covariance",
                 )
             else:
                 draw_cov_ellipse(
-                cov_integrated[:2, :2, i_node],
-                mean_integrated[:, i_node],
-                ax_comparison,
-                color="b",
+                    cov_integrated[:2, :2, i_node],
+                    mean_integrated[:, i_node],
+                    ax_comparison,
+                    color="b",
                 )
             i_node += 1
     ax_comparison.legend()
@@ -622,7 +635,19 @@ def main():
     with open("obstacle.pkl", "wb") as file:
         pickle.dump(data_to_save, file)
 
-    plot_results(sol_socp, states, controls, time, algebraic_states, bio_model, motor_noise_magnitude, n_shooting, polynomial_degree, is_stochastic, q_init)
+    plot_results(
+        sol_socp,
+        states,
+        controls,
+        time,
+        algebraic_states,
+        bio_model,
+        motor_noise_magnitude,
+        n_shooting,
+        polynomial_degree,
+        is_stochastic,
+        q_init,
+    )
 
 
 if __name__ == "__main__":

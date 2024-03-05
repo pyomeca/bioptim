@@ -423,7 +423,7 @@ class PenaltyOption(OptionGeneric):
             sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, x)
 
         if len(sub_fcn.shape) > 1 and sub_fcn.shape[1] != 1:
-                raise RuntimeError("The penalty must return a vector not a matrix.")
+            raise RuntimeError("The penalty must return a vector not a matrix.")
 
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])

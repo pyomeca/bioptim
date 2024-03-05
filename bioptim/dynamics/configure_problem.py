@@ -930,18 +930,18 @@ class ConfigureProblem:
         time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
         if nlp.dynamics_func is None:
             nlp.dynamics_func = Function(
-                    "ForwardDyn",
-                    [
-                        time_span_sym,
-                        nlp.states.scaled.mx_reduced,
-                        nlp.controls.scaled.mx_reduced,
-                        nlp.parameters.scaled.mx_reduced,
-                        nlp.algebraic_states.scaled.mx_reduced,
-                    ],
-                    [dynamics_dxdt],
-                    ["t_span", "x", "u", "p", "a"],
-                    ["xdot"],
-                )
+                "ForwardDyn",
+                [
+                    time_span_sym,
+                    nlp.states.scaled.mx_reduced,
+                    nlp.controls.scaled.mx_reduced,
+                    nlp.parameters.scaled.mx_reduced,
+                    nlp.algebraic_states.scaled.mx_reduced,
+                ],
+                [dynamics_dxdt],
+                ["t_span", "x", "u", "p", "a"],
+                ["xdot"],
+            )
 
             # TODO: allow expand for each dynamics independently
             if nlp.dynamics_type.expand_dynamics:
@@ -1017,7 +1017,6 @@ class ConfigureProblem:
                         "Original casadi error message:\n"
                         f"{me}"
                     )
-
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):

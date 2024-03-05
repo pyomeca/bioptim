@@ -161,7 +161,7 @@ class OnlineCallback(Callback):
         """
         send = self.queue.put
         args_dict = {}
-        for (i, s) in enumerate(nlpsol_out()):
+        for i, s in enumerate(nlpsol_out()):
             args_dict[s] = arg[i]
         send(args_dict)
         return [0]

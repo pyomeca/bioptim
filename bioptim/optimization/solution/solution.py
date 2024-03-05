@@ -12,7 +12,16 @@ from ..optimization_vector import OptimizationVectorHelper
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
-from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node, PhaseDynamics
+from ...misc.enums import (
+    ControlType,
+    CostType,
+    Shooting,
+    InterpolationType,
+    SolverType,
+    SolutionIntegrator,
+    Node,
+    PhaseDynamics,
+)
 from ...dynamics.ode_solver import OdeSolver
 from ...interfaces.solve_ivp_interface import solve_ivp_interface
 from ...models.protocols.stochastic_biomodel import StochasticBioModel
@@ -766,10 +775,9 @@ class Solution:
         TODO: Charbie!
         """
         from ...optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
+
         if not isinstance(self.ocp, StochasticOptimalControlProgram):
-            raise ValueError(
-                "This method is only available for StochasticOptimalControlProgram."
-            )
+            raise ValueError("This method is only available for StochasticOptimalControlProgram.")
 
         t_spans, x, u, params, a = self.prepare_integrate(integrator=integrator)
 
@@ -805,7 +813,9 @@ class Solution:
                 for i in range(len(params[sensory_noise_index])):
                     sensory_noise[i, :] = np.random.normal(0, params[sensory_noise_index[i]], size=(nlp.ns, size))
 
-            without_noise_idx = [i for i in range(len(params)) if i not in motor_noise_index and i not in sensory_noise_index]
+            without_noise_idx = [
+                i for i in range(len(params)) if i not in motor_noise_index and i not in sensory_noise_index
+            ]
             parameters_cx = nlp.parameters.cx[without_noise_idx]
             parameters = params[without_noise_idx]
             for i_random in range(size):
@@ -819,9 +829,19 @@ class Solution:
 
                     if len(nlp.extra_dynamics_func) > 1:
                         raise NotImplementedError("Noisy integration is not available for multiple extra dynamics.")
-                    cas_func = Function("noised_extra_dynamics",
-                                        [nlp.time_cx, nlp.states.cx, nlp.controls.cx, parameters_cx, nlp.algebraic_states.cx],
-                                        [nlp.extra_dynamics_func[0](nlp.time_cx, nlp.states.cx, nlp.controls.cx, params_this_time[node], nlp.algebraic_states.cx)])
+                    cas_func = Function(
+                        "noised_extra_dynamics",
+                        [nlp.time_cx, nlp.states.cx, nlp.controls.cx, parameters_cx, nlp.algebraic_states.cx],
+                        [
+                            nlp.extra_dynamics_func[0](
+                                nlp.time_cx,
+                                nlp.states.cx,
+                                nlp.controls.cx,
+                                params_this_time[node],
+                                nlp.algebraic_states.cx,
+                            )
+                        ],
+                    )
                     list_of_dynamics += [cas_func]
 
                 integrated_sol = solve_ivp_interface(
@@ -837,7 +857,11 @@ class Solution:
                 )
                 for i_node in range(nlp.ns + 1):
                     for key in nlp.states.keys():
-                        states_integrated = integrated_sol[i_node][nlp.states[key].index, :] if n_sub_nodes > 1 else integrated_sol[i_node][nlp.states[key].index, 0].reshape(-1, 1)
+                        states_integrated = (
+                            integrated_sol[i_node][nlp.states[key].index, :]
+                            if n_sub_nodes > 1
+                            else integrated_sol[i_node][nlp.states[key].index, 0].reshape(-1, 1)
+                        )
                         out[p][key][i_node][:, :, i_random] = states_integrated
                 first_x[:, i_random] = np.reshape(integrated_sol[-1], (-1,))
         if to_merge:

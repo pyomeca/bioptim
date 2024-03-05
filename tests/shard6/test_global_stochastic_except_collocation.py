@@ -625,12 +625,15 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
             )
 
             np.random.seed(42)
-            integrated_states = sol.noisy_integrate(integrator=SolutionIntegrator.SCIPY_RK45,
-                                                    to_merge=SolutionMerge.NODES)
+            integrated_states = sol.noisy_integrate(
+                integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES
+            )
             integrated_stated_covariance = np.cov(integrated_states["q"][:, -1, :])
-            np.testing.assert_almost_equal(integrated_stated_covariance, np.array([[ 0.52918393, -1.36311773],
-       [-1.36311773,  3.85744162]]),
-                                           decimal=6)
+            np.testing.assert_almost_equal(
+                integrated_stated_covariance,
+                np.array([[0.52918393, -1.36311773], [-1.36311773, 3.85744162]]),
+                decimal=6,
+            )
     else:
         # Check some of the results
         k, ref, m, cov, a, c = (

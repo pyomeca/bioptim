@@ -159,7 +159,9 @@ class OdeSolverBase:
         """
         return nlp.parameters.scaled.cx_start
 
-    def initialize_integrator(self, ocp, nlp, node_index: int, dynamics_index: int = 0, is_extra_dynamics: bool = False,  **extra_opt) -> Callable:
+    def initialize_integrator(
+        self, ocp, nlp, node_index: int, dynamics_index: int = 0, is_extra_dynamics: bool = False, **extra_opt
+    ) -> Callable:
         """
         Initialize the integrator
 
@@ -237,12 +239,18 @@ class OdeSolverBase:
         # Extra dynamics
         extra_dynamics = []
         for i in range(len(nlp.extra_dynamics_func)):
-            extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True)]
+            extra_dynamics += [
+                nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=0, is_extra_dynamics=True)
+            ]
             if nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE:
                 extra_dynamics = extra_dynamics * nlp.ns
             else:
                 for node_index in range(1, nlp.ns):
-                    extra_dynamics += [nlp.ode_solver.initialize_integrator(ocp, nlp, dynamics_index=i, node_index=node_index, is_extra_dynamics=True)]
+                    extra_dynamics += [
+                        nlp.ode_solver.initialize_integrator(
+                            ocp, nlp, dynamics_index=i, node_index=node_index, is_extra_dynamics=True
+                        )
+                    ]
             nlp.extra_dynamics.append(extra_dynamics)
 
 
@@ -538,7 +546,9 @@ class OdeSolver:
         def a_ode(self, nlp):
             return nlp.algebraic_states.scaled.cx
 
-        def initialize_integrator(self, ocp, nlp, node_index: int, dynamics_index: int = 0, is_extra_dynamics: bool = False, **extra_opt):
+        def initialize_integrator(
+            self, ocp, nlp, node_index: int, dynamics_index: int = 0, is_extra_dynamics: bool = False, **extra_opt
+        ):
             raise NotImplementedError("CVODES is not yet implemented")
 
             if extra_opt:
