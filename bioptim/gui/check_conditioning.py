@@ -246,7 +246,7 @@ def check_conditioning(ocp):
             min_jac = 0
 
         # PLOT GENERAL
-        fig, axis = plt.subplots(1, 2 * ocp.n_phases)
+        fig_constraint, axis = plt.subplots(1, 2 * ocp.n_phases, num="Check conditioning for constraints")
         for ax in range(ocp.n_phases):
             # Jacobian plot
             jacobian_list[ax][(jacobian_list[ax] == 0)] = np.nan
@@ -255,7 +255,7 @@ def check_conditioning(ocp):
             current_cmap.set_bad(color="k")
             norm = mcolors.TwoSlopeNorm(vmin=min_jac - 0.01, vmax=max_jac + 0.01, vcenter=0)
             im = axis[ax].imshow(jacobian_list[ax], aspect="auto", cmap=current_cmap, norm=norm)
-            axis[ax].set_title("Jacobian constraints \n Phase " + str(ax), fontweight="bold", fontsize=8)
+            axis[ax].set_title("Jacobian constraints \n Phase " + str(ax) + "\nMatrix rank = " + str(jacobian_rank[ax]) + "\n Number of constraints = " + str(jacobian_list[ax].shape[1]), fontweight="bold", fontsize=8)
             axis[ax].text(
                 0,
                 jacobian_list[ax].shape[0] * 1.08,
@@ -267,15 +267,8 @@ def check_conditioning(ocp):
                 fontweight="bold",
                 fontsize=8,
             )
-            axis[ax].text(
-                0,
-                jacobian_list[ax].shape[0] * 1.1,
-                "The rank should be equal to the number of constraints",
-                horizontalalignment="center",
-                fontsize=6,
-            )
-            cbar_ax = fig.add_axes([0.02, 0.4, 0.015, 0.3])
-            fig.colorbar(im, cax=cbar_ax)
+            cbar_ax = fig_constraint.add_axes([0.02, 0.4, 0.015, 0.3])
+            fig_constraint.colorbar(im, cax=cbar_ax)
 
             # Hessian constraints plot
             hessian_norm_list[ax][~(hessian_norm_list[ax] != 0).astype(bool)] = np.nan
@@ -288,16 +281,16 @@ def check_conditioning(ocp):
 
             im2 = axis[ax + ocp.n_phases].imshow(hessian_norm_list[ax], aspect="auto", cmap=current_cmap2, norm=norm2)
             axis[ax + ocp.n_phases].set_title(
-                "Hessian constraint norms \n Phase " + str(ax), fontweight="bold", fontsize=8
+                "Hessian constraint norms (Norms should be close to 0) \n Phase " + str(ax), fontweight="bold", fontsize=8
             )
-            axis[ax + ocp.n_phases].set_xticks([0])
-            axis[ax + ocp.n_phases].set_xticklabels(["Norms should be close to 0"], fontsize=8)
             axis[ax + ocp.n_phases].set_yticks(yticks)
             axis[ax + ocp.n_phases].set_yticklabels(tick_labels_list[ax], fontsize=6, rotation=90)
-            cbar_ax2 = fig.add_axes([0.95, 0.4, 0.015, 0.3])
-            fig.colorbar(im2, cax=cbar_ax2)
-        fig.legend(["Black = 0"], loc="upper left")
-        plt.suptitle("Check conditioning for constraints ", color="b", fontsize=15, fontweight="bold")
+            cbar_ax2 = fig_constraint.add_axes([0.95, 0.4, 0.015, 0.3])
+            fig_constraint.colorbar(im2, cax=cbar_ax2)
+        fig_constraint.legend(["Black = 0"], loc="upper left")
+        plt.suptitle("The rank should be equal to the number of constraints", color="b", fontsize=15, fontweight="bold")
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
 
     def hessian_objective():
         """
@@ -466,11 +459,7 @@ def check_conditioning(ocp):
                 condition_number.append(" /!\ Ev_min is 0")
             if ev_min != 0:
                 condition_number.append(np.abs(ev_max) / np.abs(ev_min))
-            convexity.append("Possible")
-            for ev in range(eigen_values.size):
-                if eigen_values[ev] < 0:
-                    convexity[matrix] = "False"
-                    break
+            convexity.append("positive semi-definite" if np.all(eigen_values > 0) else "not positive semi-definite")
 
         return hessian_obj_list, condition_number, convexity
 
@@ -490,7 +479,7 @@ def check_conditioning(ocp):
         max_hes = max(max_hes)
 
         # PLOT GENERAL
-        fig_obj, axis_obj = plt.subplots(1, ocp.n_phases)
+        fig_obj, axis_obj = plt.subplots(1, ocp.n_phases, num="Check conditioning for objectives")
         for ax in range(ocp.n_phases):
             hessian_obj_list[ax][~(hessian_obj_list[ax] != 0).astype(bool)] = np.nan
             current_cmap3 = mcm.get_cmap("seismic")
@@ -537,15 +526,9 @@ def check_conditioning(ocp):
             cbar_ax3 = fig_obj.add_axes([0.02, 0.4, 0.015, 0.3])
             fig_obj.colorbar(im3, cax=cbar_ax3)
         fig_obj.legend(["Black = 0"], loc="upper left")
-        fig_obj.text(
-            0.5,
-            0.1,
-            "Every hessian should be convexe \n Condition numbers should be close to 0",
-            horizontalalignment="center",
-            fontsize=12,
-            fontweight="bold",
-        )
-        plt.suptitle("Check conditioning for objectives", color="b", fontsize=15, fontweight="bold")
+        plt.suptitle("Every hessian should be convexe \n Condition numbers should be close to 0", color="b", fontsize=15, fontweight="bold")
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
 
     if sum(isinstance(ocp.nlp[i].ode_solver, OdeSolver.COLLOCATION) for i in range(ocp.n_phases)) > 0:
         raise NotImplementedError("Conditioning check is not implemented for collocations")
