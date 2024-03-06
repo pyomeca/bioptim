@@ -853,12 +853,10 @@ class Solution:
                     merged_out[key] = [None] * len(out[key])
                     for i in range(len(out[key])):
                         temp_merged_out = np.delete(out[key][i], redundant_index_between_phases[:-1])[:-1][np.newaxis, :]
-                        merged_out[key][i] = np.delete(temp_merged_out, redundant_index[:-1])[:-1][np.newaxis, :]
-
+                        merged_out[key][i] = np.delete(temp_merged_out, redundant_index)[np.newaxis, :]
 
                     merged_out[key] = np.concatenate(merged_out[key], axis=0)
-                    # merged_out[key] = np.delete(out[key][0], redundant_index[:-1])[:-1][np.newaxis, :]
-                time_vector = [i for time_vector_sub in time_vector for i in time_vector_sub]
+                time_vector = unique_time_vector
 
             else:
                 merged_out = []
