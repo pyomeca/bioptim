@@ -837,7 +837,7 @@ class Solution:
                 f"please integrate with Shooting.SINGLE_DISCONTINUOUS_PHASE."
             )
 
-        return [(integrated_states[-1] if shooting_type == Shooting.SINGLE else decision_states[phase_idx]) + dx]
+        return [(integrated_states[-1] if shooting_type == Shooting.SINGLE else decision_states[phase_idx][0]) + dx]
 
     def _remove_integrated_duplicates(self, time_vector, out, shooting_type, to_merge):
         if shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE) and (to_merge == SolutionMerge.NODES or SolutionMerge.NODES in to_merge):
@@ -854,22 +854,23 @@ class Solution:
                     for i in range(len(out[key])):
                         temp_merged_out = np.delete(out[key][i], redundant_index_between_phases[:-1])[:-1][np.newaxis, :]
                         merged_out[key][i] = np.delete(temp_merged_out, redundant_index)[np.newaxis, :]
-
                     merged_out[key] = np.concatenate(merged_out[key], axis=0)
                 time_vector = unique_time_vector
 
             else:
                 merged_out = []
                 for i in range(len(out)):
-                    redundant_index = np.linspace(
-                        1, self.ocp.nlp[0].ns * 2 + 1, self.ocp.nlp[0].ns + 1, dtype=int
-                    ).tolist()
-                    redundant_index = [0] + redundant_index[:-1]
+                    phase_time_vector = time_vector[i]
+                    unique_time_vector, unique_index = np.unique(phase_time_vector, return_index=True)
+                    redundant_index = [i for i in range(len(phase_time_vector)) if i not in unique_index]
+
                     out_per_phase = {}
                     for key in out[i].keys():
                         out_per_phase[key] = [None] * len(out[i][key])
                         for j in range(len(out[i][key])):
-                            out_per_phase[key][j] = np.delete(out[i][key][j], redundant_index[i])[:-1][np.newaxis, :]
+                            temp_merged_out = np.delete(out[i][key][j], redundant_index)[:-1][np.newaxis, :]
+                            temp_merged_out = temp_merged_out[0][1:] if i > 0 else temp_merged_out
+                            out_per_phase[key][j] = temp_merged_out
                         out_per_phase[key] = np.concatenate(out_per_phase[key], axis=0)
                     merged_out.append(out_per_phase)
 
