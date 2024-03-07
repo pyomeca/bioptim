@@ -586,6 +586,8 @@ class OptimalControlProgram:
 
         # If we want to plot what is printed by IPOPT in the console
         self.plot_ipopt_outputs = False
+        # If we want the conditioning of the problem to be plotted live
+        self.plot_check_conditioning = False
 
         return (
             constraints,
@@ -1307,7 +1309,7 @@ class OptimalControlProgram:
         self.plot_ipopt_outputs = True
 
     def add_plot_check_conditioning(self):
-        self.plot_conditionning = True
+        self.plot_conditioning = True
 
     def prepare_plots(
         self,

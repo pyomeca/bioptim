@@ -292,8 +292,9 @@ class PlotOcp:
         if self.ocp.plot_ipopt_outputs:
             self._create_ipopt_output_plot()
 
-        if self.plot_conditionning:
-            self._create_conditionning_plot()
+        if self.plot_check_conditioning:
+            from ..gui.check_conditioning import create_conditioning_plots
+            create_conditioning_plots(self)
 
 
     def _update_time_vector(self, phase_times):
@@ -731,7 +732,14 @@ class PlotOcp:
                 self._append_to_ydata(mapped_y_data)
 
         self.__update_axes()
-        self._update_ipopt_output_plot(args)
+
+        if self.ocp.plot_ipopt_outputs:
+            self._update_ipopt_output_plot(args)
+
+        if self.ocp.plot_check_conditioning:
+            from ..gui.check_conditioning import update_conditioning_plots
+            update_conditioning_plots(args["x"], self)
+
 
     def _compute_y_from_plot_func(
         self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a
