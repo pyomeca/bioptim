@@ -854,7 +854,10 @@ class Solution:
                     if len(time_vector) != 1
                     else time_vector[0]
                 )
+
+                time_vector = np.array(time_vector).round(decimals=6).tolist()
                 unique_time_vector, unique_index = np.unique(time_vector, return_index=True)
+
                 redundant_index = [i for i in range(len(time_vector)) if i not in unique_index]
 
                 for key in out.keys():
