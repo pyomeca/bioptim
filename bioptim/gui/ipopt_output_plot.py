@@ -68,7 +68,7 @@ def update_ipopt_output_plot(args, ocp):
         v = interface.ocp.variables_vector
 
         all_objectives = interface.dispatch_obj_func()
-        all_g, all_g_bounds = interface.dispatch_bounds()
+        all_g, all_g_bounds = interface.dispatch_bounds(include_g=True, include_g_internal=True, include_g_implicit=True)
 
         grad_f = jacobian(all_objectives, v)
         grad_g = jacobian(all_g, v)

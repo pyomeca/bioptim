@@ -1309,7 +1309,7 @@ class OptimalControlProgram:
         self.plot_ipopt_outputs = True
 
     def add_plot_check_conditioning(self):
-        self.plot_conditioning = True
+        self.plot_check_conditioning = True
 
     def prepare_plots(
         self,

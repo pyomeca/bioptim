@@ -97,13 +97,13 @@ def evaluate_hessian_objective(v, ocp):
     # On R (convex), the objective is convex if and only if the hessian is positive semi definite (psd)
     # And, as the hessian is symmetric (Schwarz), the hessian is psd if and only if the eigenvalues are positive
     eigen_values = np.linalg.eigvals(hessian_matrix)
-    ev_max = min(eigen_values)
-    ev_min = max(eigen_values)
+    ev_max = np.max(eigen_values)
+    ev_min = np.min(eigen_values)
     if ev_min == 0:
-        condition_number = " /!\ Ev_min is 0"
+        condition_number = " /!\ min eigen value is 0"
     if ev_min != 0:
         condition_number = np.abs(ev_max) / np.abs(ev_min)
-    convexity = "positive semi-definite" if np.all(eigen_values > 0) else "not positive semi-definite"
+    convexity = "positive semi-definite" if np.all(eigen_values > 0) else f"not positive semi-definite (min: {ev_min}, max: {ev_max})"
 
     return hessian_matrix, condition_number, convexity
 
@@ -111,10 +111,10 @@ def evaluate_hessian_objective(v, ocp):
 def create_conditioning_plots(ocp):
     
     cmap = mcm.get_cmap("seismic")
-    # cmap.set_bad(color="k")
+    cmap.set_bad(color="k")
     interface = IpoptInterface(ocp)
     variables_vector = ocp.variables_vector
-    all_g, _ = interface.dispatch_bounds()
+    all_g, _ = interface.dispatch_bounds(include_g=True, include_g_implicit=False, include_g_internal=False)
     all_objectives = interface.dispatch_obj_func()
     nb_variables = variables_vector.shape[0]
     nb_constraints = all_g.shape[0]
@@ -134,12 +134,13 @@ def create_conditioning_plots(ocp):
     fig_constraints.colorbar(im_constraints_jacobian, cax=cbar_ax)
 
     # Hessian constraints plot
-    fake_hessian = np.zeros((nb_constraints, nb_variables))
-
+    fake_hessian = np.zeros((nb_constraints, 3))
     im_constraints_hessian = axis_constraints[1].imshow(fake_hessian, aspect="auto", cmap=cmap)
     axis_constraints[1].set_title(
         "Hessian constraint norms (Norms should be close to 0)", fontweight="bold", fontsize=12
     )
+    axis_constraints[1].set_xticks([0, 1, 2])
+    axis_constraints[1].set_xticklabels(["Min", "Mean", "Max"])
     # colobar
     cbar_ax2 = fig_constraints.add_axes([0.95, 0.4, 0.015, 0.3])
     fig_constraints.colorbar(im_constraints_hessian, cax=cbar_ax2)
@@ -156,13 +157,14 @@ def create_conditioning_plots(ocp):
     # Hessian objective plot
     fake_hessian_obj = np.zeros((nb_variables, nb_variables))
     im_objectives_hessian = axis_obj.imshow(fake_hessian_obj, cmap=cmap)
-    axis_obj.set_title("Hessian objective \nConvexity = NA \n|λmax|/|λmin| = Condition number = NA", fontweight="bold", fontsize=12)
+    axis_obj.set_title("Convexity = NA \n|λmax|/|λmin| = Condition number = NA", fontweight="bold", fontsize=12)
+    axis_obj.set_xlabel("Hessian objectives")
     # colobar
     cbar_ax3 = fig_obj.add_axes([0.02, 0.4, 0.015, 0.3])
     fig_obj.colorbar(im_objectives_hessian, cax=cbar_ax3)
 
     fig_obj.legend(["Black = 0"], loc="upper left")
-    plt.suptitle("Every hessian should be convexe \n Condition numbers should be close to 0", color="b", fontsize=15,
+    plt.suptitle("Every hessian should be convexe (positive) and Condition numbers should be close to 0", color="b", fontsize=15,
                  fontweight="bold")
     figManager = plt.get_current_fig_manager()
     figManager.window.showMaximized()
@@ -185,19 +187,24 @@ def update_constraints_plot(v, ocp):
     axis_constraints = ocp.conditioning_plots["axis_constraints"]
     im_constraints_jacobian = ocp.conditioning_plots["im_constraints_jacobian"]
     im_constraints_hessian = ocp.conditioning_plots["im_constraints_hessian"]
-    cmap = mcm.get_cmap("seismic")
 
     # Jacobian plot
     jacobian_matrix[jacobian_matrix == 0] = np.nan
-    norm = mcolors.TwoSlopeNorm(vmin=np.min(jacobian_matrix) - 0.01, vmax=np.max(jacobian_matrix) + 0.01, vcenter=0)
-    im_constraints_jacobian.set_data(jacobian_matrix, aspect="auto", cmap=cmap, norm=norm)
-    axis_constraints[0].set_title(f"Jacobian constraints \nMatrix rank = {str(jacobian_rank)}\n Number of constraints = {str(jacobian_matrix.shape[1])}",
+    jac_min = np.min(jacobian_matrix) if jacobian_matrix.shape[0] != 0 else 0
+    jac_max = np.max(jacobian_matrix) if jacobian_matrix.shape[0] != 0 else 0
+    norm = mcolors.TwoSlopeNorm(vmin=jac_min - 0.01, vmax=jac_max + 0.01, vcenter=0)
+    im_constraints_jacobian.set_data(jacobian_matrix)
+    im_constraints_jacobian.set_norm(norm)
+    axis_constraints[0].set_title(f"Jacobian constraints \nMatrix rank = {str(jacobian_rank)}\n Number of constraints = {str(jacobian_matrix.shape[0])}",
                                         fontweight="bold",
                                         fontsize=12)
 
     # Hessian constraints plot
-    norm = mcolors.TwoSlopeNorm(vmin=np.min(hess_min_mean_max) - 0.01, vmax=np.max(hess_min_mean_max) + 0.01, vcenter=0)
-    im_constraints_hessian.set_data(hess_min_mean_max, aspect="auto", cmap=cmap, norm=norm)
+    hess_min = np.min(hess_min_mean_max) if hess_min_mean_max.shape[0] != 0 else 0
+    hess_max = np.max(hess_min_mean_max) if hess_min_mean_max.shape[0] != 0 else 0
+    norm = mcolors.TwoSlopeNorm(vmin=hess_min - 0.01, vmax=hess_max + 0.01, vcenter=0)
+    im_constraints_hessian.set_data(hess_min_mean_max)
+    im_constraints_hessian.set_norm(norm)
 
     
 def update_objective_plot(v, ocp):
@@ -208,8 +215,11 @@ def update_objective_plot(v, ocp):
     cmap = mcm.get_cmap("seismic")
 
     # Hessian objective plot
-    norm = mcolors.TwoSlopeNorm(vmin=np.min(hessian_matrix) - 0.01, vmax=np.max(hessian_matrix) + 0.01, vcenter=0)
-    im_objectives_hessian.set_data(hessian_matrix, cmap=cmap, norm=norm)
+    hess_min = np.min(hessian_matrix) if hessian_matrix.shape[0] != 0 else 0
+    hess_max = np.max(hessian_matrix) if hessian_matrix.shape[0] != 0 else 0
+    norm = mcolors.TwoSlopeNorm(vmin=hess_min - 0.01, vmax=hess_max + 0.01, vcenter=0)
+    im_objectives_hessian.set_data(hessian_matrix)
+    im_objectives_hessian.set_norm(norm)
     axis_obj.set_title(f"Hessian objective \nConvexity = {convexity} \n|λmax|/|λmin| = Condition number = {condition_number}", fontweight="bold",
                        fontsize=12)
 

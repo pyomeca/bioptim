@@ -293,9 +293,9 @@ class PlotOcp:
             from ..gui.ipopt_output_plot import create_ipopt_output_plot
             create_ipopt_output_plot(ocp)
 
-        if self.plot_check_conditioning:
+        if self.ocp.plot_check_conditioning:
             from ..gui.check_conditioning import create_conditioning_plots
-            create_conditioning_plots(self)
+            create_conditioning_plots(ocp)
 
 
     def _update_time_vector(self, phase_times):
@@ -736,11 +736,11 @@ class PlotOcp:
 
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import update_ipopt_output_plot
-            update_ipopt_output_plot(args, self)
+            update_ipopt_output_plot(args, self.ocp)
 
         if self.ocp.plot_check_conditioning:
             from ..gui.check_conditioning import update_conditioning_plots
-            update_conditioning_plots(args["x"], self)
+            update_conditioning_plots(args["x"], self.ocp)
 
 
     def _compute_y_from_plot_func(
