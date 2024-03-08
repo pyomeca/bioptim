@@ -25,9 +25,8 @@ from ..limits.path_conditions import BoundsList
 from ..limits.path_conditions import InitialGuessList, InitialGuess
 from ..limits.penalty_controller import PenaltyController
 from ..limits.path_conditions import InitialGuessList
-from ..misc.enums import PhaseDynamics, InterpolationType
 from ..misc.__version__ import __version__
-from ..misc.enums import Node, ControlType
+from ..misc.enums import Node, ControlType, PenaltyType, PhaseDynamics, InterpolationType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
 from ..misc.utils import check_version
 from ..optimization.optimal_control_program import OptimalControlProgram
@@ -209,7 +208,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         Adds the internal constraint needed for the explicit formulation of the stochastic ocp.
         """
 
-        constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+        constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL, penalty_type=PenaltyType.INTERNAL)
 
         penalty_m_dg_dz_list = MultinodeConstraintList()
         for i_phase, nlp in enumerate(self.nlp):
@@ -218,12 +217,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
+                    penalty_type=PenaltyType.INTERNAL,
                 )
             if i_phase > 0:
                 penalty_m_dg_dz_list.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
+                    penalty_type=PenaltyType.INTERNAL,
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
@@ -242,12 +243,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
+                    penalty_type=PenaltyType.INTERNAL,
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
+                    penalty_type=PenaltyType.INTERNAL,
                 )
 
         # Constraints for P
@@ -256,6 +259,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
+                penalty_type=PenaltyType.INTERNAL,
             )
 
         # Constraints for A
@@ -264,6 +268,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_DF_DX_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
+                penalty_type=PenaltyType.INTERNAL,
             )
 
         # Constraints for C
@@ -273,12 +278,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
+                    penalty_type=PenaltyType.INTERNAL,
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase + 1),
                     nodes=(-1, 0),
+                    penalty_type=PenaltyType.INTERNAL,
                 )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)
@@ -290,7 +297,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         """
 
         if "ref" in self.nlp[0].algebraic_states:
-            constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL)
+            constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL, penalty_type=PenaltyType.INTERNAL)
 
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
@@ -299,6 +306,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
                 expand=True,
+                penalty_type=PenaltyType.INTERNAL,
             )
 
         # Constraints for P inner-phase
@@ -308,12 +316,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
                 expand=True,
+                penalty_type=PenaltyType.INTERNAL
             )
 
         # Constraints for P inter-phase
         for i_phase, nlp in enumerate(self.nlp):
             if len(self.nlp) > 1 and i_phase < len(self.nlp) - 1:
-                phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase)
+                phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase, penalty_type=PenaltyType.INTERNAL)
 
     def _auto_initialize(self, x_init, u_init, parameter_init, a_init):
         def replace_initial_guess(key, n_var, var_init, a_init, i_phase):
@@ -548,46 +557,6 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         self.update_initial_guess(x_init, u_init, parameter_init, a_init)
         # Define the actual NLP problem
         OptimizationVectorHelper.declare_ocp_shooting_points(self)
-
-    @staticmethod
-    def load(file_path: str) -> list:
-        """
-        Reload a previous optimization (*.bo) saved using save
-
-        Parameters
-        ----------
-        file_path: str
-            The path to the *.bo file
-
-        Returns
-        -------
-        The ocp and sol structure. If it was saved, the iterations are also loaded
-        """
-
-        with open(file_path, "rb") as file:
-            try:
-                data = pickle.load(file)
-            except BaseException as error_message:
-                raise ValueError(
-                    f"The file '{file_path}' cannot be loaded, maybe the version of bioptim (version {__version__})\n"
-                    f"is not the same as the one that created the file (version unknown). For more information\n"
-                    "please refer to the original error message below\n\n"
-                    f"{type(error_message).__name__}: {error_message}"
-                )
-            ocp = StochasticOptimalControlProgram.from_loaded_data(data["ocp_initializer"])
-            for key in data["versions"].keys():
-                key_module = "biorbd_casadi" if key == "biorbd" else key
-                try:
-                    check_version(sys.modules[key_module], data["versions"][key], ocp.version[key], exclude_max=False)
-                except ImportError:
-                    raise ImportError(
-                        f"Version of {key} from file ({data['versions'][key]}) is not the same as the "
-                        f"installed version ({ocp.version[key]})"
-                    )
-            sol = data["sol"]
-            sol.ocp = Solution.SimplifiedOCP(ocp)
-            out = [ocp, sol]
-        return out
 
     def _set_default_ode_solver(self):
         """It overrides the method in OptimalControlProgram that set a RK4 by default"""
