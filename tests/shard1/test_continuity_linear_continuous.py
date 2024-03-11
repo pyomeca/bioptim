@@ -25,8 +25,6 @@ def test_continuity_linear_continuous_global():
 
     solution = ocp.solve(Solver.IPOPT(_max_iter=5))
 
-    print(solution.detailed_cost)
-
     actual_costs = solution.detailed_cost
 
     expected_costs = [
