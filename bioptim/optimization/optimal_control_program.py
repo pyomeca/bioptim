@@ -39,7 +39,7 @@ from ..limits.path_conditions import InitialGuess, InitialGuessList
 from ..limits.penalty import PenaltyOption
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
-from ..limits.phase_transtion_builder import PhaseTransitionBuilder
+from ..limits.phase_transtion_factory import PhaseTransitionFactory
 from ..misc.__version__ import __version__
 from ..misc.enums import (
     ControlType,
@@ -662,7 +662,7 @@ class OptimalControlProgram:
         # Define continuity constraints
         # Prepare phase transitions (Reminder, it is important that parameters are declared before,
         # otherwise they will erase the phase_transitions)
-        self.phase_transitions = PhaseTransitionBuilder(ocp=self).prepare_phase_transitions(phase_transitions)
+        self.phase_transitions = PhaseTransitionFactory(ocp=self).prepare_phase_transitions(phase_transitions)
 
         # Skipping creates an OCP without built-in continuity constraints, make sure you declared constraints elsewhere
         self._declare_continuity()
