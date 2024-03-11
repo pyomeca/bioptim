@@ -922,7 +922,7 @@ class Solution:
 
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
-            phase_times, integrated_sol = solve_ivp_interface(
+            integrated_sol = solve_ivp_interface(
                 shooting_type=Shooting.MULTIPLE,
                 nlp=nlp,
                 t=t_spans[p],
