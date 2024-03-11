@@ -51,17 +51,9 @@ class MultinodeConstraint(MultinodePenalty):
     def _get_pool_to_add_penalty(self, ocp, nlp):
 
         if self.penalty_type == PenaltyType.INTERNAL:
-            pool = (
-                nlp.g_internal
-                if nlp
-                else ocp.g_internal
-            )
+            pool = nlp.g_internal if nlp else ocp.g_internal
         elif self.penalty_type == ConstraintType.IMPLICIT:
-            pool = (
-                nlp.g_implicit
-                if nlp
-                else ocp.g_implicit
-            )
+            pool = nlp.g_implicit if nlp else ocp.g_implicit
         elif self.penalty_type == PenaltyType.USER:
             pool = nlp.g if nlp else ocp.g
         else:

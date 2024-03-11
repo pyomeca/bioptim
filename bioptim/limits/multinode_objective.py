@@ -17,11 +17,7 @@ class MultinodeObjective(MultinodePenalty):
 
     def _get_pool_to_add_penalty(self, ocp, nlp):
         if self.penalty_type == PenaltyType.INTERNAL:
-            pool = (
-                nlp.J_internal
-                if nlp
-                else ocp.J_internal
-            )
+            pool = nlp.J_internal if nlp else ocp.J_internal
         elif self.penalty_type == PenaltyType.USER:
             pool = nlp.J if nlp else ocp.J
         else:
@@ -56,7 +52,7 @@ class MultinodeObjectiveList(MultinodePenaltyList):
             option_type=MultinodeObjective,
             multinode_penalty=multinode_objective,
             _multinode_penalty_fcn=MultinodeObjectiveFcn,
-            **extra_arguments
+            **extra_arguments,
         )
 
 
