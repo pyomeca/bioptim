@@ -345,7 +345,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         )
 
         if expand:
-            nlp.dynamics_func = (nlp.dynamics_func[0].expand(),)
+            nlp.dynamics_func = (nlp.dynamics_func.expand(),)
             nlp.implicit_dynamics_func = (nlp.implicit_dynamics_func[0].expand(),)
             nlp.implicit_dynamics_func_first_node = (nlp.implicit_dynamics_func_first_node[0].expand(),)
             nlp.implicit_dynamics_func_last_node = (nlp.implicit_dynamics_func_last_node[0].expand(),)

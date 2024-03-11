@@ -1076,7 +1076,7 @@ class Solution:
         """
 
         plot_ocp = self.ocp.prepare_plots(automatically_organize, show_bounds, shooting_type, integrator)
-        plot_ocp.update_data(self.vector)
+        plot_ocp.update_data({"x": self.vector})
         if save_name:
             if save_name.endswith(".png"):
                 save_name = save_name[:-4]

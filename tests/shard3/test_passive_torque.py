@@ -89,7 +89,7 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_passive_torque:
             np.testing.assert_almost_equal(
@@ -175,7 +175,7 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
     if with_passive_torque:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -267,7 +267,7 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
     if with_residual_torque:
         if with_passive_torque:
             np.testing.assert_almost_equal(
@@ -388,7 +388,7 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func[0](time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_passive_torque:
