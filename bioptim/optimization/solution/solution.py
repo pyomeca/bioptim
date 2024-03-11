@@ -233,15 +233,11 @@ class Solution:
 
         if len(sol[0]) != len(all_ns):
             raise ValueError("The time step dt array len must match the number of phases")
-        if (
-            sum(
-                [
-                    len(s) != len(all_ns) if p != 3 and len(sol[p + 1].keys()) != 0 else False
-                    for p, s in enumerate(sol[:1])
-                ]
-            )
-            != 0
-        ):
+
+        is_right_size = [len(s) != len(all_ns) if p != 3 and len(sol[p + 1].keys()) != 0 else False
+                         for p, s in enumerate(sol[:1])]
+
+        if sum(is_right_size) != 0:
             raise ValueError("The InitialGuessList len must match the number of phases")
 
         if n_param != 0:
@@ -294,10 +290,7 @@ class Solution:
         if n_param:
             for p, ss in enumerate(sol_params):
                 for key in ss.keys():
-                    # vector = np.concatenate((vector, np.repeat(ss[key].init, all_ns[p] + 1)[:, np.newaxis]))
                     vector = np.concatenate((vector, np.repeat(ss[key].init, 1)[:, np.newaxis]))
-                    # TODO : ask pariterre about this modification (the previous version did not enable the parameters
-                    #  to be taken into consideration for each phase)
 
         # For algebraic_states variables
         for p, ss in enumerate(sol_algebraic_states):
@@ -394,6 +387,7 @@ class Solution:
         to_merge: SolutionMerge | list[SolutionMerge] = None,
         time_alignment: TimeAlignment = TimeAlignment.STATES,
         continuous: bool = True,
+        duplicated_times: bool = True,
     ) -> list | np.ndarray:
         """
         Returns the time vector at each node that matches stepwise_states or stepwise_controls
@@ -410,6 +404,9 @@ class Solution:
         continuous: bool
             If the time should be continuous throughout the whole ocp. If False, then the time is reset at the
             beginning of each phase.
+        duplicated_times: bool
+            If the times should be duplicated for each nodes.
+            If False, then the returned time vector will not have any duplicated times
 
         Returns
         -------
@@ -421,6 +418,7 @@ class Solution:
             to_merge=to_merge,
             time_alignment=time_alignment,
             continuous=continuous,
+            duplicated_times=duplicated_times,
         )
 
     def _process_time_vector(
@@ -429,6 +427,7 @@ class Solution:
         to_merge: SolutionMerge | list[SolutionMerge],
         time_alignment: TimeAlignment,
         continuous: bool,
+        duplicated_times: bool = True,
     ):
         if to_merge is None or isinstance(to_merge, SolutionMerge):
             to_merge = [to_merge]
@@ -482,6 +481,14 @@ class Solution:
 
                 else:
                     raise ValueError("time_alignment should be either TimeAlignment.STATES or TimeAlignment.CONTROLS")
+
+        if not duplicated_times:
+            for i in range(len(times)):
+                for j in range(len(times[i])):
+                    keep_condition = times[i][j].shape[0] == 1 and i == len(times) - 1
+                    times[i][j] = times[i][j][:] if keep_condition else times[i][j][:-1]
+                    if j == len(times[i]) - 1 and i != len(times) - 1:
+                        del times[i][j]
 
         if continuous:
             for phase_idx, phase_time in enumerate(times):
@@ -702,6 +709,7 @@ class Solution:
         shooting_type: Shooting = Shooting.SINGLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
         to_merge: SolutionMerge | list[SolutionMerge] = None,
+        duplicated_times: bool = True,
         return_time: bool = False,
     ):
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
@@ -730,13 +738,12 @@ class Solution:
         u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
         a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
 
-        time_vector = []
         out: list = [None] * len(self.ocp.nlp)
         integrated_sol = None
         for p, nlp in enumerate(self.ocp.nlp):
             next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
 
-            phase_times, integrated_sol = solve_ivp_interface(
+            integrated_sol = solve_ivp_interface(
                 shooting_type=shooting_type,
                 nlp=nlp,
                 t=t_spans[p],
@@ -747,18 +754,21 @@ class Solution:
                 method=integrator,
             )
 
-            time_vector.append(phase_times)
             out[p] = {}
             for key in nlp.states.keys():
                 out[p][key] = [None] * nlp.n_states_nodes
                 for ns, sol_ns in enumerate(integrated_sol):
-                    out[p][key][ns] = sol_ns[nlp.states[key].index, :]
+                    if duplicated_times:
+                        out[p][key][ns] = sol_ns[nlp.states[key].index, :]
+                    else:
+                        duplicated_times_condition = p == len(self.ocp.nlp) - 1 and ns == nlp.ns
+                        out[p][key][ns] = sol_ns[nlp.states[key].index, :] if duplicated_times_condition else sol_ns[nlp.states[key].index, :-1]
 
         if to_merge:
             out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
-            time_vector, out = self._remove_integrated_duplicates(time_vector, out, shooting_type, to_merge)
 
         if return_time:
+            time_vector = self.stepwise_time(to_merge=to_merge, duplicated_times=duplicated_times)
             return out if len(out) > 1 else out[0], time_vector if len(time_vector) > 1 else time_vector[0]
         else:
             return out if len(out) > 1 else out[0]
@@ -839,57 +849,57 @@ class Solution:
 
         return [(integrated_states[-1] if shooting_type == Shooting.SINGLE else decision_states[phase_idx][0]) + dx]
 
-    def _remove_integrated_duplicates(self, time_vector, out, shooting_type, to_merge):
-        if shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE) and (
-            to_merge == SolutionMerge.NODES or SolutionMerge.NODES in to_merge
-        ):
-            if (isinstance(to_merge, list) and SolutionMerge.PHASES in to_merge) or to_merge == SolutionMerge.PHASES:
-                merged_out = {}
-
-                redundant_index_between_phases = np.cumsum(
-                    [len(time_vector[i]) + 1 for i in range(len(self.ocp.nlp))]
-                ).tolist()
-                time_vector = (
-                    [i for time_vector_sub in time_vector for i in time_vector_sub]
-                    if len(time_vector) != 1
-                    else time_vector[0]
-                )
-
-                time_vector = np.array(time_vector).round(decimals=6).tolist()
-                unique_time_vector, unique_index = np.unique(time_vector, return_index=True)
-
-                redundant_index = [i for i in range(len(time_vector)) if i not in unique_index]
-
-                for key in out.keys():
-                    merged_out[key] = [None] * len(out[key])
-                    for i in range(len(out[key])):
-                        temp_merged_out = np.delete(out[key][i], redundant_index_between_phases[:-1])[:-1][
-                            np.newaxis, :
-                        ]
-                        merged_out[key][i] = np.delete(temp_merged_out, redundant_index)[np.newaxis, :]
-                    merged_out[key] = np.concatenate(merged_out[key], axis=0)
-                time_vector = unique_time_vector
-
-            else:
-                merged_out = []
-                for i in range(len(out)):
-                    phase_time_vector = time_vector[i]
-                    unique_time_vector, unique_index = np.unique(phase_time_vector, return_index=True)
-                    redundant_index = [i for i in range(len(phase_time_vector)) if i not in unique_index]
-
-                    out_per_phase = {}
-                    for key in out[i].keys():
-                        out_per_phase[key] = [None] * len(out[i][key])
-                        for j in range(len(out[i][key])):
-                            temp_merged_out = np.delete(out[i][key][j], redundant_index)[:-1][np.newaxis, :]
-                            temp_merged_out = temp_merged_out[0][1:] if i > 0 else temp_merged_out
-                            out_per_phase[key][j] = temp_merged_out
-                    merged_out.append(out_per_phase)
-
-        else:
-            merged_out = out
-
-        return time_vector, merged_out
+    # def _remove_integrated_duplicates(self, time_vector, out, shooting_type, to_merge):
+    #     if shooting_type in (Shooting.SINGLE, Shooting.SINGLE_DISCONTINUOUS_PHASE) and (
+    #         to_merge == SolutionMerge.NODES or SolutionMerge.NODES in to_merge
+    #     ):
+    #         if (isinstance(to_merge, list) and SolutionMerge.PHASES in to_merge) or to_merge == SolutionMerge.PHASES:
+    #             merged_out = {}
+    #
+    #             redundant_index_between_phases = np.cumsum(
+    #                 [len(time_vector[i]) + 1 for i in range(len(self.ocp.nlp))]
+    #             ).tolist()
+    #             time_vector = (
+    #                 [i for time_vector_sub in time_vector for i in time_vector_sub]
+    #                 if len(time_vector) != 1
+    #                 else time_vector[0]
+    #             )
+    #
+    #             time_vector = np.array(time_vector).round(decimals=6).tolist()
+    #             unique_time_vector, unique_index = np.unique(time_vector, return_index=True)
+    #
+    #             redundant_index = [i for i in range(len(time_vector)) if i not in unique_index]
+    #
+    #             for key in out.keys():
+    #                 merged_out[key] = [None] * len(out[key])
+    #                 for i in range(len(out[key])):
+    #                     temp_merged_out = np.delete(out[key][i], redundant_index_between_phases[:-1])[:-1][
+    #                         np.newaxis, :
+    #                     ]
+    #                     merged_out[key][i] = np.delete(temp_merged_out, redundant_index)[np.newaxis, :]
+    #                 merged_out[key] = np.concatenate(merged_out[key], axis=0)
+    #             time_vector = unique_time_vector
+    #
+    #         else:
+    #             merged_out = []
+    #             for i in range(len(out)):
+    #                 phase_time_vector = time_vector[i]
+    #                 unique_time_vector, unique_index = np.unique(phase_time_vector, return_index=True)
+    #                 redundant_index = [i for i in range(len(phase_time_vector)) if i not in unique_index]
+    #
+    #                 out_per_phase = {}
+    #                 for key in out[i].keys():
+    #                     out_per_phase[key] = [None] * len(out[i][key])
+    #                     for j in range(len(out[i][key])):
+    #                         temp_merged_out = np.delete(out[i][key][j], redundant_index)[:-1][np.newaxis, :]
+    #                         temp_merged_out = temp_merged_out[0][1:] if i > 0 else temp_merged_out
+    #                         out_per_phase[key][j] = temp_merged_out
+    #                 merged_out.append(out_per_phase)
+    #
+    #     else:
+    #         merged_out = out
+    #
+    #     return time_vector, merged_out
 
     def _integrate_stepwise(self) -> None:
         """
