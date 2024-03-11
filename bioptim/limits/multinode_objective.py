@@ -1,5 +1,6 @@
 from typing import Any
 
+from ..misc.enums import PenaltyType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 from .objective_functions import ObjectiveFunction
@@ -15,7 +16,18 @@ class MultinodeObjective(MultinodePenalty):
         self.is_stochastic = is_stochastic
 
     def _get_pool_to_add_penalty(self, ocp, nlp):
-        return nlp.J_internal if nlp else ocp.J_internal
+        if self.penalty_type == PenaltyType.INTERNAL:
+            pool = (
+                nlp.J_internal
+                if nlp
+                else ocp.J_internal
+            )
+        elif self.penalty_type == PenaltyType.USER:
+            pool = nlp.J if nlp else ocp.J
+        else:
+            raise ValueError(f"Invalid objective type {self.penalty_type}.")
+
+        return pool
 
 
 class MultinodeObjectiveList(MultinodePenaltyList):

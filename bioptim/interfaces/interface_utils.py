@@ -175,36 +175,42 @@ def generic_dispatch_bounds(interface, include_g: bool, include_g_internal: bool
     if include_g_internal:
         all_g = vertcat(all_g, interface.get_all_penalties(interface.ocp, interface.ocp.g_internal))
         for g in interface.ocp.g_internal:
-            all_g_bounds.concatenate(g.bounds)
+            if g != []:
+                all_g_bounds.concatenate(g.bounds)
 
     if include_g_implicit:
         all_g = vertcat(all_g, interface.get_all_penalties(interface.ocp, interface.ocp.g_implicit))
         for g in interface.ocp.g_implicit:
-            all_g_bounds.concatenate(g.bounds)
+            if g != []:
+                all_g_bounds.concatenate(g.bounds)
 
     if include_g:
         all_g = vertcat(all_g, interface.get_all_penalties(interface.ocp, interface.ocp.g))
         for g in interface.ocp.g:
-            all_g_bounds.concatenate(g.bounds)
+            if g != []:
+                all_g_bounds.concatenate(g.bounds)
 
     for nlp in interface.ocp.nlp:
         if include_g_internal:
             all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g_internal))
             for g in nlp.g_internal:
-                for _ in g.node_idx:
-                    all_g_bounds.concatenate(g.bounds)
+                if g != []:
+                    for _ in g.node_idx:
+                        all_g_bounds.concatenate(g.bounds)
 
         if include_g_implicit:
             all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g_implicit))
             for g in nlp.g_implicit:
-                for _ in g.node_idx:
-                    all_g_bounds.concatenate(g.bounds)
+                if g != []:
+                    for _ in g.node_idx:
+                        all_g_bounds.concatenate(g.bounds)
 
         if include_g:
             all_g = vertcat(all_g, interface.get_all_penalties(nlp, nlp.g))
             for g in nlp.g:
-                for _ in g.node_idx:
-                    all_g_bounds.concatenate(g.bounds)
+                if g != []:
+                    for _ in g.node_idx:
+                        all_g_bounds.concatenate(g.bounds)
 
     if isinstance(all_g_bounds.min, (SX, MX)) or isinstance(all_g_bounds.max, (SX, MX)):
         raise RuntimeError(f"{interface.solver_name} doesn't support SX/MX types in constraints bounds")

@@ -177,6 +177,7 @@ class ConstraintList(OptionList):
 
         else:
             super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, **extra_arguments)
+            # TODO: add an InternalConstraint option type? Because now the list_index is wrong
 
     def print(self):
         """

@@ -83,8 +83,11 @@ class MultinodePenalty(PenaltyOption):
         raise NotImplementedError("This is an abstract method and should be implemented by child")
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
-        ocp = controller[0].ocp
-        nlp = controller[0].get_nlp
+
+        controller = controller[0]  # This is a special case of Node.TRANSITION
+
+        ocp = controller.ocp
+        nlp = controller.get_nlp
         pool = self._get_pool_to_add_penalty(ocp, nlp)
         pool[self.list_index] = self
 

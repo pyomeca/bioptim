@@ -3,7 +3,7 @@ from typing import Any
 import numpy as np
 
 from .path_conditions import Bounds
-from ..misc.enums import InterpolationType
+from ..misc.enums import InterpolationType, PenaltyType, ConstraintType
 from ..misc.fcn_enum import FcnEnum
 from .multinode_penalty import MultinodePenalty, MultinodePenaltyList, MultinodePenaltyFunctions
 
@@ -49,7 +49,25 @@ class MultinodeConstraint(MultinodePenalty):
             raise RuntimeError(f"bounds rows is {self.bounds.shape[0]} but should be {self.rows} or empty")
 
     def _get_pool_to_add_penalty(self, ocp, nlp):
-        return nlp.g_internal if nlp else ocp.g_internal
+
+        if self.penalty_type == PenaltyType.INTERNAL:
+            pool = (
+                nlp.g_internal
+                if nlp
+                else ocp.g_internal
+            )
+        elif self.penalty_type == ConstraintType.IMPLICIT:
+            pool = (
+                nlp.g_implicit
+                if nlp
+                else ocp.g_implicit
+            )
+        elif self.penalty_type == PenaltyType.USER:
+            pool = nlp.g if nlp else ocp.g
+        else:
+            raise ValueError(f"Invalid constraint type {self.penalty_type}.")
+
+        return pool
 
 
 class MultinodeConstraintList(MultinodePenaltyList):
