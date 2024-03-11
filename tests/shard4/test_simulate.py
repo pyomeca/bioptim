@@ -606,7 +606,11 @@ def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, 
             assert sol_integrated[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
             assert states[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
 
-    opts = {"shooting_type": shooting, "integrator": integrator, "to_merge": [SolutionMerge.PHASES, SolutionMerge.NODES]}
+    opts = {
+        "shooting_type": shooting,
+        "integrator": integrator,
+        "to_merge": [SolutionMerge.PHASES, SolutionMerge.NODES],
+    }
     sol_integrated, sol_time = sol.integrate(**opts, duplicated_times=False, return_time=True)
     sol_time = np.concatenate(sol_time, axis=0)
     assert len(sol_time) == len(np.unique(sol_time))

@@ -234,8 +234,9 @@ class Solution:
         if len(sol[0]) != len(all_ns):
             raise ValueError("The time step dt array len must match the number of phases")
 
-        is_right_size = [len(s) != len(all_ns) if p != 3 and len(sol[p + 1].keys()) != 0 else False
-                         for p, s in enumerate(sol[:1])]
+        is_right_size = [
+            len(s) != len(all_ns) if p != 3 and len(sol[p + 1].keys()) != 0 else False for p, s in enumerate(sol[:1])
+        ]
 
         if sum(is_right_size) != 0:
             raise ValueError("The InitialGuessList len must match the number of phases")
@@ -762,7 +763,11 @@ class Solution:
                         out[p][key][ns] = sol_ns[nlp.states[key].index, :]
                     else:
                         duplicated_times_condition = p == len(self.ocp.nlp) - 1 and ns == nlp.ns
-                        out[p][key][ns] = sol_ns[nlp.states[key].index, :] if duplicated_times_condition else sol_ns[nlp.states[key].index, :-1]
+                        out[p][key][ns] = (
+                            sol_ns[nlp.states[key].index, :]
+                            if duplicated_times_condition
+                            else sol_ns[nlp.states[key].index, :-1]
+                        )
 
         if to_merge:
             out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
