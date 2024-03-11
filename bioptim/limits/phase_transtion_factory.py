@@ -3,7 +3,7 @@ from .phase_transition import PhaseTransition, PhaseTransitionFcn, PhaseTransiti
 from ..misc.enums import ControlType
 
 
-class PhaseTransitionBuilder:
+class PhaseTransitionFactory:
     """
     A class to prepare the phase transitions for the ocp builder
 
@@ -42,17 +42,15 @@ class PhaseTransitionBuilder:
     def extend_transitions_for_linear_continuous_controls(self):
         """Add phase transitions for linear continuous controls.
         This is a special case where the controls are continuous"""
-        for phase, nlp in enumerate(self.ocp.nlp):
+
+        for phase, nlp in enumerate(self.ocp.nlp[:-1]):
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
-                self.full_phase_transitions.extend(
-                    [
-                        PhaseTransition(
-                            phase_pre_idx=i,
-                            transition=PhaseTransitionFcn.CONTINUOUS_CONTROLS,
-                            weight=None,
-                        )
-                        for i in range(self.ocp.n_phases - 1)
-                    ]
+                self.full_phase_transitions.append(
+                    PhaseTransition(
+                        phase_pre_idx=phase,
+                        transition=PhaseTransitionFcn.CONTINUOUS_CONTROLS,
+                        weight=None,  # Continuity always enforced by the linear continuous control
+                    )
                 )
 
     def check_phase_index(self, idx_phase):
