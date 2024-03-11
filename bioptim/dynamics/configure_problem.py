@@ -960,19 +960,19 @@ class ConfigureProblem:
             # Only possible for regular dynamics, not for extra_dynamics
             if dynamics_eval.defects is not None:
                 nlp.implicit_dynamics_func = Function(
-                        "DynamicsDefects",
-                        [
-                            time_span_sym,
-                            nlp.states.scaled.mx_reduced,
-                            nlp.controls.scaled.mx_reduced,
-                            nlp.parameters.scaled.mx_reduced,
-                            nlp.algebraic_states.scaled.mx_reduced,
-                            nlp.states_dot.scaled.mx_reduced,
-                        ],
-                        [dynamics_eval.defects],
-                        ["t_span", "x", "u", "p", "a", "xdot"],
-                        ["defects"],
-                    )
+                    "DynamicsDefects",
+                    [
+                        time_span_sym,
+                        nlp.states.scaled.mx_reduced,
+                        nlp.controls.scaled.mx_reduced,
+                        nlp.parameters.scaled.mx_reduced,
+                        nlp.algebraic_states.scaled.mx_reduced,
+                        nlp.states_dot.scaled.mx_reduced,
+                    ],
+                    [dynamics_eval.defects],
+                    ["t_span", "x", "u", "p", "a", "xdot"],
+                    ["defects"],
+                )
                 if nlp.dynamics_type.expand_dynamics:
                     try:
                         nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()

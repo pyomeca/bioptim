@@ -26,11 +26,13 @@ def jacobian_hessian_constraints(variables_vector, all_g):
     # HESSIAN
     constraints_hess_func = []
     for i in range(all_g.shape[0]):
-        constraints_hess_func.append(Function(
-            "constraints_hessian",
-            [variables_vector],
-            [hessian(all_g[i], variables_vector)[0]],
-        ))
+        constraints_hess_func.append(
+            Function(
+                "constraints_hessian",
+                [variables_vector],
+                [hessian(all_g[i], variables_vector)[0]],
+            )
+        )
 
     return constraints_jac_func, constraints_hess_func
 
@@ -103,13 +105,17 @@ def evaluate_hessian_objective(v, ocp):
         condition_number = " /!\ min eigen value is 0"
     if ev_min != 0:
         condition_number = np.abs(ev_max) / np.abs(ev_min)
-    convexity = "positive semi-definite" if np.all(eigen_values > 0) else f"not positive semi-definite (min: {ev_min}, max: {ev_max})"
+    convexity = (
+        "positive semi-definite"
+        if np.all(eigen_values > 0)
+        else f"not positive semi-definite (min: {ev_min}, max: {ev_max})"
+    )
 
     return hessian_matrix, condition_number, convexity
 
 
 def create_conditioning_plots(ocp):
-    
+
     cmap = mcm.get_cmap("seismic")
     cmap.set_bad(color="k")
     interface = IpoptInterface(ocp)
@@ -128,7 +134,9 @@ def create_conditioning_plots(ocp):
     # Jacobian plot
     fake_jacobian = np.zeros((nb_constraints, nb_variables))
     im_constraints_jacobian = axis_constraints[0].imshow(fake_jacobian, aspect="auto", cmap=cmap)
-    axis_constraints[0].set_title("Jacobian constraints \nMatrix rank = NA \n Number of constraints = NA", fontweight="bold", fontsize=12)
+    axis_constraints[0].set_title(
+        "Jacobian constraints \nMatrix rank = NA \n Number of constraints = NA", fontweight="bold", fontsize=12
+    )
     # colorbar
     cbar_ax = fig_constraints.add_axes([0.02, 0.4, 0.015, 0.3])
     fig_constraints.colorbar(im_constraints_jacobian, cax=cbar_ax)
@@ -150,7 +158,6 @@ def create_conditioning_plots(ocp):
     figManager = plt.get_current_fig_manager()
     figManager.window.showMaximized()
 
-
     # PLOT OBJECTIVES
     fig_obj, axis_obj = plt.subplots(1, 1, num="Check conditioning for objectives")
 
@@ -164,8 +171,12 @@ def create_conditioning_plots(ocp):
     fig_obj.colorbar(im_objectives_hessian, cax=cbar_ax3)
 
     fig_obj.legend(["Black = 0"], loc="upper left")
-    plt.suptitle("Every hessian should be convexe (positive) and Condition numbers should be close to 0", color="b", fontsize=15,
-                 fontweight="bold")
+    plt.suptitle(
+        "Every hessian should be convexe (positive) and Condition numbers should be close to 0",
+        color="b",
+        fontsize=15,
+        fontweight="bold",
+    )
     figManager = plt.get_current_fig_manager()
     figManager.window.showMaximized()
 
@@ -180,7 +191,7 @@ def create_conditioning_plots(ocp):
         "objectives_hess_func": objectives_hess_func,
     }
 
-    
+
 def update_constraints_plot(v, ocp):
 
     jacobian_matrix, jacobian_rank, hess_min_mean_max = evaluate_jacobian_hessian_constraints(v, ocp)
@@ -195,9 +206,11 @@ def update_constraints_plot(v, ocp):
     norm = mcolors.TwoSlopeNorm(vmin=jac_min - 0.01, vmax=jac_max + 0.01, vcenter=0)
     im_constraints_jacobian.set_data(jacobian_matrix)
     im_constraints_jacobian.set_norm(norm)
-    axis_constraints[0].set_title(f"Jacobian constraints \nMatrix rank = {str(jacobian_rank)}\n Number of constraints = {str(jacobian_matrix.shape[0])}",
-                                        fontweight="bold",
-                                        fontsize=12)
+    axis_constraints[0].set_title(
+        f"Jacobian constraints \nMatrix rank = {str(jacobian_rank)}\n Number of constraints = {str(jacobian_matrix.shape[0])}",
+        fontweight="bold",
+        fontsize=12,
+    )
 
     # Hessian constraints plot
     hess_min = np.min(hess_min_mean_max) if hess_min_mean_max.shape[0] != 0 else 0
@@ -206,7 +219,7 @@ def update_constraints_plot(v, ocp):
     im_constraints_hessian.set_data(hess_min_mean_max)
     im_constraints_hessian.set_norm(norm)
 
-    
+
 def update_objective_plot(v, ocp):
 
     hessian_matrix, condition_number, convexity = evaluate_hessian_objective(v, ocp)
@@ -220,13 +233,18 @@ def update_objective_plot(v, ocp):
     norm = mcolors.TwoSlopeNorm(vmin=hess_min - 0.01, vmax=hess_max + 0.01, vcenter=0)
     im_objectives_hessian.set_data(hessian_matrix)
     im_objectives_hessian.set_norm(norm)
-    axis_obj.set_title(f"Hessian objective \nConvexity = {convexity} \n|λmax|/|λmin| = Condition number = {condition_number}", fontweight="bold",
-                       fontsize=12)
+    axis_obj.set_title(
+        f"Hessian objective \nConvexity = {convexity} \n|λmax|/|λmin| = Condition number = {condition_number}",
+        fontweight="bold",
+        fontsize=12,
+    )
+
 
 def update_conditioning_plots(v, ocp):
     update_constraints_plot(v, ocp)
     update_objective_plot(v, ocp)
     plt.draw()
+
 
 def check_conditioning(ocp):
     """

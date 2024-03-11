@@ -208,7 +208,11 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         Adds the internal constraint needed for the explicit formulation of the stochastic ocp.
         """
 
-        constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL, penalty_type=PenaltyType.INTERNAL)
+        constraints.add(
+            ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE,
+            node=Node.ALL,
+            penalty_type=PenaltyType.INTERNAL,
+        )
 
         penalty_m_dg_dz_list = MultinodeConstraintList()
         for i_phase, nlp in enumerate(self.nlp):
@@ -297,7 +301,11 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         """
 
         if "ref" in self.nlp[0].algebraic_states:
-            constraints.add(ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE, node=Node.ALL, penalty_type=PenaltyType.INTERNAL)
+            constraints.add(
+                ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE,
+                node=Node.ALL,
+                penalty_type=PenaltyType.INTERNAL,
+            )
 
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
@@ -316,13 +324,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
                 expand=True,
-                penalty_type=PenaltyType.INTERNAL
+                penalty_type=PenaltyType.INTERNAL,
             )
 
         # Constraints for P inter-phase
         for i_phase, nlp in enumerate(self.nlp):
             if len(self.nlp) > 1 and i_phase < len(self.nlp) - 1:
-                phase_transition.add(PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase, penalty_type=PenaltyType.INTERNAL)
+                phase_transition.add(
+                    PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase, penalty_type=PenaltyType.INTERNAL
+                )
 
     def _auto_initialize(self, x_init, u_init, parameter_init, a_init):
         def replace_initial_guess(key, n_var, var_init, a_init, i_phase):

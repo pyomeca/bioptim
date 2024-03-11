@@ -111,7 +111,9 @@ class IpoptInterface(SolverInterface):
         """
         Parse the bounds of the full ocp to a Ipopt-friendly one
         """
-        return generic_dispatch_bounds(self, include_g=include_g, include_g_internal=include_g_internal, include_g_implicit=include_g_implicit)
+        return generic_dispatch_bounds(
+            self, include_g=include_g, include_g_internal=include_g_internal, include_g_implicit=include_g_implicit
+        )
 
     def dispatch_obj_func(self):
         """

@@ -291,12 +291,13 @@ class PlotOcp:
 
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import create_ipopt_output_plot
+
             create_ipopt_output_plot(ocp)
 
         if self.ocp.plot_check_conditioning:
             from ..gui.check_conditioning import create_conditioning_plots
-            create_conditioning_plots(ocp)
 
+            create_conditioning_plots(ocp)
 
     def _update_time_vector(self, phase_times):
         """
@@ -736,12 +737,13 @@ class PlotOcp:
 
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import update_ipopt_output_plot
+
             update_ipopt_output_plot(args, self.ocp)
 
         if self.ocp.plot_check_conditioning:
             from ..gui.check_conditioning import update_conditioning_plots
-            update_conditioning_plots(args["x"], self.ocp)
 
+            update_conditioning_plots(args["x"], self.ocp)
 
     def _compute_y_from_plot_func(
         self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a
@@ -979,4 +981,3 @@ class PlotOcp:
 
         n_rows = int(round(np.sqrt(nb)))
         return n_rows + 1 if n_rows * n_rows < nb else n_rows, n_rows
-

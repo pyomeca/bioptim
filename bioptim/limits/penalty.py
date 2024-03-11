@@ -228,7 +228,7 @@ class PenaltyFunctionAbstract:
             trace_jac_p_jack = trace(jac_e_fb_x_cx @ cov_matrix @ jac_e_fb_x_cx.T)
 
             if penalty.quadratic is None or penalty.quadratic:
-                expectedEffort_fb_mx = trace_jac_p_jack ** 2 + trace_k_sensor_k ** 2
+                expectedEffort_fb_mx = trace_jac_p_jack**2 + trace_k_sensor_k**2
             else:
                 expectedEffort_fb_mx = trace_jac_p_jack + trace_k_sensor_k
             penalty.quadratic = False
