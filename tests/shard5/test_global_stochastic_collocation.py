@@ -426,6 +426,11 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (1043, 1))
 
+    # ocp.nlp[0].g = [path_constraint, path_constraint, TRACK_STATE]
+    #                [11x1, 11x1, 1x1]
+    # ocp.nlp[0].g_internal = [STATE_CONTINUITY, FIRST_COLLOCATION_HELPER_EQUALS_STATE, PHASE_TRANSITION (CYCLIC) 0->0, STOCHASTIC_HELPER_MATRIX_COLLOCATION, STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION]
+    #                         [10x16, 10x4, 1x4, 10x64, 10x16]
+
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)

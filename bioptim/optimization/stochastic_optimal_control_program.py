@@ -300,12 +300,15 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         integration. This is the real implementation suggested in Gillis 2013.
         """
 
-        if "ref" in self.nlp[0].algebraic_states:
-            constraints.add(
-                ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE,
-                node=Node.ALL,
-                penalty_type=PenaltyType.INTERNAL,
-            )
+        # Constraints for ref
+        for i_phase, nlp in enumerate(self.nlp):
+            if "ref" in nlp.algebraic_states:
+                constraints.add(
+                    ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE,
+                    node=Node.ALL,
+                    phase=i_phase,
+                    penalty_type=PenaltyType.INTERNAL,
+                )
 
         # Constraints for M
         for i_phase, nlp in enumerate(self.nlp):
