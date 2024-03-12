@@ -155,8 +155,11 @@ def create_conditioning_plots(ocp):
 
     fig_constraints.legend(["Black = 0"], loc="upper left")
     plt.suptitle("The rank should be equal to the number of constraints", color="b", fontsize=15, fontweight="bold")
-    figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
+    try:
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
+    except:
+        pass
 
     # PLOT OBJECTIVES
     fig_obj, axis_obj = plt.subplots(1, 1, num="Check conditioning for objectives")
@@ -177,8 +180,11 @@ def create_conditioning_plots(ocp):
         fontsize=15,
         fontweight="bold",
     )
-    figManager = plt.get_current_fig_manager()
-    figManager.window.showMaximized()
+    try:
+        figManager = plt.get_current_fig_manager()
+        figManager.window.showMaximized()
+    except:
+        pass
 
     ocp.conditioning_plots = {
         "axis_constraints": axis_constraints,

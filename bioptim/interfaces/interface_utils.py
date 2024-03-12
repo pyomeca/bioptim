@@ -229,7 +229,7 @@ def generic_dispatch_obj_func(interface):
 
     all_objectives = interface.ocp.cx()
     all_objectives = vertcat(all_objectives, interface.get_all_penalties(interface.ocp, interface.ocp.J_internal))
-    all_objectives = vertcat(all_objectives, interface.get_all_penalties([], interface.ocp.J))
+    all_objectives = vertcat(all_objectives, interface.get_all_penalties(interface.ocp, interface.ocp.J))
 
     for nlp in interface.ocp.nlp:
         all_objectives = vertcat(all_objectives, interface.get_all_penalties(nlp, nlp.J_internal))
