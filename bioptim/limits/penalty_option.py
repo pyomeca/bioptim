@@ -9,8 +9,6 @@ from ..misc.options import OptionGeneric
 from ..misc.mapping import BiMapping
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..limits.penalty_helpers import PenaltyHelpers
-from ..limits.constraints import ConstraintFcn
-from ..limits.multinode_constraint import MultinodeConstraintFcn
 
 
 class PenaltyOption(OptionGeneric):
@@ -424,6 +422,8 @@ class PenaltyOption(OptionGeneric):
         if self.is_stochastic:
             sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, x)
 
+        from ..limits.constraints import ConstraintFcn
+        from ..limits.multinode_constraint import MultinodeConstraintFcn
         if (
             len(sub_fcn.shape) > 1
             and sub_fcn.shape[1] != 1
