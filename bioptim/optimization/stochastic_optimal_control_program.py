@@ -211,7 +211,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         constraints.add(
             ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE,
             node=Node.ALL,
-            penalty_type=PenaltyType.INTERNAL,
+            # penalty_type=PenaltyType.INTERNAL,
         )
 
         penalty_m_dg_dz_list = MultinodeConstraintList()
@@ -221,14 +221,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,
                 )
             if i_phase > 0:
                 penalty_m_dg_dz_list.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
-                    penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
@@ -247,14 +247,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
-                    penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,
                 )
 
         # Constraints for P
@@ -263,7 +263,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
-                penalty_type=PenaltyType.INTERNAL,
+                # penalty_type=PenaltyType.INTERNAL,
             )
 
         # Constraints for A
@@ -272,7 +272,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_DF_DX_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
-                penalty_type=PenaltyType.INTERNAL,
+                # penalty_type=PenaltyType.INTERNAL,
             )
 
         # Constraints for C
@@ -282,14 +282,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase + 1),
                     nodes=(-1, 0),
-                    penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,
                 )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)
@@ -307,7 +307,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE,
                     node=Node.ALL,
                     phase=i_phase,
-                    penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,
                 )
 
         # Constraints for M
@@ -317,7 +317,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
                 expand=True,
-                penalty_type=PenaltyType.INTERNAL,
+                # penalty_type=PenaltyType.INTERNAL,
             )
 
         # Constraints for P inner-phase
@@ -327,14 +327,16 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
                 expand=True,
-                penalty_type=PenaltyType.INTERNAL,
+                # penalty_type=PenaltyType.INTERNAL,
             )
 
         # Constraints for P inter-phase
         for i_phase, nlp in enumerate(self.nlp):
             if len(self.nlp) > 1 and i_phase < len(self.nlp) - 1:
                 phase_transition.add(
-                    PhaseTransitionFcn.COVARIANCE_CONTINUOUS, phase_pre_idx=i_phase, penalty_type=PenaltyType.INTERNAL
+                    PhaseTransitionFcn.COVARIANCE_CONTINUOUS,
+                    phase_pre_idx=i_phase,
+                    # penalty_type=PenaltyType.INTERNAL
                 )
 
     def _auto_initialize(self, x_init, u_init, parameter_init, a_init):

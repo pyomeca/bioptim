@@ -90,7 +90,13 @@ class Objective(PenaltyOption):
             pool = controller.get_nlp.J if controller is not None and controller.get_nlp else controller.ocp.J
         else:
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
+
+        # if pool[-1] == []:
+        #     pool[-1] = self
+        # else:
+        #     pool.append(self)
         pool[self.list_index] = self
+
 
     def ensure_penalty_sanity(self, ocp, nlp):
         """
@@ -499,7 +505,13 @@ class ParameterObjective(PenaltyOption):
             pool = controller.ocp.J
         else:
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
+
+        # if pool[-1] == []:
+        #     pool[-1] = self
+        # else:
+        #     pool.append(self)
         pool[self.list_index] = self
+
 
     def ensure_penalty_sanity(self, ocp, nlp):
         """

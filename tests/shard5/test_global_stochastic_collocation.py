@@ -430,6 +430,7 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     #                [11x1, 11x1, 1x1]
     # ocp.nlp[0].g_internal = [STATE_CONTINUITY, FIRST_COLLOCATION_HELPER_EQUALS_STATE, PHASE_TRANSITION (CYCLIC) 0->0, STOCHASTIC_HELPER_MATRIX_COLLOCATION, STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION]
     #                         [10x16, 10x4, 1x4, 10x64, 10x16]
+    # Missing covariance cyclic
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
