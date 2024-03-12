@@ -486,6 +486,7 @@ class Solution:
         if not duplicated_times:
             for i in range(len(times)):
                 for j in range(len(times[i])):
+                    # Last node of last phase is always kept
                     keep_condition = times[i][j].shape[0] == 1 and i == len(times) - 1
                     times[i][j] = times[i][j][:] if keep_condition else times[i][j][:-1]
                     if j == len(times[i]) - 1 and i != len(times) - 1:
@@ -784,6 +785,7 @@ class Solution:
                     if duplicated_times:
                         out[p][key][ns] = sol_ns[nlp.states[key].index, :]
                     else:
+                        # Last node of last phase is always kept
                         duplicated_times_condition = p == len(self.ocp.nlp) - 1 and ns == nlp.ns
                         out[p][key][ns] = (
                             sol_ns[nlp.states[key].index, :]
