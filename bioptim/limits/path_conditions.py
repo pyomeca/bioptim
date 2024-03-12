@@ -609,7 +609,7 @@ class BoundsList(OptionDict):
             max_bound = bounds
             bounds = None
         if isinstance(bounds, Bounds):
-            if phase == -1 and key in self[phase].keys():
+            if phase == -1 and key in self.options[phase].keys():
                 phase = len(self.options) if self.options[0] else 0
 
             previous_phase = bounds.phase
@@ -1123,7 +1123,7 @@ class InitialGuessList(OptionDict):
         """
 
         if isinstance(initial_guess, InitialGuess):
-            if phase == -1 and key in self[phase].keys():
+            if phase == -1 and key in self.options[phase].keys():
                 phase = len(self.options) if self.options[0] else 0
 
             previous_phase = initial_guess.phase
