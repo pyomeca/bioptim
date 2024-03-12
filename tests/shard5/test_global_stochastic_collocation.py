@@ -244,7 +244,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     np.testing.assert_almost_equal(constraint_value[1], hand_final_position[1], decimal=6)
 
     # Reference equals mean sensory input
-    penalty = socp.nlp[0].g[7]
+    penalty = socp.nlp[0].g_internal[7]
     for i_node in range(socp.n_shooting):
         x = PenaltyHelpers.states(
             penalty,
@@ -272,7 +272,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Constraint on M --------------------------------------------------------------------
-    penalty = socp.nlp[0].g[8]
+    penalty = socp.nlp[0].g_internal[8]
     for i_node in range(socp.n_shooting):
         x = PenaltyHelpers.states(
             penalty,
@@ -300,7 +300,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Covariance continuity --------------------------------------------------------------------
-    penalty = socp.nlp[0].g[9]
+    penalty = socp.nlp[0].g_internal[9]
     for i_node in range(socp.n_shooting):
         x = PenaltyHelpers.states(
             penalty,
@@ -332,17 +332,17 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     penalty = socp.nlp[0].g_internal[0]
     for i_node in range(socp.n_shooting):
         x = PenaltyHelpers.states(
-            socp.nlp[0].g[9],
+            penalty,
             i_node,
             lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
         )
         u = PenaltyHelpers.controls(
-            socp.nlp[0].g[9],
+            penalty,
             i_node,
             lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
         )
         a = PenaltyHelpers.states(
-            socp.nlp[0].g[9],
+            penalty,
             i_node,
             lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
         )

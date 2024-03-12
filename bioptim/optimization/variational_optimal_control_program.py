@@ -435,7 +435,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func_first_node[0](
+            return controllers[0].get_nlp.implicit_dynamics_func_first_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[0].parameters.cx[:n_qdot],  # hardcoded
@@ -445,7 +445,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[0].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func_first_node[0](
+            return controllers[0].get_nlp.implicit_dynamics_func_first_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[0].parameters.cx[:n_qdot],  # hardcoded
@@ -476,7 +476,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         """
         if self.bio_model.has_holonomic_constraints:
-            return controllers[0].get_nlp.implicit_dynamics_func_last_node[0](
+            return controllers[0].get_nlp.implicit_dynamics_func_last_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
@@ -486,7 +486,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 controllers[1].states["lambdas"].cx,
             )
         else:
-            return controllers[0].get_nlp.implicit_dynamics_func_last_node[0](
+            return controllers[0].get_nlp.implicit_dynamics_func_last_node(
                 controllers[0].dt.cx,
                 controllers[0].states["q"].cx,
                 controllers[1].states["q"].cx,
