@@ -797,7 +797,7 @@ class Solution:
             out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
 
         if return_time:
-            time_vector = np.concatenate(self.stepwise_time(to_merge=to_merge, duplicated_times=duplicated_times))
+            time_vector = self._return_time_vector(to_merge=to_merge, duplicated_times=duplicated_times)
             return out if len(out) > 1 else out[0], time_vector if len(time_vector) > 1 else time_vector[0]
         else:
             return out if len(out) > 1 else out[0]
@@ -917,6 +917,34 @@ class Solution:
                     unscaled[p][key][ns] = sol_ns[nlp.states[key].index, :]
 
         self._stepwise_states = SolutionData.from_unscaled(self.ocp, unscaled, "x")
+
+    def _return_time_vector(self, to_merge: SolutionMerge | list[SolutionMerge], duplicated_times: bool):
+        """
+        Returns the time vector at each node that matches stepwise_states or stepwise_controls
+        Parameters
+        ----------
+        to_merge: SolutionMerge | list[SolutionMerge, ...]
+            The merge type to perform. If None, then no merge is performed.
+        duplicated_times: bool
+            If the times should be duplicated for each node.
+            If False, then the returned time vector will not have any duplicated times.
+        Returns
+        -------
+        The time vector at each node that matches stepwise_states or stepwise_controls
+        """
+        if to_merge is None:
+            to_merge = []
+        if isinstance(to_merge, SolutionMerge):
+            to_merge = [to_merge]
+        if SolutionMerge.NODES and SolutionMerge.PHASES in to_merge:
+            time_vector = np.concatenate(self.stepwise_time(to_merge=to_merge, duplicated_times=duplicated_times))
+        elif SolutionMerge.NODES in to_merge:
+            time_vector = self.stepwise_time(to_merge=to_merge, duplicated_times=duplicated_times)
+            for i in range(len(self.ocp.nlp)):
+                time_vector[i] = np.concatenate(time_vector[i])
+        else:
+            time_vector = self.stepwise_time(to_merge=to_merge, duplicated_times=duplicated_times)
+        return time_vector
 
     def interpolate(self, n_frames: int | list | tuple, scaled: bool = False):
         """
