@@ -713,6 +713,28 @@ class Solution:
         duplicated_times: bool = True,
         return_time: bool = False,
     ):
+        """
+        Create a deepcopy of the Solution
+
+        Parameters
+        ----------
+        shooting_type: Shooting
+            The integration shooting type to use
+        integrator: SolutionIntegrator
+            The type of integrator to use
+        to_merge: SolutionMerge | list[SolutionMerge, ...]
+            The type of merge to perform. If None, then no merge is performed.
+        duplicated_times: bool
+            If the times should be duplicated for each node.
+            If False, then the returned time vector will not have any duplicated times.
+        return_time: bool
+            If the time vector should be returned
+
+        Returns
+        -------
+        Return the integrated states
+        """
+
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
             raise ValueError(
@@ -773,7 +795,7 @@ class Solution:
             out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
 
         if return_time:
-            time_vector = self.stepwise_time(to_merge=to_merge, duplicated_times=duplicated_times)
+            time_vector = np.concatenate(self.stepwise_time(to_merge=to_merge, duplicated_times=duplicated_times))
             return out if len(out) > 1 else out[0], time_vector if len(time_vector) > 1 else time_vector[0]
         else:
             return out if len(out) > 1 else out[0]
