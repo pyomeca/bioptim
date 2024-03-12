@@ -97,7 +97,6 @@ class Objective(PenaltyOption):
         #     pool.append(self)
         pool[self.list_index] = self
 
-
     def ensure_penalty_sanity(self, ocp, nlp):
         """
         Resets an objective function. A negative penalty index creates a new empty objective function.
@@ -511,7 +510,6 @@ class ParameterObjective(PenaltyOption):
         # else:
         #     pool.append(self)
         pool[self.list_index] = self
-
 
     def ensure_penalty_sanity(self, ocp, nlp):
         """

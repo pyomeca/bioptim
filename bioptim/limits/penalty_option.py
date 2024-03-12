@@ -424,6 +424,7 @@ class PenaltyOption(OptionGeneric):
 
         from ..limits.constraints import ConstraintFcn
         from ..limits.multinode_constraint import MultinodeConstraintFcn
+
         if (
             len(sub_fcn.shape) > 1
             and sub_fcn.shape[1] != 1
