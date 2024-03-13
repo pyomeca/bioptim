@@ -282,7 +282,7 @@ def test_arm_reaching_torque_driven_explicit(use_sx):
             match = None
         else:
             match = re.escape(
-                "Error in Function::call for 'tp' [MXFunction] at .../casadi/core/function.cpp:339:\n"
+                "Error in Function::call for 'tp' [MXFunction] at .../casadi/core/function.cpp:370:\n"
                 ".../casadi/core/linsol_internal.cpp:65: eval_sx not defined for LinsolQr"
             )
         with pytest.raises(RuntimeError, match=match):
