@@ -19,7 +19,7 @@ from bioptim import (
     RigidBodyDynamics,
     ControlType,
     PhaseDynamics,
-    ObjectiveList,
+    ConstraintList,
 )
 from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.limits.penalty import PenaltyOption
@@ -1449,17 +1449,17 @@ def test_bad_shape_output_penalty():
         dynamics = DynamicsList()
         dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
 
-        objective_functions = ObjectiveList()
-        objective_functions.add(bad_custom_function, custom_type=ObjectiveFcn.Mayer, node=Node.START, quadratic=True)
+        constraints = ConstraintList()
+        constraints.add(bad_custom_function, node=Node.START)
 
         ocp = OptimalControlProgram(
             bio_model,
             dynamics,
             10,
             1.0,
-            objective_functions=objective_functions,
+            constraints=constraints,
         )
         return ocp
 
-    with pytest.raises(RuntimeError, match="The penalty must return a vector not a matrix."):
+    with pytest.raises(RuntimeError, match="The constraint must return a vector not a matrix."):
         ocp = prepare_test_ocp_error()

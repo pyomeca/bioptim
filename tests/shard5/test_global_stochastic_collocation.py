@@ -244,7 +244,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     np.testing.assert_almost_equal(constraint_value[1], hand_final_position[1], decimal=6)
 
     # Reference equals mean sensory input
-    penalty = socp.nlp[0].g_internal[7]
+    penalty = socp.nlp[0].g[7]
     for i_node in range(socp.n_shooting):
         x = PenaltyHelpers.states(
             penalty,
@@ -272,7 +272,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Constraint on M --------------------------------------------------------------------
-    penalty = socp.nlp[0].g_internal[8]
+    penalty = socp.nlp[0].g[8]
     for i_node in range(socp.n_shooting):
         x = PenaltyHelpers.states(
             penalty,
@@ -300,7 +300,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Covariance continuity --------------------------------------------------------------------
-    penalty = socp.nlp[0].g_internal[9]
+    penalty = socp.nlp[0].g[9]
     for i_node in range(socp.n_shooting):
         x = PenaltyHelpers.states(
             penalty,
@@ -425,12 +425,6 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     # Check constraints
     g = np.array(sol.constraints)
     np.testing.assert_equal(g.shape, (1043, 1))
-
-    # ocp.nlp[0].g = [path_constraint, path_constraint, TRACK_STATE]
-    #                [11x1, 11x1, 1x1]
-    # ocp.nlp[0].g_internal = [STATE_CONTINUITY, FIRST_COLLOCATION_HELPER_EQUALS_STATE, PHASE_TRANSITION (CYCLIC) 0->0, STOCHASTIC_HELPER_MATRIX_COLLOCATION, STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_COLLOCATION]
-    #                         [10x16, 10x4, 1x4, 10x64, 10x16]
-    # Missing covariance cyclic
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
