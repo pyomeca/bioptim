@@ -8,26 +8,26 @@ def create_ipopt_output_plot(ocp, interface):
     """
     This function creates the plots for the ipopt output: f, g, inf_pr, inf_du.
     """
-    ipopt_fig, axs = plt.subplots(4, 1, num="IPOPT output")
+    ipopt_fig, axs = plt.subplots(3, 1, num="IPOPT output")
     axs[0].set_ylabel("f", fontweight="bold")
-    axs[1].set_ylabel("g", fontweight="bold")
-    axs[2].set_ylabel("inf_pr", fontweight="bold")
-    axs[3].set_ylabel("inf_du", fontweight="bold")
+    axs[1].set_ylabel("inf_pr", fontweight="bold")
+    axs[2].set_ylabel("inf_du", fontweight="bold")
 
     plots = []
     colors = get_cmap("viridis")
-    for i in range(4):
+    for i in range(3):
         plot = axs[i].plot([0], [1], linestyle="-", marker=".", color="k")
         plots.append(plot[0])
         axs[i].grid(True)
         axs[i].set_yscale("log")
 
-    plot = axs[3].plot([0], [1], linestyle="-", marker=".", color=colors(0.1), label="grad_f")
+    plot = axs[2].plot([0], [1], linestyle="-", marker=".", color=colors(0.1), label="grad_f")
     plots.append(plot[0])
-    plot = axs[3].plot([0], [1], linestyle="-", marker=".", color=colors(0.5), label="grad_g")
+    plot = axs[2].plot([0], [1], linestyle="-", marker=".", color=colors(0.5), label="grad_g")
     plots.append(plot[0])
-    plot = axs[3].plot([0], [1], linestyle="-", marker=".", color=colors(0.9), label="lam_x")
+    plot = axs[2].plot([0], [1], linestyle="-", marker=".", color=colors(0.9), label="lam_x")
     plots.append(plot[0])
+    axs[2].leged()
 
     ipopt_fig.tight_layout()
 
@@ -49,7 +49,6 @@ def create_ipopt_output_plot(ocp, interface):
         "grad_f_func": grad_f_func,
         "grad_g_func": grad_g_func,
         "f": [],
-        "max_g": [],
         "inf_pr": [],
         "inf_du": [],
         "grad_f": [],
@@ -71,16 +70,11 @@ def update_ipopt_output_plot(args, ocp):
 
     x = args["x"]
     f = args["f"]
-    g = args["g"]
-
-    max_g = np.max(np.abs(g))
-
-    # if f != 0 and g.shape[0] != 0 and (len(ocp.ipopt_plots["f"]) == 0 or args["f"] != ocp.ipopt_plots["f"][-1]):
-    inf_pr = np.max(np.abs(args["g"]))
-
     lam_x = args["lam_x"]
     lam_g = args["lam_g"]
     lam_p = args["lam_p"]
+
+    inf_pr = np.max(np.abs(args["g"]))
 
     grad_f_func = ocp.ipopt_plots["grad_f_func"]
     grad_g_func = ocp.ipopt_plots["grad_g_func"]
@@ -91,7 +85,6 @@ def update_ipopt_output_plot(args, ocp):
     inf_du = np.max(np.abs(eq_4a))
 
     ocp.ipopt_plots["f"].append(float(f))
-    ocp.ipopt_plots["max_g"].append(float(max_g))
     ocp.ipopt_plots["inf_pr"].append(float(inf_pr))
     ocp.ipopt_plots["inf_du"].append(float(inf_du))
     ocp.ipopt_plots["grad_f"].append(float(np.max(np.abs(grad_f))))
@@ -99,17 +92,15 @@ def update_ipopt_output_plot(args, ocp):
     ocp.ipopt_plots["lam_x"].append(float(np.max(np.abs(lam_x))))
 
     ocp.ipopt_plots["plots"][0].set_ydata(ocp.ipopt_plots["f"])
-    ocp.ipopt_plots["plots"][1].set_ydata(ocp.ipopt_plots["max_g"])
-    ocp.ipopt_plots["plots"][2].set_ydata(ocp.ipopt_plots["inf_pr"])
-    ocp.ipopt_plots["plots"][3].set_ydata(ocp.ipopt_plots["inf_du"])
-    ocp.ipopt_plots["plots"][4].set_ydata(ocp.ipopt_plots["grad_f"])
-    ocp.ipopt_plots["plots"][5].set_ydata(ocp.ipopt_plots["grad_g"])
-    ocp.ipopt_plots["plots"][6].set_ydata(ocp.ipopt_plots["lam_x"])
+    ocp.ipopt_plots["plots"][1].set_ydata(ocp.ipopt_plots["inf_pr"])
+    ocp.ipopt_plots["plots"][2].set_ydata(ocp.ipopt_plots["inf_du"])
+    ocp.ipopt_plots["plots"][3].set_ydata(ocp.ipopt_plots["grad_f"])
+    ocp.ipopt_plots["plots"][4].set_ydata(ocp.ipopt_plots["grad_g"])
+    ocp.ipopt_plots["plots"][5].set_ydata(ocp.ipopt_plots["lam_x"])
 
     ocp.ipopt_plots["axs"][0].set_ylim(np.min(ocp.ipopt_plots["f"]), np.max(ocp.ipopt_plots["f"]))
-    ocp.ipopt_plots["axs"][1].set_ylim(np.min(ocp.ipopt_plots["max_g"]), np.max(ocp.ipopt_plots["max_g"]))
-    ocp.ipopt_plots["axs"][2].set_ylim(np.min(ocp.ipopt_plots["inf_pr"]), np.max(ocp.ipopt_plots["inf_pr"]))
-    ocp.ipopt_plots["axs"][3].set_ylim(np.min(np.array([np.min(ocp.ipopt_plots["inf_du"]),
+    ocp.ipopt_plots["axs"][1].set_ylim(np.min(ocp.ipopt_plots["inf_pr"]), np.max(ocp.ipopt_plots["inf_pr"]))
+    ocp.ipopt_plots["axs"][2].set_ylim(np.min(np.array([np.min(ocp.ipopt_plots["inf_du"]),
                                                         np.min(ocp.ipopt_plots["grad_f"]),
                                                         np.min(ocp.ipopt_plots["grad_g"]),
                                                         np.min(ocp.ipopt_plots["lam_x"])])),
@@ -118,7 +109,7 @@ def update_ipopt_output_plot(args, ocp):
                                                          np.max(ocp.ipopt_plots["grad_g"]),
                                                          np.max(ocp.ipopt_plots["lam_x"])])))
 
-    for i in range(7):
+    for i in range(6):
         ocp.ipopt_plots["plots"][i].set_xdata(range(len(ocp.ipopt_plots["f"])))
     for i in range(4):
         ocp.ipopt_plots["axs"][i].set_xlim(0, len(ocp.ipopt_plots["f"]))
