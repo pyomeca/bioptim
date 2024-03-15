@@ -606,6 +606,32 @@ def test_integrate_multiphase(shooting, integrator, ode_solver, phase_dynamics, 
             assert sol_integrated[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
             assert states[i][key].shape == (shapes[k], n_shooting[i] * n_steps + 1)
 
+    sol_integrated, sol_time = sol.integrate(
+        shooting_type=shooting,
+        integrator=integrator,
+        to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES],
+        duplicated_times=False,
+        return_time=True,
+    )
+
+    assert len(sol_time) == len(np.unique(sol_time))
+    for i in range(len(sol_integrated)):
+        for k, key in enumerate(states[i]):
+            assert len(sol_integrated[key][k]) == len(sol_time)
+
+    sol_integrated, sol_time = sol.integrate(
+        shooting_type=shooting,
+        integrator=integrator,
+        to_merge=[SolutionMerge.NODES],
+        duplicated_times=False,
+        return_time=True,
+    )
+    for i in range(len(sol_time)):
+        assert len(sol_time[i]) == len(np.unique(sol_time[i]))
+    for i in range(len(sol_integrated)):
+        for k, key in enumerate(states[i]):
+            assert len(sol_integrated[i][key][k]) == len(sol_time[i])
+
 
 def test_check_models_comes_from_same_super_class():
     from bioptim.examples.getting_started import example_multiphase as ocp_module
