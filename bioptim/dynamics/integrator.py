@@ -1,5 +1,5 @@
-from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, DM, MX, SX, linspace
 import numpy as np
+from casadi import Function, vertcat, horzcat, collocation_points, tangent, rootfinder, DM, MX, SX, linspace
 
 from ..misc.enums import ControlType, DefectType
 from ..models.protocols.biomodel import BioModel
@@ -170,7 +170,7 @@ class Integrator:
         The control at a given time
         """
 
-        if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+        if self.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
             return u
         elif self.control_type == ControlType.LINEAR_CONTINUOUS:
             dt_norm = (t - self.t_span_sym[0]) / self.t_span_sym[1]
@@ -595,7 +595,7 @@ class COLLOCATION(Integrator):
         The control at a given time
         """
 
-        if self.control_type == ControlType.CONSTANT or self.control_type == ControlType.CONSTANT_WITH_LAST_NODE:
+        if self.control_type in (ControlType.CONSTANT, ControlType.CONSTANT_WITH_LAST_NODE):
             return super(COLLOCATION, self).get_u(u, t)
         else:
             raise NotImplementedError(f"{self.control_type} ControlType not implemented yet with COLLOCATION")
