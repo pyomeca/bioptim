@@ -20,7 +20,7 @@ def create_ipopt_output_plot(ocp, interface):
         plot = axs[i].plot([0], [1], linestyle="-", marker=".", color=colors(i / 3))
         plots.append(plot[0])
         axs[i].grid(True)
-        axs[i].set_yscale('log')
+        axs[i].set_yscale("log")
 
     ipopt_fig.tight_layout()
 
@@ -33,9 +33,7 @@ def create_ipopt_output_plot(ocp, interface):
     v_sym = interface.ocp.variables_vector
 
     all_objectives = interface.dispatch_obj_func()
-    all_g, all_g_bounds = interface.dispatch_bounds(
-        include_g=True, include_g_internal=True, include_g_implicit=True
-    )
+    all_g, all_g_bounds = interface.dispatch_bounds(include_g=True, include_g_internal=True, include_g_implicit=True)
 
     grad_f_func = Function("grad_f", [v_sym], [gradient(sum1(all_objectives), v_sym)])
     grad_g_func = Function("grad_g", [v_sym], [jacobian(all_g, v_sym).T])

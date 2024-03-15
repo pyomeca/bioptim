@@ -61,6 +61,7 @@ class OnlineCallback(Callback):
 
         # There must be an option to add an if here
         from ..interfaces.ipopt_interface import IpoptInterface
+
         interface = IpoptInterface(ocp)
         all_g, all_g_bounds = interface.dispatch_bounds()
         self.ng = all_g.shape[0]
