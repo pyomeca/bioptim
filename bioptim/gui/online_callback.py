@@ -58,7 +58,15 @@ class OnlineCallback(Callback):
         Callback.__init__(self)
         self.ocp = ocp
         self.nx = self.ocp.variables_vector.shape[0]
-        self.ng = 0
+
+        # There must be an option to add an if here
+        from ..interfaces.ipopt_interface import IpoptInterface
+        interface = IpoptInterface(ocp)
+        all_g, all_g_bounds = interface.dispatch_bounds()
+        self.ng = all_g.shape[0]
+
+        v = interface.ocp.variables_vector
+
         self.construct("AnimateCallback", opts)
 
         self.queue = mp.Queue()

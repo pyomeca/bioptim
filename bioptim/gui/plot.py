@@ -291,8 +291,10 @@ class PlotOcp:
 
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import create_ipopt_output_plot
+            from ..interfaces.ipopt_interface import IpoptInterface
 
-            create_ipopt_output_plot(ocp)
+            interface = IpoptInterface(self.ocp)
+            create_ipopt_output_plot(ocp, interface)
 
         if self.ocp.plot_check_conditioning:
             from ..gui.check_conditioning import create_conditioning_plots
