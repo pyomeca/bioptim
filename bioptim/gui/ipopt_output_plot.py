@@ -109,14 +109,14 @@ def update_ipopt_output_plot(args, ocp):
     ocp.ipopt_plots["axs"][0].set_ylim(np.min(ocp.ipopt_plots["f"]), np.max(ocp.ipopt_plots["f"]))
     ocp.ipopt_plots["axs"][1].set_ylim(np.min(ocp.ipopt_plots["max_g"]), np.max(ocp.ipopt_plots["max_g"]))
     ocp.ipopt_plots["axs"][2].set_ylim(np.min(ocp.ipopt_plots["inf_pr"]), np.max(ocp.ipopt_plots["inf_pr"]))
-    ocp.ipopt_plots["axs"][3].set_ylim(np.min(ocp.ipopt_plots["inf_du"],
-                                              ocp.ipopt_plots["grad_f"],
-                                                ocp.ipopt_plots["grad_g"],
-                                                    ocp.ipopt_plots["lam_x"]),
-                                        np.max(ocp.ipopt_plots["inf_du"],
-                                               ocp.ipopt_plots["grad_f"],
-                                                ocp.ipopt_plots["grad_g"],
-                                                    ocp.ipopt_plots["lam_x"]))
+    ocp.ipopt_plots["axs"][3].set_ylim(np.min(np.array([np.min(ocp.ipopt_plots["inf_du"]),
+                                                        np.min(ocp.ipopt_plots["grad_f"]),
+                                                        np.min(ocp.ipopt_plots["grad_g"]),
+                                                        np.min(ocp.ipopt_plots["lam_x"])])),
+                                        np.max(np.array([np.max(ocp.ipopt_plots["inf_du"]),
+                                                         np.max(ocp.ipopt_plots["grad_f"]),
+                                                         np.max(ocp.ipopt_plots["grad_g"]),
+                                                         np.max(ocp.ipopt_plots["lam_x"])])))
 
     for i in range(7):
         ocp.ipopt_plots["plots"][i].set_xdata(range(len(ocp.ipopt_plots["f"])))
