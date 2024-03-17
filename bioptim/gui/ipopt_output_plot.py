@@ -27,7 +27,7 @@ def create_ipopt_output_plot(ocp, interface):
     plots.append(plot[0])
     plot = axs[2].plot([0], [1], linestyle="-", marker=".", color=colors(0.9), label="lam_x")
     plots.append(plot[0])
-    axs[2].leged()
+    axs[2].legend()
 
     ipopt_fig.tight_layout()
 
@@ -111,7 +111,7 @@ def update_ipopt_output_plot(args, ocp):
 
     for i in range(6):
         ocp.ipopt_plots["plots"][i].set_xdata(range(len(ocp.ipopt_plots["f"])))
-    for i in range(4):
+    for i in range(3):
         ocp.ipopt_plots["axs"][i].set_xlim(0, len(ocp.ipopt_plots["f"]))
 
     ocp.ipopt_plots["ipopt_fig"].canvas.draw()
