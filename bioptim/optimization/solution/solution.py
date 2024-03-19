@@ -716,7 +716,7 @@ class Solution:
             new._parameters = deepcopy(self._parameters)
         return new
 
-    def prepare_integrate(self, integrator: SolutionIntegrator):
+    def _prepare_integrate(self, integrator: SolutionIntegrator):
         """
         Prepare the variables for the states integration and checks if the integrator is compatible with the ocp.
 
@@ -759,7 +759,7 @@ class Solution:
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
         to_merge: SolutionMerge | list[SolutionMerge] = None,
         duplicated_times: bool = True,
-        return_time: bool = True,
+        return_time: bool = False,
     ):
         """
         Create a deepcopy of the Solution
@@ -775,15 +775,16 @@ class Solution:
         duplicated_times: bool
             If the times should be duplicated for each node.
             If False, then the returned time vector will not have any duplicated times.
+            Default is True.
         return_time: bool
-            If the time vector should be returned
+            If the time vector should be returned, default is False.
 
         Returns
         -------
         Return the integrated states
         """
 
-        t_spans, x, u, params, a = self.prepare_integrate(integrator=integrator)
+        t_spans, x, u, params, a = self._prepare_integrate(integrator=integrator)
 
         out: list = [None] * len(self.ocp.nlp)
         integrated_sol = None
@@ -840,7 +841,7 @@ class Solution:
         if not isinstance(self.ocp, StochasticOptimalControlProgram):
             raise ValueError("This method is only available for StochasticOptimalControlProgram.")
 
-        t_spans, x, u, params, a = self.prepare_integrate(integrator=integrator)
+        t_spans, x, u, params, a = self._prepare_integrate(integrator=integrator)
 
         cov_index = self.ocp.nlp[0].algebraic_states["cov"].index
         n_sub_nodes = x[0][0].shape[1]
