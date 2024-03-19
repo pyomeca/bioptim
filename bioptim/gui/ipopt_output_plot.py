@@ -100,16 +100,30 @@ def update_ipopt_output_plot(args, ocp):
 
     ocp.ipopt_plots["axs"][0].set_ylim(np.min(ocp.ipopt_plots["f"]), np.max(ocp.ipopt_plots["f"]))
     ocp.ipopt_plots["axs"][1].set_ylim(np.min(ocp.ipopt_plots["inf_pr"]), np.max(ocp.ipopt_plots["inf_pr"]))
-    ocp.ipopt_plots["axs"][2].set_ylim(np.min(np.array([1e+8,
-                                                        np.min(np.abs(ocp.ipopt_plots["inf_du"])),
-                                                        np.min(np.abs(ocp.ipopt_plots["grad_f"])),
-                                                        np.min(np.abs(ocp.ipopt_plots["grad_g"])),
-                                                        np.min(np.abs(ocp.ipopt_plots["lam_x"]))])),
-                                        np.max(np.array([1e-8,
-                                                         np.max(np.abs(ocp.ipopt_plots["inf_du"])),
-                                                         np.max(np.abs(ocp.ipopt_plots["grad_f"])),
-                                                         np.max(np.abs(ocp.ipopt_plots["grad_g"])),
-                                                         np.max(np.abs(ocp.ipopt_plots["lam_x"]))])))
+    ocp.ipopt_plots["axs"][2].set_ylim(
+        np.min(
+            np.array(
+                [
+                    1e8,
+                    np.min(np.abs(ocp.ipopt_plots["inf_du"])),
+                    np.min(np.abs(ocp.ipopt_plots["grad_f"])),
+                    np.min(np.abs(ocp.ipopt_plots["grad_g"])),
+                    np.min(np.abs(ocp.ipopt_plots["lam_x"])),
+                ]
+            )
+        ),
+        np.max(
+            np.array(
+                [
+                    1e-8,
+                    np.max(np.abs(ocp.ipopt_plots["inf_du"])),
+                    np.max(np.abs(ocp.ipopt_plots["grad_f"])),
+                    np.max(np.abs(ocp.ipopt_plots["grad_g"])),
+                    np.max(np.abs(ocp.ipopt_plots["lam_x"])),
+                ]
+            )
+        ),
+    )
 
     for i in range(6):
         ocp.ipopt_plots["plots"][i].set_xdata(range(len(ocp.ipopt_plots["f"])))
