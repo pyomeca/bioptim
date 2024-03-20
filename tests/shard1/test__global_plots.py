@@ -6,6 +6,7 @@ import io
 import sys
 import os
 import pytest
+import platform
 
 from casadi import Function, MX
 import numpy as np
@@ -53,6 +54,36 @@ def test_plot_check_conditioning(phase_dynamics):
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_plot_check_conditioning_live(phase_dynamics):
+    # Load graphs check conditioning
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        long_optim=False,
+        phase_dynamics=phase_dynamics,
+        expand_dynamics=True,
+    )
+    ocp.add_plot_check_conditioning()
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_plot_ipopt_output_live(phase_dynamics):
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        long_optim=False,
+        phase_dynamics=phase_dynamics,
+        expand_dynamics=True,
+    )
+    ocp.add_plot_ipopt_outputs()
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_merged_graphs(phase_dynamics):
