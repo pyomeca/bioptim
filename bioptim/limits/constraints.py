@@ -123,16 +123,6 @@ class Constraint(PenaltyOption):
         else:
             raise ValueError(f"Invalid constraint type {self.penalty_type}.")
 
-        # if pool[-1] == []:
-        #     pool[-1] = self
-        # else:
-        #     pool.append(self)
-        # if pool[self.list_index] != []:
-        #     if self.list_index == len(pool) - 1:
-        #         pool.append([])
-        #         self.list_index = len(pool) - 1
-        #     else:
-        #         raise RuntimeError(f"The penalty index {self.list_index} is already used.")
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):
@@ -1234,10 +1224,6 @@ class ParameterConstraint(PenaltyOption):
         else:
             raise ValueError(f"Invalid constraint type {self.penalty_type}.")
 
-        # if pool[-1] == []:
-        #     pool[-1] = self
-        # else:
-        #     pool.append(self)
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):

@@ -91,10 +91,6 @@ class Objective(PenaltyOption):
         else:
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
 
-        # if pool[-1] == []:
-        #     pool[-1] = self
-        # else:
-        #     pool.append(self)
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):
@@ -505,10 +501,6 @@ class ParameterObjective(PenaltyOption):
         else:
             raise ValueError(f"Invalid objective type {self.penalty_type}.")
 
-        # if pool[-1] == []:
-        #     pool[-1] = self
-        # else:
-        #     pool.append(self)
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):

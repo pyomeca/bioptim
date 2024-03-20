@@ -415,6 +415,7 @@ class PlotOcp:
                             for nlp in self.ocp.nlp
                         ]
                     )
+                    # TODO: get rid of all_variables_in_one_subplot by fixing the mapping appropriately
                     if not nlp.plot[variable].all_variables_in_one_subplot:
                         n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
                     else:

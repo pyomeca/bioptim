@@ -89,10 +89,6 @@ class MultinodePenalty(PenaltyOption):
         ocp = controller.ocp
         nlp = controller.get_nlp
         pool = self._get_pool_to_add_penalty(ocp, nlp)
-        # if pool[-1] == []:
-        #     pool[-1] = self
-        # else:
-        #     pool.append(self)
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):
