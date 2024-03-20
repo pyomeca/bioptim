@@ -54,6 +54,7 @@ def test_plot_check_conditioning(phase_dynamics):
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
 
+
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_check_conditioning_live(phase_dynamics):
     # Load graphs check conditioning
@@ -70,6 +71,7 @@ def test_plot_check_conditioning_live(phase_dynamics):
     ocp.add_plot_check_conditioning()
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
+
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_ipopt_output_live(phase_dynamics):
     from bioptim.examples.getting_started import example_multiphase as ocp_module
@@ -84,6 +86,7 @@ def test_plot_ipopt_output_live(phase_dynamics):
     )
     ocp.add_plot_ipopt_outputs()
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 def test_plot_merged_graphs(phase_dynamics):
