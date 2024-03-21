@@ -30,15 +30,7 @@ def test_arm_reaching_muscle_driven(use_sx):
     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
 
     if use_sx:
-        if platform.system() == "Windows":
-            # It is not possible to test the error message on Windows as it uses absolute path
-            match = None
-        else:
-            match = re.escape(
-                "Error in Function::call for 'tp' [MXFunction] at .../casadi/core/function.cpp:339:\n"
-                ".../casadi/core/linsol_internal.cpp:65: eval_sx not defined for LinsolQr"
-            )
-        with pytest.raises(RuntimeError, match=match):
+        with pytest.raises(RuntimeError, match=".*eval_sx not defined for LinsolQr"):
             ocp = ocp_module.prepare_socp(
                 final_time=final_time,
                 n_shooting=n_shooting,
@@ -277,15 +269,7 @@ def test_arm_reaching_torque_driven_explicit(use_sx):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     if use_sx:
-        if platform.system() == "Windows":
-            # It is not possible to test the error message on Windows as it uses absolute path
-            match = None
-        else:
-            match = re.escape(
-                "Error in Function::call for 'tp' [MXFunction] at .../casadi/core/function.cpp:339:\n"
-                ".../casadi/core/linsol_internal.cpp:65: eval_sx not defined for LinsolQr"
-            )
-        with pytest.raises(RuntimeError, match=match):
+        with pytest.raises(RuntimeError, match=".*eval_sx not defined for LinsolQr"):
             ocp = ocp_module.prepare_socp(
                 biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
                 final_time=final_time,

@@ -10,6 +10,9 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 """
 
 import platform
+import matplotlib.pyplot as plt
+import numpy as np
+
 
 from bioptim import (
     OptimalControlProgram,
@@ -26,6 +29,8 @@ from bioptim import (
     BiorbdModel,
     ControlType,
     PhaseDynamics,
+    SolutionMerge,
+    TimeAlignment,
 )
 
 
@@ -146,12 +151,6 @@ def main():
     # --- Show the results (graph or animation) --- #
     # sol.graphs(show_bounds=True)
     sol.animate(n_frames=100)
-
-    # # --- Save the solution --- #
-    # import pickle
-    # with open("pendulum.pkl", "wb") as file:
-    #     del sol.ocp
-    #     pickle.dump(sol, file)
 
 
 if __name__ == "__main__":
