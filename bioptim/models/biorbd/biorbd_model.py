@@ -172,6 +172,7 @@ class BiorbdModel:
         qddot_biorbd = GeneralizedAcceleration(qddot)
         return self.model.CoMddot(q_biorbd, qdot_biorbd, qddot_biorbd, True).to_mx()
 
+
     def body_rotation_rate(self, q, qdot) -> MX:
         self.check_q_size(q)
         self.check_qdot_size(qdot)
