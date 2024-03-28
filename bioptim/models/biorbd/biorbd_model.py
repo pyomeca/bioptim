@@ -15,7 +15,7 @@ from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 from ...misc.utils import check_version
 
-check_version(biorbd, "1.10.0", "1.11.0")
+check_version(biorbd, "1.11.0", "1.12.0")
 
 
 class BiorbdModel:
@@ -659,18 +659,18 @@ class BiorbdModel:
                 if segment.parent().to_string().lower() != "root":
                     q_ranges += [q_range for q_range in segment.QRanges()]
             elif variable == "qdot":
-                qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+                qdot_ranges += [qdot_range for qdot_range in segment.QdotRanges()]
             elif variable == "qdot_roots":
                 if segment.parent().to_string().lower() == "root":
-                    qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+                    qdot_ranges += [qdot_range for qdot_range in segment.QdotRanges()]
             elif variable == "qdot_joints":
                 if segment.parent().to_string().lower() != "root":
-                    qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
+                    qdot_ranges += [qdot_range for qdot_range in segment.QdotRanges()]
             elif variable == "qddot":
-                qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
+                qddot_ranges += [qddot_range for qddot_range in segment.QddotRanges()]
             elif variable == "qddot_joints":
                 if segment.parent().to_string().lower() != "root":
-                    qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
+                    qddot_ranges += [qddot_range for qddot_range in segment.QddotRanges()]
 
         if variable in ["q", "q_roots", "q_joints"]:
             return q_ranges
@@ -689,7 +689,7 @@ class BiorbdModel:
     ) -> dict:
         return _var_mapping(key, range_for_mapping, mapping)
 
-    def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
+    def bounds_from_ranges(self, variables: str | list[str], mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
 
     def lagrangian(self, q: MX | SX, qdot: MX | SX) -> MX | SX:
@@ -705,7 +705,7 @@ class BiorbdModel:
         ocp,
         solution: "SolutionData",
         show_now: bool = True,
-        tracked_markers: list[np.ndarray, ...] = None,
+        tracked_markers: list[np.ndarray] = None,
         **kwargs: Any,
     ) -> None | list:
         try:
