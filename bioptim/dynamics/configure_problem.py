@@ -158,7 +158,7 @@ class ConfigureProblem:
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
-        external_forces: list = None,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -183,16 +183,22 @@ class ConfigureProblem:
             which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
-        external_forces: list[Any]
-            A list of external forces
+        dynamics_constants_used_at_each_nodes: dict[list[Any]]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
         _check_soft_contacts_dynamics(
             rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
-        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
-        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
+        external_forces = None
+        for key in dynamics_constants_used_at_each_nodes.keys():
+            if key != "external_forces":
+                raise RuntimeError(
+                    "The only dynamics_constants_used_at_each_nodes allowed for torque_driven dynamics is external_forces."
+                )
+            _check_dynamics_constants_format(dynamics_constants_used_at_each_nodes[key], nlp.ns, nlp.phase_idx)
+            external_forces = dynamics_constants_used_at_each_nodes["external_forces"]
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -1903,29 +1909,14 @@ class DynamicsList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of DynamicsList is not ready yet")
 
 
-def _check_external_forces_format(external_forces: list[Any], n_shooting: int, phase_idx: int):
-    """Check if the external_forces is of the right format"""
-    if external_forces is not None and len(external_forces) != n_shooting:
+def _check_dynamics_constants_format(dynamics_constant: list[Any], n_shooting: int, phase_idx: int):
+    """Check if the dynamics_constant_at_each_node is of the right format"""
+    if dynamics_constant is not None and dynamics_constant.shape[2] != n_shooting:
         raise RuntimeError(
-            f"Phase {phase_idx} has {n_shooting} shooting points but the external_forces "
-            f"has {len(external_forces)} shooting points."
-            f"The external_forces should be of format list[Any] "
-            f"where the list is the number of shooting points of the phase and the dict is the Any "
-            f"is the specific way to add external_force for the specific implementation of the biomodel."
-        )
-
-
-def _check_external_forces_and_phase_dynamics(
-    external_forces: list[Any], phase_dynamics: PhaseDynamics, phase_idx: int
-):
-    """If external_forces is not None, phase_dynamics should be PhaseDynamics.ONE_PER_NODE"""
-    # Note to the developer: External_forces doesn't necessitate ONE_PER_NODE, we made it anyway
-    # because at this stage it makes more sens to send full time series of external forces
-    # but one day someone could be interested in sending a unique value that could be applied to all nodes
-    if external_forces is not None and phase_dynamics != PhaseDynamics.ONE_PER_NODE:
-        raise RuntimeError(
-            f"Phase {phase_idx} has external_forces but the phase_dynamics is {phase_dynamics}."
-            f"Please set phase_dynamics=PhaseDynamics.ONE_PER_NODE"
+            f"Phase {phase_idx} has {n_shooting} shooting points but the dynamics_constant_at_each_node "
+            f"has {len(dynamics_constant)} shooting points."
+            f"The dynamics_constant_at_each_node should be of format dict[list[Any]] "
+            f"where the list is the number of shooting points of the phase "
         )
 
 

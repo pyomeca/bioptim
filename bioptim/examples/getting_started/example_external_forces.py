@@ -11,6 +11,7 @@ where the vector is a 6x1 array (Mx, My, Mz, Fx, Fy, Fz)
 """
 
 import platform
+import numpy as np
 
 from bioptim import (
     BiorbdModel,
@@ -54,7 +55,9 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path, segments_to_apply_external_forces=["Seg1", "Test"])
+    # segments_to_apply_external_forces is necessary to define the external forces.
+    # Please note that they should be declared in the same order as the external forces values bellow.
 
     # Problem parameters
     n_shooting = 30
@@ -64,13 +67,12 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
-    # External forces. external_forces is of len 1 because there is only one phase.
-    # The inner array is of len 30 since there is 30. At each node, two forces are added to the segments "Seg1" and
-    # "Test" respectively and is of the format [Mx, My, Mz, Fx, Fy, Fz]
-    external_forces = [[["Seg1", (0, 0, 0, 0, 0, -2)], ["Test", (0, 0, 0, 0, 0, 5)]] for _ in range(n_shooting)]
-    # Change the values (index 1) of the 5th node (index 4) and 1st (index 0) and 2nd (index 1) forces
-    external_forces[4][0][1] = (0, 0, 0, 0, 0, -22)
-    external_forces[4][1][1] = (0, 0, 0, 0, 0, 52)
+    # External forces (shape: 6 x nb_external_forces x n_shooting_points)
+    external_forces = np.zeros((6, 2, n_shooting))
+    external_forces[5, 0, :] = -2
+    external_forces[5, 1, :] = 5
+    external_forces[5, 0, 4] = -22
+    external_forces[5, 1, 4] = 52
 
     # Dynamics
     dynamics = DynamicsList()
@@ -79,7 +81,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=expand_dynamics,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
-        external_forces=external_forces,
+        dynamics_constants_used_at_each_nodes={"external_forces": external_forces},  # the key word "external_forces" must be used
     )
 
     # Constraints

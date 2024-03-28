@@ -43,8 +43,6 @@ class NonLinearProgram:
         The implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
     dynamics_type: Dynamics
         The dynamic option declared by the user for the current phase
-    external_forces: list
-        The external forces acting at the center of mass of the designated segment
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
     g_internal: list[list[Constraint]]
@@ -147,7 +145,6 @@ class NonLinearProgram:
         self.dynamics_func: list = []
         self.implicit_dynamics_func: list = []
         self.dynamics_type = None
-        self.external_forces: list[list[Any, ...], ...] | None = None  # nodes x steps that are passed to the model
         self.g = []
         self.g_internal = []
         self.g_implicit = []

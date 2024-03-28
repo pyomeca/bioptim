@@ -552,8 +552,8 @@ class OdeSolver:
                 )  # todo: should accept parameters now
             if nlp.algebraic_states.cx_start.shape != 0 and nlp.algebraic_states.cx_start.shape != (0, 0):
                 raise RuntimeError("CVODES cannot be used while optimizing algebraic_states variables")
-            if nlp.external_forces:
-                raise RuntimeError("CVODES cannot be used with external_forces")
+            if nlp.dynamics_constants:
+                raise RuntimeError("CVODES cannot be used with external_forces or other dynamics_constants")
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
             if nlp.algebraic_states.shape != 0:
