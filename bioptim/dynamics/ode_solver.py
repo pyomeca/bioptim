@@ -201,6 +201,7 @@ class OdeSolverBase:
             "u": self.p_ode(nlp),
             "a": self.a_ode(nlp),
             "param": self.param_ode(nlp),
+            "dynamics_constants": nlp.dynamics_constants.mx, ######
             "ode": nlp.dynamics_func[dynamics_index],
             # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
             "implicit_ode": (

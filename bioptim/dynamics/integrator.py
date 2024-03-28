@@ -65,6 +65,7 @@ class Integrator:
         self.u_sym = ode["u"]
         self.param_sym = ode["param"]
         self.a_sym = ode["a"]
+        self.dynamics_constants_sym = ode["dynamics_constants"]
         self.fun = ode["ode"]
         self.implicit_fun = ode["implicit_ode"]
         self.defects_type = ode_opt["defects_type"]
@@ -78,12 +79,13 @@ class Integrator:
         self.step_times_from_dt = self._time_xall_from_dt_func
         self.function = Function(
             "integrator",
-            [self.t_span_sym, self._x_sym_modified, self.u_sym, self.param_sym, self.a_sym],
+            [self.t_span_sym, self._x_sym_modified, self.u_sym, self.param_sym, self.a_sym, self.dynamics_constants_sym],
             self.dxdt(
                 states=self.x_sym,
                 controls=self.u_sym,
                 params=self.param_sym,
                 algebraic_states=self.a_sym,
+                dynamics_constants=self.dynamics_constants_sym,
             ),
             self._input_names,
             self._output_names,
@@ -120,7 +122,7 @@ class Integrator:
 
     @property
     def _input_names(self):
-        return ["t_span", "x0", "u", "p", "a"]
+        return ["t_span", "x0", "u", "p", "a", "dynamics_constants"]
 
     @property
     def _output_names(self):
@@ -184,6 +186,7 @@ class Integrator:
         controls: MX | SX,
         params: MX | SX,
         algebraic_states: MX | SX,
+        dynamics_constants: MX,
     ) -> tuple:
         """
         The dynamics of the system
@@ -198,6 +201,8 @@ class Integrator:
             The parameters of the system
         algebraic_states: MX | SX
             The algebraic states of the system
+        dynamics_constants: MX
+            The dynamics constants of the system
 
         Returns
         -------
@@ -283,6 +288,7 @@ class RK(Integrator):
         controls: MX | SX,
         params: MX | SX,
         algebraic_states: MX | SX,
+        dynamics_constants: MX,
     ) -> tuple:
         u = controls
         x = self.cx(states.shape[0], self._n_step + 1)
@@ -292,7 +298,7 @@ class RK(Integrator):
 
         for i in range(1, self._n_step + 1):
             t = self.t_span_sym[0] + self._integration_time * (i - 1)
-            x[:, i] = self.next_x(t, x[:, i - 1], u, p, a)
+            x[:, i] = self.next_x(t, x[:, i - 1], u, p, a, dynamics_constants)
             if self.model.nb_quaternions > 0:
                 x[:, i] = self.model.normalize_state_quaternions(x[:, i])
 
@@ -304,8 +310,8 @@ class RK1(RK):
     Numerical integration using first order Runge-Kutta 1 Method (Forward Euler Method).
     """
 
-    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX) -> MX | SX:
-        return x_prev + self.h * self.fun(vertcat(t0, self.h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX) -> MX | SX:
+        return x_prev + self.h * self.fun(vertcat(t0, self.h), x_prev, self.get_u(u, t0), p, a, dynamics_constants)[:, self.ode_idx]
 
 
 class RK2(RK):
@@ -313,14 +319,14 @@ class RK2(RK):
     Numerical integration using second order Runge-Kutta Method (Midpoint Method).
     """
 
-    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX):
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX) -> MX | SX:
         h = self.h
 
-        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
+        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, dynamics_constants)[:, self.ode_idx]
         return (
             x_prev
             + h
-            * self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
+            * self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, dynamics_constants)[:, self.ode_idx]
         )
 
 
@@ -329,13 +335,13 @@ class RK4(RK):
     Numerical integration using fourth order Runge-Kutta method.
     """
 
-    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX):
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX) -> MX | SX:
         h = self.h
 
-        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
-        k2 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
-        k3 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, a)[:, self.ode_idx]
-        k4 = self.fun(vertcat(t0 + h, h), x_prev + h * k3, self.get_u(u, t0 + h), p, a)[:, self.ode_idx]
+        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, dynamics_constants)[:, self.ode_idx]
+        k2 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, dynamics_constants)[:, self.ode_idx]
+        k3 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, a, dynamics_constants)[:, self.ode_idx]
+        k4 = self.fun(vertcat(t0 + h, h), x_prev + h * k3, self.get_u(u, t0 + h), p, a, dynamics_constants)[:, self.ode_idx]
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
@@ -344,20 +350,20 @@ class RK8(RK4):
     Numerical integration using eighth order Runge-Kutta method.
     """
 
-    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX):
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX) -> MX | SX:
         h = self.h
 
-        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a)[:, self.ode_idx]
-        k2 = self.fun(vertcat(t0 + h * 4 / 27, h), x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + h * (4 / 27)), p, a)[
+        k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, dynamics_constants)[:, self.ode_idx]
+        k2 = self.fun(vertcat(t0 + h * 4 / 27, h), x_prev + (h * 4 / 27) * k1, self.get_u(u, t0 + h * (4 / 27)), p, a, dynamics_constants)[
             :, self.ode_idx
         ]
         k3 = self.fun(
-            vertcat(t0 + h / 18, h), x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + h * (2 / 9)), p, a
+            vertcat(t0 + h / 18, h), x_prev + (h / 18) * (k1 + 3 * k2), self.get_u(u, t0 + h * (2 / 9)), p, a, dynamics_constants
         )[:, self.ode_idx]
         k4 = self.fun(
-            vertcat(t0 + h / 12, h), x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t0 + h * (1 / 3)), p, a
+            vertcat(t0 + h / 12, h), x_prev + (h / 12) * (k1 + 3 * k3), self.get_u(u, t0 + h * (1 / 3)), p, a, dynamics_constants
         )[:, self.ode_idx]
-        k5 = self.fun(vertcat(t0 + h / 8, h), x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t0 + h * (1 / 2)), p, a)[
+        k5 = self.fun(vertcat(t0 + h / 8, h), x_prev + (h / 8) * (k1 + 3 * k4), self.get_u(u, t0 + h * (1 / 2)), p, a, dynamics_constants)[
             :, self.ode_idx
         ]
         k6 = self.fun(
@@ -366,6 +372,7 @@ class RK8(RK4):
             self.get_u(u, t0 + h * (2 / 3)),
             p,
             a,
+            dynamics_constants,
         )[:, self.ode_idx]
         k7 = self.fun(
             vertcat(t0 + h / 4320, h),
@@ -373,6 +380,7 @@ class RK8(RK4):
             self.get_u(u, t0 + h * (1 / 6)),
             p,
             a,
+            dynamics_constants,
         )[:, self.ode_idx]
         k8 = self.fun(
             vertcat(t0 + h / 20, h),
@@ -380,6 +388,7 @@ class RK8(RK4):
             self.get_u(u, t0 + h),
             p,
             a,
+            dynamics_constants,
         )[:, self.ode_idx]
         k9 = self.fun(
             vertcat(t0 + h / 288, h),
@@ -387,6 +396,7 @@ class RK8(RK4):
             self.get_u(u, t0 + h * (5 / 6)),
             p,
             a,
+            dynamics_constants,
         )[:, self.ode_idx]
         k10 = self.fun(
             vertcat(t0 + h / 820, h),
@@ -395,6 +405,7 @@ class RK8(RK4):
             self.get_u(u, t0 + h),
             p,
             a,
+            dynamics_constants,
         )[:, self.ode_idx]
         return x_prev + h / 840 * (41 * k1 + 27 * k4 + 272 * k5 + 27 * k6 + 216 * k7 + 216 * k9 + 41 * k10)
 

@@ -1,6 +1,6 @@
 from typing import Callable, Any
 
-from casadi import vertcat, Function, DM
+from casadi import vertcat, Function, DM, horzcat
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
@@ -198,7 +198,9 @@ class ConfigureProblem:
                     "The only dynamics_constants_used_at_each_nodes allowed for torque_driven dynamics is external_forces."
                 )
             _check_dynamics_constants_format(dynamics_constants_used_at_each_nodes[key], nlp.ns, nlp.phase_idx)
-            external_forces = dynamics_constants_used_at_each_nodes["external_forces"]
+            external_forces = nlp.dynamics_constants[0].mx
+            for i in range(1, dynamics_constants_used_at_each_nodes[key].shape[1]):
+                external_forces = horzcat(external_forces, nlp.dynamics_constants[i].mx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -947,9 +949,10 @@ class ConfigureProblem:
                         nlp.controls.scaled.mx_reduced,
                         nlp.parameters.scaled.mx_reduced,
                         nlp.algebraic_states.scaled.mx_reduced,
+                        nlp.dynamics_constants.mx,
                     ],
                     [dynamics_dxdt],
-                    ["t_span", "x", "u", "p", "a"],
+                    ["t_span", "x", "u", "p", "a", "dynamics_constants"],
                     ["xdot"],
                 ),
             )
