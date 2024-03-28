@@ -1453,7 +1453,7 @@ class Solution:
                             "function": penalty.name,
                             "cost_value_weighted": val_weighted,
                             "cost_value": val,
-                            "params": penalty.params,
+                            "params": penalty.extra_parameters,
                             "derivative": penalty.derivative,
                             "explicit_derivative": penalty.explicit_derivative,
                             "integration_rule": penalty.integration_rule.name,

@@ -48,7 +48,7 @@ class PhaseTransition(MultinodePenalty):
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
-        **params: Any,
+        **extra_parameters: Any,
     ):
         # TODO: @pariterre: where did phase_post go !?
 
@@ -65,7 +65,7 @@ class PhaseTransition(MultinodePenalty):
             nodes=(Node.END, Node.START),
             multinode_penalty=transition,
             custom_function=custom_function,
-            **params,
+            **extra_parameters,
         )
 
         self.weight = 0 if weight is None else weight

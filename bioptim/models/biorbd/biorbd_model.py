@@ -1,5 +1,3 @@
-from typing import Callable, Any
-
 import biorbd_casadi as biorbd
 import numpy as np
 from biorbd_casadi import (
@@ -9,13 +7,14 @@ from biorbd_casadi import (
     GeneralizedAcceleration,
 )
 from casadi import SX, MX, vertcat, horzcat, norm_fro
+from typing import Callable, Any
 
 from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 from ...misc.utils import check_version
 
-check_version(biorbd, "1.10.0", "1.11.0")
+check_version(biorbd, "1.11.0", "1.12.0")
 
 
 class BiorbdModel:
@@ -645,41 +644,50 @@ class BiorbdModel:
         return self.model.ligamentsJointTorque(q_biorbd, qdot_biorbd).to_mx()
 
     def ranges_from_model(self, variable: str):
-        q_ranges = []
-        qdot_ranges = []
-        qddot_ranges = []
-
-        for i_segment, segment in enumerate(self.segments):
-            if variable == "q":
-                q_ranges += [q_range for q_range in segment.QRanges()]
-            elif variable == "q_roots":
+        ranges = []
+        for segment in self.segments:
+            if "_joints" in variable:
+                if segment.parent().to_string().lower() != "root":
+                    variable = variable.replace("_joints", "")
+                    ranges += self._add_range(variable, segment)
+            elif "_roots" in variable:
                 if segment.parent().to_string().lower() == "root":
-                    q_ranges += [q_range for q_range in segment.QRanges()]
-            elif variable == "q_joints":
-                if segment.parent().to_string().lower() != "root":
-                    q_ranges += [q_range for q_range in segment.QRanges()]
-            elif variable == "qdot":
-                qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-            elif variable == "qdot_roots":
-                if segment.parent().to_string().lower() == "root":
-                    qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-            elif variable == "qdot_joints":
-                if segment.parent().to_string().lower() != "root":
-                    qdot_ranges += [qdot_range for qdot_range in segment.QDotRanges()]
-            elif variable == "qddot":
-                qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
-            elif variable == "qddot_joints":
-                if segment.parent().to_string().lower() != "root":
-                    qddot_ranges += [qddot_range for qddot_range in segment.QDDotRanges()]
+                    variable = variable.replace("_roots", "")
+                    ranges += self._add_range(variable, segment)
+            else:
+                ranges += self._add_range(variable, segment)
 
-        if variable in ["q", "q_roots", "q_joints"]:
-            return q_ranges
-        elif variable in ["qdot", "qdot_roots", "qdot_joints"]:
-            return qdot_ranges
-        elif variable == "qddot" or variable == "qddot_joints":
-            return qddot_ranges
-        else:
-            raise RuntimeError("Wrong variable name")
+        return ranges
+
+    @staticmethod
+    def _add_range(variable: str, segment: biorbd.Segment) -> list[biorbd.Range]:
+        """
+        Get the range of a variable for a given segment
+
+        Parameters
+        ----------
+        variable: str
+            The variable to get the range for such as:
+             "q", "qdot", "qddot", "q_joint", "qdot_joint", "qddot_joint", "q_root", "qdot_root", "qddot_root"
+        segment: biorbd.Segment
+            The segment to get the range from
+
+        Returns
+        -------
+        list[biorbd.Range]
+            range min and max for the given variable for a given segment
+        """
+        ranges_map = {
+            "q": [q_range for q_range in segment.QRanges()],
+            "qdot": [qdot_range for qdot_range in segment.QdotRanges()],
+            "qddot": [qddot_range for qddot_range in segment.QddotRanges()],
+        }
+
+        segment_variable_range = ranges_map.get(variable, None)
+        if segment_variable_range is None:
+            RuntimeError("Wrong variable name")
+
+        return segment_variable_range
 
     def _var_mapping(
         self,
@@ -689,7 +697,7 @@ class BiorbdModel:
     ) -> dict:
         return _var_mapping(key, range_for_mapping, mapping)
 
-    def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
+    def bounds_from_ranges(self, variables: str | list[str], mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
 
     def lagrangian(self, q: MX | SX, qdot: MX | SX) -> MX | SX:
@@ -705,7 +713,7 @@ class BiorbdModel:
         ocp,
         solution: "SolutionData",
         show_now: bool = True,
-        tracked_markers: list[np.ndarray, ...] = None,
+        tracked_markers: list[np.ndarray] = None,
         **kwargs: Any,
     ) -> None | list:
         try:

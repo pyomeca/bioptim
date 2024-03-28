@@ -1162,6 +1162,7 @@ class PenaltyFunctionAbstract:
                 "name",
                 "type",
                 "params",
+                "extra_parameters",
                 "node",
                 "quadratic",
                 "index",

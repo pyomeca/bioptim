@@ -427,7 +427,7 @@ class AcadosInterface(SolverInterface):
             def add_objective(n_variables, is_state):
                 v_var = np.zeros(n_variables)
                 var_type = acados.ocp.nlp[0].states if is_state else acados.ocp.nlp[0].controls
-                rows = objectives.rows + var_type[objectives.params["key"]].index[0]
+                rows = objectives.rows + var_type[objectives.extra_parameters["key"]].index[0]
                 v_var[rows] = 1.0
                 if is_state:
                     acados.Vx = np.vstack((acados.Vx, np.diag(v_var)))
@@ -459,7 +459,7 @@ class AcadosInterface(SolverInterface):
                 def _adjust_dim():
                     v_var = np.zeros(n_variables)
                     var_type = acados.ocp.nlp[0].states if is_state else acados.ocp.nlp[0].controls
-                    rows = objectives.rows + var_type[objectives.params["key"]].index[0]
+                    rows = objectives.rows + var_type[objectives.extra_parameters["key"]].index[0]
                     v_var[rows] = 1.0
                     return v_var, rows
 

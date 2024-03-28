@@ -31,7 +31,7 @@ class Constraint(PenaltyOption):
         quadratic: bool = False,
         phase: int = -1,
         is_stochastic: bool = False,
-        **params: Any,
+        **extra_parameters: Any,
     ):
         """
         Parameters
@@ -49,7 +49,7 @@ class Constraint(PenaltyOption):
         is_stochastic: bool
             If the constraint is stochastic (if we should instead look at the rate of variation of the inequality
             constraint)
-        params:
+        extra_parameters:
             Generic parameters for options
         """
         custom_function = None
@@ -63,7 +63,7 @@ class Constraint(PenaltyOption):
             quadratic=quadratic,
             custom_function=custom_function,
             is_stochastic=is_stochastic,
-            **params,
+            **extra_parameters,
         )
 
         if isinstance(constraint, ImplicitConstraintFcn):
@@ -1141,7 +1141,7 @@ class ParameterConstraint(PenaltyOption):
         min_bound: np.ndarray | float = None,
         max_bound: np.ndarray | float = None,
         quadratic: bool = False,
-        **params: Any,
+        **extra_parameters: Any,
     ):
         """
         Parameters
@@ -1154,7 +1154,7 @@ class ParameterConstraint(PenaltyOption):
             The vector of maximal bound of the constraint. Default is 0
         quadratic: bool
             If the penalty is quadratic
-        params:
+        extra_parameters:
             Generic parameters for options
         """
         custom_function = None
@@ -1163,7 +1163,7 @@ class ParameterConstraint(PenaltyOption):
             parameter_constraint = ConstraintFcn.CUSTOM
 
         super(ParameterConstraint, self).__init__(
-            penalty=parameter_constraint, quadratic=quadratic, custom_function=custom_function, **params
+            penalty=parameter_constraint, quadratic=quadratic, custom_function=custom_function, **extra_parameters
         )
 
         if isinstance(parameter_constraint, ImplicitConstraintFcn):
