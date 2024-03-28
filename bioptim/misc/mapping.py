@@ -35,7 +35,7 @@ class Mapping(OptionGeneric):
         self,
         map_idx: list | tuple | range | np.ndarray,
         oppose: int | list | tuple | range | np.ndarray = None,
-        **params
+        **extra_parameters
     ):
         """
         Parameters
@@ -45,7 +45,7 @@ class Mapping(OptionGeneric):
         oppose: int | list | tuple | range | np.ndarray
             Index to multiply by -1
         """
-        super(Mapping, self).__init__(**params)
+        super(Mapping, self).__init__(**extra_parameters)
         self.map_idx = map_idx
         self.oppose = [1] * len(self.map_idx)
         if oppose is not None:
@@ -127,7 +127,7 @@ class BiMapping(OptionGeneric):
         to_first: Mapping | int | list | tuple | range,
         oppose_to_second: Mapping | int | list | tuple | range = None,
         oppose_to_first: Mapping | int | list | tuple | range = None,
-        **params
+        **extra_parameters
     ):
         """
         Parameters
@@ -141,7 +141,7 @@ class BiMapping(OptionGeneric):
         oppose_to_first: Mapping | int | list | tuple | range
             Index to multiply by -1 of the to_first mapping
         """
-        super(BiMapping, self).__init__(**params)
+        super(BiMapping, self).__init__(**extra_parameters)
 
         self.oppose_to_second = oppose_to_second
         self.oppose_to_first = oppose_to_first
@@ -316,7 +316,7 @@ class SelectionMapping(BiMapping):
         nb_elements: int = None,
         independent_indices: tuple[int, ...] = None,
         dependencies: tuple[Dependency, ...] = None,
-        **params
+        **extra_parameters
     ):
         """
         Initializes the class SelectionMapping
@@ -435,7 +435,7 @@ class NodeMapping(OptionGeneric):
         map_controls: bool = False,
         phase_pre: int = None,
         phase_post: int = None,
-        **params
+        **extra_parameters
     ):
         """
         Parameters
@@ -449,7 +449,7 @@ class NodeMapping(OptionGeneric):
         nodes_post: Node | int | list | tuple | range
             The indices of the nodes to map in second phase
         """
-        super(NodeMapping, self).__init__(**params)
+        super(NodeMapping, self).__init__(**extra_parameters)
 
         self.map_states = map_states
         self.map_controls = map_controls

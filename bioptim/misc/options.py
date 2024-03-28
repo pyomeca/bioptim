@@ -17,7 +17,7 @@ class OptionGeneric:
         The name of the option
     type: Any
         The type of the option
-    params: dict
+    extra_parameters: dict
         Any extra parameters that did not fall in any category
 
     Methods
@@ -26,7 +26,7 @@ class OptionGeneric:
         Get the size of the OptionGeneric (abstract)
     """
 
-    def __init__(self, phase: int = -1, list_index: int = -1, name: str = None, type: Any = None, **params):
+    def __init__(self, phase: int = -1, list_index: int = -1, name: str = None, type: Any = None, **extra_parameters):
         """
         Parameters
         ----------
@@ -38,7 +38,7 @@ class OptionGeneric:
             The name of the option
         type: Any
             The type of the option
-        params: dict
+        extra_parameters: dict
             Any extra parameters that did not fall in any category
         """
 
@@ -52,7 +52,7 @@ class OptionGeneric:
         self.name = name
         self.type = type
 
-        self.params = params  # TODO: change parameters to extra-parameters (differentiate from parameters)
+        self.extra_parameters = extra_parameters
 
     @property
     def param_when_copying(self) -> dict:

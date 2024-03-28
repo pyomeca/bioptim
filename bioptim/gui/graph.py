@@ -128,8 +128,8 @@ class GraphAbstract:
             string += f"<b>Index</b>: {objective.index}{self._return_line}" if objective.index is not None else ""
         if hasattr(objective, "weight"):
             string += f"<b>Weight</b>: {objective.weight}{self._return_line}"
-        for param in objective.params:
-            string += f"<b>{param}</b>: {objective.params[param]}{self._return_line}"
+        for param in objective.extra_parameters:
+            string += f"<b>{param}</b>: {objective.extra_parameters[param]}{self._return_line}"
         string += f"<b>Index in list</b>: {objective.list_index}{self._return_line}"
         return string
 
@@ -502,7 +502,7 @@ class OcpToGraph(GraphAbstract):
             if constraint.target is not None
             else ""
         )
-        constraint_str += self._add_dict_to_str(constraint.params)
+        constraint_str += self._add_dict_to_str(constraint.extra_parameters)
         constraint_str += f"<b>Index in list</b>: {constraint.list_index}<br/>"
         return constraint_str
 

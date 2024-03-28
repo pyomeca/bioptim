@@ -838,7 +838,7 @@ class InitialGuess(OptionGeneric):
             seed=seed,
             magnitude=magnitude,
             magnitude_type=magnitude_type,
-            **self.params,
+            **self.extra_parameters,
         )
         self.init = noised_guess.init
         self.type = noised_guess.type

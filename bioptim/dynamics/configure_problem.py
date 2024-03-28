@@ -130,7 +130,7 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.params)
+        nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.extra_parameters)
 
     @staticmethod
     def custom(ocp, nlp, **extra_params):
@@ -1820,7 +1820,7 @@ class Dynamics(OptionGeneric):
         skip_continuity: bool = False,
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-        **params: Any,
+        **extra_parameters: Any,
     ):
         """
         Parameters
@@ -1847,16 +1847,16 @@ class Dynamics(OptionGeneric):
             configure = dynamics_type
             dynamics_type = DynamicsFcn.CUSTOM
         else:
-            if "configure" in params:
-                configure = params["configure"]
-                del params["configure"]
+            if "configure" in extra_parameters:
+                configure = extra_parameters["configure"]
+                del extra_parameters["configure"]
 
         dynamic_function = None
-        if "dynamic_function" in params:
-            dynamic_function = params["dynamic_function"]
-            del params["dynamic_function"]
+        if "dynamic_function" in extra_parameters:
+            dynamic_function = extra_parameters["dynamic_function"]
+            del extra_parameters["dynamic_function"]
 
-        super(Dynamics, self).__init__(type=dynamics_type, **params)
+        super(Dynamics, self).__init__(type=dynamics_type, **extra_parameters)
         self.dynamic_function = dynamic_function
         self.configure = configure
         self.expand_dynamics = expand_dynamics

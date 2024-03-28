@@ -120,7 +120,7 @@ class MultiFatigueModel(OptionGeneric):
         state_only: bool,
         split_controls: bool = True,
         apply_to_joint_dynamics: bool = False,
-        **params
+        **extra_parameters
     ):
         """
         model: FatigueModel
@@ -139,7 +139,7 @@ class MultiFatigueModel(OptionGeneric):
             Any other parameters to pass to OptionGeneric
         """
 
-        super(MultiFatigueModel, self).__init__(**params)
+        super(MultiFatigueModel, self).__init__(**extra_parameters)
         if isinstance(model, FatigueModel):
             model = [model]
 

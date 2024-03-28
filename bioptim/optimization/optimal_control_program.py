@@ -1521,8 +1521,14 @@ class OptimalControlProgram:
                             _min = pen_fun.min_bound if pen_fun.min_bound else 0
                             _max = pen_fun.max_bound if pen_fun.max_bound else inf
                         else:
-                            _min = pen_fun.params["min_bound"] if "min_bound" in pen_fun.params else 0
-                            _max = pen_fun.params["max_bound"] if "max_bound" in pen_fun.params else inf
+                            _min = (
+                                pen_fun.extra_parameters["min_bound"] if "min_bound" in pen_fun.extra_parameters else 0
+                            )
+                            _max = (
+                                pen_fun.extra_parameters["max_bound"]
+                                if "max_bound" in pen_fun.extra_parameters
+                                else inf
+                            )
                         dt_bounds[key]["min"] = _min / self.nlp[i].ns
                         dt_bounds[key]["max"] = _max / self.nlp[i].ns
 
