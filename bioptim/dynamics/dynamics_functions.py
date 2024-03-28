@@ -1093,15 +1093,11 @@ class DynamicsFunctions:
 
             return qdot_var_mapping.map(qddot)
         else:
-            dxdt = MX(len(qdot_var_mapping), nlp.ns)
-            ################
-            for i_node in range(external_forces.shape[2]):
-                if with_contact:
-                    qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, external_forces[:, :, i_node])
-                else:
-                    qddot = nlp.model.forward_dynamics(q, qdot, tau, external_forces[:, :, i_node])
-                dxdt[:, i_node] = qdot_var_mapping.map(qddot)
-            return dxdt
+            if with_contact:
+                qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, external_forces)
+            else:
+                qddot = nlp.model.forward_dynamics(q, qdot, tau, external_forces)
+            return qdot_var_mapping.map(qddot)
 
     @staticmethod
     def inverse_dynamics(

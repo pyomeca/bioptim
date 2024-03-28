@@ -208,6 +208,7 @@ class OdeSolverBase:
             "x": self.x_ode(nlp),
             "u": self.p_ode(nlp),
             "a": self.a_ode(nlp),
+            "dynamics_constants": self.d_ode(nlp),
             "param": self.param_ode(nlp),
             "ode": dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
