@@ -1105,7 +1105,7 @@ class PenaltyFunctionAbstract:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
 
                 integrated = controller.integrate(
-                    t_span=t_span, x0=cx, u=u, p=controller.parameters.cx, a=controller.algebraic_states.cx_start
+                    t_span=t_span, x0=cx, u=u, p=controller.parameters.cx, a=controller.algebraic_states.cx_start, dynamics_constants=controller.dynamics.cx
                 )
                 continuity -= integrated["xf"]
                 continuity = vertcat(continuity, integrated["defects"])
