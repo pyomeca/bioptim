@@ -49,7 +49,9 @@ class MultinodePenalty(PenaltyOption):
             custom_function = multinode_penalty
             multinode_penalty = _multinode_penalty_fcn.CUSTOM
 
-        super(MultinodePenalty, self).__init__(penalty=multinode_penalty, custom_function=custom_function, **extra_parameters)
+        super(MultinodePenalty, self).__init__(
+            penalty=multinode_penalty, custom_function=custom_function, **extra_parameters
+        )
 
         for node in nodes:
             if node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):

@@ -13,7 +13,12 @@ class Objective(PenaltyOption):
     """
 
     def __init__(
-        self, objective: Any, custom_type: Any = None, phase: int = -1, is_stochastic: bool = False, **extra_parameters: Any
+        self,
+        objective: Any,
+        custom_type: Any = None,
+        phase: int = -1,
+        is_stochastic: bool = False,
+        **extra_parameters: Any,
     ):
         """
         Parameters
@@ -52,7 +57,10 @@ class Objective(PenaltyOption):
 
         # sanity check on the integration method
         if isinstance(objective, ObjectiveFcn.Lagrange):
-            if "integration_rule" not in extra_parameters.keys() or extra_parameters["integration_rule"] == QuadratureRule.DEFAULT:
+            if (
+                "integration_rule" not in extra_parameters.keys()
+                or extra_parameters["integration_rule"] == QuadratureRule.DEFAULT
+            ):
                 extra_parameters["integration_rule"] = QuadratureRule.RECTANGLE_LEFT
             if extra_parameters["integration_rule"] not in (
                 QuadratureRule.RECTANGLE_LEFT,
@@ -63,7 +71,10 @@ class Objective(PenaltyOption):
                     f"{extra_parameters['integration_rule']} has not been implemented yet for objective functions."
                 )
         elif isinstance(objective, ObjectiveFcn.Mayer):
-            if "integration_rule" in extra_parameters.keys() and extra_parameters["integration_rule"] != QuadratureRule.DEFAULT:
+            if (
+                "integration_rule" in extra_parameters.keys()
+                and extra_parameters["integration_rule"] != QuadratureRule.DEFAULT
+            ):
                 raise ValueError(
                     "Mayer objective functions cannot be integrated, "
                     "remove the argument "
@@ -74,7 +85,11 @@ class Objective(PenaltyOption):
             pass
 
         super(Objective, self).__init__(
-            penalty=objective, phase=phase, custom_function=custom_function, is_stochastic=is_stochastic, **extra_parameters
+            penalty=objective,
+            phase=phase,
+            custom_function=custom_function,
+            is_stochastic=is_stochastic,
+            **extra_parameters,
         )
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController]):
@@ -488,7 +503,9 @@ class ParameterObjective(PenaltyOption):
                     "It should either be ObjectiveFcn.Parameter"
                 )
 
-        super(ParameterObjective, self).__init__(penalty=parameter_objective, custom_function=custom_function, **extra_parameters)
+        super(ParameterObjective, self).__init__(
+            penalty=parameter_objective, custom_function=custom_function, **extra_parameters
+        )
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController]):
         controller = controller[0]  # This is a special case of Node.TRANSITION
