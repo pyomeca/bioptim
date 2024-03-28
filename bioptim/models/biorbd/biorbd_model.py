@@ -22,12 +22,13 @@ class BiorbdModel:
     This class wraps the biorbd model and allows the user to call the biorbd functions from the biomodel protocol
     """
 
-    def __init__(self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None):
+    def __init__(self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None, segments_to_apply_external_forces: list[str] = []):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
         self._friction_coefficients = friction_coefficients
+        self._segments_to_apply_external_forces = segments_to_apply_external_forces
 
     @property
     def name(self) -> str:
@@ -288,48 +289,50 @@ class BiorbdModel:
         return vertcat(qddot_root, qddot_joints)
 
     def _dispatch_forces(self, external_forces, translational_forces):
-        def extract_elements(e) -> tuple[str, Any] | tuple[Any, str, Any]:
-            value_message = ValueError(
-                "The external_forces at each frame should be of the form: [segment_name, spatial_vector],\n"
-                "where the segment_name is a str corresponding to the name of the parent and the spatial_vector\n"
-                "is a 6 element vectors (Mx, My, Mz, Fx, Fy, Fz) of the type tuple, list, np.ndarray or MX."
-            )
-            if not isinstance(e, (list, tuple)) and len(e) < 2:
-                raise value_message
-
-            name = e[0]
-            if not isinstance(name, str):
-                raise value_message
-
-            values = e[1]
-            if isinstance(values, (list, tuple)):
-                values = np.array(values)
-            if not isinstance(values, (np.ndarray, MX)):
-                raise value_message
-
-            # If it is a force, we are done
-            if len(e) < 3:
-                return name, values
-
-            # If it is a contact point, add it
-            point_of_application = e[2]
-            if isinstance(point_of_application, (list, tuple)):
-                point_of_application = np.array(point_of_application)
-            if not isinstance(point_of_application, (np.ndarray, MX)):
-                raise value_message
-            return values, name, point_of_application
+        # def extract_elements(e) -> tuple[str, Any] | tuple[Any, str, Any]:
+        #     value_message = ValueError(
+        #         "The external_forces at each frame should be of the form: [segment_name, spatial_vector],\n"
+        #         "where the segment_name is a str corresponding to the name of the parent and the spatial_vector\n"
+        #         "is a 6 element vectors (Mx, My, Mz, Fx, Fy, Fz) of the type tuple, list, np.ndarray or MX."
+        #     )
+        #     if not isinstance(e, (list, tuple)) and len(e) < 2:
+        #         raise value_message
+        #
+        #     name = e[0]
+        #     if not isinstance(name, str):
+        #         raise value_message
+        #
+        #     values = e[1]
+        #     if isinstance(values, (list, tuple)):
+        #         values = np.array(values)
+        #     if not isinstance(values, (np.ndarray, MX)):
+        #         raise value_message
+        #
+        #     # If it is a force, we are done
+        #     if len(e) < 3:
+        #         return name, values
+        #
+        #     # If it is a contact point, add it
+        #     point_of_application = e[2]
+        #     if isinstance(point_of_application, (list, tuple)):
+        #         point_of_application = np.array(point_of_application)
+        #     if not isinstance(point_of_application, (np.ndarray, MX)):
+        #         raise value_message
+        #     return values, name, point_of_application
 
         external_forces_set = self.model.externalForceSet()
 
         if external_forces is not None:
-            for elements in external_forces:
-                name, values = extract_elements(elements)
-                external_forces_set.add(name, values)
+            for i_element in range(external_forces.shape[1]):
+                    name = self._segments_to_apply_external_forces[i_element]
+                    values = external_forces[:, i_element]
+                    external_forces_set.add(name, values)
 
-        if translational_forces is not None:
-            for elements in translational_forces:
-                values, name, point_of_application = extract_elements(elements)
-                external_forces_set.addTranslationalForce(values, name, point_of_application)
+        # # TODO: split translational force from external force
+        # if translational_forces is not None:
+        #     for elements in translational_forces:
+        #         values, name, point_of_application = extract_elements(elements)
+        #         external_forces_set.addTranslationalForce(values, name, point_of_application)
 
         return external_forces_set
 

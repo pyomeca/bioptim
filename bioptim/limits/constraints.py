@@ -472,7 +472,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = tau + passive_torque if with_passive_torque else tau
             tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
-            if controller.get_nlp.external_forces:
+            if controller.get_nlp.dynamics_constants:
+                # TODO: deal with external forces
                 raise NotImplementedError(
                     "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
                 )
@@ -565,7 +566,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             muscle_tau = muscle_tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else muscle_tau
             qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
 
-            if controller.get_nlp.external_forces:
+            if controller.get_nlp.dynamics_constants:
                 raise NotImplementedError(
                     "This implicit constraint tau_from_muscle_equal_inverse_dynamics is not implemented yet with external forces"
                 )

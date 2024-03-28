@@ -61,6 +61,7 @@ from ..optimization.parameters import ParameterList, Parameter, ParameterContain
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
 from ..optimization.variable_scaling import VariableScalingList, VariableScaling
+from ..optimization.optimization_variable import OptimizationVariableList
 
 
 class OptimalControlProgram:
@@ -570,6 +571,9 @@ class OptimalControlProgram:
 
         # Declare and fill the parameters
         self._declare_parameters(parameters)
+
+        # Declare the dynamics constants used at each nodes as symbolic variables
+        self._define_dynamics_constants(dynamics)
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
@@ -1599,6 +1603,41 @@ class OptimalControlProgram:
         self.dt_parameter_initial_guess = InitialGuess(
             "dt_initial_guess", initial_guess=[v for v in dt_initial_guess.values()]
         )
+
+    def _define_dynamics_constants(self, dynamics):
+        """
+        Declare the dynamics_constants symbolic variables.
+
+        Parameters
+        ----------
+        dynamics:
+            The dynamics for each phase.
+        """
+
+        dynamics_constants = []
+        for i_phase, nlp in enumerate(self.nlp):
+            dynamics_constants += [OptimizationVariableList(self.cx, dynamics[i_phase].phase_dynamics)]
+            for key in dynamics[i_phase].extra_parameters["dynamics_constants_used_at_each_nodes"].keys():
+                variable_shape = dynamics[i_phase].extra_parameters["dynamics_constants_used_at_each_nodes"][key].shape
+                for i_component in range(variable_shape[1] if len(variable_shape) > 1 else 1):
+                    cx = self.cx.sym(
+                        f"{key}_phase{i_phase}_{i_component}_cx",
+                        variable_shape[0],
+                    )
+                    mx = MX.sym(
+                        f"{key}_phase{i_phase}_{i_component}_mx",
+                        variable_shape[0],
+                    )
+
+                    dynamics_constants[-1].append(
+                        name=key,
+                        cx=[cx, cx, cx],
+                        mx=mx,
+                        bimapping=BiMapping(Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0]))))
+                    )
+
+        # Add to the nlp
+        NLP.add(self, "dynamics_constants", dynamics_constants, True)
 
     def _modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """

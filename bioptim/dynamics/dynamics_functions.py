@@ -1,3 +1,4 @@
+import numpy as np
 from casadi import horzcat, vertcat, MX, SX
 
 from ..misc.enums import RigidBodyDynamics, DefectType
@@ -87,7 +88,7 @@ class DynamicsFunctions:
         with_friction: bool,
         rigidbody_dynamics: RigidBodyDynamics,
         fatigue: FatigueList,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -118,7 +119,7 @@ class DynamicsFunctions:
             which rigidbody dynamics should be used
         fatigue : FatigueList
             A list of fatigue elements
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -461,7 +462,7 @@ class DynamicsFunctions:
         with_passive_torque: bool,
         with_residual_torque: bool,
         with_ligament: bool,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ):
         """
         Forward dynamics driven by joint torques activations.
@@ -488,7 +489,7 @@ class DynamicsFunctions:
             If the dynamic should be added with residual torques
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -528,7 +529,7 @@ class DynamicsFunctions:
         with_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -555,7 +556,7 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -605,7 +606,7 @@ class DynamicsFunctions:
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -628,7 +629,7 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -655,7 +656,7 @@ class DynamicsFunctions:
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -678,7 +679,7 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -709,7 +710,7 @@ class DynamicsFunctions:
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         with_residual_torque: bool = False,
         fatigue=None,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by muscle.
@@ -740,7 +741,7 @@ class DynamicsFunctions:
             To define fatigue elements
         with_residual_torque: bool
             If the dynamic should be added with residual torques
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -1093,14 +1094,13 @@ class DynamicsFunctions:
             return qdot_var_mapping.map(qddot)
         else:
             dxdt = MX(len(qdot_var_mapping), nlp.ns)
-            # Todo: Should be added to pass f_ext in controls (as a symoblic value)
-            #  this would avoid to create multiple equations of motions per node
-            for i, f_ext in enumerate(external_forces):
+            ################
+            for i_node in range(external_forces.shape[2]):
                 if with_contact:
-                    qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, f_ext)
+                    qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, external_forces[:, :, i_node])
                 else:
-                    qddot = nlp.model.forward_dynamics(q, qdot, tau, f_ext)
-                dxdt[:, i] = qdot_var_mapping.map(qddot)
+                    qddot = nlp.model.forward_dynamics(q, qdot, tau, external_forces[:, :, i_node])
+                dxdt[:, i_node] = qdot_var_mapping.map(qddot)
             return dxdt
 
     @staticmethod
