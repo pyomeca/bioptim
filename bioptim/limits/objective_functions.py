@@ -13,7 +13,7 @@ class Objective(PenaltyOption):
     """
 
     def __init__(
-        self, objective: Any, custom_type: Any = None, phase: int = -1, is_stochastic: bool = False, **params: Any
+        self, objective: Any, custom_type: Any = None, phase: int = -1, is_stochastic: bool = False, **extra_parameters: Any
     ):
         """
         Parameters
@@ -24,7 +24,7 @@ class Objective(PenaltyOption):
             When objective is a custom defined function, one must specify if the custom_type is Mayer or Lagrange
         phase: int
             At which phase this objective function must be applied
-        params: dict
+        extra_parameters: dict
             Generic parameters for options
         """
 
@@ -52,18 +52,18 @@ class Objective(PenaltyOption):
 
         # sanity check on the integration method
         if isinstance(objective, ObjectiveFcn.Lagrange):
-            if "integration_rule" not in params.keys() or params["integration_rule"] == QuadratureRule.DEFAULT:
-                params["integration_rule"] = QuadratureRule.RECTANGLE_LEFT
-            if params["integration_rule"] not in (
+            if "integration_rule" not in extra_parameters.keys() or extra_parameters["integration_rule"] == QuadratureRule.DEFAULT:
+                extra_parameters["integration_rule"] = QuadratureRule.RECTANGLE_LEFT
+            if extra_parameters["integration_rule"] not in (
                 QuadratureRule.RECTANGLE_LEFT,
                 QuadratureRule.TRAPEZOIDAL,
                 QuadratureRule.APPROXIMATE_TRAPEZOIDAL,
             ):
                 raise NotImplementedError(
-                    f"{params['integration_rule']} has not been implemented yet for objective functions."
+                    f"{extra_parameters['integration_rule']} has not been implemented yet for objective functions."
                 )
         elif isinstance(objective, ObjectiveFcn.Mayer):
-            if "integration_rule" in params.keys() and params["integration_rule"] != QuadratureRule.DEFAULT:
+            if "integration_rule" in extra_parameters.keys() and extra_parameters["integration_rule"] != QuadratureRule.DEFAULT:
                 raise ValueError(
                     "Mayer objective functions cannot be integrated, "
                     "remove the argument "

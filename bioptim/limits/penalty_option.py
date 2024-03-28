@@ -103,7 +103,7 @@ class PenaltyOption(OptionGeneric):
         is_stochastic: bool = False,
         multi_thread: bool = None,
         expand: bool = False,
-        **params: Any,
+        **extra_parameters: Any,
     ):
         """
         Parameters
@@ -136,11 +136,11 @@ class PenaltyOption(OptionGeneric):
             If the penalty is from the user or from bioptim (implicit or internal)
         is_stochastic: bool
             If the penalty is stochastic (i.e. if we should look instead at the variation of the penalty)
-        **params: dict
+        **extra_parameters: dict
             Generic parameters for the penalty
         """
 
-        super(PenaltyOption, self).__init__(phase=phase, type=penalty, **params)
+        super(PenaltyOption, self).__init__(phase=phase, type=penalty, **extra_parameters)
         self.node: Node | list | tuple = node
         self.quadratic = quadratic
         self.integration_rule = integration_rule
@@ -150,7 +150,7 @@ class PenaltyOption(OptionGeneric):
         self.explicit_derivative = explicit_derivative
         self.integrate = integrate
 
-        self.extra_arguments = params
+        self.extra_arguments = extra_parameters
 
         if index is not None and rows is not None:
             raise ValueError("rows and index cannot be defined simultaneously since they are the same variable")
@@ -780,7 +780,7 @@ class PenaltyOption(OptionGeneric):
             else:
                 plot_type = PlotType.POINT
 
-            target_mapping = self.define_target_mapping(controller, self.params["key"], self.rows)
+            target_mapping = self.define_target_mapping(controller, self.extra_parameters["key"], self.rows)
             controller.ocp.add_plot(
                 self.target_plot_name,
                 plot_function,

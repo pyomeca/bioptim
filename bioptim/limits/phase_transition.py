@@ -48,7 +48,7 @@ class PhaseTransition(MultinodePenalty):
         custom_function: Callable = None,
         min_bound: float = 0,
         max_bound: float = 0,
-        **params: Any,
+        **extra_parameters: Any,
     ):
         # TODO: @pariterre: where did phase_post go !?
 

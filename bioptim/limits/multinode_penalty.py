@@ -43,13 +43,13 @@ class MultinodePenalty(PenaltyOption):
         nodes_phase: tuple[int, ...],
         multinode_penalty: Any | Callable = None,
         custom_function: Callable = None,
-        **params: Any,
+        **extra_parameters: Any,
     ):
         if not isinstance(multinode_penalty, _multinode_penalty_fcn):
             custom_function = multinode_penalty
             multinode_penalty = _multinode_penalty_fcn.CUSTOM
 
-        super(MultinodePenalty, self).__init__(penalty=multinode_penalty, custom_function=custom_function, **params)
+        super(MultinodePenalty, self).__init__(penalty=multinode_penalty, custom_function=custom_function, **extra_parameters)
 
         for node in nodes:
             if node not in (Node.START, Node.MID, Node.PENULTIMATE, Node.END):
@@ -617,7 +617,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out_vector
 
         @staticmethod
-        def custom(penalty, controllers: list[PenaltyController, PenaltyController], **extra_params):
+        def custom(penalty, controllers: list[PenaltyController, PenaltyController], **extra_parameters):
             """
             Calls the custom transition function provided by the user
 
@@ -634,7 +634,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             """
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
-            return penalty.custom_function(controllers, **extra_params)
+            return penalty.custom_function(controllers, **extra_parameters)
 
         @staticmethod
         def _prepare_controller_cx(penalty, controllers: list[PenaltyController, ...]):
