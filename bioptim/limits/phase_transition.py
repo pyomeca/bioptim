@@ -65,7 +65,7 @@ class PhaseTransition(MultinodePenalty):
             nodes=(Node.END, Node.START),
             multinode_penalty=transition,
             custom_function=custom_function,
-            **params,
+            **extra_parameters,
         )
 
         self.weight = 0 if weight is None else weight

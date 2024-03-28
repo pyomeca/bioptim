@@ -1161,7 +1161,7 @@ class ParameterConstraint(PenaltyOption):
             parameter_constraint = ConstraintFcn.CUSTOM
 
         super(ParameterConstraint, self).__init__(
-            penalty=parameter_constraint, quadratic=quadratic, custom_function=custom_function, **params
+            penalty=parameter_constraint, quadratic=quadratic, custom_function=custom_function, **extra_parameters
         )
 
         if isinstance(parameter_constraint, ImplicitConstraintFcn):

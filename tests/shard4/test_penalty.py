@@ -92,7 +92,7 @@ def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a):
         ]
     else:
         controller = PenaltyController(ocp, ocp.nlp[0], t, x, u, [], [], p, a, [], 0)
-    val = penalty.type(penalty, controller, **penalty.params)
+    val = penalty.type(penalty, controller, **penalty.extra_parameters)
     # changed only this one
     if isinstance(val, float):
         return val

@@ -74,7 +74,7 @@ class Objective(PenaltyOption):
             pass
 
         super(Objective, self).__init__(
-            penalty=objective, phase=phase, custom_function=custom_function, is_stochastic=is_stochastic, **params
+            penalty=objective, phase=phase, custom_function=custom_function, is_stochastic=is_stochastic, **extra_parameters
         )
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController]):
@@ -459,7 +459,7 @@ class ParameterObjective(PenaltyOption):
     A placeholder for an objective function
     """
 
-    def __init__(self, parameter_objective: Any, custom_type: Any = None, **params: Any):
+    def __init__(self, parameter_objective: Any, custom_type: Any = None, **extra_parameters: Any):
         """
         Parameters
         ----------
@@ -488,7 +488,7 @@ class ParameterObjective(PenaltyOption):
                     "It should either be ObjectiveFcn.Parameter"
                 )
 
-        super(ParameterObjective, self).__init__(penalty=parameter_objective, custom_function=custom_function, **params)
+        super(ParameterObjective, self).__init__(penalty=parameter_objective, custom_function=custom_function, **extra_parameters)
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController]):
         controller = controller[0]  # This is a special case of Node.TRANSITION

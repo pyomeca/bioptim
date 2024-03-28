@@ -130,7 +130,7 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.params)
+        nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.extra_parameters)
 
     @staticmethod
     def custom(ocp, nlp, **extra_params):

@@ -854,7 +854,7 @@ class PenaltyOption(OptionGeneric):
                 controller.node_index = controller.t[node]
                 controller.cx_index_to_get = 0
 
-            penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.params)
+            penalty_function = self.type(self, controllers if len(controllers) > 1 else controllers[0], **self.extra_parameters)
 
             self.set_penalty(penalty_function, controllers if len(controllers) > 1 else controllers[0])
 
