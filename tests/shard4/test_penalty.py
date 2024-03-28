@@ -1,5 +1,5 @@
 import pytest
-from casadi import DM, MX, vertcat
+from casadi import DM, MX, vertcat, horzcat
 import numpy as np
 from bioptim import (
     BiorbdModel,
@@ -19,6 +19,7 @@ from bioptim import (
     RigidBodyDynamics,
     ControlType,
     PhaseDynamics,
+    ConstraintList,
 )
 from bioptim.limits.penalty_controller import PenaltyController
 from bioptim.limits.penalty import PenaltyOption
@@ -1432,3 +1433,33 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
         np.testing.assert_almost_equal(controller.u_scaled, u_expected[2])
     else:
         raise RuntimeError("Something went wrong")
+
+
+def test_bad_shape_output_penalty():
+    def bad_custom_function(controller: PenaltyController):
+        """
+        This custom function returns a matrix, thus some terms will be ignored by bioptim!
+        """
+        return horzcat(controller.states["q"].cx, controller.states["qdot"].cx, controller.controls["tau"].cx)
+
+    def prepare_test_ocp_error():
+        bioptim_folder = TestUtils.bioptim_folder()
+
+        bio_model = BiorbdModel(bioptim_folder + "/examples/track/models/cube_and_line.bioMod")
+        dynamics = DynamicsList()
+        dynamics.add(DynamicsFcn.TORQUE_DRIVEN)
+
+        constraints = ConstraintList()
+        constraints.add(bad_custom_function, node=Node.START)
+
+        ocp = OptimalControlProgram(
+            bio_model,
+            dynamics,
+            10,
+            1.0,
+            constraints=constraints,
+        )
+        return ocp
+
+    with pytest.raises(RuntimeError, match="The constraint must return a vector not a matrix."):
+        ocp = prepare_test_ocp_error()

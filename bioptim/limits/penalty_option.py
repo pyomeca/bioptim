@@ -420,6 +420,16 @@ class PenaltyOption(OptionGeneric):
         if self.is_stochastic:
             sub_fcn = self.transform_penalty_to_stochastic(controller, sub_fcn, x)
 
+        from ..limits.constraints import ConstraintFcn
+        from ..limits.multinode_constraint import MultinodeConstraintFcn
+
+        if (
+            len(sub_fcn.shape) > 1
+            and sub_fcn.shape[1] != 1
+            and (isinstance(self.type, ConstraintFcn) or isinstance(self.type, MultinodeConstraintFcn))
+        ):
+            raise RuntimeError("The constraint must return a vector not a matrix.")
+
         is_trapezoidal = self.integration_rule in (QuadratureRule.APPROXIMATE_TRAPEZOIDAL, QuadratureRule.TRAPEZOIDAL)
         target_shape = tuple([len(self.rows), len(self.cols) + 1 if is_trapezoidal else len(self.cols)])
         target_cx = controller.cx.sym("target", target_shape)
@@ -844,7 +854,7 @@ class PenaltyOption(OptionGeneric):
         # The active controller is always the last one, and they all should be the same length anyway
         for node in range(len(controllers[-1])):
             # TODO WARNING THE NEXT IF STATEMENT IS A BUG DELIBERATELY INTRODUCED TO FIT THE PREVIOUS RESULTS.
-            # IT SHOULD BE REMOVED AS SOON AS THE MERGE IS DONE (AND VALUES OF THE TESTS ADJUSTED)
+            # IT SHOULD BE REMOVED AS SOON AS THE MERGE IS DONE (AND VALUES OF THE TESTS ADJUSTED)  # @pariterre, can we remove?
             if self.integrate and self.target is not None:
                 self.node_idx = controllers[0].t[:-1]
                 if node not in self.node_idx:

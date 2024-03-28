@@ -43,7 +43,7 @@ from bioptim import (
     ControlType,
 )
 
-from bioptim.examples.stochastic_optimal_control.leuven_arm_model import LeuvenArmModel
+from bioptim.examples.stochastic_optimal_control.models.leuven_arm_model import LeuvenArmModel
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 
 

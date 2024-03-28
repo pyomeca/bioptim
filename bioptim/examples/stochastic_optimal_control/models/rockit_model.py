@@ -80,7 +80,7 @@ class RockitModel:
         qdot = states[self.nb_q :]
         u = controls
 
-        qddot = -0.1 * (1 - q**2) * qdot - q + u  # + motor_noise
+        qddot = -0.1 * (1 - q**2) * qdot - q + u + motor_noise
 
         return vertcat(qdot, qddot)
 

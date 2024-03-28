@@ -5,10 +5,11 @@ import numpy as np
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
-from ..misc.enums import Shooting, ControlType, SolutionIntegrator
+from ..misc.enums import Shooting, ControlType, SolutionIntegrator, PhaseDynamics
 
 
 def solve_ivp_interface(
+    list_of_dynamics: list[Callable],
     shooting_type: Shooting,
     nlp,
     t: list[np.ndarray],
@@ -75,11 +76,10 @@ def solve_ivp_interface(
             if len(x0i.shape) > 1:
                 x0i = x0i[:, 0]
 
-            func = nlp.dynamics_func[0] if len(nlp.dynamics_func) == 1 else nlp.dynamics_func[node]
             result = _solve_ivp_scipy_interface(
-                lambda t, x: np.array(func(t, x, _control_function(control_type, t, t_span, u[node]), p, a[node]))[
-                    :, 0
-                ],
+                lambda t, x: np.array(
+                    list_of_dynamics[node](t, x, _control_function(control_type, t, t_span, u[node]), p, a[node])
+                )[:, 0],
                 x0=x0i,
                 t_span=np.array(t_span),
                 t_eval=t_eval,

@@ -122,6 +122,7 @@ class Constraint(PenaltyOption):
             pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
             raise ValueError(f"Invalid constraint type {self.penalty_type}.")
+
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):
@@ -177,6 +178,7 @@ class ConstraintList(OptionList):
 
         else:
             super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, **extra_arguments)
+            # TODO: add an InternalConstraint option type? Because now the list_index is wrong
 
     def print(self):
         """
@@ -1221,6 +1223,7 @@ class ParameterConstraint(PenaltyOption):
             pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
             raise ValueError(f"Invalid constraint type {self.penalty_type}.")
+
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):

@@ -63,6 +63,8 @@ class IPOPT(GenericSolver):
         The valid range for this integer option is 0 ≤ print_level ≤ 12 and its default value is 5.
     _c_compile: bool
         True if you want to compile in C the code.
+    _check_derivatives_for_naninf: bool
+        If true, the Hessian will be checked for nan/inf values. If false this computational problem is silent.
     """
 
     type: SolverType = SolverType.IPOPT
@@ -92,6 +94,7 @@ class IPOPT(GenericSolver):
     _bound_frac: float = 0.01
     _print_level: int = 5
     _c_compile: bool = False
+    _check_derivatives_for_naninf: str = "no"  # "yes"
 
     @property
     def tol(self):
@@ -189,6 +192,10 @@ class IPOPT(GenericSolver):
     def c_compile(self):
         return self._c_compile
 
+    @property
+    def check_derivatives_for_naninf(self):
+        return self._check_derivatives_for_naninf
+
     def set_tol(self, val: float):
         self._tol = val
 
@@ -260,6 +267,10 @@ class IPOPT(GenericSolver):
 
     def set_c_compile(self, val: bool):
         self._c_compile = val
+
+    def set_check_derivatives_for_naninf(self, val: bool):
+        string_val = "yes" if val else "no"
+        self._check_derivatives_for_naninf = string_val
 
     def set_convergence_tolerance(self, val: float):
         self._tol = val

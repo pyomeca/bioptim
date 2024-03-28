@@ -136,7 +136,9 @@ def main():
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=400, n_threads=2)
 
     # Custom plots
-    ocp.add_plot_penalty(CostType.ALL)
+    ocp.add_plot_penalty(CostType.ALL)  # This will display the objectives and constraints at the current iteration
+    # ocp.add_plot_ipopt_outputs()  # This will display the solver's output at the current iteration
+    # ocp.add_plot_check_conditioning()  # This will display the conditioning of the problem at the current iteration
 
     # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
     # ocp.check_conditioning()
@@ -146,11 +148,59 @@ def main():
 
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+
     sol.print_cost()
 
     # --- Show the results (graph or animation) --- #
-    # sol.graphs(show_bounds=True)
+    # sol.graphs(show_bounds=True, save_name="results.png")
     sol.animate(n_frames=100)
+
+    # # --- Save the solution --- #
+    # Here is an example of how we recommend to save the solution. Please note that sol.ocp is not picklable and that sol will be loaded using the current bioptim version, not the version at the time of the generation of the results.
+    # import pickle
+    # import git
+    # from datetime import date
+    #
+    # # Save the version of bioptim and the date of the optimization for future reference
+    # repo = git.Repo(search_parent_directories=True)
+    # commit_id = str(repo.commit())
+    # branch = str(repo.active_branch)
+    # tag = repo.git.describe("--tags")
+    # bioptim_version = repo.git.version_info
+    # git_date = repo.git.log("-1", "--format=%cd")
+    # version_dic = {
+    #     "commit_id": commit_id,
+    #     "git_date": git_date,
+    #     "branch": branch,
+    #     "tag": tag,
+    #     "bioptim_version": bioptim_version,
+    #     "date_of_the_optimization": date.today().strftime("%b-%d-%Y-%H-%M-%S"),
+    # }
+    #
+    # q = sol.decision_states(to_merge=SolutionMerge.NODES)["q"]
+    # qdot = sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"]
+    # tau = sol.decision_controls(to_merge=SolutionMerge.NODES)["tau"]
+    #
+    # # Do everything you need with the solution here before we delete ocp
+    # integrated_sol = sol.integrate(to_merge=SolutionMerge.NODES)
+    # q_integrated = integrated_sol["q"]
+    # qdot_integrated = integrated_sol["qdot"]
+    #
+    # # Save the output of the optimization
+    # with open("pendulum_data.pkl", "wb") as file:
+    #     data = {"q": q,
+    #             "qdot": qdot,
+    #             "tau": tau,
+    #             "real_time_to_optimize": sol.real_time_to_optimize,
+    #             "version": version_dic,
+    #             "q_integrated": q_integrated,
+    #             "qdot_integrated": qdot_integrated}
+    #     pickle.dump(data, file)
+    #
+    # # Save the solution for future use, you will only need to do sol.ocp = prepare_ocp() to get the same solution object as above.
+    # with open("pendulum_sol.pkl", "wb") as file:
+    #     del sol.ocp
+    #     pickle.dump(sol, file)
 
 
 if __name__ == "__main__":

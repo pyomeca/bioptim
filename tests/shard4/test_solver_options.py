@@ -39,6 +39,7 @@ def test_ipopt_solver_options():
     assert solver.bound_frac == 0.01
     assert solver.print_level == 5
     assert solver.c_compile is False
+    assert solver.check_derivatives_for_naninf == "no"
 
     solver.set_linear_solver("ma57")
     assert solver.linear_solver == "ma57"
@@ -88,6 +89,8 @@ def test_ipopt_solver_options():
     assert solver.print_level == 20
     solver.set_c_compile(True)
     assert solver.c_compile is True
+    solver.set_check_derivatives_for_naninf(True)
+    assert solver.check_derivatives_for_naninf == "yes"
 
     solver.set_convergence_tolerance(21)
     assert solver.tol == 21

@@ -166,6 +166,10 @@ class PenaltyFunctionAbstract:
             controller : PenaltyController
                 Controller to be used to compute the expected effort.
             """
+
+            if penalty.target is not None:
+                raise RuntimeError("It is not possible to use a target for the expected feedback effort.")
+
             CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
             sensory_noise_matrix = controller.model.sensory_noise_magnitude * CX_eye(
                 controller.model.sensory_noise_magnitude.shape[0]

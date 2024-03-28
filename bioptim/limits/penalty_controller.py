@@ -281,12 +281,10 @@ class PenaltyController:
 
     @property
     def dynamics(self):
-        return self._nlp.dynamics_func[0]
+        return self._nlp.dynamics_func
 
     def extra_dynamics(self, dynamics_index):
-        # +1 - index so "integrate_extra_dynamics" and "extra_dynamics" share the same index.
-        # This is a hack which should be dealt properly at some point
-        return self._nlp.dynamics_func[dynamics_index + 1]
+        return self._nlp.extra_dynamics_func[dynamics_index]
 
     @property
     def states_scaled(self) -> OptimizationVariableList:

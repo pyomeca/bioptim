@@ -6,6 +6,7 @@ import casadi
 import numpy as np
 from casadi import MX, SX, sum1, horzcat
 from matplotlib import pyplot as plt
+import subprocess
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
@@ -584,6 +585,11 @@ class OptimalControlProgram:
 
         NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
 
+        # If we want to plot what is printed by IPOPT in the console
+        self.plot_ipopt_outputs = False
+        # If we want the conditioning of the problem to be plotted live
+        self.plot_check_conditioning = False
+
         return (
             constraints,
             objective_functions,
@@ -1058,6 +1064,9 @@ class OptimalControlProgram:
             for key in nlp.controls.keys():
                 if f"{key}_controls" in nlp.plot and key in nlp.u_bounds.keys():
                     nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[key]
+            for key in nlp.algebraic_states.keys():
+                if f"{key}_algebraic" in nlp.plot and key in nlp.a_bounds.keys():
+                    nlp.plot[f"{key}_algebraic"].bounds = nlp.a_bounds[key]
 
     def update_initial_guess(
         self,
@@ -1304,6 +1313,12 @@ class OptimalControlProgram:
             add_penalty(penalties_internal)
             add_penalty(penalties_implicit)
         return
+
+    def add_plot_ipopt_outputs(self):
+        self.plot_ipopt_outputs = True
+
+    def add_plot_check_conditioning(self):
+        self.plot_check_conditioning = True
 
     def prepare_plots(
         self,
