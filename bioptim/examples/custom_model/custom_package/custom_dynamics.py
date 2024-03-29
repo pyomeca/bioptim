@@ -20,6 +20,7 @@ def custom_dynamics(
     controls: MX,
     parameters: MX,
     algebraic_states: MX,
+    dynamics_constants: MX,
     nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """

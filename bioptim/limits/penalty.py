@@ -792,6 +792,7 @@ class PenaltyFunctionAbstract:
                 controller.controls.cx_start,
                 controller.parameters.cx,
                 controller.algebraic_states.cx_start,
+                controller.dynamics_constants.cx,
             )
             return contact_force
 

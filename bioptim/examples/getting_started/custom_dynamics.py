@@ -38,6 +38,7 @@ def custom_dynamics(
     controls: MX | SX,
     parameters: MX | SX,
     algebraic_states: MX | SX,
+    dynamics_constants: MX | SX,
     nlp: NonLinearProgram,
     my_additional_factor=1,
 ) -> DynamicsEvaluation:

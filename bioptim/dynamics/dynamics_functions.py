@@ -44,7 +44,7 @@ class DynamicsFunctions:
 
     @staticmethod
     def custom(
-        time: MX.sym, states: MX.sym, controls: MX.sym, parameters: MX.sym, algebraic_states: MX.sym, nlp
+        time: MX.sym, states: MX.sym, controls: MX.sym, parameters: MX.sym, algebraic_states: MX.sym, dynamics_constants: MX.sym, nlp
     ) -> DynamicsEvaluation:
         """
         Interface to custom dynamic function provided by the user.
@@ -61,6 +61,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic_states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
 
@@ -72,7 +74,7 @@ class DynamicsFunctions:
             The defects of the implicit dynamics
         """
 
-        return nlp.dynamics_type.dynamic_function(time, states, controls, parameters, algebraic_states, nlp)
+        return nlp.dynamics_type.dynamic_function(time, states, controls, parameters, algebraic_states, dynamics_constants, nlp)
 
     @staticmethod
     def torque_driven(
@@ -81,6 +83,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
@@ -105,6 +108,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -196,6 +201,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         with_passive_torque: bool,
         with_ligament: bool,
@@ -216,6 +222,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -267,6 +275,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         with_contact: bool,
         with_friction: bool,
@@ -286,6 +295,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states variables of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -332,6 +343,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         with_friction: bool,
     ) -> DynamicsEvaluation:
@@ -350,6 +362,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         with_friction: bool
@@ -457,6 +471,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
@@ -479,6 +494,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -524,6 +541,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         rigidbody_dynamics: RigidBodyDynamics,
         with_contact: bool,
@@ -546,6 +564,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         rigidbody_dynamics: RigidBodyDynamics
@@ -603,6 +623,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
@@ -623,6 +644,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -653,6 +676,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
@@ -673,6 +697,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -703,6 +729,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool = False,
@@ -727,6 +754,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -848,6 +877,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
@@ -868,6 +898,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -901,6 +933,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ) -> DynamicsEvaluation:
@@ -919,6 +952,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             The definition of the system
         rigidbody_dynamics: RigidBodyDynamics
@@ -1210,6 +1245,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        dynamics_constants: MX.sym,
         nlp,
         external_forces: list = None,
     ) -> DynamicsEvaluation:
@@ -1228,6 +1264,8 @@ class DynamicsFunctions:
             The parameters acting on the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        dynamics_constants: MX.sym
+            The dynamics constants of the system
         nlp: NonLinearProgram
             A reference to the phase
         external_forces: list[Any]
