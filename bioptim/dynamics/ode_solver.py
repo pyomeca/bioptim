@@ -131,7 +131,7 @@ class OdeSolverBase:
 
     def a_ode(self, nlp) -> MX:
         """
-        The symbolic algebraic states variables
+        The symbolic dynamics constants
 
         Parameters
         ----------
@@ -158,6 +158,21 @@ class OdeSolverBase:
         The symbolic parameters
         """
         return nlp.parameters.scaled.cx_start
+
+    def d_ode(self, nlp) -> MX:
+        """
+        The symbolic algebraic states variables
+
+        Parameters
+        ----------
+        nlp
+            The NonLinearProgram handler
+
+        Returns
+        -------
+        The symbolic dynamics constants
+        """
+        raise RuntimeError("This method should be implemented in the child class")
 
     def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt) -> Callable:
         """
@@ -201,7 +216,7 @@ class OdeSolverBase:
             "u": self.p_ode(nlp),
             "a": self.a_ode(nlp),
             "param": self.param_ode(nlp),
-            "dynamics_constants": nlp.dynamics_constants.mx,  ######
+            "dynamics_constants": self.d_ode(nlp),
             "ode": nlp.dynamics_func[dynamics_index],
             # TODO this actually checks "not nlp.implicit_dynamics_func" (or that nlp.implicit_dynamics_func == [])
             "implicit_ode": (
@@ -298,6 +313,9 @@ class RK(OdeSolverBase):
     def a_ode(self, nlp):
         return nlp.algebraic_states.scaled.cx_start
 
+    def d_ode(self, nlp):
+        return nlp.dynamics_constants.cx_start
+
     def __str__(self):
         ode_solver_string = f"{self.integrator.__name__} {self.n_integration_steps} step"
         if self.n_integration_steps > 1:
@@ -385,6 +403,9 @@ class OdeSolver:
         def a_ode(self, nlp):
             return horzcat(nlp.algebraic_states.scaled.cx_start, nlp.algebraic_states.scaled.cx_end)
 
+        def d_ode(self, nlp):
+            return horzcat(nlp.dynamics_constants.cx_start, nlp.dynamics_constants.cx_end)
+
         def initialize_integrator(self, ocp, nlp, **kwargs):
             if nlp.control_type == ControlType.CONSTANT:
                 raise RuntimeError(
@@ -464,6 +485,9 @@ class OdeSolver:
         def a_ode(self, nlp):
             return nlp.algebraic_states.scaled.cx_start
 
+        def d_ode(self, nlp):
+            return nlp.dynamics_constants.cx_start
+
         def initialize_integrator(self, ocp, nlp, **kwargs):
             if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("Piece-wise linear continuous controls cannot be used with multiple threads")
@@ -538,6 +562,9 @@ class OdeSolver:
         def a_ode(self, nlp):
             return nlp.algebraic_states.scaled.cx
 
+        def d_ode(self, nlp):
+            return nlp.dynamics_constants.cx
+
         def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, **extra_opt):
             raise NotImplementedError("CVODES is not yet implemented")
 
@@ -564,7 +591,7 @@ class OdeSolver:
                 "x": nlp.states.scaled.cx_start,
                 "u": nlp.controls.scaled.cx_start,  # todo: add p=parameters
                 "ode": nlp.dynamics_func[dynamics_index](
-                    vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.a_ode(nlp)
+                    vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.a_ode(nlp), self.d_ode(nlp)
                 ),
             }
 
@@ -574,13 +601,14 @@ class OdeSolver:
             return [
                 Function(
                     "integrator",
-                    [vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.a_ode(nlp)],
+                    [vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.a_ode(nlp), self.d_ode(nlp)],
                     self._adapt_integrator_output(
                         integrator_func,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
+                        nlp.dynamics_constants.cx_start,
                     ),
-                    ["t_span", "x0", "u", "p", "a"],
+                    ["t_span", "x0", "u", "p", "a", "dynamics_constants"],
                     ["xf", "xall"],
                 )
             ]

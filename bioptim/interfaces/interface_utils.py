@@ -353,4 +353,4 @@ def _get_dynamics_constants(ocp, phase_idx, node_idx, subnodes_idx):
                 values = dict[d][:, i_element, node_idx]
             else:
                 values = vertcat(values, dict[d][:, i_element, node_idx])
-    return values if values is not None else []
+    return values if values is not None else ocp.cx()

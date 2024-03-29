@@ -769,7 +769,11 @@ class Solution:
             next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
             d = []
             for n_idx in range(nlp.ns + 1):
-                d += [np.array(_get_dynamics_constants(self.ocp, p, n_idx, 0))]
+                d_tp = _get_dynamics_constants(self.ocp, p, n_idx, 0)
+                if d_tp.shape == (0, 0):
+                    d += [np.array([])]
+                else:
+                    d += [np.array(d_tp)]
 
             integrated_sol = solve_ivp_interface(
                 shooting_type=shooting_type,
@@ -1223,9 +1227,11 @@ class Solution:
                     merged_a[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_a[p_idx]) else np.array(())
                 ),
             )
-            d = PenaltyHelpers.dynamics_constants(
+            d_tp = PenaltyHelpers.dynamics_constants(
                 penalty, idx, lambda p_idx, n_idx, sn_idx: _get_dynamics_constants(self.ocp, p_idx, n_idx, sn_idx)
             )
+            d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
+
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
 
