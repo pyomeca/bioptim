@@ -25,6 +25,8 @@ class Integrator:
         The parameters variables
     a_sym: MX | SX
         The algebraic states variables
+    dynamics_constants_sym: MX | SX
+        The dynamics constants variables
     fun: Callable
         The dynamic function which provides the derivative of the states
     implicit_fun: Callable
@@ -42,7 +44,7 @@ class Integrator:
         Get the multithreaded CasADi graph of the integration
     get_u(self, u: np.ndarray, t: float) -> np.ndarray
         Get the control at a given time
-    dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, algebraic_states: MX | SX) -> tuple[SX, list[SX]]
+    dxdt(self, h: float, time: float | MX | SX, states: MX | SX, controls: MX | SX, params: MX | SX, algebraic_states: MX | SX, dynamics_constants: MX | SX) -> tuple[SX, list[SX]]
         The dynamics of the system
     """
 
@@ -186,7 +188,7 @@ class Integrator:
         controls: MX | SX,
         params: MX | SX,
         algebraic_states: MX | SX,
-        dynamics_constants: MX,
+        dynamics_constants: MX | SX,
     ) -> tuple:
         """
         The dynamics of the system
@@ -201,7 +203,7 @@ class Integrator:
             The parameters of the system
         algebraic_states: MX | SX
             The algebraic states of the system
-        dynamics_constants: MX
+        dynamics_constants: MX | SX
             The dynamics constants of the system
 
         Returns
@@ -258,7 +260,7 @@ class RK(Integrator):
     def h(self):
         return self.t_span_sym[1] / self._n_step
 
-    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX | SX) -> MX | SX:
         """
         Compute the next integrated state (abstract)
 
@@ -274,6 +276,8 @@ class RK(Integrator):
             The parameters of the system
         a: MX | SX
             The algebraic states of the system
+        dynamics_constants: MX | SX
+            The dynamics constants of the system
 
         Returns
         -------
@@ -288,7 +292,7 @@ class RK(Integrator):
         controls: MX | SX,
         params: MX | SX,
         algebraic_states: MX | SX,
-        dynamics_constants: MX,
+        dynamics_constants: MX | SX,
     ) -> tuple:
         u = controls
         x = self.cx(states.shape[0], self._n_step + 1)
@@ -310,7 +314,7 @@ class RK1(RK):
     Numerical integration using first order Runge-Kutta 1 Method (Forward Euler Method).
     """
 
-    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX | SX) -> MX | SX:
         return x_prev + self.h * self.fun(vertcat(t0, self.h), x_prev, self.get_u(u, t0), p, a, dynamics_constants)[:, self.ode_idx]
 
 
@@ -319,7 +323,7 @@ class RK2(RK):
     Numerical integration using second order Runge-Kutta Method (Midpoint Method).
     """
 
-    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX | SX) -> MX | SX:
         h = self.h
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, dynamics_constants)[:, self.ode_idx]
@@ -335,7 +339,7 @@ class RK4(RK):
     Numerical integration using fourth order Runge-Kutta method.
     """
 
-    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX | SX) -> MX | SX:
         h = self.h
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, dynamics_constants)[:, self.ode_idx]
@@ -350,7 +354,7 @@ class RK8(RK4):
     Numerical integration using eighth order Runge-Kutta method.
     """
 
-    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, dynamics_constants: MX | SX) -> MX | SX:
         h = self.h
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, dynamics_constants)[:, self.ode_idx]
@@ -432,9 +436,11 @@ class TRAPEZOIDAL(Integrator):
         p: MX | SX,
         a_prev: MX | SX,
         a_next: MX | SX,
+        d_prev: MX | SX,
+        d_next: MX | SX,
     ):
-        dx = self.fun(vertcat(t0, self.h), x_prev, u_prev, p, a_prev)[:, self.ode_idx]
-        dx_next = self.fun(vertcat(t0 + self.h, self.h), x_next, u_next, p, a_next)[:, self.ode_idx]
+        dx = self.fun(vertcat(t0, self.h), x_prev, u_prev, p, a_prev, d_prev)[:, self.ode_idx]
+        dx_next = self.fun(vertcat(t0 + self.h, self.h), x_next, u_next, p, a_next, d_next)[:, self.ode_idx]
         return x_prev + (dx + dx_next) * self.h / 2
 
     @property
@@ -463,7 +469,9 @@ class TRAPEZOIDAL(Integrator):
         controls: MX | SX,
         params: MX | SX,
         algebraic_states: MX | SX,
+        dynamics_constants: MX | SX,
     ) -> tuple:
+
         x_prev = self.cx(states.shape[0], 2)
 
         states_next = states[:, 1]
@@ -475,6 +483,12 @@ class TRAPEZOIDAL(Integrator):
         else:
             algebraic_states_prev = algebraic_states
             algebraic_states_next = algebraic_states
+        if dynamics_constants.shape != (0, 0):
+            dynamics_constants_prev = dynamics_constants[:, 0]
+            dynamics_constants_next = dynamics_constants[:, 1]
+        else:
+            dynamics_constants_prev = dynamics_constants
+            dynamics_constants_next = dynamics_constants
 
         x_prev[:, 0] = states[:, 0]
 
@@ -487,6 +501,8 @@ class TRAPEZOIDAL(Integrator):
             params,
             algebraic_states_prev,
             algebraic_states_next,
+            dynamics_constants_prev,
+            dynamics_constants_next,
         )
 
         if self.model.nb_quaternions > 0:
@@ -617,6 +633,7 @@ class COLLOCATION(Integrator):
         controls: MX | SX,
         params: MX | SX,
         algebraic_states: MX | SX,
+        dynamics_constants: MX | SX,
     ) -> tuple:
         # Total number of variables for one finite element
         states_end = self._d[0] * states[1]
@@ -634,7 +651,7 @@ class COLLOCATION(Integrator):
 
             if self.defects_type == DefectType.EXPLICIT:
                 f_j = self.fun(
-                    t, states[j + 1], self.get_u(controls, self._integration_time[j]), params, algebraic_states
+                    t, states[j + 1], self.get_u(controls, self._integration_time[j]), params, algebraic_states, dynamics_constants,
                 )[:, self.ode_idx]
                 defects.append(xp_j - f_j * self.h)
             elif self.defects_type == DefectType.IMPLICIT:
@@ -698,6 +715,7 @@ class IRK(COLLOCATION):
         controls: MX | SX,
         params: MX | SX,
         algebraic_states: MX | SX,
+        dynamics_constants: MX | SX,
     ) -> tuple:
         nx = states[0].shape[0]
         _, _, defect = super(IRK, self).dxdt(
@@ -705,18 +723,19 @@ class IRK(COLLOCATION):
             controls=controls,
             params=params,
             algebraic_states=algebraic_states,
+            dynamics_constants=dynamics_constants,
         )
 
         # Root-finding function, implicitly defines x_collocation_points as a function of x0 and p
         collocation_states = vertcat(*states[1:]) if self.duplicate_starting_point else vertcat(*states[2:])
         vfcn = Function(
-            "vfcn", [collocation_states, self.t_span_sym, states[0], controls, params, algebraic_states], [defect]
+            "vfcn", [collocation_states, self.t_span_sym, states[0], controls, params, algebraic_states, dynamics_constants], [defect]
         ).expand()
 
         # Create an implicit function instance to solve the system of equations
         ifcn = rootfinder("ifcn", "newton", vfcn, {"error_on_fail": False})
         t = vertcat(self.t_span_sym)  # We should not subtract here as it is already formally done in COLLOCATION
-        x_irk_points = ifcn(self.cx(), t, states[0], controls, params, algebraic_states)
+        x_irk_points = ifcn(self.cx(), t, states[0], controls, params, algebraic_states, dynamics_constants)
         x = [states[0] if r == 0 else x_irk_points[(r - 1) * nx : r * nx] for r in range(self.degree + 1)]
 
         # Get an expression for the state at the end of the finite element
