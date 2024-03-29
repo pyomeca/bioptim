@@ -1,6 +1,7 @@
 from typing import Callable, Any
 
 from casadi import vertcat, Function, DM, horzcat
+import numpy as np
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
@@ -183,7 +184,7 @@ class ConfigureProblem:
             which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
-        dynamics_constants_used_at_each_nodes: dict[list[Any]]
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
@@ -585,7 +586,7 @@ class ConfigureProblem:
         with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
-        external_forces: list = None,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -606,8 +607,8 @@ class ConfigureProblem:
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
-        external_forces: list[Any]
-            A list of external forces
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
         """
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
@@ -618,8 +619,16 @@ class ConfigureProblem:
         _check_soft_contacts_dynamics(
             rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
-        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
-        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
+        external_forces = None
+        for key in dynamics_constants_used_at_each_nodes.keys():
+            if key != "external_forces":
+                raise RuntimeError(
+                    "The only dynamics_constants_used_at_each_nodes allowed for torque_driven dynamics is external_forces."
+                )
+            _check_dynamics_constants_format(dynamics_constants_used_at_each_nodes[key], nlp.ns, nlp.phase_idx)
+            external_forces = nlp.dynamics_constants[0].mx
+            for i in range(1, dynamics_constants_used_at_each_nodes[key].shape[1]):
+                external_forces = horzcat(external_forces, nlp.dynamics_constants[i].mx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -677,7 +686,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_residual_torque: bool = False,
         with_ligament: bool = False,
-        external_forces: list[Any] = None,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
@@ -698,14 +707,21 @@ class ConfigureProblem:
             If the dynamic with a residual torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
-            A list of external forces
-
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
-        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
+        external_forces = None
+        for key in dynamics_constants_used_at_each_nodes.keys():
+            if key != "external_forces":
+                raise RuntimeError(
+                    "The only dynamics_constants_used_at_each_nodes allowed for torque_driven dynamics is external_forces."
+                )
+            _check_dynamics_constants_format(dynamics_constants_used_at_each_nodes[key], nlp.ns, nlp.phase_idx)
+            external_forces = nlp.dynamics_constants[0].mx
+            for i in range(1, dynamics_constants_used_at_each_nodes[key].shape[1]):
+                external_forces = horzcat(external_forces, nlp.dynamics_constants[i].mx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -795,7 +811,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-        external_forces: list[Any] = None,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -824,13 +840,20 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
-        external_forces: list[Any]
-            A list of external forces
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
-        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
-
+        external_forces = None
+        for key in dynamics_constants_used_at_each_nodes.keys():
+            if key != "external_forces":
+                raise RuntimeError(
+                    "The only dynamics_constants_used_at_each_nodes allowed for torque_driven dynamics is external_forces."
+                )
+            _check_dynamics_constants_format(dynamics_constants_used_at_each_nodes[key], nlp.ns, nlp.phase_idx)
+            external_forces = nlp.dynamics_constants[0].mx
+            for i in range(1, dynamics_constants_used_at_each_nodes[key].shape[1]):
+                external_forces = horzcat(external_forces, nlp.dynamics_constants[i].mx)
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
@@ -1931,13 +1954,18 @@ class DynamicsList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of DynamicsList is not ready yet")
 
 
-def _check_dynamics_constants_format(dynamics_constant: list[Any], n_shooting: int, phase_idx: int):
+def _check_dynamics_constants_format(dynamics_constant: np.ndarray, n_shooting: int, phase_idx: int):
     """Check if the dynamics_constant_at_each_node is of the right format"""
+    if type(dynamics_constant) is not np.ndarray:
+        raise RuntimeError(
+            f"Phase {phase_idx} has dynamics_constant_at_each_node of type {type(dynamics_constant)} "
+            f"but it should be of type np.ndarray"
+        )
     if dynamics_constant is not None and dynamics_constant.shape[2] != n_shooting + 1:
         raise RuntimeError(
             f"Phase {phase_idx} has {n_shooting}+1 shooting points but the dynamics_constant_at_each_node "
-            f"has {dynamics_constant.shape[2]}+1 shooting points."
-            f"The dynamics_constant_at_each_node should be of format dict[list[Any]] "
+            f"has {dynamics_constant.shape[2]} shooting points."
+            f"The dynamics_constant_at_each_node should be of format dict[np.ndarray] "
             f"where the list is the number of shooting points of the phase "
         )
 
