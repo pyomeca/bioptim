@@ -954,6 +954,7 @@ class ConfigureProblem:
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.scaled.mx_reduced,
             nlp.algebraic_states.scaled.mx_reduced,
+            nlp.dynamics_constants.mx,
             nlp,
             **extra_params,
         )

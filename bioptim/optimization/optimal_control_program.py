@@ -1240,7 +1240,7 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def compute_penalty_values(t0, phases_dt, node_idx, x, u, p, a, penalty):
+        def compute_penalty_values(t0, phases_dt, node_idx, x, u, p, a, d, penalty):
             """
             Compute the penalty value for the given time, state, control, parameters, penalty and time step
 
@@ -1260,6 +1260,8 @@ class OptimalControlProgram:
                 Parameters vector
             a: ndarray
                 Algebraic states variables vector
+            d: ndarray
+                Dynamics constants
             penalty: Penalty
                 The penalty object containing details on how to compute it
 
@@ -1271,7 +1273,7 @@ class OptimalControlProgram:
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, node_idx)
 
-            val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, weight, target)
+            val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)
             return sum1(horzcat(val))
 
         def add_penalty(_penalties):
