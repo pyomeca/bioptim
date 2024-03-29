@@ -134,7 +134,10 @@ class ConfigureProblem:
         nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.extra_parameters)
 
     @staticmethod
-    def custom(ocp, nlp, **extra_params):
+    def custom(ocp,
+               nlp,
+               dynamics_constants_used_at_each_nodes: dict[list] = {},
+               **extra_params):
         """
         Call the user-defined dynamics configuration function
 
@@ -146,7 +149,7 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.configure(ocp, nlp, **extra_params)
+        nlp.dynamics_type.configure(ocp, nlp, dynamics_constants_used_at_each_nodes, **extra_params)
 
     @staticmethod
     def torque_driven(
@@ -955,6 +958,7 @@ class ConfigureProblem:
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.scaled.mx_reduced,
                 nlp.algebraic_states.scaled.mx_reduced,
+                nlp.dynamics_constants.mx,
                 nlp,
                 **extra_params,
             )
