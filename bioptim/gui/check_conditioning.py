@@ -85,7 +85,7 @@ def check_conditioning(ocp):
                     for controller in controllers:
                         controller.node_index = constraints.node_idx[0]
 
-                    _, t0, x, u, p, a = constraints.get_variable_inputs(controllers)
+                    _, t0, x, u, p, a, dynamics_constants = constraints.get_variable_inputs(controllers)
 
                     list_constraints.append(
                         jacobian(
@@ -186,7 +186,7 @@ def check_conditioning(ocp):
 
                         for controller in controllers:
                             controller.node_index = constraints.node_idx[0]
-                        _, t0, x, u, p, a = constraints.get_variable_inputs(controllers)
+                        _, t0, x, u, p, a, dynamics_constants = constraints.get_variable_inputs(controllers)
 
                         hessian_cas = hessian(
                             constraints.function[node_index](t0, phases_dt, x, u, p, a)[axis], vertcat_obj
@@ -388,7 +388,7 @@ def check_conditioning(ocp):
 
                 for controller in controllers:
                     controller.node_index = obj.node_idx[0]
-                _, t0, x, u, p, a = obj.get_variable_inputs(controllers)
+                _, t0, x, u, p, a, dynamics_constants = obj.get_variable_inputs(controllers)
 
                 target = PenaltyHelpers.target(obj, obj.node_idx.index(node_index))
 

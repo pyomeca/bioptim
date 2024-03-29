@@ -129,6 +129,25 @@ class PenaltyHelpers:
         return _reshape_to_vector(p)
 
     @staticmethod
+    def dynamics_constants(penalty, index, get_dynamics_constants: Callable, is_constructing_penalty: bool = False):
+        node = penalty.node_idx[index]
+        if penalty.multinode_penalty:
+            d = []
+            phases, _, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
+            for phase, sub in zip(phases, subnodes):
+                d.append(_reshape_to_vector(get_dynamics_constants(phase, node, sub)))
+            return _vertcat(d)
+
+        if is_constructing_penalty:
+            d = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, 0))  # cx_start
+        else:
+            d0 = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, 0))
+            d1 = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, -1))
+            d = _vertcat([d0, d1])
+
+        return d
+
+    @staticmethod
     def weight(penalty):
         return penalty.weight
 

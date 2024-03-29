@@ -399,7 +399,7 @@ class PenaltyOption(OptionGeneric):
             .replace("__", "_")
         )
 
-        controller, _, x, u, p, a = self.get_variable_inputs(controllers)
+        controller, _, x, u, p, a, dynamics_constants = self.get_variable_inputs(controllers)
 
         # Alias some variables
         node = controller.node_index
@@ -433,6 +433,8 @@ class PenaltyOption(OptionGeneric):
             state_cx_start = controller.states_scaled.cx_start
             algebraic_states_start_cx = controller.algebraic_states_scaled.cx_start
             algebraic_states_end_cx = controller.algebraic_states_scaled.cx_end
+            dynamics_constants_start_cx = controller.dynamics_constants.cx_start
+            dynamics_constants_end_cx = controller.dynamics_constants.cx_end
 
             # Perform the integration to get the final subnode
             if self.integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
@@ -452,6 +454,7 @@ class PenaltyOption(OptionGeneric):
                     u=u_integrate,
                     p=controller.parameters.cx,
                     a=controller.algebraic_states.cx_start,
+                    dynamics_constants=controller.dynamics_constants.cx_start,
                 )["xf"]
             else:
                 raise NotImplementedError(f"Integration rule {self.integration_rule} not implemented yet")
@@ -473,14 +476,14 @@ class PenaltyOption(OptionGeneric):
             # Compute the penalty function at starting and ending of the interval
             func_at_subnode = Function(
                 name,
-                [time, phases_dt, state_cx_start, control_cx_start, param_cx_start, algebraic_states_start_cx],
+                [time, phases_dt, state_cx_start, control_cx_start, param_cx_start, algebraic_states_start_cx, dynamics_constants_start_cx],
                 [sub_fcn],
             )
             func_at_start = func_at_subnode(
-                time, phases_dt, state_cx_start, control_cx_start, param_cx_start, algebraic_states_start_cx
+                time, phases_dt, state_cx_start, control_cx_start, param_cx_start, algebraic_states_start_cx, dynamics_constants_start_cx
             )
             func_at_end = func_at_subnode(
-                time + dt, phases_dt, state_cx_end, control_cx_end, param_cx_start, algebraic_states_end_cx
+                time + dt, phases_dt, state_cx_end, control_cx_end, param_cx_start, algebraic_states_end_cx, dynamics_constants_end_cx
             )
             modified_fcn = (
                 (func_at_start - target_cx[:, 0]) ** exponent + (func_at_end - target_cx[:, 1]) ** exponent
@@ -490,7 +493,7 @@ class PenaltyOption(OptionGeneric):
             # for non weighted functions
             self.function[node] = Function(
                 name,
-                [time, phases_dt, x, u, p, a],
+                [time, phases_dt, x, u, p, a, dynamics_constants],
                 [(func_at_start + func_at_end) / 2],
                 ["t", "dt", "x", "u", "p", "a"],
                 ["val"],
@@ -507,39 +510,41 @@ class PenaltyOption(OptionGeneric):
             p_start = controller.parameters_scaled.cx
             a_start = controller.algebraic_states_scaled.cx_start
             a_end = controller.algebraic_states_scaled.cx_end
+            dynamics_constants_start = controller.dynamics_constants.cx_start
+            dynamics_constants_end = controller.dynamics_constants.cx_end
 
             fcn_tp = self.function[node] = Function(
                 name,
-                [time, phases_dt, x_start, u_start, p_start, a_start],
+                [time, phases_dt, x_start, u_start, p_start, a_start, dynamics_constants_start],
                 [sub_fcn],
-                ["t", "dt", "x", "u", "p", "a"],
+                ["t", "dt", "x", "u", "p", "a", "dynamics_constants"],
                 ["val"],
             )
 
             self.function[node] = Function(
                 f"{name}",
-                [time, phases_dt, x, u, p, a],
+                [time, phases_dt, x, u, p, a, dynamics_constants],
                 [
-                    fcn_tp(time, phases_dt, x_end, u_end, p, a_end)
-                    - fcn_tp(time, phases_dt, x_start, u_start, p, a_start)
+                    fcn_tp(time, phases_dt, x_end, u_end, p, a_end, dynamics_constants_end)
+                    - fcn_tp(time, phases_dt, x_start, u_start, p, a_start, dynamics_constants_start)
                 ],
-                ["t", "dt", "x", "u", "p", "a"],
+                ["t", "dt", "x", "u", "p", "a", "dynamics_constants"],
                 ["val"],
             )
 
-            modified_fcn = (self.function[node](time, phases_dt, x, u, p, a) - target_cx) ** exponent
+            modified_fcn = (self.function[node](time, phases_dt, x, u, p, a, dynamics_constants) - target_cx) ** exponent
 
         else:
             # TODO Add error message if there are free variables to guide the user? For instance controls with last node
             self.function[node] = Function(
                 name,
-                [time, phases_dt, x, u, p, a],
+                [time, phases_dt, x, u, p, a, dynamics_constants],
                 [sub_fcn],
-                ["t", "dt", "x", "u", "p", "a"],
+                ["t", "dt", "x", "u", "p", "a", "dynamics_constants"],
                 ["val"],
             )
 
-            modified_fcn = (self.function[node](time, phases_dt, x, u, p, a) - target_cx) ** exponent
+            modified_fcn = (self.function[node](time, phases_dt, x, u, p, a, dynamics_constants) - target_cx) ** exponent
 
         if self.expand:
             self.function[node] = self.function[node].expand()
@@ -551,9 +556,9 @@ class PenaltyOption(OptionGeneric):
 
         self.weighted_function[node] = Function(
             name,
-            [time, phases_dt, x, u, p, a, weight_cx, target_cx],
+            [time, phases_dt, x, u, p, a, dynamics_constants, weight_cx, target_cx],
             [modified_fcn],
-            ["t", "dt", "x", "u", "p", "a", "weight", "target"],
+            ["t", "dt", "x", "u", "p", "a", "dynamics_constants", "weight", "target"],
             ["val"],
         )
         self.weighted_function_non_threaded[node] = self.weighted_function[node]
@@ -630,8 +635,15 @@ class PenaltyOption(OptionGeneric):
             lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].algebraic_states, n_idx, sn_idx),
             is_constructing_penalty=True,
         )
+        dynamics_constants = PenaltyHelpers.dynamics_constants(
+            self,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: self._get_dynamics_constants(ocp, p_idx, n_idx, sn_idx),
+            is_constructing_penalty=True,
+        )
+        # dynamics_constants = controller.dynamics_constants.cx
 
-        return controller, t0, x, u, p, a
+        return controller, t0, x, u, p, a, dynamics_constants
 
     @staticmethod
     def _get_states(ocp, states, n_idx, sn_idx):
@@ -731,6 +743,21 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("The sn_idx.start should be 0 or -1")
 
         return u
+
+
+    def _get_dynamics_constants(self, ocp, p_idx, n_idx, sn_idx):
+
+        nlp = ocp.nlp[p_idx]
+        dynamics_constants = nlp.dynamics_constants
+
+        if dynamics_constants.cx_start.shape == (0, 0):
+            return ocp.cx()
+        elif sn_idx == 0:
+            return dynamics_constants.cx_start
+        elif sn_idx == -1:
+            return dynamics_constants.cx_end
+        else:
+            raise ValueError("The sn_idx should be 0 or -1")
 
     @staticmethod
     def define_target_mapping(controller: PenaltyController, key: str, rows):

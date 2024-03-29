@@ -137,14 +137,13 @@ class NonLinearProgram:
         self.control_type = ControlType.CONSTANT
         self.cx = None
         self.dt = None
-        self.dynamics = (
-            None  # TODO Change this to a list to include extra_dynamics in a single vector (that matches dynamics_func)
-        )
+        self.dynamics = (None)
         self.extra_dynamics = []
         self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func: list = []
         self.implicit_dynamics_func: list = []
         self.dynamics_type = None
+        self.dynamics_constants = None
         self.g = []
         self.g_internal = []
         self.g_implicit = []
