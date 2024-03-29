@@ -601,7 +601,14 @@ class OdeSolver:
             return [
                 Function(
                     "integrator",
-                    [vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.a_ode(nlp), self.d_ode(nlp)],
+                    [
+                        vertcat(*t),
+                        self.x_ode(nlp),
+                        self.p_ode(nlp),
+                        self.param_ode(nlp),
+                        self.a_ode(nlp),
+                        self.d_ode(nlp),
+                    ],
                     self._adapt_integrator_output(
                         integrator_func,
                         nlp.states.scaled.cx_start,
