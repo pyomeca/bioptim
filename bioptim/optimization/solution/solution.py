@@ -768,7 +768,7 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
             d = []
-            for n_idx in range(nlp.ns+1):
+            for n_idx in range(nlp.ns + 1):
                 d += [np.array(_get_dynamics_constants(self.ocp, p, n_idx, 0))]
 
             integrated_sol = solve_ivp_interface(
@@ -1224,10 +1224,8 @@ class Solution:
                 ),
             )
             d = PenaltyHelpers.dynamics_constants(
-                penalty,
-                idx,
-                lambda p_idx, n_idx, sn_idx: _get_dynamics_constants(self.ocp, p_idx, n_idx, sn_idx)
-                )
+                penalty, idx, lambda p_idx, n_idx, sn_idx: _get_dynamics_constants(self.ocp, p_idx, n_idx, sn_idx)
+            )
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
 

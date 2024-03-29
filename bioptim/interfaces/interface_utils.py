@@ -343,6 +343,7 @@ def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].A_scaled if scaled else ocp.nlp[phase_idx].A
     return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
 
+
 def _get_dynamics_constants(ocp, phase_idx, node_idx, subnodes_idx):
     dict = ocp.nlp[phase_idx].dynamics_constants_used_at_each_nodes
     values = None

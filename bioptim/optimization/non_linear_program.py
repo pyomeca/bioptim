@@ -137,7 +137,7 @@ class NonLinearProgram:
         self.control_type = ControlType.CONSTANT
         self.cx = None
         self.dt = None
-        self.dynamics = (None)
+        self.dynamics = None
         self.extra_dynamics = []
         self.dynamics_evaluation = DynamicsEvaluation()
         self.dynamics_func: list = []

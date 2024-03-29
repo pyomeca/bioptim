@@ -1914,7 +1914,7 @@ class DynamicsList(UniquePerPhaseOptionList):
 
 def _check_dynamics_constants_format(dynamics_constant: list[Any], n_shooting: int, phase_idx: int):
     """Check if the dynamics_constant_at_each_node is of the right format"""
-    if dynamics_constant is not None and dynamics_constant.shape[2] != n_shooting+1:
+    if dynamics_constant is not None and dynamics_constant.shape[2] != n_shooting + 1:
         raise RuntimeError(
             f"Phase {phase_idx} has {n_shooting}+1 shooting points but the dynamics_constant_at_each_node "
             f"has {dynamics_constant.shape[2]}+1 shooting points."

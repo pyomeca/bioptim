@@ -80,9 +80,9 @@ def solve_ivp_interface(
 
             func = nlp.dynamics_func[0] if len(nlp.dynamics_func) == 1 else nlp.dynamics_func[node]
             result = _solve_ivp_scipy_interface(
-                lambda t, x: np.array(func(t, x, _control_function(control_type, t, t_span, u[node]), p, a[node], d[node]))[
-                    :, 0
-                ],
+                lambda t, x: np.array(
+                    func(t, x, _control_function(control_type, t, t_span, u[node]), p, a[node], d[node])
+                )[:, 0],
                 x0=x0i,
                 t_span=np.array(t_span),
                 t_eval=t_eval,

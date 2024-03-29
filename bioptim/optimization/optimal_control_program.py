@@ -619,7 +619,9 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             self.nlp[i].parameters = self.parameters  # This should be remove when phase parameters will be implemented
-            self.nlp[i].dynamics_constants_used_at_each_nodes = dynamics[i].extra_parameters["dynamics_constants_used_at_each_nodes"]
+            self.nlp[i].dynamics_constants_used_at_each_nodes = dynamics[i].extra_parameters[
+                "dynamics_constants_used_at_each_nodes"
+            ]
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
             if (isinstance(self.nlp[i].model, VariationalBiorbdModel)) and self.nlp[i].algebraic_states.shape > 0:
@@ -1619,7 +1621,9 @@ class OptimalControlProgram:
                         name=key,
                         cx=[cx, cx, cx],
                         mx=mx,
-                        bimapping=BiMapping(Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0]))))
+                        bimapping=BiMapping(
+                            Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0])))
+                        ),
                     )
 
         # Add to the nlp
