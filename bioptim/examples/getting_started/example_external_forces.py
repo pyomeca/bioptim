@@ -35,6 +35,9 @@ def prepare_ocp(
     biorbd_model_path: str = "models/cube_with_forces.bioMod",
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     expand_dynamics: bool = True,
+    phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
+    n_threads: int = 1,
+    use_sx: bool = False,
 ) -> OptimalControlProgram:
     """
     Prepare the ocp
@@ -49,6 +52,12 @@ def prepare_ocp(
         If the dynamics function should be expanded. Please note, this will solve the problem faster, but will slow down
         the declaration of the OCP, so it is a trade-off. Also depending on the solver, it may or may not work
         (for instance IRK is not compatible with expanded dynamics)
+    phase_dynamics: PhaseDynamics
+        The phase dynamics to use
+    n_threads: int
+        The number of threads to use
+    use_sx: bool
+        If the code should be compiled with SX
 
     Returns
     -------
@@ -80,7 +89,7 @@ def prepare_ocp(
         # This must be PhaseDynamics.ONE_PER_NODE since external forces change at each node within the phase
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=expand_dynamics,
-        phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+        phase_dynamics=phase_dynamics,
         dynamics_constants_used_at_each_nodes={"external_forces": external_forces},  # the key word "external_forces" must be used
     )
 
@@ -111,6 +120,8 @@ def prepare_ocp(
         objective_functions=objective_functions,
         constraints=constraints,
         ode_solver=ode_solver,
+        n_threads=n_threads,
+        use_sx=use_sx,
     )
 
 

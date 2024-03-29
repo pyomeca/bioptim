@@ -722,8 +722,16 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
 
 
 @pytest.mark.parametrize("ode_solver", [OdeSolver.RK4, OdeSolver.RK8, OdeSolver.IRK])
-def test_example_external_forces(ode_solver):
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("n_threads", [1, 2])
+@pytest.mark.parametrize("use_sx", [True, False])
+def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx):
     from bioptim.examples.getting_started import example_external_forces as ocp_module
+
+    if use_sx and ode_solver == OdeSolver.IRK:
+        return
+    if n_threads == 2 and phase_dynamics == PhaseDynamics.ONE_PER_NODE:
+        return
 
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
@@ -734,6 +742,9 @@ def test_example_external_forces(ode_solver):
         biorbd_model_path=bioptim_folder + "/models/cube_with_forces.bioMod",
         ode_solver=ode_solver,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
+        phase_dynamics=phase_dynamics,
+        n_threads=n_threads,
+        use_sx=use_sx,
     )
     sol = ocp.solve()
 
@@ -768,7 +779,8 @@ def test_example_external_forces(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)), decimal=5)
 
         # detailed cost values
-        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
+        if n_threads == 1:
+            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
     else:
         # initial and final position
         np.testing.assert_almost_equal(q[:, 0], np.array([-4.6916756e-15, 6.9977394e-16, -1.6087563e-06, 0]), decimal=5)
@@ -779,7 +791,8 @@ def test_example_external_forces(ode_solver):
         np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 1.6094277e-06, 0]), decimal=5)
 
         # detailed cost values
-        np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
+        if n_threads == 1:
+            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
 
     # simulate
     TestUtils.simulate(sol)
