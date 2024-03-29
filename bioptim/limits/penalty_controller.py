@@ -253,7 +253,6 @@ class PenaltyController:
         -------
         The algebraic_states at node node_index
         """
-        # TODO: This variables should be renamed to "algebraic"
         self._nlp.algebraic_states.node_index = self.node_index
         out = self._nlp.algebraic_states.unscaled
         out.current_cx_to_get = self.cx_index_to_get
@@ -269,6 +268,16 @@ class PenaltyController:
         """
         self._nlp.integrated_values.node_index = self.node_index
         out = self._nlp.integrated_values
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
+    def dynamics_constants(self) -> OptimizationVariableList:
+        """
+        Return the dynamics_constants at node node_index=0.
+        """
+        self._nlp.dynamics_constants.node_index = self.node_index
+        out = self._nlp.dynamics_constants
         out.current_cx_to_get = self.cx_index_to_get
         return out
 
