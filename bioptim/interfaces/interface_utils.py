@@ -274,10 +274,11 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
             x = nlp.cx()
             u = nlp.cx()
             a = nlp.cx()
+            d = None
             weight = np.ndarray((1, 0))
             target = nlp.cx()
             for idx in range(len(penalty.node_idx)):
-                t0_tp, x_tp, u_tp, p, a_tp, weight_tp, target_tp = _get_weighted_function_inputs(
+                t0_tp, x_tp, u_tp, p, a_tp, d_tp, weight_tp, target_tp = _get_weighted_function_inputs(
                     penalty, idx, ocp, nlp, scaled
                 )
 
@@ -293,11 +294,12 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
                     u_tp = tp
                 u = horzcat(u, u_tp)
                 a = horzcat(a, a_tp)
+                d = horzcat(d, d_tp) if d is not None else d_tp
                 weight = np.concatenate((weight, [[float(weight_tp)]]), axis=1)
                 target = horzcat(target, target_tp)
 
             # We can call penalty.weighted_function[0] since multi-thread declares all the node at [0]
-            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, a, weight, target), -1, 1)
+            tp = reshape(penalty.weighted_function[0](t0, phases_dt, x, u, p, a, d, weight, target), -1, 1)
 
         else:
             tp = interface.ocp.cx()
@@ -306,10 +308,10 @@ def generic_get_all_penalties(interface, nlp: NonLinearProgram, penalties, scale
                     nlp.states.node_index = penalty.node_idx[idx]
                     nlp.controls.node_index = penalty.node_idx[idx]
                     nlp.algebraic_states.node_index = penalty.node_idx[idx]
-                t0, x, u, p, a, weight, target = _get_weighted_function_inputs(penalty, idx, ocp, nlp, scaled)
+                t0, x, u, p, a, d, weight, target = _get_weighted_function_inputs(penalty, idx, ocp, nlp, scaled)
 
                 node_idx = penalty.node_idx[idx]
-                tp = vertcat(tp, penalty.weighted_function[node_idx](t0, phases_dt, x, u, p, a, weight, target))
+                tp = vertcat(tp, penalty.weighted_function[node_idx](t0, phases_dt, x, u, p, a, d, weight, target))
 
         out = vertcat(out, sum2(tp))
     return out
@@ -334,13 +336,17 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
         a = PenaltyHelpers.states(
             penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled)
         )
+        d = PenaltyHelpers.dynamics_constants(
+            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_dynamics_constants(ocp, p_idx, n_idx, sn_idx)
+        )
     else:
         x = []
         u = []
         p = []
         a = []
+        d = []
 
-    return t0, x, u, p, a, weight, target
+    return t0, x, u, p, a, d, weight, target
 
 
 def _get_x(ocp, phase_idx, node_idx, subnodes_idx, scaled):
@@ -360,3 +366,14 @@ def _get_p(ocp, phase_idx, node_idx, subnodes_idx, scaled):
 def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     values = ocp.nlp[phase_idx].A_scaled if scaled else ocp.nlp[phase_idx].A
     return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
+
+def _get_dynamics_constants(ocp, phase_idx, node_idx, subnodes_idx):
+    dict = ocp.nlp[phase_idx].dynamics_constants_used_at_each_nodes
+    values = None
+    for i_d, d in enumerate(dict):
+        for i_element in range(dict[d].shape[1]):
+            if values is None:
+                values = dict[d][:, i_element, node_idx]
+            else:
+                values = vertcat(values, dict[d][:, i_element, node_idx])
+    return values if values is not None else []

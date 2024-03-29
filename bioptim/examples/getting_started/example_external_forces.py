@@ -67,8 +67,8 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
-    # External forces (shape: 6 x nb_external_forces x n_shooting_points)
-    external_forces = np.zeros((6, 2, n_shooting))
+    # External forces (shape: 6 x nb_external_forces x (n_shooting_points+1))
+    external_forces = np.zeros((6, 2, n_shooting+1))
     external_forces[5, 0, :] = -2
     external_forces[5, 1, :] = 5
     external_forces[5, 0, 4] = -22

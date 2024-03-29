@@ -725,6 +725,7 @@ class Solution:
         integrator: SolutionIntegrator
             The integrator to use for the integration
         """
+        from ...interfaces.interface_utils import _get_dynamics_constants
 
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
@@ -790,6 +791,9 @@ class Solution:
         integrated_sol = None
         for p, nlp in enumerate(self.ocp.nlp):
             first_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
+            d = []
+            for n_idx in range(nlp.ns+1):
+                d += [np.array(_get_dynamics_constants(self.ocp, p, n_idx, 0))]
 
             integrated_sol = solve_ivp_interface(
                 list_of_dynamics=[nlp.dynamics_func] * nlp.ns,
@@ -799,6 +803,7 @@ class Solution:
                 x=first_x,
                 u=u[p],
                 a=a[p],
+                d=d,
                 p=params,
                 method=integrator,
             )
@@ -1319,6 +1324,8 @@ class Solution:
             return np.ndarray((0, 1))
 
     def _get_penalty_cost(self, nlp, penalty):
+        from ...interfaces.interface_utils import _get_dynamics_constants
+
         if nlp is None:
             raise NotImplementedError("penalty cost over the full ocp is not implemented yet")
 
@@ -1356,12 +1363,17 @@ class Solution:
                     merged_a[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_a[p_idx]) else np.array(())
                 ),
             )
+            d = PenaltyHelpers.dynamics_constants(
+                penalty,
+                idx,
+                lambda p_idx, n_idx, sn_idx: _get_dynamics_constants(self.ocp, p_idx, n_idx, sn_idx)
+                )
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
 
             node_idx = penalty.node_idx[idx]
-            val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, a))
-            val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, a, weight, target))
+            val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, a, d))
+            val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, a, d, weight, target))
 
         if self.ocp.n_threads > 1:
             val = [v[:, 0] for v in val]

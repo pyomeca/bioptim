@@ -17,6 +17,7 @@ def solve_ivp_interface(
     u: list[np.ndarray],
     p: list[np.ndarray],
     a: list[np.ndarray],
+    d: list[np.ndarray],
     method: SolutionIntegrator = SolutionIntegrator.SCIPY_RK45,
 ):
     """
@@ -36,6 +37,8 @@ def solve_ivp_interface(
         array of parameters
     a : np.ndarray
         array of the algebraic states of the system
+    d : np.ndarray
+        array of the dynamics constants
     shooting_type : Shooting
         The way we integrate the solution such as SINGLE, SINGLE_CONTINUOUS, MULTIPLE
     method: SolutionIntegrator
@@ -62,7 +65,7 @@ def solve_ivp_interface(
 
         if method == SolutionIntegrator.OCP:
             result = _solve_ivp_bioptim_interface(
-                lambda t, x: nlp.dynamics[node](t, x, u[node], p, a[node])[1], x0=x0i, t_span=np.array(t_span)
+                lambda t, x: nlp.dynamics[node](t, x, u[node], p, a[node], d[node])[1], x0=x0i, t_span=np.array(t_span)
             )
 
         elif method in (
@@ -78,7 +81,7 @@ def solve_ivp_interface(
 
             result = _solve_ivp_scipy_interface(
                 lambda t, x: np.array(
-                    list_of_dynamics[node](t, x, _control_function(control_type, t, t_span, u[node]), p, a[node])
+                    list_of_dynamics[node](t, x, _control_function(control_type, t, t_span, u[node]), p, a[node], d[node])
                 )[:, 0],
                 x0=x0i,
                 t_span=np.array(t_span),
