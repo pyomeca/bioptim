@@ -15,12 +15,18 @@ class MockData:
 
 # TODO: Verify these tests
 
+
 def test_check_external_forces_format_valid():
     _check_dynamics_constants_format(np.ones((5, 5, 6)), 5, 0)
 
+
 def test_check_external_forces_format_invalid():
-    with pytest.raises(RuntimeError, match="Phase 0 has dynamics_constant_at_each_node of type <class 'list'> but it should be of type np.ndarray"):
+    with pytest.raises(
+        RuntimeError,
+        match="Phase 0 has dynamics_constant_at_each_node of type <class 'list'> but it should be of type np.ndarray",
+    ):
         _check_dynamics_constants_format([0, 0, 0, 0, 0, 0], 5, 0)
+
 
 def test_check_external_forces_format_invalid():
     with pytest.raises(RuntimeError):
@@ -39,7 +45,10 @@ def test_check_soft_contacts_dynamics_invalid_rigid():
 
 # More tests for _check_external_forces_format
 def test_check_external_forces_format_none():
-    with pytest.raises(RuntimeError, match="Phase 0 has dynamics_constant_at_each_node of type <class 'NoneType'> but it should be of type np.ndarray"):
+    with pytest.raises(
+        RuntimeError,
+        match="Phase 0 has dynamics_constant_at_each_node of type <class 'NoneType'> but it should be of type np.ndarray",
+    ):
         _check_dynamics_constants_format(None, 5, 0)
 
 
