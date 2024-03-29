@@ -486,14 +486,34 @@ class PenaltyOption(OptionGeneric):
             # Compute the penalty function at starting and ending of the interval
             func_at_subnode = Function(
                 name,
-                [time, phases_dt, state_cx_start, control_cx_start, param_cx_start, algebraic_states_start_cx, dynamics_constants_start_cx],
+                [
+                    time,
+                    phases_dt,
+                    state_cx_start,
+                    control_cx_start,
+                    param_cx_start,
+                    algebraic_states_start_cx,
+                    dynamics_constants_start_cx,
+                ],
                 [sub_fcn],
             )
             func_at_start = func_at_subnode(
-                time, phases_dt, state_cx_start, control_cx_start, param_cx_start, algebraic_states_start_cx, dynamics_constants_start_cx
+                time,
+                phases_dt,
+                state_cx_start,
+                control_cx_start,
+                param_cx_start,
+                algebraic_states_start_cx,
+                dynamics_constants_start_cx,
             )
             func_at_end = func_at_subnode(
-                time + dt, phases_dt, state_cx_end, control_cx_end, param_cx_start, algebraic_states_end_cx, dynamics_constants_end_cx
+                time + dt,
+                phases_dt,
+                state_cx_end,
+                control_cx_end,
+                param_cx_start,
+                algebraic_states_end_cx,
+                dynamics_constants_end_cx,
             )
             modified_fcn = (
                 (func_at_start - target_cx[:, 0]) ** exponent + (func_at_end - target_cx[:, 1]) ** exponent
@@ -542,7 +562,9 @@ class PenaltyOption(OptionGeneric):
                 ["val"],
             )
 
-            modified_fcn = (self.function[node](time, phases_dt, x, u, p, a, dynamics_constants) - target_cx) ** exponent
+            modified_fcn = (
+                self.function[node](time, phases_dt, x, u, p, a, dynamics_constants) - target_cx
+            ) ** exponent
 
         else:
             # TODO Add error message if there are free variables to guide the user? For instance controls with last node
@@ -554,7 +576,9 @@ class PenaltyOption(OptionGeneric):
                 ["val"],
             )
 
-            modified_fcn = (self.function[node](time, phases_dt, x, u, p, a, dynamics_constants) - target_cx) ** exponent
+            modified_fcn = (
+                self.function[node](time, phases_dt, x, u, p, a, dynamics_constants) - target_cx
+            ) ** exponent
 
         if self.expand:
             self.function[node] = self.function[node].expand()
@@ -753,7 +777,6 @@ class PenaltyOption(OptionGeneric):
             raise ValueError("The sn_idx.start should be 0 or -1")
 
         return u
-
 
     def _get_dynamics_constants(self, ocp, p_idx, n_idx, sn_idx):
 

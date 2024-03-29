@@ -22,7 +22,12 @@ class BiorbdModel:
     This class wraps the biorbd model and allows the user to call the biorbd functions from the biomodel protocol
     """
 
-    def __init__(self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None, segments_to_apply_external_forces: list[str] = []):
+    def __init__(
+        self,
+        bio_model: str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
+        segments_to_apply_external_forces: list[str] = [],
+    ):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
@@ -324,9 +329,9 @@ class BiorbdModel:
 
         if external_forces is not None:
             for i_element in range(external_forces.shape[1]):
-                    name = self._segments_to_apply_external_forces[i_element]
-                    values = external_forces[:, i_element]
-                    external_forces_set.add(name, values)
+                name = self._segments_to_apply_external_forces[i_element]
+                values = external_forces[:, i_element]
+                external_forces_set.add(name, values)
 
         # # TODO: split translational force from external force
         # if translational_forces is not None:
