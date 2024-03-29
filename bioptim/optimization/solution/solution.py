@@ -975,6 +975,7 @@ class Solution:
         -------
         The states to integrate
         """
+        from ...interfaces.interface_utils import _get_dynamics_constants
 
         # In the case of multiple shootings, we don't need to do anything special
         if shooting_type == Shooting.MULTIPLE:
@@ -998,15 +999,21 @@ class Solution:
             0,
             lambda p, n, sn: decision_controls[p][n][:, sn] if n < len(decision_controls[p]) else np.ndarray((0, 1)),
         )
-        s = PenaltyHelpers.states(
+        a = PenaltyHelpers.states(
             penalty,
             0,
             lambda p, n, sn: (
                 decision_algebraic_states[p][n][:, sn] if n < len(decision_algebraic_states[p]) else np.ndarray((0, 1))
             ),
         )
+        d_tp = PenaltyHelpers.dynamics_constants(
+            penalty,
+            0,
+            lambda p, n, sn: _get_dynamics_constants(self.ocp, p, n, sn)
+        )
+        d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
 
-        dx = penalty.function[-1](t0, dt, x, u, params, s)
+        dx = penalty.function[-1](t0, dt, x, u, params, a, d)
         if dx.shape[0] != decision_states[phase_idx][0].shape[0]:
             raise RuntimeError(
                 f"Phase transition must have the same number of states ({dx.shape[0]}) "
@@ -1026,6 +1033,7 @@ class Solution:
         dict
             The integrated data structure similar in structure to the original _decision_states
         """
+        from ...interfaces.interface_utils import _get_dynamics_constants
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
         t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
@@ -1037,6 +1045,13 @@ class Solution:
 
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
+            d = []
+            for n_idx in range(nlp.ns + 1):
+                d_tp = _get_dynamics_constants(self.ocp, p, n_idx, 0)
+                if d_tp.shape == (0, 0):
+                    d += [np.array([])]
+                else:
+                    d += [np.array(d_tp)]
 
             integrated_sol = solve_ivp_interface(
                 list_of_dynamics=[nlp.dynamics_func] * nlp.ns,
@@ -1047,6 +1062,7 @@ class Solution:
                 u=u[p],
                 a=a[p],
                 p=params,
+                d=d,
                 method=SolutionIntegrator.OCP,
             )
 
@@ -1254,11 +1270,11 @@ class Solution:
         self._check_models_comes_from_same_super_class()
 
         all_bioviz = []
-        for i, d in enumerate(data_to_animate):
+        for i, data in enumerate(data_to_animate):
             all_bioviz.append(
                 self.ocp.nlp[i].model.animate(
                     self.ocp,
-                    solution=d,
+                    solution=data,
                     show_now=show_now,
                     tracked_markers=tracked_markers,
                     **kwargs,

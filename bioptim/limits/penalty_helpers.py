@@ -135,22 +135,14 @@ class PenaltyHelpers:
             d = []
             phases, _, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
             for phase, sub in zip(phases, subnodes):
-                d += [_reshape_to_vector(get_dynamics_constants(phase, node, sub))]
-            return _vertcat(d)
+                d_tp = get_dynamics_constants(phase, node, sub)
+                if d_tp.shape != (0, 0):
+                    d += [_reshape_to_vector(get_dynamics_constants(phase, node, sub))]
+            return _vertcat(d) if len(d) > 0 else DM()
 
         d = get_dynamics_constants(penalty.phase, node, 0)  # cx_start
-        try:
-            if d.shape != (0, 0):
-                d = _reshape_to_vector(d)
-        except:
-            print("ici")
-
-        # if is_constructing_penalty:
-        #     d = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, 0))  # cx_start
-        # else:
-        #     d0 = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, 0))
-        #     d1 = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, -1))
-        #     d = _vertcat([d0, d1])
+        if d.shape != (0, 0):
+            d = _reshape_to_vector(d)
 
         return d
 

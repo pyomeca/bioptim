@@ -1635,7 +1635,7 @@ class OptimalControlProgram:
                     )
 
                     dynamics_constants[-1].append(
-                        name=key,
+                        name=f"{key}_{i_component}",
                         cx=[cx, cx, cx],
                         mx=mx,
                         bimapping=BiMapping(
