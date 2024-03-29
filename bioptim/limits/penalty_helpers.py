@@ -138,12 +138,14 @@ class PenaltyHelpers:
                 d.append(_reshape_to_vector(get_dynamics_constants(phase, node, sub)))
             return _vertcat(d)
 
-        if is_constructing_penalty:
-            d = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, 0))  # cx_start
-        else:
-            d0 = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, 0))
-            d1 = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, -1))
-            d = _vertcat([d0, d1])
+        d = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, 0))  # cx_start
+
+        # if is_constructing_penalty:
+        #     d = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, 0))  # cx_start
+        # else:
+        #     d0 = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, 0))
+        #     d1 = _reshape_to_vector(get_dynamics_constants(penalty.phase, node, -1))
+        #     d = _vertcat([d0, d1])
 
         return d
 
