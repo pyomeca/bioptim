@@ -1002,4 +1002,5 @@ class PenaltyOption(OptionGeneric):
         if nlp.A is not None and (not isinstance(nlp.A, list) or nlp.A != []):
             a = [nlp.A[idx] for idx in t_idx]
             a_scaled = [nlp.A_scaled[idx] for idx in t_idx]
-        return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, a, a_scaled)
+        d = [nlp.dynamics_constants for idx in t_idx]
+        return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, a, a_scaled, d)
