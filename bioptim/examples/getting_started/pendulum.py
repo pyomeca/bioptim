@@ -133,7 +133,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=40, n_threads=2)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=400, n_threads=2)
 
     # Custom plots
     ocp.add_plot_penalty(CostType.ALL)  # This will display the objectives and constraints at the current iteration
@@ -147,8 +147,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
-    sol.graphs()
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
     sol.print_cost()
 
