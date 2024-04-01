@@ -418,7 +418,7 @@ class NewVariableConfiguration:
                 )
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_states"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, a: (
+                        lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             x[self.nlp.states.key_index(self.name), :]
                             if x.any()
                             else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
@@ -455,7 +455,7 @@ class NewVariableConfiguration:
                 plot_type = PlotType.PLOT if self.nlp.control_type == ControlType.LINEAR_CONTINUOUS else PlotType.STEP
                 if not self.skip_plot:
                     self.nlp.plot[f"{self.name}_controls"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, a: (
+                        lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             u[self.nlp.controls.key_index(self.name), :]
                             if u.any()
                             else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
@@ -521,7 +521,7 @@ class NewVariableConfiguration:
                 if not self.skip_plot:
                     all_variables_in_one_subplot = True if self.name in ["m", "cov", "k"] else False
                     self.nlp.plot[f"{self.name}_algebraic"] = CustomPlot(
-                        lambda t0, phases_dt, node_idx, x, u, p, a: (
+                        lambda t0, phases_dt, node_idx, x, u, p, a, d: (
                             a[self.nlp.algebraic_states.key_index(self.name), :]
                             if a.any()
                             else np.ndarray((cx[0][0].shape[0], 1)) * np.nan
@@ -591,7 +591,7 @@ def _manage_fatigue_to_new_variable(
     legend = [f"{name}_{i}" for i in name_elements]
     fatigue_plot_name = f"fatigue_{name}"
     nlp.plot[fatigue_plot_name] = CustomPlot(
-        lambda t0, phases_dt, node_idx, x, u, p, a: (
+        lambda t0, phases_dt, node_idx, x, u, p, a, d: (
             x[:n_elements, :] if x.any() else np.ndarray((len(name_elements), 1))
         )
         * np.nan,
@@ -601,7 +601,7 @@ def _manage_fatigue_to_new_variable(
     )
     control_plot_name = f"{name}_controls" if not multi_interface and split_controls else f"{name}"
     nlp.plot[control_plot_name] = CustomPlot(
-        lambda t0, phases_dt, node_idx, x, u, p, a: (
+        lambda t0, phases_dt, node_idx, x, u, p, a, d: (
             u[:n_elements, :] if u.any() else np.ndarray((len(name_elements), 1))
         )
         * np.nan,
@@ -621,7 +621,7 @@ def _manage_fatigue_to_new_variable(
                 var_names_with_suffix[-1], name_elements, ocp, nlp, as_states, as_controls, skip_plot=True
             )
             nlp.plot[f"{var_names_with_suffix[-1]}_controls"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a, key: (
+                lambda t0, phases_dt, node_idx, x, u, p, a, d, key: (
                     u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan
                 ),
                 plot_type=PlotType.STEP,
@@ -632,7 +632,7 @@ def _manage_fatigue_to_new_variable(
         elif i == 0:
             NewVariableConfiguration(f"{name}", name_elements, ocp, nlp, as_states, as_controls, skip_plot=True)
             nlp.plot[f"{name}_controls"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a, key: (
+                lambda t0, phases_dt, node_idx, x, u, p, a, d, key: (
                     u[nlp.controls.key_index(key), :] if u.any() else np.ndarray((len(name_elements), 1)) * np.nan
                 ),
                 plot_type=PlotType.STEP,
@@ -645,7 +645,7 @@ def _manage_fatigue_to_new_variable(
             name_tp = f"{var_names_with_suffix[-1]}_{params}"
             NewVariableConfiguration(name_tp, name_elements, ocp, nlp, True, False, skip_plot=True)
             nlp.plot[name_tp] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a, key, mod: (
+                lambda t0, phases_dt, node_idx, x, u, p, a, d, key, mod: (
                     mod * x[nlp.states.key_index(key), :] if x.any() else np.ndarray((len(name_elements), 1)) * np.nan
                 ),
                 plot_type=PlotType.INTEGRATED,

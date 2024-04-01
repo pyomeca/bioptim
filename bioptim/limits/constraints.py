@@ -260,6 +260,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 controller.parameters.cx,
                 controller.algebraic_states.cx_start,
+                controller.dynamics_constants.cx,
             )
             normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
             if len(tangential_component_idx) == 1:
