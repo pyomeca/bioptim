@@ -39,10 +39,11 @@ def time_dependent_dynamic(
     controls: MX | SX,
     parameters: MX | SX,
     algebraic_states: MX | SX,
+    dynamics_constants: MX | SX,
     nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """
-    The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a)
+    The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
 
     Parameters
     ----------
@@ -55,7 +56,9 @@ def time_dependent_dynamic(
     parameters: MX | SX
         The parameters acting on the system
     algebraic_states: MX | SX
-        The Algebraic states variables of the system
+        The algebraic states variables of the system
+    dynamics_constants: MX | SX
+        The dynamics constants of the system
     nlp: NonLinearProgram
         A reference to the phase
 

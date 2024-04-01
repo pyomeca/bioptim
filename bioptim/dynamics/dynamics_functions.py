@@ -175,7 +175,7 @@ class DynamicsFunctions:
         ):
             if not with_contact and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.mx_reduced)
-                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
+                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
                 defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
                 dq_defects = []
@@ -1166,7 +1166,7 @@ class DynamicsFunctions:
         Torques in tau
         """
 
-        if nlp.external_forces is None:
+        if external_forces is None:
             tau = nlp.model.inverse_dynamics(q, qdot, qddot)
         else:
             if "tau" in nlp.states:
@@ -1176,9 +1176,7 @@ class DynamicsFunctions:
             else:
                 tau_shape = nlp.model.nb_tau
             tau = MX(tau_shape, nlp.ns)
-            # Todo: Should be added to pass f_ext in controls (as a symoblic value)
-            #  this would avoid to create multiple equations of motions per node
-            for i, f_ext in enumerate(nlp.external_forces):
+            for i, f_ext in enumerate(external_forces):
                 tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, f_ext)
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
@@ -1250,7 +1248,7 @@ class DynamicsFunctions:
         external_forces: list = None,
     ) -> DynamicsEvaluation:
         """
-        The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a)
+        The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
 
         Parameters
         ----------

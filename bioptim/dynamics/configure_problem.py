@@ -1114,7 +1114,7 @@ class ConfigureProblem:
 
         nlp.plot["contact_forces"] = CustomPlot(
             lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.contact_forces_func(
-                [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a
+                [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a, d
             ),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
@@ -1187,7 +1187,7 @@ class ConfigureProblem:
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
                 lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.soft_contact_forces_func(
-                    [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a
+                    [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a, d
                 )[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,

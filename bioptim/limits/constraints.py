@@ -928,8 +928,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 vertcat(controller.t_span.cx),
                 horzcat(controller.states_scaled.cx, horzcat(*controller.states_scaled.cx_intermediates_list)),
                 controller.controls_scaled.cx,
-                controller.parameters.cx,  # TODO: fix parameter scaling
+                controller.parameters_scaled.cx,
                 controller.algebraic_states_scaled.cx,
+                controller.dynamics_constants.cx,
             )
 
             initial_defect = controller.states_scaled.cx_start - controller.states_scaled.cx_intermediates_list[0]

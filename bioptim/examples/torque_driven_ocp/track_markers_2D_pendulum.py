@@ -191,14 +191,14 @@ def main():
 
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda t0, phases_dt, node_idx, x, u, p, a: get_markers_pos(x, 0, markers_fun, n_q),
+        update_function=lambda t0, phases_dt, node_idx, x, u, p, a, d: get_markers_pos(x, 0, markers_fun, n_q),
         linestyle=".-",
         plot_type=PlotType.STEP,
         color=marker_color[0],
     )
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda t0, phases_dt, node_idx, x, u, p, a: get_markers_pos(x, 1, markers_fun, n_q),
+        update_function=lambda t0, phases_dt, node_idx, x, u, p, a, d: get_markers_pos(x, 1, markers_fun, n_q),
         linestyle=".-",
         plot_type=PlotType.STEP,
         color=marker_color[1],
@@ -206,14 +206,14 @@ def main():
 
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda t0, phases_dt, node_idx, x, u, p, a: markers_ref[:, 0, :],
+        update_function=lambda t0, phases_dt, node_idx, x, u, p, a, d: markers_ref[:, 0, :],
         plot_type=PlotType.PLOT,
         color=marker_color[0],
         legend=title_markers,
     )
     ocp.add_plot(
         "Markers plot coordinates",
-        update_function=lambda t0, phases_dt, node_idx, x, u, p, a: markers_ref[:, 1, :],
+        update_function=lambda t0, phases_dt, node_idx, x, u, p, a, d: markers_ref[:, 1, :],
         plot_type=PlotType.PLOT,
         color=marker_color[1],
         legend=title_markers,

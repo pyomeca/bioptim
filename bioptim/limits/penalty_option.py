@@ -300,11 +300,11 @@ class PenaltyOption(OptionGeneric):
     def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn, state_cx_scaled):
         """
         Transform the penalty fcn into the variation of fcn depending on the noise:
-            fcn = fcn(x, u, p, a) becomes d/dx(fcn) * covariance * d/dx(fcn).T
+            fcn = fcn(x, u, p, a, d) becomes d/dx(fcn) * covariance * d/dx(fcn).T
 
-        Please note that this is usually used to add a buffer around an equality constraint h(x, u, p, a) = 0
+        Please note that this is usually used to add a buffer around an equality constraint h(x, u, p, a, d) = 0
         transforming it into an inequality constraint of the form:
-            h(x, u, p, a) + sqrt(dh/dx * covariance * dh/dx.T) <= 0
+            h(x, u, p, a, d) + sqrt(dh/dx * covariance * dh/dx.T) <= 0
 
         Here, we chose a different implementation to avoid the discontinuity of the sqrt, we instead decompose the two
         terms, meaning that you have to declare the constraint h=0 and the "variation of h"=buffer ** 2 with
@@ -525,7 +525,7 @@ class PenaltyOption(OptionGeneric):
                 name,
                 [time, phases_dt, x, u, p, a, dynamics_constants],
                 [(func_at_start + func_at_end) / 2],
-                ["t", "dt", "x", "u", "p", "a"],
+                ["t", "dt", "x", "u", "p", "a", "dynamics_constants"],
                 ["val"],
             )
         elif self.derivative:
@@ -828,7 +828,7 @@ class PenaltyOption(OptionGeneric):
 
         """
 
-        def plot_function(t0, phases_dt, node_idx, x, u, p, a, penalty=None):
+        def plot_function(t0, phases_dt, node_idx, x, u, p, a, d, penalty=None):
             if isinstance(node_idx, (list, tuple)):
                 return self.target_to_plot[:, [self.node_idx.index(idx) for idx in node_idx]]
             else:
