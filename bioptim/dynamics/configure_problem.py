@@ -134,10 +134,7 @@ class ConfigureProblem:
         nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.extra_parameters)
 
     @staticmethod
-    def custom(ocp,
-               nlp,
-               dynamics_constants_used_at_each_nodes: dict[list] = {},
-               **extra_params):
+    def custom(ocp, nlp, dynamics_constants_used_at_each_nodes: dict[list] = {}, **extra_params):
         """
         Call the user-defined dynamics configuration function
 

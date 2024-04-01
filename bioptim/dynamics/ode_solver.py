@@ -174,7 +174,9 @@ class OdeSolverBase:
         """
         raise RuntimeError("This method should be implemented in the child class")
 
-    def initialize_integrator(self, ocp, nlp, dynamics_index: int, node_index: int, is_extra_dynamics: bool = False,  **extra_opt) -> Callable:
+    def initialize_integrator(
+        self, ocp, nlp, dynamics_index: int, node_index: int, is_extra_dynamics: bool = False, **extra_opt
+    ) -> Callable:
         """
         Initialize the integrator
 
@@ -596,7 +598,12 @@ class OdeSolver:
                 "x": nlp.states.scaled.cx_start,
                 "u": nlp.controls.scaled.cx_start,  # todo: add p=parameters
                 "ode": dynamics_func(
-                    vertcat(*t), self.x_ode(nlp), self.p_ode(nlp), self.param_ode(nlp), self.a_ode(nlp), self.d_ode(nlp),
+                    vertcat(*t),
+                    self.x_ode(nlp),
+                    self.p_ode(nlp),
+                    self.param_ode(nlp),
+                    self.a_ode(nlp),
+                    self.d_ode(nlp),
                 ),
             }
 

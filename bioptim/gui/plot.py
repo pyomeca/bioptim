@@ -715,6 +715,7 @@ class PlotOcp:
 
         for nlp in self.ocp.nlp:
             from ..interfaces.interface_utils import _get_dynamics_constants
+
             phase_idx = nlp.phase_idx
             x_decision = data_states_decision[phase_idx]
             x_stepwise = data_states_stepwise[phase_idx]
@@ -825,9 +826,7 @@ class PlotOcp:
                     lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)),
                 )
                 d_node = PenaltyHelpers.dynamics_constants(
-                    penalty,
-                    idx,
-                    lambda p_idx, n_idx, sn_idx: _get_dynamics_constants(self.ocp, p_idx, n_idx, sn_idx)
+                    penalty, idx, lambda p_idx, n_idx, sn_idx: _get_dynamics_constants(self.ocp, p_idx, n_idx, sn_idx)
                 )
                 if d_node.shape == (0, 0):
                     d_node = DM(0, 1)
@@ -840,7 +839,9 @@ class PlotOcp:
                 a_node = a[node_idx]
                 d_node = d[node_idx]
 
-            tp = custom_plot.function(t0, dt, node_idx, x_node, u_node, p_node, a_node, d_node, **custom_plot.parameters)
+            tp = custom_plot.function(
+                t0, dt, node_idx, x_node, u_node, p_node, a_node, d_node, **custom_plot.parameters
+            )
 
             y_tp = np.ndarray((max(custom_plot.phase_mappings.to_first.map_idx) + 1, tp.shape[1])) * np.nan
             for ctr, axe_index in enumerate(custom_plot.phase_mappings.to_first.map_idx):

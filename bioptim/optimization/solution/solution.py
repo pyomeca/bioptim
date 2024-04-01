@@ -1007,9 +1007,7 @@ class Solution:
             ),
         )
         d_tp = PenaltyHelpers.dynamics_constants(
-            penalty,
-            0,
-            lambda p, n, sn: _get_dynamics_constants(self.ocp, p, n, sn)
+            penalty, 0, lambda p, n, sn: _get_dynamics_constants(self.ocp, p, n, sn)
         )
         d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
 

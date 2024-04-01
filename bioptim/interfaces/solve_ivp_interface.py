@@ -81,7 +81,9 @@ def solve_ivp_interface(
 
             result = _solve_ivp_scipy_interface(
                 lambda t, x: np.array(
-                    list_of_dynamics[node](t, x, _control_function(control_type, t, t_span, u[node]), p, a[node], d[node])
+                    list_of_dynamics[node](
+                        t, x, _control_function(control_type, t, t_span, u[node]), p, a[node], d[node]
+                    )
                 )[:, 0],
                 x0=x0i,
                 t_span=np.array(t_span),
