@@ -631,7 +631,9 @@ class BiorbdModel:
         if external_forces is not None:
             all_forces = MX()
             for i in range(external_forces.shape[1]):
-                force = self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=external_forces[:, i])
+                force = self.contact_forces_from_constrained_forward_dynamics(
+                    q, qdot, tau, external_forces=external_forces[:, i]
+                )
                 all_forces = horzcat(all_forces, force)
             return all_forces
         else:

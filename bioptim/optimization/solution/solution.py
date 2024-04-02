@@ -912,7 +912,14 @@ class Solution:
                         raise NotImplementedError("Noisy integration is not available for multiple extra dynamics.")
                     cas_func = Function(
                         "noised_extra_dynamics",
-                        [nlp.time_cx, nlp.states.cx, nlp.controls.cx, parameters_cx, nlp.algebraic_states.cx, nlp.dynamics_constants.cx],
+                        [
+                            nlp.time_cx,
+                            nlp.states.cx,
+                            nlp.controls.cx,
+                            parameters_cx,
+                            nlp.algebraic_states.cx,
+                            nlp.dynamics_constants.cx,
+                        ],
                         [
                             nlp.extra_dynamics_func[0](
                                 nlp.time_cx,

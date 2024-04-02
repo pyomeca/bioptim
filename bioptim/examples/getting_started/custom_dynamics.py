@@ -82,7 +82,9 @@ def custom_dynamics(
     return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1, dynamics_constants_used_at_each_nodes={}):
+def custom_configure(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1, dynamics_constants_used_at_each_nodes={}
+):
     """
     Tell the program which variables are states and controls.
     The user is expected to use the ConfigureProblem.configure_xxx functions.

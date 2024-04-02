@@ -196,7 +196,7 @@ class TestUtils:
         for key in dynamics.dynamics_constants_used_at_each_nodes.keys():
             variable_shape = dynamics.dynamics_constants_used_at_each_nodes[key].shape
             for i_component in range(variable_shape[1] if len(variable_shape) > 1 else 1):
-                cx =nlp.cx.sym(
+                cx = nlp.cx.sym(
                     f"{key}_phase{nlp.phase_idx}_{i_component}_cx",
                     variable_shape[0],
                 )

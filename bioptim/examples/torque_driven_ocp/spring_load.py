@@ -109,13 +109,13 @@ scenarios = {
 
 
 def custom_dynamic(
-        time: MX,
-        states: MX,
-        controls: MX,
-        parameters: MX,
-        algebraic_states: MX,
-        dynamics_constants: MX,
-        nlp: NonLinearProgram
+    time: MX,
+    states: MX,
+    controls: MX,
+    parameters: MX,
+    algebraic_states: MX,
+    dynamics_constants: MX,
+    nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """
     The dynamics of the system using an external force (see custom_dynamics for more explanation)

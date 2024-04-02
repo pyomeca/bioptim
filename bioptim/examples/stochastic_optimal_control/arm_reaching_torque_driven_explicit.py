@@ -189,7 +189,14 @@ def get_cov_mat(nlp, node_index, use_sx):
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(
-        nlp.time_cx, nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx, nlp.dynamics_constants.mx, nlp, with_noise=True
+        nlp.time_cx,
+        nlp.states.mx,
+        nlp.controls.mx,
+        nlp.parameters.mx,
+        nlp.algebraic_states.mx,
+        nlp.dynamics_constants.mx,
+        nlp,
+        with_noise=True,
     )
     dx.dxdt = cas.Function(
         "tp",
@@ -204,7 +211,17 @@ def get_cov_mat(nlp, node_index, use_sx):
 
     p_next = M_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ M_matrix.T
     func = cas.Function(
-        "p_next", [dt, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.dynamics_constants.cx, cov_sym], [p_next]
+        "p_next",
+        [
+            dt,
+            nlp.states.cx,
+            nlp.controls.cx,
+            nlp.parameters.cx,
+            nlp.algebraic_states.cx,
+            nlp.dynamics_constants.cx,
+            cov_sym,
+        ],
+        [p_next],
     )
 
     nlp.states.node_index = node_index - 1

@@ -780,7 +780,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 parameters,
                 controller.algebraic_states.cx_start,
-                controller.dynamics_constants.cx
+                controller.dynamics_constants.cx,
             )
 
             return StochasticBioModel.reshape_to_vector(constraint)
@@ -961,7 +961,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.parameters_scaled.cx,
                     controller.algebraic_states_scaled.cx_start,
                     controller.dynamics_constants.cx,
-
                 ],
                 [Fdz.T - Gdz.T @ m_matrix.T],
             )

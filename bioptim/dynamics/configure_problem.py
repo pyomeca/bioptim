@@ -131,7 +131,12 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.type(ocp, nlp, dynamics_constants_used_at_each_nodes=nlp.dynamics_type.dynamics_constants_used_at_each_nodes, **nlp.dynamics_type.extra_parameters)
+        nlp.dynamics_type.type(
+            ocp,
+            nlp,
+            dynamics_constants_used_at_each_nodes=nlp.dynamics_type.dynamics_constants_used_at_each_nodes,
+            **nlp.dynamics_type.extra_parameters,
+        )
 
     @staticmethod
     def custom(ocp, nlp, **extra_params):
@@ -765,11 +770,12 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def joints_acceleration_driven(ocp,
-                                   nlp,
-                                   rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-                                   dynamics_constants_used_at_each_nodes: dict[list] = {}
-                                   ):
+    def joints_acceleration_driven(
+        ocp,
+        nlp,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
+    ):
         """
         Configure the dynamics for a joints acceleration driven program
         (states are q and qdot, controls are qddot_joints)
@@ -921,10 +927,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def holonomic_torque_driven(ocp,
-                                nlp,
-                                dynamics_constants_used_at_each_nodes: dict[list] = {}
-                                ):
+    def holonomic_torque_driven(ocp, nlp, dynamics_constants_used_at_each_nodes: dict[list] = {}):
         """
         Tell the program which variables are states and controls.
 

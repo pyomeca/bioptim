@@ -18,7 +18,9 @@ def _compute_torques_from_noise_and_feedback_default(
 
     k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
-    sensory_input = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, dynamics_constants, nlp)
+    sensory_input = nlp.model.sensory_reference(
+        time, states, controls, parameters, algebraic_states, dynamics_constants, nlp
+    )
     tau_fb = k_matrix @ ((sensory_input - ref) + sensory_noise)
 
     tau_motor_noise = motor_noise
