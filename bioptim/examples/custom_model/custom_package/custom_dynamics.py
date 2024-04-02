@@ -44,7 +44,9 @@ def custom_dynamics(
     )
 
 
-def custom_configure_my_dynamics(ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}):
+def custom_configure_my_dynamics(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}
+):
     """
     Tell the program which variables are states and controls.
     The user is expected to use the ConfigureProblem.configure_xxx functions.

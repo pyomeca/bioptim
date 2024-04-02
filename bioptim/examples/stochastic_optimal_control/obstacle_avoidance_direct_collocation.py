@@ -327,7 +327,9 @@ def draw_cov_ellipse(cov, pos, ax, **kwargs):
     return ellip
 
 
-def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}):
+def configure_optimal_control_problem(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}
+):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
@@ -341,7 +343,9 @@ def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinear
     )
 
 
-def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}):
+def configure_stochastic_optimal_control_problem(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}
+):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
