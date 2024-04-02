@@ -131,7 +131,7 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.extra_parameters)
+        nlp.dynamics_type.type(ocp, nlp, dynamics_constants_used_at_each_nodes=nlp.dynamics_type.dynamics_constants_used_at_each_nodes, **nlp.dynamics_type.extra_parameters)
 
     @staticmethod
     def custom(ocp, nlp, **extra_params):
@@ -1022,10 +1022,11 @@ class ConfigureProblem:
                         nlp.controls.scaled.mx_reduced,
                         nlp.parameters.scaled.mx_reduced,
                         nlp.algebraic_states.scaled.mx_reduced,
+                        nlp.dynamics_constants.mx,
                         nlp.states_dot.scaled.mx_reduced,
                     ],
                     [dynamics_eval.defects],
-                    ["t_span", "x", "u", "p", "a", "xdot"],
+                    ["t_span", "x", "u", "p", "a", "dynamics_constants", "xdot"],
                     ["defects"],
                 )
                 if nlp.dynamics_type.expand_dynamics:
@@ -1897,6 +1898,7 @@ class Dynamics(OptionGeneric):
         skip_continuity: bool = False,
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray] = {},
         **extra_parameters: Any,
     ):
         """
@@ -1917,6 +1919,8 @@ class Dynamics(OptionGeneric):
             otherwise it is an objective
         phase_dynamics: PhaseDynamics
             If the dynamics should be shared between the nodes or not
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            The dynamics constants at each node. ex: the experimental external forces data should go here.
         """
 
         configure = None
@@ -1941,6 +1945,7 @@ class Dynamics(OptionGeneric):
         self.skip_continuity = skip_continuity
         self.state_continuity_weight = state_continuity_weight
         self.phase_dynamics = phase_dynamics
+        self.dynamics_constants_used_at_each_nodes = dynamics_constants_used_at_each_nodes
 
 
 class DynamicsList(UniquePerPhaseOptionList):

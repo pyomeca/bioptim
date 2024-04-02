@@ -624,14 +624,14 @@ class BiorbdModel:
             n_dof += self.segments[j].nbDof()
         return quat_idx
 
-    def contact_forces(self, q, qdot, tau, external_forces: list = None) -> MX:
+    def contact_forces(self, q, qdot, tau, external_forces: MX = None) -> MX:
         self.check_q_size(q)
         self.check_qdot_size(qdot)
         self.check_tau_size(tau)
-        if external_forces is not None and len(external_forces) != 0:
+        if external_forces is not None:
             all_forces = MX()
-            for i, f_ext in enumerate(external_forces):
-                force = self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=f_ext)
+            for i in range(external_forces.shape[1]):
+                force = self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=external_forces[:, i])
                 all_forces = horzcat(all_forces, force)
             return all_forces
         else:

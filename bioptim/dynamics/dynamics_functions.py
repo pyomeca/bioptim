@@ -1150,7 +1150,7 @@ class DynamicsFunctions:
         qdot: MX | SX,
         qddot: MX | SX,
         with_contact: bool,
-        external_forces: list = None,
+        external_forces: MX = None,
     ):
         """
         Easy accessor to torques from inverse dynamics
@@ -1167,7 +1167,7 @@ class DynamicsFunctions:
             The value of qddot from "get"
         with_contact: bool
             If the dynamics with contact should be used
-        external_forces: list[]
+        external_forces: MX
             The external forces
 
         Returns
@@ -1185,8 +1185,8 @@ class DynamicsFunctions:
             else:
                 tau_shape = nlp.model.nb_tau
             tau = MX(tau_shape, nlp.ns)
-            for i, f_ext in enumerate(external_forces):
-                tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, f_ext)
+            for i in range(external_forces.shape[1]):
+                tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, external_forces[:, i])
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod

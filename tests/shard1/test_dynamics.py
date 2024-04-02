@@ -19,6 +19,9 @@ from bioptim import (
     ParameterContainer,
     ParameterList,
     PhaseDynamics,
+    OptimizationVariableList,
+    BiMapping,
+    Mapping,
 )
 
 from tests.utils import TestUtils
@@ -36,6 +39,42 @@ class OptimalControlProgram:
         self.implicit_constraints = ConstraintList()
         self.n_threads = 1
 
+def initialize_dynamics_constants(nlp, dynamics):
+    dynamics_constants = OptimizationVariableList(nlp.cx, dynamics.phase_dynamics)
+    for key in dynamics.dynamics_constants_used_at_each_nodes.keys():
+        variable_shape = dynamics.dynamics_constants_used_at_each_nodes[key].shape
+        for i_component in range(variable_shape[1] if len(variable_shape) > 1 else 1):
+            cx =nlp.cx.sym(
+                f"{key}_phase{nlp.phase_idx}_{i_component}_cx",
+                variable_shape[0],
+            )
+            mx = MX.sym(
+                f"{key}_phase{nlp.phase_idx}_{i_component}_mx",
+                variable_shape[0],
+            )
+
+            dynamics_constants.append(
+                name=f"{key}_{i_component}",
+                cx=[cx, cx, cx],
+                mx=mx,
+                bimapping=BiMapping(
+                    Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0])))
+                ),
+            )
+    return dynamics_constants
+
+def dynamics_constants_values(with_external_forces, external_forces):
+    if not with_external_forces:
+        return []
+    else:
+        values = None
+        for node_idx in range(external_forces.shape[2]):
+            for i_element in range(external_forces.shape[1]):
+                if values is None:
+                    values = external_forces[:, i_element, node_idx]
+                else:
+                    values = vertcat(values, external_forces[:, i_element, node_idx])
+        return values
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
@@ -57,7 +96,6 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     nlp.time_mx = MX.sym("time", 1, 1)
     nlp.dt_mx = MX.sym("dt", 1, 1)
     nlp.initialize(cx)
-    # TODO: fake the initialization of dynamics_constants
 
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))
@@ -140,6 +178,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     if with_external_force:
         np.random.rand(nlp.ns, 6)  # just not to change the values of the next random values
 
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -147,11 +186,12 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = external_forces[:, 0, 0] if with_external_force else []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], dynamics_constants))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_contact:
-            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
+            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states, dynamics_constants))
             if with_external_force:
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
@@ -188,7 +228,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                 )
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_FORWARD_DYNAMICS:
         if with_contact:
-            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
+            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states, dynamics_constants))
             if with_external_force:
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
@@ -214,7 +254,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                 )
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_contact:
-            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
+            contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states, dynamics_constants))
             if with_external_force:
                 np.testing.assert_almost_equal(
                     x_out[:, 0],
@@ -287,6 +327,7 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -295,11 +336,12 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states, dynamics_constants))
         np.testing.assert_almost_equal(
             x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
         )
@@ -362,6 +404,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -370,11 +413,12 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states, dynamics_constants))
         np.testing.assert_almost_equal(
             x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
         )
@@ -486,6 +530,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     if with_external_force:
         np.random.rand(nlp.ns, 6)
 
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -493,11 +538,12 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = external_forces[:, 0, 0] if with_external_force else []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], dynamics_constants))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states, dynamics_constants))
         if with_external_force:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
@@ -622,6 +668,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx, phase_dynamics):
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -630,11 +677,12 @@ def test_torque_derivative_driven_implicit(with_contact, cx, phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states, dynamics_constants))
         np.testing.assert_almost_equal(
             x_out[:, 0],
             [
@@ -729,6 +777,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -737,11 +786,12 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states, dynamics_constants))
         np.testing.assert_almost_equal(
             x_out[:, 0],
             [
@@ -964,6 +1014,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     if with_external_force:
         np.random.rand(nlp.ns, 6)
 
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -971,11 +1022,12 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = external_forces[:, 0, 0] if with_external_force else []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], dynamics_constants))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states, dynamics_constants))
         if with_external_force:
             np.testing.assert_almost_equal(
                 x_out[:, 0],
@@ -1123,6 +1175,7 @@ def test_torque_activation_driven_with_residual_torque(
     if with_external_force:
         np.random.rand(nlp.ns, 6)
 
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -1130,8 +1183,9 @@ def test_torque_activation_driven_with_residual_torque(
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = external_forces[:, 0, 0] if with_external_force else []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], dynamics_constants))
 
     if with_residual_torque:
         if with_external_force:
@@ -1231,6 +1285,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     np.random.seed(42)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -1238,8 +1293,9 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = []
     time = np.random.rand(2, 1)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
 
     np.testing.assert_almost_equal(
         x_out[:, 0],
@@ -1356,6 +1412,7 @@ def test_muscle_driven(
     # Prepare the dynamics
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         pass
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -1363,8 +1420,9 @@ def test_muscle_driven(
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = external_forces[:, 0, 0] if with_external_force else []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], dynamics_constants))
 
     if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts
         if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
@@ -1854,6 +1912,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
         with pytest.raises(NotImplementedError, match=re.escape("Implicit dynamics not implemented yet.")):
             ConfigureProblem.initialize(ocp, nlp)
     else:
+        nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
         ConfigureProblem.initialize(ocp, nlp)
 
         # Test the results
@@ -1861,8 +1920,9 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
         controls = np.random.rand(nlp.controls.shape, nlp.ns)
         params = np.random.rand(nlp.parameters.shape, nlp.ns)
         algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+        dynamics_constants = []
         time = np.random.rand(2)
-        x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+        x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
 
         # obtained using Ipuch reference implementation. [https://github.com/Ipuch/OnDynamicsForSomersaults]
         np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
@@ -1872,7 +1932,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
 @pytest.mark.parametrize("with_contact", [False, True])
 def test_custom_dynamics(with_contact, phase_dynamics):
     def custom_dynamic(
-        time, states, controls, parameters, algebraic_states, nlp, with_contact=False
+        time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_contact=False
     ) -> DynamicsEvaluation:
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -1931,10 +1991,12 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
 
     np.random.seed(42)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -1942,11 +2004,12 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
 
     if with_contact:
-        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states))
+        contact_out = np.array(nlp.contact_forces_func(time, states, controls, params, algebraic_states, dynamics_constants))
         np.testing.assert_almost_equal(
             x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
         )

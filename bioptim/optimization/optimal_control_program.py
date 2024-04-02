@@ -625,9 +625,7 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             self.nlp[i].parameters = self.parameters  # This should be remove when phase parameters will be implemented
-            self.nlp[i].dynamics_constants_used_at_each_nodes = self.nlp[i].dynamics_type.extra_parameters[
-                "dynamics_constants_used_at_each_nodes"
-            ]
+            self.nlp[i].dynamics_constants_used_at_each_nodes = self.nlp[i].dynamics_type.dynamics_constants_used_at_each_nodes
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
             if (isinstance(self.nlp[i].model, VariationalBiorbdModel)) and self.nlp[i].algebraic_states.shape > 0:
@@ -1622,10 +1620,8 @@ class OptimalControlProgram:
         dynamics_constants = []
         for i_phase, nlp in enumerate(self.nlp):
             dynamics_constants += [OptimizationVariableList(self.cx, dynamics[i_phase].phase_dynamics)]
-            if "dynamics_constants_used_at_each_nodes" not in dynamics[i_phase].extra_parameters:
-                dynamics[i_phase].extra_parameters["dynamics_constants_used_at_each_nodes"] = {}
-            for key in dynamics[i_phase].extra_parameters["dynamics_constants_used_at_each_nodes"].keys():
-                variable_shape = dynamics[i_phase].extra_parameters["dynamics_constants_used_at_each_nodes"][key].shape
+            for key in dynamics[i_phase].dynamics_constants_used_at_each_nodes.keys():
+                variable_shape = dynamics[i_phase].dynamics_constants_used_at_each_nodes[key].shape
                 for i_component in range(variable_shape[1] if len(variable_shape) > 1 else 1):
                     cx = self.cx.sym(
                         f"{key}_phase{i_phase}_{i_component}_cx",
