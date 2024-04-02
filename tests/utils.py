@@ -6,7 +6,7 @@ import pickle
 
 import numpy as np
 import pytest
-from casadi import MX, Function
+from casadi import MX, Function, vertcat
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -20,6 +20,7 @@ from bioptim import (
     SolutionIntegrator,
     Solution,
     SolutionMerge,
+    OptimizationVariableList,
 )
 
 
@@ -188,3 +189,28 @@ class TestUtils:
             TestUtils.mx_assert_equal(value, expected, decimal=decimal, squeeze=squeeze, expand=expand)
         else:
             np.testing.assert_almost_equal(value, expected, decimal=decimal)
+
+    @staticmethod
+    def initialize_dynamics_constants(nlp, dynamics):
+        dynamics_constants = OptimizationVariableList(nlp.cx, dynamics.phase_dynamics)
+        for key in dynamics.dynamics_constants_used_at_each_nodes.keys():
+            variable_shape = dynamics.dynamics_constants_used_at_each_nodes[key].shape
+            for i_component in range(variable_shape[1] if len(variable_shape) > 1 else 1):
+                cx =nlp.cx.sym(
+                    f"{key}_phase{nlp.phase_idx}_{i_component}_cx",
+                    variable_shape[0],
+                )
+                mx = MX.sym(
+                    f"{key}_phase{nlp.phase_idx}_{i_component}_mx",
+                    variable_shape[0],
+                )
+
+                dynamics_constants.append(
+                    name=f"{key}_{i_component}",
+                    cx=[cx, cx, cx],
+                    mx=mx,
+                    bimapping=BiMapping(
+                        Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0])))
+                    ),
+                )
+        return dynamics_constants

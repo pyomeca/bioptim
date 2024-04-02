@@ -39,42 +39,6 @@ class OptimalControlProgram:
         self.implicit_constraints = ConstraintList()
         self.n_threads = 1
 
-def initialize_dynamics_constants(nlp, dynamics):
-    dynamics_constants = OptimizationVariableList(nlp.cx, dynamics.phase_dynamics)
-    for key in dynamics.dynamics_constants_used_at_each_nodes.keys():
-        variable_shape = dynamics.dynamics_constants_used_at_each_nodes[key].shape
-        for i_component in range(variable_shape[1] if len(variable_shape) > 1 else 1):
-            cx =nlp.cx.sym(
-                f"{key}_phase{nlp.phase_idx}_{i_component}_cx",
-                variable_shape[0],
-            )
-            mx = MX.sym(
-                f"{key}_phase{nlp.phase_idx}_{i_component}_mx",
-                variable_shape[0],
-            )
-
-            dynamics_constants.append(
-                name=f"{key}_{i_component}",
-                cx=[cx, cx, cx],
-                mx=mx,
-                bimapping=BiMapping(
-                    Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0])))
-                ),
-            )
-    return dynamics_constants
-
-def dynamics_constants_values(with_external_forces, external_forces):
-    if not with_external_forces:
-        return []
-    else:
-        values = None
-        for node_idx in range(external_forces.shape[2]):
-            for i_element in range(external_forces.shape[1]):
-                if values is None:
-                    values = external_forces[:, i_element, node_idx]
-                else:
-                    values = vertcat(values, external_forces[:, i_element, node_idx])
-        return values
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("cx", [MX, SX])
@@ -178,7 +142,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     if with_external_force:
         np.random.rand(nlp.ns, 6)  # just not to change the values of the next random values
 
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -327,7 +291,7 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -404,7 +368,7 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -530,7 +494,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     if with_external_force:
         np.random.rand(nlp.ns, 6)
 
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -668,7 +632,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx, phase_dynamics):
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -777,7 +741,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
 
     # Prepare the dynamics
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -1014,7 +978,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     if with_external_force:
         np.random.rand(nlp.ns, 6)
 
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -1175,7 +1139,7 @@ def test_torque_activation_driven_with_residual_torque(
     if with_external_force:
         np.random.rand(nlp.ns, 6)
 
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -1285,7 +1249,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     np.random.seed(42)
 
     # Prepare the dynamics
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -1412,7 +1376,7 @@ def test_muscle_driven(
     # Prepare the dynamics
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         pass
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -1912,7 +1876,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
         with pytest.raises(NotImplementedError, match=re.escape("Implicit dynamics not implemented yet.")):
             ConfigureProblem.initialize(ocp, nlp)
     else:
-        nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+        nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
         ConfigureProblem.initialize(ocp, nlp)
 
         # Test the results
@@ -1943,7 +1907,7 @@ def test_custom_dynamics(with_contact, phase_dynamics):
 
         return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
-    def configure(ocp, nlp, with_contact=None):
+    def configure(ocp, nlp, with_contact=None, dynamics_constants_used_at_each_nodes={}):
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
         ConfigureProblem.configure_tau(ocp, nlp, False, True)
@@ -1991,12 +1955,12 @@ def test_custom_dynamics(with_contact, phase_dynamics):
     NonLinearProgram.add(ocp, "use_states_from_phase_idx", use_states_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_states_dot_from_phase_idx", use_states_dot_from_phase_idx, False)
     NonLinearProgram.add(ocp, "use_controls_from_phase_idx", use_controls_from_phase_idx, False)
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
 
     np.random.seed(42)
 
     # Prepare the dynamics
-    nlp.dynamics_constants = initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results

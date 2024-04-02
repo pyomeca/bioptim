@@ -81,6 +81,7 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     np.random.seed(42)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -88,8 +89,9 @@ def test_torque_driven_with_passive_torque(with_passive_torque, cx, rigidbody_dy
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_passive_torque:
             np.testing.assert_almost_equal(
@@ -167,6 +169,7 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
     np.random.seed(42)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -174,8 +177,9 @@ def test_torque_derivative_driven_with_passive_torque(with_passive_torque, cx, p
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
     if with_passive_torque:
         np.testing.assert_almost_equal(
             x_out[:, 0],
@@ -259,6 +263,7 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     np.random.seed(42)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -266,8 +271,9 @@ def test_torque_activation_driven_with_passive_torque(with_passive_torque, with_
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
     if with_residual_torque:
         if with_passive_torque:
             np.testing.assert_almost_equal(
@@ -380,6 +386,7 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     # Prepare the dynamics
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         pass
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -387,8 +394,9 @@ def test_muscle_driven_with_passive_torque(with_passive_torque, rigidbody_dynami
     controls = np.random.rand(nlp.controls.shape, nlp.ns)
     params = np.random.rand(nlp.parameters.shape, nlp.ns)
     algebraic_states = np.random.rand(nlp.algebraic_states.shape, nlp.ns)
+    dynamics_constants = []
     time = np.random.rand(2)
-    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states))
+    x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, dynamics_constants))
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         if with_passive_torque:

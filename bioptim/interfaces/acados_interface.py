@@ -655,6 +655,7 @@ class AcadosInterface(SolverInterface):
                             nlp.controls.scaled.cx_start,
                             nlp.parameters.scaled.cx,
                             nlp.algebraic_states.scaled.cx_start,
+                            nlp.dynamics_constants.cx,
                         )
 
                         # Deal with first and last node
@@ -667,6 +668,7 @@ class AcadosInterface(SolverInterface):
                             nlp.controls.scaled.cx_start,
                             nlp.parameters.scaled.cx,
                             nlp.algebraic_states.scaled.cx_start,
+                            nlp.dynamics_constants.cx,
                         )
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
@@ -679,6 +681,7 @@ class AcadosInterface(SolverInterface):
                             nlp.controls.scaled.cx_start,
                             nlp.parameters.scaled.cx,
                             nlp.algebraic_states.scaled.cx_start,
+                            nlp.dynamics_constants.cx,
                         )
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
@@ -698,6 +701,7 @@ class AcadosInterface(SolverInterface):
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.scaled.cx,
                         nlp.algebraic_states.scaled.cx_start,
+                        nlp.dynamics_constants.cx,
                     )
 
             # Set costs

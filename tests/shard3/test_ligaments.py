@@ -75,6 +75,7 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
     np.random.seed(42)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -139,6 +140,7 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
     np.random.seed(42)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -199,6 +201,7 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
 
     np.random.seed(42)
     # Prepare the dynamics
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
@@ -267,6 +270,7 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
     np.random.seed(42)
 
     # Prepare the dynamics
+    nlp.dynamics_constants = TestUtils.initialize_dynamics_constants(nlp, dynamics=nlp.dynamics_type)
     ConfigureProblem.initialize(ocp, nlp)
 
     # Test the results
