@@ -348,6 +348,10 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     a_init.add(key, initial_guess=var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
 
         def get_ref_init(time_vector, x_guess, u_guess, p_guess, nlp):
+            if nlp.dynamics_constants.mx.shape[0] != 0:
+                raise RuntimeError(
+                    "The automatic initialization of stochastic variables is not implemented yet for nlp with dynamics_constants."
+                )
             casadi_func = Function(
                 "sensory_reference",
                 [nlp.dt_mx, nlp.time_mx, nlp.states.mx, nlp.controls.mx, nlp.parameters.mx],
@@ -358,6 +362,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                         controls=nlp.controls.mx,
                         parameters=nlp.parameters.mx,
                         algebraic_states=None,  # Sensory reference should not depend on stochastic variables
+                        dynamics_constants=None,
                         nlp=nlp,
                     )
                 ],
@@ -389,6 +394,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     u_guess[:, i],
                     p_guess,
                     fake_algebraic_states[:, i],
+                    [],
                 )
                 dg_dz = Gdz(
                     vertcat(time_vector[i], time_vector[i + 1] - time_vector[i]),
@@ -397,6 +403,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     u_guess[:, i],
                     p_guess,
                     fake_algebraic_states[:, i],
+                    [],
                 )
 
                 m_this_time = df_dz @ np.linalg.inv(dg_dz)
@@ -438,6 +445,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     u_guess[:, i],
                     p_guess,
                     fake_algebraic_states[:, i],
+                    [],
                 )
                 dg_dw = Gdw(
                     vertcat(time_vector[i], time_vector[i + 1] - time_vector[i]),
@@ -446,6 +454,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     u_guess[:, i],
                     p_guess,
                     fake_algebraic_states[:, i],
+                    [],
                 )
 
                 m_matrix = StochasticBioModel.reshape_to_matrix(m_init[:, i], nlp.model.matrix_shape_m)

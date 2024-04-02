@@ -180,6 +180,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         u,
         p_sol,
         a,
+        [],
     )
     np.testing.assert_almost_equal(constraint_value[0], shoulder_pos_initial, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], elbow_pos_initial, decimal=6)
@@ -208,6 +209,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         u,
         p_sol,
         a,
+        [],
     )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], 0, decimal=6)
@@ -223,6 +225,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         u,
         p_sol,
         a,
+        [],
     )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], 0, decimal=6)
@@ -239,6 +242,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         u,
         p_sol,
         a,
+        [],
     )
     np.testing.assert_almost_equal(constraint_value[0], hand_final_position[0], decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], hand_final_position[1], decimal=6)
@@ -268,6 +272,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             u,
             p_sol,
             a,
+            [],
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -296,6 +301,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             u,
             p_sol,
             a,
+            [],
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -325,6 +331,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             u,
             p_sol,
             a,
+            [],
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -353,6 +360,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             u,
             p_sol,
             a,
+            [],
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -381,6 +389,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             u,
             p_sol,
             a,
+            [],
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
