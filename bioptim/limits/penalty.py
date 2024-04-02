@@ -1402,6 +1402,7 @@ class PenaltyFunctionAbstract:
                 getattr(controller.controls, attribute),
                 getattr(controller.parameters, attribute),
                 getattr(controller.algebraic_states, attribute),
+                getattr(controller.dynamics_constants, attribute),
             )[controller.qdot.index, :]
 
         source = controller.states if "qddot" in controller.states else controller.controls

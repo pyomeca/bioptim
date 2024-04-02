@@ -526,7 +526,7 @@ def test_penalty_track_markers_acceleration(penalty_origin, value, implicit, pha
         penalty = Constraint(penalty_type, target=np.ones((3, 7, 1)) * value)
 
     if not implicit:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [])
+        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
 
         expected = np.array(
             [
@@ -546,7 +546,7 @@ def test_penalty_track_markers_acceleration(penalty_origin, value, implicit, pha
 
         np.testing.assert_almost_equal(res, expected, decimal=5)
     else:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [])
+        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
 
         expected = np.array(
             [
@@ -946,7 +946,7 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit, phase_dynamic
 
         np.testing.assert_almost_equal(res, expected)
     else:
-        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [])
+        res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
 
         expected = np.array([[0], [-0.0008324], [0.002668]])
         if value == -10:
@@ -1350,7 +1350,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value, phase_dynamics):
     penalty.custom_function = custom_with_bounds
 
     with pytest.raises(RuntimeError):
-        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], p, a, [], 0))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], p, a, [], [], 0))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1376,7 +1376,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value, phase_dynamics):
         RuntimeError,
         match="You cannot have non linear bounds for custom constraints and min_bound or max_bound defined",
     ):
-        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], p, a, [], 0))
+        penalty_type(penalty, PenaltyController(ocp, ocp.nlp[0], t, x, [], [], [], p, a, [], [], 0))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
