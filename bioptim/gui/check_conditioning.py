@@ -102,7 +102,7 @@ def evaluate_hessian_objective(v, ocp):
     ev_max = np.max(eigen_values)
     ev_min = np.min(eigen_values)
     if ev_min == 0:
-        condition_number = " /!\ min eigen value is 0"
+        condition_number = "/!\\ min eigen value is 0"
     if ev_min != 0:
         condition_number = np.abs(ev_max) / np.abs(ev_min)
     convexity = (
