@@ -675,7 +675,6 @@ class PenaltyOption(OptionGeneric):
             lambda p_idx, n_idx, sn_idx: self._get_dynamics_constants(ocp, p_idx, n_idx, sn_idx),
             is_constructing_penalty=True,
         )
-        # dynamics_constants = controller.dynamics_constants.cx
 
         return controller, t0, x, u, p, a, dynamics_constants
 
@@ -780,7 +779,10 @@ class PenaltyOption(OptionGeneric):
 
     def _get_dynamics_constants(self, ocp, p_idx, n_idx, sn_idx):
 
-        nlp = ocp.nlp[p_idx]
+        try:
+            nlp = ocp.nlp[p_idx]
+        except:
+            print("ici")
         dynamics_constants = nlp.dynamics_constants
 
         if dynamics_constants.cx_start.shape == (0, 0):

@@ -205,6 +205,7 @@ class PenaltyFunctionAbstract:
                 controls=controller.controls_scaled.mx,
                 parameters=controller.parameters_scaled.mx,
                 algebraic_states=controller.algebraic_states_scaled.mx,
+                dynamics_constants=controller.dynamics_constants.mx,
                 sensory_noise=controller.model.sensory_noise_magnitude,
                 motor_noise=controller.model.motor_noise_magnitude,
             )
@@ -219,6 +220,7 @@ class PenaltyFunctionAbstract:
                     controller.controls_scaled.mx,
                     controller.parameters_scaled.mx,
                     controller.algebraic_states_scaled.mx,
+                    controller.dynamics_constants.mx,
                 ],
                 [jac_e_fb_x],
             )(
@@ -227,6 +229,7 @@ class PenaltyFunctionAbstract:
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.algebraic_states.cx_start,
+                controller.dynamics_constants.cx_start,
             )
 
             trace_jac_p_jack = trace(jac_e_fb_x_cx @ cov_matrix @ jac_e_fb_x_cx.T)

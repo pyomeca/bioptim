@@ -175,6 +175,7 @@ def generate_data(
             controls=symbolic_controls,
             parameters=symbolic_parameters,
             algebraic_states=MX(),
+            dynamics_constants=MX(),
             nlp=nlp,
             with_contact=False,
             rigidbody_dynamics=RigidBodyDynamics.ODE,

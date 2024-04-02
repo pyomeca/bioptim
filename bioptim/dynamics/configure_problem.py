@@ -314,6 +314,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
     ):
         """
         Configure the dynamics for a torque driven program with a free floating base.
@@ -333,6 +334,8 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficients * qdot)
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node.
         """
 
         nb_q = nlp.model.nb_q
@@ -437,6 +440,7 @@ class ConfigureProblem:
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
     ):
         """
         Configure the dynamics for a torque driven stochastic program (states are q and qdot, controls are tau)
@@ -451,6 +455,12 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
+        with_cholesky: bool
+            If the Cholesky decomposition should be used for the covariance matrix.
+        initial_matrix: DM
+            The initial value for the covariance matrix
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
         if "tau" in nlp.model.motor_noise_mapping:
@@ -510,10 +520,10 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
-        with_contact: bool = False,
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
     ):
         """
         Configure the dynamics for a stochastic torque driven program with a free floating base.
@@ -525,10 +535,14 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
+        with_cholesky: bool
+            If the Cholesky decomposition should be used for the covariance matrix.
+        initial_matrix: DM
+            The initial value for the covariance matrix
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node.
         """
         n_noised_tau = nlp.model.n_noised_controls
         n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
@@ -751,7 +765,11 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def joints_acceleration_driven(ocp, nlp, rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE):
+    def joints_acceleration_driven(ocp,
+                                   nlp,
+                                   rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+                                   dynamics_constants_used_at_each_nodes: dict[list] = {}
+                                   ):
         """
         Configure the dynamics for a joints acceleration driven program
         (states are q and qdot, controls are qddot_joints)
@@ -764,7 +782,8 @@ class ConfigureProblem:
             A reference to the phase
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
-
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
         if rigidbody_dynamics != RigidBodyDynamics.ODE:
             raise NotImplementedError("Implicit dynamics not implemented yet.")
@@ -902,7 +921,10 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def holonomic_torque_driven(ocp, nlp):
+    def holonomic_torque_driven(ocp,
+                                nlp,
+                                dynamics_constants_used_at_each_nodes: dict[list] = {}
+                                ):
         """
         Tell the program which variables are states and controls.
 

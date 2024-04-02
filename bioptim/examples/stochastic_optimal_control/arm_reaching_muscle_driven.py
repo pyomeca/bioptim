@@ -53,6 +53,7 @@ def sensory_reference(
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
     algebraic_states: cas.MX | cas.SX,
+    dynamics_constants: cas.MX | cas.SX,
     nlp: NonLinearProgram,
 ):
     """
@@ -70,6 +71,7 @@ def stochastic_forward_dynamics(
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
     algebraic_states: cas.MX | cas.SX,
+    dynamics_constants: cas.MX | cas.SX,
     nlp: NonLinearProgram,
     force_field_magnitude,
     with_noise,
@@ -92,7 +94,7 @@ def stochastic_forward_dynamics(
         k = DynamicsFunctions.get(nlp.algebraic_states["k"], algebraic_states)
         k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
-        hand_pos_velo = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, nlp)
+        hand_pos_velo = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, dynamics_constants, nlp)
 
         mus_excitations_fb += nlp.model.get_excitation_with_feedback(k_matrix, hand_pos_velo, ref, sensory_noise)
         noise_torque = motor_noise
@@ -131,7 +133,8 @@ def stochastic_forward_dynamics(
     return DynamicsEvaluation(dxdt=cas.vertcat(dq_computed, dqdot_computed, dactivations_computed), defects=None)
 
 
-def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram,
+                                                 nlp: NonLinearProgram):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_qddot(ocp, nlp, False, False, True)
@@ -148,15 +151,15 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, nlp, with_noise=True
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise=True
         ),
     )
 
@@ -198,14 +201,15 @@ def get_cov_mat(nlp, node_index):
         nlp.controls.mx,
         nlp.parameters.mx,
         nlp.algebraic_states.mx,
+        nlp.dynamics_constants.mx,
         nlp,
         force_field_magnitude=nlp.model.force_field_magnitude,
         with_noise=True,
     )
 
     dx.dxdt = cas.Function(
-        "tp", [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx], [dx.dxdt]
-    )(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx)
+        "tp", [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx, nlp.dynamics_constants.mx], [dx.dxdt]
+    )(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.dynamics_constants.cx)
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(sensory_noise, motor_noise))
     dg_dw = -ddx_dwm * dt
@@ -220,7 +224,7 @@ def get_cov_mat(nlp, node_index):
 
     func_eval = cas.Function(
         "p_next",
-        [dt, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, cov_sym],
+        [dt, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.dynamics_constants.cx, cov_sym],
         [p_next],
     )(
         nlp.dt,
@@ -228,6 +232,7 @@ def get_cov_mat(nlp, node_index):
         nlp.controls.cx,
         parameters,
         nlp.algebraic_states.cx,
+        nlp.dynamics_constants.cx,
         nlp.integrated_values["cov"].cx,
     )
     p_vector = StochasticBioModel.reshape_to_vector(func_eval)
@@ -303,6 +308,7 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
         controllers[0].controls.cx,
         controllers[0].parameters.cx,
         controllers[0].algebraic_states.cx,
+        controllers[0].dynamics_constants.cx,
         controllers[0].get_nlp,
     )
     trace_k_sensor_k = cas.trace(k_matrix @ sensory_noise_matrix @ k_matrix.T)
@@ -335,6 +341,7 @@ def zero_acceleration(controller: PenaltyController, force_field_magnitude: floa
         controller.controls.cx,
         controller.parameters.cx,
         controller.algebraic_states.cx,
+        controller.dynamics_constants.cx,
         controller.get_nlp,
         force_field_magnitude=force_field_magnitude,
         with_noise=False,
@@ -468,18 +475,20 @@ def prepare_socp(
     dynamics = DynamicsList()
     dynamics.add(
         configure_stochastic_optimal_control_problem,
-        dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: stochastic_forward_dynamics(
+        dynamic_function=lambda time, states, controls, parameters, algebraic_states, dynamincs_constants, nlp, with_noise: stochastic_forward_dynamics(
             time,
             states,
             controls,
             parameters,
             algebraic_states,
+            dynamincs_constants,
             nlp,
             force_field_magnitude=force_field_magnitude,
             with_noise=with_noise,
         ),
         expand_dynamics=False,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+        dynamics_constants_used_at_each_nodes={},
     )
 
     n_muscles = 6
@@ -708,6 +717,7 @@ def main():
         controls = socp.nlp[0].controls.cx
         parameters = socp.nlp[0].parameters.cx
         algebraic_states = socp.nlp[0].algebraic_states.cx
+        dynamics_constants = socp.nlp[0].dynamics_constants.cx
         nlp = socp.nlp[0]
         out = stochastic_forward_dynamics(
             cas.vertcat(time, time + dt),
@@ -715,11 +725,12 @@ def main():
             controls,
             parameters,
             algebraic_states,
+            dynamics_constants,
             nlp,
             force_field_magnitude=force_field_magnitude,
             with_noise=True,
         )
-        dyn_fun = cas.Function("dyn_fun", [dt, time, states, controls, parameters, algebraic_states], [out.dxdt])
+        dyn_fun = cas.Function("dyn_fun", [dt, time, states, controls, parameters, algebraic_states, dynamics_constants], [out.dxdt])
 
         fig, axs = plt.subplots(3, 2)
         n_simulations = 30

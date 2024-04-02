@@ -784,6 +784,7 @@ class Solution:
         -------
         Return the integrated states
         """
+        from ...interfaces.interface_utils import _get_dynamics_constants
 
         t_spans, x, u, params, a = self._prepare_integrate(integrator=integrator)
 
@@ -843,9 +844,10 @@ class Solution:
         size: int = 100,
     ):
         """
-        TODO: Charbie!
+        Integrated the states with different noise values sampled from the covariance matrix.
         """
         from ...optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
+        from ...interfaces.interface_utils import _get_dynamics_constants
 
         if not isinstance(self.ocp, StochasticOptimalControlProgram):
             raise ValueError("This method is only available for StochasticOptimalControlProgram.")
@@ -874,6 +876,14 @@ class Solution:
         cov_matrix = StochasticBioModel.reshape_to_matrix(a[0][0][cov_index, :], self.ocp.nlp[0].model.matrix_shape_cov)
         first_x = np.random.multivariate_normal(x[0][0][:, 0], cov_matrix, size=size).T
         for p, nlp in enumerate(self.ocp.nlp):
+            d = []
+            for n_idx in range(nlp.ns + 1):
+                d_tp = _get_dynamics_constants(self.ocp, p, n_idx, 0)
+                if d_tp.shape == (0, 0):
+                    d += [np.array([])]
+                else:
+                    d += [np.array(d_tp)]
+
             motor_noise = np.zeros((len(params[motor_noise_index]), nlp.ns, size))
             for i in range(len(params[motor_noise_index])):
                 motor_noise[i, :] = np.random.normal(0, params[motor_noise_index[i]], size=(nlp.ns, size))
@@ -902,7 +912,7 @@ class Solution:
                         raise NotImplementedError("Noisy integration is not available for multiple extra dynamics.")
                     cas_func = Function(
                         "noised_extra_dynamics",
-                        [nlp.time_cx, nlp.states.cx, nlp.controls.cx, parameters_cx, nlp.algebraic_states.cx],
+                        [nlp.time_cx, nlp.states.cx, nlp.controls.cx, parameters_cx, nlp.algebraic_states.cx, nlp.dynamics_constants.cx],
                         [
                             nlp.extra_dynamics_func[0](
                                 nlp.time_cx,
@@ -910,6 +920,7 @@ class Solution:
                                 nlp.controls.cx,
                                 params_this_time[node],
                                 nlp.algebraic_states.cx,
+                                nlp.dynamics_constants.cx,
                             )
                         ],
                     )
@@ -924,6 +935,7 @@ class Solution:
                     u=u[p],  # No need to add noise on the controls, the extra_dynamics should do it for us
                     a=a[p],
                     p=parameters,
+                    d=d,
                     method=integrator,
                 )
                 for i_node in range(nlp.ns + 1):

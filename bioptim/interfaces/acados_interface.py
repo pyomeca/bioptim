@@ -296,6 +296,7 @@ class AcadosInterface(SolverInterface):
             u = nlp.controls.cx_start
             p = nlp.parameters.cx
             a = nlp.algebraic_states.cx_start
+            d = nlp.dynamics_constants.cx
 
             for g, G in enumerate(nlp.g):
                 if not G:

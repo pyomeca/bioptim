@@ -331,6 +331,7 @@ class DynamicsFunctions:
             controls=controls,
             parameters=parameters,
             algebraic_states=algebraic_states,
+            dynamics_constants=dynamics_constants,
             sensory_noise=sensory_noise,
             motor_noise=motor_noise,
         )
