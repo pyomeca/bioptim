@@ -310,10 +310,10 @@ class AcadosInterface(SolverInterface):
                     if u.shape[0] * 2 == G.function[0].size_in("u")[0]:
                         u_tp = vertcat(u_tp, u_tp)
 
-                    self.all_constr = vertcat(self.all_constr, G.function[0](t, dt, x_tp, u_tp, p, a))
+                    self.all_constr = vertcat(self.all_constr, G.function[0](t, dt, x_tp, u_tp, p, a, d))
                     self.all_g_bounds.concatenate(G.bounds)
                     if G.node[0] == Node.ALL:
-                        self.end_constr = vertcat(self.end_constr, G.function[0](t, dt, x_tp, u_tp, p, a))
+                        self.end_constr = vertcat(self.end_constr, G.function[0](t, dt, x_tp, u_tp, p, a, d))
                         self.end_g_bounds.concatenate(G.bounds)
 
                 elif G.node[0] == Node.END:
@@ -324,7 +324,7 @@ class AcadosInterface(SolverInterface):
                     if u.shape[0] * 2 == G.function[-1].size_in("u")[0]:
                         u_tp = vertcat(u_tp, u_tp)
 
-                    self.end_constr = vertcat(self.end_constr, G.function[-1](t, dt, x_tp, u_tp, p, a))
+                    self.end_constr = vertcat(self.end_constr, G.function[-1](t, dt, x_tp, u_tp, p, a, d))
                     self.end_g_bounds.concatenate(G.bounds)
 
                 else:
@@ -531,7 +531,7 @@ class AcadosInterface(SolverInterface):
                 u_tp = u_tp if objectives.function[0].size_in("u") != (0, 0) else []
 
                 acados.mayer_costs = vertcat(
-                    acados.mayer_costs, objectives.function[0](t, dt, x_tp, u_tp, p, a).reshape((-1, 1))
+                    acados.mayer_costs, objectives.function[0](t, dt, x_tp, u_tp, p, a, d).reshape((-1, 1))
                 )
 
                 if objectives.target is not None:
@@ -554,7 +554,7 @@ class AcadosInterface(SolverInterface):
                 u_tp = u_tp if objectives.function[-1].size_in("u") != (0, 0) else []
 
                 acados.mayer_costs_e = vertcat(
-                    acados.mayer_costs_e, objectives.function[-1](t, dt, x_tp, u_tp, p, a).reshape((-1, 1))
+                    acados.mayer_costs_e, objectives.function[-1](t, dt, x_tp, u_tp, p, a, d).reshape((-1, 1))
                 )
 
                 if objectives.target is not None:

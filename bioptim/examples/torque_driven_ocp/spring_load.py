@@ -155,7 +155,7 @@ def custom_dynamic(
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}):
     """
     The configuration of the dynamics (see custom_dynamics for more explanation)
 

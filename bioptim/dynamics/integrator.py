@@ -716,6 +716,7 @@ class COLLOCATION(Integrator):
                         self.get_u(controls, self._integration_time[j]),
                         params,
                         algebraic_states,
+                        dynamics_constants,
                         xp_j / self.h,
                     )
                 )

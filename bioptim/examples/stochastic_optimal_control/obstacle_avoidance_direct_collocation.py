@@ -327,7 +327,7 @@ def draw_cov_ellipse(cov, pos, ax, **kwargs):
     return ellip
 
 
-def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
@@ -335,13 +335,13 @@ def configure_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinear
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise=False
         ),
     )
 
 
-def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
     ConfigureProblem.configure_new_variable("u", nlp.model.name_u, ocp, nlp, as_states=False, as_controls=True)
@@ -354,15 +354,15 @@ def configure_stochastic_optimal_control_problem(ocp: OptimalControlProgram, nlp
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, nlp, with_noise=True
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise=True
         ),
     )
 
@@ -490,11 +490,12 @@ def prepare_socp(
     if is_stochastic:
         dynamics.add(
             configure_stochastic_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
                 algebraic_states,
+                dynamics_constants,
                 nlp,
                 with_noise=with_noise,
             ),
@@ -540,11 +541,12 @@ def prepare_socp(
     else:
         dynamics.add(
             configure_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, algebraic_states, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
                 algebraic_states,
+                dynamics_constants,
                 nlp,
                 with_noise=with_noise,
             ),

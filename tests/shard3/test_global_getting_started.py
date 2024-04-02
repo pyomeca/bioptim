@@ -1094,7 +1094,8 @@ def test_multinode_objective(ode_solver, phase_dynamics):
     x_out = np.ndarray((0, 1))
     u_out = np.ndarray((0, 1))
     p_out = []
-    s_out = []
+    a_out = []
+    d_out = []
     for i in range(n_shooting):
         x_out = np.vstack((x_out, np.concatenate([states[key][:, i] for key in states.keys()])[:, np.newaxis]))
         if i == n_shooting:
@@ -1103,7 +1104,7 @@ def test_multinode_objective(ode_solver, phase_dynamics):
             u_out = np.vstack((u_out, np.concatenate([controls[key][:, i] for key in controls.keys()])[:, np.newaxis]))
 
     # Note that dt=1, because the multi-node objectives are treated as mayer terms
-    out = fun[0](t_out, dt, x_out, u_out, p_out, s_out, weight, target)
+    out = fun[0](t_out, dt, x_out, u_out, p_out, a_out, d_out, weight, target)
     out_expected = sum2(sum1(controls["tau"] ** 2)) * dt * weight
     np.testing.assert_almost_equal(out, out_expected)
 
