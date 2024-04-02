@@ -10,7 +10,7 @@ from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 
 
-def dynamics_torque_driven_with_feedbacks(time, states, controls, parameters, algebraic_states, nlp, with_noise):
+def dynamics_torque_driven_with_feedbacks(time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise):
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
@@ -24,7 +24,7 @@ def dynamics_torque_driven_with_feedbacks(time, states, controls, parameters, al
 
         motor_noise = DynamicsFunctions.get(nlp.parameters["motor_noise"], parameters)
         sensory_noise = DynamicsFunctions.get(nlp.parameters["sensory_noise"], parameters)
-        end_effector = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, nlp)
+        end_effector = nlp.model.sensory_reference(time, states, controls, parameters, algebraic_states, dynamics_constants, nlp)
 
         tau_feedback = get_excitation_with_feedback(k_matrix, end_effector, ref, sensory_noise)
 

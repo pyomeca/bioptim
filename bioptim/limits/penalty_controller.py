@@ -30,6 +30,7 @@ class PenaltyController:
         p: MX | SX | list,
         a: list,
         a_scaled: list,
+        d: list,
         node_index: int = None,
     ):
         """
@@ -55,6 +56,8 @@ class PenaltyController:
             References to the algebraic_states variables
         a_scaled: list
             References to the scaled algebraic_states variables
+        d: list
+            References to the dynamics constants
         node_index: int
             Current node index if nlp.phase_dynamics is SHARED_DURING_THE_PHASE,
             then node_index is expected to be set to 0
@@ -70,6 +73,7 @@ class PenaltyController:
         self.a = a
         self.a_scaled = a_scaled
         self.p = vertcat(p) if p is not None else p
+        self.d = d
         self.node_index = node_index
         self.cx_index_to_get = 0
 

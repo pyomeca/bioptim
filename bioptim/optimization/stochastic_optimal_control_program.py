@@ -531,6 +531,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 p=p_guess,
                 a=fake_algebraic_states,
                 a_scaled=[],
+                d=[],
                 node_index=0,
             )
             _, _, Gdx, Gdz, Gdw, Fdz = ConstraintFunction.Functions.collocation_jacobians(penalty, penalty_controller)

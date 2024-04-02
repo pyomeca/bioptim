@@ -167,6 +167,7 @@ class AcadosInterface(SolverInterface):
         p_sym = ocp.nlp[0].parameters.scaled.cx
         a = ocp.nlp[0].algebraic_states.cx_start
         a_sym = ocp.nlp[0].algebraic_states.scaled.cx_start
+        d = ocp.nlp[0].dynamics_constants.cx_start
 
         if ocp.parameters:
             for key in ocp.parameters:
@@ -180,7 +181,7 @@ class AcadosInterface(SolverInterface):
         x_sym = vertcat(p_sym, x_sym)
         x_dot_sym = SX.sym("x_dot", x_sym.shape[0], x_sym.shape[1])
 
-        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(t, x, u, p, a))
+        f_expl = vertcat([0] * self.nparams, ocp.nlp[0].dynamics_func(t, x, u, p, a, d))
         f_impl = x_dot_sym - f_expl
 
         self.acados_model.f_impl_expr = f_impl
@@ -295,6 +296,7 @@ class AcadosInterface(SolverInterface):
             u = nlp.controls.cx_start
             p = nlp.parameters.cx
             a = nlp.algebraic_states.cx_start
+            d = nlp.dynamics_constants.cx
 
             for g, G in enumerate(nlp.g):
                 if not G:
@@ -495,14 +497,14 @@ class AcadosInterface(SolverInterface):
             else:
                 raise RuntimeError(f"{objectives.type.name} is an incompatible objective term with LINEAR_LS cost type")
 
-        def add_nonlinear_ls_lagrange(acados, objectives, t, dt, x, u, p, a):
+        def add_nonlinear_ls_lagrange(acados, objectives, t, dt, x, u, p, a, d):
             if objectives.function[0].size_in("x")[0] == x.shape[0] * 2:
                 x = vertcat(x, x)
             if objectives.function[0].size_in("u")[0] == u.shape[0] * 2:
                 u = vertcat(u, u)
 
             acados.lagrange_costs = vertcat(
-                acados.lagrange_costs, objectives.function[0](t, dt, x, u, p, a).reshape((-1, 1))
+                acados.lagrange_costs, objectives.function[0](t, dt, x, u, p, a, d).reshape((-1, 1))
             )
             acados.W = linalg.block_diag(acados.W, np.diag([objectives.weight] * objectives.function[0].numel_out()))
 
@@ -512,7 +514,7 @@ class AcadosInterface(SolverInterface):
             else:
                 acados.y_ref.append([np.zeros((objectives.function[0].numel_out(), 1)) for _ in node_idx])
 
-        def add_nonlinear_ls_mayer(acados, objectives, t, dt, x, u, p, a, node=None):
+        def add_nonlinear_ls_mayer(acados, objectives, t, dt, x, u, p, a, d, node=None):
             if objectives.node[0] not in [Node.INTERMEDIATES, Node.PENULTIMATE, Node.END]:
                 acados.W_0 = linalg.block_diag(
                     acados.W_0, np.diag([objectives.weight] * objectives.function[0].numel_out())

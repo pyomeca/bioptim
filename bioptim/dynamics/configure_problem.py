@@ -134,10 +134,7 @@ class ConfigureProblem:
         nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.extra_parameters)
 
     @staticmethod
-    def custom(ocp,
-               nlp,
-               dynamics_constants_used_at_each_nodes: dict[list] = {},
-               **extra_params):
+    def custom(ocp, nlp, dynamics_constants_used_at_each_nodes: dict[list] = {}, **extra_params):
         """
         Call the user-defined dynamics configuration function
 
@@ -149,7 +146,7 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.configure(ocp, nlp, dynamics_constants_used_at_each_nodes, **extra_params)
+        nlp.dynamics_type.configure(ocp, nlp, **extra_params)
 
     @staticmethod
     def torque_driven(
@@ -317,6 +314,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
     ):
         """
         Configure the dynamics for a torque driven program with a free floating base.
@@ -336,6 +334,8 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficients * qdot)
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node.
         """
 
         nb_q = nlp.model.nb_q
@@ -440,6 +440,7 @@ class ConfigureProblem:
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
     ):
         """
         Configure the dynamics for a torque driven stochastic program (states are q and qdot, controls are tau)
@@ -454,6 +455,12 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
+        with_cholesky: bool
+            If the Cholesky decomposition should be used for the covariance matrix.
+        initial_matrix: DM
+            The initial value for the covariance matrix
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
         if "tau" in nlp.model.motor_noise_mapping:
@@ -513,10 +520,10 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
-        with_contact: bool = False,
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
+        dynamics_constants_used_at_each_nodes: dict[list] = {},
     ):
         """
         Configure the dynamics for a stochastic torque driven program with a free floating base.
@@ -528,10 +535,14 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
+        with_cholesky: bool
+            If the Cholesky decomposition should be used for the covariance matrix.
+        initial_matrix: DM
+            The initial value for the covariance matrix
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node.
         """
         n_noised_tau = nlp.model.n_noised_controls
         n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
@@ -754,7 +765,11 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def joints_acceleration_driven(ocp, nlp, rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE):
+    def joints_acceleration_driven(ocp,
+                                   nlp,
+                                   rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+                                   dynamics_constants_used_at_each_nodes: dict[list] = {}
+                                   ):
         """
         Configure the dynamics for a joints acceleration driven program
         (states are q and qdot, controls are qddot_joints)
@@ -767,7 +782,8 @@ class ConfigureProblem:
             A reference to the phase
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
-
+        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
         if rigidbody_dynamics != RigidBodyDynamics.ODE:
             raise NotImplementedError("Implicit dynamics not implemented yet.")
@@ -905,7 +921,10 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def holonomic_torque_driven(ocp, nlp):
+    def holonomic_torque_driven(ocp,
+                                nlp,
+                                dynamics_constants_used_at_each_nodes: dict[list] = {}
+                                ):
         """
         Tell the program which variables are states and controls.
 
@@ -1077,6 +1096,7 @@ class ConfigureProblem:
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.scaled.mx_reduced,
                 nlp.algebraic_states.scaled.mx_reduced,
+                nlp.dynamics_constants.mx,
             ],
             [
                 dyn_func(
@@ -1085,11 +1105,12 @@ class ConfigureProblem:
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.scaled.mx_reduced,
                     nlp.algebraic_states.scaled.mx_reduced,
+                    nlp.dynamics_constants.mx,
                     nlp,
                     **extra_params,
                 )
             ],
-            ["t_span", "x", "u", "p", "a"],
+            ["t_span", "x", "u", "p", "a", "dynamics_constants"],
             ["contact_forces"],
         ).expand()
 
@@ -1111,8 +1132,8 @@ class ConfigureProblem:
             )
 
         nlp.plot["contact_forces"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, a: nlp.contact_forces_func(
-                [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.contact_forces_func(
+                [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a, d
             ),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
@@ -1184,8 +1205,8 @@ class ConfigureProblem:
                     to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a: nlp.soft_contact_forces_func(
-                    [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a
+                lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.soft_contact_forces_func(
+                    [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a, d
                 )[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,

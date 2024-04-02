@@ -300,11 +300,11 @@ class PenaltyOption(OptionGeneric):
     def transform_penalty_to_stochastic(self, controller: PenaltyController, fcn, state_cx_scaled):
         """
         Transform the penalty fcn into the variation of fcn depending on the noise:
-            fcn = fcn(x, u, p, a) becomes d/dx(fcn) * covariance * d/dx(fcn).T
+            fcn = fcn(x, u, p, a, d) becomes d/dx(fcn) * covariance * d/dx(fcn).T
 
-        Please note that this is usually used to add a buffer around an equality constraint h(x, u, p, a) = 0
+        Please note that this is usually used to add a buffer around an equality constraint h(x, u, p, a, d) = 0
         transforming it into an inequality constraint of the form:
-            h(x, u, p, a) + sqrt(dh/dx * covariance * dh/dx.T) <= 0
+            h(x, u, p, a, d) + sqrt(dh/dx * covariance * dh/dx.T) <= 0
 
         Here, we chose a different implementation to avoid the discontinuity of the sqrt, we instead decompose the two
         terms, meaning that you have to declare the constraint h=0 and the "variation of h"=buffer ** 2 with
@@ -525,7 +525,7 @@ class PenaltyOption(OptionGeneric):
                 name,
                 [time, phases_dt, x, u, p, a, dynamics_constants],
                 [(func_at_start + func_at_end) / 2],
-                ["t", "dt", "x", "u", "p", "a"],
+                ["t", "dt", "x", "u", "p", "a", "dynamics_constants"],
                 ["val"],
             )
         elif self.derivative:
@@ -675,7 +675,6 @@ class PenaltyOption(OptionGeneric):
             lambda p_idx, n_idx, sn_idx: self._get_dynamics_constants(ocp, p_idx, n_idx, sn_idx),
             is_constructing_penalty=True,
         )
-        # dynamics_constants = controller.dynamics_constants.cx
 
         return controller, t0, x, u, p, a, dynamics_constants
 
@@ -780,7 +779,10 @@ class PenaltyOption(OptionGeneric):
 
     def _get_dynamics_constants(self, ocp, p_idx, n_idx, sn_idx):
 
-        nlp = ocp.nlp[p_idx]
+        try:
+            nlp = ocp.nlp[p_idx]
+        except:
+            print("ici")
         dynamics_constants = nlp.dynamics_constants
 
         if dynamics_constants.cx_start.shape == (0, 0):
@@ -828,7 +830,7 @@ class PenaltyOption(OptionGeneric):
 
         """
 
-        def plot_function(t0, phases_dt, node_idx, x, u, p, a, penalty=None):
+        def plot_function(t0, phases_dt, node_idx, x, u, p, a, d, penalty=None):
             if isinstance(node_idx, (list, tuple)):
                 return self.target_to_plot[:, [self.node_idx.index(idx) for idx in node_idx]]
             else:
@@ -1002,4 +1004,5 @@ class PenaltyOption(OptionGeneric):
         if nlp.A is not None and (not isinstance(nlp.A, list) or nlp.A != []):
             a = [nlp.A[idx] for idx in t_idx]
             a_scaled = [nlp.A_scaled[idx] for idx in t_idx]
-        return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, a, a_scaled)
+        d = [nlp.dynamics_constants for idx in t_idx]
+        return PenaltyController(ocp, nlp, t_idx, x, u, x_scaled, u_scaled, nlp.parameters.cx, a, a_scaled, d)
