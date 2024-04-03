@@ -70,7 +70,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
 
     external_forces = None
     if with_external_force:
-        external_forces = np.zeros((6, 1, nlp.ns + 1))
+        external_forces = np.zeros((9, 1, nlp.ns + 1))
         external_forces[:, 0, 0] = [
             0.374540118847362,
             0.950714306409916,
@@ -436,7 +436,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
 
     external_forces = None
     if with_external_force:
-        external_forces = np.zeros((6, 1, nlp.ns + 1))
+        external_forces = np.zeros((9, 1, nlp.ns + 1))
         external_forces[:, 0, 0] = [
             0.3745401188473625,
             0.9507143064099162,
@@ -927,7 +927,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
 
     external_forces = None
     if with_external_force:
-        external_forces = np.zeros((6, 1, nlp.ns + 1))
+        external_forces = np.zeros((9, 1, nlp.ns + 1))
         external_forces[:, 0, 0] = [
             0.3745401188473625,
             0.9507143064099162,
@@ -1092,7 +1092,7 @@ def test_torque_activation_driven_with_residual_torque(
 
     external_forces = None
     if with_external_force:
-        external_forces = np.zeros((6, 1, nlp.ns + 1))
+        external_forces = np.zeros((9, 1, nlp.ns + 1))
         external_forces[:, 0, 0] = [
             0.3745401188473625,
             0.9507143064099162,
@@ -1325,7 +1325,7 @@ def test_muscle_driven(
 
     external_forces = None
     if with_external_force:
-        external_forces = np.zeros((6, 1, nlp.ns + 1))
+        external_forces = np.zeros((9, 1, nlp.ns + 1))
         external_forces[:, 0, 0] = [
             0.3745401188473625,
             0.9507143064099162,
