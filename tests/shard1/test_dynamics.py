@@ -78,6 +78,9 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             0.598658484197037,
             0.156018640442437,
             0.155994520336203,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 1] = [
             0.058083612168199,
@@ -86,6 +89,9 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             0.708072577796045,
             0.020584494295802,
             0.969909852161994,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 2] = [
             0.832442640800422,
@@ -94,6 +100,9 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             0.183404509853434,
             0.304242242959538,
             0.524756431632238,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 3] = [
             0.431945018642116,
@@ -102,6 +111,9 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             0.139493860652042,
             0.292144648535218,
             0.366361843293692,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 4] = [
             0.456069984217036,
@@ -110,6 +122,9 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             0.514234438413612,
             0.592414568862042,
             0.046450412719998,
+            0,
+            0,
+            0,
         ]
 
     ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
@@ -444,6 +459,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             0.5986584841970366,
             0.15601864044243652,
             0.15599452033620265,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 1] = [
             0.05808361216819946,
@@ -452,6 +470,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             0.7080725777960455,
             0.020584494295802447,
             0.9699098521619943,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 2] = [
             0.8324426408004217,
@@ -460,6 +481,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             0.18340450985343382,
             0.3042422429595377,
             0.5247564316322378,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 3] = [
             0.43194501864211576,
@@ -468,6 +492,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             0.13949386065204183,
             0.29214464853521815,
             0.3663618432936917,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 4] = [
             0.45606998421703593,
@@ -476,6 +503,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             0.5142344384136116,
             0.5924145688620425,
             0.046450412719997725,
+            0,
+            0,
+            0,
         ]
 
     NonLinearProgram.add(
@@ -935,6 +965,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             0.5986584841970366,
             0.15601864044243652,
             0.15599452033620265,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 1] = [
             0.05808361216819946,
@@ -943,6 +976,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             0.7080725777960455,
             0.020584494295802447,
             0.9699098521619943,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 2] = [
             0.8324426408004217,
@@ -951,6 +987,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             0.18340450985343382,
             0.3042422429595377,
             0.5247564316322378,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 3] = [
             0.43194501864211576,
@@ -959,6 +998,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             0.13949386065204183,
             0.29214464853521815,
             0.3663618432936917,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 4] = [
             0.45606998421703593,
@@ -967,6 +1009,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             0.5142344384136116,
             0.5924145688620425,
             0.046450412719997725,
+            0,
+            0,
+            0,
         ]
 
     ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
@@ -1100,6 +1145,9 @@ def test_torque_activation_driven_with_residual_torque(
             0.5986584841970366,
             0.15601864044243652,
             0.15599452033620265,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 1] = [
             0.05808361216819946,
@@ -1108,6 +1156,9 @@ def test_torque_activation_driven_with_residual_torque(
             0.7080725777960455,
             0.020584494295802447,
             0.9699098521619943,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 2] = [
             0.8324426408004217,
@@ -1116,6 +1167,9 @@ def test_torque_activation_driven_with_residual_torque(
             0.18340450985343382,
             0.3042422429595377,
             0.5247564316322378,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 3] = [
             0.43194501864211576,
@@ -1124,6 +1178,9 @@ def test_torque_activation_driven_with_residual_torque(
             0.13949386065204183,
             0.29214464853521815,
             0.3663618432936917,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 4] = [
             0.45606998421703593,
@@ -1132,6 +1189,9 @@ def test_torque_activation_driven_with_residual_torque(
             0.5142344384136116,
             0.5924145688620425,
             0.046450412719997725,
+            0,
+            0,
+            0,
         ]
 
     ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
@@ -1333,6 +1393,9 @@ def test_muscle_driven(
             0.5986584841970366,
             0.15601864044243652,
             0.15599452033620265,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 1] = [
             0.05808361216819946,
@@ -1341,6 +1404,9 @@ def test_muscle_driven(
             0.7080725777960455,
             0.020584494295802447,
             0.9699098521619943,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 2] = [
             0.8324426408004217,
@@ -1349,6 +1415,9 @@ def test_muscle_driven(
             0.18340450985343382,
             0.3042422429595377,
             0.5247564316322378,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 3] = [
             0.43194501864211576,
@@ -1357,6 +1426,9 @@ def test_muscle_driven(
             0.13949386065204183,
             0.29214464853521815,
             0.3663618432936917,
+            0,
+            0,
+            0,
         ]
         external_forces[:, 0, 4] = [
             0.45606998421703593,
@@ -1365,6 +1437,9 @@ def test_muscle_driven(
             0.5142344384136116,
             0.5924145688620425,
             0.046450412719997725,
+            0,
+            0,
+            0,
         ]
 
     ocp = OptimalControlProgram(nlp, use_sx=(True if cx == SX else False))
