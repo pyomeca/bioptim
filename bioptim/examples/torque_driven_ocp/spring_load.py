@@ -146,7 +146,7 @@ def custom_dynamic(
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-    force_vector = MX.zeros(6)
+    force_vector = MX.zeros(9)
     stiffness = 100
     force_vector[5] = -sign(q[0]) * stiffness * q[0] ** 2  # traction-compression spring
 
