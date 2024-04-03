@@ -725,7 +725,8 @@ def test_custom_problem_type_and_dynamics(problem_type_custom, ode_solver, phase
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("n_threads", [1, 2])
 @pytest.mark.parametrize("use_sx", [True, False])
-def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx):
+@pytest.mark.parametrize("use_point_of_applications", [True, False])
+def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, use_point_of_applications):
     from bioptim.examples.getting_started import example_external_forces as ocp_module
 
     if use_sx and ode_solver == OdeSolver.IRK:
@@ -743,56 +744,92 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx):
         ode_solver=ode_solver,
         expand_dynamics=ode_solver_orig != OdeSolver.IRK,
         phase_dynamics=phase_dynamics,
+        use_point_of_applications=use_point_of_applications,
         n_threads=n_threads,
         use_sx=use_sx,
     )
     sol = ocp.solve()
 
-    # Check objective function value
-    f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 7067.851604540213)
+    if not use_point_of_applications:
+        # Check objective function value
+        f = np.array(sol.cost)
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 7067.851604540213)
 
-    # Check constraints
-    g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (246, 1))
-    np.testing.assert_almost_equal(g, np.zeros((246, 1)))
+        # Check constraints
+        g = np.array(sol.constraints)
+        np.testing.assert_equal(g.shape, (246, 1))
+        np.testing.assert_almost_equal(g, np.zeros((246, 1)))
 
-    # Check some of the results
-    states = sol.decision_states(to_merge=SolutionMerge.NODES)
-    controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
-    q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+        # Check some of the results
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+        q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
-    # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([2.0377671e-09, 6.9841937e00, 4.3690494e-19, 0]))
-    np.testing.assert_almost_equal(tau[:, 10], np.array([-8.2313903e-10, 6.2433705e00, 1.5403878e-17, 0]))
-    np.testing.assert_almost_equal(tau[:, 20], np.array([-6.7256342e-10, 5.5025474e00, 1.3602434e-17, 0]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([2.0377715e-09, 4.8358065e00, 3.7533411e-19, 0]))
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array([2.0377671e-09, 6.9841937e00, 4.3690494e-19, 0]))
+        np.testing.assert_almost_equal(tau[:, 10], np.array([-8.2313903e-10, 6.2433705e00, 1.5403878e-17, 0]))
+        np.testing.assert_almost_equal(tau[:, 20], np.array([-6.7256342e-10, 5.5025474e00, 1.3602434e-17, 0]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([2.0377715e-09, 4.8358065e00, 3.7533411e-19, 0]))
 
-    if isinstance(ode_solver, OdeSolver.IRK):
-        # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)), decimal=5)
-        np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)), decimal=5)
+        if isinstance(ode_solver, OdeSolver.IRK):
+            # initial and final position
+            np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0, 0)), decimal=5)
+            np.testing.assert_almost_equal(q[:, -1], np.array((0, 2, 0, 0)), decimal=5)
 
-        # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)), decimal=5)
-        np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)), decimal=5)
+            # initial and final velocities
+            np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0, 0)), decimal=5)
+            np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0, 0)), decimal=5)
 
-        # detailed cost values
-        if n_threads == 1:
-            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
+            # detailed cost values
+            if n_threads == 1:
+                np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
+        else:
+            # initial and final position
+            np.testing.assert_almost_equal(q[:, 0], np.array([-4.6916756e-15, 6.9977394e-16, -1.6087563e-06, 0]), decimal=5)
+            np.testing.assert_almost_equal(q[:, -1], np.array([-4.6917018e-15, 2.0000000e00, 1.6091612e-06, 0]), decimal=5)
+
+            # initial and final velocities
+            np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 1.60839825e-06, 0]), decimal=5)
+            np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 1.6094277e-06, 0]), decimal=5)
+
+            # detailed cost values
+            if n_threads == 1:
+                np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
+
     else:
+        # Check objective function value
+        f = np.array(sol.cost)
+        np.testing.assert_equal(f.shape, (1, 1))
+        np.testing.assert_almost_equal(f[0, 0], 7073.702785927464)
+
+        # Check constraints
+        g = np.array(sol.constraints)
+        np.testing.assert_equal(g.shape, (246, 1))
+        np.testing.assert_almost_equal(g, np.zeros((246, 1)))
+
+        # Check some of the results
+        states = sol.decision_states(to_merge=SolutionMerge.NODES)
+        controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
+        q, qdot, tau = states["q"], states["qdot"], controls["tau"]
+
+        # initial and final controls
+        np.testing.assert_almost_equal(tau[:, 0], np.array([-0.18786284,  6.98419368, -0.15203139,  0.        ]))
+        np.testing.assert_almost_equal(tau[:, 10], np.array([0.06658482,  6.24337052, -0.15203139,  0.        ]))
+        np.testing.assert_almost_equal(tau[:, 20], np.array([0.04534891,  5.50254736, -0.15203139,  0.        ]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-0.14707919,  4.83580652, -0.15203139,  0.]))
+
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-4.6916756e-15, 6.9977394e-16, -1.6087563e-06, 0]), decimal=5)
-        np.testing.assert_almost_equal(q[:, -1], np.array([-4.6917018e-15, 2.0000000e00, 1.6091612e-06, 0]), decimal=5)
+        np.testing.assert_almost_equal(q[:, 0], np.array([-3.45394141e-15,  6.99773966e-16, -3.49050491e-02,  0.00000000e+00]), decimal=5)
+        np.testing.assert_almost_equal(q[:, -1], np.array([-3.94794954e-15,  2.00000000e+00,  2.22536671e-02,  0.00000000e+00]), decimal=5)
 
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 1.60839825e-06, 0]), decimal=5)
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 1.6094277e-06, 0]), decimal=5)
+        np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=5)
+        np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 0, 0]), decimal=5)
 
         # detailed cost values
         if n_threads == 1:
-            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
+            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7073.70278592746)
 
     # simulate
     TestUtils.simulate(sol)

@@ -36,6 +36,7 @@ def prepare_ocp(
     ode_solver: OdeSolverBase = OdeSolver.RK4(),
     expand_dynamics: bool = True,
     phase_dynamics: PhaseDynamics = PhaseDynamics.ONE_PER_NODE,
+    use_point_of_applications: bool = False,
     n_threads: int = 1,
     use_sx: bool = False,
 ) -> OptimalControlProgram:
@@ -54,6 +55,8 @@ def prepare_ocp(
         (for instance IRK is not compatible with expanded dynamics)
     phase_dynamics: PhaseDynamics
         The phase dynamics to use
+    use_point_of_applications: bool
+        If the external forces should be applied at the point of application or at the segment's origin
     n_threads: int
         The number of threads to use
     use_sx: bool
@@ -76,12 +79,19 @@ def prepare_ocp(
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
-    # External forces (shape: 6 x nb_external_forces x (n_shooting_points+1))
-    external_forces = np.zeros((6, 2, n_shooting+1))
+    # External forces (shape: 9 x nb_external_forces x (n_shooting_points+1))
+    external_forces = np.zeros((9, 2, n_shooting+1))
     external_forces[5, 0, :] = -2
     external_forces[5, 1, :] = 5
     external_forces[5, 0, 4] = -22
     external_forces[5, 1, 4] = 52
+    if use_point_of_applications:
+        external_forces[6, 0, :] = 0.05
+        external_forces[7, 1, :] = 0.01
+        external_forces[8, 0, :] = 0.007
+        external_forces[6, 1, :] = -0.009
+        external_forces[7, 0, :] = -0.05
+        external_forces[8, 1, :] = -0.01
 
     # Dynamics
     dynamics = DynamicsList()
