@@ -296,21 +296,31 @@ class BiorbdModel:
     def _dispatch_forces(self, external_forces: MX, translational_forces: MX):
 
         if external_forces is not None and translational_forces is not None:
-            raise NotImplementedError("You cannot provide both external_forces and translational_forces at the same time.")
+            raise NotImplementedError(
+                "You cannot provide both external_forces and translational_forces at the same time."
+            )
         elif external_forces is not None:
             if not isinstance(external_forces, MX):
                 raise ValueError("external_forces should be a numpy array of shape 9 x nb_forces.")
             if external_forces.shape[0] != 9:
-                raise ValueError(f"external_forces has {external_forces.shape[0]} rows, it should have 9 rows (Mx, My, Mz, Fx, Fy, Fz, Px, Py, Pz). You should provide the moments, forces and points of application.")
+                raise ValueError(
+                    f"external_forces has {external_forces.shape[0]} rows, it should have 9 rows (Mx, My, Mz, Fx, Fy, Fz, Px, Py, Pz). You should provide the moments, forces and points of application."
+                )
             if len(self._segments_to_apply_external_forces) != external_forces.shape[1]:
-                raise ValueError(f"external_forces has {external_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length.")
+                raise ValueError(
+                    f"external_forces has {external_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length."
+                )
         elif translational_forces is not None:
             if not isinstance(translational_forces, MX):
                 raise ValueError("translational_forces should be a numpy array of shape 6 x nb_forces.")
             if translational_forces.shape[0] != 6:
-                raise ValueError(f"translational_forces has {translational_forces.shape[0]} rows, it should have 6 rows (Fx, Fy, Fz, Px, Py, Pz). You should provide the forces and points of application.")
+                raise ValueError(
+                    f"translational_forces has {translational_forces.shape[0]} rows, it should have 6 rows (Fx, Fy, Fz, Px, Py, Pz). You should provide the forces and points of application."
+                )
             if len(self._segments_to_apply_external_forces) != translational_forces.shape[1]:
-                raise ValueError(f"translational_forces has {translational_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length.")
+                raise ValueError(
+                    f"translational_forces has {translational_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length."
+                )
 
         external_forces_set = self.model.externalForceSet()
 
@@ -329,7 +339,6 @@ class BiorbdModel:
                 external_forces_set.addTranslationalForce(values, name, point_of_application)
 
         return external_forces_set
-
 
     def forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
         self.check_q_size(q)
@@ -576,8 +585,9 @@ class BiorbdModel:
             parent_name = []
             for i in range(self.nb_rigid_contacts):
                 contact = self.model.rigidContact(i)
-                parent_name += [self.model.segment(
-                    self.model.getBodyRbdlIdToBiorbdId(contact.parentId())).name().to_string()]
+                parent_name += [
+                    self.model.segment(self.model.getBodyRbdlIdToBiorbdId(contact.parentId())).name().to_string()
+                ]
             self._segments_to_apply_external_forces = parent_name
 
         count = 0

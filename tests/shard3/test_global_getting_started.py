@@ -786,8 +786,12 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
                 np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 7067.851604540213)
         else:
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([-4.6916756e-15, 6.9977394e-16, -1.6087563e-06, 0]), decimal=5)
-            np.testing.assert_almost_equal(q[:, -1], np.array([-4.6917018e-15, 2.0000000e00, 1.6091612e-06, 0]), decimal=5)
+            np.testing.assert_almost_equal(
+                q[:, 0], np.array([-4.6916756e-15, 6.9977394e-16, -1.6087563e-06, 0]), decimal=5
+            )
+            np.testing.assert_almost_equal(
+                q[:, -1], np.array([-4.6917018e-15, 2.0000000e00, 1.6091612e-06, 0]), decimal=5
+            )
 
             # initial and final velocities
             np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 1.60839825e-06, 0]), decimal=5)
@@ -814,14 +818,18 @@ def test_example_external_forces(ode_solver, phase_dynamics, n_threads, use_sx, 
         q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array([-0.18786284,  6.98419368, -0.15203139,  0.        ]))
-        np.testing.assert_almost_equal(tau[:, 10], np.array([0.06658482,  6.24337052, -0.15203139,  0.        ]))
-        np.testing.assert_almost_equal(tau[:, 20], np.array([0.04534891,  5.50254736, -0.15203139,  0.        ]))
-        np.testing.assert_almost_equal(tau[:, -1], np.array([-0.14707919,  4.83580652, -0.15203139,  0.]))
+        np.testing.assert_almost_equal(tau[:, 0], np.array([-0.18786284, 6.98419368, -0.15203139, 0.0]))
+        np.testing.assert_almost_equal(tau[:, 10], np.array([0.06658482, 6.24337052, -0.15203139, 0.0]))
+        np.testing.assert_almost_equal(tau[:, 20], np.array([0.04534891, 5.50254736, -0.15203139, 0.0]))
+        np.testing.assert_almost_equal(tau[:, -1], np.array([-0.14707919, 4.83580652, -0.15203139, 0.0]))
 
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([-3.45394141e-15,  6.99773966e-16, -3.49050491e-02,  0.00000000e+00]), decimal=5)
-        np.testing.assert_almost_equal(q[:, -1], np.array([-3.94794954e-15,  2.00000000e+00,  2.22536671e-02,  0.00000000e+00]), decimal=5)
+        np.testing.assert_almost_equal(
+            q[:, 0], np.array([-3.45394141e-15, 6.99773966e-16, -3.49050491e-02, 0.00000000e00]), decimal=5
+        )
+        np.testing.assert_almost_equal(
+            q[:, -1], np.array([-3.94794954e-15, 2.00000000e00, 2.22536671e-02, 0.00000000e00]), decimal=5
+        )
 
         # initial and final velocities
         np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=5)

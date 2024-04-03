@@ -222,7 +222,6 @@ class NonLinearProgram:
         self.algebraic_states.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
         self.integrated_values.initialize_from_shooting(n_shooting=self.ns + 1, cx=self.cx)
 
-
     @property
     def n_states_nodes(self) -> int:
         """
