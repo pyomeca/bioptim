@@ -1,0 +1,77 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["bioptim"]
+
+[project]
+name = "bioptim"
+version = "3.2.0"
+authors = [{name = "Pariterre", email = "pariterre@hotmail.com"}]
+maintainers = [{name = "Pariterre", email = "pariterre@hotmail.com"}]
+description = "An optimization framework for Optimal Control Programming in biomechanics"
+license = {file = "LICENSE"}
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License"
+]
+dependencies = [
+    "biorbd",
+    "bioviz",
+    "numpy",
+    "scipy",
+    "packaging",
+    "setuptools",
+    "matplotlib",
+    "pandas",
+    "pyomeca",
+    "casadi",
+    "tinyxml",
+    "biorbd",
+    "vtk",
+    "pyqt",
+    "bioviz",
+    "python-graphviz",
+    "ipopt",
+    "pyqtgraph",
+    "gitpython",
+]
+
+keywords = [
+    "control",
+    "robotics",
+    "biomechanics",
+    "optimal-control",
+    "stochastic-optimal-control",
+    "dmoc",
+    "discrete-mechanics",
+    "forward-simulation",
+    "casadi",
+    "moving-horizon-estimation",
+    "direct-collocation",
+    "musculoskeletal-simulations",
+    "musculoskeletal-model",
+    "direct-multiple-shooting",
+    "dmocc",
+    "fatigue-dynamics",
+    "inverse-optimal-control",
+]
+
+
+[project.optional-dependencies]
+advanced-control = [
+    "pygmo", # Only for inverse optimal control
+]
+
+linux = [
+    "sh external/acados_install_linux.sh ${CONDA_PREFIX}"
+]
+macos = [
+    "sh external/acados_install_macos.sh ${CONDA_PREFIX}"
+]
+
+[project.urls]
+homepage = "https://github.com/bioptim/bioptim"
