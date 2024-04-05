@@ -689,6 +689,8 @@ class PlotOcp:
             The data to parse
         """
 
+        from ..interfaces.interface_utils import get_numerical_timeseries
+
         self.ydata = []
 
         sol = Solution.from_vector(self.ocp, args["x"])
