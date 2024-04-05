@@ -669,7 +669,7 @@ class PenaltyOption(OptionGeneric):
             self,
             penalty_idx,
             lambda p_idx, n_idx, sn_idx: self.get_numerical_timeseries(ocp, p_idx, n_idx, sn_idx),
-            is_constructing_penalty=True,
+            ocp,
         )
 
         return controller, t0, x, u, p, a, d

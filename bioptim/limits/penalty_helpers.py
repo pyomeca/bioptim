@@ -129,10 +129,10 @@ class PenaltyHelpers:
         return _reshape_to_vector(p)
 
     @staticmethod
-    def numerical_timeseries(penalty, index, get_numerical_timeseries: Callable, is_constructing_penalty: bool = False):
+    def numerical_timeseries(penalty, index, get_numerical_timeseries: Callable, ocp):
         node = penalty.node_idx[index]
         if penalty.multinode_penalty:
-            if penalty.nlp.numerical_data_timeseries is not None:
+            if ocp.nlp[penalty.phase].numerical_data_timeseries is not None:
                 raise NotImplementedError("Numerical data timeseries is not implemented for multinode penalties yet.")
                 # Note to the developers: We do not think this will raise an error at runtime, but the results will be wrong is cx_start or cx_ens are used in multiple occasions with different values.
             d = get_numerical_timeseries(penalty.nodes_phase[0], node, 0)  # cx_start

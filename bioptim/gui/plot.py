@@ -824,7 +824,10 @@ class PlotOcp:
                     lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)),
                 )
                 d_node = PenaltyHelpers.numerical_timeseries(
-                    penalty, idx, lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(self.ocp, p_idx, n_idx, sn_idx)
+                    penalty,
+                    idx,
+                    lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(self.ocp, p_idx, n_idx, sn_idx),
+                    self.ocp,
                 )
                 if d_node.shape == (0, 0):
                     d_node = DM(0, 1)

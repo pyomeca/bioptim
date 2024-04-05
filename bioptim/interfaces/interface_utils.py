@@ -337,7 +337,10 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
             penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled)
         )
         d = PenaltyHelpers.numerical_timeseries(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(ocp, p_idx, n_idx, sn_idx)
+            penalty,
+            penalty_idx,
+            lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(ocp, p_idx, n_idx, sn_idx),
+            ocp,
         )
     else:
         x = []
