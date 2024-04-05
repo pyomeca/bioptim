@@ -1,20 +1,29 @@
-from typing import Any
 from copy import deepcopy
+from typing import Any
 
 import numpy as np
+from casadi import vertcat, DM, Function
+from matplotlib import pyplot as plt
 from scipy import interpolate as sci_interp
 from scipy.interpolate import interp1d
-from casadi import vertcat, DM
-from matplotlib import pyplot as plt
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
 from ..optimization_vector import OptimizationVectorHelper
+from ...dynamics.ode_solver import OdeSolver
+from ...interfaces.solve_ivp_interface import solve_ivp_interface
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
-from ...misc.enums import ControlType, CostType, Shooting, InterpolationType, SolverType, SolutionIntegrator, Node
-from ...dynamics.ode_solver import OdeSolver
-from ...interfaces.solve_ivp_interface import solve_ivp_interface
+from ...misc.enums import (
+    ControlType,
+    CostType,
+    Shooting,
+    InterpolationType,
+    SolverType,
+    SolutionIntegrator,
+    Node,
+)
+from ...models.protocols.stochastic_biomodel import StochasticBioModel
 
 
 class Solution:
@@ -706,6 +715,43 @@ class Solution:
             new._parameters = deepcopy(self._parameters)
         return new
 
+    def _prepare_integrate(self, integrator: SolutionIntegrator):
+        """
+        Prepare the variables for the states integration and checks if the integrator is compatible with the ocp.
+
+        Parameters
+        ----------
+        integrator: SolutionIntegrator
+            The integrator to use for the integration
+        """
+
+        has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
+        if has_direct_collocation and integrator == SolutionIntegrator.OCP:
+            raise ValueError(
+                "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
+                "we cannot use the SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
+            )
+
+        has_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
+        if has_trapezoidal and integrator == SolutionIntegrator.OCP:
+            raise ValueError(
+                "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
+                "we cannot use the SolutionIntegrator.OCP.\n"
+                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
+                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
+            )
+
+        params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
+        t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
+        if len(self.ocp.nlp) == 1:
+            t_spans = [t_spans]
+        x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
+        u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
+        a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
+        return t_spans, x, u, params, a
+
     def integrate(
         self,
         shooting_type: Shooting = Shooting.SINGLE,
@@ -728,52 +774,39 @@ class Solution:
         duplicated_times: bool
             If the times should be duplicated for each node.
             If False, then the returned time vector will not have any duplicated times.
+            Default is True.
         return_time: bool
-            If the time vector should be returned
+            If the time vector should be returned, default is False.
 
         Returns
         -------
         Return the integrated states
         """
+        from ...interfaces.interface_utils import get_numerical_timeseries
 
-        has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
-        if has_direct_collocation and integrator == SolutionIntegrator.OCP:
-            raise ValueError(
-                "When the ode_solver of the Optimal Control Problem is OdeSolver.COLLOCATION, "
-                "we cannot use the SolutionIntegrator.OCP.\n"
-                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE"
-            )
-
-        has_trapezoidal = sum([isinstance(nlp.ode_solver, OdeSolver.TRAPEZOIDAL) for nlp in self.ocp.nlp]) > 0
-        if has_trapezoidal:
-            raise ValueError(
-                "When the ode_solver of the Optimal Control Problem is OdeSolver.TRAPEZOIDAL, "
-                "we cannot use the SolutionIntegrator.OCP.\n"
-                "We must use one of the SolutionIntegrator provided by scipy with any Shooting Enum such as"
-                " Shooting.SINGLE, Shooting.MULTIPLE, or Shooting.SINGLE_DISCONTINUOUS_PHASE",
-            )
-
-        params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
-        t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
-        if len(self.ocp.nlp) == 1:
-            t_spans = [t_spans]
-        x = self._decision_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
-        u = self._stepwise_controls.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
-        a = self._decision_algebraic_states.to_dict(to_merge=SolutionMerge.KEYS, scaled=False)
+        t_spans, x, u, params, a = self._prepare_integrate(integrator=integrator)
 
         out: list = [None] * len(self.ocp.nlp)
         integrated_sol = None
         for p, nlp in enumerate(self.ocp.nlp):
-            next_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
+            first_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
+            d = []
+            for n_idx in range(nlp.ns + 1):
+                d_tp = get_numerical_timeseries(self.ocp, p, n_idx, 0)
+                if d_tp.shape == (0, 0):
+                    d += [np.array([])]
+                else:
+                    d += [np.array(d_tp)]
 
             integrated_sol = solve_ivp_interface(
+                list_of_dynamics=[nlp.dynamics_func] * nlp.ns,
                 shooting_type=shooting_type,
                 nlp=nlp,
                 t=t_spans[p],
-                x=next_x,
+                x=first_x,
                 u=u[p],
                 a=a[p],
+                d=d,
                 p=params,
                 method=integrator,
             )
@@ -801,6 +834,128 @@ class Solution:
             return out if len(out) > 1 else out[0], time_vector if len(time_vector) > 1 else time_vector[0]
         else:
             return out if len(out) > 1 else out[0]
+
+    def noisy_integrate(
+        self,
+        integrator: SolutionIntegrator = SolutionIntegrator.OCP,
+        to_merge: SolutionMerge | list[SolutionMerge] = None,
+        size: int = 100,
+    ):
+        """
+        Integrated the states with different noise values sampled from the covariance matrix.
+        """
+        from ...optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
+        from ...interfaces.interface_utils import get_numerical_timeseries
+
+        if not isinstance(self.ocp, StochasticOptimalControlProgram):
+            raise ValueError("This method is only available for StochasticOptimalControlProgram.")
+
+        t_spans, x, u, params, a = self._prepare_integrate(integrator=integrator)
+
+        cov_index = self.ocp.nlp[0].algebraic_states["cov"].index
+        n_sub_nodes = x[0][0].shape[1]
+        motor_noise_index = self.ocp.nlp[0].parameters["motor_noise"].index
+        sensory_noise_index = (
+            self.ocp.nlp[0].parameters["sensory_noise"].index
+            if len(list(self.ocp.nlp[0].parameters["sensory_noise"].index)) > 0
+            else None
+        )
+
+        # initialize the out dictionary
+        out = [None] * len(self.ocp.nlp)
+        for p, nlp in enumerate(self.ocp.nlp):
+            out[p] = {}
+            for key in self.ocp.nlp[0].states.keys():
+                out[p][key] = [None] * nlp.n_states_nodes
+                for i_node in range(nlp.ns):
+                    out[p][key][i_node] = np.zeros((len(nlp.states[key].index), n_sub_nodes, size))
+                out[p][key][nlp.ns] = np.zeros((len(nlp.states[key].index), 1, size))
+
+        cov_matrix = StochasticBioModel.reshape_to_matrix(a[0][0][cov_index, :], self.ocp.nlp[0].model.matrix_shape_cov)
+        first_x = np.random.multivariate_normal(x[0][0][:, 0], cov_matrix, size=size).T
+        for p, nlp in enumerate(self.ocp.nlp):
+            d = []
+            for n_idx in range(nlp.ns + 1):
+                d_tp = get_numerical_timeseries(self.ocp, p, n_idx, 0)
+                if d_tp.shape == (0, 0):
+                    d += [np.array([])]
+                else:
+                    d += [np.array(d_tp)]
+
+            motor_noise = np.zeros((len(params[motor_noise_index]), nlp.ns, size))
+            for i in range(len(params[motor_noise_index])):
+                motor_noise[i, :] = np.random.normal(0, params[motor_noise_index[i]], size=(nlp.ns, size))
+            sensory_noise = (
+                np.zeros((len(sensory_noise_index), nlp.ns, size)) if sensory_noise_index is not None else None
+            )
+            if sensory_noise_index is not None:
+                for i in range(len(params[sensory_noise_index])):
+                    sensory_noise[i, :] = np.random.normal(0, params[sensory_noise_index[i]], size=(nlp.ns, size))
+
+            without_noise_idx = [
+                i for i in range(len(params)) if i not in motor_noise_index and i not in sensory_noise_index
+            ]
+            parameters_cx = nlp.parameters.cx[without_noise_idx]
+            parameters = params[without_noise_idx]
+            for i_random in range(size):
+                params_this_time = []
+                list_of_dynamics = []
+                for node in range(nlp.ns):
+                    params_this_time += [nlp.parameters.cx]
+                    params_this_time[node][motor_noise_index, :] = motor_noise[:, node, i_random]
+                    if sensory_noise_index is not None:
+                        params_this_time[node][sensory_noise_index, :] = sensory_noise[:, node, i_random]
+
+                    if len(nlp.extra_dynamics_func) > 1:
+                        raise NotImplementedError("Noisy integration is not available for multiple extra dynamics.")
+                    cas_func = Function(
+                        "noised_extra_dynamics",
+                        [
+                            nlp.time_cx,
+                            nlp.states.cx,
+                            nlp.controls.cx,
+                            parameters_cx,
+                            nlp.algebraic_states.cx,
+                            nlp.numerical_timeseries.cx,
+                        ],
+                        [
+                            nlp.extra_dynamics_func[0](
+                                nlp.time_cx,
+                                nlp.states.cx,
+                                nlp.controls.cx,
+                                params_this_time[node],
+                                nlp.algebraic_states.cx,
+                                nlp.numerical_timeseries.cx,
+                            )
+                        ],
+                    )
+                    list_of_dynamics += [cas_func]
+
+                integrated_sol = solve_ivp_interface(
+                    list_of_dynamics=list_of_dynamics,
+                    shooting_type=Shooting.SINGLE,
+                    nlp=nlp,
+                    t=t_spans[p],
+                    x=[np.reshape(first_x[:, i_random], (-1, 1))],
+                    u=u[p],  # No need to add noise on the controls, the extra_dynamics should do it for us
+                    a=a[p],
+                    p=parameters,
+                    d=d,
+                    method=integrator,
+                )
+                for i_node in range(nlp.ns + 1):
+                    for key in nlp.states.keys():
+                        states_integrated = (
+                            integrated_sol[i_node][nlp.states[key].index, :]
+                            if n_sub_nodes > 1
+                            else integrated_sol[i_node][nlp.states[key].index, 0].reshape(-1, 1)
+                        )
+                        out[p][key][i_node][:, :, i_random] = states_integrated
+                first_x[:, i_random] = np.reshape(integrated_sol[-1], (-1,))
+        if to_merge:
+            out = SolutionData.from_unscaled(self.ocp, out, "x").to_dict(to_merge=to_merge, scaled=False)
+
+        return out if len(out) > 1 else out[0]
 
     def _states_for_phase_integration(
         self,
@@ -837,6 +992,7 @@ class Solution:
         -------
         The states to integrate
         """
+        from ...interfaces.interface_utils import get_numerical_timeseries
 
         # In the case of multiple shootings, we don't need to do anything special
         if shooting_type == Shooting.MULTIPLE:
@@ -860,15 +1016,21 @@ class Solution:
             0,
             lambda p, n, sn: decision_controls[p][n][:, sn] if n < len(decision_controls[p]) else np.ndarray((0, 1)),
         )
-        s = PenaltyHelpers.states(
+        a = PenaltyHelpers.states(
             penalty,
             0,
             lambda p, n, sn: (
                 decision_algebraic_states[p][n][:, sn] if n < len(decision_algebraic_states[p]) else np.ndarray((0, 1))
             ),
         )
+        d_tp = PenaltyHelpers.numerical_timeseries(
+            penalty,
+            0,
+            lambda p, n, sn: get_numerical_timeseries(self.ocp, p, n, sn),
+        )
+        d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
 
-        dx = penalty.function[-1](t0, dt, x, u, params, s)
+        dx = penalty.function[-1](t0, dt, x, u, params, a, d)
         if dx.shape[0] != decision_states[phase_idx][0].shape[0]:
             raise RuntimeError(
                 f"Phase transition must have the same number of states ({dx.shape[0]}) "
@@ -888,6 +1050,7 @@ class Solution:
         dict
             The integrated data structure similar in structure to the original _decision_states
         """
+        from ...interfaces.interface_utils import get_numerical_timeseries
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
         t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
@@ -899,7 +1062,16 @@ class Solution:
 
         unscaled: list = [None] * len(self.ocp.nlp)
         for p, nlp in enumerate(self.ocp.nlp):
+            d = []
+            for n_idx in range(nlp.ns + 1):
+                d_tp = get_numerical_timeseries(self.ocp, p, n_idx, 0)
+                if d_tp.shape == (0, 0):
+                    d += [np.array([])]
+                else:
+                    d += [np.array(d_tp)]
+
             integrated_sol = solve_ivp_interface(
+                list_of_dynamics=[nlp.dynamics_func] * nlp.ns,
                 shooting_type=Shooting.MULTIPLE,
                 nlp=nlp,
                 t=t_spans[p],
@@ -907,6 +1079,7 @@ class Solution:
                 u=u[p],
                 a=a[p],
                 p=params,
+                d=d,
                 method=SolutionIntegrator.OCP,
             )
 
@@ -1014,6 +1187,7 @@ class Solution:
         show_now: bool = True,
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
+        save_name: str = None,
     ):
         """
         Show the graphs of the simulation
@@ -1030,10 +1204,18 @@ class Solution:
             The type of interpolation
         integrator: SolutionIntegrator
             Use the scipy solve_ivp integrator for RungeKutta 45 instead of currently defined integrator
+        save_name: str
+            If a name is provided, the figures will be saved with this name
         """
 
         plot_ocp = self.ocp.prepare_plots(automatically_organize, show_bounds, shooting_type, integrator)
-        plot_ocp.update_data(self.vector)
+        plot_ocp.update_data({"x": self.vector})
+        if save_name:
+            if save_name.endswith(".png"):
+                save_name = save_name[:-4]
+            for i_fig, name_fig in enumerate(plt.get_figlabels()):
+                fig = plt.figure(i_fig + 1)
+                fig.savefig(f"{save_name}_{name_fig}.png", format="png")
         if show_now:
             plt.show()
 
@@ -1105,11 +1287,11 @@ class Solution:
         self._check_models_comes_from_same_super_class()
 
         all_bioviz = []
-        for i, d in enumerate(data_to_animate):
+        for i, data in enumerate(data_to_animate):
             all_bioviz.append(
                 self.ocp.nlp[i].model.animate(
                     self.ocp,
-                    solution=d,
+                    solution=data,
                     show_now=show_now,
                     tracked_markers=tracked_markers,
                     **kwargs,
@@ -1179,6 +1361,8 @@ class Solution:
             return np.ndarray((0, 1))
 
     def _get_penalty_cost(self, nlp, penalty):
+        from ...interfaces.interface_utils import get_numerical_timeseries
+
         if nlp is None:
             raise NotImplementedError("penalty cost over the full ocp is not implemented yet")
 
@@ -1216,12 +1400,19 @@ class Solution:
                     merged_a[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_a[p_idx]) else np.array(())
                 ),
             )
+            d_tp = PenaltyHelpers.numerical_timeseries(
+                penalty,
+                idx,
+                lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(self.ocp, p_idx, n_idx, sn_idx),
+            )
+            d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
+
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, idx)
 
             node_idx = penalty.node_idx[idx]
-            val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, a))
-            val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, a, weight, target))
+            val.append(penalty.function[node_idx](t0, phases_dt, x, u, params, a, d))
+            val_weighted.append(penalty.weighted_function[node_idx](t0, phases_dt, x, u, params, a, d, weight, target))
 
         if self.ocp.n_threads > 1:
             val = [v[:, 0] for v in val]

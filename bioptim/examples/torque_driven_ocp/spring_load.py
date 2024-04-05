@@ -6,8 +6,10 @@ forces to interact with the body.
 
 import platform
 
-from casadi import MX, vertcat, sign
 import numpy as np
+from casadi import MX, vertcat, sign
+from matplotlib import pyplot as plt
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -23,7 +25,6 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
-from matplotlib import pyplot as plt
 
 # scenarios are based on a Mayer term (at Tf)
 # 0: maximize upward speed - expected kinematics: negative torque to get as low as possible and release
@@ -109,7 +110,13 @@ scenarios = {
 
 
 def custom_dynamic(
-    time: MX, states: MX, controls: MX, parameters: MX, algebraic_states: MX, nlp: NonLinearProgram
+    time: MX,
+    states: MX,
+    controls: MX,
+    parameters: MX,
+    algebraic_states: MX,
+    numerical_timeseries: MX,
+    nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """
     The dynamics of the system using an external force (see custom_dynamics for more explanation)
@@ -126,6 +133,8 @@ def custom_dynamic(
         The current parameters of the system
     algebraic_states: MX
         The current algebraic states of the system
+    numerical_timeseries: MX
+        The current numerical timeseries of the system
     nlp: NonLinearProgram
         A reference to the phase of the ocp
 
@@ -138,16 +147,16 @@ def custom_dynamic(
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
     tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-    force_vector = MX.zeros(6)
+    force_vector = MX.zeros(9)
     stiffness = 100
     force_vector[5] = -sign(q[0]) * stiffness * q[0] ** 2  # traction-compression spring
 
-    qddot = nlp.model.forward_dynamics(q, qdot, tau, [["Point", force_vector]])
+    qddot = nlp.model.forward_dynamics(q, qdot, tau, force_vector)
 
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram):
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None):
     """
     The configuration of the dynamics (see custom_dynamics for more explanation)
 
@@ -173,7 +182,7 @@ def prepare_ocp(
     scenario=1,
 ):
     # BioModel path
-    m = BiorbdModel(biorbd_model_path)
+    m = BiorbdModel(biorbd_model_path, segments_to_apply_external_forces=["Point"])
     m.set_gravity(np.array((0, 0, 0)))
 
     weight = 1

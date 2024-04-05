@@ -122,6 +122,7 @@ class Constraint(PenaltyOption):
             pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
             raise ValueError(f"Invalid constraint type {self.penalty_type}.")
+
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):
@@ -177,6 +178,7 @@ class ConstraintList(OptionList):
 
         else:
             super(ConstraintList, self)._add(option_type=Constraint, constraint=constraint, **extra_arguments)
+            # TODO: add an InternalConstraint option type? Because now the list_index is wrong
 
     def print(self):
         """
@@ -258,6 +260,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 controller.parameters.cx,
                 controller.algebraic_states.cx_start,
+                controller.numerical_timeseries.cx,
             )
             normal_contact_force_squared = sum1(contact[normal_component_idx, 0]) ** 2
             if len(tangential_component_idx) == 1:
@@ -470,7 +473,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = tau + passive_torque if with_passive_torque else tau
             tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
-            if controller.get_nlp.external_forces:
+            if controller.get_nlp.numerical_timeseries:
+                # TODO: deal with external forces
                 raise NotImplementedError(
                     "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
                 )
@@ -563,7 +567,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             muscle_tau = muscle_tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else muscle_tau
             qddot = controller.states["qddot"].mx if "qddot" in controller.states else controller.controls["qddot"].mx
 
-            if controller.get_nlp.external_forces:
+            if controller.get_nlp.numerical_timeseries:
                 raise NotImplementedError(
                     "This implicit constraint tau_from_muscle_equal_inverse_dynamics is not implemented yet with external forces"
                 )
@@ -693,6 +697,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot_joints = MX.sym("qdot_joints", nu, 1)
             tau_joints = MX.sym("tau_joints", nu, 1)
             algebraic_states_sym = MX.sym("algebraic_states_sym", controller.algebraic_states.shape, 1)
+            numerical_timeseries_sym = MX.sym("numerical_timeseries_sym", controller.numerical_timeseries.shape, 1)
 
             dx = controller.extra_dynamics(0)(
                 controller.t_span.mx,
@@ -700,6 +705,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 tau_joints,
                 controller.parameters.mx,
                 algebraic_states_sym,
+                numerical_timeseries_sym,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -716,6 +722,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     tau_joints,
                     controller.parameters.mx,
                     algebraic_states_sym,
+                    numerical_timeseries_sym,
                 ],
                 [jacobian(dx[non_root_index], vertcat(q_joints, qdot_joints))],
             )
@@ -733,6 +740,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx,
                 parameters,
                 controller.algebraic_states.cx,
+                controller.numerical_timeseries.cx,
             )
 
             CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
@@ -772,6 +780,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 parameters,
                 controller.algebraic_states.cx_start,
+                controller.numerical_timeseries.cx,
             )
 
             return StochasticBioModel.reshape_to_vector(constraint)
@@ -810,6 +819,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 parameters,
                 controller.algebraic_states.cx_start,
+                controller.numerical_timeseries.cx,
             )
 
             cov_implicit_defect = cov_matrix_next - cov_next_computed
@@ -838,6 +848,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controls=controller.controls.mx,
                 parameters=controller.parameters.mx,
                 algebraic_states=controller.algebraic_states.mx,
+                numerical_timeseries=controller.numerical_timeseries.mx,
                 nlp=controller.get_nlp,
             )
 
@@ -849,6 +860,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.controls.mx,
                     controller.parameters.mx,
                     controller.algebraic_states.mx,
+                    controller.numerical_timeseries.mx,
                 ],
                 [sensory_input],
             )(
@@ -857,6 +869,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.controls.cx_start,
                 controller.parameters.cx,
                 controller.algebraic_states.cx_start,
+                controller.numerical_timeseries.cx,
             )
 
             return sensory_input[: controller.model.n_feedbacks] - ref[: controller.model.n_feedbacks]
@@ -924,8 +937,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 vertcat(controller.t_span.cx),
                 horzcat(controller.states_scaled.cx, horzcat(*controller.states_scaled.cx_intermediates_list)),
                 controller.controls_scaled.cx,
-                controller.parameters.cx,  # TODO: fix parameter scaling
+                controller.parameters_scaled.cx,
                 controller.algebraic_states_scaled.cx,
+                controller.numerical_timeseries.cx,
             )
 
             initial_defect = controller.states_scaled.cx_start - controller.states_scaled.cx_intermediates_list[0]
@@ -944,8 +958,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.states_scaled.cx_start,
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
-                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.parameters_scaled.cx,
                     controller.algebraic_states_scaled.cx_start,
+                    controller.numerical_timeseries.cx,
                 ],
                 [Fdz.T - Gdz.T @ m_matrix.T],
             )
@@ -960,8 +975,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.states_scaled.cx_start,
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
-                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.parameters_scaled.cx,
                     controller.algebraic_states_scaled.cx_start,
+                    controller.numerical_timeseries.cx,
                 ],
                 [m_matrix @ (Gdx @ cov_matrix @ Gdx.T + Gdw @ sigma_ww @ Gdw.T) @ m_matrix.T],
             )
@@ -975,8 +991,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.states_scaled.cx_start,
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
-                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.parameters_scaled.cx,
                     controller.algebraic_states_scaled.cx_start,
+                    controller.numerical_timeseries.cx,
                 ],
                 [Gdx],
             )
@@ -988,8 +1005,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.states_scaled.cx_start,
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
-                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.parameters_scaled.cx,
                     controller.algebraic_states_scaled.cx_start,
+                    controller.numerical_timeseries.cx,
                 ],
                 [Gdz],
             )
@@ -1001,8 +1019,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.states_scaled.cx_start,
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
-                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.parameters_scaled.cx,
                     controller.algebraic_states_scaled.cx_start,
+                    controller.numerical_timeseries.cx,
                 ],
                 [Gdw],
             )
@@ -1014,8 +1033,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     controller.states_scaled.cx_start,
                     horzcat(*controller.states_scaled.cx_intermediates_list),
                     controller.controls_scaled.cx_start,
-                    controller.parameters.cx,  # TODO: fix parameter scaling
+                    controller.parameters_scaled.cx,
                     controller.algebraic_states_scaled.cx_start,
+                    controller.numerical_timeseries.cx,
                 ],
                 [Fdz],
             )
@@ -1221,6 +1241,7 @@ class ParameterConstraint(PenaltyOption):
             pool = controller.get_nlp.g if controller is not None and controller.get_nlp else controller.ocp.g
         else:
             raise ValueError(f"Invalid constraint type {self.penalty_type}.")
+
         pool[self.list_index] = self
 
     def ensure_penalty_sanity(self, ocp, nlp):

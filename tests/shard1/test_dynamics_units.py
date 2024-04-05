@@ -1,9 +1,9 @@
+import numpy as np
 import pytest
 
-from bioptim import PhaseDynamics, RigidBodyDynamics, SoftContactDynamics
+from bioptim import RigidBodyDynamics, SoftContactDynamics
 from bioptim.dynamics.configure_problem import (
-    _check_external_forces_format,
-    _check_external_forces_and_phase_dynamics,
+    _check_numerical_timeseries_format,
     _check_soft_contacts_dynamics,
     _check_contacts_in_biorbd_model,
 )
@@ -13,23 +13,24 @@ class MockData:
     pass
 
 
+# TODO: Verify these tests
+
+
 def test_check_external_forces_format_valid():
-    _check_external_forces_format([MockData()], 1, 0)
+    _check_numerical_timeseries_format(np.ones((5, 5, 6)), 5, 0)
+
+
+def test_check_external_forces_format_invalid():
+    with pytest.raises(
+        RuntimeError,
+        match="Phase 0 has numerical_data_timeseries of type <class 'list'> but it should be of type np.ndarray",
+    ):
+        _check_numerical_timeseries_format([0, 0, 0, 0, 0, 0], 5, 0)
 
 
 def test_check_external_forces_format_invalid():
     with pytest.raises(RuntimeError):
-        _check_external_forces_format([MockData(), MockData()], 1, 0)
-
-
-# Tests for _check_external_forces_and_phase_dynamics
-def test_check_external_forces_and_phase_dynamics_valid():
-    _check_external_forces_and_phase_dynamics([MockData()], PhaseDynamics.ONE_PER_NODE, 0)
-
-
-def test_check_external_forces_and_phase_dynamics_invalid():
-    with pytest.raises(RuntimeError):
-        _check_external_forces_and_phase_dynamics([MockData()], "InvalidPhaseDynamics", 0)
+        _check_numerical_timeseries_format([MockData(), MockData()], 1, 0)
 
 
 # Tests for _check_soft_contacts_dynamics
@@ -44,17 +45,16 @@ def test_check_soft_contacts_dynamics_invalid_rigid():
 
 # More tests for _check_external_forces_format
 def test_check_external_forces_format_none():
-    _check_external_forces_format(None, 2, 0)
+    with pytest.raises(
+        RuntimeError,
+        match="Phase 0 has numerical_data_timeseries of type <class 'NoneType'> but it should be of type np.ndarray",
+    ):
+        _check_numerical_timeseries_format(None, 5, 0)
 
 
 def test_check_external_forces_format_wrong_length():
     with pytest.raises(RuntimeError):
-        _check_external_forces_format([MockData(), MockData()], 3, 0)
-
-
-# More tests for _check_external_forces_and_phase_dynamics
-def test_check_external_forces_and_phase_dynamics_no_external_forces():
-    _check_external_forces_and_phase_dynamics(None, "InvalidPhaseDynamics", 0)
+        _check_numerical_timeseries_format([MockData(), MockData()], 3, 0)
 
 
 # Tests for _check_soft_contacts_dynamics

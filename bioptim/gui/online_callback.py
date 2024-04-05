@@ -58,7 +58,16 @@ class OnlineCallback(Callback):
         Callback.__init__(self)
         self.ocp = ocp
         self.nx = self.ocp.variables_vector.shape[0]
-        self.ng = 0
+
+        # There must be an option to add an if here
+        from ..interfaces.ipopt_interface import IpoptInterface
+
+        interface = IpoptInterface(ocp)
+        all_g, all_g_bounds = interface.dispatch_bounds()
+        self.ng = all_g.shape[0]
+
+        v = interface.ocp.variables_vector
+
         self.construct("AnimateCallback", opts)
 
         self.queue = mp.Queue()
@@ -160,7 +169,10 @@ class OnlineCallback(Callback):
         A list of error index
         """
         send = self.queue.put
-        send(arg[0])
+        args_dict = {}
+        for i, s in enumerate(nlpsol_out()):
+            args_dict[s] = arg[i]
+        send(args_dict)
         return [0]
 
     class ProcessPlotter(object):
@@ -221,8 +233,8 @@ class OnlineCallback(Callback):
             """
 
             while not self.pipe.empty():
-                v = self.pipe.get()
-                self.plot.update_data(v)
+                args = self.pipe.get()
+                self.plot.update_data(args)
 
             for i, fig in enumerate(self.plot.all_figures):
                 fig.canvas.draw()

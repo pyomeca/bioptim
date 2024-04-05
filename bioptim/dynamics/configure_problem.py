@@ -1,12 +1,14 @@
 from typing import Callable, Any
 
-from casadi import vertcat, Function, DM
+import numpy as np
+from casadi import vertcat, Function, DM, horzcat
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
 from .fatigue.fatigue_dynamics import FatigueList
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
+from ..limits.constraints import ImplicitConstraintFcn
 from ..misc.enums import (
     PlotType,
     Node,
@@ -18,7 +20,6 @@ from ..misc.enums import (
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..limits.constraints import ImplicitConstraintFcn
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..optimization.problem_type import SocpType
 
@@ -130,7 +131,12 @@ class ConfigureProblem:
             A reference to the phase
         """
 
-        nlp.dynamics_type.type(ocp, nlp, **nlp.dynamics_type.extra_parameters)
+        nlp.dynamics_type.type(
+            ocp,
+            nlp,
+            numerical_data_timeseries=nlp.dynamics_type.numerical_data_timeseries,
+            **nlp.dynamics_type.extra_parameters,
+        )
 
     @staticmethod
     def custom(ocp, nlp, **extra_params):
@@ -158,7 +164,7 @@ class ConfigureProblem:
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
-        external_forces: list = None,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -183,16 +189,22 @@ class ConfigureProblem:
             which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
-        external_forces: list[Any]
-            A list of external forces
+        numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
         _check_soft_contacts_dynamics(
             rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
-        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
-        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
+        external_forces = None
+        if numerical_data_timeseries is not None:
+            for key in numerical_data_timeseries.keys():
+                if key == "external_forces":
+                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
+                    external_forces = nlp.numerical_timeseries[0].mx
+                    for i in range(1, numerical_data_timeseries[key].shape[1]):
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -305,6 +317,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a torque driven program with a free floating base.
@@ -324,6 +337,8 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficients * qdot)
+        numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node.
         """
 
         nb_q = nlp.model.nb_q
@@ -428,6 +443,7 @@ class ConfigureProblem:
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a torque driven stochastic program (states are q and qdot, controls are tau)
@@ -442,6 +458,12 @@ class ConfigureProblem:
             If the dynamic with contact should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
+        with_cholesky: bool
+            If the Cholesky decomposition should be used for the covariance matrix.
+        initial_matrix: DM
+            The initial value for the covariance matrix
+        numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
         if "tau" in nlp.model.motor_noise_mapping:
@@ -501,10 +523,10 @@ class ConfigureProblem:
         ocp,
         nlp,
         problem_type,
-        with_contact: bool = False,
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a stochastic torque driven program with a free floating base.
@@ -516,10 +538,14 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        with_contact: bool
-            If the dynamic with contact should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficient * qdot)
+        with_cholesky: bool
+            If the Cholesky decomposition should be used for the covariance matrix.
+        initial_matrix: DM
+            The initial value for the covariance matrix
+        numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node.
         """
         n_noised_tau = nlp.model.n_noised_controls
         n_noise = nlp.model.motor_noise_magnitude.shape[0] + nlp.model.sensory_noise_magnitude.shape[0]
@@ -577,7 +603,7 @@ class ConfigureProblem:
         with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
-        external_forces: list = None,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -598,8 +624,8 @@ class ConfigureProblem:
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
-        external_forces: list[Any]
-            A list of external forces
+        numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
         """
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
@@ -610,8 +636,14 @@ class ConfigureProblem:
         _check_soft_contacts_dynamics(
             rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
-        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
-        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
+        external_forces = None
+        if numerical_data_timeseries is not None:
+            for key in numerical_data_timeseries.keys():
+                if key == "external_forces":
+                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
+                    external_forces = nlp.numerical_timeseries[0].mx
+                    for i in range(1, numerical_data_timeseries[key].shape[1]):
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -669,7 +701,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_residual_torque: bool = False,
         with_ligament: bool = False,
-        external_forces: list[Any] = None,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
@@ -690,14 +722,19 @@ class ConfigureProblem:
             If the dynamic with a residual torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
-            A list of external forces
-
+        numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
-        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
+        external_forces = None
+        if numerical_data_timeseries is not None:
+            for key in numerical_data_timeseries.keys():
+                if key == "external_forces":
+                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
+                    external_forces = nlp.numerical_timeseries[0].mx
+                    for i in range(1, numerical_data_timeseries[key].shape[1]):
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -727,7 +764,12 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def joints_acceleration_driven(ocp, nlp, rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE):
+    def joints_acceleration_driven(
+        ocp,
+        nlp,
+        rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
+    ):
         """
         Configure the dynamics for a joints acceleration driven program
         (states are q and qdot, controls are qddot_joints)
@@ -740,7 +782,8 @@ class ConfigureProblem:
             A reference to the phase
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
-
+        numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
         if rigidbody_dynamics != RigidBodyDynamics.ODE:
             raise NotImplementedError("Implicit dynamics not implemented yet.")
@@ -787,7 +830,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-        external_forces: list[Any] = None,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -816,13 +859,18 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
-        external_forces: list[Any]
-            A list of external forces
+        numerical_data_timeseries: dict[str, np.ndarray]
+            A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        _check_external_forces_format(external_forces, nlp.ns, nlp.phase_idx)
-        _check_external_forces_and_phase_dynamics(external_forces, nlp.phase_dynamics, nlp.phase_idx)
-
+        external_forces = None
+        if numerical_data_timeseries is not None:
+            for key in numerical_data_timeseries.keys():
+                if key == "external_forces":
+                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
+                    external_forces = nlp.numerical_timeseries[0].mx
+                    for i in range(1, numerical_data_timeseries[key].shape[1]):
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
@@ -871,7 +919,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def holonomic_torque_driven(ocp, nlp):
+    def holonomic_torque_driven(ocp, nlp, numerical_data_timeseries: dict[str, np.ndarray] = None):
         """
         Tell the program which variables are states and controls.
 
@@ -908,50 +956,46 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states] | tuple[Callable[time, states, controls, param, algebraic_states], ...]
+        dyn_func: Callable[time, states, controls, param, algebraic_states]
             The function to get the derivative of the states
         """
 
         DynamicsFunctions.apply_parameters(nlp)
 
-        if not isinstance(dyn_func, (tuple, list)):
-            dyn_func = (dyn_func,)
+        dynamics_eval = dyn_func(
+            nlp.time_mx,
+            nlp.states.scaled.mx_reduced,
+            nlp.controls.scaled.mx_reduced,
+            nlp.parameters.scaled.mx_reduced,
+            nlp.algebraic_states.scaled.mx_reduced,
+            nlp.numerical_timeseries.mx,
+            nlp,
+            **extra_params,
+        )
+        dynamics_dxdt = dynamics_eval.dxdt
+        if isinstance(dynamics_dxdt, (list, tuple)):
+            dynamics_dxdt = vertcat(*dynamics_dxdt)
 
-        for func in dyn_func:
-            dynamics_eval = func(
-                nlp.time_mx,
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.scaled.mx_reduced,
-                nlp.algebraic_states.scaled.mx_reduced,
-                nlp,
-                **extra_params,
-            )
-            dynamics_dxdt = dynamics_eval.dxdt
-            if isinstance(dynamics_dxdt, (list, tuple)):
-                dynamics_dxdt = vertcat(*dynamics_dxdt)
-
-            time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
-            nlp.dynamics_func.append(
-                Function(
-                    "ForwardDyn",
-                    [
-                        time_span_sym,
-                        nlp.states.scaled.mx_reduced,
-                        nlp.controls.scaled.mx_reduced,
-                        nlp.parameters.scaled.mx_reduced,
-                        nlp.algebraic_states.scaled.mx_reduced,
-                    ],
-                    [dynamics_dxdt],
-                    ["t_span", "x", "u", "p", "a"],
-                    ["xdot"],
-                ),
+        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
+        if nlp.dynamics_func is None:
+            nlp.dynamics_func = Function(
+                "ForwardDyn",
+                [
+                    time_span_sym,
+                    nlp.states.scaled.mx_reduced,
+                    nlp.controls.scaled.mx_reduced,
+                    nlp.parameters.scaled.mx_reduced,
+                    nlp.algebraic_states.scaled.mx_reduced,
+                    nlp.numerical_timeseries.mx,
+                ],
+                [dynamics_dxdt],
+                ["t_span", "x", "u", "p", "a", "d"],
+                ["xdot"],
             )
 
-            # TODO: allow expand for each dynamics independently
             if nlp.dynamics_type.expand_dynamics:
                 try:
-                    nlp.dynamics_func[-1] = nlp.dynamics_func[-1].expand()
+                    nlp.dynamics_func = nlp.dynamics_func.expand()
                 except Exception as me:
                     RuntimeError(
                         f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -963,25 +1007,24 @@ class ConfigureProblem:
                     )
 
             if dynamics_eval.defects is not None:
-                nlp.implicit_dynamics_func.append(
-                    Function(
-                        "DynamicsDefects",
-                        [
-                            time_span_sym,
-                            nlp.states.scaled.mx_reduced,
-                            nlp.controls.scaled.mx_reduced,
-                            nlp.parameters.scaled.mx_reduced,
-                            nlp.algebraic_states.scaled.mx_reduced,
-                            nlp.states_dot.scaled.mx_reduced,
-                        ],
-                        [dynamics_eval.defects],
-                        ["t_span", "x", "u", "p", "a", "xdot"],
-                        ["defects"],
-                    )
+                nlp.implicit_dynamics_func = Function(
+                    "DynamicsDefects",
+                    [
+                        time_span_sym,
+                        nlp.states.scaled.mx_reduced,
+                        nlp.controls.scaled.mx_reduced,
+                        nlp.parameters.scaled.mx_reduced,
+                        nlp.algebraic_states.scaled.mx_reduced,
+                        nlp.numerical_timeseries.mx,
+                        nlp.states_dot.scaled.mx_reduced,
+                    ],
+                    [dynamics_eval.defects],
+                    ["t_span", "x", "u", "p", "a", "d", "xdot"],
+                    ["defects"],
                 )
                 if nlp.dynamics_type.expand_dynamics:
                     try:
-                        nlp.implicit_dynamics_func[-1] = nlp.implicit_dynamics_func[-1].expand()
+                        nlp.implicit_dynamics_func = nlp.implicit_dynamics_func.expand()
                     except Exception as me:
                         RuntimeError(
                             f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -991,6 +1034,36 @@ class ConfigureProblem:
                             "Original casadi error message:\n"
                             f"{me}"
                         )
+        else:
+            nlp.extra_dynamics_func.append(
+                Function(
+                    "ForwardDyn",
+                    [
+                        time_span_sym,
+                        nlp.states.scaled.mx_reduced,
+                        nlp.controls.scaled.mx_reduced,
+                        nlp.parameters.scaled.mx_reduced,
+                        nlp.algebraic_states.scaled.mx_reduced,
+                        nlp.numerical_timeseries.mx,
+                    ],
+                    [dynamics_dxdt],
+                    ["t_span", "x", "u", "p", "a", "d"],
+                    ["xdot"],
+                ),
+            )
+
+            if nlp.dynamics_type.expand_dynamics:
+                try:
+                    nlp.extra_dynamics_func[-1] = nlp.extra_dynamics_func[-1].expand()
+                except Exception as me:
+                    RuntimeError(
+                        f"An error occurred while executing the 'expand()' function for the dynamic function. "
+                        f"Please review the following casadi error message for more details.\n"
+                        "Several factors could be causing this issue. One of the most likely is the inability to "
+                        "use expand=True at all. In that case, try adding expand=False to the dynamics.\n"
+                        "Original casadi error message:\n"
+                        f"{me}"
+                    )
 
     @staticmethod
     def configure_contact_function(ocp, nlp, dyn_func: Callable, **extra_params):
@@ -1016,6 +1089,7 @@ class ConfigureProblem:
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.scaled.mx_reduced,
                 nlp.algebraic_states.scaled.mx_reduced,
+                nlp.numerical_timeseries.mx,
             ],
             [
                 dyn_func(
@@ -1024,11 +1098,12 @@ class ConfigureProblem:
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.scaled.mx_reduced,
                     nlp.algebraic_states.scaled.mx_reduced,
+                    nlp.numerical_timeseries.mx,
                     nlp,
                     **extra_params,
                 )
             ],
-            ["t_span", "x", "u", "p", "a"],
+            ["t_span", "x", "u", "p", "a", "d"],
             ["contact_forces"],
         ).expand()
 
@@ -1050,8 +1125,8 @@ class ConfigureProblem:
             )
 
         nlp.plot["contact_forces"] = CustomPlot(
-            lambda t0, phases_dt, node_idx, x, u, p, a: nlp.contact_forces_func(
-                [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.contact_forces_func(
+                [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a, d
             ),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
@@ -1123,8 +1198,8 @@ class ConfigureProblem:
                     to_second=[i for i, c in enumerate(all_soft_contact_names) if c in soft_contact_names_in_phase],
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
-                lambda t0, phases_dt, node_idx, x, u, p, a: nlp.soft_contact_forces_func(
-                    [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a
+                lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.soft_contact_forces_func(
+                    [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a, d
                 )[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
@@ -1369,7 +1444,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_algebraic_states=True,
-            skip_plot=True,
         )
 
     @staticmethod
@@ -1493,7 +1567,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_algebraic_states=True,
-            skip_plot=True,
         )
 
     @staticmethod
@@ -1525,7 +1598,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_algebraic_states=True,
-            skip_plot=True,
         )
 
     @staticmethod
@@ -1554,7 +1626,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_algebraic_states=True,
-            skip_plot=True,
         )
 
     @staticmethod
@@ -1589,7 +1660,6 @@ class ConfigureProblem:
             as_controls=False,
             as_states_dot=False,
             as_algebraic_states=True,
-            skip_plot=True,
         )
 
     @staticmethod
@@ -1820,6 +1890,7 @@ class Dynamics(OptionGeneric):
         skip_continuity: bool = False,
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
         **extra_parameters: Any,
     ):
         """
@@ -1840,6 +1911,8 @@ class Dynamics(OptionGeneric):
             otherwise it is an objective
         phase_dynamics: PhaseDynamics
             If the dynamics should be shared between the nodes or not
+        numerical_data_timeseries: dict[str, np.ndarray]
+            The numerical timeseries at each node. ex: the experimental external forces data should go here.
         """
 
         configure = None
@@ -1864,6 +1937,7 @@ class Dynamics(OptionGeneric):
         self.skip_continuity = skip_continuity
         self.state_continuity_weight = state_continuity_weight
         self.phase_dynamics = phase_dynamics
+        self.numerical_data_timeseries = numerical_data_timeseries
 
 
 class DynamicsList(UniquePerPhaseOptionList):
@@ -1903,29 +1977,19 @@ class DynamicsList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of DynamicsList is not ready yet")
 
 
-def _check_external_forces_format(external_forces: list[Any], n_shooting: int, phase_idx: int):
-    """Check if the external_forces is of the right format"""
-    if external_forces is not None and len(external_forces) != n_shooting:
+def _check_numerical_timeseries_format(numerical_timeseries: np.ndarray, n_shooting: int, phase_idx: int):
+    """Check if the numerical_data_timeseries is of the right format"""
+    if type(numerical_timeseries) is not np.ndarray:
         raise RuntimeError(
-            f"Phase {phase_idx} has {n_shooting} shooting points but the external_forces "
-            f"has {len(external_forces)} shooting points."
-            f"The external_forces should be of format list[Any] "
-            f"where the list is the number of shooting points of the phase and the dict is the Any "
-            f"is the specific way to add external_force for the specific implementation of the biomodel."
+            f"Phase {phase_idx} has numerical_data_timeseries of type {type(numerical_timeseries)} "
+            f"but it should be of type np.ndarray"
         )
-
-
-def _check_external_forces_and_phase_dynamics(
-    external_forces: list[Any], phase_dynamics: PhaseDynamics, phase_idx: int
-):
-    """If external_forces is not None, phase_dynamics should be PhaseDynamics.ONE_PER_NODE"""
-    # Note to the developer: External_forces doesn't necessitate ONE_PER_NODE, we made it anyway
-    # because at this stage it makes more sens to send full time series of external forces
-    # but one day someone could be interested in sending a unique value that could be applied to all nodes
-    if external_forces is not None and phase_dynamics != PhaseDynamics.ONE_PER_NODE:
+    if numerical_timeseries is not None and numerical_timeseries.shape[2] != n_shooting + 1:
         raise RuntimeError(
-            f"Phase {phase_idx} has external_forces but the phase_dynamics is {phase_dynamics}."
-            f"Please set phase_dynamics=PhaseDynamics.ONE_PER_NODE"
+            f"Phase {phase_idx} has {n_shooting}+1 shooting points but the numerical_data_timeseries "
+            f"has {numerical_timeseries.shape[2]} shooting points."
+            f"The numerical_data_timeseries should be of format dict[str, np.ndarray] "
+            f"where the list is the number of shooting points of the phase "
         )
 
 

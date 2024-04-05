@@ -1,7 +1,7 @@
 from typing import Callable, Protocol
 
-from casadi import MX, SX, DM, vertcat
 import numpy as np
+from casadi import MX, SX, DM, vertcat
 
 from ..misc.enums import PhaseDynamics, ControlType
 
@@ -127,6 +127,25 @@ class PenaltyHelpers:
         node = penalty.node_idx[index]
         p = get_parameter_decision(penalty.phase, node, None)
         return _reshape_to_vector(p)
+
+    @staticmethod
+    def numerical_timeseries(penalty, index, get_numerical_timeseries: Callable):
+        node = penalty.node_idx[index]
+        if penalty.multinode_penalty:
+            for i_phase in penalty.nodes_phase:
+                d = get_numerical_timeseries(i_phase, node, 0)  # cx_start
+                if d.shape[0] != 0:
+                    raise NotImplementedError(
+                        "Numerical data timeseries is not implemented for multinode penalties yet."
+                    )
+                    # Note to the developers: We do not think this will raise an error at runtime, but the results will be wrong is cx_start or cx_ens are used in multiple occasions with different values.
+        else:
+            d = get_numerical_timeseries(penalty.phase, node, 0)  # cx_start
+
+        if d.shape != (0, 0):
+            d = _reshape_to_vector(d)
+
+        return d
 
     @staticmethod
     def weight(penalty):

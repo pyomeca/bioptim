@@ -1,5 +1,4 @@
 import tkinter
-from itertools import accumulate
 from typing import Callable, Any
 
 import numpy as np
@@ -71,6 +70,7 @@ class CustomPlot:
         label: list = None,
         compute_derivative: bool = False,
         integration_rule: QuadratureRule = QuadratureRule.RECTANGLE_LEFT,
+        all_variables_in_one_subplot: bool = False,
         **parameters: Any,
     ):
         """
@@ -100,6 +100,8 @@ class CustomPlot:
             Label of the curve to plot (to be added to the legend)
         compute_derivative: bool
             If the function should send the next node with x and u. Prevents from computing all at once (therefore a bit slower)
+        all_variables_in_one_subplot: bool
+            If all indices of the variables should be put on the same graph. This is not cute, but allows to display variables with a lot of entries.
         """
 
         self.function = update_function
@@ -125,6 +127,7 @@ class CustomPlot:
             raise NotImplementedError(f"{integration_rule} has not been implemented yet.")
         self.integration_rule = integration_rule
         self.parameters = parameters
+        self.all_variables_in_one_subplot = all_variables_in_one_subplot
 
 
 class PlotOcp:
@@ -285,6 +288,18 @@ class PlotOcp:
             if self.plot_options["general_options"]["use_tight_layout"]:
                 fig.tight_layout()
 
+        if self.ocp.plot_ipopt_outputs:
+            from ..gui.ipopt_output_plot import create_ipopt_output_plot
+            from ..interfaces.ipopt_interface import IpoptInterface
+
+            interface = IpoptInterface(self.ocp)
+            create_ipopt_output_plot(ocp, interface)
+
+        if self.ocp.plot_check_conditioning:
+            from ..gui.check_conditioning import create_conditioning_plots
+
+            create_conditioning_plots(ocp)
+
     def _update_time_vector(self, phase_times):
         """
         Setup the time and time integrated vector, which is the x-axes of the graphs
@@ -334,6 +349,7 @@ class PlotOcp:
                         size_u = nlp.controls.shape
                         size_p = nlp.parameters.shape
                         size_a = nlp.algebraic_states.shape
+                        size_d = nlp.numerical_timeseries.shape
                         if "penalty" in nlp.plot[key].parameters:
                             penalty = nlp.plot[key].parameters["penalty"]
 
@@ -346,6 +362,7 @@ class PlotOcp:
                                 size_u = casadi_function.size_in("u")[0]
                                 size_p = casadi_function.size_in("p")[0]
                                 size_a = casadi_function.size_in("a")[0]
+                                size_d = casadi_function.size_in("d")[0]
 
                         size = (
                             nlp.plot[key]
@@ -357,6 +374,7 @@ class PlotOcp:
                                 np.zeros((size_u, 1)),  # controls
                                 np.zeros((size_p, 1)),  # parameters
                                 np.zeros((size_a, 1)),  # algebraic_states
+                                np.zeros((size_d, 1)),  # numerical_timeseries
                                 **nlp.plot[key].parameters,  # parameters
                             )
                             .shape[0]
@@ -399,7 +417,12 @@ class PlotOcp:
                             for nlp in self.ocp.nlp
                         ]
                     )
-                    n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
+                    # TODO: get rid of all_variables_in_one_subplot by fixing the mapping appropriately
+                    if not nlp.plot[variable].all_variables_in_one_subplot:
+                        n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
+                    else:
+                        n_cols = 1
+                        n_rows = 1
                     axes = self.__add_new_axis(variable, nb_subplots, n_rows, n_cols)
                     self.axes[variable] = [nlp.plot[variable], axes]
                     if not y_min_all[var_idx]:
@@ -415,17 +438,24 @@ class PlotOcp:
 
                 mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
                 for ctr in mapping_to_first_index:
-                    ax = axes[ctr]
-                    if ctr in mapping_to_first_index:
-                        index_legend = mapping_to_first_index.index(ctr)
-                        if len(nlp.plot[variable].legend) > index_legend:
-                            ax.set_title(nlp.plot[variable].legend[index_legend])
+                    if not nlp.plot[variable].all_variables_in_one_subplot:
+                        ax = axes[ctr]
+                        if ctr in mapping_to_first_index:
+                            index_legend = mapping_to_first_index.index(ctr)
+                            if len(nlp.plot[variable].legend) > index_legend:
+                                ax.set_title(nlp.plot[variable].legend[index_legend])
+                    else:
+                        ax = axes[0]
                     ax.grid(**self.plot_options["grid"])
                     ax.set_xlim(self.t[-1][[0, -1]])
 
                     if nlp.plot[variable].ylim:
                         ax.set_ylim(nlp.plot[variable].ylim)
-                    elif self.show_bounds and nlp.plot[variable].bounds:
+                    elif (
+                        self.show_bounds
+                        and nlp.plot[variable].bounds
+                        and not nlp.plot[variable].all_variables_in_one_subplot
+                    ):
                         if nlp.plot[variable].bounds.type != InterpolationType.CUSTOM:
                             y_min = nlp.plot[variable].bounds.min[mapping_to_first_index.index(ctr), :].min()
                             y_max = nlp.plot[variable].bounds.max[mapping_to_first_index.index(ctr), :].max()
@@ -646,7 +676,10 @@ class PlotOcp:
 
         plt.show()
 
-    def update_data(self, v: np.ndarray):
+    def update_data(
+        self,
+        args: dict,
+    ):
         """
         Update ydata from the variable a solution structure
 
@@ -656,9 +689,11 @@ class PlotOcp:
             The data to parse
         """
 
+        from ..interfaces.interface_utils import get_numerical_timeseries
+
         self.ydata = []
 
-        sol = Solution.from_vector(self.ocp, v)
+        sol = Solution.from_vector(self.ocp, args["x"])
         data_states_decision = sol.decision_states(scaled=True, to_merge=SolutionMerge.KEYS)
         data_states_stepwise = sol.stepwise_states(scaled=True, to_merge=SolutionMerge.KEYS)
 
@@ -680,11 +715,19 @@ class PlotOcp:
         self._update_xdata(time_stepwise)
 
         for nlp in self.ocp.nlp:
+
             phase_idx = nlp.phase_idx
             x_decision = data_states_decision[phase_idx]
             x_stepwise = data_states_stepwise[phase_idx]
             u = data_controls[phase_idx]
             a = data_algebraic_states[phase_idx]
+            d = []
+            for n_idx in range(nlp.ns + 1):
+                d_tp = get_numerical_timeseries(self.ocp, phase_idx, n_idx, 0)
+                if d_tp.shape == (0, 0):
+                    d += [np.array([])]
+                else:
+                    d += [np.array(d_tp)]
 
             for key in self.variable_sizes[phase_idx]:
                 y_data = self._compute_y_from_plot_func(
@@ -697,6 +740,7 @@ class PlotOcp:
                     u,
                     p,
                     a,
+                    d,
                 )
                 if y_data is None:
                     continue
@@ -707,8 +751,18 @@ class PlotOcp:
 
         self.__update_axes()
 
+        if self.ocp.plot_ipopt_outputs:
+            from ..gui.ipopt_output_plot import update_ipopt_output_plot
+
+            update_ipopt_output_plot(args, self.ocp)
+
+        if self.ocp.plot_check_conditioning:
+            from ..gui.check_conditioning import update_conditioning_plots
+
+            update_conditioning_plots(args["x"], self.ocp)
+
     def _compute_y_from_plot_func(
-        self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a
+        self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
     ):
         """
         Compute the y data from the plot function
@@ -733,11 +787,14 @@ class PlotOcp:
             The parameters of the current phase
         a
             The algebraic states of the current phase
+        d
+            The numerical timeseries of the current phase
 
         Returns
         -------
         The y data
         """
+        from ..interfaces.interface_utils import get_numerical_timeseries
 
         if not custom_plot:
             return None
@@ -768,7 +825,13 @@ class PlotOcp:
                     idx,
                     lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)),
                 )
-
+                d_node = PenaltyHelpers.numerical_timeseries(
+                    penalty,
+                    idx,
+                    lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(self.ocp, p_idx, n_idx, sn_idx),
+                )
+                if d_node.shape == (0, 0):
+                    d_node = DM(0, 1)
             else:
                 t0 = time_stepwise[phase_idx][node_idx][0]
 
@@ -776,8 +839,11 @@ class PlotOcp:
                 u_node = u[node_idx] if node_idx < len(u) else np.ndarray((0, 1))
                 p_node = p
                 a_node = a[node_idx]
+                d_node = d[node_idx]
 
-            tp = custom_plot.function(t0, dt, node_idx, x_node, u_node, p_node, a_node, **custom_plot.parameters)
+            tp = custom_plot.function(
+                t0, dt, node_idx, x_node, u_node, p_node, a_node, d_node, **custom_plot.parameters
+            )
 
             y_tp = np.ndarray((max(custom_plot.phase_mappings.to_first.map_idx) + 1, tp.shape[1])) * np.nan
             for ctr, axe_index in enumerate(custom_plot.phase_mappings.to_first.map_idx):

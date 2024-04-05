@@ -3,7 +3,7 @@ import pytest
 
 import numpy as np
 from casadi import DM, vertcat
-from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers
+from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator
 
 
 @pytest.mark.parametrize("use_sx", [False, True])
@@ -180,6 +180,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         u,
         p_sol,
         a,
+        [],
     )
     np.testing.assert_almost_equal(constraint_value[0], shoulder_pos_initial, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], elbow_pos_initial, decimal=6)
@@ -208,6 +209,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         u,
         p_sol,
         a,
+        [],
     )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], 0, decimal=6)
@@ -223,6 +225,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         u,
         p_sol,
         a,
+        [],
     )
     np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], 0, decimal=6)
@@ -239,6 +242,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         u,
         p_sol,
         a,
+        [],
     )
     np.testing.assert_almost_equal(constraint_value[0], hand_final_position[0], decimal=6)
     np.testing.assert_almost_equal(constraint_value[1], hand_final_position[1], decimal=6)
@@ -268,6 +272,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             u,
             p_sol,
             a,
+            [],
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -296,6 +301,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             u,
             p_sol,
             a,
+            [],
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -325,6 +331,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             u,
             p_sol,
             a,
+            [],
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -332,17 +339,17 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     penalty = socp.nlp[0].g_internal[0]
     for i_node in range(socp.n_shooting):
         x = PenaltyHelpers.states(
-            socp.nlp[0].g[9],
+            penalty,
             i_node,
             lambda p_idx, n_idx, sn_idx: states_sol[:, sn_idx, n_idx],
         )
         u = PenaltyHelpers.controls(
-            socp.nlp[0].g[9],
+            penalty,
             i_node,
             lambda p_idx, n_idx, sn_idx: controls_sol[:, n_idx],
         )
         a = PenaltyHelpers.states(
-            socp.nlp[0].g[9],
+            penalty,
             i_node,
             lambda p_idx, n_idx, sn_idx: algebraic_sol[:, n_idx],
         )
@@ -353,6 +360,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             u,
             p_sol,
             a,
+            [],
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -381,6 +389,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             u,
             p_sol,
             a,
+            [],
         )
         np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
@@ -540,4 +549,14 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
             ]
         ),
         decimal=6,
+    )
+
+    np.random.seed(42)
+    integrated_states = sol.noisy_integrate(integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES)
+    integrated_stated_covariance = np.cov(integrated_states["q"][:, -1, :])
+    np.testing.assert_almost_equal(
+        integrated_stated_covariance, np.array([[0.00404452, -0.00100082], [-0.00100082, 0.00382313]]), decimal=6
+    )
+    np.testing.assert_almost_equal(
+        cov[:, -1].reshape(4, 4)[:2, :2], np.array([[0.00266764, -0.0005587], [-0.0005587, 0.00134316]]), decimal=6
     )

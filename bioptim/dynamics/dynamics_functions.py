@@ -1,10 +1,11 @@
+import numpy as np
 from casadi import horzcat, vertcat, MX, SX
 
-from ..misc.enums import RigidBodyDynamics, DefectType
-from .fatigue.fatigue_dynamics import FatigueList
-from ..optimization.optimization_variable import OptimizationVariable
 from .dynamics_evaluation import DynamicsEvaluation
+from .fatigue.fatigue_dynamics import FatigueList
+from ..misc.enums import RigidBodyDynamics, DefectType
 from ..misc.mapping import BiMapping
+from ..optimization.optimization_variable import OptimizationVariable
 
 
 class DynamicsFunctions:
@@ -43,7 +44,13 @@ class DynamicsFunctions:
 
     @staticmethod
     def custom(
-        time: MX.sym, states: MX.sym, controls: MX.sym, parameters: MX.sym, algebraic_states: MX.sym, nlp
+        time: MX.sym,
+        states: MX.sym,
+        controls: MX.sym,
+        parameters: MX.sym,
+        algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
+        nlp,
     ) -> DynamicsEvaluation:
         """
         Interface to custom dynamic function provided by the user.
@@ -60,6 +67,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic_states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
 
@@ -71,7 +80,9 @@ class DynamicsFunctions:
             The defects of the implicit dynamics
         """
 
-        return nlp.dynamics_type.dynamic_function(time, states, controls, parameters, algebraic_states, nlp)
+        return nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp
+        )
 
     @staticmethod
     def torque_driven(
@@ -80,6 +91,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
@@ -87,7 +99,7 @@ class DynamicsFunctions:
         with_friction: bool,
         rigidbody_dynamics: RigidBodyDynamics,
         fatigue: FatigueList,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -104,6 +116,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -118,7 +132,7 @@ class DynamicsFunctions:
             which rigidbody dynamics should be used
         fatigue : FatigueList
             A list of fatigue elements
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -169,7 +183,7 @@ class DynamicsFunctions:
         ):
             if not with_contact and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.mx_reduced)
-                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact)
+                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
                 defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
                 dq_defects = []
@@ -195,6 +209,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         with_passive_torque: bool,
         with_ligament: bool,
@@ -215,6 +230,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -266,6 +283,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         with_contact: bool,
         with_friction: bool,
@@ -285,6 +303,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states variables of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -311,6 +331,7 @@ class DynamicsFunctions:
             controls=controls,
             parameters=parameters,
             algebraic_states=algebraic_states,
+            numerical_timeseries=numerical_timeseries,
             sensory_noise=sensory_noise,
             motor_noise=motor_noise,
         )
@@ -331,6 +352,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         with_friction: bool,
     ) -> DynamicsEvaluation:
@@ -349,6 +371,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         with_friction: bool
@@ -456,12 +480,13 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool,
         with_residual_torque: bool,
         with_ligament: bool,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ):
         """
         Forward dynamics driven by joint torques activations.
@@ -478,6 +503,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -488,7 +515,7 @@ class DynamicsFunctions:
             If the dynamic should be added with residual torques
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -523,12 +550,13 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         rigidbody_dynamics: RigidBodyDynamics,
         with_contact: bool,
         with_passive_torque: bool,
         with_ligament: bool,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -545,6 +573,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         rigidbody_dynamics: RigidBodyDynamics
@@ -555,7 +585,7 @@ class DynamicsFunctions:
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -602,10 +632,11 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -622,13 +653,15 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -652,10 +685,11 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ) -> MX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -672,13 +706,15 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
             If the dynamic with passive torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -702,6 +738,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         with_contact: bool,
         with_passive_torque: bool = False,
@@ -709,7 +746,7 @@ class DynamicsFunctions:
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         with_residual_torque: bool = False,
         fatigue=None,
-        external_forces: list = None,
+        external_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by muscle.
@@ -726,6 +763,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         with_contact: bool
@@ -740,7 +779,7 @@ class DynamicsFunctions:
             To define fatigue elements
         with_residual_torque: bool
             If the dynamic should be added with residual torques
-        external_forces: list[Any]
+        external_forces: np.ndarray
             The external forces
 
         Returns
@@ -847,6 +886,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         with_passive_torque: bool = False,
         with_ligament: bool = False,
@@ -867,6 +907,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         with_passive_torque: bool
@@ -900,6 +942,7 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
     ) -> DynamicsEvaluation:
@@ -918,6 +961,8 @@ class DynamicsFunctions:
             The parameters of the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             The definition of the system
         rigidbody_dynamics: RigidBodyDynamics
@@ -1092,16 +1137,11 @@ class DynamicsFunctions:
 
             return qdot_var_mapping.map(qddot)
         else:
-            dxdt = MX(len(qdot_var_mapping), nlp.ns)
-            # Todo: Should be added to pass f_ext in controls (as a symoblic value)
-            #  this would avoid to create multiple equations of motions per node
-            for i, f_ext in enumerate(external_forces):
-                if with_contact:
-                    qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, f_ext)
-                else:
-                    qddot = nlp.model.forward_dynamics(q, qdot, tau, f_ext)
-                dxdt[:, i] = qdot_var_mapping.map(qddot)
-            return dxdt
+            if with_contact:
+                qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, external_forces)
+            else:
+                qddot = nlp.model.forward_dynamics(q, qdot, tau, external_forces)
+            return qdot_var_mapping.map(qddot)
 
     @staticmethod
     def inverse_dynamics(
@@ -1110,7 +1150,7 @@ class DynamicsFunctions:
         qdot: MX | SX,
         qddot: MX | SX,
         with_contact: bool,
-        external_forces: list = None,
+        external_forces: MX = None,
     ):
         """
         Easy accessor to torques from inverse dynamics
@@ -1127,7 +1167,7 @@ class DynamicsFunctions:
             The value of qddot from "get"
         with_contact: bool
             If the dynamics with contact should be used
-        external_forces: list[]
+        external_forces: MX
             The external forces
 
         Returns
@@ -1135,7 +1175,7 @@ class DynamicsFunctions:
         Torques in tau
         """
 
-        if nlp.external_forces is None:
+        if external_forces is None:
             tau = nlp.model.inverse_dynamics(q, qdot, qddot)
         else:
             if "tau" in nlp.states:
@@ -1145,10 +1185,8 @@ class DynamicsFunctions:
             else:
                 tau_shape = nlp.model.nb_tau
             tau = MX(tau_shape, nlp.ns)
-            # Todo: Should be added to pass f_ext in controls (as a symoblic value)
-            #  this would avoid to create multiple equations of motions per node
-            for i, f_ext in enumerate(nlp.external_forces):
-                tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, f_ext)
+            for i in range(external_forces.shape[1]):
+                tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, external_forces[:, i])
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod
@@ -1214,11 +1252,12 @@ class DynamicsFunctions:
         controls: MX.sym,
         parameters: MX.sym,
         algebraic_states: MX.sym,
+        numerical_timeseries: MX.sym,
         nlp,
         external_forces: list = None,
     ) -> DynamicsEvaluation:
         """
-        The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a)
+        The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
 
         Parameters
         ----------
@@ -1232,6 +1271,8 @@ class DynamicsFunctions:
             The parameters acting on the system
         algebraic_states: MX.sym
             The algebraic states of the system
+        numerical_timeseries: MX.sym
+            The numerical timeseries of the system
         nlp: NonLinearProgram
             A reference to the phase
         external_forces: list[Any]

@@ -1,12 +1,11 @@
 import importlib.util
 from pathlib import Path
-import os
 from typing import Any
-import pickle
 
 import numpy as np
 import pytest
 from casadi import MX, Function
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -20,6 +19,7 @@ from bioptim import (
     SolutionIntegrator,
     Solution,
     SolutionMerge,
+    OptimizationVariableList,
 )
 
 
@@ -188,3 +188,29 @@ class TestUtils:
             TestUtils.mx_assert_equal(value, expected, decimal=decimal, squeeze=squeeze, expand=expand)
         else:
             np.testing.assert_almost_equal(value, expected, decimal=decimal)
+
+    @staticmethod
+    def initialize_numerical_timeseries(nlp, dynamics):
+        numerical_timeseries = OptimizationVariableList(nlp.cx, dynamics.phase_dynamics)
+        if dynamics.numerical_data_timeseries is not None:
+            for key in dynamics.numerical_data_timeseries.keys():
+                variable_shape = dynamics.numerical_data_timeseries[key].shape
+                for i_component in range(variable_shape[1] if len(variable_shape) > 1 else 1):
+                    cx = nlp.cx.sym(
+                        f"{key}_phase{nlp.phase_idx}_{i_component}_cx",
+                        variable_shape[0],
+                    )
+                    mx = MX.sym(
+                        f"{key}_phase{nlp.phase_idx}_{i_component}_mx",
+                        variable_shape[0],
+                    )
+
+                    numerical_timeseries.append(
+                        name=f"{key}_{i_component}",
+                        cx=[cx, cx, cx],
+                        mx=mx,
+                        bimapping=BiMapping(
+                            Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0])))
+                        ),
+                    )
+        return numerical_timeseries

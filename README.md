@@ -1872,17 +1872,8 @@ The solver must minimize the force to lift the box while reaching the marker in 
 It is designed to show how to use external forces. An example of external forces that depends on the state (for
 example, a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
 
-`Bioptim` expects `external_forces` to be a list (for each shooting node) of np.ndarray [6 x n],
-where the six components are [Mx, My, Mz, Fx, Fy, Fz], expressed at the origin of the global reference frame for each node n.
-Let us take a look at the definition of the external forces in
-this example :
-
-```python
-external_forces = [[["Seg1", (0, 0, 0, 0, 0, -2)], ["Test", (0, 0, 0, 0, 0, 5)]] for _ in range(n_shooting)]
-```
-
-`external_forces` is 30-element long, and each sub list array are composed of a string, the name of the segment, and a tuple, the external force.
-The tuple is [Mx, My, Mz, Fx, Fy, Fz] for each node (in this example, we take 30 shooting nodes).
+`Bioptim` expects `external_forces` to be a np.ndarray [6 x n x n_shooting], where the six components are 
+[Mx, My, Mz, Fx, Fy, Fz], expressed at the origin of the global reference frame for each node.
 
 ### The [example_implicit_dynamics.py](./bioptim/examples/getting_started/example_implicit_dynamics.py) file
 *#TODO*

@@ -22,12 +22,18 @@ class BiorbdModel:
     This class wraps the biorbd model and allows the user to call the biorbd functions from the biomodel protocol
     """
 
-    def __init__(self, bio_model: str | biorbd.Model, friction_coefficients: np.ndarray = None):
+    def __init__(
+        self,
+        bio_model: str | biorbd.Model,
+        friction_coefficients: np.ndarray = None,
+        segments_to_apply_external_forces: list[str] = [],
+    ):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
         self._friction_coefficients = friction_coefficients
+        self._segments_to_apply_external_forces = segments_to_apply_external_forces
 
     @property
     def name(self) -> str:
@@ -287,48 +293,49 @@ class BiorbdModel:
     def reorder_qddot_root_joints(qddot_root, qddot_joints) -> MX:
         return vertcat(qddot_root, qddot_joints)
 
-    def _dispatch_forces(self, external_forces, translational_forces):
-        def extract_elements(e) -> tuple[str, Any] | tuple[Any, str, Any]:
-            value_message = ValueError(
-                "The external_forces at each frame should be of the form: [segment_name, spatial_vector],\n"
-                "where the segment_name is a str corresponding to the name of the parent and the spatial_vector\n"
-                "is a 6 element vectors (Mx, My, Mz, Fx, Fy, Fz) of the type tuple, list, np.ndarray or MX."
+    def _dispatch_forces(self, external_forces: MX, translational_forces: MX):
+
+        if external_forces is not None and translational_forces is not None:
+            raise NotImplementedError(
+                "You cannot provide both external_forces and translational_forces at the same time."
             )
-            if not isinstance(e, (list, tuple)) and len(e) < 2:
-                raise value_message
-
-            name = e[0]
-            if not isinstance(name, str):
-                raise value_message
-
-            values = e[1]
-            if isinstance(values, (list, tuple)):
-                values = np.array(values)
-            if not isinstance(values, (np.ndarray, MX)):
-                raise value_message
-
-            # If it is a force, we are done
-            if len(e) < 3:
-                return name, values
-
-            # If it is a contact point, add it
-            point_of_application = e[2]
-            if isinstance(point_of_application, (list, tuple)):
-                point_of_application = np.array(point_of_application)
-            if not isinstance(point_of_application, (np.ndarray, MX)):
-                raise value_message
-            return values, name, point_of_application
+        elif external_forces is not None:
+            if not isinstance(external_forces, MX):
+                raise ValueError("external_forces should be a numpy array of shape 9 x nb_forces.")
+            if external_forces.shape[0] != 9:
+                raise ValueError(
+                    f"external_forces has {external_forces.shape[0]} rows, it should have 9 rows (Mx, My, Mz, Fx, Fy, Fz, Px, Py, Pz). You should provide the moments, forces and points of application."
+                )
+            if len(self._segments_to_apply_external_forces) != external_forces.shape[1]:
+                raise ValueError(
+                    f"external_forces has {external_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length."
+                )
+        elif translational_forces is not None:
+            if not isinstance(translational_forces, MX):
+                raise ValueError("translational_forces should be a numpy array of shape 6 x nb_forces.")
+            if translational_forces.shape[0] != 6:
+                raise ValueError(
+                    f"translational_forces has {translational_forces.shape[0]} rows, it should have 6 rows (Fx, Fy, Fz, Px, Py, Pz). You should provide the forces and points of application."
+                )
+            if len(self._segments_to_apply_external_forces) != translational_forces.shape[1]:
+                raise ValueError(
+                    f"translational_forces has {translational_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length."
+                )
 
         external_forces_set = self.model.externalForceSet()
 
         if external_forces is not None:
-            for elements in external_forces:
-                name, values = extract_elements(elements)
-                external_forces_set.add(name, values)
+            for i_element in range(external_forces.shape[1]):
+                name = self._segments_to_apply_external_forces[i_element]
+                values = external_forces[:6, i_element]
+                point_of_application = external_forces[6:9, i_element]
+                external_forces_set.add(name, values, point_of_application)
 
         if translational_forces is not None:
-            for elements in translational_forces:
-                values, name, point_of_application = extract_elements(elements)
+            for i_elements in range(translational_forces.shape[1]):
+                name = self._segments_to_apply_external_forces[i_elements]
+                values = translational_forces[:3, i_elements]
+                point_of_application = translational_forces[3:6, i_elements]
                 external_forces_set.addTranslationalForce(values, name, point_of_application)
 
         return external_forces_set
@@ -574,17 +581,25 @@ class BiorbdModel:
         return soft_contact_forces
 
     def reshape_fext_to_fcontact(self, fext: MX) -> list:
+        if len(self._segments_to_apply_external_forces) == 0:
+            parent_name = []
+            for i in range(self.nb_rigid_contacts):
+                contact = self.model.rigidContact(i)
+                parent_name += [
+                    self.model.segment(self.model.getBodyRbdlIdToBiorbdId(contact.parentId())).name().to_string()
+                ]
+            self._segments_to_apply_external_forces = parent_name
+
         count = 0
-        f_contact_vec = []
+        f_contact_vec = MX()
         for i in range(self.nb_rigid_contacts):
             contact = self.model.rigidContact(i)
-            parent_name = self.model.segment(self.model.getBodyRbdlIdToBiorbdId(contact.parentId())).name().to_string()
-
-            tp = MX.zeros(3)
+            tp = MX.zeros(6)
             used_axes = [i for i, val in enumerate(contact.axes()) if val]
             n_contacts = len(used_axes)
             tp[used_axes] = fext[count : count + n_contacts]
-            f_contact_vec.append([parent_name, tp, contact.to_mx()])
+            tp[3:] = contact.to_mx()
+            f_contact_vec = horzcat(f_contact_vec, tp)
             count += n_contacts
         return f_contact_vec
 
@@ -616,14 +631,16 @@ class BiorbdModel:
             n_dof += self.segments[j].nbDof()
         return quat_idx
 
-    def contact_forces(self, q, qdot, tau, external_forces: list = None) -> MX:
+    def contact_forces(self, q, qdot, tau, external_forces: MX = None) -> MX:
         self.check_q_size(q)
         self.check_qdot_size(qdot)
         self.check_tau_size(tau)
-        if external_forces is not None and len(external_forces) != 0:
+        if external_forces is not None:
             all_forces = MX()
-            for i, f_ext in enumerate(external_forces):
-                force = self.contact_forces_from_constrained_forward_dynamics(q, qdot, tau, external_forces=f_ext)
+            for i in range(external_forces.shape[1]):
+                force = self.contact_forces_from_constrained_forward_dynamics(
+                    q, qdot, tau, external_forces=external_forces[:, i]
+                )
                 all_forces = horzcat(all_forces, force)
             return all_forces
         else:

@@ -10,6 +10,7 @@ More specifically this example reproduces the behavior of the DynamicsFcn.TORQUE
 import platform
 
 from casadi import MX, SX, vertcat
+
 from bioptim import (
     BiorbdModel,
     Node,
@@ -38,6 +39,7 @@ def custom_dynamics(
     controls: MX | SX,
     parameters: MX | SX,
     algebraic_states: MX | SX,
+    numerical_timeseries: MX | SX,
     nlp: NonLinearProgram,
     my_additional_factor=1,
 ) -> DynamicsEvaluation:
@@ -81,7 +83,9 @@ def custom_dynamics(
     return DynamicsEvaluation(dxdt=vertcat(dq, ddq), defects=None)
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1):
+def custom_configure(
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, my_additional_factor=1, numerical_data_timeseries=None
+):
     """
     Tell the program which variables are states and controls.
     The user is expected to use the ConfigureProblem.configure_xxx functions.

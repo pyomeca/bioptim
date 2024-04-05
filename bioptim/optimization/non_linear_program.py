@@ -39,12 +39,12 @@ class NonLinearProgram:
         The dynamic MX or SX used during the current phase
     dynamics_func: Callable
         The dynamic function used during the current phase dxdt = f(x,u,p)
+    extra_dynamics_func: Callable
+        The extra dynamic function used during the current phase dxdt = f(x,u,p)
     implicit_dynamics_func: Callable
         The implicit dynamic function used during the current phase f(x,u,p,xdot) = 0
     dynamics_type: Dynamics
         The dynamic option declared by the user for the current phase
-    external_forces: list
-        The external forces acting at the center of mass of the designated segment
     g: list[list[Constraint]]
         All the constraints at each of the node of the phase
     g_internal: list[list[Constraint]]
@@ -139,15 +139,14 @@ class NonLinearProgram:
         self.control_type = ControlType.CONSTANT
         self.cx = None
         self.dt = None
-        self.dynamics = (
-            None  # TODO Change this to a list to include extra_dynamics in a single vector (that matches dynamics_func)
-        )
+        self.dynamics = []
         self.extra_dynamics = []
         self.dynamics_evaluation = DynamicsEvaluation()
-        self.dynamics_func: list = []
-        self.implicit_dynamics_func: list = []
+        self.dynamics_func = None
+        self.extra_dynamics_func: list = []
+        self.implicit_dynamics_func = None
         self.dynamics_type = None
-        self.external_forces: list[list[Any, ...], ...] | None = None  # nodes x steps that are passed to the model
+        self.numerical_timeseries = None
         self.g = []
         self.g_internal = []
         self.g_implicit = []

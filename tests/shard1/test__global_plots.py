@@ -3,16 +3,16 @@ Test for file IO
 """
 
 import io
-import sys
 import os
-import pytest
-
-from casadi import Function, MX
-import numpy as np
-from bioptim import CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel, PhaseDynamics
-from bioptim.limits.penalty import PenaltyOption
+import sys
 
 import matplotlib
+import numpy as np
+import pytest
+from casadi import Function, MX
+
+from bioptim import CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel, PhaseDynamics
+from bioptim.limits.penalty import PenaltyOption
 
 matplotlib.use("Agg")
 
@@ -52,6 +52,37 @@ def test_plot_check_conditioning(phase_dynamics):
     ocp.check_conditioning()
     sol = ocp.solve()
     sol.graphs(automatically_organize=False)
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_plot_check_conditioning_live(phase_dynamics):
+    # Load graphs check conditioning
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        long_optim=False,
+        phase_dynamics=phase_dynamics,
+        expand_dynamics=True,
+    )
+    ocp.add_plot_check_conditioning()
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+def test_plot_ipopt_output_live(phase_dynamics):
+    from bioptim.examples.getting_started import example_multiphase as ocp_module
+
+    bioptim_folder = os.path.dirname(ocp_module.__file__)
+
+    ocp = ocp_module.prepare_ocp(
+        biorbd_model_path=bioptim_folder + "/models/cube.bioMod",
+        long_optim=False,
+        phase_dynamics=phase_dynamics,
+        expand_dynamics=True,
+    )
+    ocp.add_plot_ipopt_outputs()
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -126,7 +157,7 @@ def test_add_new_plot(phase_dynamics):
     sol = ocp.solve(solver)
 
     # Test 1 - Working plot
-    ocp.add_plot("My New Plot", lambda t0, phases_dt, node_idx, x, u, p, a: x[0:2, :])
+    ocp.add_plot("My New Plot", lambda t0, phases_dt, node_idx, x, u, p, a, d: x[0:2, :])
     sol.graphs(automatically_organize=False)
 
     # Add the plot of objectives and constraints to this mess
@@ -226,16 +257,17 @@ def test_console_objective_functions(phase_dynamics):
                         u = MX.sym("u", 3, 1)
                     param = MX.sym("param", *p.weighted_function[node_index].size_in("p"))
                     a = MX.sym("a", *p.weighted_function[node_index].size_in("a"))
+                    d = MX.sym("d", *p.weighted_function[node_index].size_in("d"))
                     weight = MX.sym("weight", *p.weighted_function[node_index].size_in("weight"))
                     target = MX.sym("target", *p.weighted_function[node_index].size_in("target"))
 
                     p.function[node_index] = Function(
-                        name, [t, phases_dt, x, u, param, a], [np.array([range(cmp, len(p.rows) + cmp)]).T]
+                        name, [t, phases_dt, x, u, param, a, d], [np.array([range(cmp, len(p.rows) + cmp)]).T]
                     )
                     p.function_non_threaded[node_index] = p.function[node_index]
                     p.weighted_function[node_index] = Function(
                         name,
-                        [t, phases_dt, x, u, param, a, weight, target],
+                        [t, phases_dt, x, u, param, a, d, weight, target],
                         [np.array([range(cmp + 1, len(p.rows) + cmp + 1)]).T],
                     )
                     p.weighted_function_non_threaded[node_index] = p.weighted_function[node_index]

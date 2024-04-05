@@ -1,4 +1,5 @@
 from typing import Callable, Any
+
 from casadi import MX_eye, SX_eye, jacobian, Function, MX, SX, vertcat
 
 from .constraints import PenaltyOption
@@ -7,8 +8,8 @@ from ..limits.penalty import PenaltyFunctionAbstract, PenaltyController
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import Node, PenaltyType
 from ..misc.fcn_enum import FcnEnum
-from ..misc.options import UniquePerPhaseOptionList
 from ..misc.mapping import BiMapping
+from ..misc.options import UniquePerPhaseOptionList
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
@@ -85,8 +86,11 @@ class MultinodePenalty(PenaltyOption):
         raise NotImplementedError("This is an abstract method and should be implemented by child")
 
     def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
-        ocp = controller[0].ocp
-        nlp = controller[0].get_nlp
+
+        controller = controller[0]  # This is a special case of Node.TRANSITION
+
+        ocp = controller.ocp
+        nlp = controller.get_nlp
         pool = self._get_pool_to_add_penalty(ocp, nlp)
         pool[self.list_index] = self
 
@@ -394,6 +398,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].controls.cx,
                 parameters,
                 controllers[0].algebraic_states.cx,
+                controllers[0].numerical_timeseries.cx,
             )
 
             DdZ_DX_fun = Function(
@@ -404,6 +409,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     controllers[0].controls.cx,
                     controllers[0].parameters.cx,
                     controllers[0].algebraic_states.cx,
+                    controllers[0].numerical_timeseries.cx,
                 ],
                 [jacobian(dx, controllers[0].states.cx)],
             )
@@ -418,6 +424,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[1].controls.cx,
                 parameters,
                 controllers[1].algebraic_states.cx,
+                controllers[1].numerical_timeseries.cx,
             )
 
             CX_eye = SX_eye if controllers[0].cx == SX else MX_eye
@@ -548,6 +555,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             qdot_joints = MX.sym("qdot_joints", nu, 1)
             tau_joints = MX.sym("tau_joints", nu, 1)
             algebraic_states_sym = MX.sym("algebraic_states_sym", controllers[0].algebraic_states.shape, 1)
+            numerical_timeseries_sym = MX.sym("numerical_timeseries_sym", controllers[0].numerical_timeseries.shape, 1)
 
             dx = controllers[0].extra_dynamics(0)(
                 controllers[0].time.mx,
@@ -555,6 +563,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 tau_joints,
                 controllers[0].parameters.mx,
                 algebraic_states_sym,
+                numerical_timeseries_sym,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -572,6 +581,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     tau_joints,
                     controllers[0].parameters.mx,
                     algebraic_states_sym,
+                    numerical_timeseries_sym,
                 ],
                 [
                     jacobian(
@@ -596,6 +606,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].controls["tau"].cx,
                 parameters,
                 controllers[0].algebraic_states.cx,
+                controllers[0].numerical_timeseries.cx,
             )
 
             parameters = controllers[1].parameters.cx
@@ -611,6 +622,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[1].controls.cx,
                 parameters,
                 controllers[1].algebraic_states.cx,
+                controllers[1].numerical_timeseries.cx,
             )
 
             out = c_matrix - (-(DF_DW + DF_DW_plus) / 2 * dt)

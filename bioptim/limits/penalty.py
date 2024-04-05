@@ -1,16 +1,15 @@
-from typing import Any
-from math import inf
 import inspect
+from typing import Any
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, SX, Function, atan2, dot, cross, sqrt, MX_eye, MX, SX_eye, SX, jacobian, trace
+from casadi import horzcat, vertcat, Function, atan2, dot, cross, sqrt, MX_eye, SX_eye, SX, jacobian, trace
+from math import inf
 
-from .penalty_option import PenaltyOption
 from .penalty_controller import PenaltyController
+from .penalty_option import PenaltyOption
 from ..misc.enums import Node, Axis, ControlType, QuadratureRule
-from ..misc.mapping import BiMapping
-from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..models.biorbd.biorbd_model import BiorbdModel
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 
 
 class PenaltyFunctionAbstract:
@@ -166,6 +165,10 @@ class PenaltyFunctionAbstract:
             controller : PenaltyController
                 Controller to be used to compute the expected effort.
             """
+
+            if penalty.target is not None:
+                raise RuntimeError("It is not possible to use a target for the expected feedback effort.")
+
             CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
             sensory_noise_matrix = controller.model.sensory_noise_magnitude * CX_eye(
                 controller.model.sensory_noise_magnitude.shape[0]
@@ -201,6 +204,7 @@ class PenaltyFunctionAbstract:
                 controls=controller.controls_scaled.mx,
                 parameters=controller.parameters_scaled.mx,
                 algebraic_states=controller.algebraic_states_scaled.mx,
+                numerical_timeseries=controller.numerical_timeseries.mx,
                 sensory_noise=controller.model.sensory_noise_magnitude,
                 motor_noise=controller.model.motor_noise_magnitude,
             )
@@ -215,6 +219,7 @@ class PenaltyFunctionAbstract:
                     controller.controls_scaled.mx,
                     controller.parameters_scaled.mx,
                     controller.algebraic_states_scaled.mx,
+                    controller.numerical_timeseries.mx,
                 ],
                 [jac_e_fb_x],
             )(
@@ -223,6 +228,7 @@ class PenaltyFunctionAbstract:
                 controller.controls.cx_start,
                 controller.parameters.cx_start,
                 controller.algebraic_states.cx_start,
+                controller.numerical_timeseries.cx_start,
             )
 
             trace_jac_p_jack = trace(jac_e_fb_x_cx @ cov_matrix @ jac_e_fb_x_cx.T)
@@ -788,6 +794,7 @@ class PenaltyFunctionAbstract:
                 controller.controls.cx_start,
                 controller.parameters.cx,
                 controller.algebraic_states.cx_start,
+                controller.numerical_timeseries.cx,
             )
             return contact_force
 
@@ -1105,7 +1112,12 @@ class PenaltyFunctionAbstract:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
 
                 integrated = controller.integrate(
-                    t_span=t_span, x0=cx, u=u, p=controller.parameters.cx, a=controller.algebraic_states.cx_start
+                    t_span=t_span,
+                    x0=cx,
+                    u=u,
+                    p=controller.parameters.cx,
+                    a=controller.algebraic_states.cx_start,
+                    d=controller.numerical_timeseries.cx,
                 )
                 continuity -= integrated["xf"]
                 continuity = vertcat(continuity, integrated["defects"])
@@ -1119,6 +1131,7 @@ class PenaltyFunctionAbstract:
                     u=u,
                     p=controller.parameters.cx_start,
                     a=controller.algebraic_states.cx_start,
+                    d=controller.numerical_timeseries.cx,
                 )["xf"]
 
             penalty.phase = controller.phase_idx
@@ -1388,6 +1401,7 @@ class PenaltyFunctionAbstract:
                 getattr(controller.controls, attribute),
                 getattr(controller.parameters, attribute),
                 getattr(controller.algebraic_states, attribute),
+                getattr(controller.numerical_timeseries, attribute),
             )[controller.qdot.index, :]
 
         source = controller.states if "qddot" in controller.states else controller.controls

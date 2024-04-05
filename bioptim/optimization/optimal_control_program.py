@@ -56,6 +56,7 @@ from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.biomodel import BioModel
+from ..optimization.optimization_variable import OptimizationVariableList
 from ..optimization.parameters import ParameterList, Parameter, ParameterContainer
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
@@ -570,6 +571,9 @@ class OptimalControlProgram:
         # Declare and fill the parameters
         self._declare_parameters(parameters)
 
+        # Declare the numerical timeseries used at each nodes as symbolic variables
+        self._define_numerical_timeseries(dynamics)
+
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
         NLP.add(self, "ode_solver", ode_solver, True)
@@ -583,6 +587,11 @@ class OptimalControlProgram:
         NLP.add(self, "variable_mappings", variable_mappings, True)
 
         NLP.add(self, "integrated_value_functions", integrated_value_functions, True)
+
+        # If we want to plot what is printed by IPOPT in the console
+        self.plot_ipopt_outputs = False
+        # If we want the conditioning of the problem to be plotted live
+        self.plot_check_conditioning = False
 
         return (
             constraints,
@@ -615,6 +624,7 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             self.nlp[i].parameters = self.parameters  # This should be remove when phase parameters will be implemented
+            self.nlp[i].numerical_data_timeseries = self.nlp[i].dynamics_type.numerical_data_timeseries
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
             if (isinstance(self.nlp[i].model, VariationalBiorbdModel)) and self.nlp[i].algebraic_states.shape > 0:
@@ -1058,6 +1068,9 @@ class OptimalControlProgram:
             for key in nlp.controls.keys():
                 if f"{key}_controls" in nlp.plot and key in nlp.u_bounds.keys():
                     nlp.plot[f"{key}_controls"].bounds = nlp.u_bounds[key]
+            for key in nlp.algebraic_states.keys():
+                if f"{key}_algebraic" in nlp.plot and key in nlp.a_bounds.keys():
+                    nlp.plot[f"{key}_algebraic"].bounds = nlp.a_bounds[key]
 
     def update_initial_guess(
         self,
@@ -1224,7 +1237,7 @@ class OptimalControlProgram:
                 color[name] = plt.cm.viridis(i / len(name_unique_objective))
             return color
 
-        def compute_penalty_values(t0, phases_dt, node_idx, x, u, p, a, penalty):
+        def compute_penalty_values(t0, phases_dt, node_idx, x, u, p, a, d, penalty):
             """
             Compute the penalty value for the given time, state, control, parameters, penalty and time step
 
@@ -1244,6 +1257,8 @@ class OptimalControlProgram:
                 Parameters vector
             a: ndarray
                 Algebraic states variables vector
+            d: ndarray
+                numerical timeseries
             penalty: Penalty
                 The penalty object containing details on how to compute it
 
@@ -1255,7 +1270,7 @@ class OptimalControlProgram:
             weight = PenaltyHelpers.weight(penalty)
             target = PenaltyHelpers.target(penalty, node_idx)
 
-            val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, weight, target)
+            val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)
             return sum1(horzcat(val))
 
         def add_penalty(_penalties):
@@ -1304,6 +1319,12 @@ class OptimalControlProgram:
             add_penalty(penalties_internal)
             add_penalty(penalties_implicit)
         return
+
+    def add_plot_ipopt_outputs(self):
+        self.plot_ipopt_outputs = True
+
+    def add_plot_check_conditioning(self):
+        self.plot_check_conditioning = True
 
     def prepare_plots(
         self,
@@ -1584,6 +1605,44 @@ class OptimalControlProgram:
         self.dt_parameter_initial_guess = InitialGuess(
             "dt_initial_guess", initial_guess=[v for v in dt_initial_guess.values()]
         )
+
+    def _define_numerical_timeseries(self, dynamics):
+        """
+        Declare the numerical_timeseries symbolic variables.
+
+        Parameters
+        ----------
+        dynamics:
+            The dynamics for each phase.
+        """
+
+        numerical_timeseries = []
+        for i_phase, nlp in enumerate(self.nlp):
+            numerical_timeseries += [OptimizationVariableList(self.cx, dynamics[i_phase].phase_dynamics)]
+            if dynamics[i_phase].numerical_data_timeseries is not None:
+                for key in dynamics[i_phase].numerical_data_timeseries.keys():
+                    variable_shape = dynamics[i_phase].numerical_data_timeseries[key].shape
+                    for i_component in range(variable_shape[1] if len(variable_shape) > 1 else 1):
+                        cx = self.cx.sym(
+                            f"{key}_phase{i_phase}_{i_component}_cx",
+                            variable_shape[0],
+                        )
+                        mx = MX.sym(
+                            f"{key}_phase{i_phase}_{i_component}_mx",
+                            variable_shape[0],
+                        )
+
+                        numerical_timeseries[-1].append(
+                            name=f"{key}_{i_component}",
+                            cx=[cx, cx, cx],
+                            mx=mx,
+                            bimapping=BiMapping(
+                                Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0])))
+                            ),
+                        )
+
+        # Add to the nlp
+        NLP.add(self, "numerical_timeseries", numerical_timeseries, True)
 
     def _modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """

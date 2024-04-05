@@ -10,11 +10,12 @@ The difference between muscle activation and excitation is that the latter is th
 
 import platform
 
-from scipy.integrate import solve_ivp
-import numpy as np
 import biorbd_casadi as biorbd
+import numpy as np
 from casadi import MX, vertcat
 from matplotlib import pyplot as plt
+from scipy.integrate import solve_ivp
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -35,7 +36,6 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
-
 from bioptim.optimization.optimization_variable import OptimizationVariableContainer
 
 
@@ -173,6 +173,7 @@ def generate_data(
             controls=symbolic_controls,
             parameters=symbolic_parameters,
             algebraic_states=MX(),
+            numerical_timeseries=MX(),
             nlp=nlp,
             with_contact=False,
             rigidbody_dynamics=RigidBodyDynamics.ODE,

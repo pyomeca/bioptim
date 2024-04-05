@@ -30,6 +30,7 @@ class PenaltyController:
         p: MX | SX | list,
         a: list,
         a_scaled: list,
+        d: list,
         node_index: int = None,
     ):
         """
@@ -55,6 +56,8 @@ class PenaltyController:
             References to the algebraic_states variables
         a_scaled: list
             References to the scaled algebraic_states variables
+        d: list
+            References to the numerical timeseries
         node_index: int
             Current node index if nlp.phase_dynamics is SHARED_DURING_THE_PHASE,
             then node_index is expected to be set to 0
@@ -70,6 +73,7 @@ class PenaltyController:
         self.a = a
         self.a_scaled = a_scaled
         self.p = vertcat(p) if p is not None else p
+        self.d = d
         self.node_index = node_index
         self.cx_index_to_get = 0
 
@@ -253,7 +257,6 @@ class PenaltyController:
         -------
         The algebraic_states at node node_index
         """
-        # TODO: This variables should be renamed to "algebraic"
         self._nlp.algebraic_states.node_index = self.node_index
         out = self._nlp.algebraic_states.unscaled
         out.current_cx_to_get = self.cx_index_to_get
@@ -273,6 +276,16 @@ class PenaltyController:
         return out
 
     @property
+    def numerical_timeseries(self) -> OptimizationVariableList:
+        """
+        Return the numerical_timeseries at node node_index=0.
+        """
+        self._nlp.numerical_timeseries.node_index = self.node_index
+        out = self._nlp.numerical_timeseries
+        out.current_cx_to_get = self.cx_index_to_get
+        return out
+
+    @property
     def integrate(self):
         return self._nlp.dynamics[self.node_index]
 
@@ -281,12 +294,10 @@ class PenaltyController:
 
     @property
     def dynamics(self):
-        return self._nlp.dynamics_func[0]
+        return self._nlp.dynamics_func
 
     def extra_dynamics(self, dynamics_index):
-        # +1 - index so "integrate_extra_dynamics" and "extra_dynamics" share the same index.
-        # This is a hack which should be dealt properly at some point
-        return self._nlp.dynamics_func[dynamics_index + 1]
+        return self._nlp.extra_dynamics_func[dynamics_index]
 
     @property
     def states_scaled(self) -> OptimizationVariableList:
