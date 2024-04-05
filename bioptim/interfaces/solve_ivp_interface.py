@@ -1,11 +1,11 @@
 from typing import Callable, Any
 
-from casadi import vertcat
 import numpy as np
+from casadi import vertcat
 from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 
-from ..misc.enums import Shooting, ControlType, SolutionIntegrator, PhaseDynamics
+from ..misc.enums import Shooting, ControlType, SolutionIntegrator
 
 
 def solve_ivp_interface(
@@ -38,7 +38,7 @@ def solve_ivp_interface(
     a : np.ndarray
         array of the algebraic states of the system
     d : np.ndarray
-        array of the dynamics constants
+        array of the numerical timeseries
     shooting_type : Shooting
         The way we integrate the solution such as SINGLE, SINGLE_CONTINUOUS, MULTIPLE
     method: SolutionIntegrator

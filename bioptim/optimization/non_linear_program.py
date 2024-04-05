@@ -146,7 +146,7 @@ class NonLinearProgram:
         self.extra_dynamics_func: list = []
         self.implicit_dynamics_func = None
         self.dynamics_type = None
-        self.dynamics_constants = None
+        self.numerical_timeseries = None
         self.g = []
         self.g_internal = []
         self.g_implicit = []

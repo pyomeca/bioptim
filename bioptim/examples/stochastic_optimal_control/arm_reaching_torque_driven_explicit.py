@@ -4,10 +4,11 @@ The states dynamics is implicit. which allows to minimize the uncertainty on the
 The algebraic states dynamics is explicit.
 """
 
-from typing import Any
 import pickle
-import numpy as np
+from typing import Any
+
 import casadi as cas
+import numpy as np
 
 from bioptim import (
     OptimalControlProgram,
@@ -36,7 +37,6 @@ from bioptim import (
     ControlType,
     PhaseDynamics,
 )
-
 from bioptim.examples.stochastic_optimal_control.arm_reaching_torque_driven_implicit import ExampleType
 from bioptim.examples.stochastic_optimal_control.common import (
     dynamics_torque_driven_with_feedbacks,
@@ -49,7 +49,7 @@ def stochastic_forward_dynamics(
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
     algebraic_states: cas.MX | cas.SX,
-    dynamics_constants: cas.MX | cas.SX,
+    numerical_timeseries: cas.MX | cas.SX,
     nlp: NonLinearProgram,
     with_noise: bool,
 ) -> DynamicsEvaluation:
@@ -77,7 +77,7 @@ def stochastic_forward_dynamics(
     qdddot = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
 
     dqdot_constraint = dynamics_torque_driven_with_feedbacks(
-        time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise=with_noise
+        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise=with_noise
     )
     defects = cas.vertcat(dqdot_constraint - qddot)
 
@@ -85,7 +85,7 @@ def stochastic_forward_dynamics(
 
 
 def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
 ):
     """
     Configure the stochastic optimal control problem.
@@ -107,20 +107,20 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp: nlp.dynamics_type.dynamic_function(
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp: nlp.dynamics_type.dynamic_function(
             time,
             states,
             controls,
             parameters,
             algebraic_states,
-            dynamics_constants,
+            numerical_timeseries,
             nlp,
             with_noise=True,
         ),
@@ -146,7 +146,7 @@ def sensory_reference(
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
     algebraic_states: cas.MX | cas.SX,
-    dynamics_constants: cas.MX | cas.SX,
+    numerical_timeseries: cas.MX | cas.SX,
     nlp: NonLinearProgram,
 ):
     """
@@ -196,15 +196,15 @@ def get_cov_mat(nlp, node_index, use_sx):
         nlp.controls.mx,
         nlp.parameters.mx,
         nlp.algebraic_states.mx,
-        nlp.dynamics_constants.mx,
+        nlp.numerical_timeseries.mx,
         nlp,
         with_noise=True,
     )
     dx.dxdt = cas.Function(
         "tp",
-        [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx, nlp.dynamics_constants.mx],
+        [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx, nlp.numerical_timeseries.mx],
         [dx.dxdt],
-    )(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.dynamics_constants.cx)
+    )(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.numerical_timeseries.cx)
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(sensory_noise, motor_noise))
     dg_dw = -ddx_dwm * dt
@@ -220,7 +220,7 @@ def get_cov_mat(nlp, node_index, use_sx):
             nlp.controls.cx,
             nlp.parameters.cx,
             nlp.algebraic_states.cx,
-            nlp.dynamics_constants.cx,
+            nlp.numerical_timeseries.cx,
             cov_sym,
         ],
         [p_next],
@@ -241,7 +241,7 @@ def get_cov_mat(nlp, node_index, use_sx):
         nlp.controls.cx,
         parameters,
         nlp.algebraic_states.cx,
-        nlp.dynamics_constants.cx,
+        nlp.numerical_timeseries.cx,
         nlp.integrated_values["cov"].cx,
     )
     p_vector = StochasticBioModel.reshape_to_vector(func_eval)
@@ -313,7 +313,7 @@ def expected_feedback_effort(controllers: list[PenaltyController]) -> cas.MX:
         controllers[0].controls.cx,
         controllers[0].parameters.cx,
         controllers[0].algebraic_states,
-        controllers[0].dynamics_constants.cx,
+        controllers[0].numerical_timeseries.cx,
         controllers[0].get_nlp,
     )
     e_fb = k_matrix @ ((estimated_ref - ref) + controllers[0].model.sensory_noise_magnitude)
@@ -458,7 +458,7 @@ def prepare_socp(
         dynamic_function=stochastic_forward_dynamics,
         expand_dynamics=False,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
-        dynamics_constants_used_at_each_nodes={},
+        numerical_data_timeseries=None,
     )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf

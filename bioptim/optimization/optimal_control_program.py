@@ -6,7 +6,6 @@ import casadi
 import numpy as np
 from casadi import MX, SX, sum1, horzcat
 from matplotlib import pyplot as plt
-import subprocess
 
 from .non_linear_program import NonLinearProgram as NLP
 from .optimization_vector import OptimizationVectorHelper
@@ -57,11 +56,11 @@ from ..misc.mapping import BiMappingList, Mapping, BiMapping, NodeMappingList
 from ..misc.options import OptionDict
 from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
 from ..models.protocols.biomodel import BioModel
+from ..optimization.optimization_variable import OptimizationVariableList
 from ..optimization.parameters import ParameterList, Parameter, ParameterContainer
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
 from ..optimization.variable_scaling import VariableScalingList, VariableScaling
-from ..optimization.optimization_variable import OptimizationVariableList
 
 
 class OptimalControlProgram:
@@ -572,8 +571,8 @@ class OptimalControlProgram:
         # Declare and fill the parameters
         self._declare_parameters(parameters)
 
-        # Declare the dynamics constants used at each nodes as symbolic variables
-        self._define_dynamics_constants(dynamics)
+        # Declare the numerical timeseries used at each nodes as symbolic variables
+        self._define_numerical_timeseries(dynamics)
 
         # Prepare path constraints and dynamics of the program
         NLP.add(self, "dynamics_type", dynamics, False)
@@ -625,9 +624,9 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             self.nlp[i].parameters = self.parameters  # This should be remove when phase parameters will be implemented
-            self.nlp[i].dynamics_constants_used_at_each_nodes = self.nlp[
+            self.nlp[i].numerical_data_timeseries = self.nlp[
                 i
-            ].dynamics_type.dynamics_constants_used_at_each_nodes
+            ].dynamics_type.numerical_data_timeseries
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
             if (isinstance(self.nlp[i].model, VariationalBiorbdModel)) and self.nlp[i].algebraic_states.shape > 0:
@@ -1261,7 +1260,7 @@ class OptimalControlProgram:
             a: ndarray
                 Algebraic states variables vector
             d: ndarray
-                Dynamics constants
+                numerical timeseries
             penalty: Penalty
                 The penalty object containing details on how to compute it
 
@@ -1609,9 +1608,9 @@ class OptimalControlProgram:
             "dt_initial_guess", initial_guess=[v for v in dt_initial_guess.values()]
         )
 
-    def _define_dynamics_constants(self, dynamics):
+    def _define_numerical_timeseries(self, dynamics):
         """
-        Declare the dynamics_constants symbolic variables.
+        Declare the numerical_timeseries symbolic variables.
 
         Parameters
         ----------
@@ -1619,32 +1618,33 @@ class OptimalControlProgram:
             The dynamics for each phase.
         """
 
-        dynamics_constants = []
+        numerical_timeseries = []
         for i_phase, nlp in enumerate(self.nlp):
-            dynamics_constants += [OptimizationVariableList(self.cx, dynamics[i_phase].phase_dynamics)]
-            for key in dynamics[i_phase].dynamics_constants_used_at_each_nodes.keys():
-                variable_shape = dynamics[i_phase].dynamics_constants_used_at_each_nodes[key].shape
-                for i_component in range(variable_shape[1] if len(variable_shape) > 1 else 1):
-                    cx = self.cx.sym(
-                        f"{key}_phase{i_phase}_{i_component}_cx",
-                        variable_shape[0],
-                    )
-                    mx = MX.sym(
-                        f"{key}_phase{i_phase}_{i_component}_mx",
-                        variable_shape[0],
-                    )
+            numerical_timeseries += [OptimizationVariableList(self.cx, dynamics[i_phase].phase_dynamics)]
+            if dynamics[i_phase].numerical_data_timeseries is not None:
+                for key in dynamics[i_phase].numerical_data_timeseries.keys():
+                    variable_shape = dynamics[i_phase].numerical_data_timeseries[key].shape
+                    for i_component in range(variable_shape[1] if len(variable_shape) > 1 else 1):
+                        cx = self.cx.sym(
+                            f"{key}_phase{i_phase}_{i_component}_cx",
+                            variable_shape[0],
+                        )
+                        mx = MX.sym(
+                            f"{key}_phase{i_phase}_{i_component}_mx",
+                            variable_shape[0],
+                        )
 
-                    dynamics_constants[-1].append(
-                        name=f"{key}_{i_component}",
-                        cx=[cx, cx, cx],
-                        mx=mx,
-                        bimapping=BiMapping(
-                            Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0])))
-                        ),
-                    )
+                        numerical_timeseries[-1].append(
+                            name=f"{key}_{i_component}",
+                            cx=[cx, cx, cx],
+                            mx=mx,
+                            bimapping=BiMapping(
+                                Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0])))
+                            ),
+                        )
 
         # Add to the nlp
-        NLP.add(self, "dynamics_constants", dynamics_constants, True)
+        NLP.add(self, "d", numerical_timeseries, True)
 
     def _modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """

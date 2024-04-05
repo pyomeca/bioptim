@@ -2,10 +2,9 @@ import tkinter
 from typing import Callable, Any
 
 import numpy as np
-from casadi import DM, jacobian
+from casadi import DM
 from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import StrMethodFormatter
-from matplotlib.cm import get_cmap
 
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds
@@ -350,7 +349,7 @@ class PlotOcp:
                         size_u = nlp.controls.shape
                         size_p = nlp.parameters.shape
                         size_a = nlp.algebraic_states.shape
-                        size_d = nlp.dynamics_constants.shape
+                        size_d = nlp.numerical_timeseries.shape
                         if "penalty" in nlp.plot[key].parameters:
                             penalty = nlp.plot[key].parameters["penalty"]
 
@@ -363,7 +362,7 @@ class PlotOcp:
                                 size_u = casadi_function.size_in("u")[0]
                                 size_p = casadi_function.size_in("p")[0]
                                 size_a = casadi_function.size_in("a")[0]
-                                size_d = casadi_function.size_in("dynamics_constants")[0]
+                                size_d = casadi_function.size_in("d")[0]
 
                         size = (
                             nlp.plot[key]
@@ -375,7 +374,7 @@ class PlotOcp:
                                 np.zeros((size_u, 1)),  # controls
                                 np.zeros((size_p, 1)),  # parameters
                                 np.zeros((size_a, 1)),  # algebraic_states
-                                np.zeros((size_d, 1)),  # dynamics_constants
+                                np.zeros((size_d, 1)),  # numerical_timeseries
                                 **nlp.plot[key].parameters,  # parameters
                             )
                             .shape[0]
@@ -714,7 +713,6 @@ class PlotOcp:
         self._update_xdata(time_stepwise)
 
         for nlp in self.ocp.nlp:
-            from ..interfaces.interface_utils import _get_dynamics_constants
 
             phase_idx = nlp.phase_idx
             x_decision = data_states_decision[phase_idx]
@@ -723,7 +721,7 @@ class PlotOcp:
             a = data_algebraic_states[phase_idx]
             d = []
             for n_idx in range(nlp.ns + 1):
-                d_tp = _get_dynamics_constants(self.ocp, phase_idx, n_idx, 0)
+                d_tp = get_numerical_timeseries(self.ocp, phase_idx, n_idx, 0)
                 if d_tp.shape == (0, 0):
                     d += [np.array([])]
                 else:
@@ -788,13 +786,13 @@ class PlotOcp:
         a
             The algebraic states of the current phase
         d
-            The dynamics constants of the current phase
+            The numerical timeseries of the current phase
 
         Returns
         -------
         The y data
         """
-        from ..interfaces.interface_utils import _get_dynamics_constants
+        from ..interfaces.interface_utils import get_numerical_timeseries
 
         if not custom_plot:
             return None
@@ -825,8 +823,8 @@ class PlotOcp:
                     idx,
                     lambda p_idx, n_idx, sn_idx: a[n_idx][:, sn_idx] if n_idx < len(a) else np.ndarray((0, 1)),
                 )
-                d_node = PenaltyHelpers.dynamics_constants(
-                    penalty, idx, lambda p_idx, n_idx, sn_idx: _get_dynamics_constants(self.ocp, p_idx, n_idx, sn_idx)
+                d_node = PenaltyHelpers.numerical_timeseries(
+                    penalty, idx, lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(self.ocp, p_idx, n_idx, sn_idx)
                 )
                 if d_node.shape == (0, 0):
                     d_node = DM(0, 1)

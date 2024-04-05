@@ -6,11 +6,13 @@ It is designed to show how to use external forces. An example of external forces
 example a spring) can be found at 'examples/torque_driven_ocp/spring_load.py'
 
 Please note that the point of application of the external forces are defined from the name of the segment in the bioMod.
-It is expected to act on a segment in the global_reference_frame. BiorbdBioptim expect a list of list[segment_name, vector]
-where the vector is a 6x1 array (Mx, My, Mz, Fx, Fy, Fz)
+It is expected to act on a segment in the global_reference_frame. Bioptim expects an array of shape [9, nb_external_forces, n_shooting+1]
+where the three first components are the moments, the three next components are the forces and the three last components are the point of application (Mx, My, Mz, Fx, Fy, Fz, Px, Py, Pz)
+You should also specify the name of the segments where the external forces are applied the list "segments_to_apply_external_forces".
 """
 
 import platform
+
 import numpy as np
 
 from bioptim import (
@@ -80,12 +82,14 @@ def prepare_ocp(
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=100)
 
     # External forces (shape: 9 x nb_external_forces x (n_shooting_points+1))
+    # First components are the moments and forces
     external_forces = np.zeros((9, 2, n_shooting+1))
     external_forces[5, 0, :] = -2
     external_forces[5, 1, :] = 5
     external_forces[5, 0, 4] = -22
     external_forces[5, 1, 4] = 52
     if use_point_of_applications:
+        # Last components are the point of application
         external_forces[6, 0, :] = 0.05
         external_forces[7, 1, :] = 0.01
         external_forces[8, 0, :] = 0.007
@@ -100,7 +104,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-        dynamics_constants_used_at_each_nodes={"external_forces": external_forces},  # the key word "external_forces" must be used
+        numerical_data_timeseries={"external_forces": external_forces},  # the key word "external_forces" must be used
     )
 
     # Constraints

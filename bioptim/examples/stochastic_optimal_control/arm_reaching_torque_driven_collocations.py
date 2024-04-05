@@ -39,7 +39,7 @@ def sensory_reference(
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
     algebraic_states: cas.MX | cas.SX,
-    dynamics_constants: cas.MX | cas.SX,
+    numerical_timeseries: cas.MX | cas.SX,
     nlp: NonLinearProgram,
 ):
     """

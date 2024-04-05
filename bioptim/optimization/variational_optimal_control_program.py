@@ -3,21 +3,20 @@ Optimal control program with the variational integrator for the dynamics.
 """
 
 import numpy as np
-
 from casadi import MX, Function, vertcat
 
 from .optimal_control_program import OptimalControlProgram
 from ..dynamics.configure_problem import ConfigureProblem, DynamicsList
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
 from ..dynamics.dynamics_functions import DynamicsFunctions
-from ..models.protocols.variational_biomodel import VariationalBioModel
-from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
-from ..misc.enums import ControlType
 from ..limits.constraints import ParameterConstraintList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ParameterObjectiveList
 from ..limits.path_conditions import BoundsList, InitialGuessList
 from ..limits.penalty_controller import PenaltyController
+from ..misc.enums import ControlType
+from ..models.biorbd.variational_biorbd_model import VariationalBiorbdModel
+from ..models.protocols.variational_biomodel import VariationalBioModel
 from ..optimization.non_linear_program import NonLinearProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.variable_scaling import VariableScaling
@@ -251,10 +250,10 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.mx_reduced,
                 nlp.algebraic_states.scaled.mx_reduced,
-                nlp.dynamics_constants.mx,
+                nlp.numerical_timeseries.mx,
             ],
             [dynamics_dxdt],
-            ["t_span", "x", "u", "p", "a", "dynamics_constants"],
+            ["t_span", "x", "u", "p", "a", "d"],
             ["xdot"],
         )
 
@@ -344,7 +343,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             nlp.implicit_dynamics_func_last_node = nlp.implicit_dynamics_func_last_node.expand()
 
     def configure_torque_driven(
-        self, ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}
+        self, ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
     ):
         """
         Configure the problem to be torque driven for the variational integrator.

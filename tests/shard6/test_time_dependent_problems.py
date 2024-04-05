@@ -6,13 +6,8 @@ it is supposed to balance the pendulum. It is designed to show how to track mark
 Note that the final node is not tracked.
 """
 
-import os
-import pytest
-import platform
-
-import numpy as np
-
 from casadi import MX, SX, vertcat, sin
+
 from bioptim import (
     BiorbdModel,
     BoundsList,
@@ -38,7 +33,7 @@ def time_dynamic(
     controls: MX | SX,
     parameters: MX | SX,
     algebraic_states: MX | SX,
-    dynamics_constants: MX | SX,
+    numerical_timeseries: MX | SX,
     nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """
@@ -56,8 +51,8 @@ def time_dynamic(
         The parameters acting on the system
     algebraic_states: MX | SX
         The Algebraic states variables of the system
-    dynamics_constants: MX | SX
-        The dynamics constants of the system
+    numerical_timeseries: MX | SX
+        The numerical timeseries of the system
     nlp: NonLinearProgram
         A reference to the phase
 

@@ -1,9 +1,9 @@
-import pytest
 import numpy as np
+import pytest
 
 from bioptim import RigidBodyDynamics, SoftContactDynamics
 from bioptim.dynamics.configure_problem import (
-    _check_dynamics_constants_format,
+    _check_numerical_timeseries_format,
     _check_soft_contacts_dynamics,
     _check_contacts_in_biorbd_model,
 )
@@ -17,20 +17,20 @@ class MockData:
 
 
 def test_check_external_forces_format_valid():
-    _check_dynamics_constants_format(np.ones((5, 5, 6)), 5, 0)
+    _check_numerical_timeseries_format(np.ones((5, 5, 6)), 5, 0)
 
 
 def test_check_external_forces_format_invalid():
     with pytest.raises(
         RuntimeError,
-        match="Phase 0 has dynamics_constant_at_each_node of type <class 'list'> but it should be of type np.ndarray",
+        match="Phase 0 has numerical_data_timeseries of type <class 'list'> but it should be of type np.ndarray",
     ):
-        _check_dynamics_constants_format([0, 0, 0, 0, 0, 0], 5, 0)
+        _check_numerical_timeseries_format([0, 0, 0, 0, 0, 0], 5, 0)
 
 
 def test_check_external_forces_format_invalid():
     with pytest.raises(RuntimeError):
-        _check_dynamics_constants_format([MockData(), MockData()], 1, 0)
+        _check_numerical_timeseries_format([MockData(), MockData()], 1, 0)
 
 
 # Tests for _check_soft_contacts_dynamics
@@ -47,14 +47,14 @@ def test_check_soft_contacts_dynamics_invalid_rigid():
 def test_check_external_forces_format_none():
     with pytest.raises(
         RuntimeError,
-        match="Phase 0 has dynamics_constant_at_each_node of type <class 'NoneType'> but it should be of type np.ndarray",
+        match="Phase 0 has numerical_data_timeseries of type <class 'NoneType'> but it should be of type np.ndarray",
     ):
-        _check_dynamics_constants_format(None, 5, 0)
+        _check_numerical_timeseries_format(None, 5, 0)
 
 
 def test_check_external_forces_format_wrong_length():
     with pytest.raises(RuntimeError):
-        _check_dynamics_constants_format([MockData(), MockData()], 3, 0)
+        _check_numerical_timeseries_format([MockData(), MockData()], 3, 0)
 
 
 # Tests for _check_soft_contacts_dynamics

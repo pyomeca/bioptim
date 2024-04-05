@@ -1,7 +1,7 @@
 from typing import Callable, Protocol
 
-from casadi import MX, SX, DM, vertcat
 import numpy as np
+from casadi import MX, SX, DM, vertcat
 
 from ..misc.enums import PhaseDynamics, ControlType
 
@@ -129,20 +129,15 @@ class PenaltyHelpers:
         return _reshape_to_vector(p)
 
     @staticmethod
-    def dynamics_constants(penalty, index, get_dynamics_constants: Callable, is_constructing_penalty: bool = False):
+    def numerical_timeseries(penalty, index, get_numerical_timeseries: Callable, is_constructing_penalty: bool = False):
         node = penalty.node_idx[index]
         if penalty.multinode_penalty:
-            d = get_dynamics_constants(penalty.nodes_phase[0], node, 0)  # cx_start
-        #     d = []
-        #     phases, _, subnodes = _get_multinode_indices(penalty, is_constructing_penalty)
-        #     for phase, sub in zip(phases, subnodes):
-        #         d_tp = get_dynamics_constants(phase, node, sub)
-        #         if d_tp.shape != (0, 0):
-        #             d += [_reshape_to_vector(get_dynamics_constants(phase, node, sub))]
-        #     return _vertcat(d) if len(d) > 0 else DM()
-
+            if penalty.nlp.numerical_data_timeseries is not None:
+                raise NotImplementedError("Numerical data timeseries is not implemented for multinode penalties yet.")
+                # Note to the developers: We do not think this will raise an error at runtime, but the results will be wrong is cx_start or cx_ens are used in multiple occasions with different values.
+            d = get_numerical_timeseries(penalty.nodes_phase[0], node, 0)  # cx_start
         else:
-            d = get_dynamics_constants(penalty.phase, node, 0)  # cx_start
+            d = get_numerical_timeseries(penalty.phase, node, 0)  # cx_start
 
         if d.shape != (0, 0):
             d = _reshape_to_vector(d)

@@ -106,12 +106,12 @@ def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d):
     algebraic_states = (
         ocp.nlp[0].algebraic_states.cx_start if ocp.nlp[0].algebraic_states.cx_start.shape != (0, 0) else ocp.cx(0, 0)
     )
-    dynamics_constants = (
-        ocp.nlp[0].dynamics_constants.cx if ocp.nlp[0].dynamics_constants.cx.shape != (0, 0) else ocp.cx(0, 0)
+    numerical_timeseries = (
+        ocp.nlp[0].numerical_timeseries.cx if ocp.nlp[0].numerical_timeseries.cx.shape != (0, 0) else ocp.cx(0, 0)
     )
 
     return ocp.nlp[0].to_casadi_func(
-        "penalty", val, time, phases_dt_cx, states, controls, parameters, algebraic_states, dynamics_constants
+        "penalty", val, time, phases_dt_cx, states, controls, parameters, algebraic_states, numerical_timeseries
     )(t, phases_dt, x[0], u[0], p, a, d)
 
 

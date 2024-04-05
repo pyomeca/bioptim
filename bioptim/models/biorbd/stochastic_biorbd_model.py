@@ -1,14 +1,14 @@
 from typing import Callable
 
-from casadi import MX, DM, SX
 import numpy as np
+from casadi import DM
 
-from ...misc.mapping import BiMappingList
 from bioptim import BiorbdModel, DynamicsFunctions
+from ...misc.mapping import BiMappingList
 
 
 def _compute_torques_from_noise_and_feedback_default(
-    nlp, time, states, controls, parameters, algebraic_states, dynamics_constants, sensory_noise, motor_noise
+    nlp, time, states, controls, parameters, algebraic_states, numerical_timeseries, sensory_noise, motor_noise
 ):
     tau_nominal = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
@@ -19,7 +19,7 @@ def _compute_torques_from_noise_and_feedback_default(
     k_matrix = StochasticBioModel.reshape_to_matrix(k, nlp.model.matrix_shape_k)
 
     sensory_input = nlp.model.sensory_reference(
-        time, states, controls, parameters, algebraic_states, dynamics_constants, nlp
+        time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp
     )
     tau_fb = k_matrix @ ((sensory_input - ref) + sensory_noise)
 

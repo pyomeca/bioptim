@@ -11,7 +11,7 @@ import matplotlib.transforms as transforms
 
 
 def dynamics_torque_driven_with_feedbacks(
-    time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise
+    time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise
 ):
     q = DynamicsFunctions.get(nlp.states["q"], states)
     qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
@@ -27,7 +27,7 @@ def dynamics_torque_driven_with_feedbacks(
         motor_noise = DynamicsFunctions.get(nlp.parameters["motor_noise"], parameters)
         sensory_noise = DynamicsFunctions.get(nlp.parameters["sensory_noise"], parameters)
         end_effector = nlp.model.sensory_reference(
-            time, states, controls, parameters, algebraic_states, dynamics_constants, nlp
+            time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp
         )
 
         tau_feedback = get_excitation_with_feedback(k_matrix, end_effector, ref, sensory_noise)

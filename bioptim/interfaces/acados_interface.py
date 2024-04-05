@@ -167,7 +167,7 @@ class AcadosInterface(SolverInterface):
         p_sym = ocp.nlp[0].parameters.scaled.cx
         a = ocp.nlp[0].algebraic_states.cx_start
         a_sym = ocp.nlp[0].algebraic_states.scaled.cx_start
-        d = ocp.nlp[0].dynamics_constants.cx_start
+        d = ocp.nlp[0].numerical_timeseries.cx_start
 
         if ocp.parameters:
             for key in ocp.parameters:
@@ -296,7 +296,7 @@ class AcadosInterface(SolverInterface):
             u = nlp.controls.cx_start
             p = nlp.parameters.cx
             a = nlp.algebraic_states.cx_start
-            d = nlp.dynamics_constants.cx
+            d = nlp.numerical_timeseries.cx
 
             for g, G in enumerate(nlp.g):
                 if not G:
@@ -655,7 +655,7 @@ class AcadosInterface(SolverInterface):
                             nlp.controls.scaled.cx_start,
                             nlp.parameters.scaled.cx,
                             nlp.algebraic_states.scaled.cx_start,
-                            nlp.dynamics_constants.cx,
+                            nlp.numerical_timeseries.cx,
                         )
 
                         # Deal with first and last node
@@ -668,7 +668,7 @@ class AcadosInterface(SolverInterface):
                             nlp.controls.scaled.cx_start,
                             nlp.parameters.scaled.cx,
                             nlp.algebraic_states.scaled.cx_start,
-                            nlp.dynamics_constants.cx,
+                            nlp.numerical_timeseries.cx,
                         )
 
                     elif J.type.get_type() == ObjectiveFunction.MayerFunction:
@@ -681,7 +681,7 @@ class AcadosInterface(SolverInterface):
                             nlp.controls.scaled.cx_start,
                             nlp.parameters.scaled.cx,
                             nlp.algebraic_states.scaled.cx_start,
-                            nlp.dynamics_constants.cx,
+                            nlp.numerical_timeseries.cx,
                         )
                     else:
                         raise RuntimeError("The objective function is not Lagrange nor Mayer.")
@@ -701,7 +701,7 @@ class AcadosInterface(SolverInterface):
                         nlp.controls.scaled.cx_start,
                         nlp.parameters.scaled.cx,
                         nlp.algebraic_states.scaled.cx_start,
-                        nlp.dynamics_constants.cx,
+                        nlp.numerical_timeseries.cx,
                     )
 
             # Set costs

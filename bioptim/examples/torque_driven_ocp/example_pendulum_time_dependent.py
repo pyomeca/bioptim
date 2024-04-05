@@ -12,6 +12,7 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 import platform
 
 from casadi import MX, SX, sin, vertcat
+
 from bioptim import (
     BiorbdModel,
     BoundsList,
@@ -39,7 +40,7 @@ def time_dependent_dynamic(
     controls: MX | SX,
     parameters: MX | SX,
     algebraic_states: MX | SX,
-    dynamics_constants: MX | SX,
+    numerical_timeseries: MX | SX,
     nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """
@@ -57,8 +58,8 @@ def time_dependent_dynamic(
         The parameters acting on the system
     algebraic_states: MX | SX
         The algebraic states variables of the system
-    dynamics_constants: MX | SX
-        The dynamics constants of the system
+    numerical_timeseries: MX | SX
+        The numerical timeseries of the system
     nlp: NonLinearProgram
         A reference to the phase
 

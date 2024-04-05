@@ -6,8 +6,10 @@ forces to interact with the body.
 
 import platform
 
-from casadi import MX, vertcat, sign
 import numpy as np
+from casadi import MX, vertcat, sign
+from matplotlib import pyplot as plt
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -23,7 +25,6 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
-from matplotlib import pyplot as plt
 
 # scenarios are based on a Mayer term (at Tf)
 # 0: maximize upward speed - expected kinematics: negative torque to get as low as possible and release
@@ -114,7 +115,7 @@ def custom_dynamic(
     controls: MX,
     parameters: MX,
     algebraic_states: MX,
-    dynamics_constants: MX,
+    numerical_timeseries: MX,
     nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """
@@ -132,8 +133,8 @@ def custom_dynamic(
         The current parameters of the system
     algebraic_states: MX
         The current algebraic states of the system
-    dynamics_constants: MX
-        The current dynamics constants of the system
+    numerical_timeseries: MX
+        The current numerical timeseries of the system
     nlp: NonLinearProgram
         A reference to the phase of the ocp
 
@@ -155,7 +156,7 @@ def custom_dynamic(
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 
 
-def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}):
+def custom_configure(ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None):
     """
     The configuration of the dynamics (see custom_dynamics for more explanation)
 

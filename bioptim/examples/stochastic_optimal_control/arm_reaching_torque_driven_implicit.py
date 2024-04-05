@@ -8,9 +8,10 @@ covariance matrix always stays positive semi-definite.
 """
 
 import pickle
+from enum import Enum
+
 import casadi as cas
 import numpy as np
-from enum import Enum
 
 from bioptim import (
     StochasticOptimalControlProgram,
@@ -50,7 +51,7 @@ def sensory_reference(
     controls: cas.MX | cas.SX,
     parameters: cas.MX | cas.SX,
     algebraic_states: cas.MX | cas.SX,
-    dynamics_constants: cas.MX | cas.SX,
+    numerical_timeseries: cas.MX | cas.SX,
     nlp: NonLinearProgram,
 ):
     """
@@ -189,7 +190,7 @@ def prepare_socp(
         expand_dynamics=False,
         phase_dynamics=PhaseDynamics.ONE_PER_NODE,
         with_friction=True,
-        dynamics_constants_used_at_each_nodes={},
+        numerical_data_timeseries=None,
     )
 
     states_min = np.ones((n_states, n_shooting + 1)) * -cas.inf

@@ -4,12 +4,14 @@ It consists in a mass-point trying to find a time optimal periodic trajectory ar
 The controls are coordinates of a quide-point (the mass is attached to this guide point with a sping).
 """
 
-import matplotlib.pyplot as plt
-from matplotlib.patches import Ellipse
-import matplotlib.cm as cm
-import casadi as cas
-import numpy as np
 import pickle
+
+import casadi as cas
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.patches import Ellipse
+from scipy.integrate import solve_ivp
 
 from bioptim import (
     StochasticOptimalControlProgram,
@@ -38,15 +40,12 @@ from bioptim import (
     SolutionIntegrator,
     Shooting,
 )
-
-from bioptim.examples.stochastic_optimal_control.models.mass_point_model import MassPointModel
 from bioptim.examples.stochastic_optimal_control.common import (
     test_matrix_semi_definite_positiveness,
     test_eigen_values,
     reshape_to_matrix,
 )
-
-from scipy.integrate import solve_ivp
+from bioptim.examples.stochastic_optimal_control.models.mass_point_model import MassPointModel
 
 
 def plot_results(
@@ -328,7 +327,7 @@ def draw_cov_ellipse(cov, pos, ax, **kwargs):
 
 
 def configure_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
 ):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
@@ -337,14 +336,14 @@ def configure_optimal_control_problem(
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise=False
         ),
     )
 
 
 def configure_stochastic_optimal_control_problem(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
 ):
     ConfigureProblem.configure_q(ocp, nlp, True, False, False)
     ConfigureProblem.configure_qdot(ocp, nlp, True, False, True)
@@ -358,15 +357,15 @@ def configure_stochastic_optimal_control_problem(
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise=False
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise=False
         ),
     )
     ConfigureProblem.configure_dynamics_function(
         ocp,
         nlp,
-        dyn_func=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp: nlp.dynamics_type.dynamic_function(
-            time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise=True
+        dyn_func=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp: nlp.dynamics_type.dynamic_function(
+            time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise=True
         ),
     )
 
@@ -494,12 +493,12 @@ def prepare_socp(
     if is_stochastic:
         dynamics.add(
             configure_stochastic_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
                 algebraic_states,
-                dynamics_constants,
+                numerical_timeseries,
                 nlp,
                 with_noise=with_noise,
             ),
@@ -545,12 +544,12 @@ def prepare_socp(
     else:
         dynamics.add(
             configure_optimal_control_problem,
-            dynamic_function=lambda time, states, controls, parameters, algebraic_states, dynamics_constants, nlp, with_noise: bio_model.dynamics(
+            dynamic_function=lambda time, states, controls, parameters, algebraic_states, numerical_timeseries, nlp, with_noise: bio_model.dynamics(
                 states,
                 controls,
                 parameters,
                 algebraic_states,
-                dynamics_constants,
+                numerical_timeseries,
                 nlp,
                 with_noise=with_noise,
             ),

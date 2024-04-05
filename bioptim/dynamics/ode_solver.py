@@ -131,7 +131,7 @@ class OdeSolverBase:
 
     def a_ode(self, nlp) -> MX:
         """
-        The symbolic dynamics constants
+        The symbolic numerical timeseries
 
         Parameters
         ----------
@@ -170,7 +170,7 @@ class OdeSolverBase:
 
         Returns
         -------
-        The symbolic dynamics constants
+        The symbolic numerical timeseries
         """
         raise RuntimeError("This method should be implemented in the child class")
 
@@ -223,7 +223,7 @@ class OdeSolverBase:
             "x": self.x_ode(nlp),
             "u": self.p_ode(nlp),
             "a": self.a_ode(nlp),
-            "dynamics_constants": self.d_ode(nlp),
+            "d": self.d_ode(nlp),
             "param": self.param_ode(nlp),
             "ode": dynamics_func,
             "implicit_ode": nlp.implicit_dynamics_func,
@@ -323,7 +323,7 @@ class RK(OdeSolverBase):
         return nlp.algebraic_states.scaled.cx_start
 
     def d_ode(self, nlp):
-        return nlp.dynamics_constants.cx_start
+        return nlp.numerical_timeseries.cx_start
 
     def __str__(self):
         ode_solver_string = f"{self.integrator.__name__} {self.n_integration_steps} step"
@@ -413,7 +413,7 @@ class OdeSolver:
             return horzcat(nlp.algebraic_states.scaled.cx_start, nlp.algebraic_states.scaled.cx_end)
 
         def d_ode(self, nlp):
-            return horzcat(nlp.dynamics_constants.cx_start, nlp.dynamics_constants.cx_end)
+            return horzcat(nlp.numerical_timeseries.cx_start, nlp.numerical_timeseries.cx_end)
 
         def initialize_integrator(self, ocp, nlp, **kwargs):
             if nlp.control_type == ControlType.CONSTANT:
@@ -495,7 +495,7 @@ class OdeSolver:
             return nlp.algebraic_states.scaled.cx_start
 
         def d_ode(self, nlp):
-            return nlp.dynamics_constants.cx_start
+            return nlp.numerical_timeseries.cx_start
 
         def initialize_integrator(self, ocp, nlp, **kwargs):
             if ocp.n_threads > 1 and nlp.control_type == ControlType.LINEAR_CONTINUOUS:
@@ -585,8 +585,8 @@ class OdeSolver:
                 )  # todo: should accept parameters now
             if nlp.algebraic_states.cx_start.shape != 0 and nlp.algebraic_states.cx_start.shape != (0, 0):
                 raise RuntimeError("CVODES cannot be used while optimizing algebraic_states variables")
-            if nlp.dynamics_constants:
-                raise RuntimeError("CVODES cannot be used with external_forces or other dynamics_constants")
+            if nlp.numerical_timeseries:
+                raise RuntimeError("CVODES cannot be used with external_forces or other numerical_timeseries")
             if nlp.control_type == ControlType.LINEAR_CONTINUOUS:
                 raise RuntimeError("CVODES cannot be used with piece-wise linear controls (only RK4)")
             if nlp.algebraic_states.shape != 0:
@@ -625,9 +625,9 @@ class OdeSolver:
                         integrator_func,
                         nlp.states.scaled.cx_start,
                         nlp.controls.scaled.cx_start,
-                        nlp.dynamics_constants.cx_start,
+                        nlp.numerical_timeseries.cx_start,
                     ),
-                    ["t_span", "x0", "u", "p", "a", "dynamics_constants"],
+                    ["t_span", "x0", "u", "p", "a", "d"],
                     ["xf", "xall"],
                 )
             ]

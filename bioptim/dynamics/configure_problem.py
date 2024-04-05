@@ -1,13 +1,14 @@
 from typing import Callable, Any
 
-from casadi import vertcat, Function, DM, horzcat
 import numpy as np
+from casadi import vertcat, Function, DM, horzcat
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
 from .fatigue.fatigue_dynamics import FatigueList
 from .ode_solver import OdeSolver
 from ..gui.plot import CustomPlot
+from ..limits.constraints import ImplicitConstraintFcn
 from ..misc.enums import (
     PlotType,
     Node,
@@ -19,7 +20,6 @@ from ..misc.enums import (
 from ..misc.fcn_enum import FcnEnum
 from ..misc.mapping import BiMapping, Mapping
 from ..misc.options import UniquePerPhaseOptionList, OptionGeneric
-from ..limits.constraints import ImplicitConstraintFcn
 from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..optimization.problem_type import SocpType
 
@@ -134,7 +134,7 @@ class ConfigureProblem:
         nlp.dynamics_type.type(
             ocp,
             nlp,
-            dynamics_constants_used_at_each_nodes=nlp.dynamics_type.dynamics_constants_used_at_each_nodes,
+            numerical_data_timeseries=nlp.dynamics_type.numerical_data_timeseries,
             **nlp.dynamics_type.extra_parameters,
         )
 
@@ -164,7 +164,7 @@ class ConfigureProblem:
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
         fatigue: FatigueList = None,
-        dynamics_constants_used_at_each_nodes: dict[list] = {},
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -189,7 +189,7 @@ class ConfigureProblem:
             which soft contact dynamic should be used
         fatigue: FatigueList
             A list of fatigue elements
-        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+        numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
@@ -198,15 +198,13 @@ class ConfigureProblem:
             rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
         external_forces = None
-        for key in dynamics_constants_used_at_each_nodes.keys():
-            if key != "external_forces":
-                raise RuntimeError(
-                    "The only dynamics_constants_used_at_each_nodes allowed for torque_driven dynamics is external_forces."
-                )
-            _check_dynamics_constants_format(dynamics_constants_used_at_each_nodes[key], nlp.ns, nlp.phase_idx)
-            external_forces = nlp.dynamics_constants[0].mx
-            for i in range(1, dynamics_constants_used_at_each_nodes[key].shape[1]):
-                external_forces = horzcat(external_forces, nlp.dynamics_constants[i].mx)
+        if numerical_data_timeseries is not None:
+            for key in numerical_data_timeseries.keys():
+                if key == "external_forces":
+                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
+                    external_forces = nlp.numerical_timeseries[0].mx
+                    for i in range(1, numerical_data_timeseries[key].shape[1]):
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -319,7 +317,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         with_friction: bool = False,
-        dynamics_constants_used_at_each_nodes: dict[list] = {},
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a torque driven program with a free floating base.
@@ -339,7 +337,7 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         with_friction: bool
             If the dynamic with joint friction should be used (friction = coefficients * qdot)
-        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+        numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
         """
 
@@ -445,7 +443,7 @@ class ConfigureProblem:
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
-        dynamics_constants_used_at_each_nodes: dict[list] = {},
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a torque driven stochastic program (states are q and qdot, controls are tau)
@@ -464,7 +462,7 @@ class ConfigureProblem:
             If the Cholesky decomposition should be used for the covariance matrix.
         initial_matrix: DM
             The initial value for the covariance matrix
-        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+        numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
@@ -528,7 +526,7 @@ class ConfigureProblem:
         with_friction: bool = False,
         with_cholesky: bool = False,
         initial_matrix: DM = None,
-        dynamics_constants_used_at_each_nodes: dict[list] = {},
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a stochastic torque driven program with a free floating base.
@@ -546,7 +544,7 @@ class ConfigureProblem:
             If the Cholesky decomposition should be used for the covariance matrix.
         initial_matrix: DM
             The initial value for the covariance matrix
-        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+        numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node.
         """
         n_noised_tau = nlp.model.n_noised_controls
@@ -605,7 +603,7 @@ class ConfigureProblem:
         with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
         soft_contacts_dynamics: SoftContactDynamics = SoftContactDynamics.ODE,
-        dynamics_constants_used_at_each_nodes: dict[list] = {},
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau)
@@ -626,7 +624,7 @@ class ConfigureProblem:
             which rigidbody dynamics should be used
         soft_contacts_dynamics: SoftContactDynamics
             which soft contact dynamic should be used
-        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+        numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
 
         """
@@ -639,15 +637,13 @@ class ConfigureProblem:
             rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
         external_forces = None
-        for key in dynamics_constants_used_at_each_nodes.keys():
-            if key != "external_forces":
-                raise RuntimeError(
-                    "The only dynamics_constants_used_at_each_nodes allowed for torque_driven dynamics is external_forces."
-                )
-            _check_dynamics_constants_format(dynamics_constants_used_at_each_nodes[key], nlp.ns, nlp.phase_idx)
-            external_forces = nlp.dynamics_constants[0].mx
-            for i in range(1, dynamics_constants_used_at_each_nodes[key].shape[1]):
-                external_forces = horzcat(external_forces, nlp.dynamics_constants[i].mx)
+        if numerical_data_timeseries is not None:
+            for key in numerical_data_timeseries.keys():
+                if key == "external_forces":
+                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
+                    external_forces = nlp.numerical_timeseries[0].mx
+                    for i in range(1, numerical_data_timeseries[key].shape[1]):
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -705,7 +701,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_residual_torque: bool = False,
         with_ligament: bool = False,
-        dynamics_constants_used_at_each_nodes: dict[list] = {},
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a torque driven program (states are q and qdot, controls are tau activations).
@@ -726,21 +722,19 @@ class ConfigureProblem:
             If the dynamic with a residual torque should be used
         with_ligament: bool
             If the dynamic with ligament should be used
-        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+        numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
         external_forces = None
-        for key in dynamics_constants_used_at_each_nodes.keys():
-            if key != "external_forces":
-                raise RuntimeError(
-                    "The only dynamics_constants_used_at_each_nodes allowed for torque_driven dynamics is external_forces."
-                )
-            _check_dynamics_constants_format(dynamics_constants_used_at_each_nodes[key], nlp.ns, nlp.phase_idx)
-            external_forces = nlp.dynamics_constants[0].mx
-            for i in range(1, dynamics_constants_used_at_each_nodes[key].shape[1]):
-                external_forces = horzcat(external_forces, nlp.dynamics_constants[i].mx)
+        if numerical_data_timeseries is not None:
+            for key in numerical_data_timeseries.keys():
+                if key == "external_forces":
+                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
+                    external_forces = nlp.numerical_timeseries[0].mx
+                    for i in range(1, numerical_data_timeseries[key].shape[1]):
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -774,7 +768,7 @@ class ConfigureProblem:
         ocp,
         nlp,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-        dynamics_constants_used_at_each_nodes: dict[list] = {},
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a joints acceleration driven program
@@ -788,7 +782,7 @@ class ConfigureProblem:
             A reference to the phase
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
-        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+        numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
         if rigidbody_dynamics != RigidBodyDynamics.ODE:
@@ -836,7 +830,7 @@ class ConfigureProblem:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         rigidbody_dynamics: RigidBodyDynamics = RigidBodyDynamics.ODE,
-        dynamics_constants_used_at_each_nodes: dict[list] = {},
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
     ):
         """
         Configure the dynamics for a muscle driven program.
@@ -865,20 +859,18 @@ class ConfigureProblem:
             If the dynamic with ligament should be used
         rigidbody_dynamics: RigidBodyDynamics
             which rigidbody dynamics should be used
-        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
+        numerical_data_timeseries: dict[str, np.ndarray]
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
         external_forces = None
-        for key in dynamics_constants_used_at_each_nodes.keys():
-            if key != "external_forces":
-                raise RuntimeError(
-                    "The only dynamics_constants_used_at_each_nodes allowed for torque_driven dynamics is external_forces."
-                )
-            _check_dynamics_constants_format(dynamics_constants_used_at_each_nodes[key], nlp.ns, nlp.phase_idx)
-            external_forces = nlp.dynamics_constants[0].mx
-            for i in range(1, dynamics_constants_used_at_each_nodes[key].shape[1]):
-                external_forces = horzcat(external_forces, nlp.dynamics_constants[i].mx)
+        if numerical_data_timeseries is not None:
+            for key in numerical_data_timeseries.keys():
+                if key == "external_forces":
+                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
+                    external_forces = nlp.numerical_timeseries[0].mx
+                    for i in range(1, numerical_data_timeseries[key].shape[1]):
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
@@ -927,7 +919,7 @@ class ConfigureProblem:
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
     @staticmethod
-    def holonomic_torque_driven(ocp, nlp, dynamics_constants_used_at_each_nodes: dict[list] = {}):
+    def holonomic_torque_driven(ocp, nlp, numerical_data_timeseries: dict[str, np.ndarray] = None):
         """
         Tell the program which variables are states and controls.
 
@@ -976,7 +968,7 @@ class ConfigureProblem:
             nlp.controls.scaled.mx_reduced,
             nlp.parameters.scaled.mx_reduced,
             nlp.algebraic_states.scaled.mx_reduced,
-            nlp.dynamics_constants.mx,
+            nlp.numerical_timeseries.mx,
             nlp,
             **extra_params,
         )
@@ -994,14 +986,13 @@ class ConfigureProblem:
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.scaled.mx_reduced,
                     nlp.algebraic_states.scaled.mx_reduced,
-                    nlp.dynamics_constants.mx,
+                    nlp.numerical_timeseries.mx,
                 ],
                 [dynamics_dxdt],
-                ["t_span", "x", "u", "p", "a", "dynamics_constants"],
+                ["t_span", "x", "u", "p", "a", "d"],
                 ["xdot"],
             )
 
-            # TODO: allow expand for each dynamics independently
             if nlp.dynamics_type.expand_dynamics:
                 try:
                     nlp.dynamics_func = nlp.dynamics_func.expand()
@@ -1015,7 +1006,6 @@ class ConfigureProblem:
                         f"{me}"
                     )
 
-            # Only possible for regular dynamics, not for extra_dynamics
             if dynamics_eval.defects is not None:
                 nlp.implicit_dynamics_func = Function(
                     "DynamicsDefects",
@@ -1025,11 +1015,11 @@ class ConfigureProblem:
                         nlp.controls.scaled.mx_reduced,
                         nlp.parameters.scaled.mx_reduced,
                         nlp.algebraic_states.scaled.mx_reduced,
-                        nlp.dynamics_constants.mx,
+                        nlp.numerical_timeseries.mx,
                         nlp.states_dot.scaled.mx_reduced,
                     ],
                     [dynamics_eval.defects],
-                    ["t_span", "x", "u", "p", "a", "dynamics_constants", "xdot"],
+                    ["t_span", "x", "u", "p", "a", "d", "xdot"],
                     ["defects"],
                 )
                 if nlp.dynamics_type.expand_dynamics:
@@ -1054,18 +1044,17 @@ class ConfigureProblem:
                         nlp.controls.scaled.mx_reduced,
                         nlp.parameters.scaled.mx_reduced,
                         nlp.algebraic_states.scaled.mx_reduced,
-                        nlp.dynamics_constants.mx,
+                        nlp.numerical_timeseries.mx,
                     ],
                     [dynamics_dxdt],
-                    ["t_span", "x", "u", "p", "a", "dynamics_constants"],
+                    ["t_span", "x", "u", "p", "a", "d"],
                     ["xdot"],
                 ),
             )
 
-            # TODO: allow expand for each dynamics independently
             if nlp.dynamics_type.expand_dynamics:
                 try:
-                    nlp.extra_dynamics_func[-1] = nlp.dynamics_funcextra_dynamics_func[-1].expand()
+                    nlp.extra_dynamics_func[-1] = nlp.extra_dynamics_func[-1].expand()
                 except Exception as me:
                     RuntimeError(
                         f"An error occurred while executing the 'expand()' function for the dynamic function. "
@@ -1100,7 +1089,7 @@ class ConfigureProblem:
                 nlp.controls.scaled.mx_reduced,
                 nlp.parameters.scaled.mx_reduced,
                 nlp.algebraic_states.scaled.mx_reduced,
-                nlp.dynamics_constants.mx,
+                nlp.numerical_timeseries.mx,
             ],
             [
                 dyn_func(
@@ -1109,12 +1098,12 @@ class ConfigureProblem:
                     nlp.controls.scaled.mx_reduced,
                     nlp.parameters.scaled.mx_reduced,
                     nlp.algebraic_states.scaled.mx_reduced,
-                    nlp.dynamics_constants.mx,
+                    nlp.numerical_timeseries.mx,
                     nlp,
                     **extra_params,
                 )
             ],
-            ["t_span", "x", "u", "p", "a", "dynamics_constants"],
+            ["t_span", "x", "u", "p", "a", "d"],
             ["contact_forces"],
         ).expand()
 
@@ -1901,7 +1890,7 @@ class Dynamics(OptionGeneric):
         skip_continuity: bool = False,
         state_continuity_weight: float | None = None,
         phase_dynamics: PhaseDynamics = PhaseDynamics.SHARED_DURING_THE_PHASE,
-        dynamics_constants_used_at_each_nodes: dict[np.ndarray] = {},
+        numerical_data_timeseries: dict[str, np.ndarray] = None,
         **extra_parameters: Any,
     ):
         """
@@ -1922,8 +1911,8 @@ class Dynamics(OptionGeneric):
             otherwise it is an objective
         phase_dynamics: PhaseDynamics
             If the dynamics should be shared between the nodes or not
-        dynamics_constants_used_at_each_nodes: dict[np.ndarray]
-            The dynamics constants at each node. ex: the experimental external forces data should go here.
+        numerical_data_timeseries: dict[str, np.ndarray]
+            The numerical timeseries at each node. ex: the experimental external forces data should go here.
         """
 
         configure = None
@@ -1948,7 +1937,7 @@ class Dynamics(OptionGeneric):
         self.skip_continuity = skip_continuity
         self.state_continuity_weight = state_continuity_weight
         self.phase_dynamics = phase_dynamics
-        self.dynamics_constants_used_at_each_nodes = dynamics_constants_used_at_each_nodes
+        self.numerical_data_timeseries = numerical_data_timeseries
 
 
 class DynamicsList(UniquePerPhaseOptionList):
@@ -1988,18 +1977,18 @@ class DynamicsList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of DynamicsList is not ready yet")
 
 
-def _check_dynamics_constants_format(dynamics_constant: np.ndarray, n_shooting: int, phase_idx: int):
-    """Check if the dynamics_constant_at_each_node is of the right format"""
-    if type(dynamics_constant) is not np.ndarray:
+def _check_numerical_timeseries_format(numerical timeseries: np.ndarray, n_shooting: int, phase_idx: int):
+    """Check if the numerical_data_timeseries is of the right format"""
+    if type(numerical timeseries) is not np.ndarray:
         raise RuntimeError(
-            f"Phase {phase_idx} has dynamics_constant_at_each_node of type {type(dynamics_constant)} "
+            f"Phase {phase_idx} has numerical_data_timeseries of type {type(numerical timeseries)} "
             f"but it should be of type np.ndarray"
         )
-    if dynamics_constant is not None and dynamics_constant.shape[2] != n_shooting + 1:
+    if numerical timeseries is not None and numerical timeseries.shape[2] != n_shooting + 1:
         raise RuntimeError(
-            f"Phase {phase_idx} has {n_shooting}+1 shooting points but the dynamics_constant_at_each_node "
-            f"has {dynamics_constant.shape[2]} shooting points."
-            f"The dynamics_constant_at_each_node should be of format dict[np.ndarray] "
+            f"Phase {phase_idx} has {n_shooting}+1 shooting points but the numerical_data_timeseries "
+            f"has {numerical timeseries.shape[2]} shooting points."
+            f"The numerical_data_timeseries should be of format dict[str, np.ndarray] "
             f"where the list is the number of shooting points of the phase "
         )
 

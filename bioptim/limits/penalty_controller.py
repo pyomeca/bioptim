@@ -57,7 +57,7 @@ class PenaltyController:
         a_scaled: list
             References to the scaled algebraic_states variables
         d: list
-            References to the dynamics constants
+            References to the numerical timeseries
         node_index: int
             Current node index if nlp.phase_dynamics is SHARED_DURING_THE_PHASE,
             then node_index is expected to be set to 0
@@ -276,12 +276,12 @@ class PenaltyController:
         return out
 
     @property
-    def dynamics_constants(self) -> OptimizationVariableList:
+    def numerical_timeseries(self) -> OptimizationVariableList:
         """
-        Return the dynamics_constants at node node_index=0.
+        Return the numerical_timeseries at node node_index=0.
         """
-        self._nlp.dynamics_constants.node_index = self.node_index
-        out = self._nlp.dynamics_constants
+        self._nlp.numerical_timeseries.node_index = self.node_index
+        out = self._nlp.numerical_timeseries
         out.current_cx_to_get = self.cx_index_to_get
         return out
 

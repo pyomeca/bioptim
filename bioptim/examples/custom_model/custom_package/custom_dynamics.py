@@ -20,7 +20,7 @@ def custom_dynamics(
     controls: MX,
     parameters: MX,
     algebraic_states: MX,
-    dynamics_constants: MX,
+    numerical_timeseries: MX,
     nlp: NonLinearProgram,
 ) -> DynamicsEvaluation:
     """
@@ -45,7 +45,7 @@ def custom_dynamics(
 
 
 def custom_configure_my_dynamics(
-    ocp: OptimalControlProgram, nlp: NonLinearProgram, dynamics_constants_used_at_each_nodes={}
+    ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries=None
 ):
     """
     Tell the program which variables are states and controls.

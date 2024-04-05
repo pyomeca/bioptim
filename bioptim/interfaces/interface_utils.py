@@ -336,8 +336,8 @@ def _get_weighted_function_inputs(penalty, penalty_idx, ocp, nlp, scaled):
         a = PenaltyHelpers.states(
             penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_a(ocp, p_idx, n_idx, sn_idx, scaled)
         )
-        d = PenaltyHelpers.dynamics_constants(
-            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: _get_dynamics_constants(ocp, p_idx, n_idx, sn_idx)
+        d = PenaltyHelpers.numerical_timeseries(
+            penalty, penalty_idx, lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(ocp, p_idx, n_idx, sn_idx)
         )
     else:
         x = []
@@ -368,8 +368,8 @@ def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
     return values[node_idx][:, subnodes_idx] if node_idx < len(values) else ocp.cx()
 
 
-def _get_dynamics_constants(ocp, phase_idx, node_idx, subnodes_idx):
-    dict = ocp.nlp[phase_idx].dynamics_constants_used_at_each_nodes
+def get_numerical_timeseries(ocp, phase_idx, node_idx, subnodes_idx):
+    dict = ocp.nlp[phase_idx].numerical_data_timeseries
     values = None
     for i_d, d in enumerate(dict):
         for i_element in range(dict[d].shape[1]):

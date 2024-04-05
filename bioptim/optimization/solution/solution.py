@@ -1,14 +1,16 @@
-from typing import Any
 from copy import deepcopy
+from typing import Any
 
 import numpy as np
-from scipy import interpolate as sci_interp
-from scipy.interpolate import interp1d
 from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
+from scipy import interpolate as sci_interp
+from scipy.interpolate import interp1d
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
 from ..optimization_vector import OptimizationVectorHelper
+from ...dynamics.ode_solver import OdeSolver
+from ...interfaces.solve_ivp_interface import solve_ivp_interface
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
@@ -20,10 +22,7 @@ from ...misc.enums import (
     SolverType,
     SolutionIntegrator,
     Node,
-    PhaseDynamics,
 )
-from ...dynamics.ode_solver import OdeSolver
-from ...interfaces.solve_ivp_interface import solve_ivp_interface
 from ...models.protocols.stochastic_biomodel import StochasticBioModel
 
 
@@ -725,7 +724,6 @@ class Solution:
         integrator: SolutionIntegrator
             The integrator to use for the integration
         """
-        from ...interfaces.interface_utils import _get_dynamics_constants
 
         has_direct_collocation = sum([nlp.ode_solver.is_direct_collocation for nlp in self.ocp.nlp]) > 0
         if has_direct_collocation and integrator == SolutionIntegrator.OCP:
@@ -784,7 +782,7 @@ class Solution:
         -------
         Return the integrated states
         """
-        from ...interfaces.interface_utils import _get_dynamics_constants
+        from ...interfaces.interface_utils import get_numerical_timeseries
 
         t_spans, x, u, params, a = self._prepare_integrate(integrator=integrator)
 
@@ -794,7 +792,7 @@ class Solution:
             first_x = self._states_for_phase_integration(shooting_type, p, integrated_sol, x, u, params, a)
             d = []
             for n_idx in range(nlp.ns + 1):
-                d_tp = _get_dynamics_constants(self.ocp, p, n_idx, 0)
+                d_tp = get_numerical_timeseries(self.ocp, p, n_idx, 0)
                 if d_tp.shape == (0, 0):
                     d += [np.array([])]
                 else:
@@ -847,7 +845,7 @@ class Solution:
         Integrated the states with different noise values sampled from the covariance matrix.
         """
         from ...optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
-        from ...interfaces.interface_utils import _get_dynamics_constants
+        from ...interfaces.interface_utils import get_numerical_timeseries
 
         if not isinstance(self.ocp, StochasticOptimalControlProgram):
             raise ValueError("This method is only available for StochasticOptimalControlProgram.")
@@ -878,7 +876,7 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             d = []
             for n_idx in range(nlp.ns + 1):
-                d_tp = _get_dynamics_constants(self.ocp, p, n_idx, 0)
+                d_tp = get_numerical_timeseries(self.ocp, p, n_idx, 0)
                 if d_tp.shape == (0, 0):
                     d += [np.array([])]
                 else:
@@ -918,7 +916,7 @@ class Solution:
                             nlp.controls.cx,
                             parameters_cx,
                             nlp.algebraic_states.cx,
-                            nlp.dynamics_constants.cx,
+                            nlp.numerical_timeseries.cx,
                         ],
                         [
                             nlp.extra_dynamics_func[0](
@@ -927,7 +925,7 @@ class Solution:
                                 nlp.controls.cx,
                                 params_this_time[node],
                                 nlp.algebraic_states.cx,
-                                nlp.dynamics_constants.cx,
+                                nlp.numerical_timeseries.cx,
                             )
                         ],
                     )
@@ -994,7 +992,7 @@ class Solution:
         -------
         The states to integrate
         """
-        from ...interfaces.interface_utils import _get_dynamics_constants
+        from ...interfaces.interface_utils import get_numerical_timeseries
 
         # In the case of multiple shootings, we don't need to do anything special
         if shooting_type == Shooting.MULTIPLE:
@@ -1025,8 +1023,8 @@ class Solution:
                 decision_algebraic_states[p][n][:, sn] if n < len(decision_algebraic_states[p]) else np.ndarray((0, 1))
             ),
         )
-        d_tp = PenaltyHelpers.dynamics_constants(
-            penalty, 0, lambda p, n, sn: _get_dynamics_constants(self.ocp, p, n, sn)
+        d_tp = PenaltyHelpers.numerical_timeseries(
+            penalty, 0, lambda p, n, sn: get_numerical_timeseries(self.ocp, p, n, sn)
         )
         d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
 
@@ -1050,7 +1048,7 @@ class Solution:
         dict
             The integrated data structure similar in structure to the original _decision_states
         """
-        from ...interfaces.interface_utils import _get_dynamics_constants
+        from ...interfaces.interface_utils import get_numerical_timeseries
 
         params = self._parameters.to_dict(to_merge=SolutionMerge.KEYS, scaled=True)[0][0]
         t_spans = self.t_span(time_alignment=TimeAlignment.CONTROLS)
@@ -1064,7 +1062,7 @@ class Solution:
         for p, nlp in enumerate(self.ocp.nlp):
             d = []
             for n_idx in range(nlp.ns + 1):
-                d_tp = _get_dynamics_constants(self.ocp, p, n_idx, 0)
+                d_tp = get_numerical_timeseries(self.ocp, p, n_idx, 0)
                 if d_tp.shape == (0, 0):
                     d += [np.array([])]
                 else:
@@ -1361,7 +1359,7 @@ class Solution:
             return np.ndarray((0, 1))
 
     def _get_penalty_cost(self, nlp, penalty):
-        from ...interfaces.interface_utils import _get_dynamics_constants
+        from ...interfaces.interface_utils import get_numerical_timeseries
 
         if nlp is None:
             raise NotImplementedError("penalty cost over the full ocp is not implemented yet")
@@ -1400,8 +1398,8 @@ class Solution:
                     merged_a[p_idx][n_idx][:, sn_idx] if n_idx < len(merged_a[p_idx]) else np.array(())
                 ),
             )
-            d_tp = PenaltyHelpers.dynamics_constants(
-                penalty, idx, lambda p_idx, n_idx, sn_idx: _get_dynamics_constants(self.ocp, p_idx, n_idx, sn_idx)
+            d_tp = PenaltyHelpers.numerical_timeseries(
+                penalty, idx, lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(self.ocp, p_idx, n_idx, sn_idx)
             )
             d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
 

@@ -1,38 +1,33 @@
 from typing import Callable
-import sys
+
 import numpy as np
 from casadi import DM_eye, vertcat, Function
 
-import pickle
-
-from .optimization_vector import OptimizationVectorHelper
 from .non_linear_program import NonLinearProgram as NLP
+from .optimization_vector import OptimizationVectorHelper
 from ..dynamics.configure_problem import DynamicsList, Dynamics
 from ..dynamics.ode_solver import OdeSolver
-from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..limits.constraints import (
     ConstraintFcn,
     ConstraintList,
     Constraint,
     ParameterConstraintList,
 )
-from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
+from ..limits.constraints import ConstraintFunction
 from ..limits.multinode_constraint import MultinodeConstraintList, MultinodeConstraintFcn
 from ..limits.multinode_objective import MultinodeObjectiveList
 from ..limits.objective_functions import ObjectiveList, Objective, ParameterObjectiveList
-from ..limits.constraints import ConstraintFunction
 from ..limits.path_conditions import BoundsList
-from ..limits.path_conditions import InitialGuessList, InitialGuess
-from ..limits.penalty_controller import PenaltyController
+from ..limits.path_conditions import InitialGuess
 from ..limits.path_conditions import InitialGuessList
-from ..misc.__version__ import __version__
-from ..misc.enums import Node, ControlType, PenaltyType, PhaseDynamics, InterpolationType
+from ..limits.penalty_controller import PenaltyController
+from ..limits.phase_transition import PhaseTransitionList, PhaseTransitionFcn
+from ..misc.enums import Node, ControlType, PhaseDynamics, InterpolationType
 from ..misc.mapping import BiMappingList, Mapping, NodeMappingList, BiMapping
-from ..misc.utils import check_version
+from ..models.protocols.stochastic_biomodel import StochasticBioModel
 from ..optimization.optimal_control_program import OptimalControlProgram
 from ..optimization.parameters import ParameterList
 from ..optimization.problem_type import SocpType
-from ..optimization.solution.solution import Solution
 from ..optimization.variable_scaling import VariableScalingList, VariableScaling
 
 
@@ -211,7 +206,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
         constraints.add(
             ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE,
             node=Node.ALL,
-            # penalty_type=PenaltyType.INTERNAL,
+            # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
         )
 
         penalty_m_dg_dz_list = MultinodeConstraintList()
@@ -221,14 +216,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    # penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
             if i_phase > 0:
                 penalty_m_dg_dz_list.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_EXPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
-                    # penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
         penalty_m_dg_dz_list.add_or_replace_to_penalty_pool(self)
 
@@ -247,14 +242,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    # penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_HELPER_MATRIX_IMPLICIT,
                     nodes_phase=(i_phase - 1, i_phase),
                     nodes=(-1, 0),
-                    # penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
 
         # Constraints for P
@@ -263,7 +258,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_COVARIANCE_MATRIX_CONTINUITY_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
-                # penalty_type=PenaltyType.INTERNAL,
+                # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
             )
 
         # Constraints for A
@@ -272,7 +267,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 ConstraintFcn.STOCHASTIC_DF_DX_IMPLICIT,
                 node=Node.ALL,
                 phase=i_phase,
-                # penalty_type=PenaltyType.INTERNAL,
+                # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
             )
 
         # Constraints for C
@@ -282,14 +277,14 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase),
                     nodes=(i_node, i_node + 1),
-                    # penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
             if i_phase > 0 and i_phase < len(self.nlp) - 1:
                 multi_node_penalties.add(
                     MultinodeConstraintFcn.STOCHASTIC_DF_DW_IMPLICIT,
                     nodes_phase=(i_phase, i_phase + 1),
                     nodes=(-1, 0),
-                    # penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
 
         multi_node_penalties.add_or_replace_to_penalty_pool(self)
@@ -307,7 +302,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     ConstraintFcn.STOCHASTIC_MEAN_SENSORY_INPUT_EQUALS_REFERENCE,
                     node=Node.ALL,
                     phase=i_phase,
-                    # penalty_type=PenaltyType.INTERNAL,
+                    # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
 
         # Constraints for M
@@ -317,7 +312,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
                 expand=True,
-                # penalty_type=PenaltyType.INTERNAL,
+                # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
             )
 
         # Constraints for P inner-phase
@@ -327,7 +322,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 node=Node.ALL_SHOOTING,
                 phase=i_phase,
                 expand=True,
-                # penalty_type=PenaltyType.INTERNAL,
+                # penalty_type=PenaltyType.INTERNAL,  #TODO: waiting for the bug on ConstraintList to be fixed
             )
 
         # Constraints for P inter-phase
@@ -336,7 +331,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 phase_transition.add(
                     PhaseTransitionFcn.COVARIANCE_CONTINUOUS,
                     phase_pre_idx=i_phase,
-                    # penalty_type=PenaltyType.INTERNAL
+                    # penalty_type=PenaltyType.INTERNAL  #TODO: waiting for the bug on ConstraintList to be fixed
                 )
 
     def _auto_initialize(self, x_init, u_init, parameter_init, a_init):
@@ -348,9 +343,9 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     a_init.add(key, initial_guess=var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
 
         def get_ref_init(time_vector, x_guess, u_guess, p_guess, nlp):
-            if nlp.dynamics_constants.mx.shape[0] != 0:
+            if nlp.numerical_timeseries.mx.shape[0] != 0:
                 raise RuntimeError(
-                    "The automatic initialization of stochastic variables is not implemented yet for nlp with dynamics_constants."
+                    "The automatic initialization of stochastic variables is not implemented yet for nlp with numerical_timeseries."
                 )
             casadi_func = Function(
                 "sensory_reference",
@@ -362,7 +357,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                         controls=nlp.controls.mx,
                         parameters=nlp.parameters.mx,
                         algebraic_states=None,  # Sensory reference should not depend on stochastic variables
-                        dynamics_constants=None,
+                        numerical_timeseries=None,
                         nlp=nlp,
                     )
                 ],

@@ -3,17 +3,16 @@ Test for file IO
 """
 
 import io
-import sys
 import os
-import pytest
-import platform
-
-from casadi import Function, MX
-import numpy as np
-from bioptim import CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel, PhaseDynamics
-from bioptim.limits.penalty import PenaltyOption
+import sys
 
 import matplotlib
+import numpy as np
+import pytest
+from casadi import Function, MX
+
+from bioptim import CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel, PhaseDynamics
+from bioptim.limits.penalty import PenaltyOption
 
 matplotlib.use("Agg")
 
@@ -258,7 +257,7 @@ def test_console_objective_functions(phase_dynamics):
                         u = MX.sym("u", 3, 1)
                     param = MX.sym("param", *p.weighted_function[node_index].size_in("p"))
                     a = MX.sym("a", *p.weighted_function[node_index].size_in("a"))
-                    d = MX.sym("dynamics_constants", *p.weighted_function[node_index].size_in("dynamics_constants"))
+                    d = MX.sym("d", *p.weighted_function[node_index].size_in("d"))
                     weight = MX.sym("weight", *p.weighted_function[node_index].size_in("weight"))
                     target = MX.sym("target", *p.weighted_function[node_index].size_in("target"))
 
