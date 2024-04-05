@@ -1977,17 +1977,17 @@ class DynamicsList(UniquePerPhaseOptionList):
         raise NotImplementedError("Printing of DynamicsList is not ready yet")
 
 
-def _check_numerical_timeseries_format(numerical timeseries: np.ndarray, n_shooting: int, phase_idx: int):
+def _check_numerical_timeseries_format(numerical_timeseries: np.ndarray, n_shooting: int, phase_idx: int):
     """Check if the numerical_data_timeseries is of the right format"""
-    if type(numerical timeseries) is not np.ndarray:
+    if type(numerical_timeseries) is not np.ndarray:
         raise RuntimeError(
-            f"Phase {phase_idx} has numerical_data_timeseries of type {type(numerical timeseries)} "
+            f"Phase {phase_idx} has numerical_data_timeseries of type {type(numerical_timeseries)} "
             f"but it should be of type np.ndarray"
         )
-    if numerical timeseries is not None and numerical timeseries.shape[2] != n_shooting + 1:
+    if numerical_timeseries is not None and numerical_timeseries.shape[2] != n_shooting + 1:
         raise RuntimeError(
             f"Phase {phase_idx} has {n_shooting}+1 shooting points but the numerical_data_timeseries "
-            f"has {numerical timeseries.shape[2]} shooting points."
+            f"has {numerical_timeseries.shape[2]} shooting points."
             f"The numerical_data_timeseries should be of format dict[str, np.ndarray] "
             f"where the list is the number of shooting points of the phase "
         )
