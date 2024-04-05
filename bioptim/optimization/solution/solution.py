@@ -1027,7 +1027,6 @@ class Solution:
             penalty,
             0,
             lambda p, n, sn: get_numerical_timeseries(self.ocp, p, n, sn),
-            self.ocp,
         )
         d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
 
@@ -1405,7 +1404,6 @@ class Solution:
                 penalty,
                 idx,
                 lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(self.ocp, p_idx, n_idx, sn_idx),
-                self.ocp,
             )
             d = np.array([]) if d_tp.shape == (0, 0) else np.array(d_tp)
 

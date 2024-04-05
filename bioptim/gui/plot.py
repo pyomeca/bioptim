@@ -829,7 +829,6 @@ class PlotOcp:
                     penalty,
                     idx,
                     lambda p_idx, n_idx, sn_idx: get_numerical_timeseries(self.ocp, p_idx, n_idx, sn_idx),
-                    self.ocp,
                 )
                 if d_node.shape == (0, 0):
                     d_node = DM(0, 1)
