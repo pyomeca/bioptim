@@ -134,7 +134,7 @@ class PenaltyHelpers:
         if penalty.multinode_penalty:
             for i_phase in penalty.nodes_phase:
                 d = get_numerical_timeseries(penalty.nodes_phase[i_phase], node, 0)  # cx_start
-                if d.shape != (0, 0):
+                if d.shape[0] != 0:
                     raise NotImplementedError(
                         "Numerical data timeseries is not implemented for multinode penalties yet."
                     )
