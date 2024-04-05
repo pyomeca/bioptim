@@ -1,9 +1,9 @@
 import inspect
-from math import inf
 from typing import Any
 
 import biorbd_casadi as biorbd
-from casadi import horzcat, vertcat, Function, atan2, dot, cross, sqrt, MX_eye, MX, SX_eye, SX, jacobian, trace
+from casadi import horzcat, vertcat, Function, atan2, dot, cross, sqrt, MX_eye, SX_eye, SX, jacobian, trace
+from math import inf
 
 from .penalty_controller import PenaltyController
 from .penalty_option import PenaltyOption
@@ -1117,7 +1117,7 @@ class PenaltyFunctionAbstract:
                     u=u,
                     p=controller.parameters.cx,
                     a=controller.algebraic_states.cx_start,
-                    numerical_timeseries=controller.numerical_timeseries.cx,
+                    d=controller.numerical_timeseries.cx,
                 )
                 continuity -= integrated["xf"]
                 continuity = vertcat(continuity, integrated["defects"])
@@ -1131,7 +1131,7 @@ class PenaltyFunctionAbstract:
                     u=u,
                     p=controller.parameters.cx_start,
                     a=controller.algebraic_states.cx_start,
-                    numerical_timeseries=controller.numerical_timeseries.cx,
+                    d=controller.numerical_timeseries.cx,
                 )["xf"]
 
             penalty.phase = controller.phase_idx

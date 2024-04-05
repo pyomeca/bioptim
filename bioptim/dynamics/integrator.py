@@ -306,6 +306,7 @@ class RK(Integrator):
         p = params
         x[:, 0] = states
         a = algebraic_states
+        d = numerical_timeseries
 
         for i in range(1, self._n_step + 1):
             t = self.t_span_sym[0] + self._integration_time * (i - 1)

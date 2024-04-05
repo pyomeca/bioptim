@@ -370,11 +370,14 @@ def _get_a(ocp, phase_idx, node_idx, subnodes_idx, scaled):
 
 def get_numerical_timeseries(ocp, phase_idx, node_idx, subnodes_idx):
     dict = ocp.nlp[phase_idx].numerical_data_timeseries
-    values = None
-    for i_d, d in enumerate(dict):
-        for i_element in range(dict[d].shape[1]):
-            if values is None:
-                values = dict[d][:, i_element, node_idx]
-            else:
-                values = vertcat(values, dict[d][:, i_element, node_idx])
-    return values if values is not None else ocp.cx()
+    if dict is None:
+        return ocp.cx()
+    else:
+        values = None
+        for i_d, d in enumerate(dict):
+            for i_element in range(dict[d].shape[1]):
+                if values is None:
+                    values = dict[d][:, i_element, node_idx]
+                else:
+                    values = vertcat(values, dict[d][:, i_element, node_idx])
+        return values

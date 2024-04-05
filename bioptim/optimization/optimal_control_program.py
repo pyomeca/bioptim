@@ -1642,7 +1642,7 @@ class OptimalControlProgram:
                         )
 
         # Add to the nlp
-        NLP.add(self, "d", numerical_timeseries, True)
+        NLP.add(self, "numerical_timeseries", numerical_timeseries, True)
 
     def _modify_penalty(self, new_penalty: PenaltyOption | Parameter):
         """

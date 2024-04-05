@@ -464,7 +464,7 @@ class PenaltyOption(OptionGeneric):
                     u=u_integrate,
                     p=controller.parameters.cx,
                     a=controller.algebraic_states.cx_start,
-                    numerical_timeseries=controller.numerical_timeseries.cx_start,
+                    d=controller.numerical_timeseries.cx_start,
                 )["xf"]
             else:
                 raise NotImplementedError(f"Integration rule {self.integration_rule} not implemented yet")
@@ -665,7 +665,7 @@ class PenaltyOption(OptionGeneric):
             lambda p_idx, n_idx, sn_idx: self._get_states(ocp, ocp.nlp[p_idx].algebraic_states, n_idx, sn_idx),
             is_constructing_penalty=True,
         )
-        numerical_timeseries = PenaltyHelpers.numerical_timeseries(
+        d = PenaltyHelpers.numerical_timeseries(
             self,
             penalty_idx,
             lambda p_idx, n_idx, sn_idx: self.get_numerical_timeseries(ocp, p_idx, n_idx, sn_idx),
