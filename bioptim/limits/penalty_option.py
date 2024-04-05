@@ -562,9 +562,7 @@ class PenaltyOption(OptionGeneric):
                 ["val"],
             )
 
-            modified_fcn = (
-                self.function[node](time, phases_dt, x, u, p, a, d) - target_cx
-            ) ** exponent
+            modified_fcn = (self.function[node](time, phases_dt, x, u, p, a, d) - target_cx) ** exponent
 
         else:
             # TODO Add error message if there are free variables to guide the user? For instance controls with last node
@@ -576,9 +574,7 @@ class PenaltyOption(OptionGeneric):
                 ["val"],
             )
 
-            modified_fcn = (
-                self.function[node](time, phases_dt, x, u, p, a, d) - target_cx
-            ) ** exponent
+            modified_fcn = (self.function[node](time, phases_dt, x, u, p, a, d) - target_cx) ** exponent
 
         if self.expand:
             self.function[node] = self.function[node].expand()

@@ -135,9 +135,7 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
             rigidbody_dynamics=rigidbody_dynamics,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=(
-                {"external_forces": external_forces} if external_forces is not None else None
-            ),
+            numerical_data_timeseries=({"external_forces": external_forces} if external_forces is not None else None),
         ),
         False,
     )
@@ -165,7 +163,9 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
     numerical_timeseries = external_forces[:, 0, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
-        nlp.dynamics_func(time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries)
+        nlp.dynamics_func(
+            time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries
+        )
     )
     if rigidbody_dynamics == RigidBodyDynamics.ODE:
         if with_contact:
@@ -513,9 +513,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             with_contact=with_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=(
-                {"external_forces": external_forces} if external_forces is not None else None
-            ),
+            numerical_data_timeseries=({"external_forces": external_forces} if external_forces is not None else None),
         ),
         False,
     )
@@ -544,7 +542,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
     numerical_timeseries = external_forces[:, 0, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
-        nlp.dynamics_func(time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries)
+        nlp.dynamics_func(
+            time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries
+        )
     )
 
     if with_contact:
@@ -1021,9 +1021,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             with_contact=with_contact,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=(
-                {"external_forces": external_forces} if external_forces is not None else None
-            ),
+            numerical_data_timeseries=({"external_forces": external_forces} if external_forces is not None else None),
         ),
         False,
     )
@@ -1051,7 +1049,9 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
     numerical_timeseries = external_forces[:, 0, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
-        nlp.dynamics_func(time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries)
+        nlp.dynamics_func(
+            time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries
+        )
     )
 
     if with_contact:
@@ -1201,9 +1201,7 @@ def test_torque_activation_driven_with_residual_torque(
             with_residual_torque=with_residual_torque,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=(
-                {"external_forces": external_forces} if external_forces is not None else None
-            ),
+            numerical_data_timeseries=({"external_forces": external_forces} if external_forces is not None else None),
         ),
         False,
     )
@@ -1231,7 +1229,9 @@ def test_torque_activation_driven_with_residual_torque(
     numerical_timeseries = external_forces[:, 0, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
-        nlp.dynamics_func(time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries)
+        nlp.dynamics_func(
+            time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries
+        )
     )
 
     if with_residual_torque:
@@ -1452,9 +1452,7 @@ def test_muscle_driven(
             rigidbody_dynamics=rigidbody_dynamics,
             expand_dynamics=True,
             phase_dynamics=phase_dynamics,
-            numerical_data_timeseries=(
-                {"external_forces": external_forces} if external_forces is not None else None
-            ),
+            numerical_data_timeseries=({"external_forces": external_forces} if external_forces is not None else None),
         ),
         False,
     )
@@ -1485,7 +1483,9 @@ def test_muscle_driven(
     numerical_timeseries = external_forces[:, 0, 0] if with_external_force else []
     time = np.random.rand(2)
     x_out = np.array(
-        nlp.dynamics_func(time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries)
+        nlp.dynamics_func(
+            time, states[:, 0], controls[:, 0], params[:, 0], algebraic_states[:, 0], numerical_timeseries
+        )
     )
 
     if with_contact:  # Warning this test is a bit bogus, there since the model does not have contacts

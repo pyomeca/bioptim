@@ -267,9 +267,7 @@ class RK(Integrator):
     def h(self):
         return self.t_span_sym[1] / self._n_step
 
-    def next_x(
-        self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX
-    ) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX) -> MX | SX:
         """
         Compute the next integrated state (abstract)
 
@@ -323,14 +321,8 @@ class RK1(RK):
     Numerical integration using first order Runge-Kutta 1 Method (Forward Euler Method).
     """
 
-    def next_x(
-        self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX
-    ) -> MX | SX:
-        return (
-            x_prev
-            + self.h
-            * self.fun(vertcat(t0, self.h), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
-        )
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX) -> MX | SX:
+        return x_prev + self.h * self.fun(vertcat(t0, self.h), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
 
 
 class RK2(RK):
@@ -338,18 +330,14 @@ class RK2(RK):
     Numerical integration using second order Runge-Kutta Method (Midpoint Method).
     """
 
-    def next_x(
-        self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX
-    ) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX) -> MX | SX:
         h = self.h
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
         return (
             x_prev
             + h
-            * self.fun(
-                vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, d
-            )[:, self.ode_idx]
+            * self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, d)[:, self.ode_idx]
         )
 
 
@@ -358,21 +346,13 @@ class RK4(RK):
     Numerical integration using fourth order Runge-Kutta method.
     """
 
-    def next_x(
-        self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX
-    ) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX) -> MX | SX:
         h = self.h
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
-        k2 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, d)[
-            :, self.ode_idx
-        ]
-        k3 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, a, d)[
-            :, self.ode_idx
-        ]
-        k4 = self.fun(vertcat(t0 + h, h), x_prev + h * k3, self.get_u(u, t0 + h), p, a, d)[
-            :, self.ode_idx
-        ]
+        k2 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k1, self.get_u(u, t0 + h / 2), p, a, d)[:, self.ode_idx]
+        k3 = self.fun(vertcat(t0 + h / 2, h), x_prev + h / 2 * k2, self.get_u(u, t0 + h / 2), p, a, d)[:, self.ode_idx]
+        k4 = self.fun(vertcat(t0 + h, h), x_prev + h * k3, self.get_u(u, t0 + h), p, a, d)[:, self.ode_idx]
         return x_prev + h / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
 
@@ -381,9 +361,7 @@ class RK8(RK4):
     Numerical integration using eighth order Runge-Kutta method.
     """
 
-    def next_x(
-        self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX
-    ) -> MX | SX:
+    def next_x(self, t0: float | MX | SX, x_prev: MX | SX, u: MX | SX, p: MX | SX, a: MX | SX, d: MX | SX) -> MX | SX:
         h = self.h
 
         k1 = self.fun(vertcat(t0, h), x_prev, self.get_u(u, t0), p, a, d)[:, self.ode_idx]
