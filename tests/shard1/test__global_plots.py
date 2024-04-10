@@ -100,9 +100,7 @@ def test_save_ipopt_output():
         os.mkdir(path_to_results)
     result_file_name = "pendulum"
     nb_iter_save = 10
-    ocp.save_intermediary_ipopt_iterations(
-        path_to_results, result_file_name, nb_iter_save
-    )
+    ocp.save_intermediary_ipopt_iterations(path_to_results, result_file_name, nb_iter_save)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
