@@ -1,7 +1,9 @@
+import pickle
+
 import numpy as np
+from casadi import jacobian, gradient, sum1, Function
 from matplotlib import pyplot as plt
 from matplotlib.cm import get_cmap
-from casadi import jacobian, gradient, sum1, Function
 
 
 def create_ipopt_output_plot(ocp, interface):
@@ -131,3 +133,66 @@ def update_ipopt_output_plot(args, ocp):
         ocp.ipopt_plots["axs"][i].set_xlim(0, len(ocp.ipopt_plots["f"]))
 
     ocp.ipopt_plots["ipopt_fig"].canvas.draw()
+
+
+def save_ipopt_output(args, save_ipopt_iterations_info):
+    """
+    This function saves the ipopt outputs: x, f, g, lam_x, lam_g, lam_p every nb_iter_save iterations.
+    """
+    f = args["f"]
+
+    if len(save_ipopt_iterations_info.f_list) != 0 and save_ipopt_iterations_info.f_list[-1] == f:
+        return
+
+    save_ipopt_iterations_info.f_list += [f]
+    save_ipopt_iterations_info.current_iter += 1
+
+    if save_ipopt_iterations_info.current_iter % save_ipopt_iterations_info.nb_iter_save != 0:
+        return
+    else:
+        x = args["x"]
+        g = args["g"]
+        lam_x = args["lam_x"]
+        lam_g = args["lam_g"]
+        lam_p = args["lam_p"]
+
+        save_path = save_ipopt_iterations_info.path_to_results + save_ipopt_iterations_info.result_file_name + "_" + str(
+            save_ipopt_iterations_info.current_iter) + ".pkl"
+        with open(save_path, "wb") as file:
+            pickle.dump(
+                {
+                    "x": x,
+                    "f": f,
+                    "g": g,
+                    "lam_x": lam_x,
+                    "lam_g": lam_g,
+                    "lam_p": lam_p
+                },
+                file)
+
+
+class SaveIterationsInfo:
+    """
+    This class is used to store the ipopt outputs save info.
+    """
+    def __init__(self, path_to_results: str, result_file_name:str , nb_iter_save: int):
+
+        if not isinstance(path_to_results, str) or len(path_to_results) == 0:
+            raise ValueError("path_to_results should be a non-empty string")
+        if path_to_results[-1] != "/":
+            path_to_results += "/"
+
+        if not isinstance(result_file_name, str) or len(result_file_name) == 0:
+            raise ValueError("result_file_name should be a non-empty string")
+        if result_file_name[-4:] == ".pkl":
+            result_file_name = result_file_name[:-4]
+        result_file_name.replace(".", "-")
+
+        if not isinstance(nb_iter_save, int) or nb_iter_save <= 0:
+            raise ValueError("nb_iter_save should be a positive integer")
+
+        self.path_to_results = path_to_results
+        self.result_file_name = result_file_name
+        self.nb_iter_save = nb_iter_save
+        self.current_iter = 0
+        self.f_list = []
