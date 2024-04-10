@@ -156,26 +156,23 @@ def save_ipopt_output(args, save_ipopt_iterations_info):
         lam_g = args["lam_g"]
         lam_p = args["lam_p"]
 
-        save_path = save_ipopt_iterations_info.path_to_results + save_ipopt_iterations_info.result_file_name + "_" + str(
-            save_ipopt_iterations_info.current_iter) + ".pkl"
+        save_path = (
+            save_ipopt_iterations_info.path_to_results
+            + save_ipopt_iterations_info.result_file_name
+            + "_"
+            + str(save_ipopt_iterations_info.current_iter)
+            + ".pkl"
+        )
         with open(save_path, "wb") as file:
-            pickle.dump(
-                {
-                    "x": x,
-                    "f": f,
-                    "g": g,
-                    "lam_x": lam_x,
-                    "lam_g": lam_g,
-                    "lam_p": lam_p
-                },
-                file)
+            pickle.dump({"x": x, "f": f, "g": g, "lam_x": lam_x, "lam_g": lam_g, "lam_p": lam_p}, file)
 
 
 class SaveIterationsInfo:
     """
     This class is used to store the ipopt outputs save info.
     """
-    def __init__(self, path_to_results: str, result_file_name:str , nb_iter_save: int):
+
+    def __init__(self, path_to_results: str, result_file_name: str, nb_iter_save: int):
 
         if not isinstance(path_to_results, str) or len(path_to_results) == 0:
             raise ValueError("path_to_results should be a non-empty string")
