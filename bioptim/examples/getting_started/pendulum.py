@@ -136,12 +136,12 @@ def main():
     # ocp.add_plot_ipopt_outputs()  # This will display the solver's output at the current iteration
 
     # --- Saving the solver's output during the optimization --- #
-    path_to_results = "temporary_results/"
-    result_file_name = "pendulum"
-    nb_iter_save = 10  # Save the solver's output every 10 iterations
-    ocp.save_intermediary_ipopt_iterations(
-        path_to_results, result_file_name, nb_iter_save
-    )  # This will save the solver's output at each iteration
+    # path_to_results = "temporary_results/"
+    # result_file_name = "pendulum"
+    # nb_iter_save = 10  # Save the solver's output every 10 iterations
+    # ocp.save_intermediary_ipopt_iterations(
+    #     path_to_results, result_file_name, nb_iter_save
+    # )  # This will save the solver's output at each iteration
 
     # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
     # ocp.check_conditioning()
