@@ -756,6 +756,11 @@ class PlotOcp:
 
             update_ipopt_output_plot(args, self.ocp)
 
+        if self.ocp.save_ipopt_iterations_info is not None:
+            from ..gui.ipopt_output_plot import save_ipopt_output
+
+            save_ipopt_output(args, self.ocp.save_ipopt_iterations_info)
+
         if self.ocp.plot_check_conditioning:
             from ..gui.check_conditioning import update_conditioning_plots
 

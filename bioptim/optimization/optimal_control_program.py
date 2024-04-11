@@ -14,6 +14,7 @@ from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
 from ..gui.plot import CustomPlot, PlotOcp
+from ..gui.ipopt_output_plot import SaveIterationsInfo
 from ..interfaces import Solver
 from ..interfaces.abstract_options import GenericSolver
 from ..limits.constraints import (
@@ -592,6 +593,7 @@ class OptimalControlProgram:
         self.plot_ipopt_outputs = False
         # If we want the conditioning of the problem to be plotted live
         self.plot_check_conditioning = False
+        self.save_ipopt_iterations_info = None
 
         return (
             constraints,
@@ -1325,6 +1327,9 @@ class OptimalControlProgram:
 
     def add_plot_check_conditioning(self):
         self.plot_check_conditioning = True
+
+    def save_intermediary_ipopt_iterations(self, path_to_results, result_file_name, nb_iter_save):
+        self.save_ipopt_iterations_info = SaveIterationsInfo(path_to_results, result_file_name, nb_iter_save)
 
     def prepare_plots(
         self,

@@ -10,9 +10,6 @@ appreciate it). Finally, once it finished optimizing, it animates the model usin
 """
 
 import platform
-import matplotlib.pyplot as plt
-import numpy as np
-
 
 from bioptim import (
     OptimalControlProgram,
@@ -29,8 +26,6 @@ from bioptim import (
     BiorbdModel,
     ControlType,
     PhaseDynamics,
-    SolutionMerge,
-    TimeAlignment,
 )
 
 
@@ -135,10 +130,18 @@ def main():
     # --- Prepare the ocp --- #
     ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=400, n_threads=2)
 
-    # Custom plots
+    # --- Live plots --- #
     ocp.add_plot_penalty(CostType.ALL)  # This will display the objectives and constraints at the current iteration
-    # ocp.add_plot_ipopt_outputs()  # This will display the solver's output at the current iteration
     # ocp.add_plot_check_conditioning()  # This will display the conditioning of the problem at the current iteration
+    # ocp.add_plot_ipopt_outputs()  # This will display the solver's output at the current iteration
+
+    # --- Saving the solver's output during the optimization --- #
+    # path_to_results = "temporary_results/"
+    # result_file_name = "pendulum"
+    # nb_iter_save = 10  # Save the solver's output every 10 iterations
+    # ocp.save_intermediary_ipopt_iterations(
+    #     path_to_results, result_file_name, nb_iter_save
+    # )  # This will save the solver's output at each iteration
 
     # --- If one is interested in checking the conditioning of the problem, they can uncomment the following line --- #
     # ocp.check_conditioning()
@@ -149,13 +152,12 @@ def main():
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
-    sol.print_cost()
-
     # --- Show the results (graph or animation) --- #
+    sol.print_cost()
     # sol.graphs(show_bounds=True, save_name="results.png")
     sol.animate(n_frames=100)
 
-    # # --- Save the solution --- #
+    # # --- Saving the solver's output after the optimization --- #
     # Here is an example of how we recommend to save the solution. Please note that sol.ocp is not picklable and that sol will be loaded using the current bioptim version, not the version at the time of the generation of the results.
     # import pickle
     # import git
