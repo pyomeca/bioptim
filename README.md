@@ -328,7 +328,14 @@ algebraic states (s = optimization variables that are defined at each node but t
 built-in continuity constraints), and parameters (p = optimization variables defined once per phase).
 The state continuity constraints implementation may vary depending on the transcription of the problem (implicit vs explicit, direct multiple shooting vs direct collocations).
 
-The cost function can include Mayer terms (function evaluated at one node) and Lagrange terms (functions integrated over the duration of the phase).
+The cost function can include Mayer terms (function evaluated at one node, the default is the last node) and Lagrange terms (functions integrated over the duration of the phase).
+The Lagrange terms are computed by default as EulerForward Integrals:
+```python
+L = 0
+for i in range(n_shooting):
+  L += weight * sum((evaluated_cost[:, i] - target_cost[:, i])**2 * dt)
+```
+Where `weight` is by default 1 and `target_cost` is by default 0. For more advanced approximations, see QuadratureRule section. They can be used to evaluate more accurately the Lagrange terms of the cost function.
 The optimization variables can be subject to equality and/or inequality constraints.
 
 # A first practical example
