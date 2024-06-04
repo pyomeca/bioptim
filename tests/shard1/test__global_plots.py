@@ -3,12 +3,11 @@ Test for file IO
 """
 
 import io
-import os
-import sys
-
 import matplotlib
 import numpy as np
+import os
 import pytest
+import sys
 from casadi import Function, MX
 
 from bioptim import CostType, OdeSolver, Solver, RigidBodyDynamics, BiorbdModel, PhaseDynamics

@@ -149,7 +149,7 @@ class DynamicsFunctions:
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
-        tau = tau + nlp.model.friction_coefficients @ qdot if with_friction else tau
+        tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -263,7 +263,7 @@ class DynamicsFunctions:
             tau_joints + nlp.model.passive_joint_torque(q_full, qdot_full) if with_passive_torque else tau_joints
         )
         tau_joints = tau_joints + nlp.model.ligament_joint_torque(q_full, qdot_full) if with_ligament else tau_joints
-        tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
+        tau_joints = tau_joints - nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
 
         tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
 
@@ -335,7 +335,7 @@ class DynamicsFunctions:
             sensory_noise=sensory_noise,
             motor_noise=motor_noise,
         )
-        tau = tau + nlp.model.friction_coefficients @ qdot if with_friction else tau
+        tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact)
@@ -406,7 +406,7 @@ class DynamicsFunctions:
             motor_noise=motor_noise,
             sensory_noise=sensory_noise,
         )
-        tau_joints = tau_joints + nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
+        tau_joints = (tau_joints - nlp.model.friction_coefficients @ qdot_joints) if with_friction else tau_joints
 
         tau_full = vertcat(MX.zeros(nlp.model.nb_root), tau_joints)
 

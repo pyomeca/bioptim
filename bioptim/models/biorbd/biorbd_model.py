@@ -54,6 +54,11 @@ class BiorbdModel:
     def friction_coefficients(self) -> MX | np.ndarray:
         return self._friction_coefficients
 
+    def set_friction_coefficients(self, new_friction_coefficients) -> None:
+        if np.any(new_friction_coefficients < 0):
+            raise ValueError("Friction coefficients must be positive")
+        return self._friction_coefficients
+
     @property
     def gravity(self) -> MX:
         return self.model.getGravity().to_mx()
