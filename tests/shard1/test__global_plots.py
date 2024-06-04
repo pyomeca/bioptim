@@ -94,9 +94,9 @@ def test_save_ipopt_output():
         final_time=1,
         n_shooting=40,
     )
-    path_to_results = bioptim_folder + "/temporary_results/"
+    path_to_results = "temporary_results"
     if path_to_results not in os.listdir(bioptim_folder):
-        os.mkdir(path_to_results)
+        os.mkdir(os.path.join(bioptim_folder, path_to_results))
     result_file_name = "pendulum"
     nb_iter_save = 10
     ocp.save_intermediary_ipopt_iterations(path_to_results, result_file_name, nb_iter_save)
