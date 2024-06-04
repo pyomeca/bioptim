@@ -83,7 +83,7 @@ def prepare_ocp(
 
     # External forces (shape: 9 x nb_external_forces x (n_shooting_points+1))
     # First components are the moments and forces
-    external_forces = np.zeros((9, 2, n_shooting+1))
+    external_forces = np.zeros((9, 2, n_shooting + 1))
     external_forces[5, 0, :] = -2
     external_forces[5, 1, :] = 5
     external_forces[5, 0, 4] = -22
