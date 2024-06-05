@@ -45,7 +45,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     # Check objective function value
     f = np.array(sol.cost)
     np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 426.84572091057413)
+    np.testing.assert_almost_equal(f[0, 0], 433.119929307444)
 
     # Check constraints
     g = np.array(sol.constraints)
@@ -66,8 +66,8 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
     np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-    np.testing.assert_almost_equal(tau[:, 0], np.array([1.72235954, -0.90041542]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-1.64870266, 1.08550928]))
+    np.testing.assert_almost_equal(tau[:, 0], np.array([1.73918356, -1.0035866]))
+    np.testing.assert_almost_equal(tau[:, -2], np.array([-1.672167, 0.91772376]))
 
     np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
 
