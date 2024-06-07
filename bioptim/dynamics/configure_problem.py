@@ -956,7 +956,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states]
+        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
             The function to get the derivative of the states
         """
 
@@ -1076,7 +1076,7 @@ class ConfigureProblem:
             A reference to the ocp
         nlp: NonLinearProgram
             A reference to the phase
-        dyn_func: Callable[time, states, controls, param, algebraic_states]
+        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
             The function to get the values of contact forces from the dynamics
         """
 
