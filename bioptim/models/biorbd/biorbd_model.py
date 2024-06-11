@@ -14,7 +14,7 @@ from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 from ...misc.utils import check_version
 
-check_version(biorbd, "1.11.0", "1.12.0")
+check_version(biorbd, "1.11.1", "1.12.0")
 
 
 class BiorbdModel:
