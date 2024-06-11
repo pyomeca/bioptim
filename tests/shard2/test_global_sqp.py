@@ -4,6 +4,7 @@ Tests for SQP interface.
 
 import os
 import numpy as np
+import numpy.testing as npt
 from bioptim import Solver, PhaseDynamics, SolutionMerge
 import pytest
 
@@ -31,11 +32,11 @@ def test_pendulum(phase_dynamics):
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
+    npt.assert_equal(f.shape, (1, 1))
 
-    np.testing.assert_almost_equal(f[0, 0], 124.90212482956895)
+    npt.assert_almost_equal(f[0, 0], 124.90212482956895)
     # detailed cost values
-    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 124.90212482956895)
+    npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 124.90212482956895)
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -43,13 +44,13 @@ def test_pendulum(phase_dynamics):
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+    npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((11.75634204, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-16.60785771, 0)))
+    npt.assert_almost_equal(tau[:, 0], np.array((11.75634204, 0)))
+    npt.assert_almost_equal(tau[:, -1], np.array((-16.60785771, 0)))

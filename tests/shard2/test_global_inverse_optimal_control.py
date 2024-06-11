@@ -6,6 +6,7 @@ import os
 
 from bioptim import PhaseDynamics, SolutionMerge
 import numpy as np
+import numpy.testing as npt
 import pytest
 
 
@@ -36,22 +37,22 @@ def test_double_pendulum_torque_driven_IOCP(phase_dynamics):
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
-    np.testing.assert_equal(g.shape, (120, 1))
-    np.testing.assert_almost_equal(g, np.zeros((120, 1)))
+    npt.assert_equal(g.shape, (120, 1))
+    npt.assert_almost_equal(g, np.zeros((120, 1)))
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 12.0765913088802)
+    npt.assert_equal(f.shape, (1, 1))
+    npt.assert_almost_equal(f[0, 0], 12.0765913088802)
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([-3.14159265, 0.0]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([3.14159265, 0.0]))
+    npt.assert_almost_equal(q[:, 0], np.array([-3.14159265, 0.0]))
+    npt.assert_almost_equal(q[:, -1], np.array([3.14159265, 0.0]))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([-3.29089471, 15.70796327]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([2.97490708, -2.73024542]))
+    npt.assert_almost_equal(qdot[:, 0], np.array([-3.29089471, 15.70796327]))
+    npt.assert_almost_equal(qdot[:, -1], np.array([2.97490708, -2.73024542]))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([-11.9453666]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([0.02482167]))
+    npt.assert_almost_equal(tau[:, 0], np.array([-11.9453666]))
+    npt.assert_almost_equal(tau[:, -1], np.array([0.02482167]))

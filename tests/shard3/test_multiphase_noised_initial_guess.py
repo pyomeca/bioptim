@@ -1,6 +1,7 @@
 import pytest
 import os
 import numpy as np
+import numpy.testing as npt
 from bioptim import BiorbdModel, BoundsList, InitialGuessList, MagnitudeType, PhaseDynamics
 
 
@@ -722,7 +723,7 @@ def test_noisy_multiphase(phase_dynamics):
         [-5.98678677e00],
     ]
 
-    np.testing.assert_almost_equal(ocp.init_vector, np.concatenate(([[0.1], [0.16666667], [0.2]], expected)))
+    npt.assert_almost_equal(ocp.init_vector, np.concatenate(([[0.1], [0.16666667], [0.2]], expected)))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

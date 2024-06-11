@@ -7,6 +7,7 @@ import os
 import sys
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 
 from bioptim import (
@@ -164,23 +165,23 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
+    npt.assert_equal(f.shape, (1, 1))
     if integration_rule == QuadratureRule.RECTANGLE_LEFT:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
-                np.testing.assert_almost_equal(j_printed, 36.077211633874164)
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.0]))
+                npt.assert_almost_equal(f[0, 0], 36.077211633874164)
+                npt.assert_almost_equal(j_printed, 36.077211633874164)
+                npt.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.0]))
             else:
-                np.testing.assert_almost_equal(f[0, 0], 18.91863487850207)
-                np.testing.assert_almost_equal(j_printed, 18.91863487850207)
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-17.24468626, 0.0]))
+                npt.assert_almost_equal(f[0, 0], 18.91863487850207)
+                npt.assert_almost_equal(j_printed, 18.91863487850207)
+                npt.assert_almost_equal(tau[:, -1], np.array([-17.24468626, 0.0]))
 
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-            np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
+            npt.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 36.077211633874185)
-                np.testing.assert_almost_equal(j_printed, 36.077211633874185)
+                npt.assert_almost_equal(f[0, 0], 36.077211633874185)
+                npt.assert_almost_equal(j_printed, 36.077211633874185)
 
                 controls = sol.decision_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS])
                 states = sol.decision_states(to_merge=[SolutionMerge.NODES, SolutionMerge.KEYS])
@@ -197,18 +198,18 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
                         ocp.nlp[0].J[0].weight,  # Weight
                         [],  # Target
                     )
-                np.testing.assert_almost_equal(float(out[0, 0]), 36.077211633874185)
+                npt.assert_almost_equal(float(out[0, 0]), 36.077211633874185)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 18.918634878502065)
-                np.testing.assert_almost_equal(j_printed, 18.918634878502065)
+                npt.assert_almost_equal(f[0, 0], 18.918634878502065)
+                npt.assert_almost_equal(j_printed, 18.918634878502065)
 
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 52.0209218166193)
-                np.testing.assert_almost_equal(j_printed, 52.0209218166193)
+                npt.assert_almost_equal(f[0, 0], 52.0209218166193)
+                npt.assert_almost_equal(j_printed, 52.0209218166193)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 18.844221574687065)
-                np.testing.assert_almost_equal(j_printed, 18.844221574687065)
+                npt.assert_almost_equal(f[0, 0], 18.844221574687065)
+                npt.assert_almost_equal(j_printed, 18.844221574687065)
 
         else:
             raise NotImplementedError("Control type not implemented yet")
@@ -216,53 +217,53 @@ def test_pendulum(control_type, integration_rule, objective, phase_dynamics):
     elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.0]))
-                np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
-                np.testing.assert_almost_equal(j_printed, 36.077211633874164)
+                npt.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.0]))
+                npt.assert_almost_equal(f[0, 0], 36.077211633874164)
+                npt.assert_almost_equal(j_printed, 36.077211633874164)
             else:
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-17.24468626, 0.0]))
-                np.testing.assert_almost_equal(f[0, 0], 18.91863487850206)
-                np.testing.assert_almost_equal(j_printed, 18.91863487850206)
+                npt.assert_almost_equal(tau[:, -1], np.array([-17.24468626, 0.0]))
+                npt.assert_almost_equal(f[0, 0], 18.91863487850206)
+                npt.assert_almost_equal(j_printed, 18.91863487850206)
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-            np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
+            npt.assert_equal(np.isnan(tau[:, -1]), np.array([False, False]))
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
-                np.testing.assert_almost_equal(j_printed, 36.077211633874164)
+                npt.assert_almost_equal(f[0, 0], 36.077211633874164)
+                npt.assert_almost_equal(j_printed, 36.077211633874164)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 18.91863487850206)
-                np.testing.assert_almost_equal(j_printed, 18.91863487850206)
+                npt.assert_almost_equal(f[0, 0], 18.91863487850206)
+                npt.assert_almost_equal(j_printed, 18.91863487850206)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 52.0209218166202)
-                np.testing.assert_almost_equal(j_printed, 52.0209218166202)
+                npt.assert_almost_equal(f[0, 0], 52.0209218166202)
+                npt.assert_almost_equal(j_printed, 52.0209218166202)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 18.844221574687094)
-                np.testing.assert_almost_equal(j_printed, 18.844221574687094)
+                npt.assert_almost_equal(f[0, 0], 18.844221574687094)
+                npt.assert_almost_equal(j_printed, 18.844221574687094)
     elif integration_rule == QuadratureRule.TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.0]))
-                np.testing.assert_almost_equal(f[0, 0], 36.077211633874164)
-                np.testing.assert_almost_equal(j_printed, 36.077211633874164)
+                npt.assert_almost_equal(tau[:, -1], np.array([-15.79894366, 0.0]))
+                npt.assert_almost_equal(f[0, 0], 36.077211633874164)
+                npt.assert_almost_equal(j_printed, 36.077211633874164)
             else:
-                np.testing.assert_almost_equal(tau[:, -1], np.array([-15.3519514, 0.0]))
-                np.testing.assert_almost_equal(f[0, 0], 18.112963129413707)
-                np.testing.assert_almost_equal(j_printed, 18.112963129413707)
+                npt.assert_almost_equal(tau[:, -1], np.array([-15.3519514, 0.0]))
+                npt.assert_almost_equal(f[0, 0], 18.112963129413707)
+                npt.assert_almost_equal(j_printed, 18.112963129413707)
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
-            np.testing.assert_equal(np.isnan(tau[:, -1]), np.array([0, 0]))
+            npt.assert_equal(np.isnan(tau[:, -1]), np.array([0, 0]))
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 36.077211633874384)
-                np.testing.assert_almost_equal(j_printed, 36.077211633874384)
+                npt.assert_almost_equal(f[0, 0], 36.077211633874384)
+                npt.assert_almost_equal(j_printed, 36.077211633874384)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 17.944878542423062)
-                np.testing.assert_almost_equal(j_printed, 17.944878542423062)
+                npt.assert_almost_equal(f[0, 0], 17.944878542423062)
+                npt.assert_almost_equal(j_printed, 17.944878542423062)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 34.52084504124038)
-                np.testing.assert_almost_equal(j_printed, 34.52084504124038)
+                npt.assert_almost_equal(f[0, 0], 34.52084504124038)
+                npt.assert_almost_equal(j_printed, 34.52084504124038)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 17.72098984554101)
-                np.testing.assert_almost_equal(j_printed, 17.72098984554101)
+                npt.assert_almost_equal(f[0, 0], 17.72098984554101)
+                npt.assert_almost_equal(j_printed, 17.72098984554101)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -319,31 +320,31 @@ def test_pendulum_collocation(control_type, integration_rule, objective, phase_d
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
+    npt.assert_equal(f.shape, (1, 1))
     if integration_rule == QuadratureRule.RECTANGLE_LEFT:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
-                np.testing.assert_almost_equal(j_printed, 11.795040652982767)
+                npt.assert_almost_equal(f[0, 0], 11.795040652982767)
+                npt.assert_almost_equal(j_printed, 11.795040652982767)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 12.336208562756555)
-                np.testing.assert_almost_equal(j_printed, 12.336208562756553)
+                npt.assert_almost_equal(f[0, 0], 12.336208562756555)
+                npt.assert_almost_equal(j_printed, 12.336208562756553)
     elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
-                np.testing.assert_almost_equal(j_printed, 11.795040652982767)
+                npt.assert_almost_equal(f[0, 0], 11.795040652982767)
+                npt.assert_almost_equal(j_printed, 11.795040652982767)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 12.336208562756559)
-                np.testing.assert_almost_equal(j_printed, 12.336208562756559)
+                npt.assert_almost_equal(f[0, 0], 12.336208562756559)
+                npt.assert_almost_equal(j_printed, 12.336208562756559)
     elif integration_rule == QuadratureRule.TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 11.795040652982767)
-                np.testing.assert_almost_equal(j_printed, 11.795040652982767)
+                npt.assert_almost_equal(f[0, 0], 11.795040652982767)
+                npt.assert_almost_equal(j_printed, 11.795040652982767)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 12.336208562756564)
-                np.testing.assert_almost_equal(j_printed, 12.336208562756564)
+                npt.assert_almost_equal(f[0, 0], 12.336208562756564)
+                npt.assert_almost_equal(j_printed, 12.336208562756564)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -519,73 +520,73 @@ def test_pendulum_target(control_type, integration_rule, objective, phase_dynami
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
+    npt.assert_equal(f.shape, (1, 1))
     if integration_rule == QuadratureRule.RECTANGLE_LEFT:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 47.409664872029175)
-                np.testing.assert_almost_equal(j_printed, 47.409664872029175)
+                npt.assert_almost_equal(f[0, 0], 47.409664872029175)
+                npt.assert_almost_equal(j_printed, 47.409664872029175)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 69.3969483839429, decimal=4)  # for windows
-                np.testing.assert_almost_equal(j_printed, 69.3969483839429, decimal=4)
+                npt.assert_almost_equal(f[0, 0], 69.3969483839429, decimal=4)  # for windows
+                npt.assert_almost_equal(j_printed, 69.3969483839429, decimal=4)
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 47.409664872029175)
-                np.testing.assert_almost_equal(j_printed, 47.409664872029175)
+                npt.assert_almost_equal(f[0, 0], 47.409664872029175)
+                npt.assert_almost_equal(j_printed, 47.409664872029175)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 69.39694769390407, decimal=4)  # for windows
-                np.testing.assert_almost_equal(j_printed, 69.39694769390407, decimal=4)
+                npt.assert_almost_equal(f[0, 0], 69.39694769390407, decimal=4)  # for windows
+                npt.assert_almost_equal(j_printed, 69.39694769390407, decimal=4)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 47.18288247657242)
-                np.testing.assert_almost_equal(j_printed, 47.18288247657242)
+                npt.assert_almost_equal(f[0, 0], 47.18288247657242)
+                npt.assert_almost_equal(j_printed, 47.18288247657242)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 49.52081908930845)
-                np.testing.assert_almost_equal(j_printed, 49.52081908930845)
+                npt.assert_almost_equal(f[0, 0], 49.52081908930845)
+                npt.assert_almost_equal(j_printed, 49.52081908930845)
     elif integration_rule == QuadratureRule.APPROXIMATE_TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 47.20218950613529)
-                np.testing.assert_almost_equal(j_printed, 47.20218950613529)
+                npt.assert_almost_equal(f[0, 0], 47.20218950613529)
+                npt.assert_almost_equal(j_printed, 47.20218950613529)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 79.20445223944195, decimal=5)
-                np.testing.assert_almost_equal(j_printed, 79.20445223944195, decimal=5)
+                npt.assert_almost_equal(f[0, 0], 79.20445223944195, decimal=5)
+                npt.assert_almost_equal(j_printed, 79.20445223944195, decimal=5)
         elif control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 47.20218950610398)
-                np.testing.assert_almost_equal(j_printed, 47.20218950610398)
+                npt.assert_almost_equal(f[0, 0], 47.20218950610398)
+                npt.assert_almost_equal(j_printed, 47.20218950610398)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 79.20445223932471, decimal=5)
-                np.testing.assert_almost_equal(j_printed, 79.20445223932471, decimal=5)
+                npt.assert_almost_equal(f[0, 0], 79.20445223932471, decimal=5)
+                npt.assert_almost_equal(j_printed, 79.20445223932471, decimal=5)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 48.49207210991624)
-                np.testing.assert_almost_equal(j_printed, 48.49207210991624)
+                npt.assert_almost_equal(f[0, 0], 48.49207210991624)
+                npt.assert_almost_equal(j_printed, 48.49207210991624)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 47.038431660223246)
-                np.testing.assert_almost_equal(j_printed, 47.038431660223246)
+                npt.assert_almost_equal(f[0, 0], 47.038431660223246)
+                npt.assert_almost_equal(j_printed, 47.038431660223246)
     elif integration_rule == QuadratureRule.TRAPEZOIDAL:
         if control_type == ControlType.CONSTANT:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 47.20218950613529)
-                np.testing.assert_almost_equal(j_printed, 47.20218950613529)
+                npt.assert_almost_equal(f[0, 0], 47.20218950613529)
+                npt.assert_almost_equal(j_printed, 47.20218950613529)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 33.46130228108698)
-                np.testing.assert_almost_equal(j_printed, 33.46130228108698)
+                npt.assert_almost_equal(f[0, 0], 33.46130228108698)
+                npt.assert_almost_equal(j_printed, 33.46130228108698)
         if control_type == ControlType.CONSTANT_WITH_LAST_NODE:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 47.20218950610398)
-                np.testing.assert_almost_equal(j_printed, 47.20218950610398)
+                npt.assert_almost_equal(f[0, 0], 47.20218950610398)
+                npt.assert_almost_equal(j_printed, 47.20218950610398)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 33.46130228109848)
-                np.testing.assert_almost_equal(j_printed, 33.46130228109848)
+                npt.assert_almost_equal(f[0, 0], 33.46130228109848)
+                npt.assert_almost_equal(j_printed, 33.46130228109848)
         elif control_type == ControlType.LINEAR_CONTINUOUS:
             if objective == "torque":
-                np.testing.assert_almost_equal(f[0, 0], 43.72737954458251)
-                np.testing.assert_almost_equal(j_printed, 43.72737954458251)
+                npt.assert_almost_equal(f[0, 0], 43.72737954458251)
+                npt.assert_almost_equal(j_printed, 43.72737954458251)
             else:
-                np.testing.assert_almost_equal(f[0, 0], 35.61604299585224)
-                np.testing.assert_almost_equal(j_printed, 35.61604299585224)
+                npt.assert_almost_equal(f[0, 0], 35.61604299585224)
+                npt.assert_almost_equal(j_printed, 35.61604299585224)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

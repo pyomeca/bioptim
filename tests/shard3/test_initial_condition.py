@@ -2,6 +2,7 @@ import os
 import pytest
 
 import numpy as np
+import numpy.testing as npt
 from bioptim import (
     InterpolationType,
     Solution,
@@ -33,7 +34,7 @@ def test_initial_guess_constant():
     init.check_and_adjust_dimensions(n_elements, n_shoot)
     expected_val = init_val
     for i in range(n_shoot):
-        np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
+        npt.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
 def test_initial_guess_constant_with_first_and_last_different():
@@ -51,7 +52,7 @@ def test_initial_guess_constant_with_first_and_last_different():
             expected_val = init_val[:, 2]
         else:
             expected_val = init_val[:, 1]
-        np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
+        npt.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
 def test_initial_guess_linear():
@@ -64,13 +65,13 @@ def test_initial_guess_linear():
     init.check_and_adjust_dimensions(n_elements, n_shoot)
     for i in range(n_shoot + 1):
         expected_val = init_val[:, 0] + (init_val[:, 1] - init_val[:, 0]) * i / n_shoot
-        np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
+        npt.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
     init = InitialGuess(None, init_val, interpolation=InterpolationType.LINEAR)
     init.check_and_adjust_dimensions(n_elements, int(n_shoot / 2))
     for i in range(n_shoot + 1):
         expected_val = init_val[:, 0] + (init_val[:, 1] - init_val[:, 0]) * i / n_shoot
-        np.testing.assert_almost_equal(init.init.evaluate_at(i, repeat=2), expected_val)
+        npt.assert_almost_equal(init.init.evaluate_at(i, repeat=2), expected_val)
 
 
 def test_initial_guess_each_frame():
@@ -83,7 +84,7 @@ def test_initial_guess_each_frame():
     init.check_and_adjust_dimensions(n_elements, n_shoot)
     for i in range(n_shoot + 1):
         expected_val = init_val[:, i]
-        np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
+        npt.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
 def test_initial_guess_all_points():
@@ -96,7 +97,7 @@ def test_initial_guess_all_points():
     init.check_and_adjust_dimensions(n_elements, n_shoot)
     for i in range(n_shoot + 1):
         expected_val = init_val[:, i]
-        np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
+        npt.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
 def test_initial_guess_spline():
@@ -132,7 +133,7 @@ def test_initial_guess_spline():
     ).T
     for i, t in enumerate(time_to_test):
         expected_val = expected_matrix[:, i]
-        np.testing.assert_almost_equal(init.init.evaluate_at(t), expected_val)
+        npt.assert_almost_equal(init.init.evaluate_at(t), expected_val)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -150,12 +151,12 @@ def test_initial_guess_update(phase_dynamics):
         expand_dynamics=True,
     )
 
-    np.testing.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.zeros((2, 1)))
-    np.testing.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.zeros((2, 1)))
-    np.testing.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.zeros((2, 1)))
+    npt.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.zeros((2, 1)))
+    npt.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.zeros((2, 1)))
+    npt.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.zeros((2, 1)))
 
-    np.testing.assert_almost_equal(ocp.phase_time[0], 2)
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(ocp.phase_time[0], 2)
+    npt.assert_almost_equal(
         ocp.init_vector,
         np.concatenate(
             (
@@ -173,10 +174,10 @@ def test_initial_guess_update(phase_dynamics):
 
     ocp.update_initial_guess(x_init=new_x_init, u_init=new_u_init)
 
-    np.testing.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.ones((2, 1)))
-    np.testing.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.ones((2, 1)))
-    np.testing.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.ones((2, 1)) * 3)
-    np.testing.assert_almost_equal(ocp.init_vector, np.array([[0.2] + [1, 1, 1, 1] * 11 + [3, 3] * 10]).T)
+    npt.assert_almost_equal(ocp.nlp[0].x_init["q"].init, np.ones((2, 1)))
+    npt.assert_almost_equal(ocp.nlp[0].x_init["qdot"].init, np.ones((2, 1)))
+    npt.assert_almost_equal(ocp.nlp[0].u_init["tau"].init, np.ones((2, 1)) * 3)
+    npt.assert_almost_equal(ocp.init_vector, np.array([[0.2] + [1, 1, 1, 1] * 11 + [3, 3] * 10]).T)
 
 
 def test_initial_guess_custom():
@@ -199,7 +200,7 @@ def test_initial_guess_custom():
     init.check_and_adjust_dimensions(n_elements, n_shoot)
     for i in range(n_shoot + 1):
         expected_val = init_val[:, 0] + (init_val[:, 1] - init_val[:, 0]) * i / n_shoot
-        np.testing.assert_almost_equal(init.init.evaluate_at(i), expected_val)
+        npt.assert_almost_equal(init.init.evaluate_at(i), expected_val)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -237,16 +238,16 @@ def test_simulate_from_initial_multiple_shoot(phase_dynamics):
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -2], np.array([-0.75310861, -1.65299482]))
+    npt.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
+    npt.assert_almost_equal(q[:, -2], np.array([-0.75310861, -1.65299482]))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
-    np.testing.assert_almost_equal(qdot[:, -2], np.array([1.06121162, 2.91187814]))
+    npt.assert_almost_equal(qdot[:, 0], np.array((1.0, 0.5)))
+    npt.assert_almost_equal(qdot[:, -2], np.array([1.06121162, 2.91187814]))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((1, 2)))
+    npt.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
+    npt.assert_almost_equal(tau[:, -1], np.array((1, 2)))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -285,16 +286,16 @@ def test_simulate_from_initial_single_shoot(phase_dynamics):
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array([-0.48327558, 0.40051344]))
+    npt.assert_almost_equal(q[:, 0], np.array((-1.0, -2.0)))
+    npt.assert_almost_equal(q[:, -1], np.array([-0.48327558, 0.40051344]))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0.1, 0.2)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([1.05637442, 0.87221644]))
+    npt.assert_almost_equal(qdot[:, 0], np.array((0.1, 0.2)))
+    npt.assert_almost_equal(qdot[:, -1], np.array([1.05637442, 0.87221644]))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((1, 2)))
+    npt.assert_almost_equal(tau[:, 0], np.array((-0.1, 0.0)))
+    npt.assert_almost_equal(tau[:, -1], np.array((1, 2)))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

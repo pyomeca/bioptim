@@ -4,6 +4,7 @@ Test for file IO
 
 import pytest
 import numpy as np
+import numpy.testing as npt
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -152,13 +153,13 @@ def test_track_and_minimize_marker_displacement_global(ode_solver, phase_dynamic
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], -143.5854887928483)
+    npt.assert_equal(f.shape, (1, 1))
+    npt.assert_almost_equal(f[0, 0], -143.5854887928483)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+    npt.assert_equal(g.shape, (40, 1))
+    npt.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -166,13 +167,13 @@ def test_track_and_minimize_marker_displacement_global(ode_solver, phase_dynamic
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0.37791617, 3.70167396, 10.0, 10.0]), decimal=2)
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0.37675299, -3.40771446, 10.0, 10.0]), decimal=2)
+    npt.assert_almost_equal(qdot[:, 0], np.array([0.37791617, 3.70167396, 10.0, 10.0]), decimal=2)
+    npt.assert_almost_equal(qdot[:, -1], np.array([0.37675299, -3.40771446, 10.0, 10.0]), decimal=2)
     # initial and final controls
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         tau[:, 0], np.array([-4.52595667e-02, 9.25475333e-01, -4.34001849e-08, -9.24667407e01]), decimal=2
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         tau[:, -1], np.array([4.42976253e-02, 1.40077846e00, -7.28864793e-13, 9.24667396e01]), decimal=2
     )
 
@@ -199,13 +200,13 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, phase_dynamics):
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], -200.80194174353494)
+    npt.assert_equal(f.shape, (1, 1))
+    npt.assert_almost_equal(f[0, 0], -200.80194174353494)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+    npt.assert_equal(g.shape, (40, 1))
+    npt.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -213,16 +214,14 @@ def test_track_and_minimize_marker_displacement_RT(ode_solver, phase_dynamics):
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.07221334, -0.4578082, -3.00436948, 1.57079633]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.05754807, -0.43931116, 2.99563057, 1.57079633]))
+    npt.assert_almost_equal(q[:, 0], np.array([0.07221334, -0.4578082, -3.00436948, 1.57079633]))
+    npt.assert_almost_equal(q[:, -1], np.array([0.05754807, -0.43931116, 2.99563057, 1.57079633]))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([5.17192208, 2.3422717, 10.0, -10.0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([-3.56965109, -4.36318589, 10.0, 10.0]))
+    npt.assert_almost_equal(qdot[:, 0], np.array([5.17192208, 2.3422717, 10.0, -10.0]))
+    npt.assert_almost_equal(qdot[:, -1], np.array([-3.56965109, -4.36318589, 10.0, 10.0]))
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([-3.21817755e01, 1.55202948e01, 7.42730542e-13, 2.61513401e-08]))
-    np.testing.assert_almost_equal(
-        tau[:, -1], np.array([-1.97981112e01, -9.89876772e-02, 4.34033234e-08, 2.61513636e-08])
-    )
+    npt.assert_almost_equal(tau[:, 0], np.array([-3.21817755e01, 1.55202948e01, 7.42730542e-13, 2.61513401e-08]))
+    npt.assert_almost_equal(tau[:, -1], np.array([-1.97981112e01, -9.89876772e-02, 4.34033234e-08, 2.61513636e-08]))
 
     # simulate
     TestUtils.simulate(sol)
@@ -247,13 +246,13 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], -80.20048585400944)
+    npt.assert_equal(f.shape, (1, 1))
+    npt.assert_almost_equal(f[0, 0], -80.20048585400944)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (40, 1))
-    np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+    npt.assert_equal(g.shape, (40, 1))
+    npt.assert_almost_equal(g, np.zeros((40, 1)))
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -261,14 +260,14 @@ def test_track_and_minimize_marker_velocity(ode_solver, phase_dynamics):
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([7.18708669e-01, -4.45703930e-01, -3.14159262e00, 0]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([1.08646846e00, -3.86731175e-01, 3.14159262e00, 0]))
+    npt.assert_almost_equal(q[:, 0], np.array([7.18708669e-01, -4.45703930e-01, -3.14159262e00, 0]))
+    npt.assert_almost_equal(q[:, -1], np.array([1.08646846e00, -3.86731175e-01, 3.14159262e00, 0]))
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([3.78330878e-01, 3.70214281, 10, 0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([3.77168521e-01, -3.40782793, 10, 0]))
+    npt.assert_almost_equal(qdot[:, 0], np.array([3.78330878e-01, 3.70214281, 10, 0]))
+    npt.assert_almost_equal(qdot[:, -1], np.array([3.77168521e-01, -3.40782793, 10, 0]))
     # # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([-4.52216174e-02, 9.25170010e-01, 0, 0]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([4.4260355e-02, 1.4004583, 0, 0]))
+    npt.assert_almost_equal(tau[:, 0], np.array([-4.52216174e-02, 9.25170010e-01, 0, 0]))
+    npt.assert_almost_equal(tau[:, -1], np.array([4.4260355e-02, 1.4004583, 0, 0]))
 
     # simulate
     TestUtils.simulate(sol)
@@ -309,8 +308,8 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dy
 
         # Check constraints
         g = np.array(sol.constraints)
-        np.testing.assert_equal(g.shape, (40, 1))
-        np.testing.assert_almost_equal(g, np.zeros((40, 1)))
+        npt.assert_equal(g.shape, (40, 1))
+        npt.assert_almost_equal(g, np.zeros((40, 1)))
 
         # Check some of the results
         states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -318,14 +317,14 @@ def test_track_and_minimize_marker_velocity_linear_controls(ode_solver, phase_dy
         q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
         # initial and final position
-        np.testing.assert_almost_equal(q[2:, 0], np.array([-3.14159264, 0]))
-        np.testing.assert_almost_equal(q[2:, -1], np.array([3.14159264, 0]))
+        npt.assert_almost_equal(q[2:, 0], np.array([-3.14159264, 0]))
+        npt.assert_almost_equal(q[2:, -1], np.array([3.14159264, 0]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[2:, 0], np.array([10, 0]))
-        np.testing.assert_almost_equal(qdot[2:, -1], np.array([10, 0]))
+        npt.assert_almost_equal(qdot[2:, 0], np.array([10, 0]))
+        npt.assert_almost_equal(qdot[2:, -1], np.array([10, 0]))
         # initial and final controls
-        np.testing.assert_almost_equal(tau[2:, 0], np.array([-8.495542, 0]), decimal=5)
-        np.testing.assert_almost_equal(tau[2:, -1], np.array([8.495541, 0]), decimal=5)
+        npt.assert_almost_equal(tau[2:, 0], np.array([-8.495542, 0]), decimal=5)
+        npt.assert_almost_equal(tau[2:, -1], np.array([8.495541, 0]), decimal=5)
 
         # simulate
         TestUtils.simulate(sol)

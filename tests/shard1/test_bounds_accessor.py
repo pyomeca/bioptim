@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.testing as npt
 from bioptim import BoundsList, InterpolationType
 
 
@@ -12,8 +13,8 @@ def test_accessors_on_bounds_option():
     x_bounds["my_key"].max[1:3] = 10
 
     # Check min and max have the right value
-    np.testing.assert_almost_equal(x_bounds["my_key"].min[:], np.array([[0], [0], [0], [-10], [-10], [-10]]))
-    np.testing.assert_almost_equal(x_bounds["my_key"].max[:], np.array([[0], [10], [10], [100], [100], [100]]))
+    npt.assert_almost_equal(x_bounds["my_key"].min[:], np.array([[0], [0], [0], [-10], [-10], [-10]]))
+    npt.assert_almost_equal(x_bounds["my_key"].max[:], np.array([[0], [10], [10], [100], [100], [100]]))
 
 
 def test_accessors_on_bounds_option_multidimensional():
@@ -31,11 +32,11 @@ def test_accessors_on_bounds_option_multidimensional():
     x_bounds["my_key"].max[1:5, 1:] = 10
 
     # Check min and max have the right value
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         x_bounds["my_key"].min[:],
         np.array([[0, -50, 0], [0, -10, -10], [0, -10, -10], [-100, -10, -10], [-100, -10, -10], [-100, -50, 0]]),
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         x_bounds["my_key"].max[:],
         np.array([[0, 150, 200], [0, 10, 10], [0, 10, 10], [100, 10, 10], [100, 10, 10], [100, 150, 200]]),
     )

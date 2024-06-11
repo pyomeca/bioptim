@@ -1,4 +1,5 @@
 import numpy as np
+import numpy.testing as npt
 from casadi import MX
 import pytest
 
@@ -156,48 +157,48 @@ def test_variable_time(phase_time_constraint, use_parameter, phase_dynamics):
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         states[0]["q"][0, 0:8],
         np.array([0.37454012, 0.05808361, 0.83244264, 0.43194502, 0.45606998, 0.60754485, 0.30461377, 0.03438852]),
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         states[1]["q"][0, 0:8],
         np.array([0.81801477, 0.11986537, 0.3636296, 0.28484049, 0.90826589, 0.67213555, 0.63352971, 0.04077514]),
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         states[2]["q"][0, 0:8],
         np.array([0.02535074, 0.15643704, 0.95486528, 0.35597268, 0.85546058, 0.17320187, 0.37461261, 0.07056875]),
     )
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         states[0]["qdot"][0, 0:8],
         np.array([0.59865848, 0.70807258, 0.18340451, 0.13949386, 0.51423444, 0.94888554, 0.44015249, 0.66252228]),
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         states[1]["qdot"][0, 0:8],
         np.array([0.5107473, 0.32320293, 0.2517823, 0.50267902, 0.48945276, 0.72821635, 0.8353025, 0.01658783]),
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         states[2]["qdot"][0, 0:8],
         np.array([0.69597421, 0.71459592, 0.61172075, 0.11607264, 0.09783416, 0.6158501, 0.85648984, 0.58577558]),
     )
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         controls[0]["tau"][0, 0:8],
         np.array([0.70624223, 0.98663958, 0.81279957, 0.75337819, 0.77714692, 0.90635439, 0.01135364, 0.11881792]),
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         controls[1]["tau"][0, 0:8],
         np.array([0.97439481, 0.53609637, 0.68473117, 0.82253724, 0.6134152, 0.86606389, 0.37646337, 0.15041689]),
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         controls[2]["tau"][0, 0:8],
         np.array([0.12804584, 0.64087474, 0.89678841, 0.17231987, 0.16893506, 0.08870253, 0.20633372, 0.69039483]),
     )
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         controls[2]["tau"][0, 0:8],
         np.array([0.12804584, 0.64087474, 0.89678841, 0.17231987, 0.16893506, 0.08870253, 0.20633372, 0.69039483]),
     )
 
-    np.testing.assert_almost_equal(sol.parameters["gravity_z"], 0.78917124)
+    npt.assert_almost_equal(sol.parameters["gravity_z"], 0.78917124)

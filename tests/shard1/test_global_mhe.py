@@ -4,6 +4,7 @@ Test for file IO
 
 import os
 import numpy as np
+import numpy.testing as npt
 import pytest
 from bioptim import Solver, PhaseDynamics, SolutionMerge
 
@@ -35,14 +36,14 @@ def test_cyclic_nmpc(phase_dynamics):
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_equal(q.shape, (3, n_cycles * cycle_len + 1))
-    np.testing.assert_almost_equal(q[:, 0], np.array((-3.14159265, 0.12979378, 2.77623291)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((3.14159265, 0.12979378, 2.77623291)))
+    npt.assert_equal(q.shape, (3, n_cycles * cycle_len + 1))
+    npt.assert_almost_equal(q[:, 0], np.array((-3.14159265, 0.12979378, 2.77623291)))
+    npt.assert_almost_equal(q[:, -1], np.array((3.14159265, 0.12979378, 2.77623291)))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((6.28268908, -11.63289399, 0.37215021)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((6.28268908, -12.14519356, -0.21986407)))
+    npt.assert_almost_equal(qdot[:, 0], np.array((6.28268908, -11.63289399, 0.37215021)))
+    npt.assert_almost_equal(qdot[:, -1], np.array((6.28268908, -12.14519356, -0.21986407)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((0.01984925, 17.53758229, -1.92204945)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-0.01984925, -6.81104298, -1.80560018)))
+    npt.assert_almost_equal(tau[:, 0], np.array((0.01984925, 17.53758229, -1.92204945)))
+    npt.assert_almost_equal(tau[:, -1], np.array((-0.01984925, -6.81104298, -1.80560018)))

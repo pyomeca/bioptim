@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+import numpy.testing as npt
 from casadi import MX
 from bioptim import (
     BiorbdModel,
@@ -50,9 +51,9 @@ def test_double_update_bounds_and_init(phase_dynamics):
     ocp.update_bounds(x_bounds, u_bounds)
 
     expected = np.array([[0.1] + [-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
+    npt.assert_almost_equal(ocp.bounds_vectors[0], expected)
     expected = np.array([[0.1] + [1] * (nq * 2) * (ns + 1) + [2] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
+    npt.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     x_init = InitialGuessList()
     x_init["q"] = 0.5 * np.ones((nq, 1))
@@ -61,7 +62,7 @@ def test_double_update_bounds_and_init(phase_dynamics):
     u_init["tau"] = -0.5 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.array([[0.1] + [0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.init_vector, expected)
+    npt.assert_almost_equal(ocp.init_vector, expected)
 
     x_bounds = BoundsList()
     x_bounds["q"] = -2.0 * np.ones((nq, 1)), 2.0 * np.ones((nq, 1))
@@ -72,9 +73,9 @@ def test_double_update_bounds_and_init(phase_dynamics):
     ocp.update_bounds(u_bounds=u_bounds)
 
     expected = np.array([[0.1] + [-2] * (nq * 2) * (ns + 1) + [-4] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
+    npt.assert_almost_equal(ocp.bounds_vectors[0], expected)
     expected = np.array([[0.1] + [2] * (nq * 2) * (ns + 1) + [4] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
+    npt.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     x_init = InitialGuessList()
     x_init["q"] = 0.25 * np.ones((nq, 1))
@@ -83,7 +84,7 @@ def test_double_update_bounds_and_init(phase_dynamics):
     u_init["tau"] = -0.25 * np.ones((nq, 1))
     ocp.update_initial_guess(x_init, u_init)
     expected = np.array([[0.1] + [0.25] * (nq * 2) * (ns + 1) + [-0.25] * nq * ns]).T
-    np.testing.assert_almost_equal(ocp.init_vector, expected)
+    npt.assert_almost_equal(ocp.init_vector, expected)
 
     with pytest.raises(RuntimeError, match="x_init should be built from a InitialGuessList"):
         ocp.update_initial_guess(x_bounds, u_bounds)
@@ -164,9 +165,9 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
 
     # Before modifying
     expected = np.array([[0.1] + [-np.inf] * (nq * 2) * (ns + 1) + [-np.inf] * nq * ns + [g_min]]).T
-    np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
+    npt.assert_almost_equal(ocp.bounds_vectors[0], expected)
     expected = np.array([[0.1] + [np.inf] * (nq * 2) * (ns + 1) + [np.inf] * nq * ns + [g_max]]).T
-    np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
+    npt.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     x_bounds = BoundsList()
     x_bounds["q"] = -np.ones((nq, 1)), np.ones((nq, 1))
@@ -176,9 +177,9 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
     ocp.update_bounds(x_bounds, u_bounds)
 
     expected = np.array([[0.1] + [-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns + [g_min]]).T
-    np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
+    npt.assert_almost_equal(ocp.bounds_vectors[0], expected)
     expected = np.array([[0.1] + [1] * (nq * 2) * (ns + 1) + [2] * nq * ns + [g_max]]).T
-    np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
+    npt.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     x_init = InitialGuessList()
     x_init["q"] = 0.5 * np.ones((nq, 1))
@@ -188,7 +189,7 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
     ocp.update_initial_guess(x_init, u_init)
 
     expected = np.array([[0.1] + [0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns + [g_init]]).T
-    np.testing.assert_almost_equal(ocp.init_vector, expected)
+    npt.assert_almost_equal(ocp.init_vector, expected)
 
     # Try on parameters too
     parameter_bounds = BoundsList()
@@ -201,12 +202,12 @@ def test_update_bounds_and_init_with_param(phase_dynamics):
     ocp.update_initial_guess(parameter_init=parameter_init)
 
     expected = np.array([[0.1] + [-1] * (nq * 2) * (ns + 1) + [-2] * nq * ns + [g_min * 2]]).T
-    np.testing.assert_almost_equal(ocp.bounds_vectors[0], expected)
+    npt.assert_almost_equal(ocp.bounds_vectors[0], expected)
     expected = np.array([[0.1] + [1] * (nq * 2) * (ns + 1) + [2] * nq * ns + [g_max * 2]]).T
-    np.testing.assert_almost_equal(ocp.bounds_vectors[1], expected)
+    npt.assert_almost_equal(ocp.bounds_vectors[1], expected)
 
     expected = np.array([[0.1] + [0.5] * (nq * 2) * (ns + 1) + [-0.5] * nq * ns + [g_init * 2]]).T
-    np.testing.assert_almost_equal(ocp.init_vector, expected)
+    npt.assert_almost_equal(ocp.init_vector, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -560,7 +561,7 @@ def test_update_noised_init_rk4(interpolation, phase_dynamics):
         else:
             raise NotImplementedError("Interpolation type not implemented in the tests")
 
-        np.testing.assert_almost_equal(ocp.init_vector, expected)
+        npt.assert_almost_equal(ocp.init_vector, expected)
 
         with pytest.raises(RuntimeError, match="x_bounds should be built from a BoundsList"):
             ocp.update_bounds(x_init, u_init)
@@ -911,7 +912,7 @@ def test_update_noised_initial_guess_rk4(interpolation, phase_dynamics):
         else:
             raise NotImplementedError("Interpolation type not implemented yet")
 
-        np.testing.assert_almost_equal(ocp.init_vector, expected[:, np.newaxis])
+        npt.assert_almost_equal(ocp.init_vector, expected[:, np.newaxis])
 
         with pytest.raises(RuntimeError, match="x_bounds should be built from a BoundsList"):
             ocp.update_bounds(x, u)

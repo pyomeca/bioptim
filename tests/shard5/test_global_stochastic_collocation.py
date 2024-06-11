@@ -2,6 +2,7 @@ import os
 import pytest
 
 import numpy as np
+import numpy.testing as npt
 from casadi import DM, vertcat
 from bioptim import Solver, SocpType, SolutionMerge, PenaltyHelpers, SolutionIntegrator
 
@@ -44,12 +45,12 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 433.119929307444)
+    npt.assert_equal(f.shape, (1, 1))
+    npt.assert_almost_equal(f[0, 0], 433.119929307444)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (442, 1))
+    npt.assert_equal(g.shape, (442, 1))
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -61,17 +62,17 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     k, ref, m, cov = algebraic_states["k"], algebraic_states["ref"], algebraic_states["m"], algebraic_states["cov"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
+    npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+    npt.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
+    npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+    npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-    np.testing.assert_almost_equal(tau[:, 0], np.array([1.73918356, -1.0035866]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-1.672167, 0.91772376]))
+    npt.assert_almost_equal(tau[:, 0], np.array([1.73918356, -1.0035866]))
+    npt.assert_almost_equal(tau[:, -2], np.array([-1.672167, 0.91772376]))
 
-    np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
+    npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         m[:10, 0],
         np.array(
             [
@@ -182,8 +183,8 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         a,
         [],
     )
-    np.testing.assert_almost_equal(constraint_value[0], shoulder_pos_initial, decimal=6)
-    np.testing.assert_almost_equal(constraint_value[1], elbow_pos_initial, decimal=6)
+    npt.assert_almost_equal(constraint_value[0], shoulder_pos_initial, decimal=6)
+    npt.assert_almost_equal(constraint_value[1], elbow_pos_initial, decimal=6)
 
     # Initial and final velocities
     penalty = socp.nlp[0].g[1]
@@ -211,8 +212,8 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         a,
         [],
     )
-    np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
-    np.testing.assert_almost_equal(constraint_value[1], 0, decimal=6)
+    npt.assert_almost_equal(constraint_value[0], 0, decimal=6)
+    npt.assert_almost_equal(constraint_value[1], 0, decimal=6)
 
     penalty = socp.nlp[0].g[2]
     x = states_sol[:, 0, -1]
@@ -227,8 +228,8 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         a,
         [],
     )
-    np.testing.assert_almost_equal(constraint_value[0], 0, decimal=6)
-    np.testing.assert_almost_equal(constraint_value[1], 0, decimal=6)
+    npt.assert_almost_equal(constraint_value[0], 0, decimal=6)
+    npt.assert_almost_equal(constraint_value[1], 0, decimal=6)
 
     # Hand final marker position
     penalty = socp.nlp[0].g[4]
@@ -244,8 +245,8 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
         a,
         [],
     )
-    np.testing.assert_almost_equal(constraint_value[0], hand_final_position[0], decimal=6)
-    np.testing.assert_almost_equal(constraint_value[1], hand_final_position[1], decimal=6)
+    npt.assert_almost_equal(constraint_value[0], hand_final_position[0], decimal=6)
+    npt.assert_almost_equal(constraint_value[1], hand_final_position[1], decimal=6)
 
     # Reference equals mean sensory input
     penalty = socp.nlp[0].g[7]
@@ -274,7 +275,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             a,
             [],
         )
-        np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
+        npt.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Constraint on M --------------------------------------------------------------------
     penalty = socp.nlp[0].g[8]
@@ -303,7 +304,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             a,
             [],
         )
-        np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
+        npt.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # Covariance continuity --------------------------------------------------------------------
     penalty = socp.nlp[0].g[9]
@@ -333,7 +334,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             a,
             [],
         )
-        np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
+        npt.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # States continuity --------------------------------------------------------------------
     penalty = socp.nlp[0].g_internal[0]
@@ -362,7 +363,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             a,
             [],
         )
-        np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
+        npt.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
     # First collocation state is equal to the states at node
     penalty = socp.nlp[0].g_internal[1]
@@ -391,7 +392,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
             a,
             [],
         )
-        np.testing.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
+        npt.assert_almost_equal(constraint_value, np.zeros(constraint_value.shape), decimal=6)
 
 
 @pytest.mark.parametrize("use_sx", [False, True])
@@ -428,12 +429,12 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 4.6220107868123605)
+    npt.assert_equal(f.shape, (1, 1))
+    npt.assert_almost_equal(f[0, 0], 4.6220107868123605)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (1043, 1))
+    npt.assert_equal(g.shape, (1043, 1))
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -445,15 +446,15 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     m, cov = algebraic_states["m"], algebraic_states["cov"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([-1.07999204e-27, 2.94926475e00]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([-3.76592146e-26, 2.94926475e00]))
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([3.59388215, 0.49607651]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([3.59388215, 0.49607651]))
+    npt.assert_almost_equal(q[:, 0], np.array([-1.07999204e-27, 2.94926475e00]))
+    npt.assert_almost_equal(q[:, -1], np.array([-3.76592146e-26, 2.94926475e00]))
+    npt.assert_almost_equal(qdot[:, 0], np.array([3.59388215, 0.49607651]))
+    npt.assert_almost_equal(qdot[:, -1], np.array([3.59388215, 0.49607651]))
 
-    np.testing.assert_almost_equal(u[:, 0], np.array([2.2568354, 1.69720657]))
-    np.testing.assert_almost_equal(u[:, -1], np.array([0.82746288, 2.89042815]))
+    npt.assert_almost_equal(u[:, 0], np.array([2.2568354, 1.69720657]))
+    npt.assert_almost_equal(u[:, -1], np.array([0.82746288, 2.89042815]))
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         m[:, 0],
         np.array(
             [
@@ -526,7 +527,7 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
         decimal=6,
     )
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         cov[:, -1],
         np.array(
             [
@@ -554,9 +555,9 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     np.random.seed(42)
     integrated_states = sol.noisy_integrate(integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES)
     integrated_stated_covariance = np.cov(integrated_states["q"][:, -1, :])
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         integrated_stated_covariance, np.array([[0.00404452, -0.00100082], [-0.00100082, 0.00382313]]), decimal=6
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         cov[:, -1].reshape(4, 4)[:2, :2], np.array([[0.00266764, -0.0005587], [-0.0005587, 0.00134316]]), decimal=6
     )

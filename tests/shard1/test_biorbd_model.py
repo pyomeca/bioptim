@@ -6,10 +6,9 @@ It tests that a model path with another type than string or biorbdmodel return a
 import os
 import pytest
 import numpy as np
+import numpy.testing as npt
 import biorbd_casadi as biorbd
-from bioptim import (
-    BiorbdModel,
-)
+from bioptim import BiorbdModel
 
 
 def test_biorbd_model_import():
@@ -77,5 +76,5 @@ def test_bounds_from_ranges(my_keys):
             raise ValueError("Wrong key")
 
         # Check min and max have the right value
-        np.testing.assert_almost_equal(x_bounds.min, x_min)
-        np.testing.assert_almost_equal(x_bounds.max, x_max)
+        npt.assert_almost_equal(x_bounds.min, x_min)
+        npt.assert_almost_equal(x_bounds.max, x_max)

@@ -1,6 +1,7 @@
 import platform
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 
 from bioptim import PhaseDynamics, SolutionMerge
@@ -47,9 +48,9 @@ def test_continuity_as_objective(phase_dynamics):
         expected_controls = [[-1.47014529, -0.22059134, -18.23601047], [0.0, 0.0, 0.0]]
 
     assert sol.iterations in expected_iterations
-    np.testing.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["q"], expected_q)
-    np.testing.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"], expected_qdot)
-    np.testing.assert_almost_equal(sol.decision_controls(to_merge=SolutionMerge.NODES)["tau"], expected_controls)
+    npt.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["q"], expected_q)
+    npt.assert_almost_equal(sol.decision_states(to_merge=SolutionMerge.NODES)["qdot"], expected_qdot)
+    npt.assert_almost_equal(sol.decision_controls(to_merge=SolutionMerge.NODES)["tau"], expected_controls)
 
     # second pass
     ocp_second_pass = ocp_module.prepare_ocp_second_pass(
@@ -136,20 +137,18 @@ def test_continuity_as_objective(phase_dynamics):
     ]
     expected_iterations = range(5, 35)  # 20 on my laptop @ipuch
 
-    np.testing.assert_almost_equal(sol_second_pass.decision_states(to_merge=SolutionMerge.NODES)["q"], expected_q)
-    np.testing.assert_almost_equal(sol_second_pass.decision_states(to_merge=SolutionMerge.NODES)["qdot"], expected_qdot)
-    np.testing.assert_almost_equal(sol_second_pass.decision_controls(to_merge=SolutionMerge.NODES)["tau"], expected_tau)
+    npt.assert_almost_equal(sol_second_pass.decision_states(to_merge=SolutionMerge.NODES)["q"], expected_q)
+    npt.assert_almost_equal(sol_second_pass.decision_states(to_merge=SolutionMerge.NODES)["qdot"], expected_qdot)
+    npt.assert_almost_equal(sol_second_pass.decision_controls(to_merge=SolutionMerge.NODES)["tau"], expected_tau)
 
-    np.testing.assert_almost_equal(sol_second_pass.vector, expected_vector)
-    np.testing.assert_almost_equal(sol_second_pass.constraints, expected_constraints)
-    np.testing.assert_almost_equal(float(sol_second_pass.cost), expected_cost)
+    npt.assert_almost_equal(sol_second_pass.vector, expected_vector)
+    npt.assert_almost_equal(sol_second_pass.constraints, expected_constraints)
+    npt.assert_almost_equal(float(sol_second_pass.cost), expected_cost)
 
     assert sol_second_pass.detailed_cost[0]["name"] == expected_detailed_cost[0]["name"]
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         sol_second_pass.detailed_cost[0]["cost_value_weighted"], expected_detailed_cost[0]["cost_value_weighted"]
     )
-    np.testing.assert_almost_equal(
-        sol_second_pass.detailed_cost[0]["cost_value"], expected_detailed_cost[0]["cost_value"]
-    )
+    npt.assert_almost_equal(sol_second_pass.detailed_cost[0]["cost_value"], expected_detailed_cost[0]["cost_value"])
 
     assert sol_second_pass.iterations in expected_iterations

@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import numpy.testing as npt
 
 from bioptim import PhaseDynamics, ControlType, QuadratureRule, Solver
 
@@ -54,5 +55,5 @@ def test_continuity_linear_continuous_global():
     for expected, actual in zip(expected_costs, actual_costs):
         assert expected["name"] == actual["name"]
 
-        np.testing.assert_almost_equal(expected["cost_value_weighted"], actual["cost_value_weighted"])
-        np.testing.assert_almost_equal(expected["cost_value"], actual["cost_value"])
+        npt.assert_almost_equal(expected["cost_value_weighted"], actual["cost_value_weighted"])
+        npt.assert_almost_equal(expected["cost_value"], actual["cost_value"])

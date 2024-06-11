@@ -2,6 +2,7 @@ import os
 import re
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 from casadi import MX, SX, vertcat
 
@@ -173,27 +174,27 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                 nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
             )
             if with_external_force:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.9695846, 0.9218742, 0.3886773, 0.5426961, -2.2030836, -0.3463042, 4.4577117, -3.5917074],
                 )
-                np.testing.assert_almost_equal(contact_out[:, 0], [-14.3821076, 126.2899884, 4.1631847])
+                npt.assert_almost_equal(contact_out[:, 0], [-14.3821076, 126.2899884, 4.1631847])
 
             else:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716],
                 )
-                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+                npt.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
         else:
             if with_external_force:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.9695846, 0.9218742, 0.3886773, 0.5426961, -1.090359, -10.1284375, 4.8896337, 13.5217526],
                 )
             else:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [
                         0.61185289,
@@ -212,25 +213,25 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                 nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
             )
             if with_external_force:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.9695846, 0.9218742, 0.3886773, 0.5426961, 0.1195942, 0.4937956, 0.0314292, 0.2492922],
                 )
-                np.testing.assert_almost_equal(contact_out[:, 0], [-14.3821076, 126.2899884, 4.1631847])
+                npt.assert_almost_equal(contact_out[:, 0], [-14.3821076, 126.2899884, 4.1631847])
             else:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
                 )
-                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+                npt.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
         else:
             if with_external_force:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.9695846, 0.9218742, 0.3886773, 0.5426961, 0.1195942, 0.4937956, 0.0314292, 0.2492922],
                 )
             else:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
                 )
@@ -240,25 +241,25 @@ def test_torque_driven(with_contact, with_external_force, cx, rigidbody_dynamics
                 nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
             )
             if with_external_force:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.9695846, 0.9218742, 0.3886773, 0.5426961, 0.1195942, 0.4937956, 0.0314292, 0.2492922],
                 )
-                np.testing.assert_almost_equal(contact_out[:, 0], [-14.3821076, 126.2899884, 4.1631847])
+                npt.assert_almost_equal(contact_out[:, 0], [-14.3821076, 126.2899884, 4.1631847])
             else:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
                 )
-                np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+                npt.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
         else:
             if with_external_force:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.9695846, 0.9218742, 0.3886773, 0.5426961, 0.1195942, 0.4937956, 0.0314292, 0.2492922],
                 )
             else:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
                 )
@@ -328,14 +329,14 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072]
         )
 
-        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+        npt.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [0.6118529, 0.785176, 0.6075449, 0.8083973, 0.3886773, 0.5426961, 0.7722448, 0.7290072],
         )
@@ -407,14 +408,14 @@ def test_torque_driven_soft_contacts_dynamics(with_contact, cx, implicit_contact
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
         )
 
-        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+        npt.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3024137, -10.3850379, 1.6044517, 35.8023864],
         )
@@ -552,7 +553,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
         if with_external_force:
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 x_out[:, 0],
                 [
                     0.9695846,
@@ -569,9 +570,9 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
                     0.2492922,
                 ],
             )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-14.3821076, 126.2899884, 4.1631847])
+            npt.assert_almost_equal(contact_out[:, 0], [-14.3821076, 126.2899884, 4.1631847])
         else:
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 x_out[:, 0],
                 [
                     0.61185289,
@@ -588,11 +589,11 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
                     0.72900717,
                 ],
             )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+            npt.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
         if with_external_force:
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 x_out[:, 0],
                 [
                     0.9695846,
@@ -610,7 +611,7 @@ def test_torque_derivative_driven(with_contact, with_external_force, cx, phase_d
                 ],
             )
         else:
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 x_out[:, 0],
                 [
                     0.61185289,
@@ -692,7 +693,7 @@ def test_torque_derivative_driven_implicit(with_contact, cx, phase_dynamics):
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [
                 0.6118529,
@@ -713,9 +714,9 @@ def test_torque_derivative_driven_implicit(with_contact, cx, phase_dynamics):
                 0.8714606,
             ],
         )
-        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+        npt.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [
                 0.6118529,
@@ -803,7 +804,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [
                 0.6118529,
@@ -820,10 +821,10 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
                 0.7290072,
             ],
         )
-        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+        npt.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [
                 0.6118529,
@@ -1059,23 +1060,23 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
         if with_external_force:
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 x_out[:, 0],
                 [0.96958, 0.92187, 0.38868, 0.5427, -8.22427, -1.08479, 16.59032, -15.72432],
                 decimal=5,
             )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-126.9614581, 179.6585112, -125.8079563])
+            npt.assert_almost_equal(contact_out[:, 0], [-126.9614581, 179.6585112, -125.8079563])
         else:
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 x_out[:, 0],
                 [0.61185289, 0.78517596, 0.60754485, 0.80839735, 0.78455384, -0.16844256, -1.56184114, 1.97658587],
                 decimal=5,
             )
-            np.testing.assert_almost_equal(contact_out[:, 0], [-7.88958997, 329.70828173, -263.55516549])
+            npt.assert_almost_equal(contact_out[:, 0], [-7.88958997, 329.70828173, -263.55516549])
 
     else:
         if with_external_force:
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 x_out[:, 0],
                 [
                     9.69584628e-01,
@@ -1090,7 +1091,7 @@ def test_torque_activation_driven(with_contact, with_external_force, cx, phase_d
                 decimal=5,
             )
         else:
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 x_out[:, 0],
                 [
                     6.11852895e-01,
@@ -1237,26 +1238,26 @@ def test_torque_activation_driven_with_residual_torque(
     if with_residual_torque:
         if with_external_force:
             if with_passive_torque:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [1.22038235e-01, 6.62522284e-01, 1.52446740e02, 1.79223051e03],
                     decimal=5,
                 )
             else:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [1.22038235e-01, 6.62522284e-01, 1.52446740e02, 1.79223051e03],
                     decimal=5,
                 )
         else:
             if with_passive_torque:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.020584, 0.183405, 55.393940, 54.222523],
                     decimal=5,
                 )
             else:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.020584, 0.183405, 55.393940, 54.222523],
                     decimal=5,
@@ -1265,26 +1266,26 @@ def test_torque_activation_driven_with_residual_torque(
     else:
         if with_external_force:
             if with_passive_torque:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [1.22038235e-01, 6.62522284e-01, 1.51341897e02, 1.77042854e03],
                     decimal=5,
                 )
             else:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [1.22038235e-01, 6.62522284e-01, 1.51341897e02, 1.77042854e03],
                     decimal=5,
                 )
         else:
             if with_passive_torque:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.020584, 0.183405, 55.204243, 24.411235],
                     decimal=5,
                 )
             else:
-                np.testing.assert_almost_equal(
+                npt.assert_almost_equal(
                     x_out[:, 0],
                     [0.020584, 0.183405, 55.204243, 24.411235],
                     decimal=5,
@@ -1344,7 +1345,7 @@ def test_torque_driven_free_floating_base(cx, phase_dynamics):
     time = np.random.rand(2, 1)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         x_out[:, 0],
         [0.61185289, 0.78517596, 0.60754485, 0.80839735, 0.04791036, -9.96778948, -0.01986505, 4.39786051],
     )
@@ -1493,7 +1494,7 @@ def test_muscle_driven(
             if with_residual_torque:
                 if with_excitations:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 0.6625223,
@@ -1511,7 +1512,7 @@ def test_muscle_driven(
                             ],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 0.183405,
@@ -1531,13 +1532,13 @@ def test_muscle_driven(
                         )
                 else:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.662522, 0.969585, 0.921874, 0.249292, 0.289751, 0.871461],
                             decimal=6,
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.183405, 0.611853, 0.785176, 0.729007, 0.863103, 0.325183],
                             decimal=6,
@@ -1546,7 +1547,7 @@ def test_muscle_driven(
             else:
                 if with_excitations:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 0.6625223,
@@ -1564,7 +1565,7 @@ def test_muscle_driven(
                             ],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 1.83404510e-01,
@@ -1584,12 +1585,12 @@ def test_muscle_driven(
                         )
                 else:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.6625223, 0.9695846, 0.9218742, 0.1195942, 0.4937956, 0.0314292],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
                             decimal=6,
@@ -1598,7 +1599,7 @@ def test_muscle_driven(
             if with_residual_torque:
                 if with_excitations:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 0.6625223,
@@ -1616,7 +1617,7 @@ def test_muscle_driven(
                             ],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 1.83404510e-01,
@@ -1636,13 +1637,13 @@ def test_muscle_driven(
                         )
                 else:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.662522, 0.969585, 0.921874, 1.151072, -56.094393, 49.109365],
                             decimal=6,
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.183405, 0.611853, 0.785176, -0.867138, 22.511947, -153.294775],
                             decimal=6,
@@ -1651,7 +1652,7 @@ def test_muscle_driven(
             else:
                 if with_excitations:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 0.6625223,
@@ -1669,7 +1670,7 @@ def test_muscle_driven(
                             ],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 1.83404510e-01,
@@ -1689,12 +1690,12 @@ def test_muscle_driven(
                         )
                 else:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.6625223, 0.9695846, 0.9218742, 0.2684853, -33.7252751, -30.3079326],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 1.83404510e-01,
@@ -1711,7 +1712,7 @@ def test_muscle_driven(
             if with_residual_torque:
                 if with_excitations:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 0.6625223,
@@ -1729,7 +1730,7 @@ def test_muscle_driven(
                             ],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 0.183405,
@@ -1749,13 +1750,13 @@ def test_muscle_driven(
                         )
                 else:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.662522, 0.969585, 0.921874, 0.249292, 0.289751, 0.871461],
                             decimal=6,
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.183405, 0.611853, 0.785176, 0.729007, 0.863103, 0.325183],
                             decimal=6,
@@ -1764,7 +1765,7 @@ def test_muscle_driven(
             else:
                 if with_excitations:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 0.6625223,
@@ -1782,7 +1783,7 @@ def test_muscle_driven(
                             ],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 1.83404510e-01,
@@ -1802,12 +1803,12 @@ def test_muscle_driven(
                         )
                 else:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.6625223, 0.9695846, 0.9218742, 0.1195942, 0.4937956, 0.0314292],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.183405, 0.611853, 0.785176, 0.388677, 0.542696, 0.772245],
                             decimal=6,
@@ -1816,7 +1817,7 @@ def test_muscle_driven(
             if with_residual_torque:
                 if with_excitations:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 0.6625223,
@@ -1834,7 +1835,7 @@ def test_muscle_driven(
                             ],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 1.83404510e-01,
@@ -1854,13 +1855,13 @@ def test_muscle_driven(
                         )
                 else:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.662522, 0.969585, 0.921874, 1.151072, -56.094393, 49.109365],
                             decimal=6,
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.18340451, 0.61185289, 0.78517596, -0.8671376, 22.51194682, -153.29477496],
                             decimal=6,
@@ -1869,7 +1870,7 @@ def test_muscle_driven(
             else:
                 if with_excitations:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 0.6625223,
@@ -1887,7 +1888,7 @@ def test_muscle_driven(
                             ],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 1.83404510e-01,
@@ -1907,12 +1908,12 @@ def test_muscle_driven(
                         )
                 else:
                     if with_external_force:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [0.6625223, 0.9695846, 0.9218742, 0.2684853, -33.7252751, -30.3079326],
                         )
                     else:
-                        np.testing.assert_almost_equal(
+                        npt.assert_almost_equal(
                             x_out[:, 0],
                             [
                                 1.83404510e-01,
@@ -1989,7 +1990,7 @@ def test_joints_acceleration_driven(cx, rigid_body_dynamics, phase_dynamics):
         x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
 
         # obtained using Ipuch reference implementation. [https://github.com/Ipuch/OnDynamicsForSomersaults]
-        np.testing.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
+        npt.assert_almost_equal(x_out[:, 0], [0.02058449, 0.18340451, -2.95556261, 0.61185289])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -2076,13 +2077,13 @@ def test_custom_dynamics(with_contact, phase_dynamics):
         contact_out = np.array(
             nlp.contact_forces_func(time, states, controls, params, algebraic_states, numerical_timeseries)
         )
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0], [0.6118529, 0.785176, 0.6075449, 0.8083973, -0.3214905, -0.1912131, 0.6507164, -0.2359716]
         )
-        np.testing.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
+        npt.assert_almost_equal(contact_out[:, 0], [-2.444071, 128.8816865, 2.7245124])
 
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [0.61185289, 0.78517596, 0.60754485, 0.80839735, -0.30241366, -10.38503791, 1.60445173, 35.80238642],
         )

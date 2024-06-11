@@ -1,6 +1,7 @@
 import pytest
 from casadi import DM, MX, vertcat, horzcat
 import numpy as np
+import numpy.testing as npt
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -117,13 +118,13 @@ def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d):
 
 def test_penalty_targets_shapes():
     p = ObjectiveFcn.Parameter
-    np.testing.assert_equal(Objective([], custom_type=p, target=1).target.shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=np.array(1)).target.shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[1]).target.shape, (1, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[1, 2]).target.shape, (2, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target.shape, (2, 1))
-    np.testing.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target.shape, (1, 2))
-    np.testing.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target.shape, (1, 2))
+    npt.assert_equal(Objective([], custom_type=p, target=1).target.shape, (1, 1))
+    npt.assert_equal(Objective([], custom_type=p, target=np.array(1)).target.shape, (1, 1))
+    npt.assert_equal(Objective([], custom_type=p, target=[1]).target.shape, (1, 1))
+    npt.assert_equal(Objective([], custom_type=p, target=[1, 2]).target.shape, (2, 1))
+    npt.assert_equal(Objective([], custom_type=p, target=[[1], [2]]).target.shape, (2, 1))
+    npt.assert_equal(Objective([], custom_type=p, target=[[1, 2]]).target.shape, (1, 2))
+    npt.assert_equal(Objective([], custom_type=p, target=np.array([[1, 2]])).target.shape, (1, 2))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -145,9 +146,9 @@ def test_penalty_minimize_time(penalty_origin, value, phase_dynamics):
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     if penalty_origin == ObjectiveFcn.Lagrange:
-        np.testing.assert_almost_equal(res, np.array(1))
+        npt.assert_almost_equal(res, np.array(1))
     else:
-        np.testing.assert_almost_equal(res, np.array(0.05) * ocp.nlp[0].ns)
+        npt.assert_almost_equal(res, np.array(0.05) * ocp.nlp[0].ns)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -165,7 +166,7 @@ def test_penalty_minimize_state(penalty_origin, value, phase_dynamics):
 
     penalty = Objective(penalty_origin.MINIMIZE_STATE, key="qdot")
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
-    np.testing.assert_almost_equal(res, np.array([[value]] * 4))
+    npt.assert_almost_equal(res, np.array([[value]] * 4))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -183,7 +184,7 @@ def test_penalty_minimize_joint_power(penalty_origin, value, phase_dynamics):
 
     penalty = Objective(penalty_origin.MINIMIZE_POWER, key_control="tau")
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
-    np.testing.assert_almost_equal(res, np.array([[value]] * 4))
+    npt.assert_almost_equal(res, np.array([[value]] * 4))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -202,11 +203,11 @@ def test_penalty_minimize_muscle_power(penalty_origin, value, phase_dynamics):
     penalty = Objective(penalty_origin.MINIMIZE_POWER, key_control="muscles")
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
     if value == 0.1:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             res, np.array([[0.00475812, -0.00505504, -0.000717714, 0.00215864, 0.00215864, -0.00159915]]).T
         )
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             res, np.array([[-0.475812, 0.505504, 0.0717714, -0.215864, -0.215864, 0.159915]]).T, decimal=5
         )
 
@@ -233,7 +234,7 @@ def test_penalty_minimize_qddot(penalty_origin, value, phase_dynamics):
     penalty = Objective(penalty_type)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d).T
 
-    np.testing.assert_almost_equal(res, [[value, -9.81 + value, value, value]])
+    npt.assert_almost_equal(res, [[value, -9.81 + value, value, value]])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -255,7 +256,7 @@ def test_penalty_track_state(penalty_origin, value, phase_dynamics):
     else:
         penalty = Constraint(penalty_type, key="qdot", target=np.ones((4, 1)) * value)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
-    np.testing.assert_almost_equal(res, [[value]] * 4)
+    npt.assert_almost_equal(res, [[value]] * 4)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -277,7 +278,7 @@ def test_penalty_track_joint_power(penalty_origin, value, phase_dynamics):
     else:
         penalty = Constraint(penalty_type, key_control="tau")
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
-    np.testing.assert_almost_equal(res, [[value]] * 4)
+    npt.assert_almost_equal(res, [[value]] * 4)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -313,7 +314,7 @@ def test_penalty_minimize_markers(penalty_origin, value, phase_dynamics):
             ]
         )
 
-    np.testing.assert_almost_equal(res, expected)
+    npt.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -353,7 +354,7 @@ def test_penalty_track_markers(penalty_origin, value, phase_dynamics):
             ]
         )
 
-    np.testing.assert_almost_equal(res, expected)
+    npt.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -374,7 +375,7 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value, phase_dynamics
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     if value == 0.1:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             res,
             np.array(
                 [
@@ -385,7 +386,7 @@ def test_penalty_minimize_markers_velocity(penalty_origin, value, phase_dynamics
             ),
         )
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             res,
             np.array(
                 [
@@ -438,7 +439,7 @@ def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, 
                 ]
             )
 
-        np.testing.assert_almost_equal(res, expected, decimal=5)
+        npt.assert_almost_equal(res, expected, decimal=5)
     else:
         res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
@@ -457,7 +458,7 @@ def test_penalty_minimize_markers_acceleration(penalty_origin, implicit, value, 
                     [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
                 ]
             )
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             res,
             expected,
             decimal=5,
@@ -486,7 +487,7 @@ def test_penalty_track_markers_velocity(penalty_origin, value, phase_dynamics):
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     if value == 0.1:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             res,
             np.array(
                 [
@@ -497,7 +498,7 @@ def test_penalty_track_markers_velocity(penalty_origin, value, phase_dynamics):
             ),
         )
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             res,
             np.array(
                 [
@@ -546,7 +547,7 @@ def test_penalty_track_markers_acceleration(penalty_origin, value, implicit, pha
                 ]
             )
 
-        np.testing.assert_almost_equal(res, expected, decimal=5)
+        npt.assert_almost_equal(res, expected, decimal=5)
     else:
         res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
 
@@ -565,7 +566,7 @@ def test_penalty_track_markers_acceleration(penalty_origin, value, implicit, pha
                     [-9.81, -39.31504182, 15.08706927, 44.59211109, 0.0, 0.0, 0.0, 27.20105554],
                 ]
             )
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             res,
             expected,
             decimal=5,
@@ -594,7 +595,7 @@ def test_penalty_track_super_impose_marker(penalty_origin, value, phase_dynamics
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = [[0.8951707, 0, -1.0948376]] if value == 0.1 else [[-1.3830926, 0, 0.2950504]]
-    np.testing.assert_almost_equal(res.T, expected)
+    npt.assert_almost_equal(res.T, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -619,7 +620,7 @@ def test_penalty_track_super_impose_marker_velocity(penalty_origin, value, phase
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = [[-0.1094838, 0.0, -0.0895171]] if value == 0.1 else [[-2.9505042, 0.0, -13.8309264]]
-    np.testing.assert_almost_equal(res.T, expected)
+    npt.assert_almost_equal(res.T, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -661,12 +662,12 @@ def test_penalty_proportional_state(penalty_origin, value, value_intercept, phas
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     if value_intercept == 0.0:
-        np.testing.assert_almost_equal(res, -value)
+        npt.assert_almost_equal(res, -value)
     else:
         if value == 0.1:
-            np.testing.assert_almost_equal(res, 0.9)
+            npt.assert_almost_equal(res, 0.9)
         else:
-            np.testing.assert_almost_equal(res, 11)
+            npt.assert_almost_equal(res, 11)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -694,7 +695,7 @@ def test_penalty_proportional_control(penalty_origin, value, phase_dynamics):
         penalty = Constraint(penalty_type, key="tau", first_dof=first, second_dof=second, coef=coef)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    np.testing.assert_almost_equal(res, np.array(u[0][first] - coef * u[0][second]))
+    npt.assert_almost_equal(res, np.array(u[0][first] - coef * u[0][second]))
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -713,7 +714,7 @@ def test_penalty_minimize_torque(penalty_origin, value, phase_dynamics):
     penalty = Objective(penalty_origin.MINIMIZE_CONTROL, key="tau")
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    np.testing.assert_almost_equal(res, np.array([[value, value, value, value]]).T)
+    npt.assert_almost_equal(res, np.array([[value, value, value, value]]).T)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -737,7 +738,7 @@ def test_penalty_track_torque(penalty_origin, value, phase_dynamics):
         penalty = Constraint(penalty_type, key="tau", target=np.ones((4, 1)) * value)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    np.testing.assert_almost_equal(res, np.array([[value, value, value, value]]).T)
+    npt.assert_almost_equal(res, np.array([[value, value, value, value]]).T)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -757,7 +758,7 @@ def test_penalty_minimize_muscles_control(penalty_origin, value, phase_dynamics)
     penalty = Objective(penalty_type, key="muscles")
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    np.testing.assert_almost_equal(res, np.array([[value, value, value, value, value, value]]).T)
+    npt.assert_almost_equal(res, np.array([[value, value, value, value, value, value]]).T)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -778,9 +779,9 @@ def test_penalty_minimize_contact_forces(penalty_origin, value, phase_dynamics):
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     if value == 0.1:
-        np.testing.assert_almost_equal(res, np.array([[-9.6680105, 127.2360329, 5.0905995]]).T)
+        npt.assert_almost_equal(res, np.array([[-9.6680105, 127.2360329, 5.0905995]]).T)
     else:
-        np.testing.assert_almost_equal(res, np.array([[25.6627161, 462.7973306, -94.0182191]]).T)
+        npt.assert_almost_equal(res, np.array([[25.6627161, 462.7973306, -94.0182191]]).T)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -805,9 +806,9 @@ def test_penalty_track_contact_forces(penalty_origin, value, phase_dynamics):
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     if value == 0.1:
-        np.testing.assert_almost_equal(res.T, [[-9.6680105, 127.2360329, 5.0905995]])
+        npt.assert_almost_equal(res.T, [[-9.6680105, 127.2360329, 5.0905995]])
     else:
-        np.testing.assert_almost_equal(res.T, [[25.6627161, 462.7973306, -94.0182191]])
+        npt.assert_almost_equal(res.T, [[25.6627161, 462.7973306, -94.0182191]])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -827,7 +828,7 @@ def test_penalty_minimize_predicted_com_height(value, phase_dynamics):
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = np.array(0.0501274 if value == 0.1 else -3.72579)
-    np.testing.assert_almost_equal(res, expected)
+    npt.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -858,7 +859,7 @@ def test_penalty_minimize_com_position(value, penalty_origin, phase_dynamics):
     if value == -10:
         expected = np.array([[-5], [0.05], [-5]])
 
-    np.testing.assert_almost_equal(res, expected)
+    npt.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -886,7 +887,7 @@ def test_penalty_minimize_angular_momentum(value, penalty_origin, phase_dynamics
     if value == -10:
         expected = np.array([[0.5], [-20], [-0.5]])
 
-    np.testing.assert_almost_equal(res, expected)
+    npt.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -915,7 +916,7 @@ def test_penalty_minimize_linear_momentum(value, penalty_origin, use_sx, phase_d
     if value == -10:
         expected = np.array([[-10], [0], [-10]])
 
-    np.testing.assert_almost_equal(res, expected)
+    npt.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -946,7 +947,7 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit, phase_dynamic
         if value == -10:
             expected = np.array([[0.0], [1.455063], [16.3741091]])
 
-        np.testing.assert_almost_equal(res, expected)
+        npt.assert_almost_equal(res, expected)
     else:
         res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, [], [], [])
 
@@ -954,7 +955,7 @@ def test_penalty_minimize_comddot(value, penalty_origin, implicit, phase_dynamic
         if value == -10:
             expected = np.array([[0], [-17.5050533], [-18.2891901]])
 
-        np.testing.assert_almost_equal(res, expected)
+        npt.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -982,7 +983,7 @@ def test_penalty_track_segment_with_custom_rt(penalty_origin, value, phase_dynam
     if value == -10:
         expected = np.array([[3.1415927], [0.575222], [3.1415927]])
 
-    np.testing.assert_almost_equal(res, expected)
+    npt.assert_almost_equal(res, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1007,7 +1008,7 @@ def test_penalty_track_marker_with_segment_axis(penalty_origin, value, phase_dyn
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = [[value, 0, value]]
-    np.testing.assert_almost_equal(res.T, expected)
+    npt.assert_almost_equal(res.T, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1032,7 +1033,7 @@ def test_penalty_minimize_segment_rotation(penalty_origin, value, phase_dynamics
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = [[0, value, 0]] if value == 0.1 else [[3.1415927, 0.575222, 3.1415927]]
-    np.testing.assert_almost_equal(res.T, expected)
+    npt.assert_almost_equal(res.T, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1057,7 +1058,7 @@ def test_penalty_minimize_segment_velocity(penalty_origin, value, phase_dynamics
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = [[0, value, 0]]
-    np.testing.assert_almost_equal(res.T, expected)
+    npt.assert_almost_equal(res.T, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1095,9 +1096,9 @@ def test_penalty_minimize_vector_orientation(penalty_origin, value, phase_dynami
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     if value == 0.1:
-        np.testing.assert_almost_equal(float(res), 0.09999999999999999)
+        npt.assert_almost_equal(float(res), 0.09999999999999999)
     else:
-        np.testing.assert_almost_equal(float(res), 2.566370614359173)
+        npt.assert_almost_equal(float(res), 2.566370614359173)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1118,7 +1119,7 @@ def test_penalty_contact_force_inequality(penalty_origin, value, phase_dynamics)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = [[-9.6680105, 127.2360329, 5.0905995]] if value == 0.1 else [[25.6627161, 462.7973306, -94.0182191]]
-    np.testing.assert_almost_equal(res.T, expected)
+    npt.assert_almost_equal(res.T, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1140,7 +1141,7 @@ def test_penalty_non_slipping(value, phase_dynamics):
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = [[64662.56185612, 64849.5027121]] if value == 0.1 else [[856066.90177734, 857384.05177395]]
-    np.testing.assert_almost_equal(res.T, expected)
+    npt.assert_almost_equal(res.T, expected)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1166,9 +1167,9 @@ def test_tau_max_from_actuators(value, threshold, phase_dynamics):
         res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     if threshold:
-        np.testing.assert_almost_equal(res, np.repeat([value + threshold, value - threshold], 3)[:, np.newaxis])
+        npt.assert_almost_equal(res, np.repeat([value + threshold, value - threshold], 3)[:, np.newaxis])
     else:
-        np.testing.assert_almost_equal(res, np.repeat([value + 5, value - 10], 3)[:, np.newaxis])
+        npt.assert_almost_equal(res, np.repeat([value + 5, value - 10], 3)[:, np.newaxis])
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1187,7 +1188,7 @@ def test_penalty_time_constraint(value, phase_dynamics):
     penalty = Constraint(penalty_type)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    np.testing.assert_almost_equal(res, np.array(0.05) * ocp.nlp[0].ns)
+    npt.assert_almost_equal(res, np.array(0.05) * ocp.nlp[0].ns)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1222,7 +1223,7 @@ def test_penalty_constraint_total_time(value, phase_dynamics):
     )
     res = get_penalty_value(ocp, penalty[0], t, phases_dt, x, u, p, a, d)
 
-    np.testing.assert_almost_equal(res, np.array(0.05) * ocp.nlp[0].ns * 2)
+    npt.assert_almost_equal(res, np.array(0.05) * ocp.nlp[0].ns * 2)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1251,7 +1252,7 @@ def test_penalty_custom(penalty_origin, value, phase_dynamics):
         penalty = Constraint(custom, index=0, mult=mult)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    np.testing.assert_almost_equal(res, [[value * mult]] * 4)
+    npt.assert_almost_equal(res, [[value * mult]] * 4)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1327,9 +1328,9 @@ def test_penalty_custom_with_bounds(value, phase_dynamics):
     penalty = Constraint(custom_with_bounds)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
-    np.testing.assert_almost_equal(res, [[value]] * 4)
-    np.testing.assert_almost_equal(penalty.min_bound, -10)
-    np.testing.assert_almost_equal(penalty.max_bound, 10)
+    npt.assert_almost_equal(res, [[value]] * 4)
+    npt.assert_almost_equal(penalty.min_bound, -10)
+    npt.assert_almost_equal(penalty.max_bound, 10)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
@@ -1429,53 +1430,53 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
     u_expected = nlp.U
 
     if node == Node.ALL:
-        np.testing.assert_almost_equal(controller.t, [i for i in range(ns + 1)])
-        np.testing.assert_almost_equal(np.array(controller.x), np.linspace(0, -10, ns + 1))
-        np.testing.assert_almost_equal(np.array(controller.u), np.linspace(10, 19, ns))
-        np.testing.assert_almost_equal(np.array(controller.x_scaled), np.linspace(0, -10, ns + 1))
-        np.testing.assert_almost_equal(np.array(controller.u_scaled), np.linspace(10, 19, ns))
+        npt.assert_almost_equal(controller.t, [i for i in range(ns + 1)])
+        npt.assert_almost_equal(np.array(controller.x), np.linspace(0, -10, ns + 1))
+        npt.assert_almost_equal(np.array(controller.u), np.linspace(10, 19, ns))
+        npt.assert_almost_equal(np.array(controller.x_scaled), np.linspace(0, -10, ns + 1))
+        npt.assert_almost_equal(np.array(controller.u_scaled), np.linspace(10, 19, ns))
     elif node == Node.ALL_SHOOTING:
-        np.testing.assert_almost_equal(controller.t, [i for i in range(ns)])
-        np.testing.assert_almost_equal(np.array(controller.x), nlp.X[:-1])
-        np.testing.assert_almost_equal(np.array(controller.u), nlp.U)
-        np.testing.assert_almost_equal(np.array(controller.x_scaled), nlp.X[:-1])
-        np.testing.assert_almost_equal(np.array(controller.u_scaled), nlp.U)
+        npt.assert_almost_equal(controller.t, [i for i in range(ns)])
+        npt.assert_almost_equal(np.array(controller.x), nlp.X[:-1])
+        npt.assert_almost_equal(np.array(controller.u), nlp.U)
+        npt.assert_almost_equal(np.array(controller.x_scaled), nlp.X[:-1])
+        npt.assert_almost_equal(np.array(controller.u_scaled), nlp.U)
     elif node == Node.INTERMEDIATES:
-        np.testing.assert_almost_equal(controller.t, [i for i in range(1, ns - 1)])
-        np.testing.assert_almost_equal(np.array(controller.x), x_expected[1 : ns - 1])
-        np.testing.assert_almost_equal(np.array(controller.u), u_expected[1 : ns - 1])
-        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[1 : ns - 1])
-        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[1 : ns - 1])
+        npt.assert_almost_equal(controller.t, [i for i in range(1, ns - 1)])
+        npt.assert_almost_equal(np.array(controller.x), x_expected[1 : ns - 1])
+        npt.assert_almost_equal(np.array(controller.u), u_expected[1 : ns - 1])
+        npt.assert_almost_equal(np.array(controller.x_scaled), x_expected[1 : ns - 1])
+        npt.assert_almost_equal(np.array(controller.u_scaled), u_expected[1 : ns - 1])
     elif node == Node.START:
-        np.testing.assert_almost_equal(controller.t, [0])
-        np.testing.assert_almost_equal(np.array(controller.x), x_expected[0])
-        np.testing.assert_almost_equal(np.array(controller.u), u_expected[0])
-        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[0])
-        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[0])
+        npt.assert_almost_equal(controller.t, [0])
+        npt.assert_almost_equal(np.array(controller.x), x_expected[0])
+        npt.assert_almost_equal(np.array(controller.u), u_expected[0])
+        npt.assert_almost_equal(np.array(controller.x_scaled), x_expected[0])
+        npt.assert_almost_equal(np.array(controller.u_scaled), u_expected[0])
     elif node == Node.MID:
-        np.testing.assert_almost_equal(controller.t, [ns // 2])
-        np.testing.assert_almost_equal(np.array(controller.x), x_expected[ns // 2])
-        np.testing.assert_almost_equal(np.array(controller.u), u_expected[ns // 2])
-        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[ns // 2])
-        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[ns // 2])
+        npt.assert_almost_equal(controller.t, [ns // 2])
+        npt.assert_almost_equal(np.array(controller.x), x_expected[ns // 2])
+        npt.assert_almost_equal(np.array(controller.u), u_expected[ns // 2])
+        npt.assert_almost_equal(np.array(controller.x_scaled), x_expected[ns // 2])
+        npt.assert_almost_equal(np.array(controller.u_scaled), u_expected[ns // 2])
     elif node == Node.PENULTIMATE:
-        np.testing.assert_almost_equal(controller.t, [ns - 1])
-        np.testing.assert_almost_equal(np.array(controller.x), x_expected[-2])
-        np.testing.assert_almost_equal(np.array(controller.u), u_expected[-1])
-        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[-2])
-        np.testing.assert_almost_equal(np.array(controller.u_scaled), u_expected[-1])
+        npt.assert_almost_equal(controller.t, [ns - 1])
+        npt.assert_almost_equal(np.array(controller.x), x_expected[-2])
+        npt.assert_almost_equal(np.array(controller.u), u_expected[-1])
+        npt.assert_almost_equal(np.array(controller.x_scaled), x_expected[-2])
+        npt.assert_almost_equal(np.array(controller.u_scaled), u_expected[-1])
     elif node == Node.END:
-        np.testing.assert_almost_equal(controller.t, [ns])
-        np.testing.assert_almost_equal(np.array(controller.x), x_expected[ns])
-        np.testing.assert_almost_equal(controller.u, [])
-        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[ns])
-        np.testing.assert_almost_equal(controller.u_scaled, [])
+        npt.assert_almost_equal(controller.t, [ns])
+        npt.assert_almost_equal(np.array(controller.x), x_expected[ns])
+        npt.assert_almost_equal(controller.u, [])
+        npt.assert_almost_equal(np.array(controller.x_scaled), x_expected[ns])
+        npt.assert_almost_equal(controller.u_scaled, [])
     elif node == 2:
-        np.testing.assert_almost_equal(controller.t, [2])
-        np.testing.assert_almost_equal(np.array(controller.x), x_expected[2])
-        np.testing.assert_almost_equal(controller.u, u_expected[2])
-        np.testing.assert_almost_equal(np.array(controller.x_scaled), x_expected[2])
-        np.testing.assert_almost_equal(controller.u_scaled, u_expected[2])
+        npt.assert_almost_equal(controller.t, [2])
+        npt.assert_almost_equal(np.array(controller.x), x_expected[2])
+        npt.assert_almost_equal(controller.u, u_expected[2])
+        npt.assert_almost_equal(np.array(controller.x_scaled), x_expected[2])
+        npt.assert_almost_equal(controller.u_scaled, u_expected[2])
     else:
         raise RuntimeError("Something went wrong")
 
