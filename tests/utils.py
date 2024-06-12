@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 from casadi import MX, Function
 
@@ -60,7 +61,7 @@ class TestUtils:
                 try:
                     elem_loaded = np.asarray(first_elem, dtype=float)
                     elem_original = np.array(second_elem, dtype=float)
-                    np.testing.assert_almost_equal(elem_original, elem_loaded)
+                    npt.assert_almost_equal(elem_original, elem_loaded)
                 except (ValueError, Exception):
                     pass
 
@@ -81,19 +82,17 @@ class TestUtils:
         if ocp.n_phases > 1:
             for i in range(ocp.n_phases):
                 for key in states[i]:
-                    np.testing.assert_almost_equal(warm_start_states[i][key], states[i][key], decimal=state_decimal)
+                    npt.assert_almost_equal(warm_start_states[i][key], states[i][key], decimal=state_decimal)
                 for key in controls[i]:
-                    np.testing.assert_almost_equal(
-                        warm_start_controls[i][key], controls[i][key], decimal=control_decimal
-                    )
+                    npt.assert_almost_equal(warm_start_controls[i][key], controls[i][key], decimal=control_decimal)
         else:
             for key in states:
-                np.testing.assert_almost_equal(warm_start_states[key], states[key], decimal=state_decimal)
+                npt.assert_almost_equal(warm_start_states[key], states[key], decimal=state_decimal)
             for key in controls:
-                np.testing.assert_almost_equal(warm_start_controls[key], controls[key], decimal=control_decimal)
+                npt.assert_almost_equal(warm_start_controls[key], controls[key], decimal=control_decimal)
 
         for key in sol_warm_start.parameters.keys():
-            np.testing.assert_almost_equal(sol_warm_start.parameters[key], sol.parameters[key], decimal=param_decimal)
+            npt.assert_almost_equal(sol_warm_start.parameters[key], sol.parameters[key], decimal=param_decimal)
 
     @staticmethod
     def simulate(sol: Solution, decimal_value=7):
@@ -134,7 +133,7 @@ class TestUtils:
         # Evaluate the final error of the single shooting integration versus the final node
         sol_merged = sol.decision_states(to_merge=[SolutionMerge.PHASES, SolutionMerge.NODES])
         for key in sol_merged.keys():
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 sol_merged[key][:, -1],
                 sol_single[key][:, -1],
                 decimal=decimal_value,
@@ -173,9 +172,7 @@ class TestUtils:
         if isinstance(expected, MX):
             expected = TestUtils.mx_to_array(mx, squeeze=squeeze, expand=expand)
 
-        np.testing.assert_almost_equal(
-            TestUtils.mx_to_array(mx, squeeze=squeeze, expand=expand), expected, decimal=decimal
-        )
+        npt.assert_almost_equal(TestUtils.mx_to_array(mx, squeeze=squeeze, expand=expand), expected, decimal=decimal)
 
     @staticmethod
     def assert_equal(
@@ -187,7 +184,7 @@ class TestUtils:
         if isinstance(value, MX):
             TestUtils.mx_assert_equal(value, expected, decimal=decimal, squeeze=squeeze, expand=expand)
         else:
-            np.testing.assert_almost_equal(value, expected, decimal=decimal)
+            npt.assert_almost_equal(value, expected, decimal=decimal)
 
     @staticmethod
     def initialize_numerical_timeseries(nlp, dynamics):

@@ -1,7 +1,8 @@
 import os
 import pytest
 import numpy as np
-from casadi import MX, DM, vertcat, Function
+import numpy.testing as npt
+from casadi import DM
 import biorbd_casadi as biorbd
 from bioptim import (
     MultiBiorbdModel,
@@ -376,10 +377,10 @@ def test_biorbd_model():
     qddot_mapping = models._var_mapping("qddot", None, variable_mappings)
     tau_mapping = models._var_mapping("tau", None, variable_mappings)
 
-    np.testing.assert_equal(q_mapping["q"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
-    np.testing.assert_equal(qdot_mapping["qdot"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
-    np.testing.assert_equal(qddot_mapping["qddot"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
-    np.testing.assert_equal(tau_mapping["tau"].to_first.map_idx, [1, 2, 5])
+    npt.assert_equal(q_mapping["q"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
+    npt.assert_equal(qdot_mapping["qdot"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
+    npt.assert_equal(qddot_mapping["qddot"].to_first.map_idx, [0, 1, 2, 3, 4, 5])
+    npt.assert_equal(tau_mapping["tau"].to_first.map_idx, [1, 2, 5])
 
     bounds_from_ranges = BoundsList()
     bounds_from_ranges["q"] = models.bounds_from_ranges("q", variable_mappings)
@@ -407,7 +408,7 @@ def test_biorbd_model():
         else:
             raise NotImplementedError("Wrong value")
 
-        np.testing.assert_almost_equal(bounds_from_ranges[key].min, DM(np.array(expected)), decimal=5)
+        npt.assert_almost_equal(bounds_from_ranges[key].min, DM(np.array(expected)), decimal=5)
 
         assert models.variable_index("q", 0) == range(0, 3)
         assert models.variable_index("qdot", 1) == range(3, 6)

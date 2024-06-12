@@ -10,6 +10,7 @@ import pytest
 from sys import platform
 
 import numpy as np
+import numpy.testing as npt
 from bioptim import (
     BiorbdModel,
     Axis,
@@ -80,7 +81,7 @@ def test_acados_one_mayer(cost_type):
     # Check end state value
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     q = states["q"]
-    np.testing.assert_almost_equal(q[0, -1], 1.0)
+    npt.assert_almost_equal(q[0, -1], 1.0)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -115,7 +116,7 @@ def test_acados_mayer_first_node(cost_type):
     # Check end state value
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     q = states["q"]
-    np.testing.assert_almost_equal(q[0, 0], 0.999999948505021)
+    npt.assert_almost_equal(q[0, 0], 0.999999948505021)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -150,9 +151,9 @@ def test_acados_several_mayer(cost_type):
     # Check end state value
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     q = states["q"]
-    np.testing.assert_almost_equal(q[0, -1], 1.0)
-    np.testing.assert_almost_equal(q[1, -1], 2.0)
-    np.testing.assert_almost_equal(q[2, -1], 3.0)
+    npt.assert_almost_equal(q[0, -1], 1.0)
+    npt.assert_almost_equal(q[1, -1], 2.0)
+    npt.assert_almost_equal(q[2, -1], 3.0)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -197,7 +198,7 @@ def test_acados_one_lagrange(cost_type):
     # Check end state value
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     q = states["q"]
-    np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze())
+    npt.assert_almost_equal(q[0, :], target[0, :].squeeze())
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -245,7 +246,7 @@ def test_acados_one_lagrange_and_one_mayer(cost_type):
     # Check end state value
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     q = states["q"]
-    np.testing.assert_almost_equal(q[0, :], target[0, :].squeeze(), decimal=6)
+    npt.assert_almost_equal(q[0, :], target[0, :].squeeze(), decimal=6)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -284,7 +285,7 @@ def test_acados_control_lagrange_and_state_mayer(cost_type):
     # Check end state value
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     q = states["q"]
-    np.testing.assert_almost_equal(q[0, -1], target.squeeze())
+    npt.assert_almost_equal(q[0, -1], target.squeeze())
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -319,7 +320,7 @@ def test_acados_options(cost_type):
 
     # Check that tol impacted convergence
     for i in range(len(tols) - 1):
-        np.testing.assert_array_less(iter[i + 1], iter[i])
+        npt.assert_array_less(iter[i + 1], iter[i])
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -403,16 +404,16 @@ def test_acados_custom_dynamics(problem_type_custom):
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((2, 0, 0)), decimal=6)
-    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
+    npt.assert_almost_equal(q[:, 0], np.array((2, 0, 0)), decimal=6)
+    npt.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57)))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
+    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)))
+    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226)))
+    npt.assert_almost_equal(tau[:, 0], np.array((0, 9.81, 2.27903226)))
+    npt.assert_almost_equal(tau[:, -1], np.array((0, 9.81, -2.27903226)))
 
 
 def test_acados_one_parameter():
@@ -472,15 +473,15 @@ def test_acados_one_parameter():
     gravity = sol.parameters["gravity_xyz"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
-    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)), decimal=6)
+    npt.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
+    npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)), decimal=6)
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)), decimal=6)
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
+    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)), decimal=6)
+    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
     # parameters
-    np.testing.assert_almost_equal(gravity[-1], -9.80995, decimal=4)
+    npt.assert_almost_equal(gravity[-1], -9.80995, decimal=4)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -548,16 +549,16 @@ def test_acados_several_parameter():
     gravity, mass = sol.parameters["gravity_xyz"], sol.parameters["mass"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
-    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)), decimal=6)
+    npt.assert_almost_equal(q[:, 0], np.array((0, 0)), decimal=6)
+    npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)), decimal=6)
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)), decimal=6)
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
+    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)), decimal=6)
+    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)), decimal=6)
 
     # parameters
-    np.testing.assert_almost_equal(gravity[-1], np.array([-9.80996]), decimal=4)
-    np.testing.assert_almost_equal(mass[0], 20, decimal=6)
+    npt.assert_almost_equal(gravity[-1], np.array([-9.80996]), decimal=4)
+    npt.assert_almost_equal(mass[0], 20, decimal=6)
 
     # Clean test folder
     os.remove(f"./acados_ocp.json")
@@ -610,11 +611,11 @@ def test_acados_one_end_constraints():
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # final position
-    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 0)))
+    npt.assert_almost_equal(q[:, -1], np.array((2, 0, 0)))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((2.72727272, 9.81, 0)))
-    np.testing.assert_almost_equal(tau[:, -1], np.array((-2.72727272, 9.81, 0)))
+    npt.assert_almost_equal(tau[:, 0], np.array((2.72727272, 9.81, 0)))
+    npt.assert_almost_equal(tau[:, -1], np.array((-2.72727272, 9.81, 0)))
 
 
 def test_acados_constraints_all():
@@ -650,15 +651,15 @@ def test_acados_constraints_all():
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([2.28988221, 0, 0, 2.95087911e-01]), decimal=6)
-    np.testing.assert_almost_equal(q[:, -1], np.array((2.28215749, 0, 1.57, 6.62470772e-01)), decimal=6)
+    npt.assert_almost_equal(q[:, 0], np.array([2.28988221, 0, 0, 2.95087911e-01]), decimal=6)
+    npt.assert_almost_equal(q[:, -1], np.array((2.28215749, 0, 1.57, 6.62470772e-01)), decimal=6)
 
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=6)
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 0, 0]), decimal=6)
+    npt.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=6)
+    npt.assert_almost_equal(qdot[:, -1], np.array([0, 0, 0, 0]), decimal=6)
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((0.04483914, 9.90739842, 2.24951691, 0.78496612)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -1], np.array((0.15945561, 10.03978178, -2.36075327, 0.07267697)), decimal=6)
+    npt.assert_almost_equal(tau[:, 0], np.array((0.04483914, 9.90739842, 2.24951691, 0.78496612)), decimal=6)
+    npt.assert_almost_equal(tau[:, -1], np.array((0.15945561, 10.03978178, -2.36075327, 0.07267697)), decimal=6)
 
 
 def test_acados_constraints_end_all():
@@ -695,15 +696,15 @@ def test_acados_constraints_end_all():
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([2.01701330, 0, 0, 3.20057865e-01]), decimal=6)
-    np.testing.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57, 7.85398168e-01)), decimal=6)
+    npt.assert_almost_equal(q[:, 0], np.array([2.01701330, 0, 0, 3.20057865e-01]), decimal=6)
+    npt.assert_almost_equal(q[:, -1], np.array((2, 0, 1.57, 7.85398168e-01)), decimal=6)
 
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=6)
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0, 0, 0]), decimal=6)
+    npt.assert_almost_equal(qdot[:, 0], np.array([0, 0, 0, 0]), decimal=6)
+    npt.assert_almost_equal(qdot[:, -1], np.array([0, 0, 0, 0]), decimal=6)
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array((0.04648408, 9.88616194, 2.24285498, 0.864213)), decimal=6)
-    np.testing.assert_almost_equal(tau[:, -1], np.array((0.19389194, 9.99905781, -2.37713652, -0.19858311)), decimal=6)
+    npt.assert_almost_equal(tau[:, 0], np.array((0.04648408, 9.88616194, 2.24285498, 0.864213)), decimal=6)
+    npt.assert_almost_equal(tau[:, -1], np.array((0.19389194, 9.99905781, -2.37713652, -0.19858311)), decimal=6)
 
 
 def test_acados_phase_dynamics_reject():

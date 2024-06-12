@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 from casadi import DM, vertcat
 
@@ -63,19 +64,19 @@ def test_arm_reaching_muscle_driven(use_sx):
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 13.32287163458417)
+    npt.assert_equal(f.shape, (1, 1))
+    npt.assert_almost_equal(f[0, 0], 13.32287163458417)
 
     # detailed cost values
-    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.6783119392800087)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.4573562887022004)
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.6783119392800087)
+    npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.4573562887022004)
+    npt.assert_almost_equal(
         f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
     )
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (546, 1))
+    npt.assert_equal(g.shape, (546, 1))
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -88,25 +89,25 @@ def test_arm_reaching_muscle_driven(use_sx):
     # cov = integrated_values["cov"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.95993109, 1.15939485]))
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+    npt.assert_almost_equal(q[:, -1], np.array([0.95993109, 1.15939485]))
+    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+    npt.assert_almost_equal(
         mus_activations[:, 0], np.array([0.00559921, 0.00096835, 0.00175969, 0.01424529, 0.01341463, 0.00648656])
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         mus_activations[:, -1], np.array([0.04856166, 0.09609582, 0.02063621, 0.0315381, 0.00022286, 0.0165601])
     )
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         mus_excitations[:, 0], np.array([0.05453449, 0.07515539, 0.02860859, 0.01667135, 0.00352633, 0.04392939])
     )
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         mus_excitations[:, -2], np.array([0.05083793, 0.09576169, 0.02139706, 0.02832909, 0.00023962, 0.02396517])
     )
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         k[:, 0],
         np.array(
             [
@@ -137,8 +138,8 @@ def test_arm_reaching_muscle_driven(use_sx):
             ]
         ),
     )
-    np.testing.assert_almost_equal(ref[:, 0], np.array([0.00834655, 0.05367618, 0.00834655, 0.00834655]))
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(ref[:, 0], np.array([0.00834655, 0.05367618, 0.00834655, 0.00834655]))
+    npt.assert_almost_equal(
         m[:, 0],
         np.array(
             [
@@ -298,19 +299,19 @@ def test_arm_reaching_torque_driven_explicit(use_sx):
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], 46.99030175091475)
+    npt.assert_equal(f.shape, (1, 1))
+    npt.assert_almost_equal(f[0, 0], 46.99030175091475)
 
     # detailed cost values
-    np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.055578630313992475)
-    np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 6.038226210163837)
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 0.055578630313992475)
+    npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 6.038226210163837)
+    npt.assert_almost_equal(
         f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
     )
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (214, 1))
+    npt.assert_equal(g.shape, (214, 1))
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -326,20 +327,20 @@ def test_arm_reaching_torque_driven_explicit(use_sx):
     # cov = integrated_values["cov"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.92702265, 1.27828413]))
-    np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
-    np.testing.assert_almost_equal(qddot[:, 0], np.array([0, 0]))
-    np.testing.assert_almost_equal(qddot[:, -1], np.array([0, 0]))
+    npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+    npt.assert_almost_equal(q[:, -1], np.array([0.92702265, 1.27828413]))
+    npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+    npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
+    npt.assert_almost_equal(qddot[:, 0], np.array([0, 0]))
+    npt.assert_almost_equal(qddot[:, -1], np.array([0, 0]))
 
-    np.testing.assert_almost_equal(qdddot[:, 0], np.array([0.00124365, 0.00124365]))
-    np.testing.assert_almost_equal(qdddot[:, -2], np.array([0.00124365, 0.00124365]))
+    npt.assert_almost_equal(qdddot[:, 0], np.array([0.00124365, 0.00124365]))
+    npt.assert_almost_equal(qdddot[:, -2], np.array([0.00124365, 0.00124365]))
 
-    np.testing.assert_almost_equal(tau[:, 0], np.array([0.36186712, -0.2368119]))
-    np.testing.assert_almost_equal(tau[:, -2], np.array([-0.35709778, 0.18867995]))
+    npt.assert_almost_equal(tau[:, 0], np.array([0.36186712, -0.2368119]))
+    npt.assert_almost_equal(tau[:, -2], np.array([-0.35709778, 0.18867995]))
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         k[:, 0],
         np.array(
             [
@@ -354,8 +355,8 @@ def test_arm_reaching_torque_driven_explicit(use_sx):
             ]
         ),
     )
-    np.testing.assert_almost_equal(ref[:, 0], np.array([0.02592847, 0.25028511, 0.00124365, 0.00124365]))
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(ref[:, 0], np.array([0.02592847, 0.25028511, 0.00124365, 0.00124365]))
+    npt.assert_almost_equal(
         m[:, 0],
         np.array(
             [
@@ -451,11 +452,11 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
 
     # Check objective
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
+    npt.assert_equal(f.shape, (1, 1))
 
     # Check constraints values
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (378, 1))
+    npt.assert_equal(g.shape, (378, 1))
 
     # Check some of the solution values
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -477,30 +478,30 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
         )
         if not with_scaling:
             # Check objective function value
-            np.testing.assert_almost_equal(f[0, 0], 54.83542936544702)
+            npt.assert_almost_equal(f[0, 0], 54.83542936544702)
 
             # detailed cost values
-            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 54.377501174311654)
-            np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.4579281911353716)
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 54.377501174311654)
+            npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 0.4579281911353716)
+            npt.assert_almost_equal(
                 f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
             )
 
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
+            npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+            npt.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
+            npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+            npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-            np.testing.assert_almost_equal(tau[:, 0], np.array([0.4128368, -0.3015095]))
-            np.testing.assert_almost_equal(tau[:, -2], np.array([-0.3927315, 0.2511875]))
+            npt.assert_almost_equal(tau[:, 0], np.array([0.4128368, -0.3015095]))
+            npt.assert_almost_equal(tau[:, -2], np.array([-0.3927315, 0.2511875]))
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 k[:, 0],
                 np.array([-0.0813293, 0.2754021, 0.154386, -0.4924746, 0.0439148, -0.4026935, -0.0874262, 0.1938167]),
             )
-            np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
+            npt.assert_almost_equal(
                 m[:, 0],
                 np.array(
                     [
@@ -524,7 +525,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
                 ),
             )
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 cov[:, -2],
                 np.array(
                     [
@@ -548,7 +549,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
                 ),
             )
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 a[:, 3],
                 np.array(
                     [
@@ -573,7 +574,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
             )
             np.set_printoptions(threshold=30)
             print(c[:, 2])
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 c[:, 2],
                 np.array(
                     [
@@ -610,7 +611,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
                 integrator=SolutionIntegrator.SCIPY_RK45, to_merge=SolutionMerge.NODES
             )
             integrated_stated_covariance = np.cov(integrated_states["q"][:, -1, :])
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 integrated_stated_covariance,
                 np.array([[0.205039, -0.411671], [-0.411671, 0.971819]]),
                 decimal=6,
@@ -627,32 +628,32 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
         )
         if not with_scaling:
             # Check objective function value
-            np.testing.assert_almost_equal(f[0, 0], 62.40222244200586)
+            npt.assert_almost_equal(f[0, 0], 62.40222244200586)
 
             # detailed cost values
-            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 62.40222242539446)
-            np.testing.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.6611394850611363e-08)
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 62.40222242539446)
+            npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.6611394850611363e-08)
+            npt.assert_almost_equal(
                 f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
             )
 
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
+            npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+            npt.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
+            npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+            npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-            np.testing.assert_almost_equal(tau[:, 0], np.array([0.42135681, -0.30494449]))
-            np.testing.assert_almost_equal(tau[:, -2], np.array([-0.39329963, 0.36152636]))
+            npt.assert_almost_equal(tau[:, 0], np.array([0.42135681, -0.30494449]))
+            npt.assert_almost_equal(tau[:, -2], np.array([-0.39329963, 0.36152636]))
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 k[:, 0],
                 np.array(
                     [0.00227125, 0.01943845, -0.00045809, 0.04340353, -0.05890334, -0.02196787, 0.02044042, -0.08280278]
                 ),
             )
-            np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
+            npt.assert_almost_equal(
                 m[:, 0],
                 np.array(
                     [
@@ -676,7 +677,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
                 ),
             )
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 cov[:, -2],
                 np.array(
                     [
@@ -694,7 +695,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
                 ),
             )
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 a[:, 3],
                 np.array(
                     [
@@ -718,7 +719,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
                 ),
             )
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 c[:, 2],
                 np.array(
                     [
@@ -751,14 +752,12 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
             )
         else:
             # Check objective function value
-            np.testing.assert_almost_equal(f[0, 0], 62.40224045726969, decimal=4)
+            npt.assert_almost_equal(f[0, 0], 62.40224045726969, decimal=4)
 
             # detailed cost values
-            np.testing.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 62.40222242578194, decimal=4)
-            np.testing.assert_almost_equal(
-                sol.detailed_cost[1]["cost_value_weighted"], 1.8031487750452925e-05, decimal=4
-            )
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(sol.detailed_cost[0]["cost_value_weighted"], 62.40222242578194, decimal=4)
+            npt.assert_almost_equal(sol.detailed_cost[1]["cost_value_weighted"], 1.8031487750452925e-05, decimal=4)
+            npt.assert_almost_equal(
                 f[0, 0], sum(sol.detailed_cost[i]["cost_value_weighted"] for i in range(len(sol.detailed_cost)))
             )
 
@@ -766,22 +765,22 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
                 return
 
             # initial and final position
-            np.testing.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
-            np.testing.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
-            np.testing.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
-            np.testing.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
+            npt.assert_almost_equal(q[:, 0], np.array([0.34906585, 2.24586773]))
+            npt.assert_almost_equal(q[:, -1], np.array([0.9256103, 1.29037205]))
+            npt.assert_almost_equal(qdot[:, 0], np.array([0, 0]))
+            npt.assert_almost_equal(qdot[:, -1], np.array([0, 0]))
 
-            np.testing.assert_almost_equal(tau[:, 0], np.array([0.42135677, -0.30494447]))
-            np.testing.assert_almost_equal(tau[:, -2], np.array([-0.39329968, 0.3615263]))
+            npt.assert_almost_equal(tau[:, 0], np.array([0.42135677, -0.30494447]))
+            npt.assert_almost_equal(tau[:, -2], np.array([-0.39329968, 0.3615263]))
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 k[:, 0],
                 np.array(
                     [0.38339153, 0.16410165, 0.24810509, 0.42872769, -0.35368849, -0.10938936, 0.14249199, -0.25350259]
                 ),
             )
-            np.testing.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(ref[:, 0], np.array([2.81907786e-02, 2.84412560e-01, 0, 0]))
+            npt.assert_almost_equal(
                 m[:, 0],
                 np.array(
                     [
@@ -805,7 +804,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
                 ),
             )
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 cov[:, -2],
                 np.array(
                     [
@@ -823,7 +822,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
                 ),
             )
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 a[:, 3],
                 np.array(
                     [
@@ -847,7 +846,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
                 ),
             )
 
-            np.testing.assert_almost_equal(
+            npt.assert_almost_equal(
                 c[:, 2],
                 np.array(
                     [

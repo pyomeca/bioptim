@@ -552,13 +552,13 @@ class MultiBiorbdModel:
 
     def muscle_joint_torque(self, activations, q, qdot) -> MX:
         out = MX()
-        for model in self.models:
+        for i, model in enumerate(self.models):
             muscles_states = model.model.stateSet()  # still call from Biorbd
             for k in range(model.nb_muscles):
                 muscles_states[k].setActivation(activations[k])
-            q_biorbd = GeneralizedCoordinates(q)
-            qdot_biorbd = GeneralizedVelocity(qdot)
-            out = vertcat(out, model.model.muscularJointTorque(muscles_states, q_biorbd, qdot_biorbd).to_mx())
+            q_model = q[self.variable_index("q", i)]
+            qdot_model = qdot[self.variable_index("qdot", i)]
+            out = vertcat(out, model.model.muscularJointTorque(muscles_states, q_model, qdot_model).to_mx())
         return out
 
     def markers(self, q) -> Any | list[MX]:

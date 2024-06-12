@@ -3,10 +3,10 @@ Test for file IO
 """
 
 import os
-import platform
 import pytest
 
 import numpy as np
+import numpy.testing as npt
 from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 
 from tests.utils import TestUtils
@@ -44,16 +44,16 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
+    npt.assert_equal(f.shape, (1, 1))
 
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_equal(g.shape, (ns * 20, 1))
-        np.testing.assert_almost_equal(g, np.zeros((ns * 20, 1)), decimal=6)
+        npt.assert_equal(g.shape, (ns * 20, 1))
+        npt.assert_almost_equal(g, np.zeros((ns * 20, 1)), decimal=6)
     else:
-        np.testing.assert_equal(g.shape, (ns * 4, 1))
-        np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
+        npt.assert_equal(g.shape, (ns * 4, 1))
+        npt.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
     # Check some results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -62,35 +62,35 @@ def test_pendulum_min_time_mayer(ode_solver, phase_dynamics):
     tf = sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+    npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     if ode_solver == OdeSolver.IRK:
-        np.testing.assert_almost_equal(f[0, 0], 0.2855606738489079)
+        npt.assert_almost_equal(f[0, 0], 0.2855606738489079)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((87.13363409, 0)), decimal=6)
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99938226, 0)), decimal=6)
+        npt.assert_almost_equal(tau[:, 0], np.array((87.13363409, 0)), decimal=6)
+        npt.assert_almost_equal(tau[:, -1], np.array((-99.99938226, 0)), decimal=6)
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.2855606738489079)
+        npt.assert_almost_equal(tf, 0.2855606738489079)
 
     elif ode_solver == OdeSolver.COLLOCATION:
         pass
 
     elif ode_solver == OdeSolver.RK4:
-        np.testing.assert_almost_equal(f[0, 0], 0.2862324498580764)
+        npt.assert_almost_equal(f[0, 0], 0.2862324498580764)
 
         # initial and final controls
-        np.testing.assert_almost_equal(tau[:, 0], np.array((70.46224716, 0)), decimal=6)
-        np.testing.assert_almost_equal(tau[:, -1], np.array((-99.99964325, 0)), decimal=6)
+        npt.assert_almost_equal(tau[:, 0], np.array((70.46224716, 0)), decimal=6)
+        npt.assert_almost_equal(tau[:, -1], np.array((-99.99964325, 0)), decimal=6)
 
         # optimized time
-        np.testing.assert_almost_equal(tf, 0.2862324498580764)
+        npt.assert_almost_equal(tf, 0.2862324498580764)
     else:
         raise ValueError("Test not implemented")
 
@@ -123,11 +123,11 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     # Check constraints
     g = np.array(sol.constraints)
     if ode_solver == OdeSolver.COLLOCATION:
-        np.testing.assert_equal(g.shape, (ns * 20, 1))
-        np.testing.assert_almost_equal(g, np.zeros((ns * 20, 1)), decimal=6)
+        npt.assert_equal(g.shape, (ns * 20, 1))
+        npt.assert_almost_equal(g, np.zeros((ns * 20, 1)), decimal=6)
     else:
-        np.testing.assert_equal(g.shape, (ns * 4, 1))
-        np.testing.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
+        npt.assert_equal(g.shape, (ns * 4, 1))
+        npt.assert_almost_equal(g, np.zeros((ns * 4, 1)), decimal=6)
 
     # Check some results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -135,20 +135,20 @@ def test_pendulum_min_time_mayer_constrained(ode_solver, phase_dynamics):
     tf = sol.decision_time(to_merge=SolutionMerge.NODES)[-1, 0]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
+    npt.assert_almost_equal(q[:, 0], np.array((0, 0)))
+    npt.assert_almost_equal(q[:, -1], np.array((0, 3.14)))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
-    np.testing.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
+    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0)))
+    npt.assert_almost_equal(qdot[:, -1], np.array((0, 0)))
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
-    np.testing.assert_almost_equal(f[0, 0], min_tf, decimal=4)
+    npt.assert_equal(f.shape, (1, 1))
+    npt.assert_almost_equal(f[0, 0], min_tf, decimal=4)
 
     # optimized time
-    np.testing.assert_almost_equal(tf, min_tf, decimal=4)
+    npt.assert_almost_equal(tf, min_tf, decimal=4)
 
     # simulate
     TestUtils.simulate(sol, decimal_value=6)

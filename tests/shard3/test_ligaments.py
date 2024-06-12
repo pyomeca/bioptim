@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 from casadi import MX, SX
 
@@ -88,12 +89,12 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
     time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
     if with_ligament:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [0.1559945, -47.2537196],
         )
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [0.1559945, -9.7997078],
         )
@@ -154,12 +155,12 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
     time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
     if with_ligament:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [0.1559945, -47.2537196, 0.1834045],
         )
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [0.1559945, -9.7997078, 0.1834045],
         )
@@ -216,13 +217,13 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
     time = np.random.rand(2)
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
     if with_ligament:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [0.155995, -46.234787],
             decimal=6,
         )
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [0.15599, -8.78078],
             decimal=5,
@@ -287,13 +288,13 @@ def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
     x_out = np.array(nlp.dynamics_func(time, states, controls, params, algebraic_states, numerical_timeseries))
 
     if with_ligament:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [2.0584494e-02, 1.8340451e-01, -6.0300944e00, -9.4582028e01],
             decimal=6,
         )
     else:
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             x_out[:, 0],
             [2.0584494e-02, 1.8340451e-01, -7.3880194e00, -9.0642142e01],
             decimal=6,
@@ -332,33 +333,33 @@ def test_ocp_mass_ligament(rigidbody_dynamics, phase_dynamics):
 
     if rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.0194773]))
+        npt.assert_almost_equal(q[:, 0], np.array([0.0]))
+        npt.assert_almost_equal(q[:, -1], np.array([0.0194773]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
+        npt.assert_almost_equal(qdot[:, 0], np.array([0.0]))
+        npt.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
         # initial and final controls
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             tau[:, 0],
             np.array([2.158472e-16]),
             decimal=6,
         )
-        np.testing.assert_almost_equal(tau[:, -1], np.array([1.423733e-17]), decimal=6)
+        npt.assert_almost_equal(tau[:, -1], np.array([1.423733e-17]), decimal=6)
 
     else:
         # initial and final position
-        np.testing.assert_almost_equal(q[:, 0], np.array([0.0]))
-        np.testing.assert_almost_equal(q[:, -1], np.array([0.0194773]))
+        npt.assert_almost_equal(q[:, 0], np.array([0.0]))
+        npt.assert_almost_equal(q[:, -1], np.array([0.0194773]))
         # initial and final velocities
-        np.testing.assert_almost_equal(qdot[:, 0], np.array([0.0]))
-        np.testing.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
+        npt.assert_almost_equal(qdot[:, 0], np.array([0.0]))
+        npt.assert_almost_equal(qdot[:, -1], np.array([-2.3061592]))
         # initial and final controls
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             tau[:, 0],
             np.array([2.158472e-16]),
             decimal=6,
         )
-        np.testing.assert_almost_equal(
+        npt.assert_almost_equal(
             tau[:, -1],
             np.array([1.423733e-17]),
             decimal=6,

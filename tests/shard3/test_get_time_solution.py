@@ -2,6 +2,7 @@ import os
 
 import pytest
 import numpy as np
+import numpy.testing as npt
 
 from bioptim import OdeSolver, Solver, PhaseDynamics, SolutionMerge, TimeAlignment, ControlType, Solution
 
@@ -445,9 +446,9 @@ def test_get_time_aligned_with_controls_multi_phases(
             assert time[-1] == 10.8
     else:
         if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
-            np.testing.assert_almost_equal(time[-1, 0], 4.0)
+            npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
-            np.testing.assert_almost_equal(time[-1, 0], 3.8)
+            npt.assert_almost_equal(time[-1, 0], 3.8)
 
     controls = sol.decision_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES, SolutionMerge.KEYS])
     time = sol.decision_time(
@@ -463,9 +464,9 @@ def test_get_time_aligned_with_controls_multi_phases(
             assert time[-1] == 10.8
     else:
         if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
-            np.testing.assert_almost_equal(time[-1, 0], 4.0)
+            npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
-            np.testing.assert_almost_equal(time[-1, 0], 3.8)
+            npt.assert_almost_equal(time[-1, 0], 3.8)
 
     # Test all the merged combinations against the time for the stepwise variables
     controls_phases = sol.stepwise_controls(to_merge=[])
@@ -536,9 +537,9 @@ def test_get_time_aligned_with_controls_multi_phases(
             assert time[-1] == 10.8
     else:
         if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
-            np.testing.assert_almost_equal(time[-1, 0], 4.0)
+            npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
-            np.testing.assert_almost_equal(time[-1, 0], 3.8)
+            npt.assert_almost_equal(time[-1, 0], 3.8)
 
     controls = sol.stepwise_controls(to_merge=[SolutionMerge.NODES, SolutionMerge.PHASES, SolutionMerge.KEYS])
     time = sol.stepwise_time(
@@ -554,6 +555,6 @@ def test_get_time_aligned_with_controls_multi_phases(
             assert time[-1] == 10.8
     else:
         if control_type in (ControlType.CONSTANT_WITH_LAST_NODE, ControlType.LINEAR_CONTINUOUS):
-            np.testing.assert_almost_equal(time[-1, 0], 4.0)
+            npt.assert_almost_equal(time[-1, 0], 4.0)
         else:
-            np.testing.assert_almost_equal(time[-1, 0], 3.8)
+            npt.assert_almost_equal(time[-1, 0], 3.8)

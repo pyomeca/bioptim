@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import numpy.testing as npt
 import pytest
 from casadi import DM, MX, Function
 
@@ -86,9 +87,9 @@ def test_model_holonomic():
     ):
         model.state_from_partition(MX([1]), MX([4, 5, 3]))
 
-    np.testing.assert_equal(model.nb_independent_joints, 1)
-    np.testing.assert_equal(model.nb_dependent_joints, 2)
-    np.testing.assert_equal(model.nb_holonomic_constraints, 2)
+    npt.assert_equal(model.nb_independent_joints, 1)
+    npt.assert_equal(model.nb_dependent_joints, 2)
+    npt.assert_equal(model.nb_holonomic_constraints, 2)
 
     # symbolic variables
     q = MX([1, 2, 3])
@@ -144,7 +145,7 @@ def test_model_holonomic():
     TestUtils.assert_equal(model.compute_qdot_v(q, qdot_u), [23.18039172, -1.4066566], expand=False)
     TestUtils.assert_equal(model.compute_qdot(q, qdot_u), [4.0, 23.18039172, -1.4066566], expand=False)
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         model.compute_q_v(DM([0.0]), q_v_init=DM([1.0, 1.0])).toarray().squeeze(),
         np.array([2 * np.pi / 3, 2 * np.pi / 3]),
         decimal=6,
@@ -173,7 +174,7 @@ def test_example_two_pendulums():
     sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
 
-    np.testing.assert_almost_equal(
+    npt.assert_almost_equal(
         states["q_u"],
         [
             [1.54, 1.433706, 1.185046, 0.891157, 0.561607, 0.191792, -0.206511, -0.614976, -1.018383, -1.356253, -1.54],

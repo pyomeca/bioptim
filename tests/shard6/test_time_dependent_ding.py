@@ -1,6 +1,6 @@
 from typing import Callable
 import numpy as np
-import pytest
+import numpy.testing as npt
 from casadi import MX, vertcat, exp
 
 import matplotlib.pyplot as plt
@@ -330,18 +330,18 @@ def result_vectors(sol):
 #                 if use_sx:
 #                     # Check cost
 #                     f = np.array(sol.cost)
-#                     np.testing.assert_equal(f.shape, (1, 1))
-#                     np.testing.assert_almost_equal(f[0, 0], 1.06206525e-16)
+#                     npt.assert_equal(f.shape, (1, 1))
+#                     npt.assert_almost_equal(f[0, 0], 1.06206525e-16)
 
 #                     # Check finishing time
-#                     np.testing.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.30085828621020366)
+#                     npt.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.30085828621020366)
 
 #                     # Check constraints
 #                     g = np.array(sol.constraints)
-#                     np.testing.assert_equal(g.shape, (167, 1))
+#                     npt.assert_equal(g.shape, (167, 1))
 
 #                     # Check state values
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)[0]["F"],
 #                         np.array(
 #                             [
@@ -360,7 +360,7 @@ def result_vectors(sol):
 #                         ),
 #                         decimal=8,
 #                     )
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)[4]["F"],
 #                         np.array(
 #                             [
@@ -382,18 +382,18 @@ def result_vectors(sol):
 #                 else:
 #                     # Check cost
 #                     f = np.array(sol.cost)
-#                     np.testing.assert_equal(f.shape, (1, 1))
-#                     np.testing.assert_almost_equal(f[0, 0], 3.4191653e-14)
+#                     npt.assert_equal(f.shape, (1, 1))
+#                     npt.assert_almost_equal(f[0, 0], 3.4191653e-14)
 
 #                     # Check finishing time
-#                     np.testing.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.17539096320913067)
+#                     npt.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.17539096320913067)
 
 #                     # Check constraints
 #                     g = np.array(sol.constraints)
-#                     np.testing.assert_equal(g.shape, (167, 1))
+#                     npt.assert_equal(g.shape, (167, 1))
 
 #                     # Check state values
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)[0]["F"],
 #                         np.array(
 #                             [
@@ -412,7 +412,7 @@ def result_vectors(sol):
 #                         ),
 #                         decimal=8,
 #                     )
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)[4]["F"],
 #                         np.array(
 #                             [
@@ -435,18 +435,18 @@ def result_vectors(sol):
 #             else:
 #                 # Check cost
 #                 f = np.array(sol.cost)
-#                 np.testing.assert_equal(f.shape, (1, 1))
-#                 np.testing.assert_almost_equal(f[0, 0], 3.4191652991854944e-14)
+#                 npt.assert_equal(f.shape, (1, 1))
+#                 npt.assert_almost_equal(f[0, 0], 3.4191652991854944e-14)
 
 #                 # Check finishing time
-#                 np.testing.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.17539096257753187)
+#                 npt.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.17539096257753187)
 
 #                 # Check constraints
 #                 g = np.array(sol.constraints)
-#                 np.testing.assert_equal(g.shape, (113, 1))
+#                 npt.assert_equal(g.shape, (113, 1))
 
 #                 # Check state values
-#                 np.testing.assert_almost_equal(
+#                 npt.assert_almost_equal(
 #                     sol.decision_states(to_merge=SolutionMerge.NODES)[0]["F"],
 #                     np.array(
 #                         [
@@ -465,7 +465,7 @@ def result_vectors(sol):
 #                     ),
 #                     decimal=8,
 #                 )
-#                 np.testing.assert_almost_equal(
+#                 npt.assert_almost_equal(
 #                     sol.decision_states(to_merge=SolutionMerge.NODES)[4]["F"],
 #                     np.array(
 #                         [
@@ -489,18 +489,18 @@ def result_vectors(sol):
 #                 if use_sx:
 #                     # Check cost
 #                     f = np.array(sol.cost)
-#                     np.testing.assert_equal(f.shape, (1, 1))
-#                     np.testing.assert_almost_equal(f[0, 0], 1.0845201701425858e-14)
+#                     npt.assert_equal(f.shape, (1, 1))
+#                     npt.assert_almost_equal(f[0, 0], 1.0845201701425858e-14)
 
 #                     # Check finishing time
-#                     np.testing.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.32261918259098243)
+#                     npt.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.32261918259098243)
 
 #                     # Check constraints
 #                     g = np.array(sol.constraints)
-#                     np.testing.assert_equal(g.shape, (167, 1))
+#                     npt.assert_equal(g.shape, (167, 1))
 
 #                     # Check state values
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)[0]["F"],
 #                         np.array(
 #                             [
@@ -519,7 +519,7 @@ def result_vectors(sol):
 #                         ),
 #                         decimal=8,
 #                     )
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)[4]["F"],
 #                         np.array(
 #                             [
@@ -542,18 +542,18 @@ def result_vectors(sol):
 #                 else:
 #                     # Check cost
 #                     f = np.array(sol.cost)
-#                     np.testing.assert_equal(f.shape, (1, 1))
-#                     np.testing.assert_almost_equal(f[0, 0], 0.0007797767183815109)
+#                     npt.assert_equal(f.shape, (1, 1))
+#                     npt.assert_almost_equal(f[0, 0], 0.0007797767183815109)
 
 #                     # Check finishing time
-#                     np.testing.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.30019830309501244)
+#                     npt.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.30019830309501244)
 
 #                     # Check constraints
 #                     g = np.array(sol.constraints)
-#                     np.testing.assert_equal(g.shape, (167, 1))
+#                     npt.assert_equal(g.shape, (167, 1))
 
 #                     # Check state values
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)[0]["F"],
 #                         np.array(
 #                             [
@@ -572,7 +572,7 @@ def result_vectors(sol):
 #                         ),
 #                         decimal=8,
 #                     )
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)[4]["F"],
 #                         np.array(
 #                             [
@@ -595,18 +595,18 @@ def result_vectors(sol):
 #             else:
 #                 # Check cost
 #                 f = np.array(sol.cost)
-#                 np.testing.assert_equal(f.shape, (1, 1))
-#                 np.testing.assert_almost_equal(f[0, 0], 3.433583564688405e-16)
+#                 npt.assert_equal(f.shape, (1, 1))
+#                 npt.assert_almost_equal(f[0, 0], 3.433583564688405e-16)
 
 #                 # Check finishing time
-#                 np.testing.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.1747389841117835)
+#                 npt.assert_almost_equal(np.cumsum([t[-1] for t in sol.times])[-1], 0.1747389841117835)
 
 #                 # Check constraints
 #                 g = np.array(sol.constraints)
-#                 np.testing.assert_equal(g.shape, (113, 1))
+#                 npt.assert_equal(g.shape, (113, 1))
 
 #                 # Check state values
-#                 np.testing.assert_almost_equal(
+#                 npt.assert_almost_equal(
 #                     sol.decision_states(to_merge=SolutionMerge.NODES)[0]["F"],
 #                     np.array(
 #                         [
@@ -625,7 +625,7 @@ def result_vectors(sol):
 #                     ),
 #                     decimal=8,
 #                 )
-#                 np.testing.assert_almost_equal(
+#                 npt.assert_almost_equal(
 #                     sol.decision_states(to_merge=SolutionMerge.NODES)[4]["F"],
 #                     np.array(
 #                         [
@@ -651,18 +651,18 @@ def result_vectors(sol):
 #                 if use_sx:
 #                     # Check cost
 #                     f = np.array(sol.cost)
-#                     np.testing.assert_equal(f.shape, (1, 1))
-#                     np.testing.assert_almost_equal(f[0, 0], 10075.150679172282)
+#                     npt.assert_equal(f.shape, (1, 1))
+#                     npt.assert_almost_equal(f[0, 0], 10075.150679172282)
 
 #                     # Check finishing time
-#                     np.testing.assert_almost_equal(sol.times[-1], 0.07829884075040208)
+#                     npt.assert_almost_equal(sol.times[-1], 0.07829884075040208)
 
 #                     # Check constraints
 #                     g = np.array(sol.constraints)
-#                     np.testing.assert_equal(g.shape, (31, 1))
+#                     npt.assert_equal(g.shape, (31, 1))
 
 #                     # Check state values
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)["F"][0],
 #                         np.array(
 #                             [
@@ -677,18 +677,18 @@ def result_vectors(sol):
 #                 else:
 #                     # Check cost
 #                     f = np.array(sol.cost)
-#                     np.testing.assert_equal(f.shape, (1, 1))
-#                     np.testing.assert_almost_equal(f[0, 0], 10075.150679172282)
+#                     npt.assert_equal(f.shape, (1, 1))
+#                     npt.assert_almost_equal(f[0, 0], 10075.150679172282)
 
 #                     # Check finishing time
-#                     np.testing.assert_almost_equal(sol.times[-1], 0.07829884075040208)
+#                     npt.assert_almost_equal(sol.times[-1], 0.07829884075040208)
 
 #                     # Check constraints
 #                     g = np.array(sol.constraints)
-#                     np.testing.assert_equal(g.shape, (31, 1))
+#                     npt.assert_equal(g.shape, (31, 1))
 
 #                     # Check state values
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)["F"][0],
 #                         np.array(
 #                             [
@@ -703,18 +703,18 @@ def result_vectors(sol):
 #             else:
 #                 # Check cost
 #                 f = np.array(sol.cost)
-#                 np.testing.assert_equal(f.shape, (1, 1))
-#                 np.testing.assert_almost_equal(f[0, 0], 10075.150679172282)
+#                 npt.assert_equal(f.shape, (1, 1))
+#                 npt.assert_almost_equal(f[0, 0], 10075.150679172282)
 
 #                 # Check finishing time
-#                 np.testing.assert_almost_equal(sol.times[-1], 0.07829884074443676)
+#                 npt.assert_almost_equal(sol.times[-1], 0.07829884074443676)
 
 #                 # Check constraints
 #                 g = np.array(sol.constraints)
-#                 np.testing.assert_equal(g.shape, (21, 1))
+#                 npt.assert_equal(g.shape, (21, 1))
 
 #                 # Check state values
-#                 np.testing.assert_almost_equal(
+#                 npt.assert_almost_equal(
 #                     sol.decision_states(to_merge=SolutionMerge.NODES)["F"][0],
 #                     np.array(
 #                         [
@@ -730,18 +730,18 @@ def result_vectors(sol):
 #                 if use_sx:
 #                     # Check cost
 #                     f = np.array(sol.cost)
-#                     np.testing.assert_equal(f.shape, (1, 1))
-#                     np.testing.assert_almost_equal(f[0, 0], 10075.150679172282)
+#                     npt.assert_equal(f.shape, (1, 1))
+#                     npt.assert_almost_equal(f[0, 0], 10075.150679172282)
 
 #                     # Check finishing time
-#                     np.testing.assert_almost_equal(sol.times[-1], 0.07829884075040208)
+#                     npt.assert_almost_equal(sol.times[-1], 0.07829884075040208)
 
 #                     # Check constraints
 #                     g = np.array(sol.constraints)
-#                     np.testing.assert_equal(g.shape, (31, 1))
+#                     npt.assert_equal(g.shape, (31, 1))
 
 #                     # Check state values
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)["F"][0],
 #                         np.array(
 #                             [
@@ -756,18 +756,18 @@ def result_vectors(sol):
 #                 else:
 #                     # Check cost
 #                     f = np.array(sol.cost)
-#                     np.testing.assert_equal(f.shape, (1, 1))
-#                     np.testing.assert_almost_equal(f[0, 0], 10075.150679172282)
+#                     npt.assert_equal(f.shape, (1, 1))
+#                     npt.assert_almost_equal(f[0, 0], 10075.150679172282)
 
 #                     # Check finishing time
-#                     np.testing.assert_almost_equal(sol.times[-1], 0.07829884075040208)
+#                     npt.assert_almost_equal(sol.times[-1], 0.07829884075040208)
 
 #                     # Check constraints
 #                     g = np.array(sol.constraints)
-#                     np.testing.assert_equal(g.shape, (31, 1))
+#                     npt.assert_equal(g.shape, (31, 1))
 
 #                     # Check state values
-#                     np.testing.assert_almost_equal(
+#                     npt.assert_almost_equal(
 #                         sol.decision_states(to_merge=SolutionMerge.NODES)["F"][0],
 #                         np.array(
 #                             [
@@ -782,18 +782,18 @@ def result_vectors(sol):
 #             else:
 #                 # Check cost
 #                 f = np.array(sol.cost)
-#                 np.testing.assert_equal(f.shape, (1, 1))
-#                 np.testing.assert_almost_equal(f[0, 0], 10075.150679172282)
+#                 npt.assert_equal(f.shape, (1, 1))
+#                 npt.assert_almost_equal(f[0, 0], 10075.150679172282)
 
 #                 # Check finishing time
-#                 np.testing.assert_almost_equal(sol.times[-1], 0.07829884074443676)
+#                 npt.assert_almost_equal(sol.times[-1], 0.07829884074443676)
 
 #                 # Check constraints
 #                 g = np.array(sol.constraints)
-#                 np.testing.assert_equal(g.shape, (21, 1))
+#                 npt.assert_equal(g.shape, (21, 1))
 
 #                 # Check state values
-#                 np.testing.assert_almost_equal(
+#                 npt.assert_almost_equal(
 #                     sol.decision_states(to_merge=SolutionMerge.NODES)["F"][0],
 #                     np.array(
 #                         [

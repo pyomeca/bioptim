@@ -1,6 +1,7 @@
 import os
 
 import numpy as np
+import numpy.testing as npt
 from bioptim import OdeSolver, PhaseDynamics, SolutionMerge
 import pytest
 
@@ -28,16 +29,16 @@ def test_soft_contact(phase_dynamics):
 
     # Check objective function value
     f = np.array(sol.cost)
-    np.testing.assert_equal(f.shape, (1, 1))
+    npt.assert_equal(f.shape, (1, 1))
     if isinstance(ode_solver, OdeSolver.RK8):
-        np.testing.assert_almost_equal(f[0, 0], 23.679065887950706)
+        npt.assert_almost_equal(f[0, 0], 23.679065887950706)
     else:
-        np.testing.assert_almost_equal(f[0, 0], 41.58259426)
+        npt.assert_almost_equal(f[0, 0], 41.58259426)
 
     # Check constraints
     g = np.array(sol.constraints)
-    np.testing.assert_equal(g.shape, (228, 1))
-    np.testing.assert_almost_equal(g, np.zeros((228, 1)))
+    npt.assert_equal(g.shape, (228, 1))
+    npt.assert_almost_equal(g, np.zeros((228, 1)))
 
     # Check some of the results
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
@@ -45,13 +46,13 @@ def test_soft_contact(phase_dynamics):
     q, qdot, tau = states["q"], states["qdot"], controls["tau"]
 
     # initial and final position
-    np.testing.assert_almost_equal(q[:, 0], np.array((0, 0, 0)), decimal=1)
-    np.testing.assert_almost_equal(q[:, -1], np.array([0.05, 0.0933177, -0.62620287]))
+    npt.assert_almost_equal(q[:, 0], np.array((0, 0, 0)), decimal=1)
+    npt.assert_almost_equal(q[:, -1], np.array([0.05, 0.0933177, -0.62620287]))
 
     # initial and final velocities
-    np.testing.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)), decimal=4)
-    np.testing.assert_almost_equal(qdot[:, -1], np.array([2.03004523e-01, -1.74795966e-05, -2.53770131e00]))
+    npt.assert_almost_equal(qdot[:, 0], np.array((0, 0, 0)), decimal=4)
+    npt.assert_almost_equal(qdot[:, -1], np.array([2.03004523e-01, -1.74795966e-05, -2.53770131e00]))
 
     # initial and final controls
-    np.testing.assert_almost_equal(tau[:, 0], np.array([-0.16347455, 0.02123226, -13.25955361]))
-    np.testing.assert_almost_equal(tau[:, -1], np.array([0.00862357, -0.00298151, -0.16425701]))
+    npt.assert_almost_equal(tau[:, 0], np.array([-0.16347455, 0.02123226, -13.25955361]))
+    npt.assert_almost_equal(tau[:, -1], np.array([0.00862357, -0.00298151, -0.16425701]))

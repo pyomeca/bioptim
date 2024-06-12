@@ -10,15 +10,15 @@ class PenaltyProtocol(Protocol):
     transition: bool  # If the penalty is a transition penalty
     multinode_penalty: bool  # If the penalty is a multinode penalty
     phase: int  # The phase of the penalty (only for non multinode or transition penalties)
-    nodes_phase: list[int, ...]  # The phases of the penalty (only for multinode penalties)
-    node_idx: list[int, ...]  # The node index of the penalty (only for non multinode or transition penalties)
-    multinode_idx: list[int, ...]  # The node index of the penalty (only for multinode penalties)
+    nodes_phase: list[int]  # The phases of the penalty (only for multinode penalties)
+    node_idx: list[int]  # The node index of the penalty (only for non multinode or transition penalties)
+    multinode_idx: list[int]  # The node index of the penalty (only for multinode penalties)
     subnodes_are_decision_states: list[bool]  # If the subnodes are decision states (e.g. collocation points)
     integrate: bool  # If the penalty is an integral penalty
     derivative: bool  # If the penalty is a derivative penalty
     explicit_derivative: bool  # If the penalty is an explicit derivative penalty
     phase_dynamics: list[PhaseDynamics]  # The dynamics of the penalty (only for multinode penalties)
-    ns = list[int, ...]  # The number of shooting points of problem (only for multinode penalties)
+    ns = list[int]  # The number of shooting points of problem (only for multinode penalties)
     control_types: ControlType  # The control type of the penalties
 
 

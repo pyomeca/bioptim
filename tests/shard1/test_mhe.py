@@ -4,6 +4,7 @@ import shutil
 from sys import platform
 
 import numpy as np
+import numpy.testing as npt
 from bioptim import (
     BiorbdModel,
     Solver,
@@ -75,7 +76,7 @@ def test_mhe(solver, phase_dynamics):
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
     if solver.type == SolverType.ACADOS:
         # Compare the position on the first few frames (only ACADOS, since IPOPT is not precise with current options)
-        np.testing.assert_almost_equal(states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len], decimal=3)
+        npt.assert_almost_equal(states["q"][:, : -2 * window_len], target_q[:nq, : -3 * window_len], decimal=3)
         # Clean test folder
         os.remove(f"./acados_ocp.json")
         shutil.rmtree(f"./c_generated_code/")
