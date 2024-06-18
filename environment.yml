@@ -3,7 +3,7 @@ name: bioptim
 channels:
 - conda-forge
 dependencies:
-- biorbd >=1.9.9
+- biorbd >=1.11.0
 - bioviz
 - python-graphviz
 - pyqtgraph
