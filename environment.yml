@@ -6,3 +6,4 @@ dependencies:
 - biorbd >=1.11.1
 - matplotlib
 - pyqtgraph
+- python-graphviz
