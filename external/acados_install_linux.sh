@@ -20,14 +20,9 @@ NB_CPU=`cat /proc/cpuinfo | grep processor | wc -l`
 ARG1=${1:-$NB_CPU}
 if [ -z "$1" ]; then
   echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs ($ARG1)."
-  echo ""
 fi
-
-if [ "$1" ]; then
-	echo "  Number of threads for acados with openMP asked : NB_CPU=$1"
-	echo ""
-fi
-
+echo "  Number of threads for acados with openMP: NB_CPU=$1"
+echo ""
 
 ARG2=${2:-$CONDA_PREFIX}
 if [ -z "$ARG2" ]; then
@@ -35,12 +30,11 @@ if [ -z "$ARG2" ]; then
   echo "  Please provide a path for installation"
   exit 1
 fi
-
 if [ -z "$2" ]; then
   echo "  Argument 2 (CMAKE_INSTALL_PREFIX) not provided, falling back on CONDA_PREFIX"
-  echo "  CONDA_PREFIX=$CONDA_PREFIX"
-  echo ""
 fi
+echo "  CMAKE_INSTALL_PREFIX set to $CONDA_PREFIX"
+echo ""
 
 ARG3=${3:-X64_AUTOMATIC}
 if [ -z "$3" ]; then
