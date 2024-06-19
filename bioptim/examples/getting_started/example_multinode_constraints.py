@@ -31,7 +31,7 @@ from bioptim import (
 
 
 def custom_multinode_constraint(
-    controllers: list[PenaltyController, ...], coef: float, states_mapping: BiMapping = None
+    controllers: list[PenaltyController], coef: float, states_mapping: BiMapping = None
 ) -> MX:
     """
     The constraint of the transition. The values from the end of the phase to the next are multiplied by coef to
@@ -42,7 +42,7 @@ def custom_multinode_constraint(
 
     Parameters
     ----------
-    controllers: list[PenaltyController, ...]
+    controllers: list[PenaltyController]
         All the controller for the penalties
     coef: float
         The coefficient of the phase transition (makes no physical sens)

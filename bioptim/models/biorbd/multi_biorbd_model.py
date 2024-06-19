@@ -725,7 +725,7 @@ class MultiBiorbdModel:
     def ranges_from_model(self, variable: str):
         return [the_range for model in self.models for the_range in model.ranges_from_model(variable)]
 
-    def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
+    def bounds_from_ranges(self, variables: str | list[str], mapping: BiMapping | BiMappingList = None) -> Bounds:
         return bounds_from_ranges(self, variables, mapping)
 
     def _var_mapping(self, key: str, range_for_mapping: int | list | tuple | range, mapping: BiMapping = None) -> dict:

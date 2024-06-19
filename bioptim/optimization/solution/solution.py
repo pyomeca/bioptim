@@ -373,7 +373,7 @@ class Solution:
 
         Parameters
         ----------
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
+        to_merge: SolutionMerge | list[SolutionMerge]
             The type of merge to perform. If None, then no merge is performed. It is often useful to merge NODES, but
             is completely useless to merge KEYS
         time_alignment: TimeAlignment
@@ -404,7 +404,7 @@ class Solution:
 
         Parameters
         ----------
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
+        to_merge: SolutionMerge | list[SolutionMerge]
             The type of merge to perform. If None, then no merge is performed. It is often useful to merge NODES, but
             is completely useless to merge KEYS
         time_alignment: TimeAlignment
@@ -533,7 +533,7 @@ class Solution:
         scaled: bool
             If the decision states should be scaled or not (note that scaled is as Ipopt received them, while unscaled
             is as the model needs temps). If you don't know what it means, you probably want the unscaled version.
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
+        to_merge: SolutionMerge | list[SolutionMerge]
             The type of merge to perform. If None, then no merge is performed.
 
         Returns
@@ -555,7 +555,7 @@ class Solution:
         scaled: bool
             If the states should be scaled or not (note that scaled is as Ipopt received them, while unscaled is as the
             model needs temps). If you don't know what it means, you probably want the unscaled version.
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
+        to_merge: SolutionMerge | list[SolutionMerge]
             The type of merge to perform. If None, then no merge is performed.
 
         Returns
@@ -580,7 +580,7 @@ class Solution:
         scaled : bool
             If the decision controls should be scaled or not (note that scaled is as Ipopt received them, while unscaled
             is as the model needs temps). If you don't know what it means, you probably want the unscaled version.
-        to_merge : SolutionMerge | list[SolutionMerge, ...]
+        to_merge : SolutionMerge | list[SolutionMerge]
             The type of merge to perform. If None, then no merge is performed.
         """
         return self.stepwise_controls(scaled=scaled, to_merge=to_merge)
@@ -594,7 +594,7 @@ class Solution:
         scaled: bool
             If the controls should be scaled or not (note that scaled is as Ipopt received them, while unscaled is as
             the model needs temps). If you don't know what it means, you probably want the unscaled version.
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
+        to_merge: SolutionMerge | list[SolutionMerge]
             The type of merge to perform. If None, then no merge is performed.
 
         Returns
@@ -660,7 +660,7 @@ class Solution:
         scaled: bool
             If the decision states should be scaled or not (note that scaled is as Ipopt received them, while unscaled
             is as the model needs temps). If you don't know what it means, you probably want the unscaled version.
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
+        to_merge: SolutionMerge | list[SolutionMerge]
             The type of merge to perform. If None, then no merge is performed.
 
         Returns
@@ -769,7 +769,7 @@ class Solution:
             The integration shooting type to use
         integrator: SolutionIntegrator
             The type of integrator to use
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
+        to_merge: SolutionMerge | list[SolutionMerge]
             The type of merge to perform. If None, then no merge is performed.
         duplicated_times: bool
             If the times should be duplicated for each node.
@@ -1096,7 +1096,7 @@ class Solution:
         Returns the time vector at each node that matches stepwise_states or stepwise_controls
         Parameters
         ----------
-        to_merge: SolutionMerge | list[SolutionMerge, ...]
+        to_merge: SolutionMerge | list[SolutionMerge]
             The merge type to perform. If None, then no merge is performed.
         duplicated_times: bool
             If the times should be duplicated for each node.

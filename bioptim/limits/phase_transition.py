@@ -142,7 +142,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         def continuous(
             transition,
             controllers: list[PenaltyController, PenaltyController],
-            states_mapping: list[BiMapping, ...] = None,
+            states_mapping: list[BiMapping] = None,
         ):
             """
             The most common continuity function, that is state before equals state after
@@ -173,7 +173,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
         def continuous_controls(
             transition,
             controllers: list[PenaltyController, PenaltyController],
-            controls_mapping: list[BiMapping, ...] = None,
+            controls_mapping: list[BiMapping] = None,
         ):
             """
             This continuity function is only relevant for ControlType.LINEAR_CONTINUOUS otherwise don't use it.

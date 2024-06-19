@@ -778,7 +778,7 @@ class PlotOcp:
             The custom plot to compute
         phase_idx: int
             The index of the current phase
-        time_stepwise: list[list[DM], ...]
+        time_stepwise: list[list[DM]]
             The time vector of each phase
         dt
             The delta times of the current phase
