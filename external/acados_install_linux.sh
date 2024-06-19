@@ -9,19 +9,17 @@ if [ ! -f acados/CMakeLists.txt ]; then
   git submodule update --recursive --init
 fi
 
-
 # Check if everything required by the script is present
 echo "Processing arguments"
 echo ""
 
-NB_CPU=`cat /proc/cpuinfo | grep processor | wc -l`
-
 # Check if there are a number of CPUs for Acados multiprocessing
-ARG1=${1:-$NB_CPU}
+NB_CPU_MAX=`cat /proc/cpuinfo | grep processor | wc -l`
+ARG1=${1:-$NB_CPU_MAX}
 if [ -z "$1" ]; then
-  echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs ($ARG1)."
+  echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs ($NB_CPU_MAX)."
 fi
-echo "  Number of threads for acados with openMP: NB_CPU=$1"
+echo "  Number of threads for acados with openMP: NB_CPU=$ARG1"
 echo ""
 
 ARG2=${2:-$CONDA_PREFIX}
@@ -33,7 +31,7 @@ fi
 if [ -z "$2" ]; then
   echo "  Argument 2 (CMAKE_INSTALL_PREFIX) not provided, falling back on CONDA_PREFIX"
 fi
-echo "  CMAKE_INSTALL_PREFIX set to $CONDA_PREFIX"
+echo "  set CMAKE_INSTALL_PREFIX=$ARG2"
 echo ""
 
 ARG3=${3:-X64_AUTOMATIC}
@@ -55,17 +53,17 @@ mkdir acados/build
 cd acados/build
 
 # Run cmake
-cmake . .. \
-  -DACADOS_INSTALL_DIR="$ARG2"\
-  -DACADOS_PYTHON=ON\
-  -DACADOS_WITH_QPOASES=ON\
-  -DACADOS_WITH_OSQP=ON\
-  -DACADOS_WITH_QPDUNES=ON\
-  -DBLASFEO_TARGET="$ARG3"\
-  -DCMAKE_INSTALL_PREFIX="$ARG2"\
-  -DACADOS_WITH_OPENMP=ON\
-  -DACADOS_NUM_THREADS="$ARG1"
-make install -j$NB_CPU
+cmake .. \
+  -DCMAKE_INSTALL_PREFIX="$ARG2" \
+  -DACADOS_INSTALL_DIR="$ARG2" \
+  -DACADOS_PYTHON=ON \
+  -DACADOS_WITH_QPOASES=ON \
+  -DACADOS_WITH_OSQP=ON \
+  -DACADOS_WITH_QPDUNES=ON \
+  -DBLASFEO_TARGET="$ARG3" \
+  -DACADOS_WITH_OPENMP=ON \
+  -DACADOS_NUM_THREADS=$ARG1
+make install -j$NB_CPU_MAX
 
 
 

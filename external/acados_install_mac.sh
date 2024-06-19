@@ -14,13 +14,12 @@ echo "Processing arguments"
 echo ""
 
 # Check if there are a number of CPUs for Acados multiprocessing
-ARG1=${1:NB_CPU}
-if [ -z "$ARG1" ]; then
-  ARG1=`getconf _NPROCESSORS_ONLN` 
-  echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs ($ARG1)."
-  echo ""
+NB_CPU_MAX=`getconf _NPROCESSORS_ONLN` 
+ARG1=${1:-$NB_CPU_MAX}
+if [ -z "$1" ]; then
+  echo "  Argument 1 (NB_CPU) not provided, falling back on maximum number of CPUs ($NB_CPU_MAX)."
 fi
-echo "  Number of threads for acados with openMP : NB_CPU=$NB_CPU"
+echo "  Number of threads for acados with openMP: NB_CPU=$ARG1"
 echo ""
 
 ARG2=${2:-$CONDA_PREFIX}
@@ -32,14 +31,15 @@ fi
 if [ -z "$2" ]; then
   echo "  Argument 2 (CMAKE_INSTALL_PREFIX) not provided, falling back on CONDA_PREFIX"
 fi
-echo "  set CMAKE_INSTALL_PREFIX=$CONDA_PREFIX"
+echo "  set CMAKE_INSTALL_PREFIX=$ARG2"
 echo ""
 
 ARG3=${3:-X64_AUTOMATIC}
 if [ -z "$3" ]; then
   echo "  Argument 3 (BLASFEO_TARGET) not provided, falling back on X64_AUTOMATIC"
-  echo ""
 fi
+echo "  set BLASFEO_TARGET=$ARG3"
+echo ""
 
 
 # Preparing environment
@@ -55,19 +55,18 @@ mkdir acados/build
 cd acados/build
 
 # Run cmake
-cmake .. \  
-  --compile-no-warning-as-error \
-  -DACADOS_INSTALL_DIR="$ARG2"\
-  -DACADOS_PYTHON=ON\
-  -DACADOS_WITH_QPOASES=ON\
-  -DACADOS_WITH_OSQP=ON\
-  -DBLASFEO_TARGET="$ARG3"\
-  -DCMAKE_INSTALL_PREFIX="$ARG2"\
-  -DACADOS_WITH_OPENMP=ON\
-  -DACADOS_NUM_THREADS="$ARG1"
-make install -j$CPU_COUNT
-
-
+cmake .. \
+  -DCMAKE_INSTALL_PREFIX="$ARG2" \
+  -DACADOS_INSTALL_DIR="$ARG2" \
+  -DACADOS_PYTHON=ON \
+  -DACADOS_WITH_OSQP=ON \
+  -DBLASFEO_TARGET="$ARG3" \
+  -DACADOS_WITH_OPENMP=ON \
+  -DACADOS_NUM_THREADS=$ARG1
+  # The following two won't compile on Mac
+  # -DACADOS_WITH_QPOASES=ON \
+  # -DACADOS_WITH_QPDUNES=ON \
+make install -j$NB_CPU_MAX
 
 # Prepare the Python interface
 cd ../interfaces/acados_template
