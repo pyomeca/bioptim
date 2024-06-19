@@ -58,7 +58,8 @@ mkdir acados/build
 cd acados/build
 
 # Run cmake
-cmake . .. \
+cmake .. \  
+  --compile-no-warning-as-error \
   -DACADOS_INSTALL_DIR="$ARG2"\
   -DACADOS_PYTHON=ON\
   -DACADOS_WITH_QPOASES=ON\

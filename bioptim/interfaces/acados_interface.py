@@ -851,9 +851,9 @@ class AcadosInterface(SolverInterface):
         out = {
             "x": [],
             "u": acados_u,
-            "solver_time_to_optimize": self.ocp_solver.get_stats("time_tot")[0],
+            "solver_time_to_optimize": self.ocp_solver.get_stats("time_tot"),
             "real_time_to_optimize": self.real_time_to_optimize,
-            "iter": self.ocp_solver.get_stats("sqp_iter")[0],
+            "iter": self.ocp_solver.get_stats("sqp_iter"),
             "status": self.status,
             "solver": SolverType.ACADOS,
         }
