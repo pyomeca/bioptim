@@ -223,7 +223,7 @@ class NewVariableConfiguration:
             and name in getattr(nlp[use_from_phase_idx], decision_variable_attribute)
         )
 
-    def define_cx_scaled(self, n_col: int, n_shooting: int, initial_node) -> list[MX | SX, ...]:
+    def define_cx_scaled(self, n_col: int, n_shooting: int, initial_node) -> list[MX | SX]:
         """
         This function defines the decision variables, either MX or SX,
         scaled to the physical world, they mean something according to the physical model considered.
@@ -259,7 +259,7 @@ class NewVariableConfiguration:
                     )
         return _cx
 
-    def define_cx_unscaled(self, _cx_scaled: list[MX | SX, ...], scaling: np.ndarray) -> list[MX | SX, ...]:
+    def define_cx_unscaled(self, _cx_scaled: list[MX | SX], scaling: np.ndarray) -> list[MX | SX]:
         """
         This function defines the decision variables, either MX or SX,
         unscaled means here the decision variable doesn't correspond to physical quantity.
@@ -269,7 +269,7 @@ class NewVariableConfiguration:
 
         Parameters
         ---------
-        _cx_scaled: list[MX | SX, ...]
+        _cx_scaled: list[MX | SX]
             Decision variables scaled to the physical world
         scaling: np.ndarray
             The scaling factors associated to the decision variable

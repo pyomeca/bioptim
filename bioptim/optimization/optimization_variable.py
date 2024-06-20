@@ -39,7 +39,7 @@ class OptimizationVariable:
         name: str,
         mx: MX,
         cx_start: list | None,
-        index: [range, list],
+        index: range | list,
         mapping: BiMapping = None,
         parent_list=None,
     ):
@@ -50,7 +50,7 @@ class OptimizationVariable:
             The name of the variable
         mx: MX
             The MX variable associated with this variable
-        index: [range, list]
+        index: range | list
             The indices to find this variable
         parent_list: OptimizationVariableList
             The list the OptimizationVariable is in
@@ -58,7 +58,7 @@ class OptimizationVariable:
         self.name: str = name
         self.mx: MX = mx
         self.original_cx: list = cx_start
-        self.index: [range, list] = index
+        self.index: range | list = index
         self.mapping: BiMapping = mapping
         self.parent_list: OptimizationVariableList = parent_list
 
@@ -494,8 +494,8 @@ class OptimizationVariableContainer:
             user sets it to something else)
         """
         self.cx_constructor = None
-        self._unscaled: list[OptimizationVariableList, ...] = []
-        self._scaled: list[OptimizationVariableList, ...] = []
+        self._unscaled: list[OptimizationVariableList] = []
+        self._scaled: list[OptimizationVariableList] = []
         self._node_index = 0  # TODO: [0] to [node_index]
         self.phase_dynamics = phase_dynamics
 

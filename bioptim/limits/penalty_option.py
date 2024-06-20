@@ -67,7 +67,7 @@ class PenaltyOption(OptionGeneric):
     _check_target_dimensions(self, controller: PenaltyController, n_frames: int)
         Checks if the variable index is consistent with the requested variable.
         If the function returns, all is okay
-    _set_penalty_function(self, controller: list[PenaltyController, ...], fcn: MX | SX)
+    _set_penalty_function(self, controller: list[PenaltyController], fcn: MX | SX)
         Finalize the preparation of the penalty (setting function and weighted_function)
     add_target_to_plot(self, controller: PenaltyController, combine_to: str)
         Interface to the plot so it can be properly added to the proper plot
@@ -75,7 +75,7 @@ class PenaltyOption(OptionGeneric):
         Internal interface to add (after having check the target dimensions) the target to the plot if needed
     add_or_replace_to_penalty_pool(self, ocp, nlp)
         Doing some configuration on the penalty and add it to the list of penalty
-    _add_penalty_to_pool(self, controller: list[PenaltyController, ...])
+    _add_penalty_to_pool(self, controller: list[PenaltyController])
         Return the penalty pool for the specified penalty (abstract)
     ensure_penalty_sanity(self, ocp, nlp)
         Resets a penalty. A negative penalty index creates a new empty penalty (abstract)
@@ -332,7 +332,7 @@ class PenaltyOption(OptionGeneric):
 
         return diag(fcn_variation)
 
-    def _set_phase_dynamics(self, controllers: list[PenaltyController, ...]):
+    def _set_phase_dynamics(self, controllers: list[PenaltyController]):
         phase_dynamics = [c.get_nlp.phase_dynamics for c in controllers]
         if self.phase_dynamics:
             # If it was already set (e.g. for multinode), we want to make sure it is consistent

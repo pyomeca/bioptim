@@ -85,7 +85,7 @@ class MultinodePenalty(PenaltyOption):
     def _get_pool_to_add_penalty(self, ocp, nlp):
         raise NotImplementedError("This is an abstract method and should be implemented by child")
 
-    def _add_penalty_to_pool(self, controller: list[PenaltyController, ...]):
+    def _add_penalty_to_pool(self, controller: list[PenaltyController]):
 
         controller = controller[0]  # This is a special case of Node.TRANSITION
 
@@ -124,9 +124,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         @staticmethod
         def states_equality(
             penalty,
-            controllers: list[PenaltyController, ...],
+            controllers: list[PenaltyController],
             key: str = "all",
-            states_mapping: list[BiMapping, ...] = None,
+            states_mapping: list[BiMapping] = None,
         ):
             """
             The most common continuity function, that is state before equals state after
@@ -171,7 +171,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def controls_equality(penalty, controllers: list[PenaltyController, ...], key: str = "all"):
+        def controls_equality(penalty, controllers: list[PenaltyController], key: str = "all"):
             """
             The controls before equals controls after
 
@@ -179,7 +179,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             ----------
             penalty : MultinodePenalty
                 A reference to the penalty
-            controllers: list[PenaltyController, ...]
+            controllers: list[PenaltyController]
                     The penalty node elements
 
             Returns
@@ -210,7 +210,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
         @staticmethod
         def algebraic_states_equality(
             penalty,
-            controllers: list[PenaltyController, ...],
+            controllers: list[PenaltyController],
             key: str = "all",
         ):
             """
@@ -249,7 +249,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def com_equality(penalty, controllers: list[PenaltyController, ...]):
+        def com_equality(penalty, controllers: list[PenaltyController]):
             """
             The centers of mass are equals for the specified phases and the specified nodes
 
@@ -257,7 +257,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             ----------
             penalty : MultinodePenalty
                 A reference to the penalty
-            controllers: list[PenaltyController, ...]
+            controllers: list[PenaltyController]
                     The penalty node elements
 
             Returns
@@ -277,7 +277,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return out
 
         @staticmethod
-        def com_velocity_equality(penalty, controllers: list[PenaltyController, ...]):
+        def com_velocity_equality(penalty, controllers: list[PenaltyController]):
             """
             The centers of mass velocity are equals for the specified phases and the specified nodes
 
@@ -285,7 +285,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             ----------
             penalty : MultinodePenalty
                 A reference to the penalty
-            controllers: list[PenaltyController, ...]
+            controllers: list[PenaltyController]
                     The penalty node elements
 
             Returns
@@ -651,7 +651,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             return penalty.custom_function(controllers, **extra_parameters)
 
         @staticmethod
-        def _prepare_controller_cx(penalty, controllers: list[PenaltyController, ...]):
+        def _prepare_controller_cx(penalty, controllers: list[PenaltyController]):
             """
             This calls the _compute_controller_cx function for each of the controller then dispatch the cx appropriately
             to the controllers
@@ -667,7 +667,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 c.cx_index_to_get = index
 
         @staticmethod
-        def _prepare_states_mapping(controllers: list[PenaltyController, ...], states_mapping: list[BiMapping, ...]):
+        def _prepare_states_mapping(controllers: list[PenaltyController], states_mapping: list[BiMapping]):
             """
             Prepare a new state_mappings if None is sent. Otherwise, it simply returns the current states_mapping
 

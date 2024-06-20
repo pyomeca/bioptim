@@ -22,7 +22,7 @@ jobs:
     steps:
       - name: Set prefix osx
         run: |
-          echo "PREFIX=${{ env.PREFIX_macOS }}" >> $GITHUB_ENV
+          echo "PREFIX=${{ env.PREFIX_MACOS }}" >> $GITHUB_ENV
         if: matrix.os == 'macos-latest'
 
       - name: Set prefix windows

@@ -260,7 +260,7 @@ class BioModel(Protocol):
     def ligament_joint_torque(self, q, qdot) -> MX:
         """Get the ligament joint torque"""
 
-    def bounds_from_ranges(self, variables: str | list[str, ...], mapping: BiMapping | BiMappingList = None) -> Bounds:
+    def bounds_from_ranges(self, variables: str | list[str], mapping: BiMapping | BiMappingList = None) -> Bounds:
         """
         Create bounds from ranges of the model depending on the variable chosen, such as q, qdot, qddot
 
@@ -325,11 +325,7 @@ class BioModel(Protocol):
 
     @staticmethod
     def animate(
-        ocp,
-        solution: "SolutionData",
-        show_now: bool = True,
-        tracked_markers: list[np.ndarray, ...] = None,
-        **kwargs: Any
+        ocp, solution: "SolutionData", show_now: bool = True, tracked_markers: list[np.ndarray] = None, **kwargs: Any
     ) -> None | list:
         """
         Animate a solution
@@ -340,7 +336,7 @@ class BioModel(Protocol):
             The solution to animate
         show_now: bool
             If the animation should be shown immediately or not
-        tracked_markers: list[np.ndarray, ...]
+        tracked_markers: list[np.ndarray]
             The tracked markers (3, n_markers, n_frames)
         kwargs: dict
             The options to pass to the animator

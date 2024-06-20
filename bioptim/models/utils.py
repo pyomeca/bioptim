@@ -62,7 +62,7 @@ def bounds_from_ranges(model, key: str, mapping: BiMapping | BiMappingList = Non
     ----------
     model: bio_model
         such as BiorbdModel or MultiBiorbdModel
-    key: str | list[str, ...]
+    key: str | list[str]
         The variables to generate the bounds from, such as "q", "qdot", "qddot", or ["q", "qdot"],
     mapping: BiMapping | BiMappingList
         The mapping to use to generate the bounds. If None, the default mapping is built
