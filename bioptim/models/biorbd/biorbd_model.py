@@ -6,7 +6,7 @@ from biorbd_casadi import (
     GeneralizedTorque,
     GeneralizedAcceleration,
 )
-from casadi import SX, MX, vertcat, horzcat, norm_fro
+from casadi import SX, MX, vertcat, horzcat, norm_fro, Function
 from typing import Callable, Any
 
 from ..utils import _var_mapping, bounds_from_ranges
@@ -208,14 +208,20 @@ class BiorbdModel:
         qdot_biorbd = GeneralizedVelocity(qdot)
         return self.model.angularMomentum(q_biorbd, qdot_biorbd, True).to_mx()
 
-    def reshape_qdot(self, q, qdot, k_stab=1) -> MX:
-        self.check_q_size(q)
-        self.check_qdot_size(qdot)
-        return self.model.computeQdot(
-            GeneralizedCoordinates(q),
-            GeneralizedCoordinates(qdot),  # mistake in biorbd
+    def reshape_qdot(self, k_stab=1) -> MX:
+        q_mx_reduced = MX.sym("q_mx_reduced", self.nb_q, 1)
+        qdot_mx_reduced = MX.sym("qdot_mx_reduced", self.nb_qdot, 1)
+        biorbd_return = self.model.computeQdot(
+            GeneralizedCoordinates(q_mx_reduced),
+            GeneralizedCoordinates(qdot_mx_reduced),  # mistake in biorbd
             k_stab,
         ).to_mx()
+        casadi_fun = Function(
+            "reshape_qdot",
+            [q_mx_reduced, qdot_mx_reduced],
+            [biorbd_return],
+        )
+        return casadi_fun
 
     def segment_angular_velocity(self, q, qdot, idx) -> MX:
         """
@@ -345,16 +351,22 @@ class BiorbdModel:
 
         return external_forces_set
 
-    def forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
-        self.check_q_size(q)
-        self.check_qdot_size(qdot)
-        self.check_tau_size(tau)
+    def forward_dynamics(self, external_forces=None, translational_forces=None) -> MX:
+        q_mx_reduced = MX.sym("q_mx_reduced", self.nb_q, 1)
+        qdot_mx_reduced = MX.sym("qdot_mx_reduced", self.nb_qdot, 1)
+        tau_mx_reduced = MX.sym("tau_mx_reduced", self.nb_tau, 1)
         external_forces_set = self._dispatch_forces(external_forces, translational_forces)
 
-        q_biorbd = GeneralizedCoordinates(q)
-        qdot_biorbd = GeneralizedVelocity(qdot)
-        tau_biorbd = GeneralizedTorque(tau)
-        return self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
+        q_biorbd = GeneralizedCoordinates(q_mx_reduced)
+        qdot_biorbd = GeneralizedVelocity(qdot_mx_reduced)
+        tau_biorbd = GeneralizedTorque(tau_mx_reduced)
+        biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
+        casadi_fun = Function(
+            "forward_dynamics",
+            [q_mx_reduced, qdot_mx_reduced, tau_mx_reduced],
+            [biorbd_return],
+        )
+        return casadi_fun
 
     def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
         external_forces_set = self._dispatch_forces(external_forces, translational_forces)
