@@ -294,21 +294,21 @@ class ConfigureProblem:
                 external_forces=external_forces,
             )
 
-        # Configure the contact forces
-        if with_contact:
-            ConfigureProblem.configure_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces
-            )
-        # Configure the soft contact forces
-        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        # Algebraic constraints of soft contact forces if needed
-        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-            ocp.implicit_constraints.add(
-                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
-                node=Node.ALL_SHOOTING,
-                penalty_type=ConstraintType.IMPLICIT,
-                phase=nlp.phase_idx,
-            )
+        # # Configure the contact forces
+        # if with_contact:
+        #     ConfigureProblem.configure_contact_function(
+        #         ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces
+        #     )
+        # # Configure the soft contact forces
+        # ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+        # # Algebraic constraints of soft contact forces if needed
+        # if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
+        #     ocp.implicit_constraints.add(
+        #         ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
+        #         node=Node.ALL_SHOOTING,
+        #         penalty_type=ConstraintType.IMPLICIT,
+        #         phase=nlp.phase_idx,
+        #     )
 
     @staticmethod
     def torque_driven_free_floating_base(
@@ -963,12 +963,12 @@ class ConfigureProblem:
         DynamicsFunctions.apply_parameters(nlp)
 
         dynamics_eval = dyn_func(
-            nlp.time_mx,
-            nlp.states.scaled.mx_reduced,
-            nlp.controls.scaled.mx_reduced,
-            nlp.parameters.scaled.mx_reduced,
-            nlp.algebraic_states.scaled.mx_reduced,
-            nlp.numerical_timeseries.mx,
+            nlp.time_cx,
+            nlp.states.scaled.cx,
+            nlp.controls.scaled.cx,
+            nlp.parameters.scaled.cx,
+            nlp.algebraic_states.scaled.cx,
+            nlp.numerical_timeseries.cx,
             nlp,
             **extra_params,
         )
@@ -976,17 +976,17 @@ class ConfigureProblem:
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
 
-        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
+        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
         if nlp.dynamics_func is None:
             nlp.dynamics_func = Function(
                 "ForwardDyn",
                 [
                     time_span_sym,
-                    nlp.states.scaled.mx_reduced,
-                    nlp.controls.scaled.mx_reduced,
-                    nlp.parameters.scaled.mx_reduced,
-                    nlp.algebraic_states.scaled.mx_reduced,
-                    nlp.numerical_timeseries.mx,
+                    nlp.states.scaled.cx,
+                    nlp.controls.scaled.cx,
+                    nlp.parameters.scaled.cx,
+                    nlp.algebraic_states.scaled.cx,
+                    nlp.numerical_timeseries.cx,
                 ],
                 [dynamics_dxdt],
                 ["t_span", "x", "u", "p", "a", "d"],
@@ -1011,12 +1011,12 @@ class ConfigureProblem:
                     "DynamicsDefects",
                     [
                         time_span_sym,
-                        nlp.states.scaled.mx_reduced,
-                        nlp.controls.scaled.mx_reduced,
-                        nlp.parameters.scaled.mx_reduced,
-                        nlp.algebraic_states.scaled.mx_reduced,
-                        nlp.numerical_timeseries.mx,
-                        nlp.states_dot.scaled.mx_reduced,
+                        nlp.states.scaled.cx,
+                        nlp.controls.scaled.cx,
+                        nlp.parameters.scaled.cx,
+                        nlp.algebraic_states.scaled.cx,
+                        nlp.numerical_timeseries.cx,
+                        nlp.states_dot.scaled.cx,
                     ],
                     [dynamics_eval.defects],
                     ["t_span", "x", "u", "p", "a", "d", "xdot"],
@@ -1040,11 +1040,11 @@ class ConfigureProblem:
                     "ForwardDyn",
                     [
                         time_span_sym,
-                        nlp.states.scaled.mx_reduced,
-                        nlp.controls.scaled.mx_reduced,
-                        nlp.parameters.scaled.mx_reduced,
-                        nlp.algebraic_states.scaled.mx_reduced,
-                        nlp.numerical_timeseries.mx,
+                        nlp.states.scaled.cx,
+                        nlp.controls.scaled.cx,
+                        nlp.parameters.scaled.cx,
+                        nlp.algebraic_states.scaled.cx,
+                        nlp.numerical_timeseries.cx,
                     ],
                     [dynamics_dxdt],
                     ["t_span", "x", "u", "p", "a", "d"],

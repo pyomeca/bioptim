@@ -189,7 +189,7 @@ class OptimizationVariableList:
         self._cx_mid: MX | SX | np.ndarray = np.array([])
         self._cx_end: MX | SX | np.ndarray = np.array([])
         self._cx_intermediates: list = []
-        self.mx_reduced: MX = MX.sym("var", 0, 0)
+        # self.mx_reduced: MX = MX.sym("var", 0, 0)
         self.cx_constructor = cx_constructor
         self._current_cx_to_get = 0
         self.phase_dynamics = phase_dynamics
@@ -310,7 +310,7 @@ class OptimizationVariableList:
             else:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
 
-        self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
+        # self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
         self.elements.append(OptimizationVariable(name, mx, cx, index, bimapping, parent_list=self))
 
     def append_from_scaled(
@@ -346,7 +346,7 @@ class OptimizationVariableList:
             else:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
 
-        self.mx_reduced = scaled_optimization_variable.mx_reduced
+        # self.mx_reduced = scaled_optimization_variable.mx_reduced
         var = scaled_optimization_variable[name]
         self.elements.append(OptimizationVariable(name, var.mx, cx, var.index, var.mapping, self))
 
@@ -564,9 +564,9 @@ class OptimizationVariableContainer:
     def mx(self):
         return self.unscaled.mx
 
-    @property
-    def mx_reduced(self):
-        return self.unscaled.mx_reduced
+    # @property
+    # def mx_reduced(self):
+    #     return self.unscaled.mx_reduced
 
     @property
     def cx(self):
