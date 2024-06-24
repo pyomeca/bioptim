@@ -128,7 +128,7 @@ def main():
     """
 
     # --- Prepare the ocp --- #
-    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=400, n_threads=2)
+    ocp = prepare_ocp(biorbd_model_path="models/pendulum.bioMod", final_time=1, n_shooting=30, n_threads=2)
 
     # --- Live plots --- #
     ocp.add_plot_penalty(CostType.ALL)  # This will display the objectives and constraints at the current iteration
@@ -155,7 +155,7 @@ def main():
     # --- Show the results (graph or animation) --- #
     sol.print_cost()
     # sol.graphs(show_bounds=True, save_name="results.png")
-    sol.animate(n_frames=100)
+    sol.animate(n_frames=0, viewer="pyorerun", show_now=True)
 
     # # --- Saving the solver's output after the optimization --- #
     # Here is an example of how we recommend to save the solution. Please note that sol.ocp is not picklable and that sol will be loaded using the current bioptim version, not the version at the time of the generation of the results.

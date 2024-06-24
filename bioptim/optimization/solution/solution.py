@@ -10,6 +10,7 @@ from scipy.interpolate import interp1d
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
 from ..optimization_vector import OptimizationVectorHelper
 from ...dynamics.ode_solver import OdeSolver
+from ...gui.animate_interface import animate_with_bioviz, animate_with_pyorerun
 from ...interfaces.solve_ivp_interface import solve_ivp_interface
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
@@ -1225,6 +1226,7 @@ class Solution:
         shooting_type: Shooting = None,
         show_now: bool = True,
         show_tracked_markers: bool = False,
+        viewer: str = "bioviz",
         **kwargs: Any,
     ) -> None | list:
         """
@@ -1241,6 +1243,8 @@ class Solution:
             If the bioviz exec() function should be called automatically. This is blocking method
         show_tracked_markers: bool
             If the tracked markers should be displayed
+        viewer: str
+            The viewer to use. Currently, bioviz or pyorerun
         kwargs: Any
             Any parameters to pass to bioviz
 
@@ -1286,19 +1290,14 @@ class Solution:
         # assuming that all the models or the same type.
         self._check_models_comes_from_same_super_class()
 
-        all_bioviz = []
-        for i, data in enumerate(data_to_animate):
-            all_bioviz.append(
-                self.ocp.nlp[i].model.animate(
-                    self.ocp,
-                    solution=data,
-                    show_now=show_now,
-                    tracked_markers=tracked_markers,
-                    **kwargs,
-                )
-            )
+        output = None
+        if viewer == "bioviz":
+            output = animate_with_bioviz(self.ocp, data_to_animate, show_now, tracked_markers, **kwargs)
+        if viewer == "pyorerun":
+            data_to_animate[0]["time"] = np.array(self.decision_time())
+            animate_with_pyorerun(self.ocp, data_to_animate, show_now, tracked_markers, **kwargs)
 
-        return all_bioviz
+        return output
 
     def _check_models_comes_from_same_super_class(self):
         """Check that all the models comes from the same super class"""

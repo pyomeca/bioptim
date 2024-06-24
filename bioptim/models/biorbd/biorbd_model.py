@@ -1,3 +1,5 @@
+from typing import Callable, Any
+
 import biorbd_casadi as biorbd
 import numpy as np
 from biorbd_casadi import (
@@ -7,7 +9,6 @@ from biorbd_casadi import (
     GeneralizedAcceleration,
 )
 from casadi import SX, MX, vertcat, horzcat, norm_fro
-from typing import Callable, Any
 
 from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
@@ -792,3 +793,55 @@ class BiorbdModel:
             return None
         else:
             return all_bioviz
+
+    @staticmethod
+    def animate_with_pyorerun(
+        ocp,
+        solution: "SolutionData",
+        show_now: bool = True,
+        tracked_markers: list[np.ndarray] = None,
+        **kwargs: Any,
+    ) -> None | list:
+        try:
+            import pyorerun
+        except ModuleNotFoundError:
+            raise RuntimeError("pyorerun must be install to animate the model")
+
+        # check_version(pyorerun, "1.2.3", max_version="1.2.99")
+
+        if "q_roots" in solution and "q_joints" in solution:
+            states = np.vstack((solution["q_roots"], solution["q_joints"]))
+        else:
+            states = solution["q"]
+
+        if not isinstance(states, (list, tuple)):
+            states = [states]
+
+        if tracked_markers is None:
+            tracked_markers = [None] * len(states)
+
+        prerun = pyorerun.PhaseRerun(t_span=solution["time"])
+
+        for idx_phase, data in enumerate(states):
+            if not isinstance(ocp.nlp[idx_phase].model, BiorbdModel):
+                raise NotImplementedError("Animation is only implemented for biorbd models")
+
+            # This calls each of the function that modify the internal dynamic model based on the parameters
+            nlp = ocp.nlp[idx_phase]
+
+            biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(nlp.model.model)
+
+            if "q_roots" in solution and "q_joints" in solution:
+                # TODO: Fix the mapping for this case
+                raise NotImplementedError("Mapping is not implemented for this case")
+                q = data
+            else:
+                q = ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data)
+
+            prerun.add_animated_model(
+                biorbd_model,
+                q,
+                tracked_markers=tracked_markers[idx_phase] if tracked_markers[idx_phase] is not None else None,
+            )
+
+            prerun.rerun(notebook=not show_now)
