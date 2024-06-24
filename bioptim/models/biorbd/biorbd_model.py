@@ -830,17 +830,17 @@ class BiorbdModel:
             nlp = ocp.nlp[idx_phase]
 
             biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(nlp.model.model)
+            if not biorbd_model.has_mesh:
+                pyorerun.BiorbdModelNoMesh.from_biorbd_object(nlp.model.model)
+
+            biorbd_model.options.show_gravity = True
 
             if "q_roots" in solution and "q_joints" in solution:
-                # TODO: Fix the mapping for this case
-                raise NotImplementedError("Mapping is not implemented for this case")
-                q = data
-            else:
-                q = ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data)
+                solution["q"] = np.concatenate((solution["q_roots"], solution["q_joints"]))
 
             prerun.add_animated_model(
                 biorbd_model,
-                q,
+                solution["q"],
                 tracked_markers=tracked_markers[idx_phase] if tracked_markers[idx_phase] is not None else None,
             )
 

@@ -1294,7 +1294,8 @@ class Solution:
         if viewer == "bioviz":
             output = animate_with_bioviz(self.ocp, data_to_animate, show_now, tracked_markers, **kwargs)
         if viewer == "pyorerun":
-            data_to_animate[0]["time"] = np.array(self.decision_time())
+            data_to_animate[0] = self.decision_states(to_merge=SolutionMerge.NODES)
+            data_to_animate[0]["time"] = np.concatenate(self.decision_time()).squeeze()
             animate_with_pyorerun(self.ocp, data_to_animate, show_now, tracked_markers, **kwargs)
 
         return output
