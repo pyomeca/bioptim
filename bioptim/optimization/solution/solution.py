@@ -5,12 +5,10 @@ import numpy as np
 from casadi import vertcat, DM, Function
 from matplotlib import pyplot as plt
 from scipy import interpolate as sci_interp
-from scipy.interpolate import interp1d
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
 from ..optimization_vector import OptimizationVectorHelper
 from ...dynamics.ode_solver import OdeSolver
-from ...gui.animate_interface import animate_with_bioviz, animate_with_pyorerun
 from ...interfaces.solve_ivp_interface import solve_ivp_interface
 from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
@@ -24,6 +22,7 @@ from ...misc.enums import (
     SolutionIntegrator,
     Node,
 )
+from ...models.biorbd.multi_biorbd_model import MultiBiorbdModel
 from ...models.protocols.stochastic_biomodel import StochasticBioModel
 
 
@@ -1253,6 +1252,13 @@ class Solution:
             A list of bioviz structures (one for each phase). So one can call exec() by hand
         """
 
+        from ...gui.viewers import (
+            _check_models_comes_from_same_super_class,
+            _prepare_tracked_markers_for_animation,
+            animate_with_bioviz_for_loop,
+            animate_with_pyorerun,
+        )
+
         if shooting_type:
             self.integrate(shooting_type=shooting_type)
 
@@ -1278,7 +1284,7 @@ class Solution:
                 data_to_animate = [data_to_animate]
 
         if show_tracked_markers and len(self.ocp.nlp) == 1:
-            tracked_markers = self._prepare_tracked_markers_for_animation(n_shooting=n_frames)
+            tracked_markers = _prepare_tracked_markers_for_animation(self.ocp.nlp, n_shooting=n_frames)
         elif show_tracked_markers and len(self.ocp.nlp) > 1:
             raise NotImplementedError(
                 "Tracking markers is not implemented for multiple phases. "
@@ -1288,69 +1294,47 @@ class Solution:
             tracked_markers = [None for _ in range(len(self.ocp.nlp))]
 
         # assuming that all the models or the same type.
-        self._check_models_comes_from_same_super_class()
+        _check_models_comes_from_same_super_class(self.ocp.nlp)
 
         output = None
         if viewer == "bioviz":
-            output = animate_with_bioviz(self.ocp, data_to_animate, show_now, tracked_markers, **kwargs)
+            output = animate_with_bioviz_for_loop(self.ocp, data_to_animate, show_now, tracked_markers, **kwargs)
         if viewer == "pyorerun":
-            data_to_animate[0] = self.decision_states(to_merge=SolutionMerge.NODES)
-            data_to_animate[0]["time"] = np.concatenate(self.decision_time()).squeeze()
-            animate_with_pyorerun(self.ocp, data_to_animate, show_now, tracked_markers, **kwargs)
+            data_to_animate = self.decision_states(to_merge=SolutionMerge.NODES)
+            time = self.decision_time()
+
+            if self.ocp.n_phases == 1:
+                time = [np.concatenate(self.decision_time()).squeeze()]
+                data_to_animate = [data_to_animate]
+            else:
+                time = [np.concatenate(t).squeeze() for t in time]
+
+            for i in range(len(data_to_animate)):
+                data_to_animate[i]["time"] = time[i]
+
+            models = []
+            for i, nlp in enumerate(self.ocp.nlp):
+                if isinstance(nlp.model, MultiBiorbdModel):
+                    models += [model for model in nlp.model.models]
+                    temp_data_animate = [data_to_animate[i].copy() for _ in range(nlp.model.nb_models)]
+                    for j, model in enumerate(nlp.model.models):
+                        for key in data_to_animate[i].keys():
+                            if key == "time":
+                                continue
+
+                            index = nlp.model.variable_index(key, j)
+                            temp_data_animate[j][key] = temp_data_animate[j][key][index, :]
+
+                    data_to_animate[i] = temp_data_animate[0]
+                    data_to_animate += temp_data_animate[1:]
+                    tracked_markers = None
+
+                else:
+                    models += [nlp.model.model]
+
+            animate_with_pyorerun(self.ocp, data_to_animate, show_now, tracked_markers, models, **kwargs)
 
         return output
-
-    def _check_models_comes_from_same_super_class(self):
-        """Check that all the models comes from the same super class"""
-        for i, nlp in enumerate(self.ocp.nlp):
-            model_super_classes = nlp.model.__class__.mro()[:-1]  # remove object class
-            nlps = self.ocp.nlp.copy()
-            del nlps[i]
-            for j, sub_nlp in enumerate(nlps):
-                if not any([isinstance(sub_nlp.model, super_class) for super_class in model_super_classes]):
-                    raise RuntimeError(
-                        f"The animation is only available for compatible models. "
-                        f"Here, the model of phase {i} is of type {nlp.model.__class__.__name__} and the model of "
-                        f"phase {j + 1 if i < j else j} is of type {sub_nlp.model.__class__.__name__} and "
-                        f"they don't share the same super class."
-                    )
-
-    def _prepare_tracked_markers_for_animation(self, n_shooting: int = None) -> list:
-        """Prepare the markers which are tracked to the animation"""
-
-        all_tracked_markers = []
-
-        for phase, nlp in enumerate(self.ocp.nlp):
-            n_frames = sum(nlp.ns) + 1 if n_shooting is None else n_shooting + 1
-
-            n_states_nodes = self.ocp.nlp[phase].n_states_nodes
-
-            tracked_markers = None
-            for objective in nlp.J:
-                if objective.target is not None:
-                    if objective.type in (
-                        ObjectiveFcn.Mayer.TRACK_MARKERS,
-                        ObjectiveFcn.Lagrange.TRACK_MARKERS,
-                    ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        tracked_markers = np.full((3, nlp.model.nb_markers, n_states_nodes), np.nan)
-
-                        for i in range(len(objective.rows)):
-                            tracked_markers[objective.rows[i], objective.cols, :] = objective.target[i, :, :]
-
-                        missing_row = np.where(np.isnan(tracked_markers))[0]
-                        if missing_row.size > 0:
-                            tracked_markers[missing_row, :, :] = 0
-
-            # interpolation
-            if n_frames > 0 and tracked_markers is not None:
-                x = np.linspace(0, n_states_nodes - 1, n_states_nodes)
-                xnew = np.linspace(0, n_states_nodes - 1, n_frames)
-                f = interp1d(x, tracked_markers, kind="cubic")
-                tracked_markers = f(xnew)
-
-            all_tracked_markers.append(tracked_markers)
-
-        return all_tracked_markers
 
     @staticmethod
     def _dispatch_params(params):

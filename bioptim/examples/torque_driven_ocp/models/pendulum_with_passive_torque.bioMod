@@ -12,7 +12,7 @@ segment Seg1
 	    0.0000	0.0335	-0.0032
 	    0.0000	-0.0032	0.0090
     com  -0.0005 0.0688 -0.9542
-    meshfile mesh/pendulum.vtp
+    meshfile mesh/pendulum.STL
 endsegment
 
     // Marker 1
