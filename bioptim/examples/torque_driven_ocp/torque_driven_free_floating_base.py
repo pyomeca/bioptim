@@ -4,8 +4,9 @@ The advantage of this formulation is that yo do not need to specify a mapping to
 This specific problem generates one somersault in straight position with 1 twist.
 """
 
-import numpy as np
 import platform
+
+import numpy as np
 
 from bioptim import (
     BiorbdModel,
@@ -17,7 +18,6 @@ from bioptim import (
     ObjectiveList,
     ObjectiveFcn,
     InterpolationType,
-    BiMappingList,
     Solver,
     Node,
 )
