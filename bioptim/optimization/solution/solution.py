@@ -1332,7 +1332,7 @@ class Solution:
                 else:
                     models += [nlp.model.model]
 
-            animate_with_pyorerun(self.ocp, data_to_animate, show_now, tracked_markers, models, **kwargs)
+            animate_with_pyorerun(data_to_animate, show_now, tracked_markers, models, **kwargs)
 
         return output
 
