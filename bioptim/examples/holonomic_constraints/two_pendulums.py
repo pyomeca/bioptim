@@ -6,7 +6,6 @@ pendulum simulation.
 
 import matplotlib.pyplot as plt
 import numpy as np
-
 from casadi import MX, Function
 
 from bioptim import (
@@ -213,11 +212,21 @@ def main():
     # --- Show results --- #
     q, qdot, qddot, lambdas = compute_all_states(sol, bio_model)
 
-    import bioviz
+    viewer = "pyorerun"
+    if viewer == "bioviz":
+        import bioviz
 
-    viz = bioviz.Viz(model_path)
-    viz.load_movement(q)
-    viz.exec()
+        viz = bioviz.Viz(model_path)
+        viz.load_movement(q)
+        viz.exec()
+
+    if viewer == "pyorerun":
+        import pyorerun
+
+        viz = pyorerun.PhaseRerun(t_span=np.concatenate(sol.decision_time()).squeeze())
+        viz.add_animated_model(pyorerun.BiorbdModel(model_path), q=q)
+
+        viz.rerun("double_pendulum")
 
     time = sol.decision_time(to_merge=SolutionMerge.NODES)
     plt.title("Lagrange multipliers of the holonomic constraint")
