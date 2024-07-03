@@ -5,10 +5,11 @@ It is not really relevant and will be removed when unitary tests for the dynamic
 """
 
 import importlib.util
-from pathlib import Path
 import platform
+from pathlib import Path
 
 import numpy as np
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -112,9 +113,13 @@ def main():
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
-    x = np.concatenate((q, qdot))
-    u = np.concatenate((tau, mus))
-    contact_forces_ref = np.array(ocp_to_track.nlp[0].contact_forces_func(x[:, :-1], u[:, :-1], []))
+    x = np.concatenate((q, qdot), axis=0)
+    u = np.concatenate((tau, mus), axis=0)
+    contact_forces_ref = (
+        np.array([ocp_to_track.nlp[0].contact_forces_func([], x[:, i], u[:, i], [], [], []) for i in range(ns)])
+        .squeeze()
+        .T
+    )
     muscle_activations_ref = mus
 
     # Track these data
