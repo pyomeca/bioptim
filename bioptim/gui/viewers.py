@@ -1,5 +1,6 @@
 from typing import Any
 
+import biorbd_casadi as biorbd
 import numpy as np
 from scipy.interpolate import interp1d
 
@@ -7,11 +8,6 @@ from ..limits.objective_functions import ObjectiveFcn
 from ..misc.enums import Node
 from ..misc.utils import check_version
 from ..models.biorbd.biorbd_model import BiorbdModel
-
-
-# from ..optimization.non_linear_program import NonLinearProgram
-# from ..optimization.optimal_control_program import OptimalControlProgram
-# from ..optimization.solution.solution import Solution
 
 
 def animate_with_bioviz_for_loop(
@@ -103,21 +99,22 @@ def animate_with_bioviz(
         if tracked_markers[idx_phase] is not None:
             all_bioviz[-1].load_experimental_markers(tracked_markers[idx_phase])
 
-    if show_now:
-        b_is_visible = [True] * len(all_bioviz)
-        while sum(b_is_visible):
-            for i, b in enumerate(all_bioviz):
-                if b.vtk_window.is_active:
-                    b.update()
-                else:
-                    b_is_visible[i] = False
-        return None
-    else:
-        return all_bioviz
+    return play_bioviz_animation(all_bioviz) if show_now else all_bioviz
+
+
+def play_bioviz_animation(all_bioviz: list) -> None:
+    """Play the animation of the list of bioviz objects"""
+    b_is_visible = [True] * len(all_bioviz)
+    while sum(b_is_visible):
+        for i, b in enumerate(all_bioviz):
+            if b.vtk_window.is_active:
+                b.update()
+            else:
+                b_is_visible[i] = False
+    return None
 
 
 def animate_with_pyorerun(
-    ocp,
     solution: "SolutionData",
     show_now: bool = True,
     tracked_markers: list[np.ndarray] = None,
@@ -138,19 +135,22 @@ def animate_with_pyorerun(
 
     for idx_phase, (data, model, tm) in enumerate(zip(solution, models, tracked_markers)):
 
-        if "q_roots" in solution and "q_joints" in solution:
-            raise NotImplementedError(
-                "Found q_roots and q_joints in the solution. This is not supported yet with animaion in pyorerun"
-            )
+        if "q_roots" in data and "q_joints" in data:
+            try:
+                data["q"] = np.vstack((data["q_roots"], data["q_joints"]))
+            except:
+                raise NotImplementedError(
+                    "Found q_roots and q_joints in the solution. This is not supported yet with animation in pyorerun"
+                )
 
         prerun.add_phase(t_span=data["time"], phase=idx_phase)
 
-        if not isinstance(model, BiorbdModel):
+        if not isinstance(model, biorbd.Model):
             raise NotImplementedError(
                 f"Animation is only implemented for biorbd models. Got {model.__class__.__name__}"
             )
 
-        biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model.model)
+        biorbd_model = pyorerun.BiorbdModel.from_biorbd_object(model)
 
         prerun.add_animated_model(
             biorbd_model,
