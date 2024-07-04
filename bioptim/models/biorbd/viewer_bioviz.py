@@ -41,7 +41,7 @@ def animate_with_bioviz_for_loop(
     all_bioviz = []
     for i, data in enumerate(data_to_animate):
         all_bioviz.append(
-            ocp.nlp[i].model.animate(
+            animate_with_bioviz(
                 ocp,
                 solution=data,
                 show_now=show_now,
