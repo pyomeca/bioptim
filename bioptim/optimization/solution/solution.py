@@ -1,16 +1,14 @@
-from copy import deepcopy
-from typing import Any
-
 import numpy as np
 from casadi import vertcat, DM, Function
+from copy import deepcopy
 from matplotlib import pyplot as plt
 from scipy import interpolate as sci_interp
+from typing import Any
 
 from .solution_data import SolutionData, SolutionMerge, TimeAlignment, TimeResolution
 from ..optimization_vector import OptimizationVectorHelper
 from ...dynamics.ode_solver import OdeSolver
 from ...interfaces.solve_ivp_interface import solve_ivp_interface
-from ...limits.objective_functions import ObjectiveFcn
 from ...limits.path_conditions import InitialGuess, InitialGuessList
 from ...limits.penalty_helpers import PenaltyHelpers
 from ...misc.enums import (
@@ -22,7 +20,6 @@ from ...misc.enums import (
     SolutionIntegrator,
     Node,
 )
-from ...models.biorbd.multi_biorbd_model import MultiBiorbdModel
 from ...models.protocols.stochastic_biomodel import StochasticBioModel
 
 
@@ -1252,89 +1249,21 @@ class Solution:
             A list of bioviz structures (one for each phase). So one can call exec() by hand
         """
 
-        from ...gui.viewers import (
+        from ...models.biorbd.viewer_utils import (
             _check_models_comes_from_same_super_class,
-            _prepare_tracked_markers_for_animation,
-            animate_with_bioviz_for_loop,
-            animate_with_pyorerun,
         )
+        from ...models.biorbd.viewer_bioviz import animate_with_bioviz_for_loop
+        from ...models.biorbd.viewer_pyorerun import animate_with_pyorerun
 
         if shooting_type:
             self.integrate(shooting_type=shooting_type)
 
-        for idx_phase in range(len(self.ocp.nlp)):
-            for objective in self.ocp.nlp[idx_phase].J:
-                if objective.target is not None:
-                    if objective.type in (
-                        ObjectiveFcn.Mayer.TRACK_MARKERS,
-                        ObjectiveFcn.Lagrange.TRACK_MARKERS,
-                    ) and objective.node[0] in (Node.ALL, Node.ALL_SHOOTING):
-                        n_frames += objective.target.shape[2]
-                        break
-
-        data_to_animate = []
-        if n_frames == 0:
-            try:
-                data_to_animate = [self.interpolate(sum([nlp.ns for nlp in self.ocp.nlp]) + 1)]
-            except ValueError:
-                data_to_animate = self.interpolate([nlp.ns for nlp in self.ocp.nlp])
-        elif n_frames > 0:
-            data_to_animate = self.interpolate(n_frames)
-            if not isinstance(data_to_animate, list):
-                data_to_animate = [data_to_animate]
-
-        if show_tracked_markers and len(self.ocp.nlp) == 1:
-            tracked_markers = _prepare_tracked_markers_for_animation(self.ocp.nlp, n_shooting=n_frames)
-        elif show_tracked_markers and len(self.ocp.nlp) > 1:
-            raise NotImplementedError(
-                "Tracking markers is not implemented for multiple phases. "
-                "Set show_tracked_markers to False such that sol.animate(show_tracked_markers=False)."
-            )
-        else:
-            tracked_markers = [None for _ in range(len(self.ocp.nlp))]
-
-        # assuming that all the models or the same type.
         _check_models_comes_from_same_super_class(self.ocp.nlp)
 
-        output = None
         if viewer == "bioviz":
-            output = animate_with_bioviz_for_loop(self.ocp, data_to_animate, show_now, tracked_markers, **kwargs)
+            return animate_with_bioviz_for_loop(self.ocp, self, show_now, show_tracked_markers, n_frames, **kwargs)
         if viewer == "pyorerun":
-            data_to_animate = self.decision_states(to_merge=SolutionMerge.NODES)
-            time = self.decision_time()
-
-            if self.ocp.n_phases == 1:
-                time = [np.concatenate(self.decision_time()).squeeze()]
-                data_to_animate = [data_to_animate]
-            else:
-                time = [np.concatenate(t).squeeze() for t in time]
-
-            for i in range(len(data_to_animate)):
-                data_to_animate[i]["time"] = time[i]
-
-            models = []
-            for i, nlp in enumerate(self.ocp.nlp):
-                if isinstance(nlp.model, MultiBiorbdModel):
-                    models += [model for model in nlp.model.models]
-                    temp_data_animate = [data_to_animate[i].copy() for _ in range(nlp.model.nb_models)]
-                    for j, model in enumerate(nlp.model.models):
-                        for key in data_to_animate[i].keys():
-                            if key == "time":
-                                continue
-
-                            index = nlp.model.variable_index(key, j)
-                            temp_data_animate[j][key] = temp_data_animate[j][key][index, :]
-
-                    data_to_animate[i] = temp_data_animate[0]
-                    data_to_animate += temp_data_animate[1:]
-                    tracked_markers = None
-
-                else:
-                    models += [nlp.model.model]
-
-            animate_with_pyorerun(data_to_animate, show_now, tracked_markers, models, **kwargs)
-
-        return output
+            return animate_with_pyorerun(self.ocp, self, show_now, show_tracked_markers, **kwargs)
 
     @staticmethod
     def _dispatch_params(params):

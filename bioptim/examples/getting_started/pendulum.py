@@ -152,10 +152,14 @@ def main():
     # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
 
-    # --- Show the results (graph or animation) --- #
+    # --- Show the results graph --- #
     sol.print_cost()
     # sol.graphs(show_bounds=True, save_name="results.png")
-    sol.animate(n_frames=0, viewer="pyorerun", show_now=True)
+
+    # --- Animate the solution --- #
+    viewer = "bioviz"
+    # viewer = "pyorerun"
+    sol.animate(n_frames=0, viewer=viewer, show_now=True)
 
     # # --- Saving the solver's output after the optimization --- #
     # Here is an example of how we recommend to save the solution. Please note that sol.ocp is not picklable and that sol will be loaded using the current bioptim version, not the version at the time of the generation of the results.
