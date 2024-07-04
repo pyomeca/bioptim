@@ -29,6 +29,8 @@ def animate_with_bioviz_for_loop(
         If the animation should be shown immediately
     show_tracked_markers: bool
         If the tracked markers should be shown
+    n_frames: int
+        The number of frames to interpolate
     kwargs
         Any other parameters to pass to bioviz
     """
