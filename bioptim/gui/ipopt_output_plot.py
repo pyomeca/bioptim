@@ -1,9 +1,8 @@
-import pickle
-
 import numpy as np
+import pickle
 from casadi import jacobian, gradient, sum1, Function
 from matplotlib import pyplot as plt
-from matplotlib.cm import get_cmap
+from matplotlib.pyplot import get_cmap
 
 
 def create_ipopt_output_plot(ocp, interface):
