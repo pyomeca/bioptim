@@ -107,11 +107,11 @@ class HolonomicBiorbdModel(BiorbdModel):
         return len(self._dependent_joint_index)
 
     @property
-    def dependent_joint_index(self) -> list[int]:
+    def dependent_joint_index(self) -> list:
         return self._dependent_joint_index
 
     @property
-    def independent_joint_index(self) -> list[int]:
+    def independent_joint_index(self) -> list:
         return self._independent_joint_index
 
     def _add_holonomic_constraint(

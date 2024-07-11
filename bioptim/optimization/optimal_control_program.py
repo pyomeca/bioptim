@@ -766,10 +766,6 @@ class OptimalControlProgram:
         """
         To add phase_mapping for different kinematic number of states in the ocp. It maps the degrees of freedom
         across phases, so they appear on the same graph.
-
-        NOTE: Strong assertion that the property method "name_dof" is the same for all models,
-        all dof are present as variable of the ocp or declared in a Bimapping for the unused dof.
-        It is not the case of holonomic models e.g. BiorbdholonomicModel for qv=f(qu) are not declared as a function of qu in bimapping.
         """
         dof_names_all_phases = []
         phase_mappings = []  # [[] for _ in range(len(self.nlp))]
