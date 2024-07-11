@@ -808,7 +808,8 @@ class PlotOcp:
 
         # Compute the values of the plot at each node
         all_y = []
-        for idx in range(len(custom_plot.node_idx)):
+        # for idx in range(len(custom_plot.node_idx)):
+        for idx in custom_plot.node_idx:
             node_idx = custom_plot.node_idx[idx]
             if "penalty" in custom_plot.parameters:
                 penalty = custom_plot.parameters["penalty"]
@@ -850,9 +851,9 @@ class PlotOcp:
                 t0, dt, node_idx, x_node, u_node, p_node, a_node, d_node, **custom_plot.parameters
             )
 
-            y_tp = np.ndarray((max(custom_plot.phase_mappings.to_first.map_idx) + 1, tp.shape[1])) * np.nan
-            for ctr, axe_index in enumerate(custom_plot.phase_mappings.to_first.map_idx):
-                y_tp[axe_index, :] = tp[ctr, :]
+            map_idx = custom_plot.phase_mappings.to_first.map_idx
+            y_tp = np.ndarray((max(map_idx) + 1, tp.shape[1])) * np.nan
+            for ctr, axe_index in enumerate(map_idx):
             all_y.append(tp)
 
         # Dispatch the values so they will by properly dispatched to the correct axes later
