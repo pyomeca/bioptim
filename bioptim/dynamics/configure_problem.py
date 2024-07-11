@@ -960,10 +960,13 @@ class ConfigureProblem:
             # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
             # see _set_kinematic_phase_mapping method
             # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
-            skip_plot=True,
         )
 
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
+
+        # extra plots
+        ConfigureProblem.configure_qv(ocp, nlp, nlp.model.compute_the_lagrangian_multipliers)
+        ConfigureProblem.configure_qdotv(ocp, nlp, nlp.model.compute_the_lagrangian_multipliers)
         ConfigureProblem.configure_lagrange_multipliers_function(ocp, nlp, nlp.model.compute_the_lagrangian_multipliers)
 
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
