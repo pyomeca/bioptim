@@ -6,7 +6,7 @@ pendulum simulation.
 
 import matplotlib.pyplot as plt
 import numpy as np
-
+import platform
 from casadi import MX, Function
 
 from bioptim import (
@@ -208,8 +208,8 @@ def main():
     ocp, bio_model = prepare_ocp(biorbd_model_path=model_path)
 
     # --- Solve the program --- #
-    sol = ocp.solve(Solver.IPOPT())
-
+    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    # sol.graphs()
     # --- Show results --- #
     q, qdot, qddot, lambdas = compute_all_states(sol, bio_model)
 
