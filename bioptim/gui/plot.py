@@ -809,7 +809,7 @@ class PlotOcp:
 
         # Compute the values of the plot at each node
         all_y = []
-        for idx in custom_plot.node_idx:
+        for idx in range(len(custom_plot.node_idx)):
             node_idx = custom_plot.node_idx[idx]
             if "penalty" in custom_plot.parameters:
                 penalty = custom_plot.parameters["penalty"]
