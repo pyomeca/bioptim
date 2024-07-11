@@ -4,9 +4,10 @@ The simulation is two single pendulum that are forced to be coherent with a holo
 pendulum simulation.
 """
 
+import platform
+
 import matplotlib.pyplot as plt
 import numpy as np
-import platform
 from casadi import MX, Function
 
 from bioptim import (
@@ -209,8 +210,9 @@ def main():
 
     # --- Solve the program --- #
     sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
-    # sol.graphs()
+
     # --- Show results --- #
+    sol.graphs()
     q, qdot, qddot, lambdas = compute_all_states(sol, bio_model)
 
     import bioviz
