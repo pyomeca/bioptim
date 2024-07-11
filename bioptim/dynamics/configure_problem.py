@@ -932,18 +932,213 @@ class ConfigureProblem:
         """
 
         name = "q_u"
-        names_u = [nlp.model.name_dof[i] for i in nlp.variable_mappings["q"].to_first.map_idx]
-        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, names_u, ocp, nlp, True, False, False, axes_idx=axes_idx)
+        names_u = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+        ConfigureProblem.configure_new_variable(
+            name,
+            names_u,
+            ocp,
+            nlp,
+            True,
+            False,
+            False,
+            # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
+            # see _set_kinematic_phase_mapping method
+            # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
+        )
 
         name = "qdot_u"
         names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
-        names_udot = [names_qdot[i] for i in nlp.variable_mappings["qdot"].to_first.map_idx]
-        axes_idx = ConfigureProblem._apply_phase_mapping(ocp, nlp, name)
-        ConfigureProblem.configure_new_variable(name, names_udot, ocp, nlp, True, False, False, axes_idx=axes_idx)
+        names_udot = [names_qdot[i] for i in nlp.model.independent_joint_index]
+        ConfigureProblem.configure_new_variable(
+            name,
+            names_udot,
+            ocp,
+            nlp,
+            True,
+            False,
+            False,
+            # NOTE: not ready for phase mapping yet as it is based on dofnames of the class BioModel
+            # see _set_kinematic_phase_mapping method
+            # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
+        )
 
         ConfigureProblem.configure_tau(ocp, nlp, as_states=False, as_controls=True)
+
+        # extra plots
+        ConfigureProblem.configure_qv(ocp, nlp, nlp.model.compute_q_v)
+        ConfigureProblem.configure_qdotv(ocp, nlp, nlp.model._compute_qdot_v)
+        ConfigureProblem.configure_lagrange_multipliers_function(ocp, nlp, nlp.model.compute_the_lagrangian_multipliers)
+
         ConfigureProblem.configure_dynamics_function(ocp, nlp, DynamicsFunctions.holonomic_torque_driven)
+
+    @staticmethod
+    def configure_lagrange_multipliers_function(ocp, nlp, dyn_func: Callable, **extra_params):
+        """
+        Configure the contact points
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
+            The function to get the values of contact forces from the dynamics
+        """
+
+        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
+        nlp.lagrange_multipliers_function = Function(
+            "lagrange_multipliers_function",
+            [
+                time_span_sym,
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.scaled.mx_reduced,
+                nlp.algebraic_states.scaled.mx_reduced,
+                nlp.numerical_timeseries.mx,
+            ],
+            [
+                dyn_func(
+                    nlp.get_var_from_states_or_controls(
+                        "q_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
+                    ),
+                    nlp.get_var_from_states_or_controls(
+                        "qdot_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
+                    ),
+                    DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.mx_reduced),
+                )
+            ],
+            ["t_span", "x", "u", "p", "a", "d"],
+            ["lagrange_multipliers"],
+        )
+
+        all_multipliers_names = [f"lagrange_multiplier_{i}" for i in range(nlp.model.nb_dependent_joints)]
+        all_multipliers_names_in_phase = [f"lagrange_multiplier_{i}" for i in range(nlp.model.nb_dependent_joints)]
+
+        axes_idx = BiMapping(
+            to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
+            to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
+        )
+
+        nlp.plot["lagrange_multipliers"] = CustomPlot(
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.lagrange_multipliers_function(
+                np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
+            ),
+            plot_type=PlotType.INTEGRATED,
+            axes_idx=axes_idx,
+            legend=all_multipliers_names,
+        )
+
+    @staticmethod
+    def configure_qv(ocp, nlp, dyn_func: Callable, **extra_params):
+        """
+        Configure the contact points
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
+            The function to get the values of contact forces from the dynamics
+        """
+
+        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
+        nlp.q_v_function = Function(
+            "qv_function",
+            [
+                time_span_sym,
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.scaled.mx_reduced,
+                nlp.algebraic_states.scaled.mx_reduced,
+                nlp.numerical_timeseries.mx,
+            ],
+            [
+                dyn_func(
+                    nlp.get_var_from_states_or_controls(
+                        "q_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
+                    ),
+                )
+            ],
+            ["t_span", "x", "u", "p", "a", "d"],
+            ["q_v"],
+        )
+
+        all_multipliers_names = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+
+        axes_idx = BiMapping(
+            to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
+            to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
+        )
+
+        nlp.plot["q_v"] = CustomPlot(
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.q_v_function(
+                np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
+            ),
+            plot_type=PlotType.INTEGRATED,
+            axes_idx=axes_idx,
+            legend=all_multipliers_names,
+        )
+
+    @staticmethod
+    def configure_qdotv(ocp, nlp, dyn_func: Callable, **extra_params):
+        """
+        Configure the contact points
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            A reference to the ocp
+        nlp: NonLinearProgram
+            A reference to the phase
+        dyn_func: Callable[time, states, controls, param, algebraic_states, numerical_timeseries]
+            The function to get the values of contact forces from the dynamics
+        """
+
+        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
+        nlp.q_v_function = Function(
+            "qdot_v_function",
+            [
+                time_span_sym,
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.scaled.mx_reduced,
+                nlp.algebraic_states.scaled.mx_reduced,
+                nlp.numerical_timeseries.mx,
+            ],
+            [
+                dyn_func(
+                    nlp.get_var_from_states_or_controls(
+                        "q_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
+                    ),
+                    nlp.get_var_from_states_or_controls(
+                        "qdot_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
+                    ),
+                )
+            ],
+            ["t_span", "x", "u", "p", "a", "d"],
+            ["qdot_v"],
+        )
+
+        all_multipliers_names = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+
+        axes_idx = BiMapping(
+            to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
+            to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
+        )
+
+        nlp.plot["qdot_v"] = CustomPlot(
+            lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.q_v_function(
+                np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
+            ),
+            plot_type=PlotType.INTEGRATED,
+            axes_idx=axes_idx,
+            legend=all_multipliers_names,
+        )
 
     @staticmethod
     def configure_dynamics_function(ocp, nlp, dyn_func, **extra_params):

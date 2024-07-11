@@ -768,7 +768,7 @@ class PlotOcp:
 
     def _compute_y_from_plot_func(
         self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
-    ):
+    ) -> list[np.ndarray | list, ...]:
         """
         Compute the y data from the plot function
 
@@ -797,7 +797,8 @@ class PlotOcp:
 
         Returns
         -------
-        The y data
+        list[np.ndarray | list, ...]
+            The y data, list of len number of axes per figure, the sublist is empty when the plot is not to be shown.
         """
         from ..interfaces.interface_utils import get_numerical_timeseries
 
@@ -850,10 +851,11 @@ class PlotOcp:
                 t0, dt, node_idx, x_node, u_node, p_node, a_node, d_node, **custom_plot.parameters
             )
 
-            y_tp = np.ndarray((max(custom_plot.phase_mappings.to_first.map_idx) + 1, tp.shape[1])) * np.nan
-            for ctr, axe_index in enumerate(custom_plot.phase_mappings.to_first.map_idx):
+            map_idx = custom_plot.phase_mappings.to_first.map_idx
+            y_tp = np.ndarray((max(map_idx) + 1, tp.shape[1])) * np.nan
+            for ctr, axe_index in enumerate(map_idx):
                 y_tp[axe_index, :] = tp[ctr, :]
-            all_y.append(tp)
+            all_y.append(y_tp)
 
         # Dispatch the values so they will by properly dispatched to the correct axes later
         if custom_plot.type == PlotType.INTEGRATED:
@@ -869,7 +871,7 @@ class PlotOcp:
             all_y = np.concatenate([tp[:, 0:1] for tp in all_y], axis=1)
             out = [[] for _ in range(max(np.abs(custom_plot.phase_mappings.to_first.map_idx)) + 1)]
             for idx in custom_plot.phase_mappings.to_first.map_idx:
-                out[idx] = all_y[custom_plot.phase_mappings.to_first.map_idx.index(idx), :]
+                out[idx] = all_y[idx, :]
             return out
         else:
             raise RuntimeError(f"Plot type {custom_plot.type} not implemented yet")

@@ -393,6 +393,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         coupling_matrix_vu = self.coupling_matrix(q)
         return coupling_matrix_vu @ qdot_u
 
+    def _compute_qdot_v(self, q_u: MX, qdot_u: MX) -> MX:
+        q = self.compute_q(q_u)
+        return self.compute_qdot_v(q, qdot_u)
+
     def compute_qdot(self, q: MX, qdot_u: MX) -> MX:
         qdot_v = self.compute_qdot_v(q, qdot_u)
         return self.state_from_partition(qdot_u, qdot_v)
@@ -422,6 +426,23 @@ class HolonomicBiorbdModel(BiorbdModel):
         return self.state_from_partition(qddot_u, qddot_v)
 
     def compute_the_lagrangian_multipliers(
+        self, q_u: MX, qdot_u: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
+    ) -> MX:
+        """
+        Sources
+        -------
+        Docquier, N., Poncelet, A., and Fisette, P.:
+        ROBOTRAN: a powerful symbolic gnerator of multibody models, Mech. Sci., 4, 199–219,
+        https://doi.org/10.5194/ms-4-199-2013, 2013.
+        """
+        q = self.compute_q(q_u)
+        qdot = self.compute_qdot(q, qdot_u)
+        qddot_u = self.partitioned_forward_dynamics(q_u, qdot_u, tau, external_forces, f_contacts)
+        qddot = self.compute_qddot(q, qdot, qddot_u)
+
+        return self._compute_the_lagrangian_multipliers(q, qdot, qddot, tau, external_forces, f_contacts)
+
+    def _compute_the_lagrangian_multipliers(
         self, q: MX, qdot: MX, qddot: MX, tau: MX, external_forces: MX = None, f_contacts: MX = None
     ) -> MX:
         """
