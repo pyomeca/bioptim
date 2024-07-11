@@ -768,7 +768,7 @@ class PlotOcp:
 
     def _compute_y_from_plot_func(
         self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
-    ):
+    ) -> list[np.ndarray | list, ...]:
         """
         Compute the y data from the plot function
 
@@ -797,7 +797,8 @@ class PlotOcp:
 
         Returns
         -------
-        The y data
+        list[np.ndarray | list, ...]
+            The y data, list of len number of axes per figure, the sublist is empty when the plot is not to be shown.
         """
         from ..interfaces.interface_utils import get_numerical_timeseries
 
