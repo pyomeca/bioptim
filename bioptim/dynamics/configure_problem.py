@@ -946,7 +946,6 @@ class ConfigureProblem:
             # axes_idx=ConfigureProblem._apply_phase_mapping(ocp, nlp, name),
         )
 
-
         name = "qdot_u"
         names_qdot = ConfigureProblem._get_kinematics_based_names(nlp, "qdot")
         names_udot = [names_qdot[i] for i in nlp.model.independent_joint_index]
