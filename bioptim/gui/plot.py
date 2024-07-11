@@ -871,7 +871,7 @@ class PlotOcp:
             all_y = np.concatenate([tp[:, 0:1] for tp in all_y], axis=1)
             out = [[] for _ in range(max(np.abs(custom_plot.phase_mappings.to_first.map_idx)) + 1)]
             for idx in custom_plot.phase_mappings.to_first.map_idx:
-                out[idx] = all_y[custom_plot.phase_mappings.to_first.map_idx.index(idx), :]
+                out[idx] = all_y[idx, :]
             return out
         else:
             raise RuntimeError(f"Plot type {custom_plot.type} not implemented yet")
