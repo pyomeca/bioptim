@@ -991,21 +991,21 @@ class ConfigureProblem:
             "lagrange_multipliers_function",
             [
                 time_span_sym,
-                nlp.states.unscaled.mx_reduced,
-                nlp.controls.unscaled.mx_reduced,
-                nlp.parameters.unscaled.mx_reduced,
-                nlp.algebraic_states.unscaled.mx_reduced,
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.scaled.mx_reduced,
+                nlp.algebraic_states.scaled.mx_reduced,
                 nlp.numerical_timeseries.mx,
             ],
             [
                 dyn_func(
                     nlp.get_var_from_states_or_controls(
-                        "q_u", nlp.states.unscaled.mx_reduced, nlp.controls.unscaled.mx_reduced
+                        "q_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
                     ),
                     nlp.get_var_from_states_or_controls(
-                        "qdot_u", nlp.states.unscaled.mx_reduced, nlp.controls.unscaled.mx_reduced
+                        "qdot_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
                     ),
-                    DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.unscaled.mx_reduced),
+                    DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.mx_reduced),
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
@@ -1049,16 +1049,16 @@ class ConfigureProblem:
             "qv_function",
             [
                 time_span_sym,
-                nlp.states.unscaled.mx_reduced,
-                nlp.controls.unscaled.mx_reduced,
-                nlp.parameters.unscaled.mx_reduced,
-                nlp.algebraic_states.unscaled.mx_reduced,
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.scaled.mx_reduced,
+                nlp.algebraic_states.scaled.mx_reduced,
                 nlp.numerical_timeseries.mx,
             ],
             [
                 dyn_func(
                     nlp.get_var_from_states_or_controls(
-                        "q_u", nlp.states.unscaled.mx_reduced, nlp.controls.unscaled.mx_reduced
+                        "q_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
                     ),
                 )
             ],
@@ -1103,19 +1103,19 @@ class ConfigureProblem:
             "qdot_v_function",
             [
                 time_span_sym,
-                nlp.states.unscaled.mx_reduced,
-                nlp.controls.unscaled.mx_reduced,
-                nlp.parameters.unscaled.mx_reduced,
-                nlp.algebraic_states.unscaled.mx_reduced,
+                nlp.states.scaled.mx_reduced,
+                nlp.controls.scaled.mx_reduced,
+                nlp.parameters.scaled.mx_reduced,
+                nlp.algebraic_states.scaled.mx_reduced,
                 nlp.numerical_timeseries.mx,
             ],
             [
                 dyn_func(
                     nlp.get_var_from_states_or_controls(
-                        "q_u", nlp.states.unscaled.mx_reduced, nlp.controls.unscaled.mx_reduced
+                        "q_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
                     ),
                     nlp.get_var_from_states_or_controls(
-                        "qdot_u", nlp.states.unscaled.mx_reduced, nlp.controls.unscaled.mx_reduced
+                        "qdot_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
                     ),
                 )
             ],
