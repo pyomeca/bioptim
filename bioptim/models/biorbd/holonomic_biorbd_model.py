@@ -393,6 +393,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         coupling_matrix_vu = self.coupling_matrix(q)
         return coupling_matrix_vu @ qdot_u
 
+    def _compute_qdot_v(self, q_u: MX, qdot_u: MX) -> MX:
+        q = self.compute_q(q_u)
+        return self.compute_qdot_v(q, qdot_u)
+
     def compute_qdot(self, q: MX, qdot_u: MX) -> MX:
         qdot_v = self.compute_qdot_v(q, qdot_u)
         return self.state_from_partition(qdot_u, qdot_v)
