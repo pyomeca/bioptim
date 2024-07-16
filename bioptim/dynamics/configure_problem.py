@@ -1022,7 +1022,7 @@ class ConfigureProblem:
 
         all_multipliers_names = [f"lagrange_multiplier_{name}" for name in all_multipliers_names]
         all_multipliers_names_in_phase = [
-            f"lagrange_multiplier_{nlp.model.name_dof[i]}" for i in range(nlp.model.nb_dependent_joints)
+            f"lagrange_multiplier_{nlp.model.name_dof[i]}" for i in nlp.model.dependent_joint_index
         ]
 
         axes_idx = BiMapping(
@@ -1343,7 +1343,7 @@ class ConfigureProblem:
 
         nlp.plot["contact_forces"] = CustomPlot(
             lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.contact_forces_func(
-                [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a, d
+                np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
             ),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
