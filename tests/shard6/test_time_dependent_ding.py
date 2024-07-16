@@ -1,16 +1,18 @@
+import pytest
+
 from typing import Callable
 import numpy as np
 import numpy.testing as npt
-from casadi import MX, vertcat, exp
+from casadi import MX, SX, vertcat, exp
 
 import matplotlib.pyplot as plt
 
 from bioptim import (
-    BiMapping,
     BoundsList,
     ConfigureProblem,
     ConstraintFcn,
     ConstraintList,
+    ControlType,
     DynamicsEvaluation,
     DynamicsList,
     InitialGuessList,
@@ -21,8 +23,11 @@ from bioptim import (
     ObjectiveList,
     OdeSolver,
     OptimalControlProgram,
+    ParameterList,
+    PenaltyController,
     PhaseDynamics,
     SolutionMerge,
+    VariableScaling
 )
 
 
@@ -36,6 +41,7 @@ class Model:
         self.r0_km_relationship = 0.014
         self.tauc = 0.02
         self.time_as_states = time_as_states
+        self.pulse_apparition_time = None
 
     def serialize(self) -> tuple[Callable, dict]:
         return (
@@ -86,19 +92,18 @@ class Model:
         sum_multiplier = 0
         if len(t_stim_prev) == 1:
             ri = 1
-            exp_time = self.exp_time_fun(t, t_stim_prev[0])
-            sum_multiplier += ri * exp_time
+            exp_time = self.exp_time_fun(t, t_stim_prev[0])  # Part of Eq n°1
+            sum_multiplier += ri * exp_time  # Part of Eq n°1
         else:
             for i in range(1, len(t_stim_prev)):
                 previous_phase_time = t_stim_prev[i] - t_stim_prev[i - 1]
-                ri = self.ri_fun(r0, previous_phase_time)
-                exp_time = self.exp_time_fun(t, t_stim_prev[i])
-                sum_multiplier += ri * exp_time
+                ri = self.ri_fun(r0, previous_phase_time)  # Part of Eq n°1
+                exp_time = self.exp_time_fun(t, t_stim_prev[i])  # Part of Eq n°1
+                sum_multiplier += ri * exp_time  # Part of Eq n°1
         return sum_multiplier
 
     def cn_dot_fun(self, cn: MX, r0: MX | float, t: MX, t_stim_prev: list[MX]) -> MX | float:
         sum_multiplier = self.cn_sum_fun(r0, t, t_stim_prev=t_stim_prev)
-
         return (1 / self.tauc) * sum_multiplier - (cn / self.tauc)
 
     def f_dot_fun(self, cn: MX, f: MX, a: MX | float, tau1: MX | float, km: MX | float) -> MX | float:
@@ -111,20 +116,23 @@ class Model:
         controls: MX,
         parameters: MX,
         algebraic_states: MX,
+        numerical_timeseries: MX,
         nlp: NonLinearProgram,
-        stim_apparition=None,
     ) -> DynamicsEvaluation:
+
+        stim_prev = get_stim_prev(nlp, parameters, nlp.phase_idx)
+
         return DynamicsEvaluation(
             dxdt=nlp.model.system_dynamics(
                 cn=states[0],
                 f=states[1],
                 t=states[2] if nlp.model.time_as_states else time,
-                t_stim_prev=stim_apparition,
+                t_stim_prev=stim_prev,
             ),
             defects=None,
         )
 
-    def declare_ding_variables(self, ocp: OptimalControlProgram, nlp: NonLinearProgram):
+    def declare_ding_variables(self, ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None):
         name = "Cn"
         name_cn = [name]
         ConfigureProblem.configure_new_variable(
@@ -159,14 +167,63 @@ class Model:
                 as_controls=False,
             )
 
-        # stim_apparition = [ocp.node_time(phase_idx=i, node_idx=0) for i in range(nlp.phase_idx + 1)]
+        ConfigureProblem.configure_dynamics_function(ocp, nlp, dyn_func=self.dynamics)
 
-        stim_apparition = [0]
-        for i in range(nlp.phase_idx):
-            stim = ocp.nlp[i].dt_mx * ocp.nlp[i].ns
-            stim_apparition.append(stim + stim_apparition[-1])
+    def set_pulse_apparition_time(self, value: list[MX], kwargs: dict = None):
+        """
+        Sets the pulse apparition time for each pulse (phases) according to the ocp parameter "pulse_apparition_time"
 
-        ConfigureProblem.configure_dynamics_function(ocp, nlp, dyn_func=self.dynamics, stim_apparition=stim_apparition)
+        Parameters
+        ----------
+        value: list[MX]
+            The pulse apparition time list (s)
+        kwargs: dict
+            The kwargs of the ocp
+        """
+        self.pulse_apparition_time = value
+
+
+def get_stim_prev(nlp: NonLinearProgram, parameters: MX, idx: int) -> list[float]:
+    """
+    Get the nlp list of previous stimulation apparition time
+
+    Parameters
+    ----------
+    nlp: NonLinearProgram
+        The NonLinearProgram of the ocp of the current phase
+    parameters: MX
+        The parameters of the ocp
+    idx: int
+        The index of the current phase
+
+    Returns
+    -------
+    The list of previous stimulation time
+    """
+    t_stim_prev = []
+    for j in range(parameters.shape[0]):
+        if "pulse_apparition_time" in nlp.parameters.cx[j].str():
+            t_stim_prev.append(parameters[j])
+        if len(t_stim_prev) > idx:
+            break
+    return t_stim_prev
+
+
+class CustomConstraint:
+    @staticmethod
+    def pulse_time_apparition_as_phase(controller: PenaltyController) -> MX | SX:
+        return controller.time.cx - controller.parameters["pulse_apparition_time"].cx[controller.phase_idx]
+
+    @staticmethod
+    def equal_to_first_pulse_interval_time(controller: PenaltyController) -> MX | SX:
+        if controller.ocp.n_phases <= 1:
+            RuntimeError("There is only one phase, the bimapping constraint is not possible")
+
+        first_phase_tf = controller.ocp.node_time(0, controller.ocp.nlp[controller.phase_idx].ns)
+        current_phase_tf = controller.ocp.nlp[controller.phase_idx].node_time(
+            controller.ocp.nlp[controller.phase_idx].ns
+        )
+        return first_phase_tf - current_phase_tf
 
 
 def prepare_ocp(
@@ -174,13 +231,14 @@ def prepare_ocp(
     n_stim: int = None,
     n_shooting: int = None,
     final_time: int | float = None,
-    time_min: int | float = None,
-    time_max: int | float = None,
-    time_bimapping: bool = None,
+    pulse_event: dict = None,
     use_sx: bool = True,
 ):
     models = [model] * n_stim
     n_shooting = [n_shooting] * n_stim
+    time_min = pulse_event["time_min"]
+    time_max = pulse_event["time_max"]
+    time_bimapping = pulse_event["time_bimapping"]
 
     constraints = ConstraintList()
     if time_min and time_max:
@@ -196,19 +254,49 @@ def prepare_ocp(
     step_phase = final_time / n_stim
     final_time_phase = [step_phase] * n_stim
 
-    phase_time_bimapping = None
-    if time_bimapping is True:
-        phase_time_bimapping = BiMapping(to_second=[0 for _ in range(n_stim)], to_first=[0])
+    parameters = ParameterList(use_sx=use_sx)
+    parameters_bounds = BoundsList()
+    parameters_init = InitialGuessList()
+    constraints = ConstraintList()
+    if time_min:
+        parameters.add(
+            name="pulse_apparition_time",
+            function=model.set_pulse_apparition_time,
+            size=n_stim,
+            scaling=VariableScaling("pulse_apparition_time", [1] * n_stim),
+        )
+
+        if time_min and time_max:
+            time_min_list = [time_min * n for n in range(n_stim)]
+            time_max_list = [time_max * n for n in range(n_stim)]
+        else:
+            time_min_list = [0] * n_stim
+            time_max_list = [100] * n_stim
+        parameters_bounds.add(
+            "pulse_apparition_time",
+            min_bound=np.array(time_min_list),
+            max_bound=np.array(time_max_list),
+            interpolation=InterpolationType.CONSTANT,
+        )
+
+        parameters_init["pulse_apparition_time"] = np.array([0] * n_stim)
+
+        for i in range(n_stim):
+            constraints.add(CustomConstraint.pulse_time_apparition_as_phase, node=Node.START, phase=i, target=0)
+
+    if time_bimapping and time_min and time_max:
+        for i in range(n_stim):
+            constraints.add(CustomConstraint.equal_to_first_pulse_interval_time, node=Node.START, target=0, phase=i)
 
     dynamics = DynamicsList()
     for i in range(n_stim):
         dynamics.add(
             models[i].declare_ding_variables,
-            dynamic_function=dynamics,
+            dynamic_function=models[i].dynamics,
             expand_dynamics=True,
             expand_continuity=False,
             phase=i,
-            phase_dynamics=PhaseDynamics.ONE_PER_NODE,
+            phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE,
         )
 
     x_bounds = BoundsList()
@@ -270,11 +358,14 @@ def prepare_ocp(
         dynamics=dynamics,
         n_shooting=n_shooting,
         phase_time=final_time_phase,
-        time_phase_mapping=phase_time_bimapping,
         objective_functions=objective_functions,
         x_init=x_init,
         x_bounds=x_bounds,
         constraints=constraints,
+        parameters=parameters,
+        parameter_bounds=parameters_bounds,
+        parameter_init=parameters_init,
+        control_type=ControlType.CONSTANT,
         use_sx=use_sx,
         ode_solver=OdeSolver.RK4(n_integration_steps=1),
     )
@@ -306,23 +397,22 @@ def result_vectors(sol):
     return force_vector, cn_vector, time_vector
 
 
-# @pytest.mark.parametrize("time_mapping", [False, True])
-# @pytest.mark.parametrize("use_sx", [False, True])
-# @pytest.mark.parametrize("time_as_states", [False, True])
-# @pytest.mark.parametrize("n_stim", [1, 5])
-# def test_time_dependent_ding(time_mapping, use_sx, time_as_states, n_stim):
-#     ocp = prepare_ocp(
-#         model=Model(time_as_states=time_as_states),
-#         n_stim=n_stim,
-#         n_shooting=10,
-#         final_time=1,
-#         time_min=0.01,
-#         time_max=0.1,
-#         time_bimapping=time_mapping,
-#         use_sx=use_sx,
-#     )
+@pytest.mark.parametrize("time_mapping", [False, True])
+@pytest.mark.parametrize("use_sx", [False, True])
+@pytest.mark.parametrize("time_as_states", [False, True])
+@pytest.mark.parametrize("n_stim", [5])
+def test_time_dependent_ding(time_mapping, use_sx, time_as_states, n_stim):
+    ocp = prepare_ocp(
+        model=Model(time_as_states=time_as_states),
+        n_stim=n_stim,
+        n_shooting=10,
+        final_time=1,
+        pulse_event={"time_min": 0.01, "time_max": 0.1, "time_bimapping": time_mapping},
+        use_sx=use_sx,
+    )
 
-#     sol = ocp.solve()
+    sol = ocp.solve()
+    sol.graphs()
 
 #     if n_stim == 5:
 #         if time_mapping:
