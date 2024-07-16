@@ -1012,8 +1012,18 @@ class ConfigureProblem:
             ["lagrange_multipliers"],
         )
 
-        all_multipliers_names = [f"lagrange_multiplier_{i}" for i in range(nlp.model.nb_dependent_joints)]
-        all_multipliers_names_in_phase = [f"lagrange_multiplier_{i}" for i in range(nlp.model.nb_dependent_joints)]
+        all_multipliers_names = []
+        for nlp_i in ocp.nlp:
+            if hasattr(nlp_i.model, "_dependent_joint_index"):  # making sure we have a HolonomicBiorbdModel
+                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+                all_multipliers_names.extend(
+                    [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
+                )
+
+        all_multipliers_names = [f"lagrange_multiplier_{name}" for name in all_multipliers_names]
+        all_multipliers_names_in_phase = [
+            f"lagrange_multiplier_{nlp.model.name_dof[i]}" for i in range(nlp.model.nb_dependent_joints)
+        ]
 
         axes_idx = BiMapping(
             to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
@@ -1068,10 +1078,11 @@ class ConfigureProblem:
 
         all_multipliers_names = []
         for nlp_i in ocp.nlp:
-            nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
-            all_multipliers_names.extend(
-                [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
-            )
+            if hasattr(nlp_i.model, "_dependent_joint_index"):  # making sure we have a HolonomicBiorbdModel
+                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+                all_multipliers_names.extend(
+                    [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
+                )
 
         all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
         axes_idx = BiMapping(
@@ -1130,10 +1141,11 @@ class ConfigureProblem:
 
         all_multipliers_names = []
         for nlp_i in ocp.nlp:
-            nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
-            all_multipliers_names.extend(
-                [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
-            )
+            if hasattr(nlp_i.model, "_dependent_joint_index"):  # making sure we have a HolonomicBiorbdModel
+                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+                all_multipliers_names.extend(
+                    [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
+                )
 
         all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
         axes_idx = BiMapping(
