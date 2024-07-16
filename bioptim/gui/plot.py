@@ -393,10 +393,10 @@ class PlotOcp:
             # No graph was setup in problem_type
             return
 
-        y_min_all = [None for _ in self.variable_sizes[0]]
-        y_max_all = [None for _ in self.variable_sizes[0]]
         self.custom_plots = {}
         for i, nlp in enumerate(self.ocp.nlp):
+            y_min_all = [None for _ in self.variable_sizes[i]]
+            y_max_all = [None for _ in self.variable_sizes[i]]
             for var_idx, variable in enumerate(self.variable_sizes[i]):
                 if nlp.plot[variable].combine_to:
                     self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
