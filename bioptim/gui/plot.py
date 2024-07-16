@@ -393,11 +393,22 @@ class PlotOcp:
             # No graph was setup in problem_type
             return
 
+        all_keys_across_phases = []
+        for variable_sizes in self.variable_sizes:
+            keys_not_in_previous_phases = [
+                key for key in list(variable_sizes.keys()) if key not in all_keys_across_phases
+            ]
+            all_keys_across_phases += keys_not_in_previous_phases
+
+        y_min_all = [None for _ in all_keys_across_phases]
+        y_max_all = [None for _ in all_keys_across_phases]
+
         self.custom_plots = {}
         for i, nlp in enumerate(self.ocp.nlp):
-            y_min_all = [None for _ in self.variable_sizes[i]]
-            y_max_all = [None for _ in self.variable_sizes[i]]
+
             for var_idx, variable in enumerate(self.variable_sizes[i]):
+                y_range_var_idx = all_keys_across_phases.index(variable)
+
                 if nlp.plot[variable].combine_to:
                     self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
                     axes = self.axes[variable][1]
@@ -425,9 +436,10 @@ class PlotOcp:
                         n_rows = 1
                     axes = self.__add_new_axis(variable, nb_subplots, n_rows, n_cols)
                     self.axes[variable] = [nlp.plot[variable], axes]
-                    if not y_min_all[var_idx]:
-                        y_min_all[var_idx] = [np.inf] * nb_subplots
-                        y_max_all[var_idx] = [-np.inf] * nb_subplots
+
+                    if not y_min_all[y_range_var_idx]:
+                        y_min_all[y_range_var_idx] = [np.inf] * nb_subplots
+                        y_max_all[y_range_var_idx] = [-np.inf] * nb_subplots
 
                 if variable not in self.custom_plots:
                     self.custom_plots[variable] = [
@@ -476,14 +488,16 @@ class PlotOcp:
                                     for j in range(nlp.ns * repeat)
                                 ]
                             )
-                        if y_min.__array__()[0] < y_min_all[var_idx][mapping_to_first_index.index(ctr)]:
-                            y_min_all[var_idx][mapping_to_first_index.index(ctr)] = y_min
-                        if y_max.__array__()[0] > y_max_all[var_idx][mapping_to_first_index.index(ctr)]:
-                            y_max_all[var_idx][mapping_to_first_index.index(ctr)] = y_max
+
+                        if y_min.__array__()[0] < y_min_all[y_range_var_idx][mapping_to_first_index.index(ctr)]:
+                            y_min_all[y_range_var_idx][mapping_to_first_index.index(ctr)] = y_min
+
+                        if y_max.__array__()[0] > y_max_all[y_range_var_idx][mapping_to_first_index.index(ctr)]:
+                            y_max_all[y_range_var_idx][mapping_to_first_index.index(ctr)] = y_max
 
                         y_range, _ = self.__compute_ylim(
-                            y_min_all[var_idx][mapping_to_first_index.index(ctr)],
-                            y_max_all[var_idx][mapping_to_first_index.index(ctr)],
+                            y_min_all[y_range_var_idx][mapping_to_first_index.index(ctr)],
+                            y_max_all[y_range_var_idx][mapping_to_first_index.index(ctr)],
                             1.25,
                         )
                         ax.set_ylim(y_range)
@@ -973,6 +987,7 @@ class PlotOcp:
     def __compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: float) -> tuple:
         """
         Dynamically find the ylim
+
         Parameters
         ----------
         min_val: np.ndarray | DM
