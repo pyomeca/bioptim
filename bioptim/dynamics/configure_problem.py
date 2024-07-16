@@ -1032,7 +1032,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_qv(ocp, nlp, dyn_func: Callable, **extra_params):
         """
-        Configure the contact points
+        Configure the qv, i.e. the dependent joint coordinates, to be plotted
 
         Parameters
         ----------
@@ -1066,9 +1066,14 @@ class ConfigureProblem:
             ["q_v"],
         )
 
-        all_multipliers_names = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
-        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+        all_multipliers_names = []
+        for nlp_i in ocp.nlp:
+            nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+            all_multipliers_names.extend(
+                [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
+            )
 
+        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
         axes_idx = BiMapping(
             to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
             to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
@@ -1086,7 +1091,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_qdotv(ocp, nlp, dyn_func: Callable, **extra_params):
         """
-        Configure the contact points
+        Configure the qdot_v, i.e. the dependent joint velocities, to be plotted
 
         Parameters
         ----------
@@ -1123,9 +1128,14 @@ class ConfigureProblem:
             ["qdot_v"],
         )
 
-        all_multipliers_names = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
-        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+        all_multipliers_names = []
+        for nlp_i in ocp.nlp:
+            nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+            all_multipliers_names.extend(
+                [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
+            )
 
+        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
         axes_idx = BiMapping(
             to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
             to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
