@@ -1,7 +1,6 @@
-from typing import Callable, Any
-
 import numpy as np
 from casadi import vertcat, Function, DM, horzcat
+from typing import Callable, Any
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
@@ -1014,7 +1013,7 @@ class ConfigureProblem:
 
         all_multipliers_names = []
         for nlp_i in ocp.nlp:
-            if hasattr(nlp_i.model, "_dependent_joint_index"):  # making sure we have a HolonomicBiorbdModel
+            if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
                 nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
                 all_multipliers_names.extend(
                     [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
@@ -1078,7 +1077,7 @@ class ConfigureProblem:
 
         all_multipliers_names = []
         for nlp_i in ocp.nlp:
-            if hasattr(nlp_i.model, "_dependent_joint_index"):  # making sure we have a HolonomicBiorbdModel
+            if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
                 nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
                 all_multipliers_names.extend(
                     [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
@@ -1141,7 +1140,7 @@ class ConfigureProblem:
 
         all_multipliers_names = []
         for nlp_i in ocp.nlp:
-            if hasattr(nlp_i.model, "_dependent_joint_index"):  # making sure we have a HolonomicBiorbdModel
+            if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
                 nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
                 all_multipliers_names.extend(
                     [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
@@ -1416,7 +1415,7 @@ class ConfigureProblem:
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
                 lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.soft_contact_forces_func(
-                    [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a, d
+                    np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
                 )[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
