@@ -729,3 +729,21 @@ class BiorbdModel:
 
     def partitioned_forward_dynamics(self, q_u, qdot_u, tau, external_forces=None, f_contacts=None, q_v_init=None):
         raise NotImplementedError("partitioned_forward_dynamics is not implemented for BiorbdModel")
+
+    @staticmethod
+    def animate(
+        ocp,
+        solution,
+        show_now: bool = True,
+        show_tracked_markers: bool = False,
+        viewer: str = "pyorerun",
+        n_frames: int = 0,
+        **kwargs,
+    ):
+        from .viewer_bioviz import animate_with_bioviz_for_loop
+        from .viewer_pyorerun import animate_with_pyorerun
+
+        if viewer == "bioviz":
+            return animate_with_bioviz_for_loop(ocp, solution, show_now, show_tracked_markers, n_frames, **kwargs)
+        if viewer == "pyorerun":
+            return animate_with_pyorerun(ocp, solution, show_now, show_tracked_markers, **kwargs)

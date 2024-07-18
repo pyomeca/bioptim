@@ -1249,21 +1249,22 @@ class Solution:
             A list of bioviz structures (one for each phase). So one can call exec() by hand
         """
 
-        from ...models.biorbd.viewer_utils import (
-            _check_models_comes_from_same_super_class,
-        )
-        from ...models.biorbd.viewer_bioviz import animate_with_bioviz_for_loop
-        from ...models.biorbd.viewer_pyorerun import animate_with_pyorerun
+        from ...models.biorbd.viewer_utils import _check_models_comes_from_same_super_class
 
         if shooting_type:
             self.integrate(shooting_type=shooting_type)
 
         _check_models_comes_from_same_super_class(self.ocp.nlp)
 
-        if viewer == "bioviz":
-            return animate_with_bioviz_for_loop(self.ocp, self, show_now, show_tracked_markers, n_frames, **kwargs)
-        if viewer == "pyorerun":
-            return animate_with_pyorerun(self.ocp, self, show_now, show_tracked_markers, **kwargs)
+        type(self.ocp.nlp[0].model).animate(
+            ocp=self.ocp,
+            solution=self,
+            show_now=show_now,
+            show_tracked_markers=show_tracked_markers,
+            viewer=viewer,
+            n_frames=n_frames,
+            **kwargs,
+        )
 
     @staticmethod
     def _dispatch_params(params):
