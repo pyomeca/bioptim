@@ -732,13 +732,13 @@ class MultiBiorbdModel:
 
     @staticmethod
     def animate(
-            ocp,
-            solution,
-            show_now: bool = True,
-            show_tracked_markers: bool = False,
-            viewer: str = "pyorerun",
-            n_frames: int = 0,
-            **kwargs,
+        ocp,
+        solution,
+        show_now: bool = True,
+        show_tracked_markers: bool = False,
+        viewer: str = "pyorerun",
+        n_frames: int = 0,
+        **kwargs,
     ):
         from .viewer_bioviz import animate_with_bioviz_for_loop
         from .viewer_pyorerun import animate_with_pyorerun
