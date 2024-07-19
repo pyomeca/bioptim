@@ -146,10 +146,13 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
-        tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
+        # Charbie: to remove
+        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
+        #
+        # tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
+        # tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
+        # tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+        # tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -169,7 +172,7 @@ class DynamicsFunctions:
             dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
         else:
             ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
-            dxdt = MX(nlp.states.shape, ddq.shape[1])
+            dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
             dxdt[nlp.states["qdot"].index, :] = ddq
 
@@ -1090,7 +1093,7 @@ class DynamicsFunctions:
             mapping = nlp.controls["q"].mapping
         else:
             raise RuntimeError("Your q key combination was not found in states or controls")
-        return mapping.to_first.map(nlp.model.reshape_qdot(q, qdot))
+        return mapping.to_first.map(nlp.model.reshape_qdot()(q, qdot))
 
     @staticmethod
     def forward_dynamics(
@@ -1122,6 +1125,7 @@ class DynamicsFunctions:
         -------
         The derivative of qdot
         """
+        # Get the mapping of the output
         if "qdot" in nlp.states:
             qdot_var_mapping = nlp.states["qdot"].mapping.to_first
         elif "qdot" in nlp.controls:
@@ -1133,14 +1137,14 @@ class DynamicsFunctions:
             if with_contact:
                 qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau)
             else:
-                qddot = nlp.model.forward_dynamics(q, qdot, tau)
+                qddot = nlp.model.forward_dynamics()(q, qdot, tau)
 
             return qdot_var_mapping.map(qddot)
         else:
             if with_contact:
                 qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, external_forces)
             else:
-                qddot = nlp.model.forward_dynamics(q, qdot, tau, external_forces)
+                qddot = nlp.model.forward_dynamics()(q, qdot, tau, external_forces)
             return qdot_var_mapping.map(qddot)
 
     @staticmethod
