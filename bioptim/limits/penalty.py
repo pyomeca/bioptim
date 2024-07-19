@@ -284,8 +284,6 @@ class PenaltyFunctionAbstract:
                 The index or name of the segment to use as reference. Default [None] is the global coordinate system
             """
 
-            controller.model: BiorbdModel
-
             # Adjust the cols and rows
             PenaltyFunctionAbstract.set_idx_columns(penalty, controller, marker_index, "marker")
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
@@ -295,7 +293,7 @@ class PenaltyFunctionAbstract:
 
             # Compute the position of the marker in the requested reference frame (None for global)
             q = controller.q
-            model = controller.model
+            model: BiorbdModel = controller.model
             jcs_t = (
                 biorbd.RotoTrans()
                 if reference_jcs is None
