@@ -1,7 +1,6 @@
-from typing import Callable, Any
-
 import numpy as np
 from casadi import vertcat, Function, DM, horzcat
+from typing import Callable, Any
 
 from .configure_new_variable import NewVariableConfiguration
 from .dynamics_functions import DynamicsFunctions
@@ -1012,8 +1011,18 @@ class ConfigureProblem:
             ["lagrange_multipliers"],
         )
 
-        all_multipliers_names = [f"lagrange_multiplier_{i}" for i in range(nlp.model.nb_dependent_joints)]
-        all_multipliers_names_in_phase = [f"lagrange_multiplier_{i}" for i in range(nlp.model.nb_dependent_joints)]
+        all_multipliers_names = []
+        for nlp_i in ocp.nlp:
+            if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
+                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+                all_multipliers_names.extend(
+                    [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
+                )
+
+        all_multipliers_names = [f"lagrange_multiplier_{name}" for name in all_multipliers_names]
+        all_multipliers_names_in_phase = [
+            f"lagrange_multiplier_{nlp.model.name_dof[i]}" for i in nlp.model.dependent_joint_index
+        ]
 
         axes_idx = BiMapping(
             to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
@@ -1032,7 +1041,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_qv(ocp, nlp, dyn_func: Callable, **extra_params):
         """
-        Configure the contact points
+        Configure the qv, i.e. the dependent joint coordinates, to be plotted
 
         Parameters
         ----------
@@ -1066,9 +1075,15 @@ class ConfigureProblem:
             ["q_v"],
         )
 
-        all_multipliers_names = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
-        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+        all_multipliers_names = []
+        for nlp_i in ocp.nlp:
+            if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
+                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+                all_multipliers_names.extend(
+                    [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
+                )
 
+        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
         axes_idx = BiMapping(
             to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
             to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
@@ -1086,7 +1101,7 @@ class ConfigureProblem:
     @staticmethod
     def configure_qdotv(ocp, nlp, dyn_func: Callable, **extra_params):
         """
-        Configure the contact points
+        Configure the qdot_v, i.e. the dependent joint velocities, to be plotted
 
         Parameters
         ----------
@@ -1123,9 +1138,15 @@ class ConfigureProblem:
             ["qdot_v"],
         )
 
-        all_multipliers_names = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
-        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.independent_joint_index]
+        all_multipliers_names = []
+        for nlp_i in ocp.nlp:
+            if hasattr(nlp_i.model, "has_holonomic_constraints"):  # making sure we have a HolonomicBiorbdModel
+                nlp_i_multipliers_names = [nlp_i.model.name_dof[i] for i in nlp_i.model.dependent_joint_index]
+                all_multipliers_names.extend(
+                    [name for name in nlp_i_multipliers_names if name not in all_multipliers_names]
+                )
 
+        all_multipliers_names_in_phase = [nlp.model.name_dof[i] for i in nlp.model.dependent_joint_index]
         axes_idx = BiMapping(
             to_first=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
             to_second=[i for i, c in enumerate(all_multipliers_names) if c in all_multipliers_names_in_phase],
@@ -1321,7 +1342,7 @@ class ConfigureProblem:
 
         nlp.plot["contact_forces"] = CustomPlot(
             lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.contact_forces_func(
-                [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a, d
+                np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
             ),
             plot_type=PlotType.INTEGRATED,
             axes_idx=axes_idx,
@@ -1394,7 +1415,7 @@ class ConfigureProblem:
                 )
             nlp.plot[f"soft_contact_forces_{nlp.model.soft_contact_names[i_sc]}"] = CustomPlot(
                 lambda t0, phases_dt, node_idx, x, u, p, a, d: nlp.soft_contact_forces_func(
-                    [t0, t0 + phases_dt[nlp.phase_idx]], x, u, p, a, d
+                    np.concatenate([t0, t0 + phases_dt[nlp.phase_idx]]), x, u, p, a, d
                 )[(i_sc * 6) : ((i_sc + 1) * 6), :],
                 plot_type=PlotType.INTEGRATED,
                 axes_idx=phase_mappings,
