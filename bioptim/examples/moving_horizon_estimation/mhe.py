@@ -15,11 +15,12 @@ estimated data can be compared to real data.
 
 from copy import copy
 
-import matplotlib.pyplot as plt
-from scipy.integrate import solve_ivp
-import casadi as cas
-import numpy as np
 import biorbd_casadi as biorbd
+import casadi as cas
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy.integrate import solve_ivp
+
 from bioptim import (
     BioModel,
     BiorbdModel,
@@ -232,12 +233,12 @@ def main():
     sol = mhe.solve(update_functions, **get_solver_options(solver))
     sol_states = sol.decision_states(to_merge=SolutionMerge.NODES)
 
-    print("ACADOS with Bioptim")
+    print(f"{solver} with Bioptim")
     print(f"Window size of MHE : {window_duration} s.")
     print(f"New measurement every : {1 / n_shoot_per_second} s.")
     print(f"Average time per iteration of MHE : {sol.solver_time_to_optimize / (n_frames_total - 1)} s.")
     print(f"Average real time per iteration of MHE : {sol.real_time_to_optimize / (n_frames_total - 1)} s.")
-    print(f"Norm of the error on q = {np.linalg.norm(states[:bio_model.nb_q, :n_frames_total] - sol_states['q'])}")
+    print(f"Norm of the error on q = {np.linalg.norm(states[:bio_model.nb_q, :n_frames_total + 1] - sol_states['q'])}")
 
     markers_estimated = states_to_markers(bio_model, sol_states["q"])
 
@@ -256,7 +257,7 @@ def main():
     plt.figure()
     plt.plot(sol_states["q"].T, "--", label="States estimate (q)")
     plt.plot(sol_states["qdot"].T, "--", label="States estimate (qdot)")
-    plt.plot(sol_states[:, :n_frames_total].T, label="State truth")
+    plt.plot(states[:, :n_frames_total].T, label="State truth")
     plt.legend()
     plt.show()
 
