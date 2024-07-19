@@ -1270,7 +1270,7 @@ class OptimalControlProgram:
             """
 
             weight = PenaltyHelpers.weight(penalty)
-            target = PenaltyHelpers.target(penalty, node_idx)
+            target = PenaltyHelpers.target(penalty, penalty.node_idx.index(node_idx))
 
             val = penalty.weighted_function_non_threaded[node_idx](t0, phases_dt, x, u, p, a, d, weight, target)
             return sum1(horzcat(val))
