@@ -1,14 +1,14 @@
 """
-# TODO: Remove all the examples/muscle_driven_with_contact and make sure everything is properly tested
 All the examples in muscle_driven_with_contact are merely to show some dynamics and prepare some OCP for the tests.
 It is not really relevant and will be removed when unitary tests for the dynamics will be implemented
 """
 
 import importlib.util
-from pathlib import Path
 import platform
+from pathlib import Path
 
 import numpy as np
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,
@@ -21,6 +21,7 @@ from bioptim import (
     OdeSolver,
     Solver,
     SolutionMerge,
+    Node,
 )
 
 # Load track_segment_on_rt
@@ -41,8 +42,12 @@ def prepare_ocp(
 
     # Add objective functions
     objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=muscle_activations_ref)
-    objective_functions.add(ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref)
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.TRACK_CONTROL, key="muscles", target=muscle_activations_ref, node=Node.ALL_SHOOTING
+    )
+    objective_functions.add(
+        ObjectiveFcn.Lagrange.TRACK_CONTACT_FORCES, target=contact_forces_ref, node=Node.ALL_SHOOTING
+    )
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="qdot", weight=0.001)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=0.001)
     objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="muscles", weight=0.001)
@@ -53,40 +58,38 @@ def prepare_ocp(
     dynamics.add(DynamicsFcn.MUSCLE_DRIVEN, with_residual_torque=True, with_contact=True)
 
     # Path constraint
-    n_q = bio_model.nb_q
-    n_qdot = n_q
-    pose_at_first_node = [0, 0, -0.75, 0.75]
+    q_at_first_node = [0, 0, -0.75, 0.75]
 
     # Initialize x_bounds
     x_bounds = BoundsList()
-    x_bounds.add(bounds=bio_model.bounds_from_ranges(["q", "qdot"]))
-    x_bounds[0][:, 0] = pose_at_first_node + [0] * n_qdot
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["q"][:, 0] = q_at_first_node
 
     # Initial guess
     x_init = InitialGuessList()
-    x_init.add(pose_at_first_node + [0] * n_qdot)
+    x_init["q"] = q_at_first_node
 
     # Define control path constraint
     u_bounds = BoundsList()
-    u_bounds.add(
-        [tau_min] * bio_model.nb_tau + [activation_min] * bio_model.nb_muscles,
-        [tau_max] * bio_model.nb_tau + [activation_max] * bio_model.nb_muscles,
-    )
+    u_bounds["tau"] = ([tau_min] * bio_model.nb_tau, [tau_max] * bio_model.nb_tau)
+    u_bounds["muscles"] = ([activation_min] * bio_model.nb_muscles, [activation_max] * bio_model.nb_muscles)
 
     u_init = InitialGuessList()
-    u_init.add([tau_init] * bio_model.nb_tau + [activation_init] * bio_model.nb_muscles)
+    u_init["tau"] = [tau_init] * bio_model.nb_tau
+    u_init["muscles"] = [activation_init] * bio_model.nb_muscles
 
     # ------------- #
 
     return OptimalControlProgram(
-        bio_model,
-        dynamics,
-        n_shooting,
-        phase_time,
-        x_init,
-        u_init,
-        x_bounds,
-        u_bounds,
+        bio_model=bio_model,
+        dynamics=dynamics,
+        n_shooting=n_shooting,
+        phase_time=phase_time,
+        x_init=x_init,
+        u_init=u_init,
+        x_bounds=x_bounds,
+        u_bounds=u_bounds,
         objective_functions=objective_functions,
         ode_solver=ode_solver,
     )
@@ -112,9 +115,13 @@ def main():
     controls = sol.decision_controls(to_merge=SolutionMerge.NODES)
     q, qdot, tau, mus = states["q"], states["qdot"], controls["tau"], controls["muscles"]
 
-    x = np.concatenate((q, qdot))
-    u = np.concatenate((tau, mus))
-    contact_forces_ref = np.array(ocp_to_track.nlp[0].contact_forces_func(x[:, :-1], u[:, :-1], []))
+    x = np.concatenate((q, qdot), axis=0)
+    u = np.concatenate((tau, mus), axis=0)
+    contact_forces_ref = (
+        np.array([ocp_to_track.nlp[0].contact_forces_func([], x[:, i], u[:, i], [], [], []) for i in range(ns)])
+        .squeeze()
+        .T
+    )
     muscle_activations_ref = mus
 
     # Track these data
@@ -122,7 +129,7 @@ def main():
         biorbd_model_path=model_path,
         phase_time=final_time,
         n_shooting=ns,
-        muscle_activations_ref=muscle_activations_ref[:, :-1],
+        muscle_activations_ref=muscle_activations_ref,
         contact_forces_ref=contact_forces_ref,
     )
 

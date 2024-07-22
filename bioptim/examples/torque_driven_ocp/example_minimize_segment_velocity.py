@@ -5,6 +5,7 @@ Note that there are other ways to do this, here it is used to examplify how to u
 """
 
 import numpy as np
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,

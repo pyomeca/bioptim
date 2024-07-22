@@ -1,11 +1,13 @@
-import warnings
-import os
 from sys import platform
-import pytest
 
 import numpy as np
 import numpy.testing as npt
+import os
+import pytest
+import warnings
+
 from bioptim import Shooting, OdeSolver, SolutionIntegrator, Solver, PhaseDynamics, SolutionMerge, ControlType
+from bioptim.models.biorbd.viewer_utils import _check_models_comes_from_same_super_class
 
 
 @pytest.mark.parametrize("scaled", [True, False])
@@ -648,7 +650,7 @@ def test_check_models_comes_from_same_super_class():
     solver.set_print_level(0)
     sol = ocp.solve(solver)
 
-    sol._check_models_comes_from_same_super_class()
+    _check_models_comes_from_same_super_class(sol.ocp.nlp)
 
     class FakeModel:
         def __init__(self):
@@ -662,7 +664,7 @@ def test_check_models_comes_from_same_super_class():
         "Here, the model of phase 0 is of type FakeModel "
         "and the model of phase 0 is of type BiorbdModel and they don't share the same super class.",
     ):
-        sol._check_models_comes_from_same_super_class()
+        _check_models_comes_from_same_super_class(sol.ocp.nlp)
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])

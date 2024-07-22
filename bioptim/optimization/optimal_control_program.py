@@ -13,8 +13,8 @@ from ..dynamics.configure_problem import DynamicsList, Dynamics, ConfigureProble
 from ..dynamics.ode_solver import OdeSolver, OdeSolverBase
 from ..gui.check_conditioning import check_conditioning
 from ..gui.graph import OcpToConsole, OcpToGraph
-from ..gui.plot import CustomPlot, PlotOcp
 from ..gui.ipopt_output_plot import SaveIterationsInfo
+from ..gui.plot import CustomPlot, PlotOcp
 from ..interfaces import Solver
 from ..interfaces.abstract_options import GenericSolver
 from ..limits.constraints import (

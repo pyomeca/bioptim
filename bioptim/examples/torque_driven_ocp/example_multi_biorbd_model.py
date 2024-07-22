@@ -85,16 +85,19 @@ def main():
 
     sol.graphs(show_bounds=True)
 
-    # --- Show results --- #
-    show_solution_animation = False
-    if show_solution_animation:
-        states = sol.decision_states(to_merge=SolutionMerge.NODES)
-        q = states["q"]
-        import bioviz
+    # --- Animate results with bioviz --- #
+    # show_solution_animation = False
+    # if show_solution_animation:
+    #     states = sol.decision_states(to_merge=SolutionMerge.NODES)
+    #     q = states["q"]
+    #     import bioviz
+    #
+    #     b = bioviz.Viz("models/triple_pendulum_both_inertia.bioMod")
+    #     b.load_movement(q)
+    #     b.exec()
 
-        b = bioviz.Viz("models/triple_pendulum_both_inertia.bioMod")
-        b.load_movement(q)
-        b.exec()
+    # --- Animate results with pyorerun --- #
+    sol.animate(viewer="pyorerun")
 
 
 if __name__ == "__main__":

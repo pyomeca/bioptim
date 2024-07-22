@@ -1,19 +1,12 @@
+import biorbd_casadi as biorbd
+from casadi import SX, MX, vertcat
 from typing import Callable, Any
 
-import biorbd_casadi as biorbd
-from biorbd_casadi import (
-    GeneralizedCoordinates,
-    GeneralizedVelocity,
-)
-from casadi import SX, MX, vertcat
-
-from ...misc.utils import check_version
+from .biorbd_model import BiorbdModel
+from ..utils import _var_mapping
+from ..utils import bounds_from_ranges
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
-from ..utils import _var_mapping, bounds_from_ranges
-from ...optimization.solution.solution_data import SolutionMerge
-from ..utils import bounds_from_ranges
-from .biorbd_model import BiorbdModel
 
 
 class MultiBiorbdModel:
@@ -738,51 +731,19 @@ class MultiBiorbdModel:
         raise NotImplementedError("partitioned_forward_dynamics is not implemented yet for MultiBiorbdModel")
 
     @staticmethod
-    def animate(solution: Any, show_now: bool = True, tracked_markers: list = None, **kwargs: Any) -> None | list:
-        try:
-            import bioviz
-        except ModuleNotFoundError:
-            raise RuntimeError("bioviz must be install to animate the model")
+    def animate(
+        ocp,
+        solution,
+        show_now: bool = True,
+        show_tracked_markers: bool = False,
+        viewer: str = "pyorerun",
+        n_frames: int = 0,
+        **kwargs,
+    ):
+        from .viewer_bioviz import animate_with_bioviz_for_loop
+        from .viewer_pyorerun import animate_with_pyorerun
 
-        check_version(bioviz, "2.3.0", "2.4.0")
-
-        states = solution.stepwise_states(to_merge=SolutionMerge.NODES)
-        if not isinstance(states, (list, tuple)):
-            states = [states]
-
-        if tracked_markers is None:
-            tracked_markers = [None] * len(states)
-
-        all_bioviz = []
-        for idx_phase, data in enumerate(states):
-            # This calls each of the function that modify the internal dynamic model based on the parameters
-            nlp = solution.ocp.nlp[idx_phase]
-
-            if isinstance(nlp.model, MultiBiorbdModel):
-                if nlp.model.nb_models > 1:
-                    raise NotImplementedError(
-                        f"Animation is only implemented for MultiBiorbdModel with 1 model."
-                        f" There are {nlp.model.nb_models} models in the phase {idx_phase}."
-                    )
-                else:
-                    model = nlp.model.models[0]
-
-            biorbd_model: BiorbdModel = model
-
-            all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
-            all_bioviz[-1].load_movement(solution.ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data["q"]))
-
-            if tracked_markers[idx_phase] is not None:
-                all_bioviz[-1].load_experimental_markers(tracked_markers[idx_phase])
-
-        if show_now:
-            b_is_visible = [True] * len(all_bioviz)
-            while sum(b_is_visible):
-                for i, b in enumerate(all_bioviz):
-                    if b.vtk_window.is_active:
-                        b.update()
-                    else:
-                        b_is_visible[i] = False
-            return None
-        else:
-            return all_bioviz
+        if viewer == "bioviz":
+            return animate_with_bioviz_for_loop(ocp, solution, show_now, show_tracked_markers, n_frames, **kwargs)
+        if viewer == "pyorerun":
+            return animate_with_pyorerun(ocp, solution, show_now, show_tracked_markers, **kwargs)
