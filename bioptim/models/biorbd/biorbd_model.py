@@ -740,10 +740,11 @@ class BiorbdModel:
         n_frames: int = 0,
         **kwargs,
     ):
-        from .viewer_bioviz import animate_with_bioviz_for_loop
-        from .viewer_pyorerun import animate_with_pyorerun
-
         if viewer == "bioviz":
+            from .viewer_bioviz import animate_with_bioviz_for_loop
+
             return animate_with_bioviz_for_loop(ocp, solution, show_now, show_tracked_markers, n_frames, **kwargs)
         if viewer == "pyorerun":
+            from .viewer_pyorerun import animate_with_pyorerun
+
             return animate_with_pyorerun(ocp, solution, show_now, show_tracked_markers, **kwargs)
