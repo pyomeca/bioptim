@@ -782,7 +782,7 @@ class PlotOcp:
 
     def _compute_y_from_plot_func(
         self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
-    ) -> list[np.ndarray | list, ...]:
+    ) -> list[np.ndarray | list]:
         """
         Compute the y data from the plot function
 
@@ -1031,3 +1031,5 @@ class PlotOcp:
 
         n_rows = int(round(np.sqrt(nb)))
         return n_rows + 1 if n_rows * n_rows < nb else n_rows, n_rows
+
+
