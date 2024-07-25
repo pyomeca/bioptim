@@ -130,7 +130,7 @@ class Model:
             defects=None,
         )
 
-    def declare_ding_variables(
+    def declare_variables(
         self, ocp: OptimalControlProgram, nlp: NonLinearProgram, numerical_data_timeseries: dict[str, np.ndarray] = None
     ):
         name = "Cn"
@@ -289,7 +289,7 @@ def prepare_ocp(
     dynamics = DynamicsList()
     for i in range(n_stim):
         dynamics.add(
-            models[i].declare_ding_variables,
+            models[i].declare_variables,
             dynamic_function=models[i].dynamics,
             expand_dynamics=True,
             expand_continuity=False,
@@ -650,7 +650,7 @@ result_dict = {
 
 
 @pytest.mark.parametrize("test_index", [0, 1, 2, 3])
-def test_time_dependent_ding(test_index):
+def test_time_dependent(test_index):
     time_as_states = problem_dict[str(test_index)]["time_as_states"]
     use_sx = problem_dict[str(test_index)]["use_sx"]
 
