@@ -208,6 +208,7 @@ from .misc.enums import (
     MagnitudeType,
     MultiCyclicCycleSolutions,
     PhaseDynamics,
+    ShowOnlineType,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .optimization.multi_start import MultiStart
@@ -229,3 +230,5 @@ from .optimization.variational_optimal_control_program import VariationalOptimal
 from .optimization.stochastic_optimal_control_program import StochasticOptimalControlProgram
 from .optimization.problem_type import SocpType
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero
+
+from .gui.online_callback import OnlineCallbackServer

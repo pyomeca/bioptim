@@ -1363,6 +1363,7 @@ class OptimalControlProgram:
             show_bounds=show_bounds,
             shooting_type=shooting_type,
             integrator=integrator,
+            dummy_phase_times=OptimizationVectorHelper.extract_step_times(self.ocp),
         )
 
     def check_conditioning(self):

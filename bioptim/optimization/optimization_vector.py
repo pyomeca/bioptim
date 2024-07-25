@@ -347,7 +347,7 @@ class OptimizationVectorHelper:
         return list(out[:, 0])
 
     @staticmethod
-    def extract_step_times(ocp, data: np.ndarray | DM) -> list:
+    def extract_step_times(ocp, data: np.ndarray | DM | None = None) -> list:
         """
         Get the phase time. If time is optimized, the MX/SX values are replaced by their actual optimized time
 
@@ -356,13 +356,14 @@ class OptimizationVectorHelper:
         ocp: OptimalControlProgram
             A reference to the ocp
         data: np.ndarray | DM
-            The solution in a vector
+            The solution in a vector, if no data is provided, dummy data is used (it can be useful getting the dimensions)
 
         Returns
         -------
         The phase time
         """
 
+        data = DM(np.ones(ocp.n_phases)) if data is None else data
         phase_dt = OptimizationVectorHelper.extract_phase_dt(ocp, data)
 
         # Starts at zero

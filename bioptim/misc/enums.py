@@ -93,6 +93,22 @@ class PlotType(Enum):
     POINT = 3  # Point plot
 
 
+class ShowOnlineType(Enum):
+    """
+    The type of callback
+
+    Attributes
+    ----------
+    MULTIPROCESS: int
+        Using multiprocessing
+    SERVER: int
+        Using a server to communicate with the client
+    """
+
+    MULTIPROCESS = 0
+    TCP = 1
+
+
 class ControlType(Enum):
     """
     Selection of valid controls

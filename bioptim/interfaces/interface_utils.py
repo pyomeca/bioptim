@@ -6,10 +6,10 @@ from casadi import Importer, Function
 from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from bioptim.optimization.solution.solution import Solution
-from ..gui.online_callback import OnlineCallback
+from ..gui.online_callback import OnlineCallbackMultiprocess, OnlineCallbackTcp
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
-from ..misc.enums import InterpolationType
+from ..misc.enums import InterpolationType, ShowOnlineType
 from ..optimization.non_linear_program import NonLinearProgram
 
 
@@ -24,10 +24,32 @@ def generic_online_optim(interface, ocp, show_options: dict = None):
     show_options: dict
         The options to pass to PlotOcp
     """
+    show_type = ShowOnlineType.MULTIPROCESS
+    if "type" in show_options:
+        show_type = show_options["type"]
+        del show_options["type"]
 
-    if platform != "linux":
-        raise RuntimeError("Online graphics are only available on Linux")
-    interface.options_common["iteration_callback"] = OnlineCallback(ocp, show_options=show_options)
+    if show_type == ShowOnlineType.MULTIPROCESS:
+        if platform == "win32":
+            raise RuntimeError(
+                "Online ShowOnlineType.MULTIPROCESS is not supported on Windows. "
+                "You can add show_options={'type': ShowOnlineType.TCP} to the Solver declaration"
+            )
+        interface.options_common["iteration_callback"] = OnlineCallbackMultiprocess(ocp, show_options=show_options)
+    elif show_type == ShowOnlineType.TCP:
+        host = None
+        if "host" in show_options:
+            host = show_options["host"]
+            del show_options["host"]
+        port = None
+        if "port" in show_options:
+            port = show_options["port"]
+            del show_options["port"]
+        interface.options_common["iteration_callback"] = OnlineCallbackTcp(
+            ocp, show_options=show_options, host=host, port=port
+        )
+    else:
+        raise NotImplementedError(f"show_options['type']={show_type} is not implemented yet")
 
 
 def generic_solve(interface, expand_during_shake_tree=False) -> dict:
