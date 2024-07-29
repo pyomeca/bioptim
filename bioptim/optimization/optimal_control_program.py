@@ -1363,7 +1363,7 @@ class OptimalControlProgram:
             show_bounds=show_bounds,
             shooting_type=shooting_type,
             integrator=integrator,
-            dummy_phase_times=OptimizationVectorHelper.extract_step_times(self.ocp),
+            dummy_phase_times=OptimizationVectorHelper.extract_step_times(self.ocp, casadi.DM(np.ones(self.ocp.n_phases))),
         )
 
     def check_conditioning(self):

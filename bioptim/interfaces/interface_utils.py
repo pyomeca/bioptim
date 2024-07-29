@@ -13,7 +13,7 @@ from ..misc.enums import InterpolationType, ShowOnlineType
 from ..optimization.non_linear_program import NonLinearProgram
 
 
-def generic_online_optim(interface, ocp, show_options: dict = None):
+def generic_online_optim(interface, ocp, show_options: dict | None = None):
     """
     Declare the online callback to update the graphs while optimizing
 
@@ -24,6 +24,9 @@ def generic_online_optim(interface, ocp, show_options: dict = None):
     show_options: dict
         The options to pass to PlotOcp
     """
+    if show_options is None:
+        show_options = {}
+
     show_type = ShowOnlineType.MULTIPROCESS
     if "type" in show_options:
         show_type = show_options["type"]

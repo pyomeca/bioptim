@@ -5,6 +5,7 @@ import logging
 import multiprocessing as mp
 import socket
 import struct
+from typing import Callable
 
 
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
@@ -230,7 +231,8 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
                 A reference to the ocp to show
             """
 
-            self.ocp = ocp
+            self.ocp: OcpSerializable = ocp
+            self._plotter: PlotOcp = None
 
         def __call__(self, pipe: mp.Queue, show_options: dict | None):
             """
@@ -246,15 +248,14 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
                 show_options = {}
             self.pipe = pipe
 
-            dummy_phase_times = OptimizationVectorHelper.extract_step_times(self.ocp)
-            self.plot = PlotOcp(self.ocp, dummy_phase_times=dummy_phase_times, **show_options)
-
-            timer = self.plot.all_figures[0].canvas.new_timer(interval=10)
-            timer.add_callback(self.callback)
+            dummy_phase_times = OptimizationVectorHelper.extract_step_times(self.ocp, DM(np.ones(self.ocp.n_phases)))
+            self._plotter = PlotOcp(self.ocp, dummy_phase_times=dummy_phase_times, **show_options)
+            timer = self._plotter.all_figures[0].canvas.new_timer(interval=10)
+            timer.add_callback(self.plot_update)
             timer.start()
             plt.show()
 
-        def callback(self) -> bool:
+        def plot_update(self) -> bool:
             """
             The callback to update the graphs
 
@@ -265,11 +266,15 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
 
             while not self.pipe.empty():
                 args = self.pipe.get()
-                self.plot.update_data(args)
+                self._plotter.update_data(args)
 
-            for i, fig in enumerate(self.plot.all_figures):
+            for i, fig in enumerate(self._plotter.all_figures):
                 fig.canvas.draw()
             return True
+
+
+_default_host = "localhost"
+_default_port = 3050
 
 
 class OnlineCallbackServer:
@@ -290,14 +295,14 @@ class OnlineCallbackServer:
 
         self._logger = logging.getLogger(name)
         self._logger.addHandler(console_handler)
-        self._logger.setLevel(logging.INFO)
+        self._logger.setLevel(logging.DEBUG)
 
-    def __init__(self, host: str = "localhost", port: int = 3050):
+    def __init__(self, host: str = None, port: int = None):
         self._prepare_logger()
 
         # Define the host and port
-        self._host = host
-        self._port = port
+        self._host = host if host else _default_host
+        self._port = port if port else _default_port
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._plotter: PlotOcp = None
 
@@ -305,18 +310,24 @@ class OnlineCallbackServer:
         # Start listening to the server
         self._socket.bind((self._host, self._port))
         self._socket.listen(1)
-        self._logger.debug(f"Server started on {self._host}:{self._port}")
+        self._logger.info(f"Server started on {self._host}:{self._port}")
 
-        while True:
-            self._logger.info("Waiting for a new connexion")
-            client_socket, addr = self._socket.accept()
-            self._handle_client(client_socket, addr)
+        try:
+            while True:
+                self._logger.info("Waiting for a new connexion")
+                client_socket, addr = self._socket.accept()
+                self._logger.info(f"Connection from {addr}")
+                self._handle_client(client_socket, addr)
+        except Exception as e:
+            self._logger.error(f"Error while running the server: {e}")
+        finally:
+            self._socket.close()
 
     def _handle_client(self, client_socket: socket.socket, addr: tuple):
-        self._logger.info(f"Connection from {addr}")
         while True:
             # Receive the actual data
             try:
+                self._logger.debug("Waiting for data from client")
                 data = client_socket.recv(1024)
             except:
                 self._logger.warning("Error while receiving data from client, closing connexion")
@@ -327,6 +338,7 @@ class OnlineCallbackServer:
 
             if not data:
                 self._logger.info("The client closed the connexion")
+                plt.close()
                 return
 
             try:
@@ -336,64 +348,78 @@ class OnlineCallbackServer:
                 continue
 
             if message_type == OnlineCallbackServer._ServerMessages.INITIATE_CONNEXION:
-                self._logger.debug(f"Received hand shake from client, len of OCP: {data_as_list[1]}")
-                ocp_len = data_as_list[1]
-                try:
-                    ocp_data = client_socket.recv(int(ocp_len))
-                except:
-                    self._logger.warning("Error while receiving OCP data from client, closing connexion")
-                    return
-
-                data_json = json.loads(ocp_data)
-
-                try:
-                    dummy_time_vector = []
-                    for phase_times in data_json["dummy_phase_times"]:
-                        dummy_time_vector.append([DM(v) for v in phase_times])
-                    del data_json["dummy_phase_times"]
-                except:
-                    self._logger.warning("Error while extracting dummy time vector from OCP data, closing connexion")
-                    return
-
-                try:
-                    ocp = OcpSerializable.deserialize(data_json)
-                except:
-                    self._logger.warning("Error while deserializing OCP data from client, closing connexion")
-                    return
-
-                show_options = {}
-                self._plotter = PlotOcp(ocp, dummy_phase_times=dummy_time_vector, **show_options)
-                self._plotter.show()
+                self._initiate_connexion(client_socket, data_as_list)
                 continue
 
             elif message_type == OnlineCallbackServer._ServerMessages.NEW_DATA:
-                n_bytes = [int(d) for d in data_as_list[1][1:-1].split(",")]
-                n_points = [int(d / 8) for d in n_bytes]
-                all_data = []
-                for n_byte, n_point in zip(n_bytes, n_points):
-                    data = client_socket.recv(n_byte)
-                    data_tp = struct.unpack("d" * n_point, data)
-                    all_data.append(DM(data_tp))
-
-                self._logger.debug(f"Received new data from client")
-                # self._plotter.update_data(data_as_list[1])
+                try:
+                    self._update_data(client_socket, data_as_list)
+                except:
+                    self._logger.warning("Error while updating data from client, closing connexion")
+                    plt.close()
+                    client_socket.close()
+                    return
                 continue
 
             elif message_type == OnlineCallbackServer._ServerMessages.CLOSE_CONNEXION:
                 self._logger.info("Received close connexion from client")
                 client_socket.close()
+                plt.close()
                 return
             else:
                 self._logger.warning("Unknown message received")
                 continue
 
+    def _initiate_connexion(self, client_socket: socket.socket, data_as_list: list):
+        self._logger.debug(f"Received hand shake from client, len of OCP: {data_as_list[1]}")
+        ocp_len = data_as_list[1]
+        try:
+            ocp_data = client_socket.recv(int(ocp_len))
+        except:
+            self._logger.warning("Error while receiving OCP data from client, closing connexion")
+            return
+
+        data_json = json.loads(ocp_data)
+
+        try:
+            dummy_time_vector = []
+            for phase_times in data_json["dummy_phase_times"]:
+                dummy_time_vector.append([DM(v) for v in phase_times])
+            del data_json["dummy_phase_times"]
+        except:
+            self._logger.warning("Error while extracting dummy time vector from OCP data, closing connexion")
+            return
+
+        try:
+            self.ocp = OcpSerializable.deserialize(data_json)
+        except:
+            self._logger.warning("Error while deserializing OCP data from client, closing connexion")
+            return
+
+        show_options = {}
+        self._plotter = PlotOcp(self.ocp, dummy_phase_times=dummy_time_vector, **show_options)
+        plt.ion()
+        plt.draw()  # TODO HERE!
+
+    def _update_data(self, client_socket: socket.socket, data_as_list: list):
+        n_bytes = [int(d) for d in data_as_list[1][1:-1].split(",")]
+        n_points = [int(d / 8) for d in n_bytes]
+        all_data = []
+        for n_byte, n_point in zip(n_bytes, n_points):
+            data = client_socket.recv(n_byte)
+            data_tp = struct.unpack("d" * n_point, data)
+            all_data.append(DM(data_tp))
+
+        self._logger.debug(f"Received new data from client")
+        # self._plotter.update_data(data_as_list[1])
+
 
 class OnlineCallbackTcp(OnlineCallbackAbstract):
-    def __init__(self, ocp, opts: dict = None, show_options: dict = None, host: str = "localhost", port: int = 3050):
+    def __init__(self, ocp, opts: dict = None, show_options: dict = None, host: str = None, port: int = None):
         super().__init__(ocp, opts, show_options)
 
-        self._host = host
-        self._port = port
+        self._host = host if host else _default_host
+        self._port = port if port else _default_port
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._initialize_connexion()
 
@@ -409,7 +435,7 @@ class OnlineCallbackTcp(OnlineCallbackAbstract):
 
         ocp_plot = OcpSerializable.from_ocp(self.ocp).serialize()
         ocp_plot["dummy_phase_times"] = []
-        for phase_times in OptimizationVectorHelper.extract_step_times(self.ocp):
+        for phase_times in OptimizationVectorHelper.extract_step_times(self.ocp, DM(np.ones(self.ocp.n_phases))):
             ocp_plot["dummy_phase_times"].append([np.array(v)[:, 0].tolist() for v in phase_times])
         serialized_ocp = json.dumps(ocp_plot).encode()
         self._socket.send(
