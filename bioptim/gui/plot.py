@@ -6,14 +6,15 @@ from casadi import DM
 from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import StrMethodFormatter
 
+from .serializable_class import OcpSerializable
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import PlotType, Shooting, SolutionIntegrator, QuadratureRule, InterpolationType
 from ..misc.mapping import Mapping, BiMapping
-from ..optimization.optimization_vector import OptimizationVectorHelper
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
+
 
 DEFAULT_COLORS = {
     PlotType.PLOT: "tab:green",
@@ -130,501 +131,6 @@ class CustomPlot:
         self.all_variables_in_one_subplot = all_variables_in_one_subplot
 
 
-class MappingSerializable:
-    map_idx: list[int]
-    oppose: list[int]
-
-    def __init__(self, map_idx: list, oppose: list):
-        self.map_idx = map_idx
-        self.oppose = oppose
-
-    def map(self, obj):
-        from ..misc.mapping import Mapping
-
-        return Mapping.map(self, obj)
-
-    @classmethod
-    def from_mapping(cls, mapping):
-        return cls(
-            map_idx=mapping.map_idx,
-            oppose=mapping.oppose,
-        )
-
-    def serialize(self):
-        return {
-            "map_idx": self.map_idx,
-            "oppose": self.oppose,
-        }
-
-    @classmethod
-    def deserialize(cls, data):
-        return cls(
-            map_idx=data["map_idx"],
-            oppose=data["oppose"],
-        )
-
-
-class BiMappingSerializable:
-    to_first: MappingSerializable
-    to_second: MappingSerializable
-
-    def __init__(self, to_first: MappingSerializable, to_second: MappingSerializable):
-        self.to_first = to_first
-        self.to_second = to_second
-
-    @classmethod
-    def from_bimapping(cls, bimapping):
-        return cls(
-            to_first=MappingSerializable.from_mapping(bimapping.to_first),
-            to_second=MappingSerializable.from_mapping(bimapping.to_second),
-        )
-
-    def serialize(self):
-        return {
-            "to_first": self.to_first.serialize(),
-            "to_second": self.to_second.serialize(),
-        }
-
-    @classmethod
-    def deserialize(cls, data):
-        return cls(
-            to_first=MappingSerializable.deserialize(data["to_first"]),
-            to_second=MappingSerializable.deserialize(data["to_second"]),
-        )
-
-
-class BoundsSerializable:
-    min: np.ndarray | DM
-    max: np.ndarray | DM
-
-    def __init__(self, min: np.ndarray | DM, max: np.ndarray | DM):
-        self.min = min
-        self.max = max
-
-    @classmethod
-    def from_bounds(cls, bounds):
-        return cls(
-            min=np.array(bounds.min),
-            max=np.array(bounds.max),
-        )
-
-    def serialize(self):
-        return {
-            "min": self.min.tolist(),
-            "max": self.max.tolist(),
-        }
-
-    @classmethod
-    def deserialize(cls, data):
-        return cls(
-            min=np.array(data["min"]),
-            max=np.array(data["max"]),
-        )
-
-
-class CustomPlotSerializable:
-    function: Callable
-    type: PlotType
-    phase_mappings: BiMappingSerializable
-    legend: tuple | list
-    combine_to: str
-    color: str
-    linestyle: str
-    ylim: tuple | list
-    bounds: BoundsSerializable
-    node_idx: list | slice | range
-    label: list
-    compute_derivative: bool
-    integration_rule: QuadratureRule
-    parameters: dict[str, Any]
-    all_variables_in_one_subplot: bool
-
-    def __init__(
-        self,
-        function: Callable,
-        plot_type: PlotType,
-        phase_mappings: BiMapping,
-        legend: tuple | list,
-        combine_to: str,
-        color: str,
-        linestyle: str,
-        ylim: tuple | list,
-        bounds: BoundsSerializable,
-        node_idx: list | slice | range,
-        label: list,
-        compute_derivative: bool,
-        integration_rule: QuadratureRule,
-        parameters: dict[str, Any],
-        all_variables_in_one_subplot: bool,
-    ):
-        self.function = None  # TODO function
-        self.type = plot_type
-        self.phase_mappings = phase_mappings
-        self.legend = legend
-        self.combine_to = combine_to
-        self.color = color
-        self.linestyle = linestyle
-        self.ylim = ylim
-        self.bounds = bounds
-        self.node_idx = node_idx
-        self.label = label
-        self.compute_derivative = compute_derivative
-        self.integration_rule = integration_rule
-        self.parameters = None  # TODO {key: value for key, value in parameters.items()}
-        self.all_variables_in_one_subplot = all_variables_in_one_subplot
-
-    @classmethod
-    def from_custom_plot(cls, custom_plot: CustomPlot):
-        return cls(
-            function=custom_plot.function,
-            plot_type=custom_plot.type,
-            phase_mappings=BiMappingSerializable.from_bimapping(custom_plot.phase_mappings),
-            legend=custom_plot.legend,
-            combine_to=custom_plot.combine_to,
-            color=custom_plot.color,
-            linestyle=custom_plot.linestyle,
-            ylim=custom_plot.ylim,
-            bounds=BoundsSerializable.from_bounds(custom_plot.bounds),
-            node_idx=custom_plot.node_idx,
-            label=custom_plot.label,
-            compute_derivative=custom_plot.compute_derivative,
-            integration_rule=custom_plot.integration_rule,
-            parameters=custom_plot.parameters,
-            all_variables_in_one_subplot=custom_plot.all_variables_in_one_subplot,
-        )
-
-    def serialize(self):
-        return {
-            "function": self.function,
-            "type": self.type.value,
-            "phase_mappings": self.phase_mappings.serialize(),
-            "legend": self.legend,
-            "combine_to": self.combine_to,
-            "color": self.color,
-            "linestyle": self.linestyle,
-            "ylim": self.ylim,
-            "bounds": self.bounds.serialize(),
-            "node_idx": self.node_idx,
-            "label": self.label,
-            "compute_derivative": self.compute_derivative,
-            "integration_rule": self.integration_rule.value,
-            "parameters": self.parameters,
-            "all_variables_in_one_subplot": self.all_variables_in_one_subplot,
-        }
-
-    @classmethod
-    def deserialize(cls, data):
-        return cls(
-            function=data["function"],
-            plot_type=PlotType(data["type"]),
-            phase_mappings=BiMappingSerializable.deserialize(data["phase_mappings"]),
-            legend=data["legend"],
-            combine_to=data["combine_to"],
-            color=data["color"],
-            linestyle=data["linestyle"],
-            ylim=data["ylim"],
-            bounds=data["bounds"],
-            node_idx=data["node_idx"],
-            label=data["label"],
-            compute_derivative=data["compute_derivative"],
-            integration_rule=QuadratureRule(data["integration_rule"]),
-            parameters=data["parameters"],
-            all_variables_in_one_subplot=data["all_variables_in_one_subplot"],
-        )
-
-
-class OptimizationVariableContainerSerializable:
-    node_index: int
-    shape: tuple[int, int]
-
-    def __init__(self, node_index: int, shape: tuple[int, int], len: int):
-        self.node_index = node_index
-        self.shape = shape
-        self._len = len
-
-    def __len__(self):
-        return self._len
-
-    @classmethod
-    def from_container(cls, ovc):
-        from ..optimization.optimization_variable import OptimizationVariableContainer
-
-        ovc: OptimizationVariableContainer = ovc
-
-        return cls(
-            node_index=ovc.node_index,
-            shape=ovc.shape,
-            len=len(ovc),
-        )
-
-    def serialize(self):
-        return {
-            "node_index": self.node_index,
-            "shape": self.shape,
-            "len": self._len,
-        }
-
-    @classmethod
-    def deserialize(cls, data):
-        return cls(
-            node_index=data["node_index"],
-            shape=data["shape"],
-            len=data["len"],
-        )
-
-
-class OdeSolverSerializable:
-    polynomial_degree: int
-    type: OdeSolver
-
-    def __init__(self, polynomial_degree: int, type: OdeSolver):
-        self.polynomial_degree = polynomial_degree
-        self.type = type
-
-    @classmethod
-    def from_ode_solver(cls, ode_solver):
-        from ..dynamics.ode_solver import OdeSolver
-
-        ode_solver: OdeSolver = ode_solver
-
-        return cls(
-            polynomial_degree=5,
-            type="ode",
-        )
-
-    def serialize(self):
-        return {
-            "polynomial_degree": self.polynomial_degree,
-            "type": self.type,
-        }
-
-    @classmethod
-    def deserialize(cls, data):
-        return cls(
-            polynomial_degree=data["polynomial_degree"],
-            type=data["type"],
-        )
-
-
-class NlpSerializable:
-    ns: int
-    phase_idx: int
-
-    n_states_nodes: int
-    states: OptimizationVariableContainerSerializable
-    states_dot: OptimizationVariableContainerSerializable
-    controls: OptimizationVariableContainerSerializable
-    algebraic_states: OptimizationVariableContainerSerializable
-    parameters: OptimizationVariableContainerSerializable
-    numerical_timeseries: OptimizationVariableContainerSerializable
-
-    ode_solver: OdeSolverSerializable
-    plot: dict[str, CustomPlotSerializable]
-
-    def __init__(
-        self,
-        ns: int,
-        phase_idx: int,
-        n_states_nodes: int,
-        states: OptimizationVariableContainerSerializable,
-        states_dot: OptimizationVariableContainerSerializable,
-        controls: OptimizationVariableContainerSerializable,
-        algebraic_states: OptimizationVariableContainerSerializable,
-        parameters: OptimizationVariableContainerSerializable,
-        numerical_timeseries: OptimizationVariableContainerSerializable,
-        ode_solver: OdeSolverSerializable,
-        plot: dict[str, CustomPlotSerializable],
-    ):
-        self.ns = ns
-        self.phase_idx = phase_idx
-        self.n_states_nodes = n_states_nodes
-        self.states = states
-        self.states_dot = states_dot
-        self.controls = controls
-        self.algebraic_states = algebraic_states
-        self.parameters = parameters
-        self.numerical_timeseries = numerical_timeseries
-        self.ode_solver = ode_solver
-        self.plot = plot
-
-    @classmethod
-    def from_nlp(cls, nlp):
-        from ..optimization.non_linear_program import NonLinearProgram
-
-        nlp: NonLinearProgram = nlp
-
-        return cls(
-            ns=nlp.ns,
-            phase_idx=nlp.phase_idx,
-            n_states_nodes=nlp.n_states_nodes,
-            states=OptimizationVariableContainerSerializable.from_container(nlp.states),
-            states_dot=OptimizationVariableContainerSerializable.from_container(nlp.states_dot),
-            controls=OptimizationVariableContainerSerializable.from_container(nlp.controls),
-            algebraic_states=OptimizationVariableContainerSerializable.from_container(nlp.algebraic_states),
-            parameters=OptimizationVariableContainerSerializable.from_container(nlp.parameters),
-            numerical_timeseries=OptimizationVariableContainerSerializable.from_container(nlp.numerical_timeseries),
-            ode_solver=OdeSolverSerializable.from_ode_solver(nlp.ode_solver),
-            plot={key: CustomPlotSerializable.from_custom_plot(nlp.plot[key]) for key in nlp.plot},
-        )
-
-    def serialize(self):
-        return {
-            "ns": self.ns,
-            "phase_idx": self.phase_idx,
-            "n_states_nodes": self.n_states_nodes,
-            "states": self.states.serialize(),
-            "states_dot": self.states_dot.serialize(),
-            "controls": self.controls.serialize(),
-            "algebraic_states": self.algebraic_states.serialize(),
-            "parameters": self.parameters.serialize(),
-            "numerical_timeseries": self.numerical_timeseries.serialize(),
-            "ode_solver": self.ode_solver.serialize(),
-            "plot": {key: plot.serialize() for key, plot in self.plot.items()},
-        }
-
-    @classmethod
-    def deserialize(cls, data):
-        return cls(
-            ns=data["ns"],
-            phase_idx=data["phase_idx"],
-            n_states_nodes=data["n_states_nodes"],
-            states=OptimizationVariableContainerSerializable.deserialize(data["states"]),
-            states_dot=OptimizationVariableContainerSerializable.deserialize(data["states_dot"]),
-            controls=OptimizationVariableContainerSerializable.deserialize(data["controls"]),
-            algebraic_states=OptimizationVariableContainerSerializable.deserialize(data["algebraic_states"]),
-            parameters=OptimizationVariableContainerSerializable.deserialize(data["parameters"]),
-            numerical_timeseries=OptimizationVariableContainerSerializable.deserialize(data["numerical_timeseries"]),
-            ode_solver=OdeSolverSerializable.deserialize(data["ode_solver"]),
-            plot={key: CustomPlotSerializable.deserialize(plot) for key, plot in data["plot"].items()},
-        )
-
-
-class SaveIterationsInfoSerializable:
-    path_to_results: str
-    result_file_name: str | list[str]
-    nb_iter_save: int
-    current_iter: int
-    f_list: list[int]
-
-    def __init__(
-        self, path_to_results: str, result_file_name: str, nb_iter_save: int, current_iter: int, f_list: list[int]
-    ):
-        self.path_to_results = path_to_results
-        self.result_file_name = result_file_name
-        self.nb_iter_save = nb_iter_save
-        self.current_iter = current_iter
-        self.f_list = f_list
-
-    @classmethod
-    def from_save_iterations_info(cls, save_iterations_info):
-        from .ipopt_output_plot import SaveIterationsInfo
-
-        save_iterations_info: SaveIterationsInfo = save_iterations_info
-
-        if save_iterations_info is None:
-            return None
-
-        return cls(
-            path_to_results=save_iterations_info.path_to_results,
-            result_file_name=save_iterations_info.result_file_name,
-            nb_iter_save=save_iterations_info.nb_iter_save,
-            current_iter=save_iterations_info.current_iter,
-            f_list=save_iterations_info.f_list,
-        )
-
-    def serialize(self):
-        return {
-            "path_to_results": self.path_to_results,
-            "result_file_name": self.result_file_name,
-            "nb_iter_save": self.nb_iter_save,
-            "current_iter": self.current_iter,
-            "f_list": self.f_list,
-        }
-
-    @classmethod
-    def deserialize(cls, data):
-        return cls(
-            path_to_results=data["path_to_results"],
-            result_file_name=data["result_file_name"],
-            nb_iter_save=data["nb_iter_save"],
-            current_iter=data["current_iter"],
-            f_list=data["f_list"],
-        )
-
-
-class OcpSerializable:
-    n_phases: int
-    nlp: list[NlpSerializable]
-
-    time_phase_mapping: BiMappingSerializable
-
-    plot_ipopt_outputs: bool
-    plot_check_conditioning: bool
-    save_ipopt_iterations_info: SaveIterationsInfoSerializable
-
-    def __init__(
-        self,
-        n_phases: int,
-        nlp: list[NlpSerializable],
-        time_phase_mapping: BiMappingSerializable,
-        plot_ipopt_outputs: bool,
-        plot_check_conditioning: bool,
-        save_ipopt_iterations_info: SaveIterationsInfoSerializable,
-    ):
-        self.n_phases = n_phases
-        self.nlp = nlp
-
-        self.time_phase_mapping = time_phase_mapping
-
-        self.plot_ipopt_outputs = plot_ipopt_outputs
-        self.plot_check_conditioning = plot_check_conditioning
-        self.save_ipopt_iterations_info = save_ipopt_iterations_info
-
-    @classmethod
-    def from_ocp(cls, ocp):
-        from ..optimization.optimal_control_program import OptimalControlProgram
-
-        ocp: OptimalControlProgram = ocp
-
-        return cls(
-            n_phases=ocp.n_phases,
-            nlp=[NlpSerializable.from_nlp(nlp) for nlp in ocp.nlp],
-            time_phase_mapping=BiMappingSerializable.from_bimapping(ocp.time_phase_mapping),
-            plot_ipopt_outputs=ocp.plot_ipopt_outputs,
-            plot_check_conditioning=ocp.plot_check_conditioning,
-            save_ipopt_iterations_info=SaveIterationsInfoSerializable.from_save_iterations_info(
-                ocp.save_ipopt_iterations_info
-            ),
-        )
-
-    def serialize(self):
-        return {
-            "n_phases": self.n_phases,
-            "nlp": [nlp.serialize() for nlp in self.nlp],
-            "time_phase_mapping": self.time_phase_mapping.serialize(),
-            "plot_ipopt_outputs": self.plot_ipopt_outputs,
-            "plot_check_conditioning": self.plot_check_conditioning,
-            "save_ipopt_iterations_info": (
-                None if self.save_ipopt_iterations_info is None else self.save_ipopt_iterations_info.serialize()
-            ),
-        }
-
-    @classmethod
-    def deserialize(cls, data):
-        return cls(
-            n_phases=data["n_phases"],
-            nlp=[NlpSerializable.deserialize(nlp) for nlp in data["nlp"]],
-            time_phase_mapping=BiMappingSerializable.deserialize(data["time_phase_mapping"]),
-            plot_ipopt_outputs=data["plot_ipopt_outputs"],
-            plot_check_conditioning=data["plot_check_conditioning"],
-            save_ipopt_iterations_info=(
-                None
-                if data["save_ipopt_iterations_info"] is None
-                else SaveIterationsInfoSerializable.deserialize(data["save_ipopt_iterations_info"])
-            ),
-        )
-
-
 class PlotOcp:
     """
     Attributes
@@ -688,8 +194,6 @@ class PlotOcp:
         Update ydata from the variable a solution structure
     __update_xdata(self)
         Update of the time axes in plots
-    _append_to_ydata(self, data: list)
-        Parse the data list to create a single list of all ydata that will fit the plots vector
     __update_axes(self)
         Update the plotted data from ydata
     __compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: float) -> tuple:
@@ -706,6 +210,7 @@ class PlotOcp:
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
         dummy_phase_times: list[list[float]] = None,
+        only_initialize_variables: bool = False,
     ):
         """
         Prepares the figures during the simulation
@@ -724,6 +229,9 @@ class PlotOcp:
              Use the ode defined by OCP or use a separate integrator provided by scipy
         dummy_phase_times: list[list[float]]
             The time of each phase
+        only_initialize_variables: bool
+            If the plots should be initialized but not shown (this is useful for the online plot which must be declared
+            on the server side and on the client side)
         """
         self.ocp = ocp
         self.plot_options = {
@@ -736,7 +244,6 @@ class PlotOcp:
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
         }
 
-        self.ydata = []
         self.n_nodes = 0
 
         self.t = []
@@ -758,31 +265,33 @@ class PlotOcp:
         self.top_margin: int | None = None
         self.height_step: int | None = None
         self.width_step: int | None = None
-        self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
+        if not only_initialize_variables:
+            self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
 
         self.custom_plots = {}
         self.variable_sizes = []
         self.show_bounds = show_bounds
-        self.__create_plots()
+        self._create_plots(only_initialize_variables)
         self.shooting_type = shooting_type
 
-        horz = 0
-        vert = 1 if len(self.all_figures) < self.n_vertical_windows * self.n_horizontal_windows else 0
-        for i, fig in enumerate(self.all_figures):
-            if self.automatically_organize:
-                try:
-                    fig.canvas.manager.window.move(
-                        int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
-                    )
-                    vert += 1
-                    if vert >= self.n_vertical_windows:
-                        horz += 1
-                        vert = 0
-                except AttributeError:
-                    pass
-            fig.canvas.draw()
-            if self.plot_options["general_options"]["use_tight_layout"]:
-                fig.tight_layout()
+        if not only_initialize_variables:
+            horz = 0
+            vert = 1 if len(self.all_figures) < self.n_vertical_windows * self.n_horizontal_windows else 0
+            for i, fig in enumerate(self.all_figures):
+                if self.automatically_organize:
+                    try:
+                        fig.canvas.manager.window.move(
+                            int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
+                        )
+                        vert += 1
+                        if vert >= self.n_vertical_windows:
+                            horz += 1
+                            vert = 0
+                    except AttributeError:
+                        pass
+                fig.canvas.draw()
+                if self.plot_options["general_options"]["use_tight_layout"]:
+                    fig.tight_layout()
 
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import create_ipopt_output_plot
@@ -809,9 +318,15 @@ class PlotOcp:
             self.t_integrated.append(time)
             self.t.append(np.linspace(float(time[0][0]), float(time[-1][-1]), nlp.n_states_nodes))
 
-    def __create_plots(self):
+    def _create_plots(self, only_initialize_variables: bool):
         """
         Setup the plots
+
+        Parameters
+        ----------
+        only_initialize_variables: bool
+            If the plots should be initialized but not shown (this is useful for the online plot which must be declared
+            on the server side and on the client side)
         """
 
         def legend_without_duplicate_labels(ax):
@@ -905,43 +420,45 @@ class PlotOcp:
             for var_idx, variable in enumerate(self.variable_sizes[i]):
                 y_range_var_idx = all_keys_across_phases.index(variable)
 
-                if nlp.plot[variable].combine_to:
-                    self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
-                    axes = self.axes[variable][1]
-                elif i > 0 and variable in self.axes:
-                    axes = self.axes[variable][1]
-                else:
-                    nb_subplots = max(
-                        [
-                            (
-                                max(
-                                    len(nlp.plot[variable].phase_mappings.to_first.map_idx),
-                                    max(nlp.plot[variable].phase_mappings.to_first.map_idx) + 1,
-                                )
-                                if variable in nlp.plot
-                                else 0
-                            )
-                            for nlp in self.ocp.nlp
-                        ]
-                    )
-                    # TODO: get rid of all_variables_in_one_subplot by fixing the mapping appropriately
-                    if not nlp.plot[variable].all_variables_in_one_subplot:
-                        n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
+                if not only_initialize_variables:
+                    if nlp.plot[variable].combine_to:
+                        self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
+                        axes = self.axes[variable][1]
+                    elif i > 0 and variable in self.axes:
+                        axes = self.axes[variable][1]
                     else:
-                        n_cols = 1
-                        n_rows = 1
-                    axes = self.__add_new_axis(variable, nb_subplots, n_rows, n_cols)
-                    self.axes[variable] = [nlp.plot[variable], axes]
+                        nb_subplots = max(
+                            [
+                                (
+                                    max(
+                                        len(nlp.plot[variable].phase_mappings.to_first.map_idx),
+                                        max(nlp.plot[variable].phase_mappings.to_first.map_idx) + 1,
+                                    )
+                                    if variable in nlp.plot
+                                    else 0
+                                )
+                                for nlp in self.ocp.nlp
+                            ]
+                        )
 
-                    if not y_min_all[y_range_var_idx]:
-                        y_min_all[y_range_var_idx] = [np.inf] * nb_subplots
-                        y_max_all[y_range_var_idx] = [-np.inf] * nb_subplots
+                        # TODO: get rid of all_variables_in_one_subplot by fixing the mapping appropriately
+                        if not nlp.plot[variable].all_variables_in_one_subplot:
+                            n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
+                        else:
+                            n_cols = 1
+                            n_rows = 1
+                        axes = self._add_new_axis(variable, nb_subplots, n_rows, n_cols)
+                        self.axes[variable] = [nlp.plot[variable], axes]
+
+                        if not y_min_all[y_range_var_idx]:
+                            y_min_all[y_range_var_idx] = [np.inf] * nb_subplots
+                            y_max_all[y_range_var_idx] = [-np.inf] * nb_subplots
 
                 if variable not in self.custom_plots:
                     self.custom_plots[variable] = [
                         nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
                     ]
-                if not self.custom_plots[variable][i]:
+                if not self.custom_plots[variable][i] or only_initialize_variables:
                     continue
 
                 mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
@@ -1113,7 +630,7 @@ class PlotOcp:
                                 [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
                             )
 
-    def __add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
+    def _add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
         """
         Add a new axis to the axes pool
 
@@ -1186,22 +703,24 @@ class PlotOcp:
 
         plt.show()
 
-    def update_data(
-        self,
-        args: dict,
-    ):
+    def parse_data(self, **args) -> tuple[list, list]:
         """
-        Update ydata from the variable a solution structure
+        Parse the data to be plotted, the return of this method can be passed to update_data to update the plots
 
         Parameters
         ----------
-        v: np.ndarray
-            The data to parse
+        ocp: OptimalControlProgram
+            A reference to the full ocp
+        variable_sizes: list[int]
+            The size of all variables. This is the reference to the PlotOcp.variable_sizes (which can't be accessed
+            from this static method)
+        custom_plots: dict
+            The dictionary of all the CustomPlot. This is the reference to the PlotOcp.custom_plots (which can't be
+            accessed from this static method)
         """
-
         from ..interfaces.interface_utils import get_numerical_timeseries
 
-        self.ydata = []
+        ydata = []
 
         sol = Solution.from_vector(self.ocp, args["x"])
         data_states_decision = sol.decision_states(scaled=True, to_merge=SolutionMerge.KEYS)
@@ -1222,7 +741,7 @@ class PlotOcp:
         if self.ocp.n_phases == 1:
             time_stepwise = [time_stepwise]
         phases_dt = sol.phases_dt
-        self._update_xdata(time_stepwise)
+        xdata = time_stepwise
 
         for nlp in self.ocp.nlp:
 
@@ -1257,9 +776,33 @@ class PlotOcp:
                 mapped_y_data = []
                 for i in nlp.plot[key].phase_mappings.to_first.map_idx:
                     mapped_y_data.append(y_data[i])
-                self._append_to_ydata(mapped_y_data)
+                for y in mapped_y_data:
+                    ydata.append(y)
 
-        self.__update_axes()
+        return xdata, ydata
+
+    def update_data(
+        self,
+        xdata: dict,
+        ydata: list,
+        **args: dict,
+    ):
+        """
+        Update ydata from the variable a solution structure
+
+        Parameters
+        ----------
+        xdata: dict
+            The time vector
+        ydata: list
+            The actual current data to be plotted
+        args: dict
+            The same args as the parse_data method (that is so ipopt outputs can be plotted, this should be done properly
+            in the future, when ready, remove this parameter)
+        """
+
+        self._update_xdata(xdata)
+        self._update_ydata(ydata)
 
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import update_ipopt_output_plot
@@ -1419,27 +962,14 @@ class PlotOcp:
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([float(time), float(time)])
 
-    def _append_to_ydata(self, data: list | np.ndarray):
-        """
-        Parse the data list to create a single list of all ydata that will fit the plots vector
-
-        Parameters
-        ----------
-        data: list
-            The data list to copy
-        """
-
-        for y in data:
-            self.ydata.append(y)
-
-    def __update_axes(self):
+    def _update_ydata(self, ydata):
         """
         Update the plotted data from ydata
         """
 
-        assert len(self.plots) == len(self.ydata)
+        assert len(self.plots) == len(ydata)
         for i, plot in enumerate(self.plots):
-            y = self.ydata[i]
+            y = ydata[i]
             if y is None:
                 # Jump the plots which are empty
                 y = (np.nan,) * len(plot[2])

@@ -126,6 +126,17 @@ def generic_solve(interface, expand_during_shake_tree=False) -> dict:
     interface.out["sol"]["status"] = int(not interface.ocp_solver.stats()["success"])
     interface.out["sol"]["solver"] = interface.solver_name
 
+    # Make sure the graphs are showing the last iteration
+    if interface.opts.show_online_optim:
+        to_eval = [
+            interface.out["sol"]["x"],
+            interface.out["sol"]["f"],
+            interface.out["sol"]["g"],
+            interface.out["sol"]["lam_x"],
+            interface.out["sol"]["lam_g"],
+            interface.out["sol"]["lam_p"],
+        ]
+        interface.options_common["iteration_callback"].eval(to_eval, force=True)
     return interface.out
 
 
