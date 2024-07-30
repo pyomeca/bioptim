@@ -198,13 +198,12 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
     def eval(self, arg: list | tuple, force: bool = False) -> list:
         # Dequeuing the data by removing previous not useful data
         while not self.queue.empty():
-            self.queue.get()
+            self.queue.get_nowait()
 
-        send = self.queue.put
         args_dict = {}
         for i, s in enumerate(nlpsol_out()):
             args_dict[s] = arg[i]
-        send(args_dict)
+        self.queue.put_nowait(args_dict)
         return [0]
 
     class ProcessPlotter(object):
@@ -338,7 +337,7 @@ class OnlineCallbackServer:
         finally:
             self._socket.close()
 
-    def _wait_for_data(self, client_socket: socket.socket):
+    def _wait_for_data(self, client_socket: socket.socket, send_confirmation: bool = True):
         # Receive the actual data
         try:
             self._logger.debug("Waiting for data from client")
@@ -355,17 +354,22 @@ class OnlineCallbackServer:
             message_type = OnlineCallbackServer._ServerMessages(int(data_as_list[0]))
             len_all_data = [int(len_data) for len_data in data_as_list[1][1:-1].split(",")]
             # Sends confirmation and waits for the next message
-            client_socket.send("OK".encode())
+            if send_confirmation:
+                client_socket.sendall("OK".encode())
             self._logger.debug(f"Received from client: {message_type} ({len_all_data} bytes)")
             data_out = []
             for len_data in len_all_data:
                 data_out.append(client_socket.recv(len_data))
-            client_socket.send("OK".encode())
+                if len(data_out[-1]) != len_data:
+                    data_out[-1] += client_socket.recv(len_data - len(data_out[-1]))
+            if send_confirmation:
+                client_socket.sendall("OK".encode())
         except ValueError:
             self._logger.warning("Unknown message type received")
             message_type = OnlineCallbackServer._ServerMessages.UNKNOWN
             # Sends failure
-            client_socket.send("NOK".encode())
+            if send_confirmation:
+                client_socket.sendall("NOK".encode())
             data_out = []
 
         if message_type == OnlineCallbackServer._ServerMessages.CLOSE_CONNEXION:
@@ -396,7 +400,7 @@ class OnlineCallbackServer:
         try:
             self.ocp = OcpSerializable.deserialize(data_json)
         except:
-            client_socket.send("FAILED".encode())
+            client_socket.sendall("FAILED".encode())
             self._logger.warning("Error while deserializing OCP data from client, closing connexion")
             return
 
@@ -404,7 +408,7 @@ class OnlineCallbackServer:
         self._plotter = PlotOcp(self.ocp, dummy_phase_times=dummy_time_vector, **show_options)
 
         # Send the confirmation to the client
-        client_socket.send("PLOT_READY".encode())
+        client_socket.sendall("PLOT_READY".encode())
 
         # Start the callbacks
         threading.Timer(self._get_data_interval, self._wait_for_new_data, (client_socket,)).start()
@@ -430,10 +434,10 @@ class OnlineCallbackServer:
         True if everything went well
         """
         self._logger.debug(f"Waiting for new data from client")
-        client_socket.send("READY_FOR_NEXT_DATA".encode())
+        client_socket.sendall("READY_FOR_NEXT_DATA".encode())
 
         should_continue = False
-        message_type, data = self._wait_for_data(client_socket=client_socket)
+        message_type, data = self._wait_for_data(client_socket=client_socket, send_confirmation=False)
         if message_type == OnlineCallbackServer._ServerMessages.NEW_DATA:
             try:
                 self._update_data(data)
@@ -536,14 +540,14 @@ class OnlineCallbackTcp(OnlineCallbackAbstract):
         serialized_ocp = json.dumps(ocp_plot).encode()
 
         # Sends message type and dimensions
-        self._socket.send(
+        self._socket.sendall(
             f"{OnlineCallbackServer._ServerMessages.INITIATE_CONNEXION.value}\n{[len(serialized_ocp)]}".encode()
         )
         if self._socket.recv(1024).decode() != "OK":
             raise RuntimeError("The server did not acknowledge the connexion")
 
         # TODO ADD SHOW OPTIONS to the send
-        self._socket.send(serialized_ocp)
+        self._socket.sendall(serialized_ocp)
         if self._socket.recv(1024).decode() != "OK":
             raise RuntimeError("The server did not acknowledge the connexion")
 
@@ -557,19 +561,12 @@ class OnlineCallbackTcp(OnlineCallbackAbstract):
         )
 
     def close(self):
-        self._socket.send(
+        self._socket.sendall(
             f"{OnlineCallbackServer._ServerMessages.CLOSE_CONNEXION.value}\nGoodbye from client!".encode()
         )
         self._socket.close()
 
     def eval(self, arg: list | tuple, force: bool = False) -> list:
-        arg_as_bytes = []
-        for a in arg:
-            to_pack = np.array(a).T.tolist()
-            if len(to_pack) == 1:
-                to_pack = to_pack[0]
-            arg_as_bytes.append(struct.pack("d" * len(to_pack), *to_pack))
-
         if not force:
             self._socket.setblocking(False)
 
@@ -610,14 +607,11 @@ class OnlineCallbackTcp(OnlineCallbackAbstract):
                 y_steps_tp = y_steps.tolist()
                 data_serialized += struct.pack("d" * len(y_steps_tp), *y_steps_tp)
 
-        self._socket.send(
+        self._socket.sendall(
             f"{OnlineCallbackServer._ServerMessages.NEW_DATA.value}\n{[len(header), len(data_serialized)]}".encode()
         )
-        if self._socket.recv(1024).decode() != "OK":
-            raise RuntimeError("The server did not acknowledge the data")
-
-        for to_send in [header.encode(), data_serialized]:
-            self._socket.send(to_send)
-        if self._socket.recv(1024).decode() != "OK":
-            raise RuntimeError("The server did not acknowledge the data")
+        # If send_confirmation is True, we should wait for the server to acknowledge the data here (sends OK)
+        self._socket.sendall(header.encode())
+        self._socket.sendall(data_serialized)
+        # Again, if send_confirmation is True, we should wait for the server to acknowledge the data here (sends OK)
         return [0]
