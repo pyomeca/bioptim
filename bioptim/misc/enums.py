@@ -106,7 +106,7 @@ class ShowOnlineType(Enum):
     """
 
     MULTIPROCESS = 0
-    TCP = 1
+    SERVER = 1
 
 
 class ControlType(Enum):

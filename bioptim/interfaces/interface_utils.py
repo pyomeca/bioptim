@@ -39,7 +39,7 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
                 "You can add show_options={'type': ShowOnlineType.TCP} to the Solver declaration"
             )
         interface.options_common["iteration_callback"] = OnlineCallbackMultiprocess(ocp, show_options=show_options)
-    elif show_type == ShowOnlineType.TCP:
+    elif show_type == ShowOnlineType.SERVER:
         host = None
         if "host" in show_options:
             host = show_options["host"]
