@@ -196,6 +196,10 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
         self.plot_process.kill()
 
     def eval(self, arg: list | tuple, force: bool = False) -> list:
+        # Dequeuing the data by removing previous not useful data
+        while not self.queue.empty():
+            self.queue.get()
+
         send = self.queue.put
         args_dict = {}
         for i, s in enumerate(nlpsol_out()):
@@ -230,8 +234,9 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
                 A reference to the ocp to show
             """
 
-            self.ocp: OcpSerializable = ocp
+            self._ocp: OcpSerializable = ocp
             self._plotter: PlotOcp = None
+            self._update_time = 0.001
 
         def __call__(self, pipe: mp.Queue, show_options: dict | None):
             """
@@ -245,13 +250,11 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
 
             if show_options is None:
                 show_options = {}
-            self.pipe = pipe
+            self._pipe = pipe
 
-            dummy_phase_times = OptimizationVectorHelper.extract_step_times(self.ocp, DM(np.ones(self.ocp.n_phases)))
-            self._plotter = PlotOcp(self.ocp, dummy_phase_times=dummy_phase_times, **show_options)
-            timer = self._plotter.all_figures[0].canvas.new_timer(interval=10)
-            timer.add_callback(self.plot_update)
-            timer.start()
+            dummy_phase_times = OptimizationVectorHelper.extract_step_times(self._ocp, DM(np.ones(self._ocp.n_phases)))
+            self._plotter = PlotOcp(self._ocp, dummy_phase_times=dummy_phase_times, **show_options)
+            threading.Timer(self._update_time, self.plot_update).start()
             plt.show()
 
         def plot_update(self) -> bool:
@@ -263,13 +266,20 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
             True if everything went well
             """
 
-            while not self.pipe.empty():
-                args = self.pipe.get()
-                data = self._plotter.parse_data(**args)
-                self._plotter.update_data(**data, **args)
+            args = {}
+            while not self._pipe.empty():
+                args = self._pipe.get()
 
-            for i, fig in enumerate(self._plotter.all_figures):
+            if args:
+                self._plotter.update_data(*self._plotter.parse_data(**args), **args)
+
+            # We want to redraw here to actually consume a bit of time, otherwise it goes to fast and pipe remains empty
+            for fig in self._plotter.all_figures:
                 fig.canvas.draw()
+            if [plt.fignum_exists(fig.number) for fig in self._plotter.all_figures].count(True) > 0:
+                # If there are still figures, we keep updating
+                threading.Timer(self._update_time, self.plot_update).start()
+
             return True
 
 
