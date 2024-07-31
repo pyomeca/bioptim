@@ -5,8 +5,9 @@ import numpy as np
 
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.penalty_option import PenaltyOption
+from ..limits.path_conditions import Bounds
 from ..misc.mapping import BiMapping
-from ..misc.enums import PlotType, QuadratureRule
+from ..misc.enums import PlotType, QuadratureRule, InterpolationType
 
 
 class CasadiFunctionSerializable:
@@ -137,32 +138,31 @@ class BiMappingSerializable:
 
 
 class BoundsSerializable:
-    min: np.ndarray | DM
-    max: np.ndarray | DM
+    bounds: Bounds
 
-    def __init__(self, min: np.ndarray | DM, max: np.ndarray | DM):
-        self.min = min
-        self.max = max
+    def __init__(self, bounds: Bounds):
+        self.bounds = bounds
 
     @classmethod
     def from_bounds(cls, bounds):
-        return cls(
-            min=np.array(bounds.min),
-            max=np.array(bounds.max),
-        )
+        return cls(bounds=bounds)
 
     def serialize(self):
         return {
-            "min": self.min.tolist(),
-            "max": self.max.tolist(),
+            "min": self.bounds.min(),
+            "max": self.bounds.max(),
+            "type": self.bounds.type,
+            "slice_list": self.bounds.slice_list,
         }
 
     @classmethod
     def deserialize(cls, data):
         return cls(
-            min=np.array(data["min"]),
-            max=np.array(data["max"]),
+            type=Bounds(min_bound=data["min"], max_bound=data["max"], type=data["type"], slice_list=data["slice_list"]),
         )
+
+    def check_and_adjust_dimensions(self, n_elements: int, n_nodes: int):
+        pass
 
 
 class CustomPlotSerializable:

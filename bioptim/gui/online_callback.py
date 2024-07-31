@@ -286,6 +286,14 @@ _default_host = "localhost"
 _default_port = 3050
 
 
+def _serialize_show_options(show_options: dict) -> bytes:
+    return json.dumps(show_options).encode()
+
+
+def _deserialize_show_options(show_options: bytes) -> dict:
+    return json.loads(show_options.decode())
+
+
 class OnlineCallbackServer:
     class _ServerMessages(Enum):
         INITIATE_CONNEXION = 0
@@ -404,7 +412,12 @@ class OnlineCallbackServer:
             self._logger.warning("Error while deserializing OCP data from client, closing connexion")
             return
 
-        show_options = {}
+        try:
+            show_options = _deserialize_show_options(ocp_raw[1])
+        except:
+            self._logger.warning("Error while extracting show options, closing connexion")
+            return
+
         self._plotter = PlotOcp(self.ocp, dummy_phase_times=dummy_time_vector, **show_options)
 
         # Send the confirmation to the client
@@ -539,15 +552,18 @@ class OnlineCallbackTcp(OnlineCallbackAbstract):
             ocp_plot["dummy_phase_times"].append([np.array(v)[:, 0].tolist() for v in phase_times])
         serialized_ocp = json.dumps(ocp_plot).encode()
 
+        serialized_show_options = _serialize_show_options(show_options)
+
         # Sends message type and dimensions
         self._socket.sendall(
-            f"{OnlineCallbackServer._ServerMessages.INITIATE_CONNEXION.value}\n{[len(serialized_ocp)]}".encode()
+            f"{OnlineCallbackServer._ServerMessages.INITIATE_CONNEXION.value}\n{[len(serialized_ocp), len(serialized_show_options)]}".encode()
         )
         if self._socket.recv(1024).decode() != "OK":
             raise RuntimeError("The server did not acknowledge the connexion")
 
         # TODO ADD SHOW OPTIONS to the send
         self._socket.sendall(serialized_ocp)
+        self._socket.sendall(serialized_show_options)
         if self._socket.recv(1024).decode() != "OK":
             raise RuntimeError("The server did not acknowledge the connexion")
 
