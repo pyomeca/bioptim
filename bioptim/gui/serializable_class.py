@@ -138,31 +138,59 @@ class BiMappingSerializable:
 
 
 class BoundsSerializable:
-    bounds: Bounds
+    _bounds: Bounds
 
     def __init__(self, bounds: Bounds):
-        self.bounds = bounds
+        self._bounds = bounds
 
     @classmethod
     def from_bounds(cls, bounds):
         return cls(bounds=bounds)
 
     def serialize(self):
+        slice_list = self._bounds.min.slice_list  # min and max have the same slice_list
+        slice_list_type = type(slice_list).__name__
+        if isinstance(self._bounds.min.slice_list, slice):
+            slice_list = [slice_list.start, slice_list.stop, slice_list.step]
+
         return {
-            "min": self.bounds.min(),
-            "max": self.bounds.max(),
-            "type": self.bounds.type,
-            "slice_list": self.bounds.slice_list,
+            "key": self._bounds.key,
+            "min": np.array(self._bounds.min).tolist(),
+            "max": np.array(self._bounds.max).tolist(),
+            "type": self._bounds.type.value,
+            "slice_list_type": slice_list_type,
+            "slice_list": slice_list,
         }
 
     @classmethod
     def deserialize(cls, data):
         return cls(
-            type=Bounds(min_bound=data["min"], max_bound=data["max"], type=data["type"], slice_list=data["slice_list"]),
+            bounds=Bounds(
+                key=data["key"],
+                min_bound=data["min"],
+                max_bound=data["max"],
+                interpolation=InterpolationType(data["type"]),
+                slice_list=(
+                    slice(data["slice_list"][0], data["slice_list"][1], data["slice_list"][2])
+                    if data["slice_list_type"] == "slice"
+                    else data["slice_list"]
+                ),
+            ),
         )
 
-    def check_and_adjust_dimensions(self, n_elements: int, n_nodes: int):
-        pass
+    def check_and_adjust_dimensions(self, n_elements: int, n_shooting: int):
+        self._bounds.check_and_adjust_dimensions(n_elements, n_shooting)
+
+    def type(self):
+        return self._bounds.type
+
+    @property
+    def min(self):
+        return self._bounds.min
+
+    @property
+    def max(self):
+        return self._bounds.max
 
 
 class CustomPlotSerializable:

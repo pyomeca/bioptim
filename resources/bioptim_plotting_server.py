@@ -1,8 +1,8 @@
-from bioptim import OnlineCallbackServer
+from bioptim import OnlineCallbackServerBackend
 
 
 def main():
-    OnlineCallbackServer().run()
+    OnlineCallbackServerBackend().run()
 
 
 if __name__ == "__main__":

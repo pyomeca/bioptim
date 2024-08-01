@@ -6,7 +6,8 @@ from casadi import Importer, Function
 from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from bioptim.optimization.solution.solution import Solution
-from ..gui.online_callback import OnlineCallbackMultiprocess, OnlineCallbackServer
+from ..gui.online_callback_multiprocess import OnlineCallbackMultiprocess
+from ..gui.online_callback_server import OnlineCallbackServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType, ShowOnlineType
