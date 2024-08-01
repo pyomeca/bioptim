@@ -6,7 +6,7 @@ from casadi import Importer, Function
 from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from bioptim.optimization.solution.solution import Solution
-from ..gui.online_callback import OnlineCallbackMultiprocess, OnlineCallbackTcp
+from ..gui.online_callback import OnlineCallbackMultiprocess, OnlineCallbackServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType, ShowOnlineType
@@ -48,7 +48,7 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
         if "port" in show_options:
             port = show_options["port"]
             del show_options["port"]
-        interface.options_common["iteration_callback"] = OnlineCallbackTcp(
+        interface.options_common["iteration_callback"] = OnlineCallbackServer(
             ocp, show_options=show_options, host=host, port=port
         )
     else:

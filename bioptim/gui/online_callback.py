@@ -514,7 +514,7 @@ class OnlineCallbackServer:
         self._plotter.update_data(xdata, ydata)
 
 
-class OnlineCallbackTcp(OnlineCallbackAbstract):
+class OnlineCallbackServer(OnlineCallbackAbstract):
     def __init__(self, ocp, opts: dict = None, show_options: dict = None, host: str = None, port: int = None):
         super().__init__(ocp, opts, show_options)
 
