@@ -48,7 +48,7 @@ class OnlineCallbackServerBackend:
 
         self._logger = logging.getLogger(name)
         self._logger.addHandler(console_handler)
-        self._logger.setLevel(logging.DEBUG)
+        self._logger.setLevel(logging.INFO)
 
     def __init__(self, host: str = None, port: int = None):
         self._prepare_logger()
@@ -180,7 +180,11 @@ class OnlineCallbackServerBackend:
         True if everything went well
         """
         self._logger.debug(f"Waiting for new data from client")
-        client_socket.sendall("READY_FOR_NEXT_DATA".encode())
+        try:
+            client_socket.sendall("READY_FOR_NEXT_DATA".encode())
+        except:
+            self._logger.warning("Error while sending READY_FOR_NEXT_DATA to client, closing connexion")
+            return
 
         should_continue = False
         message_type, data = self._wait_for_data(client_socket=client_socket, send_confirmation=False)
@@ -190,8 +194,9 @@ class OnlineCallbackServerBackend:
                 should_continue = True
             except:
                 self._logger.warning("Error while updating data from client, closing connexion")
-                plt.close()
                 client_socket.close()
+                return
+
         elif message_type == _ServerMessages.EMPTY or message_type == _ServerMessages.CLOSE_CONNEXION:
             self._logger.debug("Received empty data from client (end of stream), closing connexion")
 
