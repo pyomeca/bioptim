@@ -28,7 +28,7 @@ def test_custom_model(phase_dynamics):
     npt.assert_almost_equal(ocp.nlp[0].model.mass, 1)
     assert ocp.nlp[0].model.name_dof == ["rotx"]
 
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(2)
     sol = ocp.solve(solver=solver)
 

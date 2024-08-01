@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import IntEnum, auto
 import json
 import logging
 import socket
@@ -15,8 +15,8 @@ from .plot import PlotOcp, OcpSerializable
 from ..optimization.optimization_vector import OptimizationVectorHelper
 
 
-_default_host = "localhost"
-_default_port = 3050
+_DEFAULT_HOST = "localhost"
+_DEFAULT_PORT = 3050
 
 
 def _serialize_show_options(show_options: dict) -> bytes:
@@ -39,13 +39,13 @@ def _start_as_multiprocess_internal(*args, **kwargs):
     PlottingServer(*args, **kwargs)
 
 
-class _ServerMessages(Enum):
-    INITIATE_CONNEXION = 0
-    NEW_DATA = 1
-    CLOSE_CONNEXION = 2
-    EMPTY = 3
-    TOO_SOON = 4
-    UNKNOWN = 5
+class _ServerMessages(IntEnum):
+    INITIATE_CONNEXION = auto()
+    NEW_DATA = auto()
+    CLOSE_CONNEXION = auto()
+    EMPTY = auto()
+    TOO_SOON = auto()
+    UNKNOWN = auto()
 
 
 class PlottingServer:
@@ -64,10 +64,11 @@ class PlottingServer:
         self._prepare_logger()
         self._get_data_interval = 1.0
         self._update_plot_interval = 0.01
+        self._is_drawing = False
 
         # Define the host and port
-        self._host = host if host else _default_host
-        self._port = port if port else _default_port
+        self._host = host if host else _DEFAULT_HOST
+        self._port = port if port else _DEFAULT_PORT
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._plotter: PlotOcp = None
 
@@ -107,7 +108,7 @@ class PlottingServer:
 
     def _run(self) -> None:
         """
-        Starts the server, this method can be called directly by the user to start a plot server
+        Starts the server, this method is blocking
         """
         # Start listening to the server
         self._socket.bind((self._host, self._port))
@@ -244,16 +245,31 @@ class PlottingServer:
         threading.Timer(self._update_plot_interval, self._redraw).start()
         plt.show()
 
+    @property
+    def has_at_least_one_active_figure(self) -> bool:
+        """
+        If at least one figure is active
+
+        Returns
+        -------
+        If at least one figure is active
+        """
+
+        return [plt.fignum_exists(fig.number) for fig in self._plotter.all_figures].count(True) > 0
+
     def _redraw(self) -> None:
         """
         Redraws the plot, this method is called periodically as long as at least one figure is open
         """
 
         self._logger.debug("Updating plot")
+        self._is_drawing = True
         for _, fig in enumerate(self._plotter.all_figures):
             fig.canvas.draw()
+            fig.canvas.flush_events()
+        self._is_drawing = False
 
-        if [plt.fignum_exists(fig.number) for fig in self._plotter.all_figures].count(True) > 0:
+        if self.has_at_least_one_active_figure:
             threading.Timer(self._update_plot_interval, self._redraw).start()
         else:
             self._logger.info("All figures have been closed, stop updating the plots")
@@ -272,6 +288,9 @@ class PlottingServer:
 
         self._logger.debug(f"Waiting for new data from client")
         try:
+            if self._is_drawing:
+                # Give it some time
+                time.sleep(self._update_plot_interval)
             client_socket.sendall("READY_FOR_NEXT_DATA".encode())
         except:
             self._logger.warning("Error while sending READY_FOR_NEXT_DATA to client, closing connexion")
@@ -288,26 +307,26 @@ class PlottingServer:
                 client_socket.close()
                 return
 
-        elif message_type == _ServerMessages.EMPTY or message_type == _ServerMessages.CLOSE_CONNEXION:
+        elif message_type in (_ServerMessages.EMPTY, _ServerMessages.CLOSE_CONNEXION):
             self._logger.debug("Received empty data from client (end of stream), closing connexion")
 
         if should_continue:
             timer_get_data = threading.Timer(self._get_data_interval, self._wait_for_new_data, (client_socket,))
             timer_get_data.start()
 
-    def _update_data(self, data_raw: list) -> None:
+    def _update_data(self, serialized_raw_data: list) -> None:
         """
-        Updates the data to plot based on the client data
+        This method parses the data from the client
 
         Parameters
         ----------
-        data_raw: list
-            The raw data from the client
+        serialized_raw_data: list
+            The serialized raw data from the client, see `xydata_encoding` below
         """
 
-        header = [int(v) for v in data_raw[0].decode().split(",")]
+        header = [int(v) for v in serialized_raw_data[0].decode().split(",")]
 
-        data = data_raw[1]
+        data = serialized_raw_data[1]
         all_data = np.array(struct.unpack("d" * (len(data) // 8), data))
 
         header_cmp = 0
@@ -372,8 +391,8 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
 
         super().__init__(ocp, opts, show_options)
 
-        self._host = host if host else _default_host
-        self._port = port if port else _default_port
+        self._host = host if host else _DEFAULT_HOST
+        self._port = port if port else _DEFAULT_PORT
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         if self.ocp.plot_ipopt_outputs:
@@ -455,7 +474,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         self._socket.sendall(f"{_ServerMessages.CLOSE_CONNEXION.value}\nGoodbye from client!".encode())
         self._socket.close()
 
-    def eval(self, arg: list | tuple, force: bool = False) -> list:
+    def eval(self, arg: list | tuple, enforce: bool = False) -> list[int]:
         """
         Sends the current data to the plotter, this method is automatically called by the solver
 
@@ -463,7 +482,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         ----------
         arg: list | tuple
             The current data
-        force: bool
+        enforce: bool
             If True, the client will block until the server is ready to receive new data. This is useful at the end of
             the optimization to make sure the data are plot (and not discarded)
 
@@ -472,7 +491,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         A mandatory [0] to respect the CasADi callback signature
         """
 
-        if not force:
+        if not enforce:
             self._socket.setblocking(False)
 
         try:

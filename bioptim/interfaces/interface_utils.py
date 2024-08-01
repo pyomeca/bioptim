@@ -10,7 +10,7 @@ from ..gui.online_callback_multiprocess import OnlineCallbackMultiprocess
 from ..gui.online_callback_server import PlottingServer, OnlineCallbackServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
-from ..misc.enums import InterpolationType, ShowOnlineType
+from ..misc.enums import InterpolationType, OnlineOptim
 from ..optimization.non_linear_program import NonLinearProgram
 
 
@@ -23,29 +23,27 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
     ocp: OptimalControlProgram
         A reference to the current OptimalControlProgram
     show_options: dict
-        The options to pass to PlotOcp, special options are:
-            - type: ShowOnlineType.MULTIPROCESS or ShowOnlineType.SERVER
-            - host: The host to connect to (only for ShowOnlineType.SERVER)
-            - port: The port to connect to (only for ShowOnlineType.SERVER)
-            - as_multiprocess: If the server should run as a multiprocess (only for ShowOnlineType.SERVER), if True,
-                a server is automatically started, if False, the user must start the server manually
+        The options to pass to PlotOcp, if online_optim is OnlineOptim.SERVER or OnlineOptim.MULTIPROCESS_SERVER there are
+        additional options:
+            - host: The host to connect to (only for OnlineOptim.SERVER)
+            - port: The port to connect to (only for OnlineOptim.SERVER)
     """
     if show_options is None:
         show_options = {}
 
-    show_type = ShowOnlineType.MULTIPROCESS
+    show_type = OnlineOptim.MULTIPROCESS
     if "type" in show_options:
         show_type = show_options["type"]
         del show_options["type"]
 
-    if show_type == ShowOnlineType.MULTIPROCESS:
-        if platform == "win32":
+    if show_type == OnlineOptim.MULTIPROCESS:
+        if platform != "linux":
             raise RuntimeError(
-                "Online ShowOnlineType.MULTIPROCESS is not supported on Windows. "
-                "You can add show_options={'type': ShowOnlineType.TCP} to the Solver declaration"
+                "Online OnlineOptim.MULTIPROCESS is not supported on Windows or MacOS. "
+                "You can use online_optim=OnlineOptim.MULTIPROCESS_SERVER to the Solver declaration on Windows though"
             )
         interface.options_common["iteration_callback"] = OnlineCallbackMultiprocess(ocp, show_options=show_options)
-    elif show_type == ShowOnlineType.SERVER:
+    elif show_type == OnlineOptim.SERVER:
         host = None
         if "host" in show_options:
             host = show_options["host"]
@@ -56,6 +54,7 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
             port = show_options["port"]
             del show_options["port"]
 
+        # TODO HERE!
         as_multiprocess = True
         if "as_multiprocess" in show_options:
             as_multiprocess = show_options["as_multiprocess"]
@@ -96,7 +95,7 @@ def generic_solve(interface, expand_during_shake_tree=False) -> dict:
     all_g, all_g_bounds = interface.dispatch_bounds()
     all_g = _shake_tree_for_penalties(interface.ocp, all_g, v, v_bounds, expand_during_shake_tree)
 
-    if interface.opts.show_online_optim:
+    if interface.opts.online_optim is not OnlineOptim.NONE:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
     # Thread here on (f and all_g) instead of individually for each function?
@@ -151,7 +150,7 @@ def generic_solve(interface, expand_during_shake_tree=False) -> dict:
             interface.out["sol"]["lam_g"],
             interface.out["sol"]["lam_p"],
         ]
-        interface.options_common["iteration_callback"].eval(to_eval, force=True)
+        interface.options_common["iteration_callback"].eval(to_eval, enforce=True)
     return interface.out
 
 

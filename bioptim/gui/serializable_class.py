@@ -400,6 +400,7 @@ class OptimizationVariableContainerSerializable:
 
 
 class OdeSolverSerializable:
+    # TODO There are probably more parameters to serialize here, if the GUI fails, this is probably the reason
     polynomial_degree: int
     type: OdeSolver
 
@@ -414,7 +415,7 @@ class OdeSolverSerializable:
         ode_solver: OdeSolver = ode_solver
 
         return cls(
-            polynomial_degree=5,
+            polynomial_degree=ode_solver.polynomial_degree,
             type="ode",
         )
 

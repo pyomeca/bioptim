@@ -275,23 +275,7 @@ class PlotOcp:
         self.shooting_type = shooting_type
 
         if not only_initialize_variables:
-            horz = 0
-            vert = 1 if len(self.all_figures) < self.n_vertical_windows * self.n_horizontal_windows else 0
-            for i, fig in enumerate(self.all_figures):
-                if self.automatically_organize:
-                    try:
-                        fig.canvas.manager.window.move(
-                            int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
-                        )
-                        vert += 1
-                        if vert >= self.n_vertical_windows:
-                            horz += 1
-                            vert = 0
-                    except AttributeError:
-                        pass
-                fig.canvas.draw()
-                if self.plot_options["general_options"]["use_tight_layout"]:
-                    fig.tight_layout()
+            self._spread_figures_on_screen()
 
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import create_ipopt_output_plot
@@ -688,6 +672,25 @@ class PlotOcp:
             self.height_step = (height - self.top_margin) / self.n_horizontal_windows
             self.width_step = width / self.n_vertical_windows
 
+    def _spread_figures_on_screen(self):
+        horz = 0
+        vert = 1 if len(self.all_figures) < self.n_vertical_windows * self.n_horizontal_windows else 0
+        for i, fig in enumerate(self.all_figures):
+            if self.automatically_organize:
+                try:
+                    fig.canvas.manager.window.move(
+                        int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
+                    )
+                    vert += 1
+                    if vert >= self.n_vertical_windows:
+                        horz += 1
+                        vert = 0
+                except AttributeError:
+                    pass
+            fig.canvas.draw()
+            if self.plot_options["general_options"]["use_tight_layout"]:
+                fig.tight_layout()
+
     def find_phases_intersections(self):
         """
         Finds the intersection between the phases
@@ -783,16 +786,16 @@ class PlotOcp:
 
     def update_data(
         self,
-        xdata: dict,
+        xdata: list,
         ydata: list,
         **args: dict,
     ):
         """
-        Update ydata from the variable a solution structure
+        Update xdata and ydata. The input are the output of the parse_data method
 
         Parameters
         ----------
-        xdata: dict
+        xdata: list
             The time vector
         ydata: list
             The actual current data to be plotted

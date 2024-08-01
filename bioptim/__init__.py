@@ -208,7 +208,7 @@ from .misc.enums import (
     MagnitudeType,
     MultiCyclicCycleSolutions,
     PhaseDynamics,
-    ShowOnlineType,
+    OnlineOptim,
 )
 from .misc.mapping import BiMappingList, BiMapping, Mapping, NodeMapping, NodeMappingList, SelectionMapping, Dependency
 from .optimization.multi_start import MultiStart

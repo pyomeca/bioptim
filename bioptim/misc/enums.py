@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, auto
 
 
 class PhaseDynamics(Enum):
@@ -93,20 +93,24 @@ class PlotType(Enum):
     POINT = 3  # Point plot
 
 
-class ShowOnlineType(Enum):
+class OnlineOptim(Enum):
     """
     The type of callback
 
     Attributes
     ----------
-    MULTIPROCESS: int
-        Using multiprocessing
-    SERVER: int
-        Using a server to communicate with the client
+    NONE: No online plotting
+    DEFAULT: Default online plotting (MULTIPROCESS on Linux, MULTIPROCESS_SERVER on Windows and NONE on MacOS)
+    MULTIPROCESS: Multiprocess online plotting
+    SERVER: Server online plotting
+    MULTIPROCESS_SERVER: Multiprocess server online plotting
     """
 
-    MULTIPROCESS = 0
-    SERVER = 1
+    NONE = auto()
+    DEFAULT = auto()
+    MULTIPROCESS = auto()
+    SERVER = auto()
+    MULTIPROCESS_SERVER = auto()
 
 
 class ControlType(Enum):

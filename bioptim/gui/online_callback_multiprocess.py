@@ -35,7 +35,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
     def close(self):
         self.plot_process.kill()
 
-    def eval(self, arg: list | tuple, force: bool = False) -> list:
+    def eval(self, arg: list | tuple, enforce: bool = False) -> list[int]:
         # Dequeuing the data by removing previous not useful data
         while not self.queue.empty():
             self.queue.get_nowait()
@@ -52,12 +52,12 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
 
         Attributes
         ----------
-        ocp: OptimalControlProgram
+        _ocp: OptimalControlProgram
             A reference to the ocp to show
-        pipe: mp.Queue
-            The multiprocessing queue to evaluate
-        plot: PlotOcp
-            The handler on all the figures
+        _plotter: PlotOcp
+            The plotter
+        _update_time: float
+            The time between each update
 
         Methods
         -------
@@ -96,6 +96,18 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
             threading.Timer(self._update_time, self.plot_update).start()
             plt.show()
 
+        @property
+        def has_at_least_one_active_figure(self) -> bool:
+            """
+            If at least one figure is active
+
+            Returns
+            -------
+            If at least one figure is active
+            """
+
+            return [plt.fignum_exists(fig.number) for fig in self._plotter.all_figures].count(True) > 0
+
         def plot_update(self) -> bool:
             """
             The callback to update the graphs
@@ -115,7 +127,7 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
             # We want to redraw here to actually consume a bit of time, otherwise it goes to fast and pipe remains empty
             for fig in self._plotter.all_figures:
                 fig.canvas.draw()
-            if [plt.fignum_exists(fig.number) for fig in self._plotter.all_figures].count(True) > 0:
+            if self.has_at_least_one_active_figure:
                 # If there are still figures, we keep updating
                 threading.Timer(self._update_time, self.plot_update).start()
 

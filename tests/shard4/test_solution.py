@@ -22,7 +22,7 @@ def test_time(ode_solver, phase_dynamics):
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
     solver.set_print_level(0)
 
@@ -58,7 +58,7 @@ def test_time_multiphase(ode_solver, phase_dynamics, continuous):
         expand_dynamics=True,
     )
 
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
     solver.set_print_level(0)
 
@@ -136,7 +136,7 @@ def test_generate_stepwise_time(ode_solver, merge_phase, phase_dynamics, continu
         expand_dynamics=True,
     )
 
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
     solver.set_print_level(0)
 
@@ -232,7 +232,7 @@ def test_generate_decision_time(ode_solver, merge_phase, phase_dynamics, continu
         expand_dynamics=True,
     )
 
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
     solver.set_print_level(0)
 
@@ -346,7 +346,7 @@ def test_generate_integrate(ode_solver, merge_phase, shooting_type, integrator, 
         expand_dynamics=True,
     )
 
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(100)
     solver.set_print_level(0)
     sol = ocp.solve(solver=solver)

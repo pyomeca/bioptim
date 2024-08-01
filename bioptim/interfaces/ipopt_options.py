@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from ..misc.enums import SolverType
+from ..misc.enums import SolverType, OnlineOptim
 from .abstract_options import GenericSolver
 
 
@@ -11,8 +11,13 @@ class IPOPT(GenericSolver):
 
     Attributes
     ----------
-    show_online_optim: bool
-        If the plot should be shown while optimizing. It will slow down the optimization a bit
+    show_online_optim: bool | None
+        If the plot should be shown while optimizing. If set to True, it will the default online_optim. online_optim
+        and show_online_optim cannot be simultaneous set
+    online_optim: OnlineOptim
+        The type of online plot to show. If set to None (default), then no plot will be shown. If set to DEFAULT, it
+        will use the fastest method for your OS (multiprocessing on Linux and multiprocessing_server on Windows).
+        In all cases, it will slow down the optimization a bit.
     show_options: dict
         The graphs option to pass to PlotOcp
     _tol: float
@@ -68,7 +73,8 @@ class IPOPT(GenericSolver):
     """
 
     type: SolverType = SolverType.IPOPT
-    show_online_optim: bool = False
+    show_online_optim: bool | None = None
+    online_optim: OnlineOptim = OnlineOptim.NONE
     show_options: dict = None
     _tol: float = 1e-6  # default in ipopt 1e-8
     _dual_inf_tol: float = 1.0
@@ -95,6 +101,16 @@ class IPOPT(GenericSolver):
     _print_level: int = 5
     _c_compile: bool = False
     _check_derivatives_for_naninf: str = "no"  # "yes"
+
+    def __attrs_post_init__(self):
+        if self.show_online_optim and self.online_optim != OnlineOptim.NONE:
+            raise ValueError("show_online_optim and online_optim cannot be simultaneous set")
+
+        if self.show_online_optim is not None:
+            if self.show_online_optim:
+                self.online_optim = OnlineOptim.DEFAULT
+            else:
+                self.online_optim = OnlineOptim.NONE
 
     @property
     def tol(self):
@@ -323,7 +339,7 @@ class IPOPT(GenericSolver):
     def as_dict(self, solver):
         solver_options = self.__dict__
         options = {}
-        non_python_options = ["_c_compile", "type", "show_online_optim", "show_options"]
+        non_python_options = ["_c_compile", "type", "show_online_optim", "online_optim", "show_options"]
         for key in solver_options:
             if key not in non_python_options:
                 ipopt_key = "ipopt." + key[1:]

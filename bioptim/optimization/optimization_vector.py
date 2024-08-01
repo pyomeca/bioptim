@@ -356,7 +356,7 @@ class OptimizationVectorHelper:
         ocp: OptimalControlProgram
             A reference to the ocp
         data: np.ndarray | DM
-            The solution in a vector, if no data is provided, dummy data is used (it can be useful getting the dimensions)
+            The solution in a vector
 
         Returns
         -------

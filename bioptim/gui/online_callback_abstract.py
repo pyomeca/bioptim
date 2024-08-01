@@ -1,18 +1,6 @@
 from abc import ABC, abstractmethod
-from enum import Enum
-import json
-import logging
-import multiprocessing as mp
-import socket
-import struct
-import threading
 
-from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity, DM
-from matplotlib import pyplot as plt
-import numpy as np
-
-from .plot import PlotOcp, OcpSerializable
-from ..optimization.optimization_vector import OptimizationVectorHelper
+from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
 
 
 class OnlineCallbackAbstract(Callback, ABC):
@@ -155,7 +143,7 @@ class OnlineCallbackAbstract(Callback, ABC):
             return Sparsity(0, 0)
 
     @abstractmethod
-    def eval(self, arg: list | tuple, force: bool = False) -> list:
+    def eval(self, arg: list | tuple, enforce: bool = False) -> list[int]:
         """
         Send the current data to the plotter
 
@@ -163,6 +151,10 @@ class OnlineCallbackAbstract(Callback, ABC):
         ----------
         arg: list | tuple
             The data to send
+
+        enforce: bool
+            If True, the client will block until the server is ready to receive new data. This is useful at the end of
+            the optimization to make sure the data are plot (and not discarded)
 
         Returns
         -------
