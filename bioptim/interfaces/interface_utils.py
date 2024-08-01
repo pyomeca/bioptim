@@ -7,7 +7,7 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from bioptim.optimization.solution.solution import Solution
 from ..gui.online_callback_multiprocess import OnlineCallbackMultiprocess
-from ..gui.online_callback_server import OnlineCallbackServer
+from ..gui.online_callback_server import PlottingServer, OnlineCallbackServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType, ShowOnlineType
@@ -23,7 +23,12 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
     ocp: OptimalControlProgram
         A reference to the current OptimalControlProgram
     show_options: dict
-        The options to pass to PlotOcp
+        The options to pass to PlotOcp, special options are:
+            - type: ShowOnlineType.MULTIPROCESS or ShowOnlineType.SERVER
+            - host: The host to connect to (only for ShowOnlineType.SERVER)
+            - port: The port to connect to (only for ShowOnlineType.SERVER)
+            - as_multiprocess: If the server should run as a multiprocess (only for ShowOnlineType.SERVER), if True,
+                a server is automatically started, if False, the user must start the server manually
     """
     if show_options is None:
         show_options = {}
@@ -45,10 +50,19 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
         if "host" in show_options:
             host = show_options["host"]
             del show_options["host"]
+
         port = None
         if "port" in show_options:
             port = show_options["port"]
             del show_options["port"]
+
+        as_multiprocess = True
+        if "as_multiprocess" in show_options:
+            as_multiprocess = show_options["as_multiprocess"]
+            del show_options["as_multiprocess"]
+        if as_multiprocess:
+            PlottingServer.as_multiprocess(host=host, port=port)
+
         interface.options_common["iteration_callback"] = OnlineCallbackServer(
             ocp, show_options=show_options, host=host, port=port
         )

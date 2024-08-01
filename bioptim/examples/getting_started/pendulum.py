@@ -26,6 +26,7 @@ from bioptim import (
     BiorbdModel,
     ControlType,
     PhaseDynamics,
+    ShowOnlineType,
 )
 
 
@@ -149,8 +150,15 @@ def main():
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
-    # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    # --- Solve the ocp --- #
+    if platform.system() == "Windows":
+        # The default online type (ShowOnlineType.MULTIPROCESS) is not available on Windows
+        # Since `as_multiprocess` default value is True, it will automatically starts the server in the background
+        solver = Solver.IPOPT(show_online_optim=True, show_options={"type": ShowOnlineType.SERVER})
+    else:
+        solver = Solver.IPOPT(show_online_optim=True)
+
+    sol = ocp.solve(solver)
 
     # --- Show the results graph --- #
     sol.print_cost()

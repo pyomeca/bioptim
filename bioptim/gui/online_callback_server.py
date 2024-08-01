@@ -3,6 +3,7 @@ import json
 import logging
 import socket
 import struct
+import time
 import threading
 
 from casadi import nlpsol_out, DM
@@ -26,6 +27,18 @@ def _deserialize_show_options(show_options: bytes) -> dict:
     return json.loads(show_options.decode())
 
 
+def _start_as_multiprocess_internal(*args, **kwargs):
+    """
+    Starts the server (necessary for multiprocessing), this method should not be called directly, apart from
+    run_as_multiprocess
+
+    Parameters
+    ----------
+    same as PlottingServer
+    """
+    PlottingServer(*args, **kwargs)
+
+
 class _ServerMessages(Enum):
     INITIATE_CONNEXION = 0
     NEW_DATA = 1
@@ -35,9 +48,37 @@ class _ServerMessages(Enum):
     UNKNOWN = 5
 
 
-class OnlineCallbackServerBackend:
-    def _prepare_logger(self):
-        name = "OnlineCallbackServer"
+class PlottingServer:
+    def __init__(self, host: str = None, port: int = None):
+        """
+        Initializes the server
+
+        Parameters
+        ----------
+        host: str
+            The host to listen to, by default "localhost"
+        port: int
+            The port to listen to, by default 3050
+        """
+
+        self._prepare_logger()
+        self._get_data_interval = 1.0
+        self._update_plot_interval = 0.01
+
+        # Define the host and port
+        self._host = host if host else _default_host
+        self._port = port if port else _default_port
+        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self._plotter: PlotOcp = None
+
+        self._run()
+
+    def _prepare_logger(self) -> None:
+        """
+        Prepares the logger
+        """
+
+        name = "PlottingServer"
         console_handler = logging.StreamHandler()
         formatter = logging.Formatter(
             "{asctime} - {name}:{levelname} - {message}",
@@ -50,18 +91,24 @@ class OnlineCallbackServerBackend:
         self._logger.addHandler(console_handler)
         self._logger.setLevel(logging.INFO)
 
-    def __init__(self, host: str = None, port: int = None):
-        self._prepare_logger()
-        self._get_data_interval = 1.0
-        self._update_plot_interval = 0.01
+    @staticmethod
+    def as_multiprocess(*args, **kwargs) -> None:
+        """
+        Starts the server in a new process, this method can be called directly by the user
 
-        # Define the host and port
-        self._host = host if host else _default_host
-        self._port = port if port else _default_port
-        self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self._plotter: PlotOcp = None
+        Parameters
+        ----------
+        same as PlottingServer
+        """
+        from multiprocessing import Process
 
-    def run(self):
+        thread = Process(target=_start_as_multiprocess_internal, args=args, kwargs=kwargs)
+        thread.start()
+
+    def _run(self) -> None:
+        """
+        Starts the server, this method can be called directly by the user to start a plot server
+        """
         # Start listening to the server
         self._socket.bind((self._host, self._port))
         self._socket.listen(1)
@@ -78,7 +125,23 @@ class OnlineCallbackServerBackend:
         finally:
             self._socket.close()
 
-    def _wait_for_data(self, client_socket: socket.socket, send_confirmation: bool = True):
+    def _wait_for_data(self, client_socket: socket.socket, send_confirmation: bool) -> tuple[_ServerMessages, list]:
+        """
+        Waits for data from the client
+
+        Parameters
+        ----------
+        client_socket: socket.socket
+            The client socket
+        send_confirmation: bool
+            If True, the server will send a "OK" confirmation to the client after receiving the data, otherwise it will
+            not send anything. This is part of the communication protocol
+
+        Returns
+        -------
+        The message type and the data
+        """
+
         # Receive the actual data
         try:
             self._logger.debug("Waiting for data from client")
@@ -121,13 +184,33 @@ class OnlineCallbackServerBackend:
 
         return message_type, data_out
 
-    def _wait_for_new_connexion(self, client_socket: socket.socket):
-        message_type, data = self._wait_for_data(client_socket=client_socket)
+    def _wait_for_new_connexion(self, client_socket: socket.socket) -> None:
+        """
+        Waits for a new connexion
+
+        Parameters
+        ----------
+        client_socket: socket.socket
+            The client socket
+        """
+
+        message_type, data = self._wait_for_data(client_socket=client_socket, send_confirmation=True)
         if message_type == _ServerMessages.INITIATE_CONNEXION:
             self._logger.debug(f"Received hand shake from client")
             self._initialize_plotter(client_socket, data)
 
-    def _initialize_plotter(self, client_socket: socket.socket, ocp_raw: list):
+    def _initialize_plotter(self, client_socket: socket.socket, ocp_raw: list) -> None:
+        """
+        Initializes the plotter
+
+        Parameters
+        ----------
+        client_socket: socket.socket
+            The client socket
+        ocp_raw: list
+            The serialized raw data from the client
+        """
+
         try:
             data_json = json.loads(ocp_raw[0])
             dummy_time_vector = []
@@ -161,7 +244,11 @@ class OnlineCallbackServerBackend:
         threading.Timer(self._update_plot_interval, self._redraw).start()
         plt.show()
 
-    def _redraw(self):
+    def _redraw(self) -> None:
+        """
+        Redraws the plot, this method is called periodically as long as at least one figure is open
+        """
+
         self._logger.debug("Updating plot")
         for _, fig in enumerate(self._plotter.all_figures):
             fig.canvas.draw()
@@ -171,14 +258,18 @@ class OnlineCallbackServerBackend:
         else:
             self._logger.info("All figures have been closed, stop updating the plots")
 
-    def _wait_for_new_data(self, client_socket: socket.socket) -> bool:
+    def _wait_for_new_data(self, client_socket: socket.socket) -> None:
         """
-        The callback to update the graphs
+        Waits for new data from the client, sends a "READY_FOR_NEXT_DATA" message to the client to signal that the server
+        is ready to receive new data. If the client sends new data, the server will update the plot, if client disconnects
+        the connexion will be closed
 
-        Returns
-        -------
-        True if everything went well
+        Parameters
+        ----------
+        client_socket: socket.socket
+            The client socket
         """
+
         self._logger.debug(f"Waiting for new data from client")
         try:
             client_socket.sendall("READY_FOR_NEXT_DATA".encode())
@@ -204,7 +295,16 @@ class OnlineCallbackServerBackend:
             timer_get_data = threading.Timer(self._get_data_interval, self._wait_for_new_data, (client_socket,))
             timer_get_data.start()
 
-    def _update_data(self, data_raw: list):
+    def _update_data(self, data_raw: list) -> None:
+        """
+        Updates the data to plot based on the client data
+
+        Parameters
+        ----------
+        data_raw: list
+            The raw data from the client
+        """
+
         header = [int(v) for v in data_raw[0].decode().split(",")]
 
         data = data_raw[1]
@@ -251,6 +351,25 @@ class OnlineCallbackServerBackend:
 
 class OnlineCallbackServer(OnlineCallbackAbstract):
     def __init__(self, ocp, opts: dict = None, show_options: dict = None, host: str = None, port: int = None):
+        """
+        Initializes the client. This is not supposed to be called directly by the user, but by the solver. During the
+        initialization, we need to perform some tasks that are not possible to do in server side. Then the results of
+        these initialization are passed to the server
+
+        Parameters
+        ----------
+        ocp: OptimalControlProgram
+            The ocp
+        opts: dict
+            The options for the solver
+        show_options: dict
+            The options for the plot
+        host: str
+            The host to connect to, by default "localhost"
+        port: int
+            The port to connect to, by default 3050
+        """
+
         super().__init__(ocp, opts, show_options)
 
         self._host = host if host else _default_host
@@ -270,15 +389,32 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
 
         self._initialize_connexion(**show_options)
 
-    def _initialize_connexion(self, **show_options):
+    def _initialize_connexion(self, retries: int = 0, **show_options) -> None:
+        """
+        Initializes the connexion to the server
+
+        Parameters
+        ----------
+        retries: int
+            The number of retries to connect to the server (retry 5 times with 1s sleep between each retry, then raises
+            an error if it still cannot connect)
+        show_options: dict
+            The options to pass to PlotOcp
+        """
+
         # Start the client
         try:
             self._socket.connect((self._host, self._port))
         except ConnectionError:
-            raise RuntimeError(
-                "Could not connect to the plotter server, make sure it is running "
-                "by calling 'OnlineCallbackServer().start()' on another python instance)"
-            )
+            if retries > 5:
+                raise RuntimeError(
+                    "Could not connect to the plotter server, make sure it is running by calling 'PlottingServer()' on "
+                    "another python instance or allowing for automatic start of the server by calling "
+                    "'PlottingServer.as_multiprocess()' in the main script"
+                )
+            else:
+                time.sleep(1)
+                return self._initialize_connexion(retries + 1, **show_options)
 
         ocp_plot = OcpSerializable.from_ocp(self.ocp).serialize()
         dummy_phase_times = OptimizationVectorHelper.extract_step_times(self.ocp, DM(np.ones(self.ocp.n_phases)))
@@ -311,11 +447,31 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
             self.ocp, only_initialize_variables=True, dummy_phase_times=dummy_phase_times, **show_options
         )
 
-    def close(self):
+    def close(self) -> None:
+        """
+        Closes the connexion
+        """
+
         self._socket.sendall(f"{_ServerMessages.CLOSE_CONNEXION.value}\nGoodbye from client!".encode())
         self._socket.close()
 
     def eval(self, arg: list | tuple, force: bool = False) -> list:
+        """
+        Sends the current data to the plotter, this method is automatically called by the solver
+
+        Parameters
+        ----------
+        arg: list | tuple
+            The current data
+        force: bool
+            If True, the client will block until the server is ready to receive new data. This is useful at the end of
+            the optimization to make sure the data are plot (and not discarded)
+
+        Returns
+        -------
+        A mandatory [0] to respect the CasADi callback signature
+        """
+
         if not force:
             self._socket.setblocking(False)
 

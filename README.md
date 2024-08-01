@@ -73,6 +73,8 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
   
     - [OptimalControlProgram](#class-optimalcontrolprogram)
     - [NonLinearProgram](#class-nonlinearprogram)
+    - [VariationalOptimalControlProgram](#class-variationaloptimalcontrolprogram)
+    - [PlottingServer](#class-plottingserver)
 
     </details>
 
@@ -167,6 +169,7 @@ As a tour guide that uses this binder, you can watch the `bioptim` workshop that
     - [Solver](#enum-solver)
     - [ControlType](#enum-controltype)
     - [PlotType](#enum-plottype)
+    - [ShowOnlineType](#enum-showonlinetype)
     - [InterpolationType](#enum-interpolationtype)
     - [Shooting](#enum-shooting)
     - [CostType](#enum-costtype)
@@ -788,7 +791,15 @@ The `Solver` class can be used to select the nonlinear solver to solve the ocp:
 Note that options can be passed to the solver parameter.
 One can refer to their respective solver's documentation to know which options exist.
 The `show_online_optim` parameter can be set to `True` so the graphs nicely update during the optimization.
-It is expected to slow down the optimization a bit.
+Please note that `ShowOnlineType.MULTIPROCESS` is not available on Windows. To see how to run the server on Windows, please refer to the `getting_started/pendulum.py` example.
+It is expected to slow down the optimization a bit. 
+`show_options` can be also passed as a dict to the plotter to customize the plotter's behavior.
+The following keys are special options:
+  - `type`: the type of plotter to use (default is `ShowOnlineType.MULTIPROCESS`)
+  - If `type` is `ShowOnlineType.SERVER`, then these additional options are available:
+    - `as_multiprocess`: if the server should be run as a multiprocess (default is `True`). If `True`, a server is automatically started in a new process. If `False`, a server must be started manually by instantiating an `PlottingServer` class.
+    - `host`: the host to use (default is `localhost`), it must match the host used in the `PlottingServer` class if `as_multiprocess` is `False`
+    - `port`: the port to use (default is `5030`), it must match the port used in the `PlottingServer` class if `as_multiprocess` is `False`
 
 Finally, one can save and load previously optimized values by using
 ```python
@@ -830,6 +841,12 @@ instead of `x_init` and `x_bounds`.
 `qdot_bounds` and the keys must be `"qdot_start"` and `"qdot_end"`. These velocities are implemented as parameters of
 the OCP, you can access them with `sol.parameters["qdot_start"]` and `sol.parameters["qdot_end"]` at the end of the
 optimization.
+
+### Class: PlottingServer
+If one wants to use the `ShowOnlineType.SERVER` plotter, one can instantiate this class to start a server.
+This is not mandatory as if `as_multiprocess` is set to `True` in the `show_options` dict [default behavior], this server is started automatically.
+The advantage of starting the server manually is that one can plot online graphs on a remote machine.
+An example of such a server is provided in `resources/plotting_server.py`.
 
 ## The model
 
@@ -1667,6 +1684,13 @@ PLOT: Normal plot that links the points.
 INTEGRATED: Plot that links the points within an interval but is discrete between its end and the beginning of the next interval.
 STEP: Step plot, constant over an interval.
 POINT: Point plot.
+
+### Enum: ShowOnlineType
+The type of online plotter to use.
+
+The accepted values are:
+MULTIPROCESS: The online plotter is in a separate process.
+SERVER: The online plotter is in a separate server.
 
 ### Enum: InterpolationType
 Defines wow a time-dependent variable is interpolated.
