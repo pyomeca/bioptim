@@ -74,7 +74,7 @@ class IPOPT(GenericSolver):
 
     type: SolverType = SolverType.IPOPT
     show_online_optim: bool | None = None
-    online_optim: OnlineOptim = OnlineOptim.NONE
+    online_optim: OnlineOptim | None = None
     show_options: dict = None
     _tol: float = 1e-6  # default in ipopt 1e-8
     _dual_inf_tol: float = 1.0
@@ -101,16 +101,6 @@ class IPOPT(GenericSolver):
     _print_level: int = 5
     _c_compile: bool = False
     _check_derivatives_for_naninf: str = "no"  # "yes"
-
-    def __attrs_post_init__(self):
-        if self.show_online_optim and self.online_optim != OnlineOptim.NONE:
-            raise ValueError("show_online_optim and online_optim cannot be simultaneous set")
-
-        if self.show_online_optim is not None:
-            if self.show_online_optim:
-                self.online_optim = OnlineOptim.DEFAULT
-            else:
-                self.online_optim = OnlineOptim.NONE
 
     @property
     def tol(self):

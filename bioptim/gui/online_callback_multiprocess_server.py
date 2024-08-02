@@ -15,7 +15,7 @@ def _start_as_multiprocess_internal(**kwargs):
     PlottingServer(**kwargs)
 
 
-class PlottingMultiprocessServer(OnlineCallbackServer):
+class OnlineCallbackMultiprocessServer(OnlineCallbackServer):
     def __init__(self, *args, **kwargs):
         """
         Starts the server in a new process
@@ -29,4 +29,4 @@ class PlottingMultiprocessServer(OnlineCallbackServer):
         process = Process(target=_start_as_multiprocess_internal, kwargs={"host": host, "port": port})
         process.start()
 
-        super(PlottingMultiprocessServer, self).__init__(*args, **kwargs)
+        super(OnlineCallbackMultiprocessServer, self).__init__(*args, **kwargs)

@@ -7,8 +7,8 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from bioptim.optimization.solution.solution import Solution
 from ..gui.online_callback_multiprocess import OnlineCallbackMultiprocess
-from ..gui.online_callback_server import PlottingServer
-from ..gui.online_callback_multiprocess_server import PlottingMultiprocessServer
+from ..gui.online_callback_server import OnlineCallbackServer
+from ..gui.online_callback_multiprocess_server import OnlineCallbackMultiprocessServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType, OnlineOptim
@@ -33,8 +33,15 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
         show_options = {}
 
     online_optim: OnlineOptim = interface.opts.online_optim
+    if online_optim == OnlineOptim.DEFAULT:
+        if platform == "linux":
+            online_optim = OnlineOptim.MULTIPROCESS
+        elif platform == "win32":
+            online_optim = OnlineOptim.MULTIPROCESS_SERVER
+        else:
+            online_optim = None
 
-    if interface.opts.online_optim == OnlineOptim.MULTIPROCESS:
+    if online_optim == OnlineOptim.MULTIPROCESS:
         if platform != "linux":
             raise RuntimeError(
                 "Online OnlineOptim.MULTIPROCESS is not supported on Windows or MacOS. "
@@ -53,9 +60,9 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
             del show_options["port"]
 
         if online_optim == OnlineOptim.SERVER:
-            class_to_instantiate = PlottingServer
+            class_to_instantiate = OnlineCallbackServer
         elif online_optim == OnlineOptim.MULTIPROCESS_SERVER:
-            class_to_instantiate = PlottingMultiprocessServer
+            class_to_instantiate = OnlineCallbackMultiprocessServer
         else:
             raise NotImplementedError(f"show_options['type']={online_optim} is not implemented yet")
 
@@ -92,7 +99,12 @@ def generic_solve(interface, expand_during_shake_tree=False) -> dict:
     all_g, all_g_bounds = interface.dispatch_bounds()
     all_g = _shake_tree_for_penalties(interface.ocp, all_g, v, v_bounds, expand_during_shake_tree)
 
-    if interface.opts.online_optim is not OnlineOptim.NONE:
+    if interface.opts.show_online_optim is not None:
+        if interface.opts.online_optim is not None:
+            raise ValueError("show_online_optim and online_optim cannot be simultaneous set")
+        interface.opts.online_optim = OnlineOptim.DEFAULT if interface.opts.show_online_optim else None
+
+    if interface.opts.online_optim is not None:
         interface.online_optim(interface.ocp, interface.opts.show_options)
 
     # Thread here on (f and all_g) instead of individually for each function?
@@ -138,7 +150,7 @@ def generic_solve(interface, expand_during_shake_tree=False) -> dict:
     interface.out["sol"]["solver"] = interface.solver_name
 
     # Make sure the graphs are showing the last iteration
-    if interface.opts.show_online_optim:
+    if "iteration_callback" in interface.options_common:
         to_eval = [
             interface.out["sol"]["x"],
             interface.out["sol"]["f"],

@@ -149,7 +149,7 @@ def main():
     ocp.print(to_console=False, to_graph=False)
 
     # --- Solve the ocp --- #
-    # Default is OnlineOptim.MULTIPROCESS on Linux, OnlineOptim.MULTIPROCESS_SERVER on Windows and OnlineOptim.NONE on MacOS
+    # Default is OnlineOptim.MULTIPROCESS on Linux, OnlineOptim.MULTIPROCESS_SERVER on Windows and None on MacOS
     sol = ocp.solve(Solver.IPOPT(show_online_optim=OnlineOptim.DEFAULT))
 
     # --- Show the results graph --- #

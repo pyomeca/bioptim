@@ -106,7 +106,6 @@ class OnlineOptim(Enum):
     MULTIPROCESS_SERVER: Multiprocess server online plotting
     """
 
-    NONE = auto()
     DEFAULT = auto()
     MULTIPROCESS = auto()
     SERVER = auto()

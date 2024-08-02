@@ -74,7 +74,7 @@ class SQP_METHOD(GenericSolver):
 
     type: SolverType = SolverType.SQP
     show_online_optim: bool | None = None
-    online_optim: OnlineOptim = OnlineOptim.NONE
+    online_optim: OnlineOptim | None = None
     show_options: dict = None
     c_compile = False
     _beta: float = 0.8
@@ -89,16 +89,6 @@ class SQP_METHOD(GenericSolver):
     _qpsol: str = "qpoases"
     _tol_du: float = 1e-6
     _tol_pr: float = 1e-6
-
-    def __attrs_post_init__(self):
-        if self.show_online_optim and self.online_optim != OnlineOptim.NONE:
-            raise ValueError("show_online_optim and online_optim cannot be simultaneous set")
-
-        if self.show_online_optim is not None:
-            if self.show_online_optim:
-                self.online_optim = OnlineOptim.DEFAULT
-            else:
-                self.online_optim = OnlineOptim.NONE
 
     @property
     def beta(self):

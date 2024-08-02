@@ -174,7 +174,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                             f"Only {solver_current.get_tolerance_keys()} can be modified."
                         )
                 if solver_current.type == SolverType.IPOPT:
-                    solver_current.online_optim = OnlineOptim.NONE
+                    solver_current.online_optim = None
             warm_start = None
 
             total_time += sol.real_time_to_optimize

@@ -16,7 +16,7 @@ def test_ipopt_solver_options():
     solver = Solver.IPOPT()
     assert solver.type == SolverType.IPOPT
     assert solver.show_online_optim is None
-    assert solver.online_optim is OnlineOptim.NONE
+    assert solver.online_optim is None
     assert solver.show_options is None
     assert solver.tol == 1e-6
     assert solver.dual_inf_tol == 1.0
@@ -133,16 +133,3 @@ def test_ipopt_solver_options():
 
     solver.set_nlp_scaling_method("gradient-fiesta")
     assert solver.nlp_scaling_method == "gradient-fiesta"
-
-
-def test_ipopt_solver_options_wrong():
-
-    solver = Solver.IPOPT()
-    solver.show_online_optim = True
-    with pytest.raises(ValueError, match="show_online_optim and online_optim cannot be simultaneous set"):
-        solver.online_optim = OnlineOptim.SERVER
-
-    solver.show_online_optim = None
-    solver.online_optim = OnlineOptim.SERVER
-    with pytest.raises(ValueError, match="show_online_optim and online_optim cannot be simultaneous set"):
-        solver.show_online_optim = True
