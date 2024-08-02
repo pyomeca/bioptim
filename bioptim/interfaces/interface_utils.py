@@ -7,7 +7,8 @@ from casadi import horzcat, vertcat, sum1, sum2, nlpsol, SX, MX, reshape
 
 from bioptim.optimization.solution.solution import Solution
 from ..gui.online_callback_multiprocess import OnlineCallbackMultiprocess
-from ..gui.online_callback_server import PlottingServer, OnlineCallbackServer
+from ..gui.online_callback_server import PlottingServer
+from ..gui.online_callback_multiprocess_server import PlottingMultiprocessServer
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import InterpolationType, OnlineOptim
@@ -31,19 +32,16 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
     if show_options is None:
         show_options = {}
 
-    show_type = OnlineOptim.MULTIPROCESS
-    if "type" in show_options:
-        show_type = show_options["type"]
-        del show_options["type"]
+    online_optim: OnlineOptim = interface.opts.online_optim
 
-    if show_type == OnlineOptim.MULTIPROCESS:
+    if interface.opts.online_optim == OnlineOptim.MULTIPROCESS:
         if platform != "linux":
             raise RuntimeError(
                 "Online OnlineOptim.MULTIPROCESS is not supported on Windows or MacOS. "
                 "You can use online_optim=OnlineOptim.MULTIPROCESS_SERVER to the Solver declaration on Windows though"
             )
         interface.options_common["iteration_callback"] = OnlineCallbackMultiprocess(ocp, show_options=show_options)
-    elif show_type == OnlineOptim.SERVER:
+    elif online_optim in (OnlineOptim.SERVER, OnlineOptim.MULTIPROCESS_SERVER):
         host = None
         if "host" in show_options:
             host = show_options["host"]
@@ -54,19 +52,18 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
             port = show_options["port"]
             del show_options["port"]
 
-        # TODO HERE!
-        as_multiprocess = True
-        if "as_multiprocess" in show_options:
-            as_multiprocess = show_options["as_multiprocess"]
-            del show_options["as_multiprocess"]
-        if as_multiprocess:
-            PlottingServer.as_multiprocess(host=host, port=port)
+        if online_optim == OnlineOptim.SERVER:
+            class_to_instantiate = PlottingServer
+        elif online_optim == OnlineOptim.MULTIPROCESS_SERVER:
+            class_to_instantiate = PlottingMultiprocessServer
+        else:
+            raise NotImplementedError(f"show_options['type']={online_optim} is not implemented yet")
 
-        interface.options_common["iteration_callback"] = OnlineCallbackServer(
+        interface.options_common["iteration_callback"] = class_to_instantiate(
             ocp, show_options=show_options, host=host, port=port
         )
     else:
-        raise NotImplementedError(f"show_options['type']={show_type} is not implemented yet")
+        raise NotImplementedError(f"show_options['type']={online_optim} is not implemented yet")
 
 
 def generic_solve(interface, expand_during_shake_tree=False) -> dict:

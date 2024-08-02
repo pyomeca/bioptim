@@ -92,20 +92,6 @@ class PlottingServer:
         self._logger.addHandler(console_handler)
         self._logger.setLevel(logging.INFO)
 
-    @staticmethod
-    def as_multiprocess(*args, **kwargs) -> None:
-        """
-        Starts the server in a new process, this method can be called directly by the user
-
-        Parameters
-        ----------
-        same as PlottingServer
-        """
-        from multiprocessing import Process
-
-        thread = Process(target=_start_as_multiprocess_internal, args=args, kwargs=kwargs)
-        thread.start()
-
     def _run(self) -> None:
         """
         Starts the server, this method is blocking
@@ -126,9 +112,50 @@ class PlottingServer:
         finally:
             self._socket.close()
 
-    def _wait_for_data(self, client_socket: socket.socket, send_confirmation: bool) -> tuple[_ServerMessages, list]:
+    def _wait_for_new_connexion(self, client_socket: socket.socket) -> None:
+        """
+        Waits for a new connexion
+
+        Parameters
+        ----------
+        client_socket: socket.socket
+            The client socket
+        """
+
+        message_type, data = self._recv_data(client_socket=client_socket, send_confirmation=True)
+        if message_type == _ServerMessages.INITIATE_CONNEXION:
+            self._logger.debug(f"Received hand shake from client")
+            self._initialize_plotter(client_socket, data)
+
+    def _recv_data(self, client_socket: socket.socket, send_confirmation: bool) -> tuple[_ServerMessages, list]:
         """
         Waits for data from the client
+
+        Parameters
+        ----------
+        client_socket: socket.socket
+            The client socket
+        send_confirmation: bool
+            If True, the server will send a "OK" confirmation to the client after receiving the data, otherwise it will
+            not send anything. This is part of the communication protocol
+
+        Returns
+        -------
+        The message type and the data
+        """
+        self._logger.debug("Waiting for data from client")
+        message_type, data_len = self._recv_message_type_and_data_len(client_socket, send_confirmation)
+        if data_len is None:
+            return message_type, None
+
+        data = self._recv_serialize_data(client_socket, send_confirmation, data_len)
+        return message_type, data
+
+    def _recv_message_type_and_data_len(
+        self, client_socket: socket.socket, send_confirmation: bool
+    ) -> tuple[_ServerMessages, list]:
+        """
+        Waits for data len from the client (first part of the protocol)
 
         Parameters
         ----------
@@ -145,7 +172,6 @@ class PlottingServer:
 
         # Receive the actual data
         try:
-            self._logger.debug("Waiting for data from client")
             data = client_socket.recv(1024)
             if not data:
                 return _ServerMessages.EMPTY, None
@@ -157,48 +183,71 @@ class PlottingServer:
         data_as_list = data.decode().split("\n")
         try:
             message_type = _ServerMessages(int(data_as_list[0]))
-            len_all_data = [int(len_data) for len_data in data_as_list[1][1:-1].split(",")]
-            # Sends confirmation and waits for the next message
-            if send_confirmation:
-                client_socket.sendall("OK".encode())
-            self._logger.debug(f"Received from client: {message_type} ({len_all_data} bytes)")
-            data_out = []
-            for len_data in len_all_data:
-                data_out.append(client_socket.recv(len_data))
-                if len(data_out[-1]) != len_data:
-                    data_out[-1] += client_socket.recv(len_data - len(data_out[-1]))
-            if send_confirmation:
-                client_socket.sendall("OK".encode())
         except ValueError:
             self._logger.warning("Unknown message type received")
-            message_type = _ServerMessages.UNKNOWN
             # Sends failure
             if send_confirmation:
                 client_socket.sendall("NOK".encode())
-            data_out = []
+            return _ServerMessages.UNKNOWN, None
 
         if message_type == _ServerMessages.CLOSE_CONNEXION:
             self._logger.info("Received close connexion from client")
             client_socket.close()
-            plt.close()
             return _ServerMessages.CLOSE_CONNEXION, None
 
-        return message_type, data_out
+        try:
+            len_all_data = [int(len_data) for len_data in data_as_list[1][1:-1].split(",")]
+        except ValueError:
+            self._logger.warning("Length of data could not be extracted")
+            # Sends failure
+            if send_confirmation:
+                client_socket.sendall("NOK".encode())
+            return _ServerMessages.UNKNOWN, None
 
-    def _wait_for_new_connexion(self, client_socket: socket.socket) -> None:
+        # If we are here, everything went well, so send confirmation
+        self._logger.debug(f"Received from client: {message_type} ({len_all_data} bytes)")
+        if send_confirmation:
+            client_socket.sendall("OK".encode())
+
+        return message_type, len_all_data
+
+    def _recv_serialize_data(self, client_socket: socket.socket, send_confirmation: bool, len_all_data: list) -> tuple:
         """
-        Waits for a new connexion
+        Receives the data from the client (second part of the protocol)
 
         Parameters
         ----------
         client_socket: socket.socket
             The client socket
+        send_confirmation: bool
+            If True, the server will send a "OK" confirmation to the client after receiving the data, otherwise it will
+            not send anything. This is part of the communication protocol
+        len_all_data: list
+            The length of the data to receive
+
+        Returns
+        -------
+        The unparsed serialized data
         """
 
-        message_type, data = self._wait_for_data(client_socket=client_socket, send_confirmation=True)
-        if message_type == _ServerMessages.INITIATE_CONNEXION:
-            self._logger.debug(f"Received hand shake from client")
-            self._initialize_plotter(client_socket, data)
+        data_out = []
+        try:
+            for len_data in len_all_data:
+                data_out.append(client_socket.recv(len_data))
+                if len(data_out[-1]) != len_data:
+                    data_out[-1] += client_socket.recv(len_data - len(data_out[-1]))
+        except:
+            self._logger.warning("Unknown message type received")
+            # Sends failure
+            if send_confirmation:
+                client_socket.sendall("NOK".encode())
+            return None
+
+        # If we are here, everything went well, so send confirmation
+        if send_confirmation:
+            client_socket.sendall("OK".encode())
+
+        return data_out
 
     def _initialize_plotter(self, client_socket: socket.socket, ocp_raw: list) -> None:
         """
@@ -241,7 +290,7 @@ class PlottingServer:
         client_socket.sendall("PLOT_READY".encode())
 
         # Start the callbacks
-        threading.Timer(self._get_data_interval, self._wait_for_new_data, (client_socket,)).start()
+        threading.Timer(self._get_data_interval, self._wait_for_new_data_to_plot, (client_socket,)).start()
         threading.Timer(self._update_plot_interval, self._redraw).start()
         plt.show()
 
@@ -274,7 +323,7 @@ class PlottingServer:
         else:
             self._logger.info("All figures have been closed, stop updating the plots")
 
-    def _wait_for_new_data(self, client_socket: socket.socket) -> None:
+    def _wait_for_new_data_to_plot(self, client_socket: socket.socket) -> None:
         """
         Waits for new data from the client, sends a "READY_FOR_NEXT_DATA" message to the client to signal that the server
         is ready to receive new data. If the client sends new data, the server will update the plot, if client disconnects
@@ -297,10 +346,10 @@ class PlottingServer:
             return
 
         should_continue = False
-        message_type, data = self._wait_for_data(client_socket=client_socket, send_confirmation=False)
+        message_type, data = self._recv_data(client_socket=client_socket, send_confirmation=False)
         if message_type == _ServerMessages.NEW_DATA:
             try:
-                self._update_data(data)
+                self._update_plot(data)
                 should_continue = True
             except:
                 self._logger.warning("Error while updating data from client, closing connexion")
@@ -311,10 +360,10 @@ class PlottingServer:
             self._logger.debug("Received empty data from client (end of stream), closing connexion")
 
         if should_continue:
-            timer_get_data = threading.Timer(self._get_data_interval, self._wait_for_new_data, (client_socket,))
+            timer_get_data = threading.Timer(self._get_data_interval, self._wait_for_new_data_to_plot, (client_socket,))
             timer_get_data.start()
 
-    def _update_data(self, serialized_raw_data: list) -> None:
+    def _update_plot(self, serialized_raw_data: list) -> None:
         """
         This method parses the data from the client
 
@@ -323,48 +372,8 @@ class PlottingServer:
         serialized_raw_data: list
             The serialized raw data from the client, see `xydata_encoding` below
         """
-
-        header = [int(v) for v in serialized_raw_data[0].decode().split(",")]
-
-        data = serialized_raw_data[1]
-        all_data = np.array(struct.unpack("d" * (len(data) // 8), data))
-
-        header_cmp = 0
-        all_data_cmp = 0
-        xdata = []
-        n_phases = header[header_cmp]
-        header_cmp += 1
-        for _ in range(n_phases):
-            n_nodes = header[header_cmp]
-            header_cmp += 1
-            x_phases = []
-            for _ in range(n_nodes):
-                n_steps = header[header_cmp]
-                header_cmp += 1
-
-                x_phases.append(all_data[all_data_cmp : all_data_cmp + n_steps])
-                all_data_cmp += n_steps
-            xdata.append(x_phases)
-
-        ydata = []
-        n_variables = header[header_cmp]
-        header_cmp += 1
-        for _ in range(n_variables):
-            n_nodes = header[header_cmp]
-            header_cmp += 1
-            if n_nodes == 0:
-                n_nodes = 1
-
-            y_variables = []
-            for _ in range(n_nodes):
-                n_steps = header[header_cmp]
-                header_cmp += 1
-
-                y_variables.append(all_data[all_data_cmp : all_data_cmp + n_steps])
-                all_data_cmp += n_steps
-            ydata.append(y_variables)
-
         self._logger.debug(f"Received new data from client")
+        xdata, ydata = _deserialize_xydata(serialized_raw_data)
         self._plotter.update_data(xdata, ydata)
 
 
@@ -507,29 +516,8 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         args_dict = {}
         for i, s in enumerate(nlpsol_out()):
             args_dict[s] = arg[i]
-        xdata_raw, ydata_raw = self._plotter.parse_data(**args_dict)
-
-        header = f"{len(xdata_raw)}"
-        data_serialized = b""
-        for x_nodes in xdata_raw:
-            header += f",{len(x_nodes)}"
-            for x_steps in x_nodes:
-                header += f",{x_steps.shape[0]}"
-                x_steps_tp = np.array(x_steps)[:, 0].tolist()
-                data_serialized += struct.pack("d" * len(x_steps_tp), *x_steps_tp)
-
-        header += f",{len(ydata_raw)}"
-        for y_nodes_variable in ydata_raw:
-            if isinstance(y_nodes_variable, np.ndarray):
-                header += f",0"
-                y_nodes_variable = [y_nodes_variable]
-            else:
-                header += f",{len(y_nodes_variable)}"
-
-            for y_steps in y_nodes_variable:
-                header += f",{y_steps.shape[0]}"
-                y_steps_tp = y_steps.tolist()
-                data_serialized += struct.pack("d" * len(y_steps_tp), *y_steps_tp)
+        xdata, ydata = self._plotter.parse_data(**args_dict)
+        header, data_serialized = _serialize_xydata(xdata, ydata)
 
         self._socket.sendall(f"{_ServerMessages.NEW_DATA.value}\n{[len(header), len(data_serialized)]}".encode())
         # If send_confirmation is True, we should wait for the server to acknowledge the data here (sends OK)
@@ -537,3 +525,104 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         self._socket.sendall(data_serialized)
         # Again, if send_confirmation is True, we should wait for the server to acknowledge the data here (sends OK)
         return [0]
+
+
+def _serialize_xydata(xdata: list, ydata: list) -> tuple:
+    """
+    Serialize the data to send to the server, it will be deserialized by `_deserialize_xydata`
+
+    Parameters
+    ----------
+    xdata: list
+        The X data to serialize from PlotOcp.parse_data
+    ydata: list
+        The Y data to serialize from PlotOcp.parse_data
+
+    Returns
+    -------
+    The serialized data as expected by the server (header, serialized_data)
+    """
+
+    header = f"{len(xdata)}"
+    data_serialized = b""
+    for x_nodes in xdata:
+        header += f",{len(x_nodes)}"
+        for x_steps in x_nodes:
+            header += f",{x_steps.shape[0]}"
+            x_steps_tp = np.array(x_steps)[:, 0].tolist()
+            data_serialized += struct.pack("d" * len(x_steps_tp), *x_steps_tp)
+
+    header += f",{len(ydata)}"
+    for y_nodes_variable in ydata:
+        if isinstance(y_nodes_variable, np.ndarray):
+            header += f",0"
+            y_nodes_variable = [y_nodes_variable]
+        else:
+            header += f",{len(y_nodes_variable)}"
+
+        for y_steps in y_nodes_variable:
+            header += f",{y_steps.shape[0]}"
+            y_steps_tp = y_steps.tolist()
+            data_serialized += struct.pack("d" * len(y_steps_tp), *y_steps_tp)
+
+    return header, data_serialized
+
+
+def _deserialize_xydata(serialized_raw_data: list) -> tuple:
+    """
+    Deserialize the data from the client, based on the serialization used in _serialize_xydata`
+
+    Parameters
+    ----------
+    serialized_raw_data: list
+        The serialized raw data from the client
+
+    Returns
+    -------
+    The deserialized data as expected by PlotOcp.update_data
+    """
+
+    # Header is made of ints comma separated from the first line
+    header = [int(v) for v in serialized_raw_data[0].decode().split(",")]
+
+    # Data is made of doubles (d) from the second line, the length of which is 8 bytes each
+    data = serialized_raw_data[1]
+    all_data = np.array(struct.unpack("d" * (len(data) // 8), data))
+
+    # Based on the header, we can now parse the data, assuming the number of phases, nodes and steps from the header
+    header_cmp = 0
+    all_data_cmp = 0
+    xdata = []
+    n_phases = header[header_cmp]  # Number of phases
+    header_cmp += 1
+    for _ in range(n_phases):
+        n_nodes = header[header_cmp]  # Number of nodes in the phase
+        header_cmp += 1
+        x_phases = []
+        for _ in range(n_nodes):
+            n_steps = header[header_cmp]  # Number of steps in the node
+            header_cmp += 1
+
+            x_phases.append(all_data[all_data_cmp : all_data_cmp + n_steps])  # The X data of the node
+            all_data_cmp += n_steps
+        xdata.append(x_phases)
+
+    ydata = []
+    n_variables = header[header_cmp]  # Number of variables (states, controls, etc.)
+    header_cmp += 1
+    for _ in range(n_variables):
+        n_nodes = header[header_cmp]  # Number of nodes for the variable
+        header_cmp += 1
+        if n_nodes == 0:
+            n_nodes = 1
+
+        y_variables = []
+        for _ in range(n_nodes):
+            n_steps = header[header_cmp]  # Number of steps in the node for the variable
+            header_cmp += 1
+
+            y_variables.append(all_data[all_data_cmp : all_data_cmp + n_steps])  # The Y data of the node
+            all_data_cmp += n_steps
+        ydata.append(y_variables)
+
+    return xdata, ydata

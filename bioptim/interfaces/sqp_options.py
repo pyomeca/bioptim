@@ -245,7 +245,7 @@ class SQP_METHOD(GenericSolver):
     def as_dict(self, solver):
         solver_options = self.__dict__
         options = {}
-        non_python_options = ["type", "show_online_optim", "show_options"]
+        non_python_options = ["type", "show_online_optim", "online_optim", "show_options"]
         for key in solver_options:
             if key not in non_python_options:
                 sqp_key = key[1:]

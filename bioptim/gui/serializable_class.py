@@ -401,11 +401,13 @@ class OptimizationVariableContainerSerializable:
 
 class OdeSolverSerializable:
     # TODO There are probably more parameters to serialize here, if the GUI fails, this is probably the reason
-    polynomial_degree: int
+    polynomial_degree: int | None
+    n_integration_steps: int | None
     type: OdeSolver
 
-    def __init__(self, polynomial_degree: int, type: OdeSolver):
+    def __init__(self, polynomial_degree: int | None, n_integration_steps: int | None, type: OdeSolver):
         self.polynomial_degree = polynomial_degree
+        self.n_integration_steps = n_integration_steps
         self.type = type
 
     @classmethod
@@ -415,13 +417,15 @@ class OdeSolverSerializable:
         ode_solver: OdeSolver = ode_solver
 
         return cls(
-            polynomial_degree=ode_solver.polynomial_degree,
+            polynomial_degree=ode_solver.polynomial_degree if hasattr(ode_solver, "polynomial_degree") else None,
+            n_integration_steps=ode_solver.n_integration_steps if hasattr(ode_solver, "n_integration_steps") else None,
             type="ode",
         )
 
     def serialize(self):
         return {
             "polynomial_degree": self.polynomial_degree,
+            "n_integration_steps": self.n_integration_steps,
             "type": self.type,
         }
 
@@ -429,6 +433,7 @@ class OdeSolverSerializable:
     def deserialize(cls, data):
         return cls(
             polynomial_degree=data["polynomial_degree"],
+            n_integration_steps=data["n_integration_steps"],
             type=data["type"],
         )
 
