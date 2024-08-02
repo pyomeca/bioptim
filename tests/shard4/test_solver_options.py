@@ -1,7 +1,5 @@
-import pytest
-
 from bioptim import Solver
-from bioptim.misc.enums import SolverType, OnlineOptim
+from bioptim.misc.enums import SolverType
 
 
 class FakeSolver:

@@ -521,7 +521,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
 
         self._socket.sendall(f"{_ServerMessages.NEW_DATA.value}\n{[len(header), len(data_serialized)]}".encode())
         # If send_confirmation is True, we should wait for the server to acknowledge the data here (sends OK)
-        self._socket.sendall(header.encode())
+        self._socket.sendall(header)
         self._socket.sendall(data_serialized)
         # Again, if send_confirmation is True, we should wait for the server to acknowledge the data here (sends OK)
         return [0]
@@ -565,6 +565,7 @@ def _serialize_xydata(xdata: list, ydata: list) -> tuple:
             y_steps_tp = y_steps.tolist()
             data_serialized += struct.pack("d" * len(y_steps_tp), *y_steps_tp)
 
+    header = header.encode()
     return header, data_serialized
 
 
