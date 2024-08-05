@@ -231,4 +231,5 @@ from .optimization.stochastic_optimal_control_program import StochasticOptimalCo
 from .optimization.problem_type import SocpType
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero
 
+from .gui.plot import CustomPlot
 from .gui.online_callback_server import PlottingServer
