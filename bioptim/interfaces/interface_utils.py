@@ -60,15 +60,21 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
             del show_options["port"]
 
         if online_optim == OnlineOptim.SERVER:
-            class_to_instantiate = OnlineCallbackServer
+            interface.options_common["iteration_callback"] = OnlineCallbackServer(
+                ocp, show_options=show_options, host=host, port=port
+            )
         elif online_optim == OnlineOptim.MULTIPROCESS_SERVER:
-            class_to_instantiate = OnlineCallbackMultiprocessServer
+            log_level = None
+            if "log_level" in show_options:
+                log_level = show_options["log_level"]
+                del show_options["log_level"]
+
+            interface.options_common["iteration_callback"] = OnlineCallbackMultiprocessServer(
+                ocp, show_options=show_options, host=host, port=port, log_level=log_level
+            )
         else:
             raise NotImplementedError(f"show_options['type']={online_optim} is not implemented yet")
 
-        interface.options_common["iteration_callback"] = class_to_instantiate(
-            ocp, show_options=show_options, host=host, port=port
-        )
     else:
         raise NotImplementedError(f"show_options['type']={online_optim} is not implemented yet")
 
