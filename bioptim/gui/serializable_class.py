@@ -1,6 +1,6 @@
-from typing import Any, Callable
+from typing import Any
 
-from casadi import DM, Function
+from casadi import Function
 import numpy as np
 
 from ..dynamics.ode_solver import OdeSolver
@@ -96,7 +96,7 @@ class MappingSerializable:
 
     def serialize(self):
         return {
-            "map_idx": self.map_idx,
+            "map_idx": list(self.map_idx),
             "oppose": self.oppose,
         }
 
@@ -194,7 +194,6 @@ class BoundsSerializable:
 
 
 class CustomPlotSerializable:
-    _function: Callable
     type: PlotType
     phase_mappings: BiMappingSerializable
     legend: tuple | list
@@ -207,12 +206,10 @@ class CustomPlotSerializable:
     label: list
     compute_derivative: bool
     integration_rule: QuadratureRule
-    parameters: dict[str, Any]
     all_variables_in_one_subplot: bool
 
     def __init__(
         self,
-        function: Callable,
         plot_type: PlotType,
         phase_mappings: BiMapping,
         legend: tuple | list,
@@ -225,10 +222,8 @@ class CustomPlotSerializable:
         label: list,
         compute_derivative: bool,
         integration_rule: QuadratureRule,
-        parameters: dict[str, Any],
         all_variables_in_one_subplot: bool,
     ):
-        self._function = function
         self.type = plot_type
         self.phase_mappings = phase_mappings
         self.legend = legend
@@ -241,7 +236,6 @@ class CustomPlotSerializable:
         self.label = label
         self.compute_derivative = compute_derivative
         self.integration_rule = integration_rule
-        self.parameters = parameters
         self.all_variables_in_one_subplot = all_variables_in_one_subplot
 
     @classmethod
@@ -250,46 +244,9 @@ class CustomPlotSerializable:
 
         custom_plot: CustomPlot = custom_plot
 
-        _function = None
-        parameters = {}
-        for key in custom_plot.parameters.keys():
-            if key == "penalty":
-                # This is a hack to emulate what PlotOcp._create_plots needs while not being able to actually serialize
-                # the function
-                parameters[key] = PenaltySerializable.from_penalty(custom_plot.parameters[key])
-
-                penalty = custom_plot.parameters[key]
-
-                casadi_function = penalty.function[0] if penalty.function[0] is not None else penalty.function[-1]
-                size_x = casadi_function.size_in("x")[0]
-                size_dt = casadi_function.size_in("dt")[0]
-                size_u = casadi_function.size_in("u")[0]
-                size_p = casadi_function.size_in("p")[0]
-                size_a = casadi_function.size_in("a")[0]
-                size_d = casadi_function.size_in("d")[0]
-                _function = custom_plot.function(
-                    0,  # t0
-                    np.zeros(size_dt),  # phases_dt
-                    custom_plot.node_idx[0],  # node_idx
-                    np.zeros((size_x, 1)),  # states
-                    np.zeros((size_u, 1)),  # controls
-                    np.zeros((size_p, 1)),  # parameters
-                    np.zeros((size_a, 1)),  # algebraic_states
-                    np.zeros((size_d, 1)),  # numerical_timeseries
-                    **custom_plot.parameters,  # parameters
-                )
-
-            else:
-                raise NotImplementedError(f"Parameter {key} is not implemented in the serialization")
-
         return cls(
-            function=_function,
             plot_type=custom_plot.type,
-            phase_mappings=(
-                None
-                if custom_plot.phase_mappings is None
-                else BiMappingSerializable.from_bimapping(custom_plot.phase_mappings)
-            ),
+            phase_mappings=BiMappingSerializable.from_bimapping(custom_plot.phase_mappings),
             legend=custom_plot.legend,
             combine_to=custom_plot.combine_to,
             color=custom_plot.color,
@@ -300,45 +257,31 @@ class CustomPlotSerializable:
             label=custom_plot.label,
             compute_derivative=custom_plot.compute_derivative,
             integration_rule=custom_plot.integration_rule,
-            parameters=parameters,
             all_variables_in_one_subplot=custom_plot.all_variables_in_one_subplot,
         )
 
     def serialize(self):
         return {
-            "function": None if self._function is None else np.array(self._function)[:, 0].tolist(),
             "type": self.type.value,
-            "phase_mappings": None if self.phase_mappings is None else self.phase_mappings.serialize(),
+            "phase_mappings": self.phase_mappings.serialize(),
             "legend": self.legend,
             "combine_to": self.combine_to,
             "color": self.color,
             "linestyle": self.linestyle,
             "ylim": self.ylim,
             "bounds": None if self.bounds is None else self.bounds.serialize(),
-            "node_idx": self.node_idx,
+            "node_idx": list(self.node_idx),
             "label": self.label,
             "compute_derivative": self.compute_derivative,
             "integration_rule": self.integration_rule.value,
-            "parameters": {key: param.serialize() for key, param in self.parameters.items()},
             "all_variables_in_one_subplot": self.all_variables_in_one_subplot,
         }
 
     @classmethod
     def deserialize(cls, data):
-
-        parameters = {}
-        for key in data["parameters"].keys():
-            if key == "penalty":
-                parameters[key] = PenaltySerializable.deserialize(data["parameters"][key])
-            else:
-                raise NotImplementedError(f"Parameter {key} is not implemented in the serialization")
-
         return cls(
-            function=None if data["function"] is None else DM(data["function"]),
             plot_type=PlotType(data["type"]),
-            phase_mappings=(
-                None if data["phase_mappings"] is None else BiMappingSerializable.deserialize(data["phase_mappings"])
-            ),
+            phase_mappings=BiMappingSerializable.deserialize(data["phase_mappings"]),
             legend=data["legend"],
             combine_to=data["combine_to"],
             color=data["color"],
@@ -349,7 +292,6 @@ class CustomPlotSerializable:
             label=data["label"],
             compute_derivative=data["compute_derivative"],
             integration_rule=QuadratureRule(data["integration_rule"]),
-            parameters=parameters,
             all_variables_in_one_subplot=data["all_variables_in_one_subplot"],
         )
 
@@ -438,99 +380,6 @@ class OdeSolverSerializable:
         )
 
 
-class NlpSerializable:
-    ns: int
-    phase_idx: int
-
-    n_states_nodes: int
-    states: OptimizationVariableContainerSerializable
-    states_dot: OptimizationVariableContainerSerializable
-    controls: OptimizationVariableContainerSerializable
-    algebraic_states: OptimizationVariableContainerSerializable
-    parameters: OptimizationVariableContainerSerializable
-    numerical_timeseries: OptimizationVariableContainerSerializable
-
-    ode_solver: OdeSolverSerializable
-    plot: dict[str, CustomPlotSerializable]
-
-    def __init__(
-        self,
-        ns: int,
-        phase_idx: int,
-        n_states_nodes: int,
-        states: OptimizationVariableContainerSerializable,
-        states_dot: OptimizationVariableContainerSerializable,
-        controls: OptimizationVariableContainerSerializable,
-        algebraic_states: OptimizationVariableContainerSerializable,
-        parameters: OptimizationVariableContainerSerializable,
-        numerical_timeseries: OptimizationVariableContainerSerializable,
-        ode_solver: OdeSolverSerializable,
-        plot: dict[str, CustomPlotSerializable],
-    ):
-        self.ns = ns
-        self.phase_idx = phase_idx
-        self.n_states_nodes = n_states_nodes
-        self.states = states
-        self.states_dot = states_dot
-        self.controls = controls
-        self.algebraic_states = algebraic_states
-        self.parameters = parameters
-        self.numerical_timeseries = numerical_timeseries
-        self.ode_solver = ode_solver
-        self.plot = plot
-
-    @classmethod
-    def from_nlp(cls, nlp):
-        from ..optimization.non_linear_program import NonLinearProgram
-
-        nlp: NonLinearProgram = nlp
-
-        return cls(
-            ns=nlp.ns,
-            phase_idx=nlp.phase_idx,
-            n_states_nodes=nlp.n_states_nodes,
-            states=OptimizationVariableContainerSerializable.from_container(nlp.states),
-            states_dot=OptimizationVariableContainerSerializable.from_container(nlp.states_dot),
-            controls=OptimizationVariableContainerSerializable.from_container(nlp.controls),
-            algebraic_states=OptimizationVariableContainerSerializable.from_container(nlp.algebraic_states),
-            parameters=OptimizationVariableContainerSerializable.from_container(nlp.parameters),
-            numerical_timeseries=OptimizationVariableContainerSerializable.from_container(nlp.numerical_timeseries),
-            ode_solver=OdeSolverSerializable.from_ode_solver(nlp.ode_solver),
-            plot={key: CustomPlotSerializable.from_custom_plot(nlp.plot[key]) for key in nlp.plot},
-        )
-
-    def serialize(self):
-        return {
-            "ns": self.ns,
-            "phase_idx": self.phase_idx,
-            "n_states_nodes": self.n_states_nodes,
-            "states": self.states.serialize(),
-            "states_dot": self.states_dot.serialize(),
-            "controls": self.controls.serialize(),
-            "algebraic_states": self.algebraic_states.serialize(),
-            "parameters": self.parameters.serialize(),
-            "numerical_timeseries": self.numerical_timeseries.serialize(),
-            "ode_solver": self.ode_solver.serialize(),
-            "plot": {key: plot.serialize() for key, plot in self.plot.items()},
-        }
-
-    @classmethod
-    def deserialize(cls, data):
-        return cls(
-            ns=data["ns"],
-            phase_idx=data["phase_idx"],
-            n_states_nodes=data["n_states_nodes"],
-            states=OptimizationVariableContainerSerializable.deserialize(data["states"]),
-            states_dot=OptimizationVariableContainerSerializable.deserialize(data["states_dot"]),
-            controls=OptimizationVariableContainerSerializable.deserialize(data["controls"]),
-            algebraic_states=OptimizationVariableContainerSerializable.deserialize(data["algebraic_states"]),
-            parameters=OptimizationVariableContainerSerializable.deserialize(data["parameters"]),
-            numerical_timeseries=OptimizationVariableContainerSerializable.deserialize(data["numerical_timeseries"]),
-            ode_solver=OdeSolverSerializable.deserialize(data["ode_solver"]),
-            plot={key: CustomPlotSerializable.deserialize(plot) for key, plot in data["plot"].items()},
-        )
-
-
 class SaveIterationsInfoSerializable:
     path_to_results: str
     result_file_name: str | list[str]
@@ -584,6 +433,97 @@ class SaveIterationsInfoSerializable:
         )
 
 
+class NlpSerializable:
+    ns: int
+    phase_idx: int
+
+    n_states_nodes: int
+    states: OptimizationVariableContainerSerializable
+    states_dot: OptimizationVariableContainerSerializable
+    controls: OptimizationVariableContainerSerializable
+    algebraic_states: OptimizationVariableContainerSerializable
+    parameters: OptimizationVariableContainerSerializable
+    numerical_timeseries: OptimizationVariableContainerSerializable
+
+    ode_solver: OdeSolverSerializable
+    plot: dict[str, CustomPlotSerializable]
+
+    def __init__(
+        self,
+        ns: int,
+        phase_idx: int,
+        n_states_nodes: int,
+        states: OptimizationVariableContainerSerializable,
+        states_dot: OptimizationVariableContainerSerializable,
+        controls: OptimizationVariableContainerSerializable,
+        algebraic_states: OptimizationVariableContainerSerializable,
+        parameters: OptimizationVariableContainerSerializable,
+        numerical_timeseries: OptimizationVariableContainerSerializable,
+        ode_solver: OdeSolverSerializable,
+        plot: dict[str, CustomPlotSerializable],
+    ):
+        self.ns = ns
+        self.phase_idx = phase_idx
+        self.n_states_nodes = n_states_nodes
+        self.states = states
+        self.states_dot = states_dot
+        self.controls = controls
+        self.algebraic_states = algebraic_states
+        self.parameters = parameters
+        self.numerical_timeseries = numerical_timeseries
+        self.ode_solver = ode_solver
+        self.plot = plot
+
+    @classmethod
+    def from_nlp(cls, nlp):
+        from ..optimization.non_linear_program import NonLinearProgram
+
+        return cls(
+            ns=nlp.ns,
+            phase_idx=nlp.phase_idx,
+            n_states_nodes=nlp.n_states_nodes,
+            states=OptimizationVariableContainerSerializable.from_container(nlp.states),
+            states_dot=OptimizationVariableContainerSerializable.from_container(nlp.states_dot),
+            controls=OptimizationVariableContainerSerializable.from_container(nlp.controls),
+            algebraic_states=OptimizationVariableContainerSerializable.from_container(nlp.algebraic_states),
+            parameters=OptimizationVariableContainerSerializable.from_container(nlp.parameters),
+            numerical_timeseries=OptimizationVariableContainerSerializable.from_container(nlp.numerical_timeseries),
+            ode_solver=OdeSolverSerializable.from_ode_solver(nlp.ode_solver),
+            plot={key: CustomPlotSerializable.from_custom_plot(nlp.plot[key]) for key in nlp.plot},
+        )
+
+    def serialize(self):
+        return {
+            "ns": self.ns,
+            "phase_idx": self.phase_idx,
+            "n_states_nodes": self.n_states_nodes,
+            "states": self.states.serialize(),
+            "states_dot": self.states_dot.serialize(),
+            "controls": self.controls.serialize(),
+            "algebraic_states": self.algebraic_states.serialize(),
+            "parameters": self.parameters.serialize(),
+            "numerical_timeseries": self.numerical_timeseries.serialize(),
+            "ode_solver": self.ode_solver.serialize(),
+            "plot": {key: plot.serialize() for key, plot in self.plot.items()},
+        }
+
+    @classmethod
+    def deserialize(cls, data):
+        return cls(
+            ns=data["ns"],
+            phase_idx=data["phase_idx"],
+            n_states_nodes=data["n_states_nodes"],
+            states=OptimizationVariableContainerSerializable.deserialize(data["states"]),
+            states_dot=OptimizationVariableContainerSerializable.deserialize(data["states_dot"]),
+            controls=OptimizationVariableContainerSerializable.deserialize(data["controls"]),
+            algebraic_states=OptimizationVariableContainerSerializable.deserialize(data["algebraic_states"]),
+            parameters=OptimizationVariableContainerSerializable.deserialize(data["parameters"]),
+            numerical_timeseries=OptimizationVariableContainerSerializable.deserialize(data["numerical_timeseries"]),
+            ode_solver=OdeSolverSerializable.deserialize(data["ode_solver"]),
+            plot={key: CustomPlotSerializable.deserialize(plot) for key, plot in data["plot"].items()},
+        )
+
+
 class OcpSerializable:
     n_phases: int
     nlp: list[NlpSerializable]
@@ -617,6 +557,7 @@ class OcpSerializable:
         from ..optimization.optimal_control_program import OptimalControlProgram
 
         ocp: OptimalControlProgram = ocp
+        ocp.finalize_plot_phase_mappings()
 
         return cls(
             n_phases=ocp.n_phases,
@@ -655,3 +596,16 @@ class OcpSerializable:
                 else SaveIterationsInfoSerializable.deserialize(data["save_ipopt_iterations_info"])
             ),
         )
+
+    def finalize_plot_phase_mappings(self):
+        """
+        This method can't be actually called from the serialized version, but we still can check if the work is done
+        """
+
+        for nlp in self.nlp:
+            if not nlp.plot:
+                continue
+
+            for key in nlp.plot:
+                if nlp.plot[key].phase_mappings is None:
+                    raise RuntimeError("The phase mapping should be set on client side")

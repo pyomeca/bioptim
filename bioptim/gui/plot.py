@@ -320,7 +320,10 @@ class PlotOcp:
                 ax.legend(*zip(*unique))
 
         variable_sizes = []
+
+        self.ocp.finalize_plot_phase_mappings()
         for i, nlp in enumerate(self.ocp.nlp):
+
             variable_sizes.append({})
             if nlp.plot:
                 for key in nlp.plot:
@@ -330,51 +333,6 @@ class PlotOcp:
                     # This is the point where we can safely define node_idx of the plot
                     if nlp.plot[key].node_idx is None:
                         nlp.plot[key].node_idx = range(nlp.n_states_nodes)
-
-                    # If the number of subplots is not known, compute it
-                    if nlp.plot[key].phase_mappings is None:
-                        node_index = nlp.plot[key].node_idx[0]
-                        nlp.states.node_index = node_index
-                        nlp.states_dot.node_index = node_index
-                        nlp.controls.node_index = node_index
-                        nlp.algebraic_states.node_index = node_index
-
-                        # If multi-node penalties = None, stays zero
-                        size_x = nlp.states.shape
-                        size_u = nlp.controls.shape
-                        size_p = nlp.parameters.shape
-                        size_a = nlp.algebraic_states.shape
-                        size_d = nlp.numerical_timeseries.shape
-                        if "penalty" in nlp.plot[key].parameters:
-                            penalty = nlp.plot[key].parameters["penalty"]
-
-                            # As stated in penalty_option, the last controller is always supposed to be the right one
-                            casadi_function = (
-                                penalty.function[0] if penalty.function[0] is not None else penalty.function[-1]
-                            )
-                            if casadi_function is not None:
-                                size_x = casadi_function.size_in("x")[0]
-                                size_u = casadi_function.size_in("u")[0]
-                                size_p = casadi_function.size_in("p")[0]
-                                size_a = casadi_function.size_in("a")[0]
-                                size_d = casadi_function.size_in("d")[0]
-
-                        size = (
-                            nlp.plot[key]
-                            .function(
-                                0,  # t0
-                                np.zeros(len(self.ocp.nlp)),  # phases_dt
-                                node_index,  # node_idx
-                                np.zeros((size_x, 1)),  # states
-                                np.zeros((size_u, 1)),  # controls
-                                np.zeros((size_p, 1)),  # parameters
-                                np.zeros((size_a, 1)),  # algebraic_states
-                                np.zeros((size_d, 1)),  # numerical_timeseries
-                                **nlp.plot[key].parameters,  # parameters
-                            )
-                            .shape[0]
-                        )
-                        nlp.plot[key].phase_mappings = BiMapping(to_first=range(size), to_second=range(size))
 
                     n_subplots = max(nlp.plot[key].phase_mappings.to_second.map_idx) + 1
 
