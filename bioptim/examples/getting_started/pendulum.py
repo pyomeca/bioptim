@@ -150,7 +150,8 @@ def main():
 
     # --- Solve the ocp --- #
     # Default is OnlineOptim.MULTIPROCESS on Linux, OnlineOptim.MULTIPROCESS_SERVER on Windows and None on MacOS
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=OnlineOptim.DEFAULT))
+    # To see the graphs on MacOS, one must run the server manually (see ressources/plotting_server.py)
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
     # --- Show the results graph --- #
     sol.print_cost()
