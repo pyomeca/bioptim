@@ -555,14 +555,14 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         header, data_serialized = _serialize_xydata(xdata, ydata)
 
         self._socket.sendall(f"{_ServerMessages.NEW_DATA.value}\n{[len(header), len(data_serialized)]}".encode())
-        # If send_confirmation is True, we should wait for the server to acknowledge the data here (sends OK)
-        if self._socket.recv(1024).decode() != "OK":
+        if self._should_wait_ok_to_client_on_new_data and self._socket.recv(1024).decode() != "OK":
             raise RuntimeError("The server did not acknowledge the connexion")
+        
         self._socket.sendall(header)
         self._socket.sendall(data_serialized)
-        # Again, if send_confirmation is True, we should wait for the server to acknowledge the data here (sends OK)
-        if self._socket.recv(1024).decode() != "OK":
+        if self._should_wait_ok_to_client_on_new_data and self._socket.recv(1024).decode() != "OK":
             raise RuntimeError("The server did not acknowledge the connexion")
+        
         return [0]
 
 
