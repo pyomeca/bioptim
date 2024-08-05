@@ -57,7 +57,7 @@ class PlottingServer:
 
         self._prepare_logger(log_level)
         self._get_data_interval = 1.0
-        self._update_plot_interval = 100
+        self._update_plot_interval = 10
         self._is_drawing = False
 
         # Define the host and port
