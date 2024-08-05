@@ -27,18 +27,6 @@ def _deserialize_show_options(show_options: bytes) -> dict:
     return json.loads(show_options.decode())
 
 
-def _start_as_multiprocess_internal(*args, **kwargs):
-    """
-    Starts the server (necessary for multiprocessing), this method should not be called directly, apart from
-    run_as_multiprocess
-
-    Parameters
-    ----------
-    same as PlottingServer
-    """
-    PlottingServer(*args, **kwargs)
-
-
 class _ServerMessages(IntEnum):
     INITIATE_CONNEXION = auto()
     NEW_DATA = auto()
@@ -49,7 +37,7 @@ class _ServerMessages(IntEnum):
 
 
 class PlottingServer:
-    def __init__(self, host: str = None, port: int = None):
+    def __init__(self, host: str = None, port: int = None, log_level: int = logging.INFO):
         """
         Initializes the server
 
@@ -59,9 +47,11 @@ class PlottingServer:
             The host to listen to, by default "localhost"
         port: int
             The port to listen to, by default 3050
+        log_level: int
+            The log level (see logging), by default logging.INFO
         """
 
-        self._prepare_logger()
+        self._prepare_logger(log_level)
         self._get_data_interval = 1.0
         self._update_plot_interval = 0.01
         self._is_drawing = False
@@ -74,9 +64,14 @@ class PlottingServer:
 
         self._run()
 
-    def _prepare_logger(self) -> None:
+    def _prepare_logger(self, log_level: int) -> None:
         """
         Prepares the logger
+
+        Parameters
+        ----------
+        log_level: int
+            The log level
         """
 
         name = "PlottingServer"
@@ -90,7 +85,7 @@ class PlottingServer:
 
         self._logger = logging.getLogger(name)
         self._logger.addHandler(console_handler)
-        self._logger.setLevel(logging.INFO)
+        self._logger.setLevel(log_level)
 
     def _run(self) -> None:
         """
@@ -108,7 +103,10 @@ class PlottingServer:
                 self._logger.info(f"Connection from {addr}")
                 self._wait_for_new_connexion(client_socket)
         except Exception as e:
-            self._logger.error(f"Error while running the server: {e}")
+            self._logger.error(
+                f"Fatal error while running the server"
+                f"{"" if self._logger.level == logging.DEBUG else ", for more information set log_level to DEBUG"}")
+            self._logger.debug(f"Error: {e}")
         finally:
             self._socket.close()
 
@@ -176,7 +174,7 @@ class PlottingServer:
             if not data:
                 return _ServerMessages.EMPTY, None
         except:
-            self._logger.warning("Client closed connexion")
+            self._logger.error("Client closed connexion")
             client_socket.close()
             return _ServerMessages.CLOSE_CONNEXION, None
 
@@ -184,7 +182,7 @@ class PlottingServer:
         try:
             message_type = _ServerMessages(int(data_as_list[0]))
         except ValueError:
-            self._logger.warning("Unknown message type received")
+            self._logger.error("Unknown message type received")
             # Sends failure
             if send_confirmation:
                 client_socket.sendall("NOK".encode())
@@ -197,8 +195,9 @@ class PlottingServer:
 
         try:
             len_all_data = [int(len_data) for len_data in data_as_list[1][1:-1].split(",")]
-        except ValueError:
-            self._logger.warning("Length of data could not be extracted")
+        except Exception as e:
+            self._logger.error("Length of data could not be extracted")
+            self._logger.debug(f"Error: {e}")
             # Sends failure
             if send_confirmation:
                 client_socket.sendall("NOK".encode())
@@ -236,8 +235,9 @@ class PlottingServer:
                 data_out.append(client_socket.recv(len_data))
                 if len(data_out[-1]) != len_data:
                     data_out[-1] += client_socket.recv(len_data - len(data_out[-1]))
-        except:
-            self._logger.warning("Unknown message type received")
+        except Exception as e:
+            self._logger.error("Unknown message type received")
+            self._logger.debug(f"Error: {e}")
             # Sends failure
             if send_confirmation:
                 client_socket.sendall("NOK".encode())
@@ -267,24 +267,31 @@ class PlottingServer:
             for phase_times in data_json["dummy_phase_times"]:
                 dummy_time_vector.append([DM(v) for v in phase_times])
             del data_json["dummy_phase_times"]
-        except:
-            self._logger.warning("Error while extracting dummy time vector from OCP data, closing connexion")
-            return
+        except Exception as e:
+            self._logger.error("Error while extracting dummy time vector from OCP data, closing connexion")
+            client_socket.sendall("NOK".encode())
+            raise e
 
         try:
             self.ocp = OcpSerializable.deserialize(data_json)
-        except:
-            client_socket.sendall("FAILED".encode())
-            self._logger.warning("Error while deserializing OCP data from client, closing connexion")
-            return
+        except Exception as e:
+            self._logger.error("Error while deserializing OCP data from client, closing connexion")
+            client_socket.sendall("NOK".encode())
+            raise e
 
         try:
             show_options = _deserialize_show_options(ocp_raw[1])
-        except:
-            self._logger.warning("Error while extracting show options, closing connexion")
-            return
+        except Exception as e:
+            self._logger.error("Error while extracting show options, closing connexion")
+            client_socket.sendall("NOK".encode())
+            raise e
 
-        self._plotter = PlotOcp(self.ocp, dummy_phase_times=dummy_time_vector, **show_options)
+        try:
+            self._plotter = PlotOcp(self.ocp, dummy_phase_times=dummy_time_vector, **show_options)
+        except Exception as e:
+            self._logger.error("Error while initializing the plotter, closing connexion")
+            client_socket.sendall("NOK".encode())
+            raise e
 
         # Send the confirmation to the client
         client_socket.sendall("PLOT_READY".encode())
@@ -341,8 +348,10 @@ class PlottingServer:
                 # Give it some time
                 time.sleep(self._update_plot_interval)
             client_socket.sendall("READY_FOR_NEXT_DATA".encode())
-        except:
-            self._logger.warning("Error while sending READY_FOR_NEXT_DATA to client, closing connexion")
+        except Exception as e:
+            self._logger.error("Error while sending READY_FOR_NEXT_DATA to client, closing connexion")
+            self._logger.debug(f"Error: {e}")
+            client_socket.close()
             return
 
         should_continue = False
@@ -351,8 +360,9 @@ class PlottingServer:
             try:
                 self._update_plot(data)
                 should_continue = True
-            except:
-                self._logger.warning("Error while updating data from client, closing connexion")
+            except Exception as e:
+                self._logger.error("Error while updating data from client, closing connexion")
+                self._logger.debug(f"Error: {e}")
                 client_socket.close()
                 return
 
