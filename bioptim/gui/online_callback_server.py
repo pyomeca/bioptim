@@ -37,7 +37,7 @@ class _ServerMessages(IntEnum):
 
 
 class PlottingServer:
-    def __init__(self, host: str = None, port: int = None, log_level: int = logging.INFO):
+    def __init__(self, host: str = None, port: int = None, log_level: int | None = logging.INFO):
         """
         Initializes the server
 
@@ -50,6 +50,9 @@ class PlottingServer:
         log_level: int
             The log level (see logging), by default logging.INFO
         """
+
+        if log_level is None:
+            log_level = logging.INFO
 
         self._prepare_logger(log_level)
         self._get_data_interval = 1.0
