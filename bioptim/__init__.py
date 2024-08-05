@@ -187,7 +187,7 @@ from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, Ph
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjectiveList
-from .limits.path_conditions import BoundsList, InitialGuessList
+from .limits.path_conditions import BoundsList, InitialGuessList, Bounds, InitialGuess
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_controller import PenaltyController
 from .limits.penalty_helpers import PenaltyHelpers
