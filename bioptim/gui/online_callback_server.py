@@ -1,6 +1,7 @@
 from enum import IntEnum, auto
 import json
 import logging
+import platform
 import socket
 import struct
 import time
@@ -56,7 +57,7 @@ class PlottingServer:
 
         self._prepare_logger(log_level)
         self._get_data_interval = 1.0
-        self._update_plot_interval = 0.01
+        self._update_plot_interval = 100
         self._is_drawing = False
 
         # Define the host and port
@@ -64,6 +65,8 @@ class PlottingServer:
         self._port = port if port else _DEFAULT_PORT
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self._plotter: PlotOcp = None
+
+        self._should_send_ok_to_client_on_new_data = False
 
         self._run()
 
@@ -103,7 +106,7 @@ class PlottingServer:
             while True:
                 self._logger.info("Waiting for a new connexion")
                 client_socket, addr = self._socket.accept()
-                self._logger.info(f"Connection from {addr}")
+                self._logger.info(f"Connexion from {addr}")
                 self._wait_for_new_connexion(client_socket)
         except Exception as e:
             self._logger.error(
@@ -177,7 +180,7 @@ class PlottingServer:
             if not data:
                 return _ServerMessages.EMPTY, None
         except:
-            self._logger.error("Client closed connexion")
+            self._logger.info("Client closed connexion")
             client_socket.close()
             return _ServerMessages.CLOSE_CONNEXION, None
 
@@ -266,6 +269,19 @@ class PlottingServer:
 
         try:
             data_json = json.loads(ocp_raw[0])
+        except Exception as e:
+            self._logger.error("Error while converting data to json format, closing connexion")
+            client_socket.sendall("NOK".encode())
+            raise e
+        
+        try:
+            self._should_send_ok_to_client_on_new_data = data_json["request_confirmation_on_new_data"]
+        except Exception as e:
+            self._logger.error("Did not receive if confirmation should be sent, closing connexion")
+            client_socket.sendall("NOK".encode())
+            raise e
+
+        try:
             dummy_time_vector = []
             for phase_times in data_json["dummy_phase_times"]:
                 dummy_time_vector.append([DM(v) for v in phase_times])
@@ -301,7 +317,12 @@ class PlottingServer:
 
         # Start the callbacks
         threading.Timer(self._get_data_interval, self._wait_for_new_data_to_plot, (client_socket,)).start()
-        threading.Timer(self._update_plot_interval, self._redraw).start()
+        
+        # Use the canvas timer for _redraw as threading won't work for updating the graphs on Macos
+        timer = self._plotter.all_figures[0].canvas.new_timer(self._update_plot_interval)
+        timer.add_callback(self._redraw)
+        timer.start()
+        
         plt.show()
 
     @property
@@ -323,15 +344,11 @@ class PlottingServer:
 
         self._logger.debug("Updating plot")
         self._is_drawing = True
-        for _, fig in enumerate(self._plotter.all_figures):
+        for fig in self._plotter.all_figures:
             fig.canvas.draw()
-            fig.canvas.flush_events()
+            if platform.system() != "Darwin":
+                fig.canvas.flush_events()
         self._is_drawing = False
-
-        if self.has_at_least_one_active_figure:
-            threading.Timer(self._update_plot_interval, self._redraw).start()
-        else:
-            self._logger.info("All figures have been closed, stop updating the plots")
 
     def _wait_for_new_data_to_plot(self, client_socket: socket.socket) -> None:
         """
@@ -347,7 +364,7 @@ class PlottingServer:
 
         self._logger.debug(f"Waiting for new data from client")
         try:
-            if self._is_drawing:
+            if self._is_drawing and platform.system() != "Darwin" and not self._wait_for_new_data_to_plot:
                 # Give it some time
                 time.sleep(self._update_plot_interval)
             client_socket.sendall("READY_FOR_NEXT_DATA".encode())
@@ -358,7 +375,9 @@ class PlottingServer:
             return
 
         should_continue = False
-        message_type, data = self._recv_data(client_socket=client_socket, send_confirmation=False)
+        message_type, data = self._recv_data(
+            client_socket=client_socket, send_confirmation=self._should_send_ok_to_client_on_new_data
+        )
         if message_type == _ServerMessages.NEW_DATA:
             try:
                 self._update_plot(data)
@@ -417,6 +436,8 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         self._port = port if port else _DEFAULT_PORT
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+        self._should_wait_ok_to_client_on_new_data = platform.system() == "Darwin"
+
         if self.ocp.plot_ipopt_outputs:
             raise NotImplementedError("The online callback with TCP does not support the plot_ipopt_outputs option")
         if self.ocp.save_ipopt_iterations_info:
@@ -462,6 +483,8 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         ocp_plot["dummy_phase_times"] = []
         for phase_times in dummy_phase_times:
             ocp_plot["dummy_phase_times"].append([np.array(v)[:, 0].tolist() for v in phase_times])
+        
+        ocp_plot["request_confirmation_on_new_data"] = self._should_wait_ok_to_client_on_new_data
         serialized_ocp = json.dumps(ocp_plot).encode()
 
         serialized_show_options = _serialize_show_options(show_options)
@@ -533,9 +556,13 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
 
         self._socket.sendall(f"{_ServerMessages.NEW_DATA.value}\n{[len(header), len(data_serialized)]}".encode())
         # If send_confirmation is True, we should wait for the server to acknowledge the data here (sends OK)
+        if self._socket.recv(1024).decode() != "OK":
+            raise RuntimeError("The server did not acknowledge the connexion")
         self._socket.sendall(header)
         self._socket.sendall(data_serialized)
         # Again, if send_confirmation is True, we should wait for the server to acknowledge the data here (sends OK)
+        if self._socket.recv(1024).decode() != "OK":
+            raise RuntimeError("The server did not acknowledge the connexion")
         return [0]
 
 
