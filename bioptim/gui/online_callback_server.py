@@ -460,7 +460,6 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         if self._socket.recv(1024).decode() != "OK":
             raise RuntimeError("The server did not acknowledge the connexion")
 
-        # TODO ADD SHOW OPTIONS to the send
         self._socket.sendall(serialized_ocp)
         self._socket.sendall(serialized_show_options)
         if self._socket.recv(1024).decode() != "OK":
