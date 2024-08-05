@@ -56,7 +56,7 @@ def test_arm_reaching_muscle_driven(use_sx):
     # ocp.print(to_console=True, to_graph=False)  #TODO: check to adjust the print method
 
     # Solver parameters
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(4)
     solver.set_nlp_scaling_method("none")
 
@@ -291,7 +291,7 @@ def test_arm_reaching_torque_driven_explicit(use_sx):
     )
 
     # Solver parameters
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(4)
     solver.set_nlp_scaling_method("none")
 
@@ -444,7 +444,7 @@ def test_arm_reaching_torque_driven_implicit(with_cholesky, with_scaling, use_sx
     )
 
     # Solver parameters
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(4)
     solver.set_nlp_scaling_method("none")
 

@@ -13,7 +13,8 @@ class FakeSolver:
 def test_ipopt_solver_options():
     solver = Solver.IPOPT()
     assert solver.type == SolverType.IPOPT
-    assert solver.show_online_optim is False
+    assert solver.show_online_optim is None
+    assert solver.online_optim is None
     assert solver.show_options is None
     assert solver.tol == 1e-6
     assert solver.dual_inf_tol == 1.0
@@ -125,6 +126,7 @@ def test_ipopt_solver_options():
     assert not "_c_compile" in solver_dict
     assert not "type" in solver_dict
     assert not "show_online_optim" in solver_dict
+    assert not "online_optim" in solver_dict
     assert not "show_options" in solver_dict
 
     solver.set_nlp_scaling_method("gradient-fiesta")

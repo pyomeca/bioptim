@@ -1,12 +1,9 @@
-import multiprocessing as mp
+from abc import ABC, abstractmethod
 
 from casadi import Callback, nlpsol_out, nlpsol_n_out, Sparsity
-from matplotlib import pyplot as plt
-
-from .plot import PlotOcp
 
 
-class OnlineCallback(Callback):
+class OnlineCallbackAbstract(Callback, ABC):
     """
     CasADi interface of Ipopt callbacks
 
@@ -18,12 +15,6 @@ class OnlineCallback(Callback):
         The number of optimization variables
     ng: int
         The number of constraints
-    queue: mp.Queue
-        The multiprocessing queue
-    plotter: ProcessPlotter
-        The callback for plotting for the multiprocessing
-    plot_process: mp.Process
-        The multiprocessing placeholder
 
     Methods
     -------
@@ -37,7 +28,7 @@ class OnlineCallback(Callback):
         Get the name of the output variable
     get_sparsity_in(self, i: int) -> tuple[int]
         Get the sparsity of a specific variable
-    eval(self, arg: list | tuple) -> list[int]
+    eval(self, arg: list | tuple, force: bool = False) -> list[int]
         Send the current data to the plotter
     """
 
@@ -63,20 +54,16 @@ class OnlineCallback(Callback):
         from ..interfaces.ipopt_interface import IpoptInterface
 
         interface = IpoptInterface(ocp)
-        all_g, all_g_bounds = interface.dispatch_bounds()
+        all_g, _ = interface.dispatch_bounds()
         self.ng = all_g.shape[0]
-
-        v = interface.ocp.variables_vector
 
         self.construct("AnimateCallback", opts)
 
-        self.queue = mp.Queue()
-        self.plotter = self.ProcessPlotter(self.ocp)
-        self.plot_process = mp.Process(target=self.plotter, args=(self.queue, show_options), daemon=True)
-        self.plot_process.start()
-
+    @abstractmethod
     def close(self):
-        self.plot_process.kill()
+        """
+        Close the callback
+        """
 
     @staticmethod
     def get_n_in() -> int:
@@ -155,7 +142,8 @@ class OnlineCallback(Callback):
         else:
             return Sparsity(0, 0)
 
-    def eval(self, arg: list | tuple) -> list:
+    @abstractmethod
+    def eval(self, arg: list | tuple, enforce: bool = False) -> list[int]:
         """
         Send the current data to the plotter
 
@@ -164,78 +152,11 @@ class OnlineCallback(Callback):
         arg: list | tuple
             The data to send
 
+        enforce: bool
+            If True, the client will block until the server is ready to receive new data. This is useful at the end of
+            the optimization to make sure the data are plot (and not discarded)
+
         Returns
         -------
         A list of error index
         """
-        send = self.queue.put
-        args_dict = {}
-        for i, s in enumerate(nlpsol_out()):
-            args_dict[s] = arg[i]
-        send(args_dict)
-        return [0]
-
-    class ProcessPlotter(object):
-        """
-        The plotter that interface PlotOcp and the multiprocessing
-
-        Attributes
-        ----------
-        ocp: OptimalControlProgram
-            A reference to the ocp to show
-        pipe: mp.Queue
-            The multiprocessing queue to evaluate
-        plot: PlotOcp
-            The handler on all the figures
-
-        Methods
-        -------
-        callback(self) -> bool
-            The callback to update the graphs
-        """
-
-        def __init__(self, ocp):
-            """
-            Parameters
-            ----------
-            ocp: OptimalControlProgram
-                A reference to the ocp to show
-            """
-
-            self.ocp = ocp
-
-        def __call__(self, pipe: mp.Queue, show_options: dict):
-            """
-            Parameters
-            ----------
-            pipe: mp.Queue
-                The multiprocessing queue to evaluate
-            show_options: dict
-                The option to pass to PlotOcp
-            """
-
-            if show_options is None:
-                show_options = {}
-            self.pipe = pipe
-            self.plot = PlotOcp(self.ocp, **show_options)
-            timer = self.plot.all_figures[0].canvas.new_timer(interval=10)
-            timer.add_callback(self.callback)
-            timer.start()
-            plt.show()
-
-        def callback(self) -> bool:
-            """
-            The callback to update the graphs
-
-            Returns
-            -------
-            True if everything went well
-            """
-
-            while not self.pipe.empty():
-                args = self.pipe.get()
-                self.plot.update_data(args)
-
-            for i, fig in enumerate(self.plot.all_figures):
-                fig.canvas.draw()
-            return True

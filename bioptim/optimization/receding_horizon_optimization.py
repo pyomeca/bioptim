@@ -12,7 +12,7 @@ from ..dynamics.configure_problem import Dynamics, DynamicsList
 from ..limits.constraints import ConstraintFcn, ConstraintList
 from ..limits.objective_functions import ObjectiveFcn, ObjectiveList
 from ..limits.path_conditions import InitialGuessList
-from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions, ControlType
+from ..misc.enums import SolverType, InterpolationType, MultiCyclicCycleSolutions, ControlType, OnlineOptim
 from ..interfaces import Solver
 from ..interfaces.abstract_options import GenericSolver
 from ..models.protocols.biomodel import BioModel
@@ -26,7 +26,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
 
     Methods
     -------
-    solve(self, solver: Solver, show_online_optim: bool, solver_options: dict) -> Solution
+    solve(self, solver: Solver) -> Solution
         Call the solver to actually solve the ocp
     """
 
@@ -174,7 +174,7 @@ class RecedingHorizonOptimization(OptimalControlProgram):
                             f"Only {solver_current.get_tolerance_keys()} can be modified."
                         )
                 if solver_current.type == SolverType.IPOPT:
-                    solver_current.show_online_optim = False
+                    solver_current.online_optim = None
             warm_start = None
 
             total_time += sol.real_time_to_optimize

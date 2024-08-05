@@ -1,4 +1,4 @@
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, auto
 
 
 class PhaseDynamics(Enum):
@@ -91,6 +91,25 @@ class PlotType(Enum):
     INTEGRATED = 1  # Linking between interpolated points
     STEP = 2  # Step plot
     POINT = 3  # Point plot
+
+
+class OnlineOptim(Enum):
+    """
+    The type of callback
+
+    Attributes
+    ----------
+    NONE: No online plotting
+    DEFAULT: Default online plotting (MULTIPROCESS on Linux, MULTIPROCESS_SERVER on Windows and NONE on MacOS)
+    MULTIPROCESS: Multiprocess online plotting
+    SERVER: Server online plotting
+    MULTIPROCESS_SERVER: Multiprocess server online plotting
+    """
+
+    DEFAULT = auto()
+    MULTIPROCESS = auto()
+    SERVER = auto()
+    MULTIPROCESS_SERVER = auto()
 
 
 class ControlType(Enum):

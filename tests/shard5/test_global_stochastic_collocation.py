@@ -38,7 +38,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     )
 
     # Solver parameters
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_nlp_scaling_method("none")
 
     sol = ocp.solve(solver)
@@ -107,7 +107,7 @@ def test_arm_reaching_torque_driven_collocations(use_sx: bool):
     )
 
     # Solver parameters
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_nlp_scaling_method("none")
     solver.set_maximum_iterations(0)
     solver.set_bound_frac(1e-8)
@@ -423,7 +423,7 @@ def test_obstacle_avoidance_direct_collocation(use_sx: bool):
     )
 
     # Solver parameters
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(4)
     sol = ocp.solve(solver)
 

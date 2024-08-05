@@ -121,7 +121,7 @@ class OptimalControlProgram:
     prepare_plots(self, automatically_organize: bool, show_bounds: bool,
             shooting_type: Shooting) -> PlotOCP
         Create all the plots associated with the OCP
-    solve(self, solver: Solver, show_online_optim: bool, solver_options: dict) -> Solution
+    solve(self, solver: Solver) -> Solution
         Call the solver to actually solve the ocp
     _define_time(self, phase_time: float | tuple, objective_functions: ObjectiveList, constraints: ConstraintList)
         Declare the phase_time vector in v. If objective_functions or constraints defined a time optimization,
@@ -1363,6 +1363,7 @@ class OptimalControlProgram:
             show_bounds=show_bounds,
             shooting_type=shooting_type,
             integrator=integrator,
+            dummy_phase_times=OptimizationVectorHelper.extract_step_times(self, casadi.DM(np.ones(self.n_phases))),
         )
 
     def check_conditioning(self):

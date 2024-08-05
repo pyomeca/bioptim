@@ -6,14 +6,15 @@ from casadi import DM
 from matplotlib import pyplot as plt, lines
 from matplotlib.ticker import StrMethodFormatter
 
+from .serializable_class import OcpSerializable
 from ..dynamics.ode_solver import OdeSolver
 from ..limits.path_conditions import Bounds
 from ..limits.penalty_helpers import PenaltyHelpers
 from ..misc.enums import PlotType, Shooting, SolutionIntegrator, QuadratureRule, InterpolationType
 from ..misc.mapping import Mapping, BiMapping
-from ..optimization.optimization_vector import OptimizationVectorHelper
 from ..optimization.solution.solution import Solution
 from ..optimization.solution.solution_data import SolutionMerge
+
 
 DEFAULT_COLORS = {
     PlotType.PLOT: "tab:green",
@@ -193,8 +194,6 @@ class PlotOcp:
         Update ydata from the variable a solution structure
     __update_xdata(self)
         Update of the time axes in plots
-    _append_to_ydata(self, data: list)
-        Parse the data list to create a single list of all ydata that will fit the plots vector
     __update_axes(self)
         Update the plotted data from ydata
     __compute_ylim(min_val: np.ndarray | DM, max_val: np.ndarray | DM, factor: float) -> tuple:
@@ -205,11 +204,13 @@ class PlotOcp:
 
     def __init__(
         self,
-        ocp,
+        ocp: OcpSerializable,
         automatically_organize: bool = True,
         show_bounds: bool = False,
         shooting_type: Shooting = Shooting.MULTIPLE,
         integrator: SolutionIntegrator = SolutionIntegrator.OCP,
+        dummy_phase_times: list[list[float]] = None,
+        only_initialize_variables: bool = False,
     ):
         """
         Prepares the figures during the simulation
@@ -226,7 +227,11 @@ class PlotOcp:
             The type of integration method
         integrator: SolutionIntegrator
              Use the ode defined by OCP or use a separate integrator provided by scipy
-
+        dummy_phase_times: list[list[float]]
+            The time of each phase
+        only_initialize_variables: bool
+            If the plots should be initialized but not shown (this is useful for the online plot which must be declared
+            on the server side and on the client side)
         """
         self.ocp = ocp
         self.plot_options = {
@@ -239,7 +244,6 @@ class PlotOcp:
             "vertical_lines": {"color": "k", "linestyle": "--", "linewidth": 1.2},
         }
 
-        self.ydata = []
         self.n_nodes = 0
 
         self.t = []
@@ -247,7 +251,6 @@ class PlotOcp:
         self.integrator = integrator
 
         # Emulate the time from Solution.time, this is just to give the size anyway
-        dummy_phase_times = OptimizationVectorHelper.extract_step_times(ocp, DM(np.ones(ocp.n_phases)))
         self._update_time_vector(dummy_phase_times)
 
         self.axes = {}
@@ -262,31 +265,17 @@ class PlotOcp:
         self.top_margin: int | None = None
         self.height_step: int | None = None
         self.width_step: int | None = None
-        self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
+        if not only_initialize_variables:
+            self._organize_windows(len(self.ocp.nlp[0].states) + len(self.ocp.nlp[0].controls))
 
         self.custom_plots = {}
         self.variable_sizes = []
         self.show_bounds = show_bounds
-        self.__create_plots()
+        self._create_plots(only_initialize_variables)
         self.shooting_type = shooting_type
 
-        horz = 0
-        vert = 1 if len(self.all_figures) < self.n_vertical_windows * self.n_horizontal_windows else 0
-        for i, fig in enumerate(self.all_figures):
-            if self.automatically_organize:
-                try:
-                    fig.canvas.manager.window.move(
-                        int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
-                    )
-                    vert += 1
-                    if vert >= self.n_vertical_windows:
-                        horz += 1
-                        vert = 0
-                except AttributeError:
-                    pass
-            fig.canvas.draw()
-            if self.plot_options["general_options"]["use_tight_layout"]:
-                fig.tight_layout()
+        if not only_initialize_variables:
+            self._spread_figures_on_screen()
 
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import create_ipopt_output_plot
@@ -313,9 +302,15 @@ class PlotOcp:
             self.t_integrated.append(time)
             self.t.append(np.linspace(float(time[0][0]), float(time[-1][-1]), nlp.n_states_nodes))
 
-    def __create_plots(self):
+    def _create_plots(self, only_initialize_variables: bool):
         """
         Setup the plots
+
+        Parameters
+        ----------
+        only_initialize_variables: bool
+            If the plots should be initialized but not shown (this is useful for the online plot which must be declared
+            on the server side and on the client side)
         """
 
         def legend_without_duplicate_labels(ax):
@@ -409,43 +404,45 @@ class PlotOcp:
             for var_idx, variable in enumerate(self.variable_sizes[i]):
                 y_range_var_idx = all_keys_across_phases.index(variable)
 
-                if nlp.plot[variable].combine_to:
-                    self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
-                    axes = self.axes[variable][1]
-                elif i > 0 and variable in self.axes:
-                    axes = self.axes[variable][1]
-                else:
-                    nb_subplots = max(
-                        [
-                            (
-                                max(
-                                    len(nlp.plot[variable].phase_mappings.to_first.map_idx),
-                                    max(nlp.plot[variable].phase_mappings.to_first.map_idx) + 1,
-                                )
-                                if variable in nlp.plot
-                                else 0
-                            )
-                            for nlp in self.ocp.nlp
-                        ]
-                    )
-                    # TODO: get rid of all_variables_in_one_subplot by fixing the mapping appropriately
-                    if not nlp.plot[variable].all_variables_in_one_subplot:
-                        n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
+                if not only_initialize_variables:
+                    if nlp.plot[variable].combine_to:
+                        self.axes[variable] = self.axes[nlp.plot[variable].combine_to]
+                        axes = self.axes[variable][1]
+                    elif i > 0 and variable in self.axes:
+                        axes = self.axes[variable][1]
                     else:
-                        n_cols = 1
-                        n_rows = 1
-                    axes = self.__add_new_axis(variable, nb_subplots, n_rows, n_cols)
-                    self.axes[variable] = [nlp.plot[variable], axes]
+                        nb_subplots = max(
+                            [
+                                (
+                                    max(
+                                        len(nlp.plot[variable].phase_mappings.to_first.map_idx),
+                                        max(nlp.plot[variable].phase_mappings.to_first.map_idx) + 1,
+                                    )
+                                    if variable in nlp.plot
+                                    else 0
+                                )
+                                for nlp in self.ocp.nlp
+                            ]
+                        )
 
-                    if not y_min_all[y_range_var_idx]:
-                        y_min_all[y_range_var_idx] = [np.inf] * nb_subplots
-                        y_max_all[y_range_var_idx] = [-np.inf] * nb_subplots
+                        # TODO: get rid of all_variables_in_one_subplot by fixing the mapping appropriately
+                        if not nlp.plot[variable].all_variables_in_one_subplot:
+                            n_cols, n_rows = PlotOcp._generate_windows_size(nb_subplots)
+                        else:
+                            n_cols = 1
+                            n_rows = 1
+                        axes = self._add_new_axis(variable, nb_subplots, n_rows, n_cols)
+                        self.axes[variable] = [nlp.plot[variable], axes]
+
+                        if not y_min_all[y_range_var_idx]:
+                            y_min_all[y_range_var_idx] = [np.inf] * nb_subplots
+                            y_max_all[y_range_var_idx] = [-np.inf] * nb_subplots
 
                 if variable not in self.custom_plots:
                     self.custom_plots[variable] = [
                         nlp_tp.plot[variable] if variable in nlp_tp.plot else None for nlp_tp in self.ocp.nlp
                     ]
-                if not self.custom_plots[variable][i]:
+                if not self.custom_plots[variable][i] or only_initialize_variables:
                     continue
 
                 mapping_to_first_index = nlp.plot[variable].phase_mappings.to_first.map_idx
@@ -617,7 +614,7 @@ class PlotOcp:
                                 [ax.step(self.t[i], bounds_max, where="post", **self.plot_options["bounds"]), i]
                             )
 
-    def __add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
+    def _add_new_axis(self, variable: str, nb: int, n_rows: int, n_cols: int):
         """
         Add a new axis to the axes pool
 
@@ -675,6 +672,25 @@ class PlotOcp:
             self.height_step = (height - self.top_margin) / self.n_horizontal_windows
             self.width_step = width / self.n_vertical_windows
 
+    def _spread_figures_on_screen(self):
+        horz = 0
+        vert = 1 if len(self.all_figures) < self.n_vertical_windows * self.n_horizontal_windows else 0
+        for i, fig in enumerate(self.all_figures):
+            if self.automatically_organize:
+                try:
+                    fig.canvas.manager.window.move(
+                        int(vert * self.width_step), int(self.top_margin + horz * self.height_step)
+                    )
+                    vert += 1
+                    if vert >= self.n_vertical_windows:
+                        horz += 1
+                        vert = 0
+                except AttributeError:
+                    pass
+            fig.canvas.draw()
+            if self.plot_options["general_options"]["use_tight_layout"]:
+                fig.tight_layout()
+
     def find_phases_intersections(self):
         """
         Finds the intersection between the phases
@@ -690,22 +706,24 @@ class PlotOcp:
 
         plt.show()
 
-    def update_data(
-        self,
-        args: dict,
-    ):
+    def parse_data(self, **args) -> tuple[list, list]:
         """
-        Update ydata from the variable a solution structure
+        Parse the data to be plotted, the return of this method can be passed to update_data to update the plots
 
         Parameters
         ----------
-        v: np.ndarray
-            The data to parse
+        ocp: OptimalControlProgram
+            A reference to the full ocp
+        variable_sizes: list[int]
+            The size of all variables. This is the reference to the PlotOcp.variable_sizes (which can't be accessed
+            from this static method)
+        custom_plots: dict
+            The dictionary of all the CustomPlot. This is the reference to the PlotOcp.custom_plots (which can't be
+            accessed from this static method)
         """
-
         from ..interfaces.interface_utils import get_numerical_timeseries
 
-        self.ydata = []
+        ydata = []
 
         sol = Solution.from_vector(self.ocp, args["x"])
         data_states_decision = sol.decision_states(scaled=True, to_merge=SolutionMerge.KEYS)
@@ -726,7 +744,7 @@ class PlotOcp:
         if self.ocp.n_phases == 1:
             time_stepwise = [time_stepwise]
         phases_dt = sol.phases_dt
-        self._update_xdata(time_stepwise)
+        xdata = time_stepwise
 
         for nlp in self.ocp.nlp:
 
@@ -761,9 +779,33 @@ class PlotOcp:
                 mapped_y_data = []
                 for i in nlp.plot[key].phase_mappings.to_first.map_idx:
                     mapped_y_data.append(y_data[i])
-                self._append_to_ydata(mapped_y_data)
+                for y in mapped_y_data:
+                    ydata.append(y)
 
-        self.__update_axes()
+        return xdata, ydata
+
+    def update_data(
+        self,
+        xdata: list,
+        ydata: list,
+        **args: dict,
+    ):
+        """
+        Update xdata and ydata. The input are the output of the parse_data method
+
+        Parameters
+        ----------
+        xdata: list
+            The time vector
+        ydata: list
+            The actual current data to be plotted
+        args: dict
+            The same args as the parse_data method (that is so ipopt outputs can be plotted, this should be done properly
+            in the future, when ready, remove this parameter)
+        """
+
+        self._update_xdata(xdata)
+        self._update_ydata(ydata)
 
         if self.ocp.plot_ipopt_outputs:
             from ..gui.ipopt_output_plot import update_ipopt_output_plot
@@ -782,7 +824,7 @@ class PlotOcp:
 
     def _compute_y_from_plot_func(
         self, custom_plot: CustomPlot, phase_idx, time_stepwise, dt, x_decision, x_stepwise, u, p, a, d
-    ) -> list[np.ndarray | list, ...]:
+    ) -> list[np.ndarray | list]:
         """
         Compute the y data from the plot function
 
@@ -923,27 +965,14 @@ class PlotOcp:
                 for i, time in enumerate(intersections_time):
                     self.plots_vertical_lines[p * n + i].set_xdata([float(time), float(time)])
 
-    def _append_to_ydata(self, data: list | np.ndarray):
-        """
-        Parse the data list to create a single list of all ydata that will fit the plots vector
-
-        Parameters
-        ----------
-        data: list
-            The data list to copy
-        """
-
-        for y in data:
-            self.ydata.append(y)
-
-    def __update_axes(self):
+    def _update_ydata(self, ydata):
         """
         Update the plotted data from ydata
         """
 
-        assert len(self.plots) == len(self.ydata)
+        assert len(self.plots) == len(ydata)
         for i, plot in enumerate(self.plots):
-            y = self.ydata[i]
+            y = ydata[i]
             if y is None:
                 # Jump the plots which are empty
                 y = (np.nan,) * len(plot[2])

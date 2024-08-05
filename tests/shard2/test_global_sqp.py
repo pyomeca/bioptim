@@ -23,7 +23,7 @@ def test_pendulum(phase_dynamics):
         expand_dynamics=True,
     )
 
-    solver = Solver.SQP_METHOD(show_online_optim=False)
+    solver = Solver.SQP_METHOD()
     solver.set_tol_du(1e-1)
     solver.set_tol_pr(1e-1)
     solver.set_max_iter_ls(1)
