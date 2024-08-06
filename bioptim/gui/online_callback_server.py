@@ -111,7 +111,7 @@ class PlottingServer:
         except Exception as e:
             self._logger.error(
                 f"Fatal error while running the server"
-                f"{"" if self._logger.level == logging.DEBUG else ", for more information set log_level to DEBUG"}")
+                f"{''if self._logger.level == logging.DEBUG else ', for more information set log_level to DEBUG'}")
             self._logger.debug(f"Error: {e}")
         finally:
             self._socket.close()
