@@ -58,7 +58,7 @@ class PlottingServer:
         self._prepare_logger(log_level)
         self._get_data_interval = 1.0
         self._update_plot_interval = 10
-        self._is_drawing = False
+        self._force_redraw = False
 
         # Define the host and port
         self._host = host if host else _DEFAULT_HOST
@@ -85,7 +85,7 @@ class PlottingServer:
         formatter = logging.Formatter(
             "{asctime} - {name}:{levelname} - {message}",
             style="{",
-            datefmt="%Y-%m-%d %H:%M",
+            datefmt="%Y-%m-%d %H:%M:%S.%03d",
         )
         console_handler.setFormatter(formatter)
 
@@ -238,9 +238,11 @@ class PlottingServer:
         data_out = []
         try:
             for len_data in len_all_data:
-                data_out.append(client_socket.recv(len_data))
-                if len(data_out[-1]) != len_data:
-                    data_out[-1] += client_socket.recv(len_data - len(data_out[-1]))
+                self._logger.debug(f"Waiting for {len_data} bytes from client")
+                data_tp = b""
+                while len(data_tp) != len_data:
+                    data_tp += client_socket.recv(len_data - len(data_tp))
+                data_out.append(data_tp)
         except Exception as e:
             self._logger.error("Unknown message type received")
             self._logger.debug(f"Error: {e}")
@@ -253,6 +255,7 @@ class PlottingServer:
         if send_confirmation:
             client_socket.sendall("OK".encode())
 
+        self._logger.debug(f"Received data from client: {[len(d) for d in data_out]} bytes")
         return data_out
 
     def _initialize_plotter(self, client_socket: socket.socket, ocp_raw: list) -> None:
@@ -343,12 +346,11 @@ class PlottingServer:
         """
 
         self._logger.debug("Updating plot")
-        self._is_drawing = True
         for fig in self._plotter.all_figures:
             fig.canvas.draw()
             if platform.system() != "Darwin":
                 fig.canvas.flush_events()
-        self._is_drawing = False
+        self._force_redraw = False
 
     def _wait_for_new_data_to_plot(self, client_socket: socket.socket) -> None:
         """
@@ -363,10 +365,11 @@ class PlottingServer:
         """
 
         self._logger.debug(f"Waiting for new data from client")
+        
+        if self._force_redraw and platform.system() != "Darwin":
+            time.sleep(self._update_plot_interval)
+        
         try:
-            if self._is_drawing and platform.system() != "Darwin" and not self._wait_for_new_data_to_plot:
-                # Give it some time
-                time.sleep(self._update_plot_interval)
             client_socket.sendall("READY_FOR_NEXT_DATA".encode())
         except Exception as e:
             self._logger.error("Error while sending READY_FOR_NEXT_DATA to client, closing connexion")
@@ -407,6 +410,8 @@ class PlottingServer:
         self._logger.debug(f"Received new data from client")
         xdata, ydata = _deserialize_xydata(serialized_raw_data)
         self._plotter.update_data(xdata, ydata)
+        
+        self._force_redraw = True
 
 
 class OnlineCallbackServer(OnlineCallbackAbstract):
