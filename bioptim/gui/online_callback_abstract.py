@@ -32,7 +32,7 @@ class OnlineCallbackAbstract(Callback, ABC):
         Send the current data to the plotter
     """
 
-    def __init__(self, ocp, opts: dict = None, show_options: dict = None):
+    def __init__(self, ocp, opts: dict = None, **show_options):
         """
         Parameters
         ----------

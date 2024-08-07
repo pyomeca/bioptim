@@ -1,4 +1,5 @@
 from enum import Enum, IntEnum, auto
+import platform
 
 
 class PhaseDynamics(Enum):
@@ -110,6 +111,17 @@ class OnlineOptim(Enum):
     MULTIPROCESS = auto()
     SERVER = auto()
     MULTIPROCESS_SERVER = auto()
+
+    def get_default(self):
+        if self != OnlineOptim.DEFAULT:
+            return self
+
+        if platform.system() == "Linux":
+            return OnlineOptim.MULTIPROCESS
+        elif platform.system() == "Windows":
+            return OnlineOptim.MULTIPROCESS_SERVER
+        else:
+            return None
 
 
 class ControlType(Enum):
