@@ -111,7 +111,8 @@ class PlottingServer:
         except Exception as e:
             self._logger.error(
                 f"Fatal error while running the server"
-                f"{''if self._logger.level == logging.DEBUG else ', for more information set log_level to DEBUG'}")
+                f"{''if self._logger.level == logging.DEBUG else ', for more information set log_level to DEBUG'}"
+            )
             self._logger.debug(f"Error: {e}")
         finally:
             self._socket.close()
@@ -276,7 +277,7 @@ class PlottingServer:
             self._logger.error("Error while converting data to json format, closing connexion")
             client_socket.sendall("NOK".encode())
             raise e
-        
+
         try:
             self._should_send_ok_to_client_on_new_data = data_json["request_confirmation_on_new_data"]
         except Exception as e:
@@ -320,12 +321,12 @@ class PlottingServer:
 
         # Start the callbacks
         threading.Timer(self._get_data_interval, self._wait_for_new_data_to_plot, (client_socket,)).start()
-        
+
         # Use the canvas timer for _redraw as threading won't work for updating the graphs on Macos
         timer = self._plotter.all_figures[0].canvas.new_timer(self._update_plot_interval)
         timer.add_callback(self._redraw)
         timer.start()
-        
+
         plt.show()
 
     @property
@@ -365,10 +366,10 @@ class PlottingServer:
         """
 
         self._logger.debug(f"Waiting for new data from client")
-        
+
         if self._force_redraw and platform.system() != "Darwin":
             time.sleep(self._update_plot_interval)
-        
+
         try:
             client_socket.sendall("READY_FOR_NEXT_DATA".encode())
         except Exception as e:
@@ -410,7 +411,7 @@ class PlottingServer:
         self._logger.debug(f"Received new data from client")
         xdata, ydata = _deserialize_xydata(serialized_raw_data)
         self._plotter.update_data(xdata, ydata)
-        
+
         self._force_redraw = True
 
 
@@ -472,7 +473,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         # Start the client
         try:
             self._socket.connect((self._host, self._port))
-        except ConnectionError:
+        except:
             if retries > 5:
                 raise RuntimeError(
                     "Could not connect to the plotter server, make sure it is running by calling 'PlottingServer()' on "
@@ -488,7 +489,7 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         ocp_plot["dummy_phase_times"] = []
         for phase_times in dummy_phase_times:
             ocp_plot["dummy_phase_times"].append([np.array(v)[:, 0].tolist() for v in phase_times])
-        
+
         ocp_plot["request_confirmation_on_new_data"] = self._should_wait_ok_to_client_on_new_data
         serialized_ocp = json.dumps(ocp_plot).encode()
 
@@ -562,12 +563,12 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
         self._socket.sendall(f"{_ServerMessages.NEW_DATA.value}\n{[len(header), len(data_serialized)]}".encode())
         if self._should_wait_ok_to_client_on_new_data and self._socket.recv(1024).decode() != "OK":
             raise RuntimeError("The server did not acknowledge the connexion")
-        
+
         self._socket.sendall(header)
         self._socket.sendall(data_serialized)
         if self._should_wait_ok_to_client_on_new_data and self._socket.recv(1024).decode() != "OK":
             raise RuntimeError("The server did not acknowledge the connexion")
-        
+
         return [0]
 
 
