@@ -416,7 +416,7 @@ class PlottingServer:
 
 
 class OnlineCallbackServer(OnlineCallbackAbstract):
-    def __init__(self, ocp, opts: dict = None, show_options: dict = None, host: str = None, port: int = None):
+    def __init__(self, ocp, opts: dict = None, host: str = None, port: int = None, **show_options):
         """
         Initializes the client. This is not supposed to be called directly by the user, but by the solver. During the
         initialization, we need to perform some tasks that are not possible to do in server side. Then the results of
@@ -436,10 +436,10 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
             The port to connect to, by default 3050
         """
 
-        super().__init__(ocp, opts, show_options)
-
         self._host = host if host else _DEFAULT_HOST
         self._port = port if port else _DEFAULT_PORT
+
+        super().__init__(ocp, opts, **show_options)
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
         self._should_wait_ok_to_client_on_new_data = platform.system() == "Darwin"
@@ -477,8 +477,8 @@ class OnlineCallbackServer(OnlineCallbackAbstract):
             if retries > 5:
                 raise RuntimeError(
                     "Could not connect to the plotter server, make sure it is running by calling 'PlottingServer()' on "
-                    "another python instance or allowing for automatic start of the server by calling "
-                    "'PlottingServer.as_multiprocess()' in the main script"
+                    "another python instance or allowing for automatic start (Linux or Windows) of the server setting "
+                    "the online_option to 'OnlineOptim.MULTIPROCESS_SERVER' when instantiating your solver"
                 )
             else:
                 time.sleep(1)

@@ -32,51 +32,17 @@ def generic_online_optim(interface, ocp, show_options: dict | None = None):
     if show_options is None:
         show_options = {}
 
-    online_optim: OnlineOptim = interface.opts.online_optim
-    if online_optim == OnlineOptim.DEFAULT:
-        if platform == "linux":
-            online_optim = OnlineOptim.MULTIPROCESS
-        elif platform == "win32":
-            online_optim = OnlineOptim.MULTIPROCESS_SERVER
-        else:
-            online_optim = None
-
+    online_optim = interface.opts.online_optim.get_default()
     if online_optim == OnlineOptim.MULTIPROCESS:
-        if platform != "linux":
-            raise RuntimeError(
-                "Online OnlineOptim.MULTIPROCESS is not supported on Windows or MacOS. "
-                "You can use online_optim=OnlineOptim.MULTIPROCESS_SERVER to the Solver declaration on Windows though"
-            )
-        interface.options_common["iteration_callback"] = OnlineCallbackMultiprocess(ocp, show_options=show_options)
-    elif online_optim in (OnlineOptim.SERVER, OnlineOptim.MULTIPROCESS_SERVER):
-        host = None
-        if "host" in show_options:
-            host = show_options["host"]
-            del show_options["host"]
-
-        port = None
-        if "port" in show_options:
-            port = show_options["port"]
-            del show_options["port"]
-
-        if online_optim == OnlineOptim.SERVER:
-            interface.options_common["iteration_callback"] = OnlineCallbackServer(
-                ocp, show_options=show_options, host=host, port=port
-            )
-        elif online_optim == OnlineOptim.MULTIPROCESS_SERVER:
-            log_level = None
-            if "log_level" in show_options:
-                log_level = show_options["log_level"]
-                del show_options["log_level"]
-
-            interface.options_common["iteration_callback"] = OnlineCallbackMultiprocessServer(
-                ocp, show_options=show_options, host=host, port=port, log_level=log_level
-            )
-        else:
-            raise NotImplementedError(f"show_options['type']={online_optim} is not implemented yet")
-
+        to_call = OnlineCallbackMultiprocess
+    elif online_optim == OnlineOptim.SERVER:
+        to_call = OnlineCallbackServer
+    elif online_optim == OnlineOptim.MULTIPROCESS_SERVER:
+        to_call = OnlineCallbackMultiprocessServer
     else:
-        raise NotImplementedError(f"show_options['type']={online_optim} is not implemented yet")
+        raise ValueError(f"online_optim {online_optim} is not implemented yet")
+
+    interface.options_common["iteration_callback"] = to_call(ocp, **show_options)
 
 
 def generic_solve(interface, expand_during_shake_tree=False) -> dict:
