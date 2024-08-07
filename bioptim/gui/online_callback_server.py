@@ -85,7 +85,7 @@ class PlottingServer:
         formatter = logging.Formatter(
             "{asctime} - {name}:{levelname} - {message}",
             style="{",
-            datefmt="%Y-%m-%d %H:%M:%S.%03d",
+            datefmt="%Y-%m-%d %H:%M:%S" if platform.system() == "Windows" else "%Y-%m-%d %H:%M:%S.%03d",
         )
         console_handler.setFormatter(formatter)
 
