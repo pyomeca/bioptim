@@ -2,8 +2,9 @@ import os
 
 from bioptim.gui.online_callback_server import _serialize_xydata, _deserialize_xydata
 from bioptim.gui.plot import PlotOcp
+from bioptim.gui.online_callback_server import _ResponseHeader
 from bioptim.optimization.optimization_vector import OptimizationVectorHelper
-from casadi import DM, Function
+from casadi import DM
 import numpy as np
 
 
@@ -40,3 +41,24 @@ def test_serialize_deserialize():
         else:
             for y_phase, deserialized_y_phase in zip(y_variable, deserialized_y_variable):
                 assert np.allclose(y_phase, deserialized_y_phase)
+
+
+def test_response_header():
+    # Make sure all the response have the same length
+    response_len = _ResponseHeader.response_len()
+    for response in _ResponseHeader:
+        assert len(response) == response_len
+        # Make sure encoding provides a constant length
+        assert len(response.encode()) == response_len
+
+    # Make sure equality works
+    assert _ResponseHeader.OK == _ResponseHeader.OK
+    assert _ResponseHeader.OK.value == _ResponseHeader.OK
+    assert _ResponseHeader.OK.encode().decode() == _ResponseHeader.OK
+    assert _ResponseHeader.OK == _ResponseHeader.OK.encode().decode()
+    assert not (_ResponseHeader.OK != _ResponseHeader.OK)
+    assert not (_ResponseHeader.OK.encode().decode() != _ResponseHeader.OK)
+    assert not (_ResponseHeader.OK != _ResponseHeader.OK.encode().decode())
+    assert not (_ResponseHeader.OK.value == _ResponseHeader.OK.encode().decode())
+    assert _ResponseHeader.OK != _ResponseHeader.NOK
+    assert _ResponseHeader.NOK == _ResponseHeader.NOK

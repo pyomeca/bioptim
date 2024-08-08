@@ -187,7 +187,7 @@ from .limits.phase_transition import PhaseTransitionFcn, PhaseTransitionList, Ph
 from .limits.multinode_constraint import MultinodeConstraintFcn, MultinodeConstraintList, MultinodeConstraint
 from .limits.multinode_objective import MultinodeObjectiveFcn, MultinodeObjectiveList, MultinodeObjective
 from .limits.objective_functions import ObjectiveFcn, ObjectiveList, Objective, ParameterObjectiveList
-from .limits.path_conditions import BoundsList, InitialGuessList
+from .limits.path_conditions import BoundsList, InitialGuessList, Bounds, InitialGuess
 from .limits.fatigue_path_conditions import FatigueBounds, FatigueInitialGuess
 from .limits.penalty_controller import PenaltyController
 from .limits.penalty_helpers import PenaltyHelpers
@@ -231,4 +231,5 @@ from .optimization.stochastic_optimal_control_program import StochasticOptimalCo
 from .optimization.problem_type import SocpType
 from .misc.casadi_expand import lt, le, gt, ge, if_else, if_else_zero
 
+from .gui.plot import CustomPlot
 from .gui.online_callback_server import PlottingServer

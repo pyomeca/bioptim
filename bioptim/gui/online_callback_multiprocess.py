@@ -24,8 +24,8 @@ class OnlineCallbackMultiprocess(OnlineCallbackAbstract):
         The multiprocessing placeholder
     """
 
-    def __init__(self, ocp, opts: dict = None, show_options: dict = None):
-        super(OnlineCallbackMultiprocess, self).__init__(ocp, opts, show_options)
+    def __init__(self, ocp, opts: dict = None, **show_options):
+        super(OnlineCallbackMultiprocess, self).__init__(ocp, opts, **show_options)
 
         self.queue = mp.Queue()
         self.plotter = self.ProcessPlotter(self.ocp)
