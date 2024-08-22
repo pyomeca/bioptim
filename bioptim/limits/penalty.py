@@ -824,7 +824,7 @@ class PenaltyFunctionAbstract:
                     f"This constraint is only useful for ControlType.CONSTANT controls. For any other dynamics, you should constraint the contact at the begining of the interval."
                 )
 
-            if controller.algebraic_states.cx_start.shape != (0, 1):
+            if controller.algebraic_states.cx_start.shape[0] != 0:
                 raise NotImplementedError(
                     "This constraint is not implemented for problems with algebraic states as you should provide their dynamics to integrate it as well."
                 )
