@@ -423,7 +423,8 @@ class ObjectiveFcn:
             PenaltyFunctionAbstract.Functions.track_vector_orientations_from_markers,
         )
         MINIMIZE_CONTACT_FORCES_END_OF_INTERVAL = (
-        PenaltyFunctionAbstract.Functions.minimize_contact_forces_end_of_interval,)
+            PenaltyFunctionAbstract.Functions.minimize_contact_forces_end_of_interval,
+        )
 
         @staticmethod
         def get_type() -> Callable:

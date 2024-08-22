@@ -796,7 +796,6 @@ class PenaltyFunctionAbstract:
             )
             return contact_force
 
-
         @staticmethod
         def minimize_contact_forces_end_of_interval(
             penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
@@ -821,10 +820,14 @@ class PenaltyFunctionAbstract:
                 raise RuntimeError("minimize_contact_forces requires a contact dynamics")
 
             if controller.control_type != ControlType.CONSTANT:
-                raise NotImplementedError(f"This constraint is only useful for ControlType.CONSTANT controls. For any other dynamics, you should constraint the contact at the begining of the interval.")
+                raise NotImplementedError(
+                    f"This constraint is only useful for ControlType.CONSTANT controls. For any other dynamics, you should constraint the contact at the begining of the interval."
+                )
 
             if controller.algebraic_states.cx_start.shape != (0, 1):
-                raise NotImplementedError("This constraint is not implemented for problems with algebraic states as you should provide their dynamics to integrate it as well.")
+                raise NotImplementedError(
+                    "This constraint is not implemented for problems with algebraic states as you should provide their dynamics to integrate it as well."
+                )
 
             PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
