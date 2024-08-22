@@ -38,6 +38,12 @@ def prepare_ocp(biorbd_model_path, phase_time, n_shooting, min_bound, max_bound,
     # Add objective functions
     objective_functions = ObjectiveList()
     objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_PREDICTED_COM_HEIGHT)
+    objective_functions.add(
+        ObjectiveFcn.Mayer.TRACK_CONTACT_FORCES_END_OF_INTERVAL,
+        node=Node.PENULTIMATE,
+        contact_index=2,
+        quadratic=True,
+    )
 
     # Dynamics
     dynamics = DynamicsList()

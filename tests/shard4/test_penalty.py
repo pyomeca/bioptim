@@ -1145,6 +1145,38 @@ def test_penalty_non_slipping(value, phase_dynamics):
 
 
 @pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
+@pytest.mark.parametrize("penalty_origin", [ObjectiveFcn.Mayer, ConstraintFcn])
+def test_penalty_minimize_contact_forces_end_of_interval(penalty_origin, phase_dynamics):
+    ocp = prepare_test_ocp(with_contact=True, phase_dynamics=phase_dynamics)
+    t = [0]
+    phases_dt = [0.05]
+    x = [DM.ones((8, 1)) * 0.1]
+    u = [DM.ones((4, 1)) * 0.1]
+    p = []
+    a = []
+    d = []
+
+    if penalty_origin == ObjectiveFcn.Mayer:
+        penalty_type = ObjectiveFcn.Mayer.MINIMIZE_CONTACT_FORCES_END_OF_INTERVAL
+        penalty = Objective(
+            penalty_type,
+            contact_index=0,
+            node=Node.PENULTIMATE,
+        )
+    else:
+        penalty_type = ConstraintFcn.TRACK_CONTACT_FORCES_END_OF_INTERVAL
+        penalty = Constraint(
+            penalty_type,
+            contact_index=0,
+            node=Node.PENULTIMATE,
+        )
+
+    res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
+
+    npt.assert_almost_equal(res.T, [[-10.5199265, 126.8712299, 5.0900292]])
+
+
+@pytest.mark.parametrize("phase_dynamics", [PhaseDynamics.SHARED_DURING_THE_PHASE, PhaseDynamics.ONE_PER_NODE])
 @pytest.mark.parametrize("value", [2])
 @pytest.mark.parametrize("threshold", [None, 15, -15])
 def test_tau_max_from_actuators(value, threshold, phase_dynamics):

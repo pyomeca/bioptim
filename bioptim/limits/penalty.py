@@ -796,6 +796,74 @@ class PenaltyFunctionAbstract:
             )
             return contact_force
 
+
+        @staticmethod
+        def minimize_contact_forces_end_of_interval(
+            penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
+        ):
+            """
+            Minimize the contact forces at the end of the interval computed by integrating the dynamics with contact.
+            By default this function is quadratic, meaning that it minimizes towards the target.
+            Targets (default=np.zeros()) and indices (default=all_idx) can be specified.
+
+            Parameters
+            ----------
+            penalty: PenaltyOption
+                The actual penalty to declare
+            controller: PenaltyController
+                The penalty node elements
+            contact_index: tuple | list
+                The index of contact to minimize, must be an int or a list.
+                penalty.cols should not be defined if contact_index is defined
+            """
+
+            if controller.get_nlp.contact_forces_func is None:
+                raise RuntimeError("minimize_contact_forces requires a contact dynamics")
+
+            if controller.control_type != ControlType.CONSTANT:
+                raise NotImplementedError(f"This constraint is only useful for ControlType.CONSTANT controls. For any other dynamics, you should constraint the contact at the begining of the interval.")
+
+            if controller.algebraic_states.cx_start.shape != (0, 1):
+                raise NotImplementedError("This constraint is not implemented for problems with algebraic states as you should provide their dynamics to integrate it as well.")
+
+            PenaltyFunctionAbstract.set_axes_rows(penalty, contact_index)
+            penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
+
+            t_span = controller.t_span.cx
+            if controller.get_nlp.ode_solver.is_direct_collocation:
+                cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
+
+                states_integrated = controller.integrate(
+                    t_span=t_span,
+                    x0=cx,
+                    u=controller.controls.cx_start,
+                    p=controller.parameters.cx,
+                    a=controller.algebraic_states.cx_start,
+                    d=controller.numerical_timeseries.cx,
+                )["xf"]
+                penalty.integrate = True
+
+            else:
+                states_integrated = controller.integrate(
+                    t_span=t_span,
+                    x0=controller.states.cx_start,
+                    u=controller.controls.cx_start,
+                    p=controller.parameters.cx_start,
+                    a=controller.algebraic_states.cx_start,
+                    d=controller.numerical_timeseries.cx,
+                )["xf"]
+
+            contact_force = controller.get_nlp.contact_forces_func(
+                controller.time.cx,
+                states_integrated,
+                controller.controls.cx_start,
+                controller.parameters.cx,
+                controller.algebraic_states.cx_start,
+                controller.numerical_timeseries.cx,
+            )
+
+            return contact_force
+
         @staticmethod
         def minimize_soft_contact_forces(
             penalty: PenaltyOption, controller: PenaltyController, contact_index: tuple | list | int | str = None
