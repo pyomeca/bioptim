@@ -833,7 +833,11 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             t_span = controller.t_span.cx
-            cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list)) if controller.get_nlp.ode_solver.is_direct_collocation else controller.states.cx_start
+            cx = (
+                horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
+                if controller.get_nlp.ode_solver.is_direct_collocation
+                else controller.states.cx_start
+            )
             end_of_interval_states = controller.integrate(
                 t_span=t_span,
                 x0=cx,
