@@ -833,27 +833,15 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             t_span = controller.t_span.cx
-            if controller.get_nlp.ode_solver.is_direct_collocation:
-                cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
-
-                end_of_interval_states = controller.integrate(
-                    t_span=t_span,
-                    x0=cx,
-                    u=controller.controls.cx_start,
-                    p=controller.parameters.cx,
-                    a=controller.algebraic_states.cx_start,
-                    d=controller.numerical_timeseries.cx,
-                )["xf"]
-
-            else:
-                end_of_interval_states = controller.integrate(
-                    t_span=t_span,
-                    x0=controller.states.cx_start,
-                    u=controller.controls.cx_start,
-                    p=controller.parameters.cx_start,
-                    a=controller.algebraic_states.cx_start,
-                    d=controller.numerical_timeseries.cx,
-                )["xf"]
+            cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list)) if controller.get_nlp.ode_solver.is_direct_collocation else controller.states.cx_start
+            end_of_interval_states = controller.integrate(
+                t_span=t_span,
+                x0=cx,
+                u=controller.controls.cx_start,
+                p=controller.parameters.cx,
+                a=controller.algebraic_states.cx_start,
+                d=controller.numerical_timeseries.cx,
+            )["xf"]
 
             contact_force = controller.get_nlp.contact_forces_func(
                 controller.time.cx,
