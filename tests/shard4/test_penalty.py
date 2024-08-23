@@ -1158,19 +1158,18 @@ def test_penalty_minimize_contact_forces_end_of_interval(penalty_origin, phase_d
 
     if penalty_origin == ObjectiveFcn.Mayer:
         penalty_type = ObjectiveFcn.Mayer.MINIMIZE_CONTACT_FORCES_END_OF_INTERVAL
-        penalty = Objective(
-            penalty_type,
-            contact_index=0,
-            node=Node.PENULTIMATE,
-        )
+        penalty_object = Objective
+
     else:
         penalty_type = ConstraintFcn.TRACK_CONTACT_FORCES_END_OF_INTERVAL
-        penalty = Constraint(
-            penalty_type,
-            contact_index=0,
-            node=Node.PENULTIMATE,
-        )
 
+        penalty_object = Constraint
+
+    penalty = penalty_object(
+        penalty_type,
+        contact_index=0,
+        node=Node.PENULTIMATE,
+    )
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     npt.assert_almost_equal(res.T, [[-10.5199265, 126.8712299, 5.0900292]])

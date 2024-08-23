@@ -836,7 +836,7 @@ class PenaltyFunctionAbstract:
             if controller.get_nlp.ode_solver.is_direct_collocation:
                 cx = horzcat(*([controller.states.cx_start] + controller.states.cx_intermediates_list))
 
-                states_integrated = controller.integrate(
+                end_of_interval_states = controller.integrate(
                     t_span=t_span,
                     x0=cx,
                     u=controller.controls.cx_start,
@@ -844,10 +844,9 @@ class PenaltyFunctionAbstract:
                     a=controller.algebraic_states.cx_start,
                     d=controller.numerical_timeseries.cx,
                 )["xf"]
-                penalty.integrate = True
 
             else:
-                states_integrated = controller.integrate(
+                end_of_interval_states = controller.integrate(
                     t_span=t_span,
                     x0=controller.states.cx_start,
                     u=controller.controls.cx_start,
@@ -858,7 +857,7 @@ class PenaltyFunctionAbstract:
 
             contact_force = controller.get_nlp.contact_forces_func(
                 controller.time.cx,
-                states_integrated,
+                end_of_interval_states,
                 controller.controls.cx_start,
                 controller.parameters.cx,
                 controller.algebraic_states.cx_start,
