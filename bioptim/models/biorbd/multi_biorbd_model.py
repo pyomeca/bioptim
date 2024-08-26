@@ -260,7 +260,8 @@ class MultiBiorbdModel:
     def segments(self) -> tuple[biorbd.Segment, ...]:
         out = ()
         for model in self.models:
-            out += model.segments
+            for seg in model.segments:
+                out += (seg,)
         return out
 
     def biorbd_homogeneous_matrices_in_global(self, q, segment_idx, inverse=False) -> biorbd.RotoTrans:
