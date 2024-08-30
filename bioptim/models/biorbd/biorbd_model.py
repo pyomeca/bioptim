@@ -1,3 +1,5 @@
+from typing import Callable
+
 import biorbd_casadi as biorbd
 import numpy as np
 from biorbd_casadi import (
@@ -7,14 +9,13 @@ from biorbd_casadi import (
     GeneralizedAcceleration,
 )
 from casadi import SX, MX, vertcat, horzcat, norm_fro
-from typing import Callable
 
 from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 from ...misc.utils import check_version
 
-check_version(biorbd, "1.11.1", "1.12.0")
+check_version(biorbd, "1.11.2", "1.12.0")
 
 
 class BiorbdModel:

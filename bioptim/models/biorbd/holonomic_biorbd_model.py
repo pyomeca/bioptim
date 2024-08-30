@@ -260,7 +260,8 @@ class HolonomicBiorbdModel(BiorbdModel):
         m_vu = partitioned_mass_matrix[self.nb_independent_joints :, : self.nb_independent_joints]
         m_vv = partitioned_mass_matrix[self.nb_independent_joints :, self.nb_independent_joints :]
 
-        coupling_matrix_vu = self.coupling_matrix(q)
+        Jv_inv = self._Jv_inv(q)
+        coupling_matrix_vu = self._coupling_matrix_from_Jv_inv(Jv_inv, q)
         modified_mass_matrix = (
             m_uu
             + m_uv @ coupling_matrix_vu
@@ -284,10 +285,26 @@ class HolonomicBiorbdModel(BiorbdModel):
         modified_generalized_forces = tau_u + coupling_matrix_vu.T @ tau_v
 
         qddot_u = inv(modified_mass_matrix) @ (
-            modified_generalized_forces - second_term @ self.biais_vector(q, qdot) - modified_non_linear_effect
+            modified_generalized_forces
+            # - second_term @ self.biais_vector(q, qdot)
+            - second_term @ self._biais_vector_from_Jv_inv(Jv_inv, qdot)
+            - modified_non_linear_effect
         )
 
         return qddot_u
+
+    def _Jv_inv(self, q: MX) -> MX:
+        """
+        This is made to avoid to compute the inverse of the Jacobian at each iteration,
+        Denoted as Jv(q)^-1 in the literature.
+
+        Returns
+        -------
+        The inverse of the Jacobian of the dependent joints.
+        """
+        partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
+        partitioned_constraints_jacobian_v = partitioned_constraints_jacobian[:, self.nb_independent_joints :]
+        return inv(partitioned_constraints_jacobian_v)
 
     def coupling_matrix(self, q: MX) -> MX:
         """
@@ -307,6 +324,12 @@ class HolonomicBiorbdModel(BiorbdModel):
 
         return -partitioned_constraints_jacobian_v_inv @ partitioned_constraints_jacobian_u
 
+    def _coupling_matrix_from_Jv_inv(self, Jv_inv: MX, q) -> MX:
+        """This is made to avoid to compute the inverse of the Jacobian at each iteration"""
+        partitioned_constraints_jacobian = self.partitioned_constraints_jacobian(q)
+        partitioned_constraints_jacobian_u = partitioned_constraints_jacobian[:, : self.nb_independent_joints]
+        return -Jv_inv @ partitioned_constraints_jacobian_u
+
     def biais_vector(self, q: MX, qdot: MX) -> MX:
         """
         Sources
@@ -322,6 +345,10 @@ class HolonomicBiorbdModel(BiorbdModel):
         partitioned_constraints_jacobian_v_inv = inv(partitioned_constraints_jacobian_v)
 
         return -partitioned_constraints_jacobian_v_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
+
+    def _biais_vector_from_Jv_inv(self, Jv_inv: MX, qdot: MX) -> MX:
+        """This is made to avoid to compute the inverse of the Jacobian at each iteration"""
+        return -Jv_inv @ self.holonomic_constraints_jacobian(qdot) @ qdot
 
     def state_from_partition(self, state_u: MX, state_v: MX) -> MX:
         """
