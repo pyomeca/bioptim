@@ -6,7 +6,7 @@ from biorbd_casadi import (
     GeneralizedTorque,
     GeneralizedAcceleration,
 )
-from casadi import SX, MX, vertcat, horzcat, norm_fro, Function
+from casadi import SX, MX, vertcat, horzcat, norm_fro
 from typing import Callable, Any
 
 from ..utils import _var_mapping, bounds_from_ranges
@@ -893,62 +893,18 @@ class BiorbdModel:
     @staticmethod
     def animate(
         ocp,
-        solution: "SolutionData",
+        solution,
         show_now: bool = True,
-        tracked_markers: list[np.ndarray] = None,
-        **kwargs: Any,
-    ) -> None | list:
-        try:
-            import bioviz
-        except ModuleNotFoundError:
-            raise RuntimeError("bioviz must be install to animate the model")
+        show_tracked_markers: bool = False,
+        viewer: str = "pyorerun",
+        n_frames: int = 0,
+        **kwargs,
+    ):
+        if viewer == "bioviz":
+            from .viewer_bioviz import animate_with_bioviz_for_loop
 
-        check_version(bioviz, "2.0.0", "2.4.0")
+            return animate_with_bioviz_for_loop(ocp, solution, show_now, show_tracked_markers, n_frames, **kwargs)
+        if viewer == "pyorerun":
+            from .viewer_pyorerun import animate_with_pyorerun
 
-        if "q_roots" in solution and "q_joints" in solution:
-            states = np.vstack((solution["q_roots"], solution["q_joints"]))
-        else:
-            states = solution["q"]
-
-        if not isinstance(states, (list, tuple)):
-            states = [states]
-
-        if tracked_markers is None:
-            tracked_markers = [None] * len(states)
-
-        all_bioviz = []
-        for idx_phase, data in enumerate(states):
-            if not isinstance(ocp.nlp[idx_phase].model, BiorbdModel):
-                raise NotImplementedError("Animation is only implemented for biorbd models")
-
-            # This calls each of the function that modify the internal dynamic model based on the parameters
-            nlp = ocp.nlp[idx_phase]
-
-            # noinspection PyTypeChecker
-            biorbd_model: BiorbdModel = nlp.model
-
-            all_bioviz.append(bioviz.Viz(biorbd_model.path, **kwargs))
-            all_bioviz[-1].load_movement(ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(solution["q"]))
-
-            if "q_roots" in solution and "q_joints" in solution:
-                # TODO: Fix the mapping for this case
-                raise NotImplementedError("Mapping is not implemented for this case")
-                q = data
-            else:
-                q = ocp.nlp[idx_phase].variable_mappings["q"].to_second.map(data)
-            all_bioviz[-1].load_movement(q)
-
-            if tracked_markers[idx_phase] is not None:
-                all_bioviz[-1].load_experimental_markers(tracked_markers[idx_phase])
-
-        if show_now:
-            b_is_visible = [True] * len(all_bioviz)
-            while sum(b_is_visible):
-                for i, b in enumerate(all_bioviz):
-                    if b.vtk_window.is_active:
-                        b.update()
-                    else:
-                        b_is_visible[i] = False
-            return None
-        else:
-            return all_bioviz
+            return animate_with_pyorerun(ocp, solution, show_now, show_tracked_markers, **kwargs)

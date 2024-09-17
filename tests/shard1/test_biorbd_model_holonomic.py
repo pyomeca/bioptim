@@ -152,7 +152,19 @@ def test_model_holonomic():
     )
 
     TestUtils.assert_equal(
-        model.compute_the_lagrangian_multipliers(q, q_dot, q_ddot, tau), [20.34808, 27.119224], expand=False
+        model._compute_the_lagrangian_multipliers(q, q_dot, q_ddot, tau), [20.34808, 27.119224], expand=False
+    )
+    compute_the_lagrangian_multipliers = Function(
+        "compute_the_lagrangian_multipliers",
+        [q_u_sym, qdot_u_sym, tau_sym],
+        [model.compute_the_lagrangian_multipliers(q_u_sym, qdot_u_sym, tau_sym)],
+    )
+    TestUtils.assert_equal(
+        compute_the_lagrangian_multipliers(
+            MX(np.zeros(model.nb_independent_joints)), MX(np.ones(model.nb_independent_joints) * 0.001), tau
+        ),
+        [np.nan, np.nan],
+        expand=False,
     )
 
 
@@ -171,7 +183,7 @@ def test_example_two_pendulums():
     )
 
     # --- Solve the ocp --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=False))
+    sol = ocp.solve(Solver.IPOPT())
     states = sol.decision_states(to_merge=SolutionMerge.NODES)
 
     npt.assert_almost_equal(

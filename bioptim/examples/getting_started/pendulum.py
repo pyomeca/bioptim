@@ -9,8 +9,6 @@ During the optimization process, the graphs are updated real-time (even though i
 appreciate it). Finally, once it finished optimizing, it animates the model using the optimal solution
 """
 
-import platform
-
 from bioptim import (
     OptimalControlProgram,
     DynamicsFcn,
@@ -26,6 +24,7 @@ from bioptim import (
     BiorbdModel,
     ControlType,
     PhaseDynamics,
+    OnlineOptim,
 )
 
 
@@ -149,13 +148,19 @@ def main():
     # --- Print ocp structure --- #
     ocp.print(to_console=False, to_graph=False)
 
-    # --- Solve the ocp. Please note that online graphics only works with the Linux operating system --- #
-    sol = ocp.solve(Solver.IPOPT(show_online_optim=platform.system() == "Linux"))
+    # --- Solve the ocp --- #
+    # Default is OnlineOptim.MULTIPROCESS on Linux, OnlineOptim.MULTIPROCESS_SERVER on Windows and None on MacOS
+    # To see the graphs on MacOS, one must run the server manually (see resources/plotting_server.py)
+    sol = ocp.solve(Solver.IPOPT(online_optim=OnlineOptim.DEFAULT))
 
-    # --- Show the results (graph or animation) --- #
+    # --- Show the results graph --- #
     sol.print_cost()
     # sol.graphs(show_bounds=True, save_name="results.png")
-    sol.animate(n_frames=100)
+
+    # --- Animate the solution --- #
+    viewer = "bioviz"
+    # viewer = "pyorerun"
+    sol.animate(n_frames=0, viewer=viewer, show_now=True)
 
     # # --- Saving the solver's output after the optimization --- #
     # Here is an example of how we recommend to save the solution. Please note that sol.ocp is not picklable and that sol will be loaded using the current bioptim version, not the version at the time of the generation of the results.

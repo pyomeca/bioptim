@@ -7,9 +7,10 @@ It is designed to show how to use a model that has quaternions in their degrees 
 
 import platform
 
-import numpy as np
 import biorbd_casadi as biorbd
+import numpy as np
 from casadi import MX, Function
+
 from bioptim import (
     BiorbdModel,
     OptimalControlProgram,

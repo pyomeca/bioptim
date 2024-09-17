@@ -2,10 +2,11 @@
 Test for file IO
 """
 
-import os
-import pytest
 import numpy as np
 import numpy.testing as npt
+import os
+import pytest
+
 from bioptim import (
     OdeSolver,
     ConstraintList,
@@ -17,6 +18,7 @@ from bioptim import (
     PhaseDynamics,
     SolutionMerge,
 )
+from bioptim.models.biorbd.viewer_utils import _prepare_tracked_markers_for_animation
 from tests.utils import TestUtils
 
 
@@ -417,7 +419,7 @@ def test_track_marker_2D_pendulum(ode_solver, defects_type, phase_dynamics):
     TestUtils.simulate(sol)
 
     # testing that preparing tracked markers for animation properly works
-    tracked_markers = sol._prepare_tracked_markers_for_animation(n_shooting)
+    tracked_markers = _prepare_tracked_markers_for_animation(sol.ocp.nlp, n_shooting)
     npt.assert_equal(tracked_markers[0].shape, (3, 2, n_shooting + 1))
     npt.assert_equal(tracked_markers[0][0, :, :], np.zeros((2, n_shooting + 1)))
     npt.assert_almost_equal(tracked_markers[0][1:, :, 0], np.array([[0.82873751, 0.5612772], [0.22793516, 0.24205527]]))

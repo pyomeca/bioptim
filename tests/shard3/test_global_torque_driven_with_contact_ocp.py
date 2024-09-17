@@ -161,7 +161,7 @@ def test_maximize_predicted_height_CoM_rigidbody_dynamics(rigidbody_dynamics, ph
         phase_dynamics=phase_dynamics,
         expand_dynamics=True,
     )
-    sol_opt = Solver.IPOPT(show_online_optim=False)
+    sol_opt = Solver.IPOPT()
     sol_opt.set_maximum_iterations(1)
     sol = ocp.solve(sol_opt)
 

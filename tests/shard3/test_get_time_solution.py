@@ -62,7 +62,7 @@ def _get_solution(
         return None
 
     ocp = ocp_module.prepare_ocp(**prepare_args)
-    solver = Solver.IPOPT(show_online_optim=False)
+    solver = Solver.IPOPT()
     solver.set_maximum_iterations(0)
     solver.set_print_level(0)
 

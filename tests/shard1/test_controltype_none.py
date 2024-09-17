@@ -253,9 +253,7 @@ def test_main_control_type_none(use_sx, phase_dynamics):
     )
 
     # --- Solve the program --- #
-    sol = ocp.solve(
-        Solver.IPOPT(show_online_optim=False),
-    )
+    sol = ocp.solve(Solver.IPOPT())
 
     # Check objective function value
     f = np.array(sol.cost)
