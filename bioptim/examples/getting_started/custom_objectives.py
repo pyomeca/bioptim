@@ -54,11 +54,13 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
     marker_1_idx = controller.model.marker_index(second_marker)
 
     if method == 0:
+        # todo: Charbie
         # Convert the function to the required format and then subtract
         markers = controller.mx_to_cx("markers", controller.model.markers, controller.states["q"])
         markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
     else:
+        # todo: Charbie
         # Do the calculation in biorbd API and then convert to the required format
         markers = controller.model.markers(controller.states["q"].mx)
         markers_diff = markers[marker_1_idx] - markers[marker_0_idx]

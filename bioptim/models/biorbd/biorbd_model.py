@@ -6,8 +6,8 @@ from biorbd_casadi import (
     GeneralizedTorque,
     GeneralizedAcceleration,
 )
-from casadi import SX, MX, vertcat, horzcat, norm_fro
-from typing import Callable, Any
+from casadi import SX, MX, vertcat, horzcat, norm_fro, Function
+from typing import Callable
 
 from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
@@ -339,7 +339,7 @@ class BiorbdModel:
         """
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
-        tau_activations_biorbd = self.tau  #TODO: Charbie check this
+        tau_activations_biorbd = self.tau  # TODO: Charbie check this
         biorbd_return = self.model.torque(tau_activations_biorbd, q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "torque_activation",
@@ -684,9 +684,9 @@ class BiorbdModel:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
         qddot_biorbd = GeneralizedAcceleration(self.qddot)
-        biorbd_return = self.model.rigidContactAcceleration(q_biorbd, qdot_biorbd, qddot_biorbd, contact_index, True).to_mx()[
-            contact_axis
-        ]
+        biorbd_return = self.model.rigidContactAcceleration(
+            q_biorbd, qdot_biorbd, qddot_biorbd, contact_index, True
+        ).to_mx()[contact_axis]
         casadi_fun = Function(
             "rigid_contact_acceleration",
             [self.q, self.qdot, self.qddot],
@@ -749,22 +749,30 @@ class BiorbdModel:
             count += n_contacts
         return f_contact_vec
 
-    def normalize_state_quaternions(self, x: MX | SX) -> MX | SX:
+    def normalize_state_quaternions(self) -> Function:
+
         quat_idx = self.get_quaternion_idx()
+        biorbd_return = MX.zeros(self.nb_q)
+        biorbd_return[:] = self.q
 
         # Normalize quaternion, if needed
         for j in range(self.nb_quaternions):
             quaternion = vertcat(
-                x[quat_idx[j][3]],
-                x[quat_idx[j][0]],
-                x[quat_idx[j][1]],
-                x[quat_idx[j][2]],
+                self.q[quat_idx[j][3]],
+                self.q[quat_idx[j][0]],
+                self.q[quat_idx[j][1]],
+                self.q[quat_idx[j][2]],
             )
             quaternion /= norm_fro(quaternion)
-            x[quat_idx[j][0] : quat_idx[j][2] + 1] = quaternion[1:4]
-            x[quat_idx[j][3]] = quaternion[0]
+            biorbd_return[quat_idx[j][0] : quat_idx[j][2] + 1] = quaternion[1:4]
+            biorbd_return[quat_idx[j][3]] = quaternion[0]
 
-        return x
+        casadi_fun = Function(
+            "soft_contact_forces",
+            [self.q],
+            [biorbd_return],
+        )
+        return casadi_fun
 
     def get_quaternion_idx(self) -> list[list[int]]:
         n_dof = 0
@@ -789,7 +797,9 @@ class BiorbdModel:
                 )
                 biorbd_return = horzcat(biorbd_return, force)
         else:
-            biorbd_return =  self.contact_forces_from_constrained_forward_dynamics(self.q, self.qdot, self.tau, external_forces=None)
+            biorbd_return = self.contact_forces_from_constrained_forward_dynamics(
+                self.q, self.qdot, self.tau, external_forces=None
+            )
         casadi_fun = Function(
             "contact_forces",
             [self.q, self.qdot, self.tau],

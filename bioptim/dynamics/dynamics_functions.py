@@ -185,6 +185,7 @@ class DynamicsFunctions:
             rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
         ):
             if not with_contact and fatigue is None:
+                # todo: Charbie
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.mx_reduced)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
                 defects = MX(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
