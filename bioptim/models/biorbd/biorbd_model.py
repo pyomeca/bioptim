@@ -129,7 +129,7 @@ class BiorbdModel:
         """
         Returns a biorbd object containing the roto-translation matrix of the segment in the global reference frame.
         This is useful if you want to interact with biorbd directly later on.
-        TODO: Charbie fis this with ApplyRT wrapper
+        TODO: Charbie fix this with ApplyRT wrapper
         """
         rt_matrix = self.model.globalJCS(GeneralizedCoordinates(q), segment_idx)
         return rt_matrix.transpose() if inverse else rt_matrix
@@ -726,7 +726,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def reshape_fext_to_fcontact(self, fext: MX) -> list:
+    def reshape_fext_to_fcontact(self, fext: MX | SX) -> list:
         if len(self._segments_to_apply_external_forces) == 0:
             parent_name = []
             for i in range(self.nb_rigid_contacts):
@@ -737,10 +737,10 @@ class BiorbdModel:
             self._segments_to_apply_external_forces = parent_name
 
         count = 0
-        f_contact_vec = MX()
+        f_contact_vec = fext.type()
         for i in range(self.nb_rigid_contacts):
             contact = self.model.rigidContact(i)
-            tp = MX.zeros(6)
+            tp = fext.type.zeros(6)
             used_axes = [i for i, val in enumerate(contact.axes()) if val]
             n_contacts = len(used_axes)
             tp[used_axes] = fext[count : count + n_contacts]

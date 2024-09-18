@@ -124,12 +124,11 @@ class PenaltyFunctionAbstract:
             if key_control == "tau":
                 return controls * controller.qdot.cx_start
             elif key_control == "muscles":
-                q_mx = controller.q.mx
+                q_mx = controller.q.cx
                 qdot_mx = controller.qdot.mx
-                muscles_dot = controller.model.muscle_velocity(q_mx, qdot_mx)
-                objective = controller.mx_to_cx("muscle_velocity", muscles_dot, controller.q, controller.qdot)
+                muscles_dot = controller.model.muscle_velocity()(controller.q.cx, controller.qdot.mx)
 
-                return controls * objective
+                return controls * muscles_dot
 
         @staticmethod
         def minimize_algebraic_states(penalty: PenaltyOption, controller: PenaltyController, key: str):
@@ -199,27 +198,28 @@ class PenaltyFunctionAbstract:
 
             e_fb_mx = controller.model.compute_torques_from_noise_and_feedback(
                 nlp=controller.get_nlp,
-                time=controller.time.mx,
-                states=controller.states_scaled.mx,
-                controls=controller.controls_scaled.mx,
-                parameters=controller.parameters_scaled.mx,
-                algebraic_states=controller.algebraic_states_scaled.mx,
-                numerical_timeseries=controller.numerical_timeseries.mx,
+                time=controller.time.cx,
+                states=controller.states_scaled.cx,
+                controls=controller.controls_scaled.cx,
+                parameters=controller.parameters_scaled.cx,
+                algebraic_states=controller.algebraic_states_scaled.cx,
+                numerical_timeseries=controller.numerical_timeseries.cx,
                 sensory_noise=controller.model.sensory_noise_magnitude,
                 motor_noise=controller.model.motor_noise_magnitude,
             )
 
-            jac_e_fb_x = jacobian(e_fb_mx, controller.states_scaled.mx)
+            jac_e_fb_x = jacobian(e_fb_mx, controller.states_scaled.cx)
 
+            # todo: Charbie remode this function
             jac_e_fb_x_cx = Function(
                 "jac_e_fb_x",
                 [
-                    controller.t_span.mx,
-                    controller.states_scaled.mx,
-                    controller.controls_scaled.mx,
-                    controller.parameters_scaled.mx,
-                    controller.algebraic_states_scaled.mx,
-                    controller.numerical_timeseries.mx,
+                    controller.t_span.cx,
+                    controller.states_scaled.cx,
+                    controller.controls_scaled.cx,
+                    controller.parameters_scaled.cx,
+                    controller.algebraic_states_scaled.cx,
+                    controller.numerical_timeseries.cx,
                 ],
                 [jac_e_fb_x],
             )(
@@ -294,19 +294,19 @@ class PenaltyFunctionAbstract:
             # Compute the position of the marker in the requested reference frame (None for global)
             q = controller.q
             model: BiorbdModel = controller.model
+            CX_eye = SX_eye if controller.ocp.cx == SX else MX_eye
             jcs_t = (
-                biorbd.RotoTrans()
+                CX_eye(4)
                 if reference_jcs is None
-                else model.biorbd_homogeneous_matrices_in_global(q.mx, reference_jcs, inverse=True)
+                else model.homogeneous_matrices_in_global(reference_jcs, inverse=True)(q.cx)
             )
 
             markers = []
-            for m in model.markers(q.mx):
-                markers_in_jcs = jcs_t.to_mx() @ vertcat(m, 1)
+            for m in model.markers()(q.cx):
+                markers_in_jcs = jcs_t @ vertcat(m, 1)
                 markers = horzcat(markers, markers_in_jcs[:3])
 
-            markers_objective = controller.mx_to_cx("markers", markers, controller.q)
-            return markers_objective
+            return markers
 
         @staticmethod
         def minimize_markers_velocity(
@@ -343,13 +343,9 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             # Add the penalty in the requested reference frame. None for global
-            q_mx = controller.q.mx
-            qdot_mx = controller.qdot.mx
+            markers = horzcat(*controller.model.marker_velocities(reference_index=reference_jcs)(controller.q.cx, controller.qdot.cx))
 
-            markers = horzcat(*controller.model.marker_velocities(q_mx, qdot_mx, reference_index=reference_jcs))
-
-            markers_objective = controller.mx_to_cx("markers_velocity", markers, controller.q, controller.qdot)
-            return markers_objective
+            return markers
 
         @staticmethod
         def minimize_markers_acceleration(
@@ -383,16 +379,15 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            q_mx = controller.q.mx
-            qdot_mx = controller.qdot.mx
-            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
+            qddot = PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
             markers = horzcat(
-                *controller.model.marker_accelerations(q_mx, qdot_mx, qddot_mx, reference_index=reference_jcs)
+                *controller.model.marker_accelerations(reference_index=reference_jcs)(controller.q.cx,
+                                                       controller.qdot.cx,
+                                                       qddot)
             )
-            markers_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, markers, CoM=False)
 
-            return markers_objective
+            return markers
 
         @staticmethod
         def superimpose_markers(
@@ -432,15 +427,11 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            diff_markers = controller.model.marker(controller.q.mx, second_marker_idx) - controller.model.marker(
-                controller.q.mx, first_marker_idx
+            diff_markers = controller.model.marker(second_marker_idx)(controller.q.cx) - controller.model.marker(first_marker_idx)(
+                controller.q.cx
             )
 
-            return controller.mx_to_cx(
-                f"diff_markers",
-                diff_markers,
-                controller.q,
-            )
+            return diff_markers
 
         @staticmethod
         def superimpose_markers_velocity(
@@ -691,14 +682,13 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            q_mx = controller.q.mx
-            qdot_mx = controller.qdot.mx
-            qddot_mx = PenaltyFunctionAbstract._get_qddot(controller, "mx")
+            qddot = PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
-            marker = controller.model.center_of_mass_acceleration(q_mx, qdot_mx, qddot_mx)
-            com_objective = PenaltyFunctionAbstract._get_markers_acceleration(controller, marker, CoM=True)
+            marker = controller.model.center_of_mass_acceleration()(controller.q.cx,
+                                                                    controller.qdot.cx,
+                                                                    qddot)
 
-            return com_objective
+            return marker
 
         @staticmethod
         def minimize_angular_momentum(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
@@ -1451,8 +1441,8 @@ class PenaltyFunctionAbstract:
         attribute : str
             Specifies which attribute ('cx_start' or 'mx') to use for the extraction.
         """
-        if attribute not in ["mx", "cx_start"]:
-            raise ValueError("atrribute should be either mx or cx_start")
+        # if attribute not in ["mx", "cx_start"]:
+        #    raise ValueError("atrribute should be either mx or cx_start")
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
             return controller.dynamics(

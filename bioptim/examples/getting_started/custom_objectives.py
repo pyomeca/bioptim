@@ -27,7 +27,7 @@ from bioptim import (
 )
 
 
-def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str, method: int) -> MX:
+def custom_func_track_markers(controller: PenaltyController, first_marker: str, second_marker: str) -> MX:
     """
     The used-defined objective function (This particular one mimics the ObjectiveFcn.SUPERIMPOSE_MARKERS)
     Except for the last two
@@ -40,8 +40,6 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
         The index of the first marker in the bioMod
     second_marker: str
         The index of the second marker in the bioMod
-    method: int
-        Two identical ways are shown to help the new user to navigate the biorbd API
 
     Returns
     -------
@@ -53,18 +51,9 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
     marker_0_idx = controller.model.marker_index(first_marker)
     marker_1_idx = controller.model.marker_index(second_marker)
 
-    if method == 0:
-        # todo: Charbie
-        # Convert the function to the required format and then subtract
-        markers = controller.mx_to_cx("markers", controller.model.markers, controller.states["q"])
-        markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
-
-    else:
-        # todo: Charbie
-        # Do the calculation in biorbd API and then convert to the required format
-        markers = controller.model.markers(controller.states["q"].mx)
-        markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
-        markers_diff = controller.mx_to_cx("markers", markers_diff, controller.states["q"])
+    # Convert the function to the required format and then subtract
+    markers = controller.model.markers()(controller.states["q"].cx)
+    markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
 
     return markers_diff
 
