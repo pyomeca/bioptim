@@ -131,7 +131,11 @@ class BiorbdModel:
         Returns the rotation matrix to euler angles function.
         """
         r = MX.sym("r_mx", 3, 3)
-        biorbd_return = biorbd.Rotation.toEulerAngles(r, sequence).to_mx()
+        # @Pariterre: is this the right order?
+        r_matrix = biorbd.Rotation(r[0, 0], r[0, 1], r[0, 2],
+                                    r[0, 0], r[0, 1], r[0, 2],
+                                    r[0, 0], r[0, 1], r[0, 2])
+        biorbd_return = biorbd.Rotation.toEulerAngles(r_matrix, sequence).to_mx()
         casadi_fun = Function(
             "rotation_matrix_to_euler_angles",
             [r],
@@ -185,6 +189,16 @@ class BiorbdModel:
         casadi_fun = Function(
             "mass",
             [MX()],
+            [biorbd_return],
+        )
+        return casadi_fun
+
+    def rt(self, rt_index) -> Function:
+        q_biorbd = GeneralizedCoordinates(self.q)
+        biorbd_return = self.model.RT(q_biorbd, rt_index).to_mx()
+        casadi_fun = Function(
+            "rt",
+            [self.q],
             [biorbd_return],
         )
         return casadi_fun
@@ -428,8 +442,14 @@ class BiorbdModel:
             )
         return casadi_fun
 
-    def inverse_dynamics(self) -> Function:
-        external_forces_set = self._dispatch_forces(self.external_forces)
+    def inverse_dynamics(self, with_contact: bool=False) -> Function:
+        # @ipuch: I do not understand what is happening here? Do we have f_ext or it is just the contact forces?
+        if with_contact:
+            f_ext = self.reshape_fext_to_fcontact(self.external_forces)
+        else:
+            f_ext = self.external_forces
+
+        external_forces_set = self._dispatch_forces(f_ext)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -709,18 +729,25 @@ class BiorbdModel:
                 ]
             self._segments_to_apply_external_forces = parent_name
 
+        fext_sym = MX.sym("Fext", fext.shape[0], fext.shape[1])
         count = 0
-        f_contact_vec = fext.type()
+        f_contact_vec = MX()
         for i in range(self.nb_rigid_contacts):
             contact = self.model.rigidContact(i)
-            tp = fext.type.zeros(6)
+            tp = MX.zeros(6)
             used_axes = [i for i, val in enumerate(contact.axes()) if val]
             n_contacts = len(used_axes)
-            tp[used_axes] = fext[count : count + n_contacts]
+            tp[used_axes] = fext_sym[count : count + n_contacts]
             tp[3:] = contact.to_mx()
             f_contact_vec = horzcat(f_contact_vec, tp)
             count += n_contacts
-        return f_contact_vec
+
+        casadi_fun_evaluated = Function(
+            "reshape_fext_to_fcontact",
+            [fext_sym],
+            [f_contact_vec],
+        )(fext)
+        return casadi_fun_evaluated
 
     def normalize_state_quaternions(self) -> Function:
 
@@ -761,19 +788,24 @@ class BiorbdModel:
     def contact_forces(self, external_forces: MX = None) -> Function:
         if external_forces is not None:
             for i in range(external_forces.shape[1]):
-                force = self.contact_forces_from_constrained_forward_dynamics(external_forces=external_forces[:, i])(
-                    self.q, self.qdot, self.tau,
+                force = self.contact_forces_from_constrained_forward_dynamics()(
+                    self.q, self.qdot, self.tau, external_forces[:, i]
                 )
                 biorbd_return = force if i == 0 else horzcat(biorbd_return, force)
+                casadi_fun = Function(
+                    "contact_forces",
+                    [self.q, self.qdot, self.tau, self.external_forces],
+                    [biorbd_return],
+                )
         else:
-            biorbd_return = self.contact_forces_from_constrained_forward_dynamics(external_forces=None)(
-                self.q, self.qdot, self.tau,
+            biorbd_return = self.contact_forces_from_constrained_forward_dynamics()(
+                self.q, self.qdot, self.tau, MX()
             )
-        casadi_fun = Function(
-            "contact_forces",
-            [self.q, self.qdot, self.tau],
-            [biorbd_return],
-        )
+            casadi_fun = Function(
+                "contact_forces",
+                [self.q, self.qdot, self.tau],
+                [biorbd_return],
+            )
         return casadi_fun
 
     def passive_joint_torque(self) -> Function:

@@ -99,6 +99,12 @@ class BioModel(Protocol):
         """Get the mass of the model"""
         return Function("F", [], [])
 
+    def rt(self, rt_idx) -> Function:
+        """
+        Get the rototrans matrix of an object (e.g., an IMU) that is placed on the model
+        args: q
+        """
+
     def center_of_mass(self) -> Function:
         """
         Get the center of mass of the model
