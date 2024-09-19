@@ -949,6 +949,7 @@ class PenaltyFunctionAbstract:
             controller: PenaltyController,
             segment: int | str,
             axes: list | tuple = None,
+            sequence: str = "xyz",
         ):
             """
             Track the orientation of a segment in the global with the sequence XYZ.
@@ -964,6 +965,8 @@ class PenaltyFunctionAbstract:
                 Name or index of the segment to align with the marker
             axes: list | tuple
                 The axis that the JCS rotation should be tracked
+            sequence: str
+                The sequence of the euler angles (default="xyz")
             """
             from ..models.biorbd.biorbd_model import BiorbdModel
 
@@ -980,7 +983,7 @@ class PenaltyFunctionAbstract:
                 raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
 
             jcs_segment = controller.model.homogeneous_matrices_in_global(segment_idx)(controller.q.cx)[:3, :3]
-            angles_segment = controller.model.rotation_matrix_to_euler_angles("xyz")(jcs_segment)
+            angles_segment = controller.model.rotation_matrix_to_euler_angles(sequence)(jcs_segment)
 
             if axes is None:
                 axes = [Axis.X, Axis.Y, Axis.Z]
