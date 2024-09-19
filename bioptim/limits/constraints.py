@@ -414,12 +414,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
             qddot = controller.controls["qddot"].cx if "qddot" in controller.controls else controller.states["qddot"].cx
-            # Charbie: todo controller.model.forward_dynamics(with_contact=True)(q, qdot, tau)
-            if with_contact:
-                qddot_fd = controller.model.constrained_forward_dynamics()(q, qdot, tau)
-            else:
-                qddot_fd = controller.model.forward_dynamics()(q, qdot, tau)
-
+            qddot_fd = controller.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau)
             return qddot - qddot_fd
 
         @staticmethod

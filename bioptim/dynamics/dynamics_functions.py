@@ -1135,17 +1135,10 @@ class DynamicsFunctions:
             qdot_var_mapping = BiMapping([i for i in range(qdot.shape[0])], [i for i in range(qdot.shape[0])]).to_first
 
         if external_forces is None:
-            if with_contact:
-                qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau)
-            else:
-                qddot = nlp.model.forward_dynamics()(q, qdot, tau)
-
+            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau)
             return qdot_var_mapping.map(qddot)
         else:
-            if with_contact:
-                qddot = nlp.model.constrained_forward_dynamics(q, qdot, tau, external_forces)
-            else:
-                qddot = nlp.model.forward_dynamics()(q, qdot, tau, external_forces)
+            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, external_forces)
             return qdot_var_mapping.map(qddot)
 
     @staticmethod
@@ -1248,7 +1241,7 @@ class DynamicsFunctions:
                 activations.append(muscle_activations[k] * (1 - fatigue_states[k]))
             else:
                 activations.append(muscle_activations[k])
-        return nlp.model.muscle_joint_torque(activations, q, qdot)
+        return nlp.model.muscle_joint_torque()(q, qdot, activations)
 
     @staticmethod
     def holonomic_torque_driven(

@@ -145,6 +145,7 @@ class HolonomicBiorbdModel(BiorbdModel):
         return vertcat(*[c(q, qdot, qddot) for c in self._holonomic_constraints_double_derivatives])
 
     def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, f_contacts=None) -> MX:
+        # @ipuch does this stays contrained_
         if external_forces is not None:
             raise NotImplementedError("External forces are not implemented yet.")
         if f_contacts is not None:

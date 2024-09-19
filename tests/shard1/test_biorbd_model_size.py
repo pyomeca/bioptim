@@ -276,16 +276,16 @@ def test_constrained_forward_dynamics_valid_and_too_large_q_or_qdot_or_tau_input
     tau_valid, tau_too_large = generate_tau_activations_vectors(model)
 
     # q, qdot and tau valid
-    model.constrained_forward_dynamics(q_valid, qdot_valid, tau_valid)
+    model.forward_dynamics(with_contact=True)(q_valid, qdot_valid, tau_valid)
     # qdot and tau valid but q not valid
     with pytest.raises(ValueError, match="Length of q size should be: 4, but got: 5"):
-        model.constrained_forward_dynamics(q_too_large, qdot_valid, tau_valid)
+        model.forward_dynamics(with_contact=True)(q_too_large, qdot_valid, tau_valid)
     # q and tau valid but qdot not valid
     with pytest.raises(ValueError, match="Length of qdot size should be: 4, but got: 5"):
-        model.constrained_forward_dynamics(q_valid, qdot_too_large, tau_valid)
+        model.forward_dynamics(with_contact=True)(q_valid, qdot_too_large, tau_valid)
     # q and qdot valid but tau not valid
     with pytest.raises(ValueError, match="Length of tau size should be: 4, but got: 5"):
-        model.constrained_forward_dynamics(q_valid, qdot_valid, tau_too_large)
+        model.forward_dynamics(with_contact=True)(q_valid, qdot_valid, tau_too_large)
 
 
 def test_inverse_dynamics_valid_and_too_large_q_or_qdot_or_qddot_input(model):
