@@ -597,9 +597,9 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            g = controller.model.gravity()[2]
-            com = controller.model.center_of_mass(controller.q.cx)
-            com_dot = controller.model.center_of_mass_velocity(controller.q.cx, controller.qdot.cx)
+            g = controller.model.gravity()['o0'][2]
+            com = controller.model.center_of_mass()(controller.q.cx)
+            com_dot = controller.model.center_of_mass_velocity()(controller.q.cx, controller.qdot.cx)
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
             return com_height
 
@@ -720,11 +720,7 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             com_velocity = controller.model.center_of_mass_velocity()(controller.q.cx, controller.qdot.cx)
-            if isinstance(com_velocity, SX):
-                mass = Function("mass", [], [controller.model.mass()]).expand()
-                mass = mass()["o0"]
-            else:
-                mass = controller.model.mass()
+            mass = controller.model.mass()["o0"]
             linear_momentum_cx = com_velocity * mass
             return linear_momentum_cx
 
@@ -864,7 +860,7 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption, controller: PenaltyController, segment: int | str, rt: int
+            penalty: PenaltyOption, controller: PenaltyController, segment: int | str, rt_idx: int, sequence: str = "zyx"
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
@@ -878,8 +874,10 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             segment: int | str
                 The name or index of the segment
-            rt: int
+            rt_idx: int
                 The index of the RT in the bioMod
+            sequence: str
+                The sequence of the euler angles (default="zyx")
             """
             from ..models.biorbd.biorbd_model import BiorbdModel
 
@@ -891,12 +889,11 @@ class PenaltyFunctionAbstract:
                 raise NotImplementedError(
                     "The track_segment_with_custom_rt penalty can only be called with a BiorbdModel"
                 )
-            # Charbie todo find a way to do this in the biorbdmodel
-            model: BiorbdModel = controller.model
-            r_seg_transposed = model.model.globalJCS(segment_index)(controller.q.mx).rot().transpose()
-            r_rt = model.model.RT(controller.q.mx, rt).rot()  # @pariterre is RT the same as GlobalJCS?
+            r_seg_transposed = controller.model.homogeneous_matrices_in_global(segment_index)(controller.q.cx)[:3, :3].T
+            r_rt = controller.model.rt(rt_idx)(controller.q.cx)[:3, :3]
             # @Pariterre: why was this sequence is fixed?
-            angles_diff = controller.model.rotation_matrix_to_euler_angles("zyx")(r_seg_transposed * r_rt)
+            # @Pariterre: this is suspicious and it breaks the tests!
+            angles_diff = controller.model.rotation_matrix_to_euler_angles(sequence)(r_seg_transposed * r_rt)
 
             return angles_diff
 

@@ -343,7 +343,7 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                     a_init.add(key, initial_guess=var_init, interpolation=InterpolationType.EACH_FRAME, phase=i_phase)
 
         def get_ref_init(time_vector, x_guess, u_guess, p_guess, nlp):
-            if nlp.numerical_timeseries.mx.shape[0] != 0:
+            if nlp.numerical_timeseries.cx.shape[0] != 0:
                 raise RuntimeError(
                     "The automatic initialization of stochastic variables is not implemented yet for nlp with numerical_timeseries."
                 )

@@ -146,13 +146,10 @@ class DynamicsFunctions:
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
-        # Charbie: to remove
-        tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-        #
-        # tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-        # tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
-        # tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
-        # tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
+        tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot) if with_ligament else tau
+        tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         if (
             rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS
@@ -185,8 +182,7 @@ class DynamicsFunctions:
             rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
         ):
             if not with_contact and fatigue is None:
-                # todo: Charbie
-                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.mx_reduced)
+                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
                 defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
@@ -197,7 +193,7 @@ class DynamicsFunctions:
                         - DynamicsFunctions.compute_qdot(
                             nlp,
                             q,
-                            DynamicsFunctions.get(nlp.states_dot.scaled["qdot"], nlp.states_dot.scaled.mx_reduced),
+                            DynamicsFunctions.get(nlp.states_dot.scaled["qdot"], nlp.states_dot.scaled.cx),
                         )
                     )
                 defects[: dq.shape[0], :] = horzcat(*dq_defects)
@@ -264,9 +260,9 @@ class DynamicsFunctions:
         n_qdot = nlp.model.nb_qdot
 
         tau_joints = (
-            tau_joints + nlp.model.passive_joint_torque(q_full, qdot_full) if with_passive_torque else tau_joints
+            tau_joints + nlp.model.passive_joint_torque()(q_full, qdot_full) if with_passive_torque else tau_joints
         )
-        tau_joints = tau_joints + nlp.model.ligament_joint_torque(q_full, qdot_full) if with_ligament else tau_joints
+        tau_joints = tau_joints + nlp.model.ligament_joint_torque()(q_full, qdot_full) if with_ligament else tau_joints
         tau_joints = tau_joints - nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
 
         tau_full = vertcat(nlp.cx.zeros(nlp.model.nb_root), tau_joints)
@@ -680,7 +676,7 @@ class DynamicsFunctions:
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
 
-        return nlp.model.contact_forces(q, qdot, tau, external_forces)
+        return nlp.model.contact_forces(external_forces=external_forces)(q, qdot, tau)
 
     @staticmethod
     def forces_from_torque_activation_driven(
@@ -1135,7 +1131,7 @@ class DynamicsFunctions:
             qdot_var_mapping = BiMapping([i for i in range(qdot.shape[0])], [i for i in range(qdot.shape[0])]).to_first
 
         if external_forces is None:
-            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau)
+            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, [])
             return qdot_var_mapping.map(qddot)
         else:
             qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, external_forces)

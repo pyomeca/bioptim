@@ -51,7 +51,8 @@ def prepare_test_ocp(
         )
     elif with_contact:
         bio_model = BiorbdModel(
-            bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod"
+            bioptim_folder + "/examples/muscle_driven_with_contact/models/2segments_4dof_2contacts_1muscle.bioMod",
+            segments_to_apply_external_forces=["", ""],  # TODO: Charbie add the proper segments
         )
         dynamics = DynamicsList()
         rigidbody_dynamics = RigidBodyDynamics.DAE_INVERSE_DYNAMICS if implicit else RigidBodyDynamics.ODE
@@ -974,9 +975,9 @@ def test_penalty_track_segment_with_custom_rt(penalty_origin, value, phase_dynam
     penalty_type = penalty_origin.TRACK_SEGMENT_WITH_CUSTOM_RT
 
     if isinstance(penalty_type, (ObjectiveFcn.Lagrange, ObjectiveFcn.Mayer)):
-        penalty = Objective(penalty_type, segment="ground", rt=0)
+        penalty = Objective(penalty_type, segment="ground", rt_idx=0)
     else:
-        penalty = Constraint(penalty_type, segment="ground", rt=0)
+        penalty = Constraint(penalty_type, segment="ground", rt_idx=0)
     res = get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d)
 
     expected = np.array([[0], [0.1], [0]])

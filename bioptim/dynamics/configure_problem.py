@@ -201,9 +201,9 @@ class ConfigureProblem:
             for key in numerical_data_timeseries.keys():
                 if key == "external_forces":
                     _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
-                    external_forces = nlp.numerical_timeseries[0].mx
+                    external_forces = nlp.numerical_timeseries[0].cx
                     for i in range(1, numerical_data_timeseries[key].shape[1]):
-                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -293,21 +293,21 @@ class ConfigureProblem:
                 external_forces=external_forces,
             )
 
-        # # Configure the contact forces
-        # if with_contact:
-        #     ConfigureProblem.configure_contact_function(
-        #         ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces
-        #     )
-        # # Configure the soft contact forces
-        # ConfigureProblem.configure_soft_contact_function(ocp, nlp)
-        # # Algebraic constraints of soft contact forces if needed
-        # if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
-        #     ocp.implicit_constraints.add(
-        #         ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
-        #         node=Node.ALL_SHOOTING,
-        #         penalty_type=ConstraintType.IMPLICIT,
-        #         phase=nlp.phase_idx,
-        #     )
+        # Configure the contact forces
+        if with_contact:
+            ConfigureProblem.configure_contact_function(
+                ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces
+            )
+        # Configure the soft contact forces
+        ConfigureProblem.configure_soft_contact_function(ocp, nlp)
+        # Algebraic constraints of soft contact forces if needed
+        if soft_contacts_dynamics == SoftContactDynamics.CONSTRAINT:
+            ocp.implicit_constraints.add(
+                ImplicitConstraintFcn.SOFT_CONTACTS_EQUALS_SOFT_CONTACTS_DYNAMICS,
+                node=Node.ALL_SHOOTING,
+                penalty_type=ConstraintType.IMPLICIT,
+                phase=nlp.phase_idx,
+            )
 
     @staticmethod
     def torque_driven_free_floating_base(
@@ -1296,25 +1296,25 @@ class ConfigureProblem:
             The function to get the values of contact forces from the dynamics
         """
 
-        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
+        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
         nlp.contact_forces_func = Function(
             "contact_forces_func",
             [
                 time_span_sym,
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.scaled.mx_reduced,
-                nlp.algebraic_states.scaled.mx_reduced,
-                nlp.numerical_timeseries.mx,
+                nlp.states.scaled.cx,
+                nlp.controls.scaled.cx,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
             ],
             [
                 dyn_func(
                     time_span_sym,
-                    nlp.states.scaled.mx_reduced,
-                    nlp.controls.scaled.mx_reduced,
-                    nlp.parameters.scaled.mx_reduced,
-                    nlp.algebraic_states.scaled.mx_reduced,
-                    nlp.numerical_timeseries.mx,
+                    nlp.states.scaled.cx,
+                    nlp.controls.scaled.cx,
+                    nlp.parameters.scaled.cx,
+                    nlp.algebraic_states.scaled.cx,
+                    nlp.numerical_timeseries.cx,
                     nlp,
                     **extra_params,
                 )
@@ -1363,25 +1363,10 @@ class ConfigureProblem:
         """
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
-        q = nlp.states.mx_reduced[nlp.states["q"].index]
-        qdot = nlp.states.mx_reduced[nlp.states["qdot"].index]
-        global_soft_contact_force_func = nlp.model.soft_contact_forces(
-            nlp.states["q"].mapping.to_second.map(q), nlp.states["qdot"].mapping.to_second.map(qdot)
-        )
-
-        # TODO: do not declare unuseful functions!
-        nlp.soft_contact_forces_func = Function(
-            "soft_contact_forces_func",
-            [
-                nlp.time_mx,
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.scaled.mx_reduced,
-            ],
-            [global_soft_contact_force_func],
-            ["t", "x", "u", "p"],
-            ["soft_contact_forces"],
-        ).expand()
+        q = nlp.states.cx[nlp.states["q"].index]
+        qdot = nlp.states.cx[nlp.states["qdot"].index]
+        global_soft_contact_force_func = nlp.model.soft_contact_forces()(q, qdot)
+        nlp.soft_contact_forces_func = global_soft_contact_force_func
 
         for i_sc in range(nlp.model.nb_soft_contacts):
             all_soft_contact_names = []

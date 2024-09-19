@@ -454,23 +454,16 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = tau + passive_torque if with_passive_torque else tau
             tau = tau + controller.model.ligament_joint_torque()(q, qdot) if with_ligament else tau
 
-            if controller.get_nlp.numerical_timeseries:
-                # TODO: deal with external forces
-                raise NotImplementedError(
-                    "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
-                )
-                # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
-            if with_contact:
-                # todo: this should be done internally in BiorbdModel
-                f_contact = (
-                    controller.controls["fext"].cx if "fext" in controller.controls else controller.states["fext"].cx
-                )
-                f_contact_vec = controller.model.reshape_fext_to_fcontact()(f_contact)
-
-                tau_id = controller.model.inverse_dynamics(q, qdot, qddot, None, f_contact_vec)
-
+            if "fext" in controller.controls:
+                f_ext = controller.controls["fext"].cx
+            elif "fext" in controller.states:
+                f_ext = controller.states["fext"].cx
+            elif "external_forces" in controller.get_nlp.numerical_timeseries:
+                f_ext = controller.numerical_timeseries["external_forces"].cx
             else:
-                tau_id = controller.model.inverse_dynamics()(q, qdot, qddot)
+                raise ValueError("External forces must be provided")
+
+            tau_id = controller.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, f_ext)
 
             var = []
             var.extend([controller.states[key] for key in controller.states])
