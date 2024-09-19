@@ -151,11 +151,8 @@ class BioModel(Protocol):
     def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
         """reorder the qddot, from the root dof and the joints dof"""
 
-    def forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
+    def forward_dynamics(self, q, qdot, tau, with_contact=False, external_forces=None, translational_forces=None) -> MX:
         """compute the forward dynamics"""
-
-    def constrained_forward_dynamics(self, q, qdot, tau, external_forces=None, translational_forces=None) -> MX:
-        """compute the forward dynamics with constraints"""
 
     def inverse_dynamics(self, q, qdot, qddot, f_ext=None, external_forces=None, translational_forces=None) -> MX:
         """compute the inverse dynamics"""

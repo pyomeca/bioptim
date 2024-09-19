@@ -212,7 +212,7 @@ def test_biorbd_model():
     )
 
     TestUtils.assert_equal(
-        models.constrained_forward_dynamics(
+        models.forward_dynamics(with_contact=True)(
             np.array([1, 2.1, 3, 4.1, 5, 6.1]),
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([3.1, 1, 2, 9.1, 1, 2]),
@@ -221,7 +221,7 @@ def test_biorbd_model():
     )
 
     with pytest.raises(NotImplementedError, match="External forces are not implemented yet for MultiBiorbdModel."):
-        models.constrained_forward_dynamics(
+        models.forward_dynamics(with_contact=True)(
             np.array([1, 2.1, 3, 4.1, 5, 6.1]),
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([3.1, 1, 2, 9.1, 1, 2]),

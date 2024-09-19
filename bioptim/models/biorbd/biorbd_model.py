@@ -125,6 +125,19 @@ class BiorbdModel:
     def segments(self) -> tuple[biorbd.Segment]:
         return self.model.segments()
 
+    def rotation_matrix_to_euler_angles(self, sequence) -> Function:
+        """
+        Returns the rotation matrix to euler angles function.
+        """
+        r = MX.sym("r_mx", 3, 3)
+        biorbd_return = biorbd.Rotation.toEulerAngles(r, sequence).to_mx()
+        casadi_fun = Function(
+            "rotation_matrix_to_euler_angles",
+            [r],
+            [biorbd_return],
+        )
+        return casadi_fun
+
     def biorbd_homogeneous_matrices_in_global(self, q, segment_idx, inverse=False) -> tuple:
         """
         Returns a biorbd object containing the roto-translation matrix of the segment in the global reference frame.
@@ -411,7 +424,7 @@ class BiorbdModel:
 
         return external_forces_set
 
-    def forward_dynamics(self, external_forces=None, translational_forces=None) -> Function:
+    def forward_dynamics(self, with_contact: bool=False, external_forces=None, translational_forces=None) -> Function:
         """
         TODO: Charbie create a different function for with external_forces and translational_forces
         """
@@ -420,31 +433,23 @@ class BiorbdModel:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
         tau_biorbd = GeneralizedTorque(self.tau)
-        biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
-        casadi_fun = Function(
-            "forward_dynamics",
-            [self.q, self.qdot, self.tau],
-            [biorbd_return],
-        )
-        return casadi_fun
 
-    def constrained_forward_dynamics(self, external_forces=None, translational_forces=None) -> Function:
-        """
-        TODO: Charbie external_forces=None, translational_forces=None
-        """
-        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
-
-        q_biorbd = GeneralizedCoordinates(self.q)
-        qdot_biorbd = GeneralizedVelocity(self.qdot)
-        tau_biorbd = GeneralizedTorque(self.tau)
-        biorbd_return = self.model.ForwardDynamicsConstraintsDirect(
-            q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set
-        ).to_mx()
-        casadi_fun = Function(
-            "constrained_forward_dynamics",
-            [self.q, self.qdot, self.tau],
-            [biorbd_return],
-        )
+        if with_contact:
+            biorbd_return = self.model.ForwardDynamicsConstraintsDirect(
+                q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set
+            ).to_mx()
+            casadi_fun = Function(
+                "constrained_forward_dynamics",
+                [self.q, self.qdot, self.tau],
+                [biorbd_return],
+            )
+        else:
+            biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
+            casadi_fun = Function(
+                "forward_dynamics",
+                [self.q, self.qdot, self.tau],
+                [biorbd_return],
+            )
         return casadi_fun
 
     def inverse_dynamics(self, external_forces=None, translational_forces=None) -> Function:
