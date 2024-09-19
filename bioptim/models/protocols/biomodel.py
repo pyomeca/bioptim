@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Protocol, Callable, Any
 
-from casadi import MX, SX
+from casadi import MX, SX, Function
 from ...misc.mapping import BiMapping, BiMappingList
 from ...limits.path_conditions import Bounds
 
@@ -25,14 +25,14 @@ class BioModel(Protocol):
         """transform the class into a save and load format"""
 
     @property
-    def friction_coefficients(self) -> MX:
+    def friction_coefficients(self) -> Function:
         """Get the coefficient of friction to apply to specified elements in the dynamics"""
-        return MX()
+        return Function([], [])
 
     @property
-    def gravity(self) -> MX:
+    def gravity(self) -> Function:
         """Get the current gravity applied to the model"""
-        return MX()
+        return Function("F", [], [])
 
     def set_gravity(self, new_gravity):
         """Set the gravity vector"""
@@ -85,7 +85,7 @@ class BioModel(Protocol):
         """Get all segments"""
         return ()
 
-    def homogeneous_matrices_in_child(self, segment_id) -> MX:
+    def homogeneous_matrices_in_child(self, segment_id) -> Function:
         """
         Get the homogeneous matrices of one segment in its parent frame,
         such as: P_R1 = T_R1_R2 * P_R2
@@ -95,26 +95,39 @@ class BioModel(Protocol):
         """
 
     @property
-    def mass(self) -> MX:
+    def mass(self) -> Function:
         """Get the mass of the model"""
-        return MX()
+        return Function("F", [], [])
 
-    def center_of_mass(self, q) -> MX:
-        """Get the center of mass of the model"""
+    def center_of_mass(self) -> Function:
+        """
+        Get the center of mass of the model
+        args: q
+        """
 
-    def center_of_mass_velocity(self, q, qdot) -> MX:
-        """Get the center of mass velocity of the model"""
+    def center_of_mass_velocity(self) -> Function:
+        """
+        Get the center of mass velocity of the model
+        args: q, qdot
+        """
 
-    def center_of_mass_acceleration(self, q, qdot, qddot) -> MX:
-        """Get the center of mass acceleration of the model"""
+    def center_of_mass_acceleration(self) -> Function:
+        """
+        Get the center of mass acceleration of the model
+        args: q, qdot, qddot
+        """
 
-    def angular_momentum(self, q, qdot) -> MX:
-        """Get the angular momentum of the model"""
+    def angular_momentum(self) -> Function:
+        """
+        Get the angular momentum of the model
+        args: q, qdot
+        """
 
-    def reshape_qdot(self, q, qdot) -> MX:
+    def reshape_qdot(self) -> Function:
         """
         In case, qdot need to be reshaped, such as if one want to get velocities from quaternions.
         Since we don't know if this is the case, this function is always called
+        args: q, qdot
         """
 
     @property
@@ -142,46 +155,83 @@ class BioModel(Protocol):
         """Get the muscle names"""
         return ()
 
-    def torque(self, activation, q, qdot) -> MX:
-        """Get the muscle torque"""
+    def torque(self) -> Function:
+        """
+        Get the muscle torque
+        args: activation, q, qdot
+        """
 
-    def forward_dynamics_free_floating_base(self, q, qdot, qddot_joints) -> MX:
-        """compute the free floating base forward dynamics"""
+    def forward_dynamics_free_floating_base(self) -> Function:
+        """
+        compute the free floating base forward dynamics
+        args: q, qdot, qddot_joints
+        """
 
-    def reorder_qddot_root_joints(self, qddot_root, qddot_joints) -> MX:
-        """reorder the qddot, from the root dof and the joints dof"""
+    def reorder_qddot_root_joints(self) -> Function:
+        """
+        reorder the qddot, from the root dof and the joints dof
+        args: qddot_root, qddot_joints
+        """
 
-    def forward_dynamics(self, q, qdot, tau, with_contact=False, external_forces=None, translational_forces=None) -> MX:
-        """compute the forward dynamics"""
+    def forward_dynamics(self, with_contact=False) -> Function:
+        """
+        compute the forward dynamics
+        args: q, qdot, tau, external_forces
+        """
 
-    def inverse_dynamics(self, q, qdot, qddot, f_ext=None, external_forces=None, translational_forces=None) -> MX:
-        """compute the inverse dynamics"""
+    def inverse_dynamics(self) -> Function:
+        """
+        compute the inverse dynamics
+        args: q, qdot, qddot, external_forces
+        """
 
-    def contact_forces_from_constrained_forward_dynamics(
-        self, q, qdot, tau, external_forces=None, translational_forces=None
-    ) -> MX:
-        """compute the contact forces"""
+    def contact_forces_from_constrained_forward_dynamics(self) -> Function:
+        """
+        compute the contact forces
+        args: q, qdot, tau, external_forces
+        """
 
-    def qdot_from_impact(self, q, qdot_pre_impact) -> MX:
-        """compute the constraint impulses"""
+    def qdot_from_impact(self) -> Function:
+        """
+        compute the constraint impulses
+        args: q, qdot_pre_impact
+        """
 
-    def muscle_activation_dot(self, muscle_excitations) -> MX:
-        """Get the activation derivative of the muscles states"""
+    def muscle_activation_dot(self) -> Function:
+        """
+        Get the activation derivative of the muscles states
+        args: muscle_excitations
+        """
 
-    def muscle_joint_torque(self, muscle_states, q, qdot) -> MX:
-        """Get the muscular joint torque"""
+    def muscle_joint_torque(self) -> Function:
+        """
+        Get the muscular joint torque
+        args: muscle_states, q, qdot
+        """
 
-    def muscle_length_jacobian(self, q) -> MX:
-        """Get the muscle velocity"""
+    def muscle_length_jacobian(self) -> Function:
+        """
+        Get the muscle velocity
+        args: q
+        """
 
-    def muscle_velocity(self, q, qdot) -> MX:
-        """Get the muscle velocity"""
+    def muscle_velocity(self) -> Function:
+        """
+        Get the muscle velocity
+        args: q, qdot
+        """
 
-    def marker(self, q, marker_index: int, reference_frame_idx: int = None) -> MX:
-        """Get the position of a marker"""
+    def marker(self, marker_index: int, reference_frame_idx: int = None) -> Function:
+        """
+        Get the position of a marker
+        args: q
+        """
 
-    def markers(self, q) -> list[MX]:
-        """Get the markers of the model"""
+    def markers(self) -> list[MX]:
+        """
+        Get the markers of the model
+        args: q
+        """
 
     @property
     def nb_markers(self) -> int:
@@ -196,41 +246,48 @@ class BioModel(Protocol):
         """Get the number of rigid contacts"""
         return -1
 
-    def marker_velocities(self, q, qdot, reference_index=None) -> list[MX]:
-        """Get the marker velocities of the model"""
+    def marker_velocities(self, reference_index=None) -> list[MX]:
+        """
+        Get the marker velocities of the model
+        args: q, qdot
+        """
 
-    def marker_accelerations(self, q, qdot, qddot, reference_index=None) -> list[MX]:
-        """Get the marker accelerations of the model"""
+    def marker_accelerations(self, reference_index=None) -> list[MX]:
+        """
+        Get the marker accelerations of the model
+        args: q, qdot, qddot
+        """
 
-    def tau_max(self, q, qdot) -> tuple[MX, MX]:
-        """Get the maximum torque"""
+    def tau_max(self) -> tuple[MX, MX]:
+        """
+        Get the maximum torque
+        args: q, qdot
+        """
 
-    def rigid_contact_acceleration(self, q, qdot, qddot, contact_index, contact_axis) -> MX:
-        """Get the rigid contact acceleration"""
+    def rigid_contact_acceleration(self, contact_index, contact_axis) -> Function:
+        """
+        Get the rigid contact acceleration
+        args: q, qdot, qddot
+        """
 
     @property
     def marker_names(self) -> tuple[str, ...]:
         """Get the marker names"""
         return ()
 
-    def soft_contact_forces(self, q, qdot) -> MX:
-        """Get the soft contact forces in the global frame"""
+    def soft_contact_forces(self) -> Function:
+        """
+        Get the soft contact forces in the global frame
+        args: q, qdot
+        """
 
-    def normalize_state_quaternions(self, x: MX | SX) -> MX | SX:
+    def normalize_state_quaternions(self) -> Function:
         """
         Normalize the quaternions of the state
-
-        Parameters
-        ----------
-        x: MX | SX
-            The state to normalize
-
-        Returns
-        -------
-        The normalized states
+        args: x (The state to normalize)
         """
 
-    def contact_forces(self, q, qdot, tau, external_forces: list = None) -> MX:
+    def contact_forces(self) -> Function:
         """
         Easy accessor for the contact forces in contact dynamics
 
@@ -251,11 +308,17 @@ class BioModel(Protocol):
         or [nb_rigid_contacts, n_frames] if external_forces is not None
         """
 
-    def passive_joint_torque(self, q, qdot) -> MX:
-        """Get the passive joint torque"""
+    def passive_joint_torque(self) -> Function:
+        """
+        Get the passive joint torque
+        args: q, qdot
+        """
 
-    def ligament_joint_torque(self, q, qdot) -> MX:
-        """Get the ligament joint torque"""
+    def ligament_joint_torque(self) -> Function:
+        """
+        Get the ligament joint torque
+        args: q, qdot
+        """
 
     def bounds_from_ranges(self, variables: str | list[str], mapping: BiMapping | BiMappingList = None) -> Bounds:
         """
@@ -273,7 +336,7 @@ class BioModel(Protocol):
         Create the desired bounds
         """
 
-    def lagrangian(self, q: MX | SX, qdot: MX | SX) -> MX | SX:
+    def lagrangian(self) -> Function:
         """
         Compute the Lagrangian of a biorbd model.
 
@@ -290,9 +353,10 @@ class BioModel(Protocol):
         """
 
     def partitioned_forward_dynamics(
-        self, q_u, qdot_u, tau, external_forces=None, translational_forces=None, q_v_init=None
-    ) -> MX:
+        self, q_u, qdot_u, tau, external_forces=None, q_v_init=None
+    ) -> Function:
         """
+        @ipuch: I need help on how to implement this!
         This is the forward dynamics of the model, but only for the independent joints
 
         Parameters
@@ -305,8 +369,6 @@ class BioModel(Protocol):
             The generalized torques
         external_forces: MX
             The external forces
-        translational_forces: MX
-            The translational forces
 
         Returns
         -------
