@@ -1235,13 +1235,13 @@ class DynamicsFunctions:
         The generalized forces computed from the muscles
         """
 
-        activations = []
+        activations = type(q)()
         for k in range(len(nlp.controls["muscles"])):
             if fatigue_states is not None:
-                activations.append(muscle_activations[k] * (1 - fatigue_states[k]))
+                activations = vertcat(activations, muscle_activations[k] * (1 - fatigue_states[k]))
             else:
-                activations.append(muscle_activations[k])
-        return nlp.model.muscle_joint_torque()(q, qdot, activations)
+                activations = vertcat(activations, muscle_activations[k])
+        return nlp.model.muscle_joint_torque()(activations, q, qdot)
 
     @staticmethod
     def holonomic_torque_driven(

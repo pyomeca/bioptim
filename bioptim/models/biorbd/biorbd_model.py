@@ -536,7 +536,7 @@ class BiorbdModel:
 
     def muscle_joint_torque(self) -> Function:
         muscles_states = self.model.stateSet()
-        muscles_activations = self.muscles
+        muscles_activations = self.muscle
         for k in range(self.model.nbMuscles()):
             muscles_states[k].setActivation(muscles_activations[k])
         q_biorbd = GeneralizedCoordinates(self.q)
@@ -544,7 +544,7 @@ class BiorbdModel:
         biorbd_return = self.model.muscularJointTorque(muscles_states, q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "muscle_joint_torque",
-            [self.q, self.qdot, self.muscle],
+            [self.muscle, self.q, self.qdot],
             [biorbd_return],
         )
         return casadi_fun
