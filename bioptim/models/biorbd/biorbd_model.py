@@ -42,6 +42,7 @@ class BiorbdModel:
         self.qddot_joints = MX.sym("qddot_joints_mx", self.nb_qddot - self.nb_root, 1)
         self.tau = MX.sym("tau_mx", self.nb_tau, 1)
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
+        self.external_forces = MX.sym("external_forces_mx", 9, len(segments_to_apply_external_forces))
 
     @property
     def name(self) -> str:
@@ -377,13 +378,9 @@ class BiorbdModel:
     def reorder_qddot_root_joints(qddot_root, qddot_joints) -> MX | SX:
         return vertcat(qddot_root, qddot_joints)
 
-    def _dispatch_forces(self, external_forces: MX, translational_forces: MX):
+    def _dispatch_forces(self, external_forces: MX):
 
-        if external_forces is not None and translational_forces is not None:
-            raise NotImplementedError(
-                "You cannot provide both external_forces and translational_forces at the same time."
-            )
-        elif external_forces is not None:
+        if external_forces is not None:
             if not isinstance(external_forces, MX):
                 raise ValueError("external_forces should be a numpy array of shape 9 x nb_forces.")
             if external_forces.shape[0] != 9:
@@ -393,17 +390,6 @@ class BiorbdModel:
             if len(self._segments_to_apply_external_forces) != external_forces.shape[1]:
                 raise ValueError(
                     f"external_forces has {external_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length."
-                )
-        elif translational_forces is not None:
-            if not isinstance(translational_forces, MX):
-                raise ValueError("translational_forces should be a numpy array of shape 6 x nb_forces.")
-            if translational_forces.shape[0] != 6:
-                raise ValueError(
-                    f"translational_forces has {translational_forces.shape[0]} rows, it should have 6 rows (Fx, Fy, Fz, Px, Py, Pz). You should provide the forces and points of application."
-                )
-            if len(self._segments_to_apply_external_forces) != translational_forces.shape[1]:
-                raise ValueError(
-                    f"translational_forces has {translational_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length."
                 )
 
         external_forces_set = self.model.externalForceSet()
@@ -415,20 +401,10 @@ class BiorbdModel:
                 point_of_application = external_forces[6:9, i_element]
                 external_forces_set.add(name, values, point_of_application)
 
-        if translational_forces is not None:
-            for i_elements in range(translational_forces.shape[1]):
-                name = self._segments_to_apply_external_forces[i_elements]
-                values = translational_forces[:3, i_elements]
-                point_of_application = translational_forces[3:6, i_elements]
-                external_forces_set.addTranslationalForce(values, name, point_of_application)
-
         return external_forces_set
 
-    def forward_dynamics(self, with_contact: bool=False, external_forces=None, translational_forces=None) -> Function:
-        """
-        TODO: Charbie create a different function for with external_forces and translational_forces
-        """
-        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
+    def forward_dynamics(self, with_contact: bool=False) -> Function:
+        external_forces_set = self._dispatch_forces(self.external_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -440,23 +416,20 @@ class BiorbdModel:
             ).to_mx()
             casadi_fun = Function(
                 "constrained_forward_dynamics",
-                [self.q, self.qdot, self.tau],
+                [self.q, self.qdot, self.tau, self.external_forces],
                 [biorbd_return],
             )
         else:
             biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
             casadi_fun = Function(
                 "forward_dynamics",
-                [self.q, self.qdot, self.tau],
+                [self.q, self.qdot, self.tau, self.external_forces],
                 [biorbd_return],
             )
         return casadi_fun
 
-    def inverse_dynamics(self, external_forces=None, translational_forces=None) -> Function:
-        """
-        TODO: Charbie external_forces=None, translational_forces=None
-        """
-        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
+    def inverse_dynamics(self) -> Function:
+        external_forces_set = self._dispatch_forces(self.external_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -464,18 +437,13 @@ class BiorbdModel:
         biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd, external_forces_set).to_mx()
         casadi_fun = Function(
             "inverse_dynamics",
-            [self.q, self.qdot, self.qddot],
+            [self.q, self.qdot, self.qddot, self.external_forces],
             [biorbd_return],
         )
         return casadi_fun
 
-    def contact_forces_from_constrained_forward_dynamics(
-        self, external_forces=None, translational_forces=None
-    ) -> Function:
-        """
-        TODO: Charbie external_forces=None, translational_forces=None
-        """
-        external_forces_set = self._dispatch_forces(external_forces, translational_forces)
+    def contact_forces_from_constrained_forward_dynamics(self) -> Function:
+        external_forces_set = self._dispatch_forces(self.external_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -485,7 +453,7 @@ class BiorbdModel:
         ).to_mx()
         casadi_fun = Function(
             "contact_forces_from_constrained_forward_dynamics",
-            [self.q, self.qdot, self.tau],
+            [self.q, self.qdot, self.tau, self.external_forces],
             [biorbd_return],
         )
         return casadi_fun
@@ -525,7 +493,7 @@ class BiorbdModel:
         return casadi_fun
 
     def muscle_velocity(self) -> Function:
-        J = self.muscle_length_jacobian(self.q)
+        J = self.muscle_length_jacobian()(self.q)
         biorbd_return = J @ self.qdot
         casadi_fun = Function(
             "muscle_velocity",
@@ -791,19 +759,15 @@ class BiorbdModel:
         return quat_idx
 
     def contact_forces(self, external_forces: MX = None) -> Function:
-        """
-        TODO: Charbie external_forces=None
-        """
         if external_forces is not None:
-            biorbd_return = MX()
             for i in range(external_forces.shape[1]):
-                force = self.contact_forces_from_constrained_forward_dynamics(
-                    self.q, self.qdot, self.tau, external_forces=external_forces[:, i]
+                force = self.contact_forces_from_constrained_forward_dynamics(external_forces=external_forces[:, i])(
+                    self.q, self.qdot, self.tau,
                 )
-                biorbd_return = horzcat(biorbd_return, force)
+                biorbd_return = force if i == 0 else horzcat(biorbd_return, force)
         else:
-            biorbd_return = self.contact_forces_from_constrained_forward_dynamics(
-                self.q, self.qdot, self.tau, external_forces=None
+            biorbd_return = self.contact_forces_from_constrained_forward_dynamics(external_forces=None)(
+                self.q, self.qdot, self.tau,
             )
         casadi_fun = Function(
             "contact_forces",
