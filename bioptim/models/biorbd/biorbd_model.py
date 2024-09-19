@@ -143,20 +143,12 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def biorbd_homogeneous_matrices_in_global(self, q, segment_idx, inverse=False) -> tuple:
-        """
-        Returns a biorbd object containing the roto-translation matrix of the segment in the global reference frame.
-        This is useful if you want to interact with biorbd directly later on.
-        TODO: Charbie fix this with ApplyRT wrapper
-        """
-        rt_matrix = self.model.globalJCS(GeneralizedCoordinates(q), segment_idx)
-        return rt_matrix.transpose() if inverse else rt_matrix
-
     def homogeneous_matrices_in_global(self, segment_idx, inverse=False) -> Function:
         """
         Returns the roto-translation matrix of the segment in the global reference frame.
         """
-        biorbd_return = self.biorbd_homogeneous_matrices_in_global(self.q, segment_idx, inverse).to_mx()
+        jcs = self.model.globalJCS(GeneralizedCoordinates(self.q), segment_idx).to_mx()
+        biorbd_return = jcs.T if inverse else jcs
         casadi_fun = Function(
             "homogeneous_matrices_in_global",
             [self.q],
