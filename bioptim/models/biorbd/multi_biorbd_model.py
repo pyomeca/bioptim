@@ -295,9 +295,13 @@ class MultiBiorbdModel:
         for i, model in enumerate(self.models):
             q_model = model.q[self.variable_index("q", i)]
             qdot_model = model.qdot[self.variable_index("qdot", i)]
-            out = model.center_of_mass_velocity()(q_model, qdot_model) if i == 0 else vertcat(
-                out,
-                model.center_of_mass_velocity()(q_model, qdot_model),
+            out = (
+                model.center_of_mass_velocity()(q_model, qdot_model)
+                if i == 0
+                else vertcat(
+                    out,
+                    model.center_of_mass_velocity()(q_model, qdot_model),
+                )
             )
         return out
 
@@ -307,9 +311,13 @@ class MultiBiorbdModel:
             q_model = model.q[self.variable_index("q", i)]
             qdot_model = model.qdot[self.variable_index("qdot", i)]
             qddot_model = model.qddot[self.variable_index("qddot", i)]
-            out = model.center_of_mass_acceleration()(q_model, qdot_model, qddot_model) if i == 0 else vertcat(
-                out,
-                model.center_of_mass_acceleration()(q_model, qdot_model, qddot_model),
+            out = (
+                model.center_of_mass_acceleration()(q_model, qdot_model, qddot_model)
+                if i == 0
+                else vertcat(
+                    out,
+                    model.center_of_mass_acceleration()(q_model, qdot_model, qddot_model),
+                )
             )
         return out
 
@@ -332,9 +340,13 @@ class MultiBiorbdModel:
         for i, model in enumerate(self.models):
             q_model = self.q[self.variable_index("q", i)]
             qdot_model = self.qdot[self.variable_index("qdot", i)]
-            out = model.angular_momentum()(q_model, qdot_model) if i == 0 else vertcat(
-                out,
-                model.angular_momentum()(q_model, qdot_model),
+            out = (
+                model.angular_momentum()(q_model, qdot_model)
+                if i == 0
+                else vertcat(
+                    out,
+                    model.angular_momentum()(q_model, qdot_model),
+                )
             )
         return out
 

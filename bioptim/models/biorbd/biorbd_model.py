@@ -132,9 +132,7 @@ class BiorbdModel:
         """
         r = MX.sym("r_mx", 3, 3)
         # @Pariterre: is this the right order?
-        r_matrix = biorbd.Rotation(r[0, 0], r[0, 1], r[0, 2],
-                                    r[0, 0], r[0, 1], r[0, 2],
-                                    r[0, 0], r[0, 1], r[0, 2])
+        r_matrix = biorbd.Rotation(r[0, 0], r[0, 1], r[0, 2], r[0, 0], r[0, 1], r[0, 2], r[0, 0], r[0, 1], r[0, 2])
         biorbd_return = biorbd.Rotation.toEulerAngles(r_matrix, sequence).to_mx()
         casadi_fun = Function(
             "rotation_matrix_to_euler_angles",
@@ -409,7 +407,7 @@ class BiorbdModel:
 
         return external_forces_set
 
-    def forward_dynamics(self, with_contact: bool=False) -> Function:
+    def forward_dynamics(self, with_contact: bool = False) -> Function:
         external_forces_set = self._dispatch_forces(self.external_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
@@ -434,7 +432,7 @@ class BiorbdModel:
             )
         return casadi_fun
 
-    def inverse_dynamics(self, with_contact: bool=False) -> Function:
+    def inverse_dynamics(self, with_contact: bool = False) -> Function:
         # @ipuch: I do not understand what is happening here? Do we have f_ext or it is just the contact forces?
         if with_contact:
             f_ext = self.reshape_fext_to_fcontact(self.external_forces)
@@ -790,9 +788,7 @@ class BiorbdModel:
                     [biorbd_return],
                 )
         else:
-            biorbd_return = self.contact_forces_from_constrained_forward_dynamics()(
-                self.q, self.qdot, self.tau, MX()
-            )
+            biorbd_return = self.contact_forces_from_constrained_forward_dynamics()(self.q, self.qdot, self.tau, MX())
             casadi_fun = Function(
                 "contact_forces",
                 [self.q, self.qdot, self.tau],

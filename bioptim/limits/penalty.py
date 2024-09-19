@@ -341,7 +341,9 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             # Add the penalty in the requested reference frame. None for global
-            markers = horzcat(*controller.model.marker_velocities(reference_index=reference_jcs)(controller.q.cx, controller.qdot.cx))
+            markers = horzcat(
+                *controller.model.marker_velocities(reference_index=reference_jcs)(controller.q.cx, controller.qdot.cx)
+            )
 
             return markers
 
@@ -380,9 +382,9 @@ class PenaltyFunctionAbstract:
             qddot = PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
             markers = horzcat(
-                *controller.model.marker_accelerations(reference_index=reference_jcs)(controller.q.cx,
-                                                       controller.qdot.cx,
-                                                       qddot)
+                *controller.model.marker_accelerations(reference_index=reference_jcs)(
+                    controller.q.cx, controller.qdot.cx, qddot
+                )
             )
 
             return markers
@@ -425,9 +427,9 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            diff_markers = controller.model.marker(second_marker_idx)(controller.q.cx) - controller.model.marker(first_marker_idx)(
-                controller.q.cx
-            )
+            diff_markers = controller.model.marker(second_marker_idx)(controller.q.cx) - controller.model.marker(
+                first_marker_idx
+            )(controller.q.cx)
 
             return diff_markers
 
@@ -597,7 +599,7 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            g = controller.model.gravity()['o0'][2]
+            g = controller.model.gravity()["o0"][2]
             com = controller.model.center_of_mass()(controller.q.cx)
             com_dot = controller.model.center_of_mass_velocity()(controller.q.cx, controller.qdot.cx)
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
@@ -672,9 +674,7 @@ class PenaltyFunctionAbstract:
 
             qddot = PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
-            marker = controller.model.center_of_mass_acceleration()(controller.q.cx,
-                                                                    controller.qdot.cx,
-                                                                    qddot)
+            marker = controller.model.center_of_mass_acceleration()(controller.q.cx, controller.qdot.cx, qddot)
 
             return marker
 
@@ -860,7 +860,11 @@ class PenaltyFunctionAbstract:
 
         @staticmethod
         def track_segment_with_custom_rt(
-            penalty: PenaltyOption, controller: PenaltyController, segment: int | str, rt_idx: int, sequence: str = "zyx"
+            penalty: PenaltyOption,
+            controller: PenaltyController,
+            segment: int | str,
+            rt_idx: int,
+            sequence: str = "zyx",
         ):
             """
             Minimize the difference of the euler angles extracted from the coordinate system of a segment
