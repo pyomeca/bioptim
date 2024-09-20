@@ -192,19 +192,19 @@ def get_cov_mat(nlp, node_index, use_sx):
 
     dx = stochastic_forward_dynamics(
         nlp.time_cx,
-        nlp.states.mx,
-        nlp.controls.mx,
-        nlp.parameters.mx,
-        nlp.algebraic_states.mx,
-        nlp.numerical_timeseries.mx,
+        nlp.states.cx,
+        nlp.controls.cx,
+        nlp.parameters.cx,
+        nlp.algebraic_states.cx,
+        nlp.numerical_timeseries.cx,
         nlp,
         with_noise=True,
     )
-    dx.dxdt = cas.Function(
-        "tp",
-        [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx, nlp.numerical_timeseries.mx],
-        [dx.dxdt],
-    )(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.numerical_timeseries.cx)
+    # dx.dxdt = cas.Function(
+    #     "tp",
+    #     [nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.numerical_timeseries.cx],
+    #     [dx.dxdt],
+    # )(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.numerical_timeseries.cx)
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(sensory_noise, motor_noise))
     dg_dw = -ddx_dwm * dt
@@ -255,6 +255,7 @@ def reach_target_consistently(controllers: list[PenaltyController]) -> cas.MX:
     applies at the END node.
     """
 
+    #  Charbie todo remove these symbolics
     q_sym = cas.MX.sym("q_sym", controllers[-1].states["q"].cx.shape[0])
     qdot_sym = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx.shape[0])
     cov_sym = cas.MX.sym("cov", controllers[-1].integrated_values.cx.shape[0])

@@ -558,10 +558,10 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             numerical_timeseries_sym = MX.sym("numerical_timeseries_sym", controllers[0].numerical_timeseries.shape, 1)
 
             dx = controllers[0].extra_dynamics(0)(
-                controllers[0].time.mx,
+                controllers[0].time.cx,
                 vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
                 tau_joints,
-                controllers[0].parameters.mx,
+                controllers[0].parameters.cx,
                 algebraic_states_sym,
                 numerical_timeseries_sym,
             )
@@ -573,13 +573,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             DF_DW_fun = Function(
                 "DF_DW_fun",
                 [
-                    controllers[0].time.mx,
+                    controllers[0].time.cx,
                     q_root,
                     q_joints,
                     qdot_root,
                     qdot_joints,
                     tau_joints,
-                    controllers[0].parameters.mx,
+                    controllers[0].parameters.cx,
                     algebraic_states_sym,
                     numerical_timeseries_sym,
                 ],
@@ -587,7 +587,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                     jacobian(
                         dx[non_root_index],
                         vertcat(
-                            controllers[0].parameters["motor_noise"].mx, controllers[0].parameters["sensory_noise"].mx
+                            controllers[0].parameters["motor_noise"].cx, controllers[0].parameters["sensory_noise"].cx
                         ),
                     )
                 ],

@@ -43,13 +43,7 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
     # Get the index of the markers from their name
     marker_0_idx = controller.model.marker_index(first_marker)
     marker_1_idx = controller.model.marker_index(second_marker)
-
-    # Convert the function to the required format and then subtract
-    from bioptim import BiorbdModel
-
-    # noinspection PyTypeChecker
-    model: BiorbdModel = controller.model
-    markers = controller.mx_to_cx("markers", model.model.markers, controller.q)
+    markers = controller.model.markers()(controller.q.cx)
     return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
 

@@ -640,9 +640,9 @@ class ConfigureProblem:
             for key in numerical_data_timeseries.keys():
                 if key == "external_forces":
                     _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
-                    external_forces = nlp.numerical_timeseries[0].mx
+                    external_forces = nlp.numerical_timeseries[0].cx
                     for i in range(1, numerical_data_timeseries[key].shape[1]):
-                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -731,9 +731,9 @@ class ConfigureProblem:
             for key in numerical_data_timeseries.keys():
                 if key == "external_forces":
                     _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
-                    external_forces = nlp.numerical_timeseries[0].mx
+                    external_forces = nlp.numerical_timeseries[0].cx
                     for i in range(1, numerical_data_timeseries[key].shape[1]):
-                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -867,9 +867,9 @@ class ConfigureProblem:
             for key in numerical_data_timeseries.keys():
                 if key == "external_forces":
                     _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
-                    external_forces = nlp.numerical_timeseries[0].mx
+                    external_forces = nlp.numerical_timeseries[0].cx
                     for i in range(1, numerical_data_timeseries[key].shape[1]):
-                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].mx)
+                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
@@ -985,26 +985,26 @@ class ConfigureProblem:
             The function to get the values of contact forces from the dynamics
         """
 
-        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
+        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
         nlp.lagrange_multipliers_function = Function(
             "lagrange_multipliers_function",
             [
                 time_span_sym,
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.scaled.mx_reduced,
-                nlp.algebraic_states.scaled.mx_reduced,
-                nlp.numerical_timeseries.mx,
+                nlp.states.scaled.cx,
+                nlp.controls.scaled.cx,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
             ],
             [
                 dyn_func(
                     nlp.get_var_from_states_or_controls(
-                        "q_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
+                        "q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx
                     ),
                     nlp.get_var_from_states_or_controls(
-                        "qdot_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
+                        "qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx
                     ),
-                    DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.mx_reduced),
+                    DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx),
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
@@ -1053,21 +1053,21 @@ class ConfigureProblem:
             The function to get the values of contact forces from the dynamics
         """
 
-        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
+        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
         nlp.q_v_function = Function(
             "qv_function",
             [
                 time_span_sym,
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.scaled.mx_reduced,
-                nlp.algebraic_states.scaled.mx_reduced,
-                nlp.numerical_timeseries.mx,
+                nlp.states.scaled.cx,
+                nlp.controls.scaled.cx,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
             ],
             [
                 dyn_func(
                     nlp.get_var_from_states_or_controls(
-                        "q_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
+                        "q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx
                     ),
                 )
             ],
@@ -1113,24 +1113,24 @@ class ConfigureProblem:
             The function to get the values of contact forces from the dynamics
         """
 
-        time_span_sym = vertcat(nlp.time_mx, nlp.dt_mx)
+        time_span_sym = vertcat(nlp.time_cx, nlp.dt)
         nlp.q_v_function = Function(
             "qdot_v_function",
             [
                 time_span_sym,
-                nlp.states.scaled.mx_reduced,
-                nlp.controls.scaled.mx_reduced,
-                nlp.parameters.scaled.mx_reduced,
-                nlp.algebraic_states.scaled.mx_reduced,
-                nlp.numerical_timeseries.mx,
+                nlp.states.scaled.cx,
+                nlp.controls.scaled.cx,
+                nlp.parameters.scaled.cx,
+                nlp.algebraic_states.scaled.cx,
+                nlp.numerical_timeseries.cx,
             ],
             [
                 dyn_func(
                     nlp.get_var_from_states_or_controls(
-                        "q_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
+                        "q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx
                     ),
                     nlp.get_var_from_states_or_controls(
-                        "qdot_u", nlp.states.scaled.mx_reduced, nlp.controls.scaled.mx_reduced
+                        "qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx
                     ),
                 )
             ],

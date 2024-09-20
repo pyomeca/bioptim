@@ -349,13 +349,13 @@ class StochasticOptimalControlProgram(OptimalControlProgram):
                 )
             casadi_func = Function(
                 "sensory_reference",
-                [nlp.dt_mx, nlp.time_mx, nlp.states.mx, nlp.controls.mx, nlp.parameters.mx],
+                [nlp.dt, nlp.time_cx, nlp.states.cx, nlp.controls.cx, nlp.parameters.cx],
                 [
                     nlp.model.sensory_reference(
-                        time=nlp.time_mx,
-                        states=nlp.states.mx,
-                        controls=nlp.controls.mx,
-                        parameters=nlp.parameters.mx,
+                        time=nlp.time_cx,
+                        states=nlp.states.cx,
+                        controls=nlp.controls.cx,
+                        parameters=nlp.parameters.cx,
                         algebraic_states=None,  # Sensory reference should not depend on stochastic variables
                         numerical_timeseries=None,
                         nlp=nlp,

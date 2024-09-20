@@ -199,21 +199,21 @@ def get_cov_mat(nlp, node_index):
 
     dx = stochastic_forward_dynamics(
         nlp.time_cx,
-        nlp.states.mx,
-        nlp.controls.mx,
-        nlp.parameters.mx,
-        nlp.algebraic_states.mx,
-        nlp.numerical_timeseries.mx,
+        nlp.states.cx,
+        nlp.controls.cx,
+        nlp.parameters.cx,
+        nlp.algebraic_states.cx,
+        nlp.numerical_timeseries.cx,
         nlp,
         force_field_magnitude=nlp.model.force_field_magnitude,
         with_noise=True,
     )
 
-    dx.dxdt = cas.Function(
-        "tp",
-        [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx, nlp.numerical_timeseries.mx],
-        [dx.dxdt],
-    )(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.numerical_timeseries.cx)
+    # dx.dxdt = cas.Function(
+    #     "tp",
+    #     [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx, nlp.numerical_timeseries.mx],
+    #     [dx.dxdt],
+    # )(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.numerical_timeseries.cx)
 
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(sensory_noise, motor_noise))
     dg_dw = -ddx_dwm * dt

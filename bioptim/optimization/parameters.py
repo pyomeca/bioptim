@@ -170,7 +170,6 @@ class ParameterList(OptimizationVariableList):
         self.scaling.add(key=name, scaling=scaling)
         index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
         self._cx_start = vertcat(self._cx_start, cx[0])
-        # self.mx_reduced = vertcat(self.mx_reduced, MX.sym("var", cx[0].shape[0]))
         mx = MX.sym(name, size)
         self.elements.append(
             Parameter(
@@ -224,7 +223,6 @@ class ParameterList(OptimizationVariableList):
             unscaled_parameter._cx_start = vertcat(
                 unscaled_parameter._cx_start, element.cx_start * element.scaling.scaling
             )
-            # unscaled_parameter.mx_reduced = vertcat(unscaled_parameter.cx, element.cx * element.scaling.scaling)
 
         return unscaled_parameter
 
@@ -261,10 +259,10 @@ class ParameterContainer(OptimizationVariableContainer):
     A parameter container (i.e., the list of scaled parameters and a list of unscaled parameters).
     """
 
-    def __init__(self):
+    def __init__(self, use_sx: bool):
         super(ParameterContainer, self).__init__(phase_dynamics=PhaseDynamics.SHARED_DURING_THE_PHASE)
-        self._scaled: ParameterList = ParameterList(use_sx=True)
-        self._unscaled: ParameterList = ParameterList(use_sx=True)
+        self._scaled: ParameterList = ParameterList(use_sx=use_sx)
+        self._unscaled: ParameterList = ParameterList(use_sx=use_sx)
 
     @property
     def node_index(self):

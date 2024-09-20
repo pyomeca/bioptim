@@ -775,25 +775,15 @@ class BiorbdModel:
             n_dof += self.segments[j].nbDof()
         return quat_idx
 
-    def contact_forces(self, external_forces: MX = None) -> Function:
-        if external_forces is not None:
-            for i in range(external_forces.shape[1]):
-                force = self.contact_forces_from_constrained_forward_dynamics()(
-                    self.q, self.qdot, self.tau, external_forces[:, i]
-                )
-                biorbd_return = force if i == 0 else horzcat(biorbd_return, force)
-                casadi_fun = Function(
-                    "contact_forces",
-                    [self.q, self.qdot, self.tau, self.external_forces],
-                    [biorbd_return],
-                )
-        else:
-            biorbd_return = self.contact_forces_from_constrained_forward_dynamics()(self.q, self.qdot, self.tau, MX())
-            casadi_fun = Function(
-                "contact_forces",
-                [self.q, self.qdot, self.tau],
-                [biorbd_return],
-            )
+    def contact_forces(self) -> Function:
+        force = self.contact_forces_from_constrained_forward_dynamics()(
+            self.q, self.qdot, self.tau, self.external_forces
+        )
+        casadi_fun = Function(
+            "contact_forces",
+            [self.q, self.qdot, self.tau, self.external_forces],
+            [force],
+        )
         return casadi_fun
 
     def passive_joint_torque(self) -> Function:
