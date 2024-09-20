@@ -42,20 +42,15 @@ from bioptim import (
 def states_to_markers(bio_model, states):
     nq = bio_model.nb_q
     n_mark = bio_model.nb_markers
-    q = cas.MX.sym("q", nq)
-    markers_func = biorbd.to_casadi_func("makers", bio_model.markers, q)
-    return np.array(markers_func(states[:nq, :])).reshape((3, n_mark, -1), order="F")
+    return np.array(bio_model.markers()(states[:nq, :])).reshape((3, n_mark, -1), order="F")
 
 
 def generate_data(bio_model, tf, x0, t_max, n_shoot, noise_std, show_plots=False):
     def pendulum_ode(t, x, u):
-        return np.concatenate((x[nq:, np.newaxis], qddot_func(x[:nq], x[nq:], u)))[:, 0]
+        return np.concatenate((x[nq:, np.newaxis], qddot_func(x[:nq], x[nq:], u, [])))[:, 0]
 
     nq = bio_model.nb_q
-    q = cas.MX.sym("q", nq)
-    qdot = cas.MX.sym("qdot", nq)
-    tau = cas.MX.sym("tau", nq)
-    qddot_func = biorbd.to_casadi_func("forw_dyn", bio_model.forward_dynamics, q, qdot, tau)
+    qddot_func = bio_model.forward_dynamics()
 
     # Simulated data
     dt = tf / n_shoot

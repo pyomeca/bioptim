@@ -108,7 +108,6 @@ def prepare_ocp(
         first_marker="m0",
         second_marker="m1",
         weight=1000,
-        method=0,
     )
     objective_functions.add(
         custom_func_track_markers,
@@ -118,7 +117,6 @@ def prepare_ocp(
         first_marker="m0",
         second_marker="m2",
         weight=1000,
-        method=1,
     )
 
     # Dynamics

@@ -147,8 +147,8 @@ class DynamicsFunctions:
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
         tau = DynamicsFunctions.__get_fatigable_tau(nlp, states, controls, fatigue)
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
         tau = tau - nlp.model.friction_coefficients @ qdot if with_friction else tau
 
         if (
@@ -260,7 +260,7 @@ class DynamicsFunctions:
         n_qdot = nlp.model.nb_qdot
 
         tau_joints = (
-            tau_joints + nlp.model.passive_joint_torque()(q_full, qdot_full) if with_passive_torque else tau_joints
+            tau_joints + nlp.model.passive_joint_torque()(q_full, qdot_full, nlp.parameters.cx) if with_passive_torque else tau_joints
         )
         tau_joints = tau_joints + nlp.model.ligament_joint_torque()(q_full, qdot_full) if with_ligament else tau_joints
         tau_joints = tau_joints - nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
@@ -528,13 +528,13 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
         tau_activation = DynamicsFunctions.get(nlp.controls["tau"], controls)
 
-        tau = nlp.model.torque()(tau_activation, q, qdot)
+        tau = nlp.model.torque()(tau_activation, q, qdot, nlp.parameters.cx)
         if with_passive_torque:
-            tau += nlp.model.passive_joint_torque()(q, qdot)
+            tau += nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx)
         if with_residual_torque:
             tau += DynamicsFunctions.get(nlp.controls["residual_tau"], controls)
         if with_ligament:
-            tau += nlp.model.ligament_joint_torque()(q, qdot)
+            tau += nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx)
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
@@ -598,8 +598,8 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
 
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
@@ -673,11 +673,11 @@ class DynamicsFunctions:
         q = nlp.get_var_from_states_or_controls("q", states, controls)
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         tau = nlp.get_var_from_states_or_controls("tau", states, controls)
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         external_forces = [] if external_forces is None else external_forces
-        return nlp.model.contact_forces()(q, qdot, tau, external_forces)
+        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
     def forces_from_torque_activation_driven(
@@ -726,12 +726,12 @@ class DynamicsFunctions:
         q = nlp.get_var_from_states_or_controls("q", states, controls)
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         tau_activations = nlp.get_var_from_states_or_controls("tau", states, controls)
-        tau = nlp.model.torque()(tau_activations, q, qdot)
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot) if with_ligament else tau
+        tau = nlp.model.torque()(tau_activations, q, qdot, nlp.parameters.cx)
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         external_forces = [] if external_forces is None else external_forces
-        return nlp.model.contact_forces()(q, qdot, tau, external_forces)
+        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
     def muscles_driven(
@@ -831,8 +831,8 @@ class DynamicsFunctions:
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations, fatigue_states)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
 
@@ -932,8 +932,8 @@ class DynamicsFunctions:
         muscles_tau = DynamicsFunctions.compute_tau_from_muscle(nlp, q, qdot, mus_activations)
 
         tau = muscles_tau + residual_tau if residual_tau is not None else muscles_tau
-        tau = tau + nlp.model.passive_joint_torque()(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque()(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot, nlp.parameters.cx) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         external_forces = [] if external_forces is None else external_forces
         return nlp.model.contact_forces()(q, qdot, tau, external_forces)
@@ -1041,27 +1041,6 @@ class DynamicsFunctions:
         return var.mapping.to_second.map(cx[var.index, :])
 
     @staticmethod
-    def apply_parameters(nlp):
-        """
-        Apply the parameter variables to the model. This should be called before calling the dynamics
-
-        Parameters
-        ----------
-        parameters: MX.sym | SX.sym
-            The state of the system
-        nlp: NonLinearProgram
-            The definition of the system
-        """
-
-        for param_key in nlp.parameters:
-            # Call the pre dynamics function
-            if nlp.parameters[param_key].function:
-                param = nlp.parameters[param_key]
-                param_scaling = nlp.parameters[param_key].scaling.scaling
-                param_reduced = nlp.parameters.scaled.cx[param.index]
-                param.function(nlp.model, param_reduced * param_scaling, **param.kwargs)
-
-    @staticmethod
     def compute_qdot(nlp, q: MX | SX, qdot: MX | SX):
         """
         Easy accessor to derivative of q
@@ -1093,7 +1072,7 @@ class DynamicsFunctions:
             mapping = nlp.controls["q"].mapping
         else:
             raise RuntimeError("Your q key combination was not found in states or controls")
-        return mapping.to_first.map(nlp.model.reshape_qdot()(q, qdot))
+        return mapping.to_first.map(nlp.model.reshape_qdot()(q, qdot, nlp.parameters.cx))
 
     @staticmethod
     def forward_dynamics(
@@ -1134,10 +1113,10 @@ class DynamicsFunctions:
             qdot_var_mapping = BiMapping([i for i in range(qdot.shape[0])], [i for i in range(qdot.shape[0])]).to_first
 
         if external_forces is None:
-            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, [])
+            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, [], nlp.parameters.cx)
             return qdot_var_mapping.map(qddot)
         else:
-            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, external_forces)
+            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, external_forces, nlp.parameters.cx)
             return qdot_var_mapping.map(qddot)
 
     @staticmethod
@@ -1173,7 +1152,7 @@ class DynamicsFunctions:
         """
 
         if external_forces is None:
-            tau = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, [])
+            tau = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, [], nlp.parameters.cx)
         else:
             if "tau" in nlp.states:
                 tau_shape = nlp.states["tau"].cx.shape[0]
@@ -1183,7 +1162,7 @@ class DynamicsFunctions:
                 tau_shape = nlp.model.nb_tau
             tau = nlp.cx(tau_shape, nlp.ns)
             for i in range(external_forces.shape[1]):
-                tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, external_forces[:, i])
+                tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, external_forces[:, i], nlp.parameters.cx)
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod
@@ -1240,7 +1219,7 @@ class DynamicsFunctions:
                 activations = vertcat(activations, muscle_activations[k] * (1 - fatigue_states[k]))
             else:
                 activations = vertcat(activations, muscle_activations[k])
-        return nlp.model.muscle_joint_torque()(activations, q, qdot)
+        return nlp.model.muscle_joint_torque()(activations, q, qdot, nlp.parameters.cx)
 
     @staticmethod
     def holonomic_torque_driven(
@@ -1283,6 +1262,6 @@ class DynamicsFunctions:
         q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
         qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-        qddot_u = nlp.model.partitioned_forward_dynamics(q_u, qdot_u, tau, external_forces=external_forces)
+        qddot_u = nlp.model.partitioned_forward_dynamics(q_u, qdot_u, tau, external_forces, nlp.parameters.cx)
 
         return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)

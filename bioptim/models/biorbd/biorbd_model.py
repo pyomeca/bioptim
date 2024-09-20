@@ -13,6 +13,7 @@ from ..utils import _var_mapping, bounds_from_ranges
 from ...limits.path_conditions import Bounds
 from ...misc.mapping import BiMapping, BiMappingList
 from ...misc.utils import check_version
+from ...optimization.parameters import ParameterList
 
 check_version(biorbd, "1.11.1", "1.12.0")
 
@@ -27,11 +28,14 @@ class BiorbdModel:
         bio_model: str | biorbd.Model,
         friction_coefficients: np.ndarray = None,
         segments_to_apply_external_forces: list[str] = [],
+        parameters: ParameterList = None,
     ):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
+        for param_key in parameters:
+            parameters[param_key].apply_parameter(self)
         self._friction_coefficients = friction_coefficients
         self._segments_to_apply_external_forces = segments_to_apply_external_forces
 
@@ -43,6 +47,7 @@ class BiorbdModel:
         self.tau = MX.sym("tau_mx", self.nb_tau, 1)
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
         self.external_forces = MX.sym("external_forces_mx", 9, len(segments_to_apply_external_forces))
+        self.parameters = parameters.mx if parameters else MX()
 
     @property
     def name(self) -> str:
@@ -78,7 +83,7 @@ class BiorbdModel:
         biorbd_return = self.model.getGravity().to_mx()
         casadi_fun = Function(
             "gravity",
-            [MX()],
+            [self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -149,7 +154,7 @@ class BiorbdModel:
         biorbd_return = jcs.T if inverse else jcs
         casadi_fun = Function(
             "homogeneous_matrices_in_global",
-            [self.q],
+            [self.q, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -163,7 +168,7 @@ class BiorbdModel:
         biorbd_return = self.model.localJCS(segment_id).to_mx()
         casadi_fun = Function(
             "homogeneous_matrices_in_child",
-            [MX()],
+            [self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -178,7 +183,7 @@ class BiorbdModel:
         biorbd_return = self.model.mass().to_mx()
         casadi_fun = Function(
             "mass",
-            [MX()],
+            [self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -188,7 +193,7 @@ class BiorbdModel:
         biorbd_return = self.model.RT(q_biorbd, rt_index).to_mx()
         casadi_fun = Function(
             "rt",
-            [self.q],
+            [self.q, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -198,7 +203,7 @@ class BiorbdModel:
         biorbd_return = self.model.CoM(q_biorbd, True).to_mx()
         casadi_fun = Function(
             "center_of_mass",
-            [self.q],
+            [self.q, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -209,7 +214,7 @@ class BiorbdModel:
         biorbd_return = self.model.CoMdot(q_biorbd, qdot_biorbd, True).to_mx()
         casadi_fun = Function(
             "center_of_mass_velocity",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -221,7 +226,7 @@ class BiorbdModel:
         biorbd_return = self.model.CoMddot(q_biorbd, qdot_biorbd, qddot_biorbd, True).to_mx()
         casadi_fun = Function(
             "center_of_mass_acceleration",
-            [self.q, self.qdot, self.qddot],
+            [self.q, self.qdot, self.qddot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -232,7 +237,7 @@ class BiorbdModel:
         biorbd_return = self.model.bodyAngularVelocity(q_biorbd, qdot_biorbd, True).to_mx()
         casadi_fun = Function(
             "body_rotation_rate",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -242,7 +247,7 @@ class BiorbdModel:
         biorbd_return = self.model.massMatrix(q_biorbd).to_mx()
         casadi_fun = Function(
             "mass_matrix",
-            [self.q],
+            [self.q, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -253,7 +258,7 @@ class BiorbdModel:
         biorbd_return = self.model.NonLinearEffect(q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "non_linear_effects",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -264,7 +269,7 @@ class BiorbdModel:
         biorbd_return = self.model.angularMomentum(q_biorbd, qdot_biorbd, True).to_mx()
         casadi_fun = Function(
             "angular_momentum",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -277,7 +282,7 @@ class BiorbdModel:
         ).to_mx()
         casadi_fun = Function(
             "reshape_qdot",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -291,7 +296,7 @@ class BiorbdModel:
         biorbd_return = self.model.segmentAngularVelocity(q_biorbd, qdot_biorbd, idx, True).to_mx()
         casadi_fun = Function(
             "segment_angular_velocity",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -318,7 +323,7 @@ class BiorbdModel:
         ).to_mx()
         casadi_fun = Function(
             "segment_orientation",
-            [self.q],
+            [self.q, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -357,11 +362,11 @@ class BiorbdModel:
         """
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
-        tau_activations_biorbd = self.tau  # TODO: Charbie check this
+        tau_activations_biorbd = self.tau
         biorbd_return = self.model.torque(tau_activations_biorbd, q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "torque_activation",
-            [self.tau, self.q, self.qdot],
+            [self.tau, self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -373,7 +378,7 @@ class BiorbdModel:
         biorbd_return = self.model.ForwardDynamicsFreeFloatingBase(q_biorbd, qdot_biorbd, qddot_joints_biorbd).to_mx()
         casadi_fun = Function(
             "forward_dynamics_free_floating_base",
-            [self.q, self.qdot, self.qddot_joints],
+            [self.q, self.qdot, self.qddot_joints, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -420,14 +425,14 @@ class BiorbdModel:
             ).to_mx()
             casadi_fun = Function(
                 "constrained_forward_dynamics",
-                [self.q, self.qdot, self.tau, self.external_forces],
+                [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
                 [biorbd_return],
             )
         else:
             biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
             casadi_fun = Function(
                 "forward_dynamics",
-                [self.q, self.qdot, self.tau, self.external_forces],
+                [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
                 [biorbd_return],
             )
         return casadi_fun
@@ -447,7 +452,7 @@ class BiorbdModel:
         biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd, external_forces_set).to_mx()
         casadi_fun = Function(
             "inverse_dynamics",
-            [self.q, self.qdot, self.qddot, self.external_forces],
+            [self.q, self.qdot, self.qddot, self.external_forces, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -463,7 +468,7 @@ class BiorbdModel:
         ).to_mx()
         casadi_fun = Function(
             "contact_forces_from_constrained_forward_dynamics",
-            [self.q, self.qdot, self.tau, self.external_forces],
+            [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -474,7 +479,7 @@ class BiorbdModel:
         biorbd_return = self.model.ComputeConstraintImpulsesDirect(q_biorbd, qdot_pre_impact_biorbd).to_mx()
         casadi_fun = Function(
             "qdot_from_impact",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -488,7 +493,7 @@ class BiorbdModel:
         biorbd_return = self.model.activationDot(muscle_states).to_mx()
         casadi_fun = Function(
             "muscle_activation_dot",
-            [self.muscle],
+            [self.muscle, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -498,7 +503,7 @@ class BiorbdModel:
         biorbd_return = self.model.musclesLengthJacobian(q_biorbd).to_mx()
         casadi_fun = Function(
             "muscle_length_jacobian",
-            [self.q],
+            [self.q, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -508,7 +513,7 @@ class BiorbdModel:
         biorbd_return = J @ self.qdot
         casadi_fun = Function(
             "muscle_velocity",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -523,7 +528,7 @@ class BiorbdModel:
         biorbd_return = self.model.muscularJointTorque(muscles_states, q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "muscle_joint_torque",
-            [self.muscle, self.q, self.qdot],
+            [self.muscle, self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -532,7 +537,7 @@ class BiorbdModel:
         biorbd_return = [m.to_mx() for m in self.model.markers(GeneralizedCoordinates(self.q))]
         casadi_fun = Function(
             "markers",
-            [self.q],
+            [self.q, self.parameters],
             biorbd_return,
         )
         return casadi_fun
@@ -552,7 +557,7 @@ class BiorbdModel:
         biorbd_return = marker.to_mx()
         casadi_fun = Function(
             "marker",
-            [self.q],
+            [self.q, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -613,7 +618,7 @@ class BiorbdModel:
 
         casadi_fun = Function(
             "marker_velocities",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             biorbd_return,
         )
         return casadi_fun
@@ -647,7 +652,7 @@ class BiorbdModel:
 
         casadi_fun = Function(
             "marker_accelerations",
-            [self.q, self.qdot, self.qddot],
+            [self.q, self.qdot, self.qddot, self.parameters],
             biorbd_return,
         )
         return casadi_fun
@@ -659,7 +664,7 @@ class BiorbdModel:
         torque_max, torque_min = self.model.torqueMax(q_biorbd, qdot_biorbd)
         casadi_fun = Function(
             "tau_max",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [torque_max.to_mx(), torque_min.to_mx()],
         )
         return casadi_fun
@@ -673,7 +678,7 @@ class BiorbdModel:
         ).to_mx()[contact_axis]
         casadi_fun = Function(
             "rigid_contact_acceleration",
-            [self.q, self.qdot, self.qddot],
+            [self.q, self.qdot, self.qddot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -682,7 +687,7 @@ class BiorbdModel:
         biorbd_return = [m.to_mx() for m in self.model.markersJacobian(GeneralizedCoordinates(self.q))]
         casadi_fun = Function(
             "markers_jacobian",
-            [self.q],
+            [self.q, self.parameters],
             biorbd_return,
         )
         return casadi_fun
@@ -705,7 +710,7 @@ class BiorbdModel:
 
         casadi_fun = Function(
             "soft_contact_forces",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -735,7 +740,7 @@ class BiorbdModel:
 
         casadi_fun_evaluated = Function(
             "reshape_fext_to_fcontact",
-            [fext_sym],
+            [fext_sym, self.parameters],
             [f_contact_vec],
         )(fext)
         return casadi_fun_evaluated
@@ -760,7 +765,7 @@ class BiorbdModel:
 
         casadi_fun = Function(
             "soft_contact_forces",
-            [self.q],
+            [self.q, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -782,7 +787,7 @@ class BiorbdModel:
         )
         casadi_fun = Function(
             "contact_forces",
-            [self.q, self.qdot, self.tau, self.external_forces],
+            [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
             [force],
         )
         return casadi_fun
@@ -793,7 +798,7 @@ class BiorbdModel:
         biorbd_return = self.model.passiveJointTorque(q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "passive_joint_torque",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -804,7 +809,7 @@ class BiorbdModel:
         biorbd_return = self.model.ligamentsJointTorque(q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "ligament_joint_torque",
-            [self.q, self.qdot],
+            [self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun

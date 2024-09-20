@@ -91,6 +91,15 @@ class Parameter(OptimizationVariable):
     def cx_intermediates_list(self):
         raise RuntimeError("cx_intermediates_list is not available for parameters, only cx_start is accepted.")
 
+    def apply_parameter(self, model):
+        """
+        Apply the parameter variables to the model. This should be called during the creation of the biomodel
+        """
+        if self.function:
+            param_scaling = self.scaling.scaling
+            param_reduced = self.mx  # because this function will be used directly in the biorbd model
+            self.function(model, param_reduced * param_scaling, **self.kwargs)
+
 
 class ParameterList(OptimizationVariableList):
     """

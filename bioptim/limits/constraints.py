@@ -408,14 +408,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             q = controller.q.cx
             qdot = controller.qdot.cx
-            passive_torque = controller.model.passive_joint_torque()(q, qdot)
+            passive_torque = controller.model.passive_joint_torque()(q, qdot, controller.parameters.cx)
             tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau.cx
             tau = tau + passive_torque if with_passive_torque else tau
-            tau = tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+            tau = tau + controller.model.ligament_joint_torque(q, qdot, controller.parameters.cx) if with_ligament else tau
 
             qddot = controller.controls["qddot"].cx if "qddot" in controller.controls else controller.states["qddot"].cx
             # @Ipuch: no f_ext allowed ?
-            qddot_fd = controller.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, [])
+            qddot_fd = controller.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, [], controller.parameters.cx)
             return qddot - qddot_fd
 
         @staticmethod
@@ -451,9 +451,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = controller.qdot.cx
             tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau.cx
             qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
-            passive_torque = controller.model.passive_joint_torque()(q, qdot)
+            passive_torque = controller.model.passive_joint_torque()(q, qdot, controller.parameters.cx)
             tau = tau + passive_torque if with_passive_torque else tau
-            tau = tau + controller.model.ligament_joint_torque()(q, qdot) if with_ligament else tau
+            tau = tau + controller.model.ligament_joint_torque()(q, qdot, controller.parameters.cx) if with_ligament else tau
 
             if "fext" in controller.controls:
                 f_ext = controller.controls["fext"].cx
@@ -464,7 +464,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             else:
                 raise ValueError("External forces must be provided")
 
-            tau_id = controller.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, f_ext)
+            tau_id = controller.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, f_ext, controller.parameters.cx)
 
             var = []
             var.extend([controller.states[key] for key in controller.states])
@@ -529,12 +529,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot = controller.qdot.cx
             muscle_activations = controller.controls["muscles"].cx
             muscles_states = controller.model.state_set()
-            passive_torque = controller.model.passive_joint_torque()(q, qdot)
+            passive_torque = controller.model.passive_joint_torque()(q, qdot, controller.parameters.cx)
             for k in range(len(controller.controls["muscles"])):
                 muscles_states[k].setActivation(muscle_activations[k])
-            muscle_tau = controller.model.muscle_joint_torque(muscles_states, q, qdot)
+            muscle_tau = controller.model.muscle_joint_torque(muscles_states, q, qdot, controller.parameters.cx)
             muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
-            muscle_tau = muscle_tau + controller.model.ligament_joint_torque(q, qdot) if with_ligament else muscle_tau
+            muscle_tau = muscle_tau + controller.model.ligament_joint_torque(q, qdot, controller.parameters.cx) if with_ligament else muscle_tau
             qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
 
             if controller.get_nlp.numerical_timeseries:
@@ -544,7 +544,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
                 # fext need to be a mx
 
-            tau_id = controller.model.inverse_dynamics()(q, qdot, qddot)
+            tau_id = controller.model.inverse_dynamics()(q, qdot, qddot, controller.parameters.cx)
 
             return tau_id - muscle_tau
 

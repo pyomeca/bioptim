@@ -49,7 +49,7 @@ def my_parameter_function(bio_model: BiorbdModel, value: MX, extra_value: Any):
     """
 
     value[2] *= extra_value
-    bio_model.set_gravity(value)
+    bio_model.model.setGravity(value)
 
 
 def set_mass(bio_model: BiorbdModel, value: MX):
@@ -65,7 +65,7 @@ def set_mass(bio_model: BiorbdModel, value: MX):
         The CasADi variables to modify the model
     """
 
-    bio_model.segments[0].characteristics().setMass(value)
+    bio_model.model.segments()[0].characteristics().setMass(value)
 
 
 def my_target_function(controller: PenaltyController, key: str) -> MX:
@@ -149,32 +149,6 @@ def prepare_ocp(
     The ocp ready to be solved
     """
 
-    # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path)
-    n_tau = bio_model.nb_tau
-
-    # Add objective functions
-    objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1)
-
-    # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
-
-    # Path constraint
-    x_bounds = BoundsList()
-    x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["q"][:, [0, -1]] = 0
-    x_bounds["q"][1, -1] = 3.14
-    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
-    x_bounds["qdot"][:, [0, -1]] = 0
-
-    # Define control path constraint
-    tau_min, tau_max = -300, 300
-    u_bounds = BoundsList()
-    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
-    u_bounds["tau"][1, :] = 0
-
     # Define the parameter to optimize
     parameters = ParameterList(use_sx=use_sx)
     parameter_objectives = ParameterObjectiveList()
@@ -229,6 +203,32 @@ def prepare_ocp(
             target=target_m / m_scaling.scaling.T,  # Make sure your target fits the scaling
             key="mass",
         )
+
+    # --- Options --- #
+    bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
+    n_tau = bio_model.nb_tau
+
+    # Add objective functions
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=1)
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_STATE, key="q", weight=1)
+
+    # Dynamics
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=expand_dynamics, phase_dynamics=phase_dynamics)
+
+    # Path constraint
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][1, -1] = 3.14
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
+
+    # Define control path constraint
+    tau_min, tau_max = -300, 300
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][1, :] = 0
 
     return OptimalControlProgram(
         bio_model,

@@ -37,6 +37,9 @@ class MultiBiorbdModel:
         bio_model: tuple[str | biorbd.Model | BiorbdModel, ...],
         extra_bio_models: tuple[str | biorbd.Model | BiorbdModel, ...] = (),
     ):
+        """
+        MultiBiorbdModel does not handle external_forces and parameters yet.
+        """
         self.models = []
         if not isinstance(bio_model, tuple):
             raise ValueError("The models must be a 'str', 'biorbd.Model', 'bioptim.BiorbdModel'" " or a tuple of those")
