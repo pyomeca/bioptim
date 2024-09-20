@@ -221,7 +221,7 @@ class BiorbdModel:
         biorbd_return = self.model.CoMddot(q_biorbd, qdot_biorbd, qddot_biorbd, True).to_mx()
         casadi_fun = Function(
             "center_of_mass_acceleration",
-            [self.q, self.qdot, self.tau],
+            [self.q, self.qdot, self.qddot],
             [biorbd_return],
         )
         return casadi_fun
