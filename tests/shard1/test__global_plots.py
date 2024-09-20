@@ -117,7 +117,9 @@ def test_plot_merged_graphs(phase_dynamics):
 
     # Generate random data to fit
     np.random.seed(42)
-    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(bio_model, final_time, n_shooting, use_sx=False)
+    t, markers_ref, x_ref, muscle_excitations_ref = ocp_module.generate_data(
+        bio_model, final_time, n_shooting, use_sx=False
+    )
 
     bio_model = BiorbdModel(model_path)  # To prevent from free variable, the model must be reloaded
     ocp = ocp_module.prepare_ocp(
