@@ -998,12 +998,8 @@ class ConfigureProblem:
             ],
             [
                 dyn_func(
-                    nlp.get_var_from_states_or_controls(
-                        "q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx
-                    ),
-                    nlp.get_var_from_states_or_controls(
-                        "qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx
-                    ),
+                    nlp.get_var_from_states_or_controls("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
+                    nlp.get_var_from_states_or_controls("qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
                     DynamicsFunctions.get(nlp.controls["tau"], nlp.controls.scaled.cx),
                 )
             ],
@@ -1066,9 +1062,7 @@ class ConfigureProblem:
             ],
             [
                 dyn_func(
-                    nlp.get_var_from_states_or_controls(
-                        "q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx
-                    ),
+                    nlp.get_var_from_states_or_controls("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
@@ -1126,12 +1120,8 @@ class ConfigureProblem:
             ],
             [
                 dyn_func(
-                    nlp.get_var_from_states_or_controls(
-                        "q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx
-                    ),
-                    nlp.get_var_from_states_or_controls(
-                        "qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx
-                    ),
+                    nlp.get_var_from_states_or_controls("q_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
+                    nlp.get_var_from_states_or_controls("qdot_u", nlp.states.scaled.cx, nlp.controls.scaled.cx),
                 )
             ],
             ["t_span", "x", "u", "p", "a", "d"],
