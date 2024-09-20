@@ -850,7 +850,7 @@ def test_torque_derivative_driven_soft_contacts_dynamics(with_contact, cx, impli
 )
 def test_soft_contacts_dynamics_errors(dynamics, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(True if cx == SX else False))
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=False)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -889,7 +889,7 @@ def test_soft_contacts_dynamics_errors(dynamics, phase_dynamics):
 @pytest.mark.parametrize("dynamics", [DynamicsFcn.TORQUE_ACTIVATIONS_DRIVEN])
 def test_implicit_dynamics_errors(dynamics, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(True if cx == SX else False))
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=False)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
@@ -2018,14 +2018,14 @@ def test_custom_dynamics(with_contact, phase_dynamics):
             ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
 
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(True if cx == SX else False))
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=False)
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod"
     )
     nlp.ns = 5
     nlp.cx = MX
-    nlp.time_cx = cx.sym("time", 1, 1)
-    nlp.dt = cx.sym("dt", 1, 1)
+    nlp.time_cx = nlp.cx.sym("time", 1, 1)
+    nlp.dt = nlp.cx.sym("dt", 1, 1)
     nlp.initialize(nlp.cx)
     nlp.x_bounds = np.zeros((nlp.model.nb_q * 3, 1))
     nlp.u_bounds = np.zeros((nlp.model.nb_q, 1))

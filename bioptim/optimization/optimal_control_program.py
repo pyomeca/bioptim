@@ -1062,7 +1062,7 @@ class OptimalControlProgram:
         if not isinstance(parameters, ParameterList):
             raise RuntimeError("new_parameter must be a Parameter or a ParameterList")
 
-        self.parameters = ParameterContainer()
+        self.parameters = ParameterContainer(use_sx=(True if self.cx == SX else False))
         self.parameters.initialize(parameters)
 
     def update_bounds(

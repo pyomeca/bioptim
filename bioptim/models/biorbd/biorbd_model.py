@@ -480,6 +480,7 @@ class BiorbdModel:
         return casadi_fun
 
     def muscle_activation_dot(self) -> Function:
+        # @Pariterre: there is a problem with the statesSet :/
         muscle_excitation_biorbd = self.muscle
         muscle_states = self.model.stateSet()
         for k in range(self.model.nbMuscles()):
