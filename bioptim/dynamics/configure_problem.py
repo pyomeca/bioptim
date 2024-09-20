@@ -1166,8 +1166,6 @@ class ConfigureProblem:
             The function to get the derivative of the states
         """
 
-        DynamicsFunctions.apply_parameters(nlp)
-
         dynamics_eval = dyn_func(
             nlp.time_cx,
             nlp.states.scaled.cx,
@@ -1355,7 +1353,7 @@ class ConfigureProblem:
 
         q = nlp.states.cx[nlp.states["q"].index]
         qdot = nlp.states.cx[nlp.states["qdot"].index]
-        global_soft_contact_force_func = nlp.model.soft_contact_forces()(q, qdot)
+        global_soft_contact_force_func = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
         nlp.soft_contact_forces_func = global_soft_contact_force_func
 
         for i_sc in range(nlp.model.nb_soft_contacts):
