@@ -126,13 +126,11 @@ class NonLinearProgram:
         Add to the pool of declared casadi function. If the function already exists, it is skipped
     to_casadi_func
         Converts a symbolic expression into a casadi function
-    mx_to_cx
-        Add to the pool of declared casadi function. If the function already exists, it is skipped
     node_time(self, node_idx: int)
         Gives the time for a specific index
     """
 
-    def __init__(self, phase_dynamics: PhaseDynamics):
+    def __init__(self, phase_dynamics: PhaseDynamics, use_sx: bool):
         self.casadi_func = {}
         self.contact_forces_func = None
         self.soft_contact_forces_func = None
@@ -195,7 +193,7 @@ class NonLinearProgram:
         # parameters is currently a clone of ocp.parameters, but should hold phase parameters
         from ..optimization.parameters import ParameterContainer
 
-        self.parameters = ParameterContainer()
+        self.parameters = ParameterContainer(use_sx=use_sx)
         self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
 
@@ -418,39 +416,6 @@ class NonLinearProgram:
             mx = [var.mx if isinstance(var, OptimizationVariable) else var for var in all_param]
             self.casadi_func[name] = self.to_casadi_func(name, function, *mx)
         return self.casadi_func[name]
-
-    @staticmethod
-    def mx_to_cx(name: str, symbolic_expression: SX | MX | Callable, *all_param: Any) -> Function:
-        """
-        Add to the pool of declared casadi function. If the function already exists, it is skipped
-
-        Parameters
-        ----------
-        name: str
-            The unique name of the function to add to the casadi functions pool
-        symbolic_expression: SX | MX | Callable
-            The symbolic expression to be converted, also support Callables
-        all_param: Any
-            Any parameters to pass to the biorbd function
-        """
-
-        from ..optimization.optimization_variable import OptimizationVariable, OptimizationVariableList
-        from ..optimization.parameters import Parameter, ParameterList
-
-        cx_types = OptimizationVariable, OptimizationVariableList, Parameter, ParameterList
-        mx = [var.mx if isinstance(var, cx_types) else var for var in all_param]
-        cx = []
-        for var in all_param:
-            if hasattr(var, "mapping"):
-                cx += [var.mapping.to_second.map(var.cx_start)]
-            elif hasattr(var, "cx_start"):
-                cx += [var.cx_start]
-            else:
-                raise RuntimeError(
-                    f"Variable {var} is not of the good type ({type(var)}), it should be an OptimizationVariable or a Parameter."
-                )
-
-        return NonLinearProgram.to_casadi_func(name, symbolic_expression, *mx)(*cx)
 
     @staticmethod
     def to_casadi_func(name, symbolic_expression: MX | SX | Callable, *all_param, expand=True) -> Function:

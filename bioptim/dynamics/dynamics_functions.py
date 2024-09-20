@@ -598,8 +598,8 @@ class DynamicsFunctions:
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)
 
         tau = DynamicsFunctions.get(nlp.states["tau"], states)
-        tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
-        tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+        tau = tau + nlp.model.passive_joint_torque()(q, qdot) if with_passive_torque else tau
+        tau = tau + nlp.model.ligament_joint_torque()(q, qdot) if with_ligament else tau
 
         dq = DynamicsFunctions.compute_qdot(nlp, q, qdot)
         dtau = DynamicsFunctions.get(nlp.controls["taudot"], controls)
@@ -675,8 +675,9 @@ class DynamicsFunctions:
         tau = nlp.get_var_from_states_or_controls("tau", states, controls)
         tau = tau + nlp.model.passive_joint_torque(q, qdot) if with_passive_torque else tau
         tau = tau + nlp.model.ligament_joint_torque(q, qdot) if with_ligament else tau
+        f_ext = [] if external_forces is None else external_forces
 
-        return nlp.model.contact_forces(external_forces=external_forces)(q, qdot, tau)
+        return nlp.model.contact_forces()(q, qdot, tau, f_ext)
 
     @staticmethod
     def forces_from_torque_activation_driven(
@@ -860,7 +861,7 @@ class DynamicsFunctions:
             rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
         ):
             if not with_contact and fatigue is None:
-                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.mx_reduced)
+                qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.cx)
                 tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
                 defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
@@ -871,7 +872,7 @@ class DynamicsFunctions:
                         - DynamicsFunctions.compute_qdot(
                             nlp,
                             q,
-                            DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.mx_reduced),
+                            DynamicsFunctions.get(nlp.states_dot["qdot"], nlp.states_dot.cx),
                         )
                     )
                 defects[: dq.shape[0], :] = horzcat(*dq_defects)
@@ -993,7 +994,7 @@ class DynamicsFunctions:
         if rigidbody_dynamics is not RigidBodyDynamics.ODE or (
             rigidbody_dynamics is RigidBodyDynamics.ODE and nlp.ode_solver.defects_type == DefectType.IMPLICIT
         ):
-            qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.mx_reduced)
+            qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.cx)
             qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
 
             floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered)[: nlp.model.nb_root]
@@ -1002,7 +1003,7 @@ class DynamicsFunctions:
 
             defects[: qdot_mapped.shape[0], :] = qdot_mapped - nlp.variable_mappings["qdot"].to_first.map(
                 DynamicsFunctions.compute_qdot(
-                    nlp, q, DynamicsFunctions.get((nlp.states_dot["qdot"]), nlp.states_dot.mx_reduced)
+                    nlp, q, DynamicsFunctions.get((nlp.states_dot["qdot"]), nlp.states_dot.cx)
                 )
             )
 
@@ -1012,7 +1013,7 @@ class DynamicsFunctions:
             defects[(qdot_mapped.shape[0] + qddot_root_mapped.shape[0]) :, :] = (
                 qddot_joints_mapped
                 - nlp.variable_mappings["qddot_joints"].to_first.map(
-                    DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.mx_reduced)
+                    DynamicsFunctions.get(nlp.states_dot["qddot_joints"], nlp.states_dot.cx)
                 )
             )
 
@@ -1055,7 +1056,7 @@ class DynamicsFunctions:
             if nlp.parameters[param_key].function:
                 param = nlp.parameters[param_key]
                 param_scaling = nlp.parameters[param_key].scaling.scaling
-                param_reduced = nlp.parameters.scaled.mx_reduced[param.index]
+                param_reduced = nlp.parameters.scaled.cx[param.index]
                 param.function(nlp.model, param_reduced * param_scaling, **param.kwargs)
 
     @staticmethod
@@ -1170,7 +1171,7 @@ class DynamicsFunctions:
         """
 
         if external_forces is None:
-            tau = nlp.model.inverse_dynamics(q, qdot, qddot)
+            tau = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, [])
         else:
             if "tau" in nlp.states:
                 tau_shape = nlp.states["tau"].cx.shape[0]
@@ -1180,7 +1181,7 @@ class DynamicsFunctions:
                 tau_shape = nlp.model.nb_tau
             tau = nlp.cx(tau_shape, nlp.ns)
             for i in range(external_forces.shape[1]):
-                tau[:, i] = nlp.model.inverse_dynamics(q, qdot, qddot, external_forces[:, i])
+                tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, external_forces[:, i])
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod

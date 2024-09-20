@@ -272,9 +272,9 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
                 warn("The chosen model does not have any rigid contact")
 
             # Todo scaled?
-            q_pre = pre.states["q"].mx
-            qdot_pre = pre.states["qdot"].mx
-            qdot_impact = post.model.qdot_from_impact(q_pre, qdot_pre)
+            q_pre = pre.states["q"].cx
+            qdot_pre = pre.states["qdot"].cx
+            qdot_impact = post.model.qdot_from_impact()(q_pre, qdot_pre)
 
             val = []
             cx_start = []
@@ -282,15 +282,14 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             for key in pre.states:
                 cx_end = vertcat(cx_end, pre.states[key].mapping.to_second.map(pre.states[key].cx))
                 cx_start = vertcat(cx_start, post.states[key].mapping.to_second.map(post.states[key].cx))
-                post_mx = post.states[key].mx
+                post_cx = post.states[key].cx
                 continuity = post.states["qdot"].mapping.to_first.map(
-                    qdot_impact - post_mx if key == "qdot" else pre.states[key].mx - post_mx
+                    qdot_impact - post_cx if key == "qdot" else pre.states[key].cx - post_cx
                 )
                 val = vertcat(val, continuity)
 
-            name = f"PHASE_TRANSITION_{pre.phase_idx % ocp.n_phases}_{post.phase_idx % ocp.n_phases}"
-            func = pre.to_casadi_func(name, val, pre.states.mx, post.states.mx)(cx_end, cx_start)
-            return func
+            # name = f"PHASE_TRANSITION_{pre.phase_idx % ocp.n_phases}_{post.phase_idx % ocp.n_phases}"
+            return val
 
         @staticmethod
         def covariance_cyclic(

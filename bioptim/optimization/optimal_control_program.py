@@ -534,7 +534,7 @@ class OptimalControlProgram:
         self.g_implicit = []
 
         # nlp is the core of a phase
-        self.nlp = [NLP(dynamics[i].phase_dynamics) for i in range(self.n_phases)]
+        self.nlp = [NLP(dynamics[i].phase_dynamics, use_sx) for i in range(self.n_phases)]
         NLP.add(self, "model", bio_model, False)
         NLP.add(self, "phase_idx", [i for i in range(self.n_phases)], False)
 

@@ -117,10 +117,6 @@ class PenaltyController:
         return self._nlp.ns
 
     @property
-    def mx_to_cx(self):
-        return self._nlp.mx_to_cx
-
-    @property
     def model(self):
         return self._nlp.model
 

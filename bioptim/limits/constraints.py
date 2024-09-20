@@ -655,22 +655,27 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.algebraic_states["a"].cx, controller.model.matrix_shape_a
             )
 
-            # Charbie todo remove this function
-            q_root = MX.sym("q_root", nb_root, 1)
-            q_joints = MX.sym("q_joints", nu, 1)
-            qdot_root = MX.sym("qdot_root", nb_root, 1)
-            qdot_joints = MX.sym("qdot_joints", nu, 1)
-            tau_joints = MX.sym("tau_joints", nu, 1)
-            algebraic_states_sym = MX.sym("algebraic_states_sym", controller.algebraic_states.shape, 1)
-            numerical_timeseries_sym = MX.sym("numerical_timeseries_sym", controller.numerical_timeseries.shape, 1)
+            q_roots = controller.states["q_roots"].cx
+            q_joints = controller.states["q_joints"].cx
+            qdot_roots = controller.states["qdot_roots"].cx
+            qdot_joints = controller.states["qdot_joints"].cx
+            tau_joints = controller.controls["tau_joints"].cx
+
+            # q_root = MX.sym("q_root", nb_root, 1)
+            # q_joints = MX.sym("q_joints", nu, 1)
+            # qdot_root = MX.sym("qdot_root", nb_root, 1)
+            # qdot_joints = MX.sym("qdot_joints", nu, 1)
+            # tau_joints = MX.sym("tau_joints", nu, 1)
+            # algebraic_states_sym = MX.sym("algebraic_states_sym", controller.algebraic_states.shape, 1)
+            # numerical_timeseries_sym = MX.sym("numerical_timeseries_sym", controller.numerical_timeseries.shape, 1)
 
             dx = controller.extra_dynamics(0)(
-                controller.t_span.mx,
-                vertcat(q_root, q_joints, qdot_root, qdot_joints),  # States
+                controller.t_span.cx,
+                vertcat(q_roots, q_joints, qdot_roots, qdot_joints),  # States
                 tau_joints,
-                controller.parameters.mx,
-                algebraic_states_sym,
-                numerical_timeseries_sym,
+                controller.parameters.cx,
+                controller.algebraic_states.cx,
+                controller.numerical_timeseries.cx,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -679,15 +684,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             DF_DX_fun = Function(
                 "DF_DX_fun",
                 [
-                    controller.t_span.mx,
-                    q_root,
+                    controller.t_span.cx,
+                    q_roots,
                     q_joints,
-                    qdot_root,
+                    qdot_roots,
                     qdot_joints,
                     tau_joints,
-                    controller.parameters.mx,
-                    algebraic_states_sym,
-                    numerical_timeseries_sym,
+                    controller.parameters.cx,
+                    controller.algebraic_states.cx,
+                    controller.numerical_timeseries.cx,
                 ],
                 [jacobian(dx[non_root_index], vertcat(q_joints, qdot_joints))],
             )
@@ -815,27 +820,6 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 algebraic_states=controller.algebraic_states.cx,
                 numerical_timeseries=controller.numerical_timeseries.cx,
                 nlp=controller.get_nlp,
-            )
-
-            # Charbie todo remove this function
-            sensory_input = Function(
-                "tp",
-                [
-                    controller.t_span.mx,
-                    controller.states.mx,
-                    controller.controls.mx,
-                    controller.parameters.mx,
-                    controller.algebraic_states.mx,
-                    controller.numerical_timeseries.mx,
-                ],
-                [sensory_input],
-            )(
-                controller.t_span.cx,
-                controller.states.cx_start,
-                controller.controls.cx_start,
-                controller.parameters.cx,
-                controller.algebraic_states.cx_start,
-                controller.numerical_timeseries.cx,
             )
 
             return sensory_input[: controller.model.n_feedbacks] - ref[: controller.model.n_feedbacks]
