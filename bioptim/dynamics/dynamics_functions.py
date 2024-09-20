@@ -260,7 +260,9 @@ class DynamicsFunctions:
         n_qdot = nlp.model.nb_qdot
 
         tau_joints = (
-            tau_joints + nlp.model.passive_joint_torque()(q_full, qdot_full, nlp.parameters.cx) if with_passive_torque else tau_joints
+            tau_joints + nlp.model.passive_joint_torque()(q_full, qdot_full, nlp.parameters.cx)
+            if with_passive_torque
+            else tau_joints
         )
         tau_joints = tau_joints + nlp.model.ligament_joint_torque()(q_full, qdot_full) if with_ligament else tau_joints
         tau_joints = tau_joints - nlp.model.friction_coefficients @ qdot_joints if with_friction else tau_joints
@@ -1116,7 +1118,9 @@ class DynamicsFunctions:
             qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, [], nlp.parameters.cx)
             return qdot_var_mapping.map(qddot)
         else:
-            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, external_forces, nlp.parameters.cx)
+            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(
+                q, qdot, tau, external_forces, nlp.parameters.cx
+            )
             return qdot_var_mapping.map(qddot)
 
     @staticmethod
@@ -1162,7 +1166,9 @@ class DynamicsFunctions:
                 tau_shape = nlp.model.nb_tau
             tau = nlp.cx(tau_shape, nlp.ns)
             for i in range(external_forces.shape[1]):
-                tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, external_forces[:, i], nlp.parameters.cx)
+                tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(
+                    q, qdot, qddot, external_forces[:, i], nlp.parameters.cx
+                )
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod

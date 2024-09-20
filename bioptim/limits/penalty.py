@@ -124,7 +124,9 @@ class PenaltyFunctionAbstract:
             if key_control == "tau":
                 return controls * controller.qdot.cx_start
             elif key_control == "muscles":
-                muscles_dot = controller.model.muscle_velocity()(controller.q.cx, controller.qdot.cx, controller.parameters.cx)
+                muscles_dot = controller.model.muscle_velocity()(
+                    controller.q.cx, controller.qdot.cx, controller.parameters.cx
+                )
 
                 return controls * muscles_dot
 
@@ -295,7 +297,9 @@ class PenaltyFunctionAbstract:
             jcs_t = (
                 CX_eye(4)
                 if reference_jcs is None
-                else controller.model.homogeneous_matrices_in_global(reference_jcs, inverse=True)(q.cx, controller.parameters.cx)
+                else controller.model.homogeneous_matrices_in_global(reference_jcs, inverse=True)(
+                    q.cx, controller.parameters.cx
+                )
             )
 
             markers = []
@@ -426,9 +430,9 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            diff_markers = controller.model.marker(second_marker_idx)(controller.q.cx, controller.parameters.cx) - controller.model.marker(
-                first_marker_idx
-            )(controller.q.cx, controller.parameters.cx)
+            diff_markers = controller.model.marker(second_marker_idx)(
+                controller.q.cx, controller.parameters.cx
+            ) - controller.model.marker(first_marker_idx)(controller.q.cx, controller.parameters.cx)
 
             return diff_markers
 
@@ -470,7 +474,9 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            marker_velocity = controller.model.marker_velocities()(controller.q.cx, controller.qdot.cx, controller.parameters.cx)
+            marker_velocity = controller.model.marker_velocities()(
+                controller.q.cx, controller.qdot.cx, controller.parameters.cx
+            )
             marker_1 = marker_velocity[first_marker_idx][:]
             marker_2 = marker_velocity[second_marker_idx][:]
 
@@ -600,7 +606,9 @@ class PenaltyFunctionAbstract:
 
             g = controller.model.gravity()["o0"][2]
             com = controller.model.center_of_mass()(controller.q.cx, controller.parameters.cx)
-            com_dot = controller.model.center_of_mass_velocity()(controller.q.cx, controller.qdot.cx, controller.parameters.cx)
+            com_dot = controller.model.center_of_mass_velocity()(
+                controller.q.cx, controller.qdot.cx, controller.parameters.cx
+            )
             com_height = (com_dot[2] * com_dot[2]) / (2 * -g) + com[2]
             return com_height
 
@@ -648,7 +656,9 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            return controller.model.center_of_mass_velocity()(controller.q.cx, controller.qdot.cx, controller.parameters.cx)
+            return controller.model.center_of_mass_velocity()(
+                controller.q.cx, controller.qdot.cx, controller.parameters.cx
+            )
 
         @staticmethod
         def minimize_com_acceleration(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
@@ -673,7 +683,9 @@ class PenaltyFunctionAbstract:
 
             qddot = PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
-            marker = controller.model.center_of_mass_acceleration()(controller.q.cx, controller.qdot.cx, qddot, controller.parameters.cx)
+            marker = controller.model.center_of_mass_acceleration()(
+                controller.q.cx, controller.qdot.cx, qddot, controller.parameters.cx
+            )
 
             return marker
 
@@ -718,7 +730,9 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            com_velocity = controller.model.center_of_mass_velocity()(controller.q.cx, controller.qdot.cx, controller.parameters.cx)
+            com_velocity = controller.model.center_of_mass_velocity()(
+                controller.q.cx, controller.qdot.cx, controller.parameters.cx
+            )
             mass = controller.model.mass()["o0"]
             linear_momentum_cx = com_velocity * mass
             return linear_momentum_cx
@@ -892,7 +906,9 @@ class PenaltyFunctionAbstract:
                 raise NotImplementedError(
                     "The track_segment_with_custom_rt penalty can only be called with a BiorbdModel"
                 )
-            r_seg_transposed = controller.model.homogeneous_matrices_in_global(segment_index)(controller.q.cx, controller.parameters.cx)[:3, :3].T
+            r_seg_transposed = controller.model.homogeneous_matrices_in_global(segment_index)(
+                controller.q.cx, controller.parameters.cx
+            )[:3, :3].T
             r_rt = controller.model.rt(rt_idx)(controller.q.cx, controller.parameters.cx)[:3, :3]
             # @Pariterre: why was this sequence is fixed?
             # @Pariterre: this is suspicious and it breaks the tests!
@@ -985,7 +1001,9 @@ class PenaltyFunctionAbstract:
             if not isinstance(controller.model, BiorbdModel):
                 raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
 
-            jcs_segment = controller.model.homogeneous_matrices_in_global(segment_idx)(controller.q.cx, controller.parameters.cx)[:3, :3]
+            jcs_segment = controller.model.homogeneous_matrices_in_global(segment_idx)(
+                controller.q.cx, controller.parameters.cx
+            )[:3, :3]
             angles_segment = controller.model.rotation_matrix_to_euler_angles(sequence)(jcs_segment)
 
             if axes is None:
@@ -1030,7 +1048,9 @@ class PenaltyFunctionAbstract:
                     "The minimize_segments_velocity penalty can only be called with a BiorbdModel"
                 )
             model: BiorbdModel = controller.model
-            segment_angular_velocity = model.segment_angular_velocity(segment_idx)(controller.q.cx, controller.qdot.cx, controller.parameters.cx)
+            segment_angular_velocity = model.segment_angular_velocity(segment_idx)(
+                controller.q.cx, controller.qdot.cx, controller.parameters.cx
+            )
 
             if axes is None:
                 axes = [Axis.X, Axis.Y, Axis.Z]
@@ -1097,10 +1117,18 @@ class PenaltyFunctionAbstract:
                 else vector_1_marker_1
             )
 
-            vector_0_marker_0_position = controller.model.marker(vector_0_marker_0_idx)(controller.q.cx, controller.parameters.cx)
-            vector_0_marker_1_position = controller.model.marker(vector_0_marker_1_idx)(controller.q.cx, controller.parameters.cx)
-            vector_1_marker_0_position = controller.model.marker(vector_1_marker_0_idx)(controller.q.cx, controller.parameters.cx)
-            vector_1_marker_1_position = controller.model.marker(vector_1_marker_1_idx)(controller.q.cx, controller.parameters.cx)
+            vector_0_marker_0_position = controller.model.marker(vector_0_marker_0_idx)(
+                controller.q.cx, controller.parameters.cx
+            )
+            vector_0_marker_1_position = controller.model.marker(vector_0_marker_1_idx)(
+                controller.q.cx, controller.parameters.cx
+            )
+            vector_1_marker_0_position = controller.model.marker(vector_1_marker_0_idx)(
+                controller.q.cx, controller.parameters.cx
+            )
+            vector_1_marker_1_position = controller.model.marker(vector_1_marker_1_idx)(
+                controller.q.cx, controller.parameters.cx
+            )
 
             vector_0 = vector_0_marker_1_position - vector_0_marker_0_position
             vector_1 = vector_1_marker_1_position - vector_1_marker_0_position

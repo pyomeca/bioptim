@@ -230,7 +230,7 @@ class MultiBiorbdModel:
 
     @property
     def gravity(self) -> Function:
-        biorbd_return = vertcat(*(model.gravity()['o0'] for model in self.models))
+        biorbd_return = vertcat(*(model.gravity()["o0"] for model in self.models))
         casadi_fun = Function(
             "gravity",
             [MX()],
@@ -301,7 +301,7 @@ class MultiBiorbdModel:
 
     @property
     def mass(self) -> Function:
-        biorbd_return = vertcat(*(model.mass()['o0'] for model in self.models))
+        biorbd_return = vertcat(*(model.mass()["o0"] for model in self.models))
         casadi_fun = Function(
             "mass",
             [MX()],
@@ -327,9 +327,9 @@ class MultiBiorbdModel:
             q_model = self.q[self.variable_index("q", i)]
             qdot_model = self.qdot[self.variable_index("qdot", i)]
             biorbd_return = vertcat(
-                    biorbd_return,
-                    model.center_of_mass_velocity()(q_model, qdot_model),
-                )
+                biorbd_return,
+                model.center_of_mass_velocity()(q_model, qdot_model),
+            )
         casadi_fun = Function(
             "center_of_mass_velocity",
             [self.q, self.qdot],
@@ -344,9 +344,9 @@ class MultiBiorbdModel:
             qdot_model = self.qdot[self.variable_index("qdot", i)]
             qddot_model = self.qddot[self.variable_index("qddot", i)]
             biorbd_return = vertcat(
-                    biorbd_return,
-                    model.center_of_mass_acceleration()(q_model, qdot_model, qddot_model),
-                )
+                biorbd_return,
+                model.center_of_mass_acceleration()(q_model, qdot_model, qddot_model),
+            )
         casadi_fun = Function(
             "center_of_mass_acceleration",
             [self.q, self.qdot, self.qddot],
@@ -385,9 +385,9 @@ class MultiBiorbdModel:
             q_model = self.q[self.variable_index("q", i)]
             qdot_model = self.qdot[self.variable_index("qdot", i)]
             biorbd_return = vertcat(
-                    biorbd_return,
-                    model.angular_momentum()(q_model, qdot_model),
-                )
+                biorbd_return,
+                model.angular_momentum()(q_model, qdot_model),
+            )
         casadi_fun = Function(
             "angular_momentum",
             [self.q, self.qdot],
@@ -483,7 +483,6 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-
     def forward_dynamics_free_floating_base(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
@@ -522,7 +521,6 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-
     def forward_dynamics(self, with_contact) -> Function:
         """External forces and contact forces are not implemented yet for MultiBiorbdModel."""
 
@@ -557,12 +555,7 @@ class MultiBiorbdModel:
             qddot_model = self.qddot[self.variable_index("qddot", i)]
             biorbd_return = vertcat(
                 biorbd_return,
-                model.inverse_dynamics()(
-                    q_model,
-                    qdot_model,
-                    qddot_model,
-                    []
-                ),
+                model.inverse_dynamics()(q_model, qdot_model, qddot_model, []),
             )
         casadi_fun = Function(
             "inverse_dynamics",
@@ -635,7 +628,9 @@ class MultiBiorbdModel:
                 muscles_states[k].setActivation(self.activations[k])
             q_model = self.q[self.variable_index("q", i)]
             qdot_model = self.qdot[self.variable_index("qdot", i)]
-            biorbd_return = vertcat(biorbd_return, model.model.muscularJointTorque(muscles_states, q_model, qdot_model).to_mx())
+            biorbd_return = vertcat(
+                biorbd_return, model.model.muscularJointTorque(muscles_states, q_model, qdot_model).to_mx()
+            )
         casadi_fun = Function(
             "muscle_joint_torque",
             [self.muscle, self.q, self.qdot],
@@ -760,7 +755,9 @@ class MultiBiorbdModel:
         q_model = self.q[self.variable_index("q", model_idx)]
         qdot_model = self.qdot[self.variable_index("qdot", model_idx)]
         qddot_model = self.qddot[self.variable_index("qddot", model_idx)]
-        biorbd_return = model_selected.rigid_contact_acceleration(contact_index, contact_axis)(q_model, qdot_model, qddot_model)
+        biorbd_return = model_selected.rigid_contact_acceleration(contact_index, contact_axis)(
+            q_model, qdot_model, qddot_model
+        )
         casadi_fun = Function(
             "rigid_contact_acceleration",
             [self.q, self.qdot, self.qddot],
@@ -822,7 +819,6 @@ class MultiBiorbdModel:
             [biorbd_return],
         )
         return casadi_fun
-
 
     def passive_joint_torque(self) -> Function:
         biorbd_return = MX()
