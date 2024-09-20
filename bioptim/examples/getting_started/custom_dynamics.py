@@ -74,7 +74,7 @@ def custom_dynamics(
 
     # You can directly call biorbd function (as for ddq) or call bioptim accessor (as for dq)
     dq = DynamicsFunctions.compute_qdot(nlp, q, qdot) * my_additional_factor
-    ddq = nlp.model.forward_dynamics(q, qdot, tau, [])
+    ddq = nlp.model.forward_dynamics()(q, qdot, tau, [])
 
     # the user has to choose if want to return the explicit dynamics dx/dt = f(x,u,p)
     # as the first argument of DynamicsEvaluation or

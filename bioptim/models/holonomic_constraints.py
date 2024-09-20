@@ -52,16 +52,16 @@ class HolonomicConstraintsFcn:
         q_ddot_sym = MX.sym("q_ddot", biorbd_model.nb_qdot, 1)
 
         # symbolic markers in global frame
-        marker_1_sym = biorbd_model.marker(q_sym, index=biorbd_model.marker_index(marker_1))
+        marker_1_sym = biorbd_model.marker(index=biorbd_model.marker_index(marker_1))(q_sym)
         if marker_2 is not None:
-            marker_2_sym = biorbd_model.marker(q_sym, index=biorbd_model.marker_index(marker_2))
+            marker_2_sym = biorbd_model.marker(index=biorbd_model.marker_index(marker_2))(q_sym)
 
         else:
             marker_2_sym = MX([0, 0, 0])
 
             # if local frame is provided, the markers are expressed in the same local frame
         if local_frame_index is not None:
-            jcs_t = biorbd_model.homogeneous_matrices_in_global(q_sym, local_frame_index, inverse=True)
+            jcs_t = biorbd_model.homogeneous_matrices_in_global(segment_idx=local_frame_index, inverse=True)(q_sym)
             marker_1_sym = (jcs_t @ vertcat(marker_1_sym, 1))[:3]
             marker_2_sym = (jcs_t @ vertcat(marker_2_sym, 1))[:3]
 
