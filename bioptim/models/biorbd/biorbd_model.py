@@ -34,8 +34,9 @@ class BiorbdModel:
             raise ValueError("The model should be of type 'str' or 'biorbd.Model'")
 
         self.model = biorbd.Model(bio_model) if isinstance(bio_model, str) else bio_model
-        for param_key in parameters:
-            parameters[param_key].apply_parameter(self)
+        if parameters is not None:
+            for param_key in parameters:
+                parameters[param_key].apply_parameter(self)
         self._friction_coefficients = friction_coefficients
         self._segments_to_apply_external_forces = segments_to_apply_external_forces
 
