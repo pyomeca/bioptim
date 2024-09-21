@@ -56,17 +56,21 @@ class StochasticBiorbdModel(BiorbdModel):
     ):
         if parameters is None:
             parameters = ParameterList(use_sx=use_sx)
-        parameters.add("motor_noise",
-                       lambda model, param: None,
-                       size=motor_noise_magnitude.shape[0],
-                       scaling=VariableScaling("motor_noise", [1.0] * motor_noise_magnitude.shape[0]))
-        parameters.add("sensory_noise",
-                       lambda model, param: None,
-                       size=sensory_noise_magnitude.shape[0],
-                       scaling=VariableScaling("sensory_noise", [1.0] * sensory_noise_magnitude.shape[0]))
-        super().__init__(bio_model=(bio_model if isinstance(bio_model, str) else bio_model.model),
-                         parameters=parameters,
-                         **kwargs)
+        parameters.add(
+            "motor_noise",
+            lambda model, param: None,
+            size=motor_noise_magnitude.shape[0],
+            scaling=VariableScaling("motor_noise", [1.0] * motor_noise_magnitude.shape[0]),
+        )
+        parameters.add(
+            "sensory_noise",
+            lambda model, param: None,
+            size=sensory_noise_magnitude.shape[0],
+            scaling=VariableScaling("sensory_noise", [1.0] * sensory_noise_magnitude.shape[0]),
+        )
+        super().__init__(
+            bio_model=(bio_model if isinstance(bio_model, str) else bio_model.model), parameters=parameters, **kwargs
+        )
 
         self.motor_noise_magnitude = motor_noise_magnitude
         self.sensory_noise_magnitude = sensory_noise_magnitude

@@ -271,7 +271,9 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             out = controllers[0].cx.zeros((3, 1))
             for i in range(1, len(controllers)):
-                com_i = controllers[i].model.center_of_mass()(controllers[i].states["q"].cx, controllers[i].parameters.cx)
+                com_i = controllers[i].model.center_of_mass()(
+                    controllers[i].states["q"].cx, controllers[i].parameters.cx
+                )
                 out += com_0 - com_i
 
             return out

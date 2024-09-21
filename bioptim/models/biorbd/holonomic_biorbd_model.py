@@ -17,10 +17,11 @@ class HolonomicBiorbdModel(BiorbdModel):
     This class allows to define a biorbd model with custom holonomic constraints.
     """
 
-    def __init__(self,
-                 bio_model: str | biorbd.Model,
-                 parameters: ParameterList = None,
-                 ):
+    def __init__(
+        self,
+        bio_model: str | biorbd.Model,
+        parameters: ParameterList = None,
+    ):
         super().__init__(bio_model, parameters=parameters)
         self._newton_tol = 1e-10
         self._holonomic_constraints = []

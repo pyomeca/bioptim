@@ -345,7 +345,9 @@ class PenaltyFunctionAbstract:
 
             # Add the penalty in the requested reference frame. None for global
             markers = horzcat(
-                *controller.model.marker_velocities(reference_index=reference_jcs)(controller.q, controller.qdot, controller.parameters.cx)
+                *controller.model.marker_velocities(reference_index=reference_jcs)(
+                    controller.q, controller.qdot, controller.parameters.cx
+                )
             )
 
             return markers
@@ -656,9 +658,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            return controller.model.center_of_mass_velocity()(
-                controller.q, controller.qdot, controller.parameters.cx
-            )
+            return controller.model.center_of_mass_velocity()(controller.q, controller.qdot, controller.parameters.cx)
 
         @staticmethod
         def minimize_com_acceleration(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
