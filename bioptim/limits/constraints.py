@@ -406,7 +406,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            passive_torque = controller.model.passive_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
+            passive_torque = controller.model.passive_joint_torque()(
+                controller.q, controller.qdot, controller.parameters.cx
+            )
             tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
             tau = tau + passive_torque if with_passive_torque else tau
             tau = (
@@ -453,7 +455,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
             qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
-            passive_torque = controller.model.passive_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
+            passive_torque = controller.model.passive_joint_torque()(
+                controller.q, controller.qdot, controller.parameters.cx
+            )
             tau = tau + passive_torque if with_passive_torque else tau
             tau = (
                 tau + controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
@@ -533,13 +537,18 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             muscle_activations = controller.controls["muscles"].cx
             muscles_states = controller.model.state_set()
-            passive_torque = controller.model.passive_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
+            passive_torque = controller.model.passive_joint_torque()(
+                controller.q, controller.qdot, controller.parameters.cx
+            )
             for k in range(len(controller.controls["muscles"])):
                 muscles_states[k].setActivation(muscle_activations[k])
-            muscle_tau = controller.model.muscle_joint_torque(muscles_states, controller.q, controller.qdot, controller.parameters.cx)
+            muscle_tau = controller.model.muscle_joint_torque(
+                muscles_states, controller.q, controller.qdot, controller.parameters.cx
+            )
             muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
             muscle_tau = (
-                muscle_tau + controller.model.ligament_joint_torque(controller.q, controller.qdot, controller.parameters.cx)
+                muscle_tau
+                + controller.model.ligament_joint_torque(controller.q, controller.qdot, controller.parameters.cx)
                 if with_ligament
                 else muscle_tau
             )

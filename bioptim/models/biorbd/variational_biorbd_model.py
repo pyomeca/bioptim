@@ -319,7 +319,9 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         CX = MX if isinstance(q_penultimate, MX) else SX
 
         # Refers to D_2 L(q_N, \dot{q_N}) (D_2 is the partial derivative with respect to the second argument)
-        d2_l_q_ultimate_qdot_ultimate = transpose(jacobian(self.lagrangian()(q_ultimate, q_dot_ultimate), q_dot_ultimate))
+        d2_l_q_ultimate_qdot_ultimate = transpose(
+            jacobian(self.lagrangian()(q_ultimate, q_dot_ultimate), q_dot_ultimate)
+        )
         # Refers to D_2 L_d(q_{n-1}, q_1) (Ld is the discrete Lagrangian)
         d2_ld_q_penultimate_q_ultimate = transpose(
             jacobian(self.discrete_lagrangian(q_penultimate, q_ultimate, time_step), q_ultimate)
