@@ -30,8 +30,6 @@ class DynamicsFunctions:
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
     get(var: OptimizationVariable, cx: MX | SX):
         Main accessor to a variable in states or controls (cx)
-    apply_parameters(parameters: MX.sym, nlp: NonLinearProgram)
-        Apply the parameter variables to the model. This should be called before calling the dynamics
     reshape_qdot(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX):
         Easy accessor to derivative of q
     forward_dynamics(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, tau: MX | SX, with_contact: bool):
@@ -938,7 +936,7 @@ class DynamicsFunctions:
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         external_forces = [] if external_forces is None else external_forces
-        return nlp.model.contact_forces()(q, qdot, tau, external_forces)
+        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
 
     @staticmethod
     def joints_acceleration_driven(
@@ -985,7 +983,7 @@ class DynamicsFunctions:
         qdot = nlp.get_var_from_states_or_controls("qdot", states, controls)
         qddot_joints = nlp.get_var_from_states_or_controls("qddot", states, controls)
 
-        qddot_root = nlp.model.forward_dynamics_free_floating_base()(q, qdot, qddot_joints)
+        qddot_root = nlp.model.forward_dynamics_free_floating_base()(q, qdot, qddot_joints, nlp.parameters.cx)
         qddot_reordered = nlp.model.reorder_qddot_root_joints(qddot_root, qddot_joints)
 
         qdot_mapped = nlp.variable_mappings["qdot"].to_first.map(qdot)
@@ -1188,7 +1186,7 @@ class DynamicsFunctions:
         The derivative of muscle activations
         """
 
-        return nlp.model.muscle_activation_dot()(muscle_excitations)
+        return nlp.model.muscle_activation_dot()(muscle_excitations, nlp.parameters.cx)
 
     @staticmethod
     def compute_tau_from_muscle(

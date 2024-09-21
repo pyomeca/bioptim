@@ -10,7 +10,9 @@ bioptim_folder = TestUtils.bioptim_folder()
 def model():
     return
 
+
 # Pariterre: Can I remove this file all together?
+
 
 def generate_q_vectors(model):
     q_valid = MX([0.1] * model.nb_q)

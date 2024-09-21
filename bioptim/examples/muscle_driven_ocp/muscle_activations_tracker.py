@@ -12,7 +12,7 @@ import platform
 
 import biorbd_casadi as biorbd
 import numpy as np
-from casadi import MX, vertcat
+from casadi import MX, vertcat, horzcat
 from matplotlib import pyplot as plt
 from scipy.integrate import solve_ivp
 
@@ -78,7 +78,8 @@ def generate_data(
     n_mus = bio_model.nb_muscles
     dt = final_time / n_shooting
 
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=False)
+    nlp.cx = MX
     nlp.model = bio_model
     nlp.variable_mappings = {
         "q": BiMapping(range(n_q), range(n_q)),
@@ -96,7 +97,6 @@ def generate_data(
     symbolic_tau = MX.sym("tau", n_tau, 1)
     symbolic_mus = MX.sym("muscles", n_mus, 1)
     symbolic_parameters = MX.sym("params", 0, 0)
-    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_q)
 
     nlp.states = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
     nlp.states_dot = OptimizationVariableContainer(phase_dynamics=phase_dynamics)
@@ -199,7 +199,7 @@ def generate_data(
 
     def add_to_data(i, q):
         X[:, i] = q
-        markers[:, :, i] = markers_func(q[0:n_q])
+        markers[:, :, i] = horzcat(*bio_model.markers()(q[0:n_q], []))
 
     x_init = np.array([0] * n_q + [0] * n_qdot)
     add_to_data(0, x_init)

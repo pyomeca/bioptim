@@ -43,7 +43,7 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
     # Get the index of the markers from their name
     marker_0_idx = controller.model.marker_index(first_marker)
     marker_1_idx = controller.model.marker_index(second_marker)
-    markers = controller.model.markers()(controller.q.cx)
+    markers = controller.model.markers()(controller.q, controller.parameters.cx)
     return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
 
@@ -258,32 +258,6 @@ def prepare_ocp_parameters(
     The ocp ready to be solved
     """
 
-    # --- Options --- #
-    bio_model = BiorbdModel(biorbd_model_path)
-    n_tau = bio_model.nb_tau
-
-    # Add objective functions
-    objective_functions = ObjectiveList()
-    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10)
-    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=10)
-
-    # Dynamics
-    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
-
-    # Path constraint
-    x_bounds = BoundsList()
-    x_bounds["q"] = bio_model.bounds_from_ranges("q")
-    x_bounds["q"][:, [0, -1]] = 0
-    x_bounds["q"][1, -1] = 3.14
-    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
-    x_bounds["qdot"][:, [0, -1]] = 0
-
-    # Define control path constraint
-    tau_min, tau_max, tau_init = -300, 300, 0
-    u_bounds = BoundsList()
-    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
-    u_bounds["tau"][1, :] = 0
-
     # Define the parameter to optimize
     parameters = ParameterList(use_sx=use_sx)
     parameter_objectives = ParameterObjectiveList()
@@ -337,6 +311,32 @@ def prepare_ocp_parameters(
             target=target_m / m_scaling.scaling,  # Make sure your target fits the scaling
             key="mass",
         )
+
+    # --- Options --- #
+    bio_model = BiorbdModel(biorbd_model_path, parameters=parameters)
+    n_tau = bio_model.nb_tau
+
+    # Add objective functions
+    objective_functions = ObjectiveList()
+    objective_functions.add(ObjectiveFcn.Lagrange.MINIMIZE_CONTROL, key="tau", weight=10)
+    objective_functions.add(ObjectiveFcn.Mayer.MINIMIZE_TIME, weight=10)
+
+    # Dynamics
+    dynamics = Dynamics(DynamicsFcn.TORQUE_DRIVEN, expand_dynamics=True, phase_dynamics=phase_dynamics)
+
+    # Path constraint
+    x_bounds = BoundsList()
+    x_bounds["q"] = bio_model.bounds_from_ranges("q")
+    x_bounds["q"][:, [0, -1]] = 0
+    x_bounds["q"][1, -1] = 3.14
+    x_bounds["qdot"] = bio_model.bounds_from_ranges("qdot")
+    x_bounds["qdot"][:, [0, -1]] = 0
+
+    # Define control path constraint
+    tau_min, tau_max, tau_init = -300, 300, 0
+    u_bounds = BoundsList()
+    u_bounds["tau"] = [tau_min] * n_tau, [tau_max] * n_tau
+    u_bounds["tau"][1, :] = 0
 
     return OptimalControlProgram(
         bio_model,

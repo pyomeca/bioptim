@@ -510,7 +510,7 @@ class BiorbdModel:
         return casadi_fun
 
     def muscle_velocity(self) -> Function:
-        J = self.muscle_length_jacobian()(self.q)
+        J = self.muscle_length_jacobian()(self.q, self.parameters)
         biorbd_return = J @ self.qdot
         casadi_fun = Function(
             "muscle_velocity",
@@ -535,11 +535,11 @@ class BiorbdModel:
         return casadi_fun
 
     def markers(self) -> list[MX]:
-        biorbd_return = [m.to_mx() for m in self.model.markers(GeneralizedCoordinates(self.q))]
+        biorbd_return = horzcat(*[m.to_mx() for m in self.model.markers(GeneralizedCoordinates(self.q))])
         casadi_fun = Function(
             "markers",
             [self.q, self.parameters],
-            biorbd_return,
+            [biorbd_return],
         )
         return casadi_fun
 
@@ -784,7 +784,7 @@ class BiorbdModel:
 
     def contact_forces(self) -> Function:
         force = self.contact_forces_from_constrained_forward_dynamics()(
-            self.q, self.qdot, self.tau, self.external_forces
+            self.q, self.qdot, self.tau, self.external_forces, self.parameters
         )
         casadi_fun = Function(
             "contact_forces",

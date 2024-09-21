@@ -301,14 +301,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if min_torque and min_torque < 0:
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
 
-            bound = controller.model.tau_max()(controller.q.cx, controller.qdot.cx)
+            bound = controller.model.tau_max()(controller.q, controller.qdot, controller.parameters.cx)
             min_bound = controller.tau.mapping.to_first.map(bound[1])
             max_bound = controller.tau.mapping.to_first.map(bound[0])
             if min_torque:
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)
 
-            value = vertcat(controller.tau.cx_start + min_bound, controller.tau.cx_start - max_bound)
+            value = vertcat(controller.tau + min_bound, controller.tau - max_bound)
 
             if constraint.rows is None or isinstance(constraint.rows, (tuple, list, np.ndarray)):
                 n_rows = value.shape[0] // 2
@@ -406,13 +406,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            q = controller.q.cx
-            qdot = controller.qdot.cx
-            passive_torque = controller.model.passive_joint_torque()(q, qdot, controller.parameters.cx)
-            tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau.cx
+            passive_torque = controller.model.passive_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
+            tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
             tau = tau + passive_torque if with_passive_torque else tau
             tau = (
-                tau + controller.model.ligament_joint_torque(q, qdot, controller.parameters.cx)
+                tau + controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
                 if with_ligament
                 else tau
             )
@@ -420,7 +418,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qddot = controller.controls["qddot"].cx if "qddot" in controller.controls else controller.states["qddot"].cx
             # @Ipuch: no f_ext allowed ?
             qddot_fd = controller.model.forward_dynamics(with_contact=with_contact)(
-                q, qdot, tau, [], controller.parameters.cx
+                controller.q, controller.qdot, tau, [], controller.parameters.cx
             )
             return qddot - qddot_fd
 
@@ -453,14 +451,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            q = controller.q.cx
-            qdot = controller.qdot.cx
-            tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau.cx
+            tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
             qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
-            passive_torque = controller.model.passive_joint_torque()(q, qdot, controller.parameters.cx)
+            passive_torque = controller.model.passive_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
             tau = tau + passive_torque if with_passive_torque else tau
             tau = (
-                tau + controller.model.ligament_joint_torque()(q, qdot, controller.parameters.cx)
+                tau + controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
                 if with_ligament
                 else tau
             )
@@ -475,7 +471,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise ValueError("External forces must be provided")
 
             tau_id = controller.model.inverse_dynamics(with_contact=with_contact)(
-                q, qdot, qddot, f_ext, controller.parameters.cx
+                controller.q, controller.qdot, qddot, f_ext, controller.parameters.cx
             )
 
             var = []
@@ -504,13 +500,11 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            q = controller.q.cx
-            qdot = controller.qdot.cx
             qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
 
             # TODO get the index of the marker
             contact_acceleration = controller.model.rigid_contact_acceleration(contact_index, contact_axis)(
-                q, qdot, qddot
+                controller.q, controller.qdot, qddot
             )
 
             return contact_acceleration
@@ -537,17 +531,15 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 Since the function does nothing, we can safely ignore any argument
             """
 
-            q = controller.q.cx
-            qdot = controller.qdot.cx
             muscle_activations = controller.controls["muscles"].cx
             muscles_states = controller.model.state_set()
-            passive_torque = controller.model.passive_joint_torque()(q, qdot, controller.parameters.cx)
+            passive_torque = controller.model.passive_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
             for k in range(len(controller.controls["muscles"])):
                 muscles_states[k].setActivation(muscle_activations[k])
-            muscle_tau = controller.model.muscle_joint_torque(muscles_states, q, qdot, controller.parameters.cx)
+            muscle_tau = controller.model.muscle_joint_torque(muscles_states, controller.q, controller.qdot, controller.parameters.cx)
             muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
             muscle_tau = (
-                muscle_tau + controller.model.ligament_joint_torque(q, qdot, controller.parameters.cx)
+                muscle_tau + controller.model.ligament_joint_torque(controller.q, controller.qdot, controller.parameters.cx)
                 if with_ligament
                 else muscle_tau
             )
@@ -560,7 +552,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
                 # fext need to be a mx
 
-            tau_id = controller.model.inverse_dynamics()(q, qdot, qddot, controller.parameters.cx)
+            tau_id = controller.model.inverse_dynamics()(controller.q, controller.qdot, qddot, controller.parameters.cx)
 
             return tau_id - muscle_tau
 
@@ -720,10 +712,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             DF_DX = DF_DX_fun(
                 controller.t_span.cx,
-                controller.q.cx[:nb_root],
-                controller.q.cx[nb_root:],
-                controller.qdot.cx[:nb_root],
-                controller.qdot.cx[nb_root:],
+                controller.q[:nb_root],
+                controller.q[nb_root:],
+                controller.qdot[:nb_root],
+                controller.qdot[nb_root:],
                 controller.controls.cx,
                 parameters,
                 controller.algebraic_states.cx,

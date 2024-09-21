@@ -9,6 +9,7 @@ from casadi import MX, DM, vertcat, horzcat, Function, solve, rootfinder, inv
 
 from .biorbd_model import BiorbdModel
 from ..holonomic_constraints import HolonomicConstraintsList
+from ...optimization.parameters import ParameterList
 
 
 class HolonomicBiorbdModel(BiorbdModel):
@@ -16,8 +17,11 @@ class HolonomicBiorbdModel(BiorbdModel):
     This class allows to define a biorbd model with custom holonomic constraints.
     """
 
-    def __init__(self, bio_model: str | biorbd.Model):
-        super().__init__(bio_model)
+    def __init__(self,
+                 bio_model: str | biorbd.Model,
+                 parameters: ParameterList = None,
+                 ):
+        super().__init__(bio_model, parameters=parameters)
         self._newton_tol = 1e-10
         self._holonomic_constraints = []
         self._holonomic_constraints_jacobians = []

@@ -7,6 +7,7 @@ from casadi import SX, MX, vertcat, jacobian, transpose
 
 from .holonomic_biorbd_model import HolonomicBiorbdModel
 from ...misc.enums import ControlType, QuadratureRule
+from ...optimization.parameters import ParameterList
 
 
 class VariationalBiorbdModel(HolonomicBiorbdModel):
@@ -21,8 +22,9 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         discrete_approximation: QuadratureRule = QuadratureRule.TRAPEZOIDAL,
         control_type: ControlType = ControlType.CONSTANT,
         control_discrete_approximation: QuadratureRule = QuadratureRule.MIDPOINT,
+        parameters: ParameterList = None,
     ):
-        super().__init__(bio_model)
+        super().__init__(bio_model, parameters=parameters)
         self.discrete_approximation = discrete_approximation
         self.control_type = control_type
         self.control_discrete_approximation = control_discrete_approximation
@@ -52,20 +54,20 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         if self.discrete_approximation == QuadratureRule.MIDPOINT:
             q_discrete = (q1 + q2) / 2
             qdot_discrete = (q2 - q1) / time_step
-            return time_step * self.lagrangian(q_discrete, qdot_discrete)
+            return time_step * self.lagrangian()(q_discrete, qdot_discrete)
         elif self.discrete_approximation == QuadratureRule.RECTANGLE_LEFT:
             q_discrete = q1
             qdot_discrete = (q2 - q1) / time_step
-            return time_step * self.lagrangian(q_discrete, qdot_discrete)
+            return time_step * self.lagrangian()(q_discrete, qdot_discrete)
         elif self.discrete_approximation == QuadratureRule.RECTANGLE_RIGHT:
             q_discrete = q2
             qdot_discrete = (q2 - q1) / time_step
-            return time_step * self.lagrangian(q_discrete, qdot_discrete)
+            return time_step * self.lagrangian()(q_discrete, qdot_discrete)
         elif self.discrete_approximation == QuadratureRule.TRAPEZOIDAL:
             # from : M. West, “Variational integrators,” Ph.D. dissertation, California Inst.
             # Technol., Pasadena, CA, 2004. p 13
             qdot_discrete = (q2 - q1) / time_step
-            return time_step / 2 * (self.lagrangian(q1, qdot_discrete) + self.lagrangian(q2, qdot_discrete))
+            return time_step / 2 * (self.lagrangian()(q1, qdot_discrete) + self.lagrangian()(q2, qdot_discrete))
         else:
             raise NotImplementedError(f"Discrete Lagrangian {self.discrete_approximation} is not implemented")
 
@@ -179,6 +181,8 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         The following equation as been calculated thanks to the paper "Discrete mechanics and optimal control for
         constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (10).
         """
+        CX = MX if isinstance(q_prev, MX) else SX
+
         # Refers to D_2 L_d(q_{k-1}, q_k) (D_2 is the partial derivative with respect to the second argument, L_d is the
         # discrete Lagrangian)
         p_current = transpose(jacobian(self.discrete_lagrangian(q_prev, q_cur, time_step), q_cur))
@@ -189,7 +193,7 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         constraint_term = (
             transpose(self.discrete_holonomic_constraints_jacobian(time_step, q_cur)) @ lambdas
             if self.has_holonomic_constraints
-            else MX.zeros(p_current.shape)
+            else CX.zeros(p_current.shape)
         )
 
         residual = (
@@ -244,8 +248,10 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
         indications given just before the equation (18) for p0 and pN.
         """
+        CX = MX if isinstance(q0, MX) else SX
+
         # Refers to D_2 L(q_0, \dot{q_0}) (D_2 is the partial derivative with respect to the second argument)
-        d2_l_q0_qdot0 = transpose(jacobian(self.lagrangian(q0, qdot0), qdot0))
+        d2_l_q0_qdot0 = transpose(jacobian(self.lagrangian()(q0, qdot0), qdot0))
         # Refers to D_1 L_d(q_0, q_1) (D1 is the partial derivative with respect to the first argument, Ld is the
         # discrete Lagrangian)
         d1_ld_q0_q1 = transpose(jacobian(self.discrete_lagrangian(q0, q1, time_step), q0))
@@ -255,7 +261,7 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         constraint_term = (
             1 / 2 * transpose(self.discrete_holonomic_constraints_jacobian(time_step, q0)) @ lambdas0
             if self.has_holonomic_constraints
-            else MX.zeros(self.nb_q, 1)
+            else CX.zeros(self.nb_q, 1)
         )
         residual = d2_l_q0_qdot0 + d1_ld_q0_q1 + f0_minus - constraint_term
 
@@ -310,8 +316,10 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         constrained systems" (https://onlinelibrary.wiley.com/doi/epdf/10.1002/oca.912), equations (14) and the
         indications given just before the equation (18) for p0 and pN.
         """
+        CX = MX if isinstance(q_penultimate, MX) else SX
+
         # Refers to D_2 L(q_N, \dot{q_N}) (D_2 is the partial derivative with respect to the second argument)
-        d2_l_q_ultimate_qdot_ultimate = transpose(jacobian(self.lagrangian(q_ultimate, q_dot_ultimate), q_dot_ultimate))
+        d2_l_q_ultimate_qdot_ultimate = transpose(jacobian(self.lagrangian()(q_ultimate, q_dot_ultimate), q_dot_ultimate))
         # Refers to D_2 L_d(q_{n-1}, q_1) (Ld is the discrete Lagrangian)
         d2_ld_q_penultimate_q_ultimate = transpose(
             jacobian(self.discrete_lagrangian(q_penultimate, q_ultimate, time_step), q_ultimate)
@@ -322,7 +330,7 @@ class VariationalBiorbdModel(HolonomicBiorbdModel):
         constraint_term = (
             1 / 2 * transpose(self.discrete_holonomic_constraints_jacobian(time_step, q_ultimate)) @ lambdas_ultimate
             if self.has_holonomic_constraints
-            else MX.zeros(self.nb_q, 1)
+            else CX.zeros(self.nb_q, 1)
         )
 
         residual = -d2_l_q_ultimate_qdot_ultimate + d2_ld_q_penultimate_q_ultimate + fd_plus - constraint_term

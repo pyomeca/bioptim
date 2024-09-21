@@ -220,7 +220,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             The difference between the state after and before
             """
 
-            return MX.zeros(0, 0)
+            return controllers.cx.zeros(0, 0)
 
         @staticmethod
         def cyclic(transition, controllers: list[PenaltyController, PenaltyController]) -> MX:
@@ -274,7 +274,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             # Todo scaled?
             q_pre = pre.states["q"].cx
             qdot_pre = pre.states["qdot"].cx
-            qdot_impact = post.model.qdot_from_impact()(q_pre, qdot_pre)
+            qdot_impact = post.model.qdot_from_impact()(q_pre, qdot_pre, pre.parameters.cx)
 
             val = []
             cx_start = []

@@ -44,7 +44,7 @@ from bioptim import (
 
 def out_of_sphere(controller: PenaltyController, y, z):
     q = controller.states["q"].cx
-    marker_q = controller.model.markers(q)[1]
+    marker_q = controller.model.markers()(q, controller.parameters.cx)[1]
 
     distance = sqrt((y - marker_q[1]) ** 2 + (z - marker_q[2]) ** 2)
 

@@ -3,12 +3,11 @@ Optimal control program with the variational integrator for the dynamics.
 """
 
 import numpy as np
-from casadi import MX, Function, vertcat
+from casadi import Function, vertcat
 
 from .optimal_control_program import OptimalControlProgram
 from ..dynamics.configure_problem import ConfigureProblem, DynamicsList
 from ..dynamics.dynamics_evaluation import DynamicsEvaluation
-from ..dynamics.dynamics_functions import DynamicsFunctions
 from ..limits.constraints import ParameterConstraintList
 from ..limits.multinode_constraint import MultinodeConstraintList
 from ..limits.objective_functions import ParameterObjectiveList
@@ -234,9 +233,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
             If the dynamics should be expanded with casadi
         """
 
-        DynamicsFunctions.apply_parameters(nlp)
-
-        dynamics_eval = DynamicsEvaluation(MX(0), MX(0))
+        dynamics_eval = DynamicsEvaluation(nlp.cx(0), nlp.cx(0))
         dynamics_dxdt = dynamics_eval.dxdt
         if isinstance(dynamics_dxdt, (list, tuple)):
             dynamics_dxdt = vertcat(*dynamics_dxdt)
@@ -280,7 +277,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
         two_last_nodes_input = [dt, q_penultimate, q_ultimate, qdot_ultimate, controlN_minus_1, controlN]
 
         if self.bio_model.has_holonomic_constraints:
-            lambdas = MX.sym("lambda", self.bio_model.nb_holonomic_constraints, 1)
+            lambdas = nlp.cx.sym("lambda", self.bio_model.nb_holonomic_constraints, 1)
             three_nodes_input.append(lambdas)
             two_first_nodes_input.append(lambdas)
             two_last_nodes_input.append(lambdas)
@@ -390,7 +387,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         Returns
         -------
-        The symbolic MX expression of the discrete Euler Lagrange equations
+        The symbolic expression of the discrete Euler Lagrange equations
         for the integration from node i-1, i,to i+1.
 
         """
@@ -433,7 +430,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         Returns
         -------
-        The symbolic MX expression of the initial continuity constraint for the integration.
+        The symbolic expression of the initial continuity constraint for the integration.
 
         """
         if self.bio_model.has_holonomic_constraints:
@@ -474,7 +471,7 @@ class VariationalOptimalControlProgram(OptimalControlProgram):
 
         Returns
         -------
-        The symbolic MX expression of the final continuity constraint for the integration.
+        The symbolic expression of the final continuity constraint for the integration.
 
         """
         if self.bio_model.has_holonomic_constraints:
