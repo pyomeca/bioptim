@@ -626,6 +626,7 @@ class OptimalControlProgram:
         for i in range(self.n_phases):
             self.nlp[i].initialize(self.cx)
             self.nlp[i].parameters = self.parameters  # This should be remove when phase parameters will be implemented
+            self.nlp[i].parameters_except_time = self.parameters_except_time
             self.nlp[i].numerical_data_timeseries = self.nlp[i].dynamics_type.numerical_data_timeseries
             ConfigureProblem.initialize(self, self.nlp[i])
             self.nlp[i].ode_solver.prepare_dynamic_integrator(self, self.nlp[i])
@@ -1064,6 +1065,9 @@ class OptimalControlProgram:
 
         self.parameters = ParameterContainer(use_sx=(True if self.cx == SX else False))
         self.parameters.initialize(parameters)
+        # The version without time will not be updated later when time is declared
+        self.parameters_except_time = ParameterContainer(use_sx=(True if self.cx == SX else False))
+        self.parameters_except_time.initialize(parameters)
 
     def update_bounds(
         self,
@@ -1647,7 +1651,7 @@ class OptimalControlProgram:
         dt_bounds = {}
         dt_initial_guess = {}
         dt_cx = []
-        dt_mx = []
+        # dt_mx = []
         for i_phase in range(self.n_phases):
             if i_phase == self.time_phase_mapping.to_second.map_idx[i_phase]:
                 dt = self.phase_time[i_phase] / self.nlp[i_phase].ns
@@ -1655,7 +1659,7 @@ class OptimalControlProgram:
                 dt_initial_guess[f"dt_phase_{i_phase}"] = dt
 
             dt_cx.append(self.dt_parameter[self.time_phase_mapping.to_second.map_idx[i_phase]].cx)
-            dt_mx.append(self.dt_parameter[self.time_phase_mapping.to_second.map_idx[i_phase]].mx)
+            # dt_mx.append(self.dt_parameter[self.time_phase_mapping.to_second.map_idx[i_phase]].mx)
 
         has_penalty = define_parameters_phase_time(self, objective_functions)
         define_parameters_phase_time(self, constraints, has_penalty)
@@ -1663,11 +1667,11 @@ class OptimalControlProgram:
         # Add to the nlp
         NLP.add(self, "time_index", self.time_phase_mapping.to_second.map_idx, True)
         NLP.add(self, "time_cx", self.cx.sym("time", 1, 1), True)
-        NLP.add(self, "time_mx", MX.sym("time", 1, 1), True)
+        # NLP.add(self, "time_mx", MX.sym("time", 1, 1), True)
         NLP.add(self, "dt", dt_cx, False)
-        NLP.add(self, "dt_mx", dt_mx, False)
+        # NLP.add(self, "dt_mx", dt_mx, False)
         NLP.add(self, "tf", [nlp.dt * max(nlp.ns, 1) for nlp in self.nlp], False)
-        NLP.add(self, "tf_mx", [nlp.dt_mx * max(nlp.ns, 1) for nlp in self.nlp], False)
+        # NLP.add(self, "tf_mx", [nlp.dt_mx * max(nlp.ns, 1) for nlp in self.nlp], False)
 
         self.dt_parameter_bounds = Bounds(
             "dt_bounds",

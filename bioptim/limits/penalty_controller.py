@@ -161,10 +161,10 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
-        n_val = self._nlp.dt_mx.shape[0]
+        n_val = self._nlp.dt.shape[0]
         tp.append(
             "dt",
-            mx=self._nlp.dt_mx,
+            mx=None,  # self._nlp.dt_mx,
             cx=[self._nlp.dt, self._nlp.dt, self._nlp.dt],
             bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
@@ -177,10 +177,10 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
-        n_val = self._nlp.time_mx.shape[0]
+        n_val = self._nlp.time_cx.shape[0]
         tp.append(
             "time",
-            mx=self._nlp.time_mx,
+            mx=None,  #self._nlp.time_mx,
             cx=[self._nlp.time_cx, self._nlp.time_cx, self._nlp.time_cx],
             bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
@@ -374,6 +374,17 @@ class PenaltyController:
         The parameters
         """
         return self._nlp.parameters
+
+    @property
+    def parameters_except_time(self) -> OptimizationVariableList:
+        """
+        Return the parameters
+
+        Returns
+        -------
+        The parameters
+        """
+        return self._nlp.parameters_except_time
 
     @property
     def parameters_scaled(self) -> OptimizationVariableList:

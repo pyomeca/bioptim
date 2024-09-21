@@ -43,7 +43,7 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
     # Get the index of the markers from their name
     marker_0_idx = controller.model.marker_index(first_marker)
     marker_1_idx = controller.model.marker_index(second_marker)
-    markers = controller.model.markers()(controller.q, controller.parameters.cx)
+    markers = controller.model.markers()(controller.q, controller.parameters_except_time.cx)
     return markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
 
