@@ -412,7 +412,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
             tau = tau + passive_torque if with_passive_torque else tau
             tau = (
-                tau + controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters_except_time.cx)
+                tau
+                + controller.model.ligament_joint_torque()(
+                    controller.q, controller.qdot, controller.parameters_except_time.cx
+                )
                 if with_ligament
                 else tau
             )
@@ -460,7 +463,10 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             )
             tau = tau + passive_torque if with_passive_torque else tau
             tau = (
-                tau + controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters_except_time.cx)
+                tau
+                + controller.model.ligament_joint_torque()(
+                    controller.q, controller.qdot, controller.parameters_except_time.cx
+                )
                 if with_ligament
                 else tau
             )
@@ -548,7 +554,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             muscle_tau = muscle_tau + passive_torque if with_passive_torque else muscle_tau
             muscle_tau = (
                 muscle_tau
-                + controller.model.ligament_joint_torque(controller.q, controller.qdot, controller.parameters_except_time.cx)
+                + controller.model.ligament_joint_torque(
+                    controller.q, controller.qdot, controller.parameters_except_time.cx
+                )
                 if with_ligament
                 else muscle_tau
             )
@@ -561,7 +569,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
                 # fext need to be a mx
 
-            tau_id = controller.model.inverse_dynamics()(controller.q, controller.qdot, qddot, controller.parameters_except_time.cx)
+            tau_id = controller.model.inverse_dynamics()(
+                controller.q, controller.qdot, qddot, controller.parameters_except_time.cx
+            )
 
             return tau_id - muscle_tau
 
