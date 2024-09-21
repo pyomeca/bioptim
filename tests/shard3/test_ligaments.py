@@ -30,7 +30,7 @@ class OptimalControlProgram:
         self.n_phases = 1
         self.nlp = [nlp]
         parameters_list = ParameterList(use_sx=use_sx)
-        self.parameters = ParameterContainer()
+        self.parameters = ParameterContainer(use_sx=use_sx)
         self.parameters.initialize(parameters_list)
         self.implicit_constraints = ConstraintList()
         self.n_threads = 1
@@ -41,14 +41,14 @@ class OptimalControlProgram:
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(True if cx == SX else False))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.time_mx = MX.sym("time", 1, 1)
-    nlp.dt_mx = MX.sym("dt", 1, 1)
+    nlp.time_cx = cx.sym("time", 1, 1)
+    nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -105,14 +105,14 @@ def test_torque_driven_with_ligament(with_ligament, cx, phase_dynamics):
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(True if cx == SX else False))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.time_mx = MX.sym("time", 1, 1)
-    nlp.dt_mx = MX.sym("dt", 1, 1)
+    nlp.time_cx = cx.sym("time", 1, 1)
+    nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -171,14 +171,14 @@ def test_torque_derivative_driven_with_ligament(with_ligament, cx, phase_dynamic
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(True if cx == SX else False))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/torque_driven_ocp/models/mass_point_with_ligament.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.time_mx = MX.sym("time", 1, 1)
-    nlp.dt_mx = MX.sym("dt", 1, 1)
+    nlp.time_cx = cx.sym("time", 1, 1)
+    nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()
@@ -235,14 +235,14 @@ def test_torque_activation_driven_with_ligament(with_ligament, cx, phase_dynamic
 @pytest.mark.parametrize("with_ligament", [False, True])
 def test_muscle_driven_with_ligament(with_ligament, cx, phase_dynamics):
     # Prepare the program
-    nlp = NonLinearProgram(phase_dynamics=phase_dynamics)
+    nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(True if cx == SX else False))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/muscle_driven_ocp/models/arm26_with_ligament.bioMod"
     )
     nlp.ns = 5
     nlp.cx = cx
-    nlp.time_mx = MX.sym("time", 1, 1)
-    nlp.dt_mx = MX.sym("dt", 1, 1)
+    nlp.time_cx = cx.sym("time", 1, 1)
+    nlp.dt = cx.sym("dt", 1, 1)
     nlp.initialize(cx)
     nlp.x_scaling = VariableScalingList()
     nlp.xdot_scaling = VariableScalingList()

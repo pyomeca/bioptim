@@ -95,7 +95,7 @@ def test_biorbd_model():
     models.serialize()
 
     models.set_gravity(np.array([0, 0, -3]))
-    TestUtils.assert_equal(models.gravity()['o0'], np.array([0, 0, -3, 0, 0, -3]).reshape(6, 1))
+    TestUtils.assert_equal(models.gravity()["o0"], np.array([0, 0, -3, 0, 0, -3]).reshape(6, 1))
     models.set_gravity(np.array([0, 0, -9.81]))
 
     with pytest.raises(NotImplementedError, match="segment_index is not implemented for MultiBiorbdModel"):
@@ -156,16 +156,12 @@ def test_biorbd_model():
         np.array([[9.313616, 5.580191, 2.063886], [5.580191, 4.791997, 1.895999], [2.063886, 1.895999, 0.945231]]),
     )
 
-    nonlinear_effects = models.non_linear_effects()(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6]))
+    nonlinear_effects = models.non_linear_effects()(
+        np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6])
+    )
     assert len(nonlinear_effects) == 2
-    TestUtils.assert_equal(
-        nonlinear_effects[0],
-        np.array([38.817401, -1.960653, -1.259441]).reshape(3, 1)
-    )
-    TestUtils.assert_equal(
-        nonlinear_effects[1],
-        np.array([322.060726, -22.147881, -20.660836]).reshape(3, 1)
-    )
+    TestUtils.assert_equal(nonlinear_effects[0], np.array([38.817401, -1.960653, -1.259441]).reshape(3, 1))
+    TestUtils.assert_equal(nonlinear_effects[1], np.array([322.060726, -22.147881, -20.660836]).reshape(3, 1))
 
     TestUtils.assert_equal(
         models.angular_momentum()(np.array([1, 2.1, 3, 4.1, 5, 6.1]), np.array([1, 2.1, 3, 4.1, 5, 6])),
@@ -198,7 +194,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([3.1, 0.0, 9.1, 0.0]),
         ),
-        np.array([-14.750679, -40.031762]).reshape(2, 1)
+        np.array([-14.750679, -40.031762]).reshape(2, 1),
     )
 
     TestUtils.assert_equal(
@@ -207,7 +203,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([3.1, 1, 2, 9.1, 1, 2]),
         ),
-        np.array([-16.092093, 9.049853, 10.570878, -121.783105, 154.820759, -20.664452]).reshape(6, 1)
+        np.array([-16.092093, 9.049853, 10.570878, -121.783105, 154.820759, -20.664452]).reshape(6, 1),
     )
 
     TestUtils.assert_equal(
@@ -216,7 +212,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([3.1, 1, 2, 9.1, 1, 2]),
         ),
-        np.array([-16.092093, 9.049853, 10.570878, -121.783105, 154.820759, -20.664452]).reshape(6, 1)
+        np.array([-16.092093, 9.049853, 10.570878, -121.783105, 154.820759, -20.664452]).reshape(6, 1),
     )
 
     with pytest.raises(RuntimeError, match="Incorrect number of inputs: Expected 3, got 4"):
@@ -244,7 +240,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([3.1, 1, 2, 9.1, 1, 2]),
         ),
-        np.array([0.0, 0.0]).reshape(2, 1)
+        np.array([0.0, 0.0]).reshape(2, 1),
     )
 
     with pytest.raises(RuntimeError, match="Incorrect number of inputs: Expected 3, got 4"):
@@ -261,7 +257,7 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6.1]),
             np.array([1, 2.1, 3, 4.1, 5, 6]),
         ),
-        np.array([1.0, 2.1, 3.0, 4.1, 5.0, 6.0]).reshape(6, 1)
+        np.array([1.0, 2.1, 3.0, 4.1, 5.0, 6.0]).reshape(6, 1),
     )
 
     TestUtils.assert_equal(
@@ -291,7 +287,7 @@ def test_biorbd_model():
         models.marker(index=1)(
             np.array([1, 2.1, 3, 4.1, 5, 6.1]),
         ),
-        np.array([0.0, 0.841471, -0.540302]).reshape(3, 1)
+        np.array([0.0, 0.841471, -0.540302]).reshape(3, 1),
     )
 
     assert models.marker_index("marker_3") == 2
@@ -348,13 +344,11 @@ def test_biorbd_model():
             np.array([1, 2.1, 3, 4.1, 5, 6]),
             np.array([3.1, 1, 2, 9.1, 1, 2]),
         ),
-        np.array([0.0, 0.0]).reshape(2, 1)
+        np.array([0.0, 0.0]).reshape(2, 1),
     )
 
     # Because external_forces are not implemented yet
-    with pytest.raises(
-        RuntimeError, match="Incorrect number of inputs: Expected 3, got 4"
-    ):
+    with pytest.raises(RuntimeError, match="Incorrect number of inputs: Expected 3, got 4"):
         models.contact_forces()(
             np.array([1, 2.1, 3, 4.1, 5, 6.1]),
             np.array([1, 2.1, 3, 4.1, 5, 6]),

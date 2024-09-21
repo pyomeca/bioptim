@@ -1351,8 +1351,8 @@ class ConfigureProblem:
         """
         component_list = ["Mx", "My", "Mz", "Fx", "Fy", "Fz"]
 
-        q = nlp.states.cx[nlp.states["q"].index]
-        qdot = nlp.states.cx[nlp.states["qdot"].index]
+        q = nlp.states["q"].mapping.to_second.map(nlp.states["q"].cx)
+        qdot = nlp.states["qdot"].mapping.to_second.map(nlp.states["qdot"].cx)
         global_soft_contact_force_func = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
         nlp.soft_contact_forces_func = global_soft_contact_force_func
 

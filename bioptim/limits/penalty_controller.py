@@ -392,8 +392,9 @@ class PenaltyController:
     @property
     def q(self) -> OptimizationVariable:
         if "q" in self.states:
-            return self.states["q"]
+            return self.states["q"].mapping.to_second.map(self.states["q"].cx)
         elif "q_roots" in self.states and "q_joints" in self.states:
+            # TODO: add mapping for q_roots and q_joints
             cx_start = vertcat(self.states["q_roots"].cx_start, self.states["q_joints"].cx_start)
             q_parent_list = OptimizationVariableList(
                 self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
@@ -417,8 +418,9 @@ class PenaltyController:
     @property
     def qdot(self) -> OptimizationVariable:
         if "qdot" in self.states:
-            return self.states["qdot"]
+            return self.states["qdot"].mapping.to_second.map(self.states["qdot"].cx)
         elif "qdot_roots" in self.states and "qdot_joints" in self.states:
+            # TODO: add mapping for qdot_roots and qdot_joints
             cx_start = vertcat(self.states["qdot_roots"].cx_start, self.states["qdot_joints"].cx_start)
             qdot_parent_list = OptimizationVariableList(
                 self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
@@ -440,9 +442,9 @@ class PenaltyController:
     @property
     def tau(self) -> OptimizationVariable:
         if "tau" in self.controls:
-            return self.controls["tau"]
+            return self.controls["tau"].mapping.to_second.map(self.controls["tau"].cx)
         elif "tau_joints" in self.controls:
-            return self.controls["tau_joints"]
+            return self.controls["tau_joints"].mapping.to_second.map(self.controls["tau_joints"].cx)
 
     def copy(self):
         return PenaltyController(

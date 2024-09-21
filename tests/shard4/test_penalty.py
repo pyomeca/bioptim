@@ -1263,7 +1263,7 @@ def test_penalty_constraint_total_time(value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom(penalty_origin, value, phase_dynamics):
     def custom(controller: PenaltyController, mult):
-        my_values = controller.q.cx_start * mult
+        my_values = controller.q * mult
         return my_values
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
@@ -1346,7 +1346,7 @@ def test_penalty_custom_fail(penalty_origin, value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds(value, phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
-        return -10, controller.q.cx_start, 10
+        return -10, controller.q, 10
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
@@ -1369,7 +1369,7 @@ def test_penalty_custom_with_bounds(value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_min_bound(value, phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
-        return -10, controller.q.cx_start, 10
+        return -10, controller.q, 10
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
@@ -1392,7 +1392,7 @@ def test_penalty_custom_with_bounds_failing_min_bound(value, phase_dynamics):
 @pytest.mark.parametrize("value", [0.1, -10])
 def test_penalty_custom_with_bounds_failing_max_bound(value, phase_dynamics):
     def custom_with_bounds(controller: PenaltyController):
-        return -10, controller.q.cx_start, 10
+        return -10, controller.q, 10
 
     ocp = prepare_test_ocp(phase_dynamics=phase_dynamics)
     t = [0]
@@ -1418,7 +1418,7 @@ def test_penalty_custom_with_bounds_failing_max_bound(value, phase_dynamics):
 @pytest.mark.parametrize("node", [*Node, 2])
 @pytest.mark.parametrize("ns", [3, 10, 11])
 def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
-    nlp = NLP(phase_dynamics=phase_dynamics)
+    nlp = NLP(phase_dynamics=phase_dynamics, use_sx=False)
     nlp.control_type = ControlType.CONSTANT
     nlp.ns = ns
     nlp.X = np.linspace(0, -10, ns + 1)

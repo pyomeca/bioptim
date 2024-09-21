@@ -47,8 +47,8 @@ def sensory_reference(
     """
     q = states[nlp.states["q"].index]
     qdot = states[nlp.states["qdot"].index]
-    hand_pos = nlp.model.markers(q)[2][:2]
-    hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
+    hand_pos = nlp.model.markers()(q, [])[2][:2]
+    hand_vel = nlp.model.marker_velocities()(q, qdot, [])[2][:2]
     hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
     return hand_pos_velo
 
@@ -115,6 +115,7 @@ def prepare_socp(
         n_noised_controls=2,
         n_collocation_points=polynomial_degree + 1,
         friction_coefficients=np.array([[0.05, 0.025], [0.025, 0.05]]),
+        use_sx=use_sx,
     )
 
     n_tau = bio_model.nb_tau

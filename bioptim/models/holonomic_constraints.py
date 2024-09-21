@@ -52,9 +52,11 @@ class HolonomicConstraintsFcn:
         q_ddot_sym = MX.sym("q_ddot", biorbd_model.nb_qdot, 1)
 
         # symbolic markers in global frame
-        marker_1_sym = biorbd_model.marker(index=biorbd_model.marker_index(marker_1))(q_sym)
+        # TODO: add the parameters
+        param = []
+        marker_1_sym = biorbd_model.marker(index=biorbd_model.marker_index(marker_1))(q_sym, param)
         if marker_2 is not None:
-            marker_2_sym = biorbd_model.marker(index=biorbd_model.marker_index(marker_2))(q_sym)
+            marker_2_sym = biorbd_model.marker(index=biorbd_model.marker_index(marker_2))(q_sym, param)
 
         else:
             marker_2_sym = MX([0, 0, 0])
