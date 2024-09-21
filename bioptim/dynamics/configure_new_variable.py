@@ -120,11 +120,11 @@ class NewVariableConfiguration:
         self.copy_states_dot = False
         self.copy_controls = False
 
-        # todo: Charbie
-        self.mx_states = None
-        self.mx_states_dot = None
-        self.mx_controls = None
-        self.mx_algebraic_states = None
+        # # todo: Charbie
+        # self.mx_states = None
+        # self.mx_states_dot = None
+        # self.mx_controls = None
+        # self.mx_algebraic_states = None
 
         self._check_combine_state_control_plot()
 
@@ -140,7 +140,7 @@ class NewVariableConfiguration:
 
         self._declare_initial_guess()
         self._declare_variable_scaling()
-        self._use_copy()
+        # self._use_copy()
 
         # plot
         self.legend = None
@@ -329,53 +329,53 @@ class NewVariableConfiguration:
                 self.name, scaling=np.ones(len(self.nlp.variable_mappings[self.name].to_first.map_idx))
             )
 
-    def _use_copy(self):
-        """Use of states[0] and controls[0] is permitted since nlp.phase_dynamics
-        is PhaseDynamics.SHARED_DURING_THE_PHASE"""
-        # todo: Charbie
-        self.mx_states = (
-            [] if not self.copy_states else [self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[0][self.name].mx]
-        )
-        self.mx_states_dot = (
-            []
-            if not self.copy_states_dot
-            else [self.ocp.nlp[self.nlp.use_states_dot_from_phase_idx].states_dot[0][self.name].mx]
-        )
-        self.mx_controls = (
-            []
-            if not self.copy_controls
-            else [self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[0][self.name].mx]
-        )
-        self.mx_algebraic_states = (
-            []
-            if not self.copy_algebraic_states
-            else [self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[0][self.name].mx]
-        )
-
-        # todo: if mapping on variables, what do we do with mapping on the nodes
-        for i in self.nlp.variable_mappings[self.name].to_second.map_idx:
-            var_name = (
-                f"{'-' if np.sign(i) < 0 else ''}{self.name}_{self.name_elements[abs(i)]}_MX"
-                if i is not None
-                else "zero"
-            )
-
-            if not self.copy_states:
-                self.mx_states.append(MX.sym(var_name, 1, 1))
-
-            if not self.copy_states_dot:
-                self.mx_states_dot.append(MX.sym(var_name, 1, 1))
-
-            if not self.copy_controls:
-                self.mx_controls.append(MX.sym(var_name, 1, 1))
-
-            self.mx_algebraic_states.append(MX.sym(var_name, 1, 1))
-
-        # todo: Charbie
-        self.mx_states = vertcat(*self.mx_states)
-        self.mx_states_dot = vertcat(*self.mx_states_dot)
-        self.mx_controls = vertcat(*self.mx_controls)
-        self.mx_algebraic_states = vertcat(*self.mx_algebraic_states)
+    # def _use_copy(self):
+    #     """Use of states[0] and controls[0] is permitted since nlp.phase_dynamics
+    #     is PhaseDynamics.SHARED_DURING_THE_PHASE"""
+    #     # todo: Charbie
+    #     self.mx_states = (
+    #         [] if not self.copy_states else [self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[0][self.name].mx]
+    #     )
+    #     self.mx_states_dot = (
+    #         []
+    #         if not self.copy_states_dot
+    #         else [self.ocp.nlp[self.nlp.use_states_dot_from_phase_idx].states_dot[0][self.name].mx]
+    #     )
+    #     self.mx_controls = (
+    #         []
+    #         if not self.copy_controls
+    #         else [self.ocp.nlp[self.nlp.use_controls_from_phase_idx].controls[0][self.name].mx]
+    #     )
+    #     self.mx_algebraic_states = (
+    #         []
+    #         if not self.copy_algebraic_states
+    #         else [self.ocp.nlp[self.nlp.use_states_from_phase_idx].algebraic_states[0][self.name].mx]
+    #     )
+    #
+    #     # todo: if mapping on variables, what do we do with mapping on the nodes
+    #     for i in self.nlp.variable_mappings[self.name].to_second.map_idx:
+    #         var_name = (
+    #             f"{'-' if np.sign(i) < 0 else ''}{self.name}_{self.name_elements[abs(i)]}_MX"
+    #             if i is not None
+    #             else "zero"
+    #         )
+    #
+    #         if not self.copy_states:
+    #             self.mx_states.append(MX.sym(var_name, 1, 1))
+    #
+    #         if not self.copy_states_dot:
+    #             self.mx_states_dot.append(MX.sym(var_name, 1, 1))
+    #
+    #         if not self.copy_controls:
+    #             self.mx_controls.append(MX.sym(var_name, 1, 1))
+    #
+    #         self.mx_algebraic_states.append(MX.sym(var_name, 1, 1))
+    #
+    #     # todo: Charbie
+    #     self.mx_states = vertcat(*self.mx_states)
+    #     self.mx_states_dot = vertcat(*self.mx_states_dot)
+    #     self.mx_controls = vertcat(*self.mx_controls)
+    #     self.mx_algebraic_states = vertcat(*self.mx_algebraic_states)
 
     def _declare_auto_axes_idx(self):
         """Declare the axes index if not already declared"""
@@ -415,7 +415,7 @@ class NewVariableConfiguration:
                     self.name,
                     cx[0],
                     cx_scaled[0],
-                    self.mx_states,
+                    None,  # self.mx_states,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -450,7 +450,7 @@ class NewVariableConfiguration:
                     self.name,
                     cx[0],
                     cx_scaled[0],
-                    self.mx_controls,
+                    None,  # self.mx_controls,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -492,7 +492,7 @@ class NewVariableConfiguration:
                     self.name,
                     cx[0],
                     cx_scaled[0],
-                    self.mx_states_dot,
+                    None,  # self.mx_states_dot,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -517,7 +517,7 @@ class NewVariableConfiguration:
                     self.name,
                     cx[0],
                     cx_scaled[0],
-                    self.mx_states,
+                    None,  # self.mx_states,
                     self.nlp.variable_mappings[self.name],
                     node_index,
                 )
@@ -689,13 +689,13 @@ def append_faked_optim_var(name: str, optim_var, keys: list):
     """
 
     index = []
-    mx = MX()
+    # mx = MX()
     to_second = []
     to_first = []
     for key in keys:
         index.extend(list(optim_var[key].index))
-        mx = vertcat(mx, optim_var[key].mx)
+        # mx = vertcat(mx, optim_var[key].mx)
         to_second.extend(list(np.array(optim_var[key].mapping.to_second.map_idx) + len(to_second)))
         to_first.extend(list(np.array(optim_var[key].mapping.to_first.map_idx) + len(to_first)))
 
-    optim_var.append_fake(name, index, mx, BiMapping(to_second, to_first))
+    optim_var.append_fake(name, index, None, BiMapping(to_second, to_first))

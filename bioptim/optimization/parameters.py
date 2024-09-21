@@ -62,6 +62,11 @@ class Parameter(OptimizationVariable):
         self.scaling = scaling
         self.index = index
         self.kwargs = kwargs
+        self._mx = mx
+
+    @property
+    def mx(self):
+        return self._mx
 
     @property
     def cx(self):
@@ -99,7 +104,6 @@ class Parameter(OptimizationVariable):
             param_scaling = self.scaling.scaling
             param_reduced = self.mx  # because this function will be used directly in the biorbd model
             self.function(model, param_reduced * param_scaling, **self.kwargs)
-
 
 class ParameterList(OptimizationVariableList):
     """
@@ -331,3 +335,8 @@ class ParameterContainer(OptimizationVariableContainer):
     @property
     def cx_end(self):
         raise RuntimeError("cx_end is not available for parameters, only cx_start is accepted.")
+
+    @property
+    def mx(self):
+        return self.unscaled.mx
+
