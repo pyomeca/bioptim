@@ -274,7 +274,7 @@ class PhaseTransitionFunctions(PenaltyFunctionAbstract):
             # Todo scaled?
             q_pre = pre.states["q"].cx
             qdot_pre = pre.states["qdot"].cx
-            qdot_impact = post.model.qdot_from_impact()(q_pre, qdot_pre, pre.parameters.cx)
+            qdot_impact = post.model.qdot_from_impact()(q_pre, qdot_pre, pre.parameters_except_time.cx)
 
             val = []
             cx_start = []

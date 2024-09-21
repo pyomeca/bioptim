@@ -222,7 +222,7 @@ def get_cov_mat(nlp, node_index):
 
     p_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
 
-    parameters = nlp.parameters.cx
+    parameters = nlp.parameters_except_time.cx
     parameters[nlp.parameters["sensory_noise"].index] = nlp.model.sensory_noise_magnitude
     parameters[nlp.parameters["motor_noise"].index] = nlp.model.motor_noise_magnitude
 
