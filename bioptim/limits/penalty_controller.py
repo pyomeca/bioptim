@@ -134,7 +134,9 @@ class PenaltyController:
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
         n_val = cx.shape[0]
-        tp.append("t_span", mx=None, cx=[cx, cx, cx], bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)))
+        tp.append(
+            "t_span", mx=None, cx=[cx, cx, cx], bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val))
+        )
         return tp["t_span"]
 
     @property
@@ -180,7 +182,7 @@ class PenaltyController:
         n_val = self._nlp.time_cx.shape[0]
         tp.append(
             "time",
-            mx=None,  #self._nlp.time_mx,
+            mx=None,  # self._nlp.time_mx,
             cx=[self._nlp.time_cx, self._nlp.time_cx, self._nlp.time_cx],
             bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )

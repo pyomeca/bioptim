@@ -37,7 +37,7 @@ class OptimizationVariable:
     def __init__(
         self,
         name: str,
-        mx: MX, # remove Charbie
+        mx: MX,  # remove Charbie
         cx_start: list | None,
         index: range | list,
         mapping: BiMapping = None,

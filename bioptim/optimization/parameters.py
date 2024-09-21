@@ -105,6 +105,7 @@ class Parameter(OptimizationVariable):
             param_reduced = self.mx  # because this function will be used directly in the biorbd model
             self.function(model, param_reduced * param_scaling, **self.kwargs)
 
+
 class ParameterList(OptimizationVariableList):
     """
     A list of Parameters.
@@ -339,4 +340,3 @@ class ParameterContainer(OptimizationVariableContainer):
     @property
     def mx(self):
         return self.unscaled.mx
-

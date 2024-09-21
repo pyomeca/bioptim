@@ -658,7 +658,9 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            return controller.model.center_of_mass_velocity()(controller.q, controller.qdot, controller.parameters_except_time.cx)
+            return controller.model.center_of_mass_velocity()(
+                controller.q, controller.qdot, controller.parameters_except_time.cx
+            )
 
         @staticmethod
         def minimize_com_acceleration(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
@@ -708,7 +710,9 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            return controller.model.angular_momentum()(controller.q, controller.qdot, controller.parameters_except_time.cx)
+            return controller.model.angular_momentum()(
+                controller.q, controller.qdot, controller.parameters_except_time.cx
+            )
 
         @staticmethod
         def minimize_linear_momentum(penalty: PenaltyOption, controller: PenaltyController, axes: tuple | list = None):
@@ -867,7 +871,10 @@ class PenaltyFunctionAbstract:
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
             soft_contact_force = controller.get_nlp.soft_contact_forces_func(
-                controller.time.cx, controller.states.cx_start, controller.controls.cx_start, controller.parameters_except_time.cx
+                controller.time.cx,
+                controller.states.cx_start,
+                controller.controls.cx_start,
+                controller.parameters_except_time.cx,
             )
             return soft_contact_force[force_idx]
 
@@ -951,7 +958,9 @@ class PenaltyFunctionAbstract:
             segment_idx = controller.model.segment_index(segment) if isinstance(segment, str) else segment
 
             # Get the marker in rt reference frame
-            marker = controller.model.marker(marker_idx, segment_idx)(controller.q, controller.parameters_except_time.cx)
+            marker = controller.model.marker(marker_idx, segment_idx)(
+                controller.q, controller.parameters_except_time.cx
+            )
 
             # To align an axis, the other must be equal to 0
             if not penalty.rows_is_set:
