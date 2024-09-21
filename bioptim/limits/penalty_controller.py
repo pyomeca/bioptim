@@ -129,12 +129,12 @@ class PenaltyController:
         -------
 
         """
-        mx = vertcat(self.time.mx, self.dt.mx)
+        # mx = vertcat(self.time.mx, self.dt.mx)
         cx = vertcat(self.time.cx, self.dt.cx)
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
         n_val = cx.shape[0]
-        tp.append("t_span", mx=mx, cx=[cx, cx, cx], bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)))
+        tp.append("t_span", mx=None, cx=[cx, cx, cx], bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)))
         return tp["t_span"]
 
     @property
