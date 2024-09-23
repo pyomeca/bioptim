@@ -183,11 +183,11 @@ def get_cov_mat(nlp, node_index, use_sx):
 
     M_matrix = StochasticBioModel.reshape_to_matrix(nlp.algebraic_states["m"].cx, nlp.model.matrix_shape_m)
 
-    CX_eye = cas.SX_eye if use_sx else cas.DM_eye
+    CX_eye = cas.SX_eye if use_sx else cas.MX_eye
     sensory_noise = nlp.parameters["sensory_noise"].cx
     motor_noise = nlp.parameters["motor_noise"].cx
     sigma_w = cas.vertcat(sensory_noise, motor_noise) * CX_eye(cas.vertcat(sensory_noise, motor_noise).shape[0])
-    cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx.shape[0])
+    cov_sym = nlp.cx.sym("cov", nlp.integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(

@@ -28,20 +28,6 @@ def test_arm_reaching_muscle_driven(use_sx):
     wPqdot_magnitude = DM(np.array([wPqdot_std**2 / dt, wPqdot_std**2 / dt]))
     sensory_noise_magnitude = vertcat(wPq_magnitude, wPqdot_magnitude)
 
-    if use_sx:
-        with pytest.raises(RuntimeError, match=".*eval_sx not defined for LinsolQr"):
-            ocp = ocp_module.prepare_socp(
-                final_time=final_time,
-                n_shooting=n_shooting,
-                hand_final_position=hand_final_position,
-                motor_noise_magnitude=motor_noise_magnitude,
-                sensory_noise_magnitude=sensory_noise_magnitude,
-                force_field_magnitude=force_field_magnitude,
-                example_type=example_type,
-                use_sx=use_sx,
-            )
-        return
-
     ocp = ocp_module.prepare_socp(
         final_time=final_time,
         n_shooting=n_shooting,

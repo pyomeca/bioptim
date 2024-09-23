@@ -683,27 +683,21 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 controller.algebraic_states["a"].cx, controller.model.matrix_shape_a
             )
 
-            q_roots = controller.states["q_roots"].cx
-            q_joints = controller.states["q_joints"].cx
-            qdot_roots = controller.states["qdot_roots"].cx
-            qdot_joints = controller.states["qdot_joints"].cx
-            tau_joints = controller.controls["tau_joints"].cx
-
-            # q_root = MX.sym("q_root", nb_root, 1)
-            # q_joints = MX.sym("q_joints", nu, 1)
-            # qdot_root = MX.sym("qdot_root", nb_root, 1)
-            # qdot_joints = MX.sym("qdot_joints", nu, 1)
-            # tau_joints = MX.sym("tau_joints", nu, 1)
-            # algebraic_states_sym = MX.sym("algebraic_states_sym", controller.algebraic_states.shape, 1)
-            # numerical_timeseries_sym = MX.sym("numerical_timeseries_sym", controller.numerical_timeseries.shape, 1)
+            q_roots = controller.cx.sym("q_roots", nb_root, 1)
+            q_joints = controller.cx.sym("q_joints", nu, 1)
+            qdot_roots = controller.cx.sym("qdot_roots", nb_root, 1)
+            qdot_joints = controller.cx.sym("qdot_joints", nu, 1)
+            tau_joints = controller.cx.sym("tau_joints", nu, 1)
+            algebraic_states_sym = controller.cx.sym("algebraic_states_sym", controller.algebraic_states.shape, 1)
+            numerical_timeseries_sym = controller.cx.sym("numerical_timeseries_sym", controller.numerical_timeseries.shape, 1)
 
             dx = controller.extra_dynamics(0)(
                 controller.t_span.cx,
                 vertcat(q_roots, q_joints, qdot_roots, qdot_joints),  # States
                 tau_joints,
                 controller.parameters.cx,
-                controller.algebraic_states.cx,
-                controller.numerical_timeseries.cx,
+                algebraic_states_sym,
+                numerical_timeseries_sym,
             )
 
             non_root_index = list(range(nb_root, nb_root + nu)) + list(
@@ -719,8 +713,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                     qdot_joints,
                     tau_joints,
                     controller.parameters.cx,
-                    controller.algebraic_states.cx,
-                    controller.numerical_timeseries.cx,
+                    algebraic_states_sym,
+                    numerical_timeseries_sym,
                 ],
                 [jacobian(dx[non_root_index], vertcat(q_joints, qdot_joints))],
             )
