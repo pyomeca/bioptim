@@ -163,21 +163,20 @@ def generate_data(
 
     dynamics_func = Function(
         "ForwardDyn",
-        [symbolic_time,
-        symbolic_states,
-        symbolic_controls,
-        symbolic_parameters],
-        [DynamicsFunctions.muscles_driven(
-            time=symbolic_time,
-            states=symbolic_states,
-            controls=symbolic_controls,
-            parameters=symbolic_parameters,
-            algebraic_states=MX(),
-            numerical_timeseries=MX(),
-            nlp=nlp,
-            with_contact=False,
-            rigidbody_dynamics=RigidBodyDynamics.ODE,
-        ).dxdt],
+        [symbolic_time, symbolic_states, symbolic_controls, symbolic_parameters],
+        [
+            DynamicsFunctions.muscles_driven(
+                time=symbolic_time,
+                states=symbolic_states,
+                controls=symbolic_controls,
+                parameters=symbolic_parameters,
+                algebraic_states=MX(),
+                numerical_timeseries=MX(),
+                nlp=nlp,
+                with_contact=False,
+                rigidbody_dynamics=RigidBodyDynamics.ODE,
+            ).dxdt
+        ],
     )
 
     def dyn_interface(t, x, u):

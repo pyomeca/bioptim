@@ -267,9 +267,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
 
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
-            com_0 = controllers[0].model.center_of_mass()(
-                controllers[0].states["q"].cx, controllers[0].parameters.cx
-            )
+            com_0 = controllers[0].model.center_of_mass()(controllers[0].states["q"].cx, controllers[0].parameters.cx)
 
             out = controllers[0].cx.zeros((3, 1))
             for i in range(1, len(controllers)):

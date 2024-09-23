@@ -112,7 +112,9 @@ def get_penalty_value(ocp, penalty, t, phases_dt, x, u, p, a, d):
         ocp.nlp[0].numerical_timeseries.cx if ocp.nlp[0].numerical_timeseries.cx.shape != (0, 0) else ocp.cx(0, 0)
     )
 
-    return Function("penalty", [time, phases_dt_cx, states, controls, parameters, algebraic_states, numerical_timeseries], [val])(t, phases_dt, x[0], u[0], p, a, d)
+    return Function(
+        "penalty", [time, phases_dt_cx, states, controls, parameters, algebraic_states, numerical_timeseries], [val]
+    )(t, phases_dt, x[0], u[0], p, a, d)
 
 
 def test_penalty_targets_shapes():
