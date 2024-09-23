@@ -114,7 +114,6 @@ def generate_data(
             name="q",
             cx=[symbolic_q, symbolic_q, symbolic_q],
             cx_scaled=[symbolic_q, symbolic_q, symbolic_q],
-            mx=symbolic_q,
             mapping=nlp.variable_mappings["q"],
             node_index=node_index,
         )
@@ -122,7 +121,6 @@ def generate_data(
             name="qdot",
             cx=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
             cx_scaled=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            mx=symbolic_qdot,
             mapping=nlp.variable_mappings["qdot"],
             node_index=node_index,
         )
@@ -130,7 +128,6 @@ def generate_data(
             name="muscles",
             cx=[symbolic_mus_states, symbolic_mus_states, symbolic_mus_states],
             cx_scaled=[symbolic_mus_states, symbolic_mus_states, symbolic_mus_states],
-            mx=symbolic_mus_states,
             mapping=nlp.variable_mappings["muscles"],
             node_index=node_index,
         )
@@ -139,7 +136,6 @@ def generate_data(
             name="tau",
             cx=[symbolic_tau, symbolic_tau, symbolic_tau],
             cx_scaled=[symbolic_tau, symbolic_tau, symbolic_tau],
-            mx=symbolic_tau,
             mapping=nlp.variable_mappings["tau"],
             node_index=node_index,
         )
@@ -147,7 +143,6 @@ def generate_data(
             name="muscles",
             cx=[symbolic_mus_controls, symbolic_mus_controls, symbolic_mus_controls],
             cx_scaled=[symbolic_mus_controls, symbolic_mus_controls, symbolic_mus_controls],
-            mx=symbolic_mus_controls,
             mapping=nlp.variable_mappings["muscles"],
             node_index=node_index,
         )
@@ -155,7 +150,6 @@ def generate_data(
             name="qdot",
             cx=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
             cx_scaled=[symbolic_qdot, symbolic_qdot, symbolic_qdot],
-            mx=symbolic_qdot,
             mapping=nlp.variable_mappings["qdot"],
             node_index=node_index,
         )
@@ -163,7 +157,6 @@ def generate_data(
             name="qddot",
             cx=[symbolic_qddot, symbolic_qddot, symbolic_qddot],
             cx_scaled=[symbolic_qddot, symbolic_qddot, symbolic_qddot],
-            mx=symbolic_qddot,
             mapping=nlp.variable_mappings["qddot"],
             node_index=node_index,
         )

@@ -640,4 +640,4 @@ def append_faked_optim_var(name: str, optim_var, keys: list):
         to_second.extend(list(np.array(optim_var[key].mapping.to_second.map_idx) + len(to_second)))
         to_first.extend(list(np.array(optim_var[key].mapping.to_first.map_idx) + len(to_first)))
 
-    optim_var.append_fake(name, index, None, BiMapping(to_second, to_first))
+    optim_var.append_fake(name, index, BiMapping(to_second, to_first))

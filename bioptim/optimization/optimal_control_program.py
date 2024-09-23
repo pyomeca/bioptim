@@ -1704,15 +1704,10 @@ class OptimalControlProgram:
                             f"{key}_phase{i_phase}_{i_component}_cx",
                             variable_shape[0],
                         )
-                        mx = MX.sym(
-                            f"{key}_phase{i_phase}_{i_component}_mx",
-                            variable_shape[0],
-                        )
 
                         numerical_timeseries[-1].append(
                             name=f"{key}_{i_component}",
                             cx=[cx, cx, cx],
-                            mx=mx,
                             bimapping=BiMapping(
                                 Mapping(list(range(variable_shape[0]))), Mapping(list(range(variable_shape[0])))
                             ),
