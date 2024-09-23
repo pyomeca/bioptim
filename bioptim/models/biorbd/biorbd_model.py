@@ -595,7 +595,7 @@ class BiorbdModel:
         """
         return self.model.rigidContacts()[contact_index].availableAxesIndices()
 
-    def marker_velocities(self, reference_index=None) -> list[MX]:
+    def markers_velocities(self, reference_index=None) -> list[MX]:
         if reference_index is None:
             biorbd_return = [
                 m.to_mx()
@@ -608,23 +608,36 @@ class BiorbdModel:
 
         else:
             biorbd_return = []
-            homogeneous_matrix_transposed = self.biorbd_homogeneous_matrices_in_global(
+            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(segment_idx=reference_index,
+                inverse=True)(
                 GeneralizedCoordinates(self.q),
-                reference_index,
-                inverse=True,
             )
+            # TODO: Check and fix this portion of code
             for m in self.model.markersVelocity(GeneralizedCoordinates(self.q), GeneralizedVelocity(self.qdot)):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     biorbd_return.append(m.to_mx())
 
         casadi_fun = Function(
-            "marker_velocities",
+            "markers_velocities",
             [self.q, self.qdot, self.parameters],
             biorbd_return,
         )
         return casadi_fun
 
-    def marker_accelerations(self, reference_index=None) -> list[MX]:
+    def marker_velocity(self, marker_index: int) -> list[MX]:
+        biorbd_return = self.model.markersVelocity(
+                GeneralizedCoordinates(self.q),
+                GeneralizedVelocity(self.qdot),
+                True,
+            )[marker_index].to_mx()
+        casadi_fun = Function(
+            "marker_velocity",
+            [self.q, self.qdot, self.parameters],
+            [biorbd_return],
+        )
+        return casadi_fun
+
+    def markers_accelerations(self, reference_index=None) -> list[MX]:
         if reference_index is None:
             biorbd_return = [
                 m.to_mx()
@@ -637,11 +650,11 @@ class BiorbdModel:
             ]
 
         else:
+            # TODO: Check and fix this portion of code
             biorbd_return = []
-            homogeneous_matrix_transposed = self.biorbd_homogeneous_matrices_in_global(
+            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(segment_idx=reference_index,
+                inverse=True,)(
                 GeneralizedCoordinates(self.q),
-                reference_index,
-                inverse=True,
             )
             for m in self.model.markersAcceleration(
                 GeneralizedCoordinates(self.q),
@@ -652,9 +665,23 @@ class BiorbdModel:
                     biorbd_return.append(m.to_mx())
 
         casadi_fun = Function(
-            "marker_accelerations",
+            "markers_accelerations",
             [self.q, self.qdot, self.qddot, self.parameters],
             biorbd_return,
+        )
+        return casadi_fun
+
+    def marker_acceleration(self, marker_index: int) -> list[MX]:
+        biorbd_return = self.model.markerAcceleration(
+                GeneralizedCoordinates(self.q),
+                GeneralizedVelocity(self.qdot),
+                GeneralizedAcceleration(self.qddot),
+                True,
+            )[marker_index].to_mx()
+        casadi_fun = Function(
+            "marker_acceleration",
+            [self.q, self.qdot, self.qddot, self.parameters],
+            [biorbd_return],
         )
         return casadi_fun
 
@@ -766,7 +793,7 @@ class BiorbdModel:
 
         casadi_fun = Function(
             "soft_contact_forces",
-            [self.q, self.parameters],
+            [self.q],
             [biorbd_return],
         )
         return casadi_fun

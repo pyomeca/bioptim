@@ -268,7 +268,7 @@ def test_arm_reaching_torque_driven_explicit(use_sx):
     bioptim_folder = os.path.dirname(ocp_module.__file__)
 
     if use_sx:
-        with pytest.raises(RuntimeError, match=".*eval_sx not defined for LinsolQr"):
+        with pytest.raises(NotImplementedError, match="Wrong number or type of arguments for overloaded function 'MX_set'"):
             ocp = ocp_module.prepare_socp(
                 biorbd_model_path=bioptim_folder + "/models/LeuvenArmModel.bioMod",
                 final_time=final_time,

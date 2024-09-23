@@ -199,7 +199,7 @@ def generate_data(
 
     def add_to_data(i, q):
         X[:, i] = q
-        markers[:, :, i] = horzcat(*bio_model.markers()(q[0:n_q], []))
+        markers[:, :, i] = bio_model.markers()(q[0:n_q], [])
 
     x_init = np.array([0] * n_q + [0] * n_qdot)
     add_to_data(0, x_init)

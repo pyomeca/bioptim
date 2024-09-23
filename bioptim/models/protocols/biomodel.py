@@ -252,15 +252,27 @@ class BioModel(Protocol):
         """Get the number of rigid contacts"""
         return -1
 
-    def marker_velocities(self, reference_index=None) -> list[MX]:
+    def markers_velocities(self, reference_index=None) -> list[MX]:
         """
-        Get the marker velocities of the model
+        Get the marker velocities of the model, in the reference frame number reference_index
         args: q, qdot
         """
 
-    def marker_accelerations(self, reference_index=None) -> list[MX]:
+    def marker_velocity(self, marker_index=None) -> list[MX]:
         """
-        Get the marker accelerations of the model
+        Get the velocity of one marker from the model
+        args: q, qdot
+        """
+
+    def markers_accelerations(self, reference_index=None) -> list[MX]:
+        """
+        Get the marker accelerations of the model, in the reference frame number reference_index
+        args: q, qdot, qddot
+        """
+
+    def marker_acceleration(self, marker_index=None) -> list[MX]:
+        """
+        Get the acceleration of one marker from the model
         args: q, qdot, qddot
         """
 
@@ -290,7 +302,7 @@ class BioModel(Protocol):
     def normalize_state_quaternions(self) -> Function:
         """
         Normalize the quaternions of the state
-        args: x (The state to normalize)
+        args: q (The joint generalized coordinates to normalize)
         """
 
     def contact_forces(self) -> Function:

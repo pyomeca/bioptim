@@ -302,8 +302,8 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise ValueError("min_torque cannot be negative in tau_max_from_actuators")
 
             bound = controller.model.tau_max()(controller.q, controller.qdot, controller.parameters_except_time.cx)
-            min_bound = controller.tau.mapping.to_first.map(bound[1])
-            max_bound = controller.tau.mapping.to_first.map(bound[0])
+            min_bound = controller.controls["tau"].mapping.to_first.map(bound[1])
+            max_bound = controller.controls["tau"].mapping.to_first.map(bound[0])
             if min_torque:
                 min_bound = if_else(lt(min_bound, min_torque), min_torque, min_bound)
                 max_bound = if_else(lt(max_bound, min_torque), min_torque, max_bound)

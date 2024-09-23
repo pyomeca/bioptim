@@ -345,7 +345,7 @@ class PenaltyFunctionAbstract:
 
             # Add the penalty in the requested reference frame. None for global
             markers = horzcat(
-                *controller.model.marker_velocities(reference_index=reference_jcs)(
+                *controller.model.markers_velocities(reference_index=reference_jcs)(
                     controller.q, controller.qdot, controller.parameters_except_time.cx
                 )
             )
@@ -387,7 +387,7 @@ class PenaltyFunctionAbstract:
             qddot = PenaltyFunctionAbstract._get_qddot(controller, "cx")
 
             markers = horzcat(
-                *controller.model.marker_accelerations(reference_index=reference_jcs)(
+                *controller.model.markers_accelerations(reference_index=reference_jcs)(
                     controller.q, controller.qdot, qddot, controller.parameters_except_time.cx
                 )
             )
@@ -476,7 +476,7 @@ class PenaltyFunctionAbstract:
             PenaltyFunctionAbstract.set_axes_rows(penalty, axes)
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            marker_velocity = controller.model.marker_velocities()(
+            marker_velocity = controller.model.markers_velocities()(
                 controller.q, controller.qdot, controller.parameters_except_time.cx
             )
             marker_1 = marker_velocity[first_marker_idx][:]
@@ -1454,6 +1454,7 @@ class PenaltyFunctionAbstract:
         #    raise ValueError("atrribute should be either mx or cx_start")
 
         if "qddot" not in controller.states and "qddot" not in controller.controls:
+            source_qdot = controller.states if "qdot" in controller.states else controller.controls
             return controller.dynamics(
                 getattr(controller.time, attribute),
                 getattr(controller.states, attribute),
@@ -1461,7 +1462,7 @@ class PenaltyFunctionAbstract:
                 getattr(controller.parameters, attribute),
                 getattr(controller.algebraic_states, attribute),
                 getattr(controller.numerical_timeseries, attribute),
-            )[controller.qdot.index, :]
+            )[source_qdot["qdot"].index, :]
 
         source = controller.states if "qddot" in controller.states else controller.controls
         return getattr(source["qddot"], attribute)

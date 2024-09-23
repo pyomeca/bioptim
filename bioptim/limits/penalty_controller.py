@@ -149,7 +149,7 @@ class PenaltyController:
         n_val = self.ocp.dt_parameter.cx.shape[0]
         tp.append(
             "phases_dt",
-            mx=self.ocp.dt_parameter.mx,
+            mx=None,  # self.ocp.dt_parameter.mx,
             cx=[self.ocp.dt_parameter.cx, self.ocp.dt_parameter.cx, self.ocp.dt_parameter.cx],
             bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
@@ -195,10 +195,10 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
-        n_val = self._nlp.tf_mx.shape[0]
+        n_val = self._nlp.tf.shape[0]
         tp.append(
             "tf",
-            mx=self._nlp.tf_mx,
+            mx=None,  # self._nlp.tf_mx,
             cx=[self._nlp.tf, self._nlp.tf, self._nlp.tf],
             bimapping=BiMapping(to_second=range(n_val), to_first=range(n_val)),
         )
@@ -408,14 +408,14 @@ class PenaltyController:
             return self.states["q"].mapping.to_second.map(self.states["q"].cx)
         elif "q_roots" in self.states and "q_joints" in self.states:
             # TODO: add mapping for q_roots and q_joints
-            cx_start = vertcat(self.states["q_roots"].cx_start, self.states["q_joints"].cx_start)
+            cx_start = vertcat(self.states["q_roots"].cx, self.states["q_joints"].cx)
             q_parent_list = OptimizationVariableList(
                 self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             )
             q_parent_list._cx_start = cx_start
             q = OptimizationVariable(
                 name="q",
-                mx=vertcat(self.states["q_roots"].mx, self.states["q_joints"].mx),
+                mx=None,  # vertcat(self.states["q_roots"].mx, self.states["q_joints"].mx),
                 cx_start=cx_start,
                 index=[i for i in range(self.states["q_roots"].shape + self.states["q_joints"].shape)],
                 mapping=BiMapping(
@@ -424,7 +424,7 @@ class PenaltyController:
                 ),
                 parent_list=q_parent_list,
             )
-            return q
+            return q.cx
         else:
             raise RuntimeError("q is not defined in the states")
 
@@ -441,7 +441,7 @@ class PenaltyController:
             qdot_parent_list._cx_start = cx_start
             qdot = OptimizationVariable(
                 name="qdot",
-                mx=vertcat(self.states["qdot_roots"].mx, self.states["qdot_joints"].mx),
+                mx=None,  # vertcat(self.states["qdot_roots"].mx, self.states["qdot_joints"].mx),
                 cx_start=cx_start,
                 index=[i for i in range(self.states["qdot_roots"].shape + self.states["qdot_joints"].shape)],
                 mapping=BiMapping(
@@ -450,7 +450,7 @@ class PenaltyController:
                 ),
                 parent_list=qdot_parent_list,
             )
-            return qdot
+            return qdot.cx
 
     @property
     def tau(self) -> OptimizationVariable:
