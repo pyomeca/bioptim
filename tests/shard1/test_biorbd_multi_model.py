@@ -292,7 +292,7 @@ def test_biorbd_model():
 
     assert models.marker_index("marker_3") == 2
 
-    markers_velocities = models.marker_velocities()(
+    markers_velocities = models.markers_velocities()(
         np.array([1, 2.1, 3, 4.1, 5, 6.1]),
         np.array([1, 2.1, 3, 4.1, 5, 6]),
     )

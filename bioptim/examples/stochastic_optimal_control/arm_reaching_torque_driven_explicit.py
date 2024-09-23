@@ -154,8 +154,8 @@ def sensory_reference(
     """
     q = states[nlp.states["q"].index]
     qdot = states[nlp.states["qdot"].index]
-    hand_pos = nlp.model.markers(q)[2][:2]
-    hand_vel = nlp.model.marker_velocities(q, qdot)[2][:2]
+    hand_pos = nlp.model.marker(2)(q, [])[:2]
+    hand_vel = nlp.model.marker_velocity(2)(q, qdot, [])[:2]
     hand_pos_velo = cas.vertcat(hand_pos, hand_vel)
     return hand_pos_velo
 
@@ -254,15 +254,13 @@ def reach_target_consistently(controllers: list[PenaltyController]) -> cas.MX:
     This is a multi-node constraint because the covariance matrix depends on all the precedent nodes, but it only
     applies at the END node.
     """
-
-    #  Charbie todo remove these symbolics
     q_sym = cas.MX.sym("q_sym", controllers[-1].states["q"].cx.shape[0])
     qdot_sym = cas.MX.sym("qdot_sym", controllers[-1].states["qdot"].cx.shape[0])
     cov_sym = cas.MX.sym("cov", controllers[-1].integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, controllers[-1].model.matrix_shape_cov)
 
-    hand_pos = controllers[0].model.markers(q_sym)[2][:2]
-    hand_vel = controllers[0].model.marker_velocities(q_sym, qdot_sym)[2][:2]
+    hand_pos = controllers[0].model.marker(2)(q_sym, [])[:2]
+    hand_vel = controllers[0].model.marker_velocity(2)(q_sym, qdot_sym, [])[:2]
 
     jac_marker_q = cas.jacobian(hand_pos, q_sym)
     jac_marker_qdot = cas.jacobian(hand_vel, cas.vertcat(q_sym, qdot_sym))

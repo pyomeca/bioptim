@@ -712,18 +712,33 @@ class MultiBiorbdModel:
             # Note: may not work if the contact_index is not in the first model
         return model_selected.rigid_contact_index(contact_index)
 
-    def marker_velocities(self, reference_index=None) -> Function:
+    def markers_velocities(self, reference_index=None) -> Function:
         if reference_index is not None:
-            raise RuntimeError("marker_velocities is not implemented yet with reference_index for MultiBiorbdModel")
+            raise RuntimeError("markers_velocities is not implemented yet with reference_index for MultiBiorbdModel")
 
         biorbd_return = []
         for i, model in enumerate(self.models):
             q_model = self.q[self.variable_index("q", i)]
             qdot_model = self.qdot[self.variable_index("qdot", i)]
-            biorbd_return += [model.marker_velocities(reference_index)(q_model, qdot_model)]
+            biorbd_return += [model.markers_velocities(reference_index)(q_model, qdot_model)]
         biorbd_return = [item for sublist in biorbd_return for item in sublist]
         casadi_fun = Function(
-            "marker_velocities",
+            "markers_velocities",
+            [self.q, self.qdot],
+            [horzcat(*biorbd_return)],
+        )
+        return casadi_fun
+
+
+    def marker_velocity(self, marker_index: int) -> Function:
+        biorbd_return = []
+        for i, model in enumerate(self.models):
+            q_model = self.q[self.variable_index("q", i)]
+            qdot_model = self.qdot[self.variable_index("qdot", i)]
+            biorbd_return += [model.marker_velocity(marker_index)(q_model, qdot_model)]
+        biorbd_return = [item for sublist in biorbd_return for item in sublist]
+        casadi_fun = Function(
+            "marker_velocity",
             [self.q, self.qdot],
             [horzcat(*biorbd_return)],
         )
