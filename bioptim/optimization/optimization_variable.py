@@ -37,7 +37,6 @@ class OptimizationVariable:
     def __init__(
         self,
         name: str,
-        mx: MX,  # remove Charbie
         cx_start: list | None,
         index: range | list,
         mapping: BiMapping = None,
@@ -56,7 +55,6 @@ class OptimizationVariable:
             The list the OptimizationVariable is in
         """
         self.name: str = name
-        # self.mx: MX = mx
         self.original_cx: list = cx_start
         self.index: range | list = index
         self.mapping: BiMapping = mapping
@@ -166,7 +164,7 @@ class OptimizationVariableList:
     -------
     __getitem__(self, item: int | str)
         Get a specific variable in the list, whether by name or by index
-    append(self, name: str, cx: list, mx: MX, bimapping: BiMapping)
+    append(self, name: str, cx: list, bimapping: BiMapping)
         Add a new variable to the list
     cx(self)
         The cx of all elements together (starting point)
@@ -210,7 +208,7 @@ class OptimizationVariableList:
                 index = []
                 for elt in self.elements:
                     index.extend(list(elt.index))
-                return OptimizationVariable("all", None, self.cx_start, index, None, self)
+                return OptimizationVariable("all", self.cx_start, index, None, self)
 
             for elt in self.elements:
                 if item == elt.name:
@@ -224,7 +222,7 @@ class OptimizationVariableList:
             for elt in self.elements:
                 if elt.name in item:
                     index.extend(list(elt.index))
-            return OptimizationVariable("some", None, None, index)
+            return OptimizationVariable("some", None, index)
         else:
             raise ValueError("OptimizationVariableList can be sliced with int, list, range or str only")
 
@@ -257,7 +255,7 @@ class OptimizationVariableList:
         else:
             self._current_cx_to_get = index if index != -1 else 2
 
-    def append_fake(self, name: str, index: MX | SX | list, mx: MX, bimapping: BiMapping):
+    def append_fake(self, name: str, index: MX | SX | list, bimapping: BiMapping):
         """
         Add a new variable to the fake list which add something without changing the size of the normal elements
 
@@ -271,9 +269,9 @@ class OptimizationVariableList:
             The Mapping of the MX against CX
         """
 
-        self.fake_elements.append(OptimizationVariable(name, None, None, index, bimapping, self))
+        self.fake_elements.append(OptimizationVariable(name, None, index, bimapping, self))
 
-    def append(self, name: str, cx: list, mx: MX, bimapping: BiMapping):
+    def append(self, name: str, cx: list, bimapping: BiMapping):
         """
         Add a new variable to the list
 
@@ -300,7 +298,7 @@ class OptimizationVariableList:
             else:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
 
-        self.elements.append(OptimizationVariable(name, None, cx, index, bimapping, parent_list=self))
+        self.elements.append(OptimizationVariable(name, cx, index, bimapping, parent_list=self))
 
     def append_from_scaled(
         self,
@@ -336,7 +334,7 @@ class OptimizationVariableList:
                 self._cx_intermediates[i] = vertcat(self._cx_intermediates[i], c)
 
         var = scaled_optimization_variable[name]
-        self.elements.append(OptimizationVariable(name, None, cx, var.index, var.mapping, self))
+        self.elements.append(OptimizationVariable(name, cx, var.index, var.mapping, self))
 
     @property
     def cx(self):
@@ -559,7 +557,6 @@ class OptimizationVariableContainer:
         name: str,
         cx: list,
         cx_scaled: list,
-        mx: MX,  # remove Charbie
         mapping: BiMapping,
         node_index: int,
     ):
@@ -579,7 +576,7 @@ class OptimizationVariableContainer:
         node_index
             The index of the node for the scaled variable
         """
-        self._scaled[node_index].append(name, cx_scaled, None, mapping)
+        self._scaled[node_index].append(name, cx_scaled, mapping)
         self._unscaled[node_index].append_from_scaled(name, cx, self._scaled[node_index])
 
     def __contains__(self, item: str):

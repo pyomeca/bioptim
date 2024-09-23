@@ -44,7 +44,7 @@ class Parameter(OptimizationVariable):
         parent_list: ParameterList
             The list the OptimizationVariable is in
         """
-        super(Parameter, self).__init__(name, mx, cx_start, index, mapping, parent_list)
+        super(Parameter, self).__init__(name, cx_start, index, mapping, parent_list)
         self.function = function
         self.size = size
         self.cx_type = cx_type

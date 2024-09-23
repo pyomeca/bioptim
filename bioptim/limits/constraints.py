@@ -566,7 +566,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise NotImplementedError(
                     "This implicit constraint tau_from_muscle_equal_inverse_dynamics is not implemented yet with external forces"
                 )
-                # Todo: add fext tau_id = nlp.model.inverse_dynamics(q, qdot, qddot, fext).to_mx()
+                # Todo: add fext tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, fext)
                 # fext need to be a mx
 
             tau_id = controller.model.inverse_dynamics()(

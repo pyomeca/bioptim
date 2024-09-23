@@ -1428,7 +1428,7 @@ def test_PenaltyFunctionAbstract_get_node(node, ns, phase_dynamics):
     nlp.A = np.linspace(0, 0, ns + 1)
     nlp.A_scaled = nlp.A
     tp = OptimizationVariableList(MX, phase_dynamics=phase_dynamics)
-    tp.append(name="param", cx=[MX(), MX(), MX()], mx=MX(), bimapping=BiMapping([], []))
+    tp.append(name="param", cx=[MX(), MX(), MX()], bimapping=BiMapping([], []))
     nlp.parameters = tp["param"]
 
     pn = []
