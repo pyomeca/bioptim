@@ -181,7 +181,7 @@ def minimize_uncertainty(controllers: list[PenaltyController], key: str) -> cas.
 
 
 def get_cov_mat(nlp, node_index):
-    dt = nlp.dt_mx
+    dt = nlp.dt
 
     nlp.states.node_index = node_index - 1
     nlp.controls.node_index = node_index - 1
@@ -194,7 +194,7 @@ def get_cov_mat(nlp, node_index):
     sensory_noise = nlp.parameters["sensory_noise"].cx
     motor_noise = nlp.parameters["motor_noise"].cx
     sigma_w = cas.vertcat(sensory_noise, motor_noise) * CX_eye(6)
-    cov_sym = cas.MX.sym("cov", nlp.integrated_values.cx.shape[0])
+    cov_sym = nlp.cx.sym("cov", nlp.integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, nlp.model.matrix_shape_cov)
 
     dx = stochastic_forward_dynamics(
@@ -302,12 +302,13 @@ def expected_feedback_effort(controllers: list[PenaltyController], sensory_noise
         Magnitude of the sensory noise.
     """
     dt = controllers[0].dt.cx
-    sensory_noise_matrix = sensory_noise_magnitude * cas.MX_eye(4)
+    CX_eye = cas.MX_eye if controllers[0].cx == cas.MX else cas.SX_eye
+    sensory_noise_matrix = sensory_noise_magnitude * CX_eye(4)
 
     # create the casadi function to be evaluated
     # Get the symbolic variables
     ref = controllers[0].algebraic_states["ref"].cx
-    cov_sym = cas.MX.sym("cov", controllers[0].integrated_values.cx.shape[0])
+    cov_sym = controllers[0].cx.sym("cov", controllers[0].integrated_values.cx.shape[0])
     cov_matrix = StochasticBioModel.reshape_to_matrix(cov_sym, controllers[0].model.matrix_shape_cov)
 
     k = controllers[0].algebraic_states["k"].cx

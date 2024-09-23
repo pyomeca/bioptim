@@ -557,13 +557,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 controllers[0].algebraic_states["c"].cx, controllers[0].model.matrix_shape_c
             )
 
-            q_root = MX.sym("q_root", nb_root, 1)
-            q_joints = MX.sym("q_joints", nu, 1)
-            qdot_root = MX.sym("qdot_root", nb_root, 1)
-            qdot_joints = MX.sym("qdot_joints", nu, 1)
-            tau_joints = MX.sym("tau_joints", nu, 1)
-            algebraic_states_sym = MX.sym("algebraic_states_sym", controllers[0].algebraic_states.shape, 1)
-            numerical_timeseries_sym = MX.sym("numerical_timeseries_sym", controllers[0].numerical_timeseries.shape, 1)
+            q_root = controllers[0].cx.sym("q_root", nb_root, 1)
+            q_joints = controllers[0].cx.sym("q_joints", nu, 1)
+            qdot_root = controllers[0].cx.sym("qdot_root", nb_root, 1)
+            qdot_joints = controllers[0].cx.sym("qdot_joints", nu, 1)
+            tau_joints = controllers[0].cx.sym("tau_joints", nu, 1)
+            algebraic_states_sym = controllers[0].cx.sym("algebraic_states_sym", controllers[0].algebraic_states.shape, 1)
+            numerical_timeseries_sym = controllers[0].cx.sym("numerical_timeseries_sym", controllers[0].numerical_timeseries.shape, 1)
 
             dx = controllers[0].extra_dynamics(0)(
                 controllers[0].time.cx,
