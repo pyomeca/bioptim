@@ -312,7 +312,7 @@ class RK(Integrator):
             t = self.t_span_sym[0] + self._integration_time * (i - 1)
             x[:, i] = self.next_x(t, x[:, i - 1], u, p, a, d)
             if self.model.nb_quaternions > 0:
-                x[:self.model.nb_q, i] = self.model.normalize_state_quaternions()(x[:self.model.nb_q, i])
+                x[: self.model.nb_q, i] = self.model.normalize_state_quaternions()(x[: self.model.nb_q, i])
 
         return x[:, -1], x
 
@@ -534,7 +534,7 @@ class TRAPEZOIDAL(Integrator):
         )
 
         if self.model.nb_quaternions > 0:
-            x_prev[:self.model.nb_q, 1] = self.model.normalize_state_quaternions(x_prev[:self.model.nb_q, 1])
+            x_prev[: self.model.nb_q, 1] = self.model.normalize_state_quaternions(x_prev[: self.model.nb_q, 1])
 
         return x_prev[:, 1], x_prev
 
