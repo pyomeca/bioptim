@@ -562,8 +562,12 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             qdot_root = controllers[0].cx.sym("qdot_root", nb_root, 1)
             qdot_joints = controllers[0].cx.sym("qdot_joints", nu, 1)
             tau_joints = controllers[0].cx.sym("tau_joints", nu, 1)
-            algebraic_states_sym = controllers[0].cx.sym("algebraic_states_sym", controllers[0].algebraic_states.shape, 1)
-            numerical_timeseries_sym = controllers[0].cx.sym("numerical_timeseries_sym", controllers[0].numerical_timeseries.shape, 1)
+            algebraic_states_sym = controllers[0].cx.sym(
+                "algebraic_states_sym", controllers[0].algebraic_states.shape, 1
+            )
+            numerical_timeseries_sym = controllers[0].cx.sym(
+                "numerical_timeseries_sym", controllers[0].numerical_timeseries.shape, 1
+            )
 
             dx = controllers[0].extra_dynamics(0)(
                 controllers[0].time.cx,
