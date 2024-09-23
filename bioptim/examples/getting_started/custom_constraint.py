@@ -59,6 +59,7 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
         from bioptim import BiorbdModel
 
         # noinspection PyTypeChecker
+        # todo: Charbie
         model: BiorbdModel = controller.model
         markers = controller.mx_to_cx("markers", model.model.markers, controller.states["q"])
         markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]

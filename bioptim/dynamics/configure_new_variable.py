@@ -120,6 +120,7 @@ class NewVariableConfiguration:
         self.copy_states_dot = False
         self.copy_controls = False
 
+        # todo: Charbie
         self.mx_states = None
         self.mx_states_dot = None
         self.mx_controls = None
@@ -331,6 +332,7 @@ class NewVariableConfiguration:
     def _use_copy(self):
         """Use of states[0] and controls[0] is permitted since nlp.phase_dynamics
         is PhaseDynamics.SHARED_DURING_THE_PHASE"""
+        # todo: Charbie
         self.mx_states = (
             [] if not self.copy_states else [self.ocp.nlp[self.nlp.use_states_from_phase_idx].states[0][self.name].mx]
         )
@@ -369,6 +371,7 @@ class NewVariableConfiguration:
 
             self.mx_algebraic_states.append(MX.sym(var_name, 1, 1))
 
+        # todo: Charbie
         self.mx_states = vertcat(*self.mx_states)
         self.mx_states_dot = vertcat(*self.mx_states_dot)
         self.mx_controls = vertcat(*self.mx_controls)

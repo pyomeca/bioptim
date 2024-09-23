@@ -148,7 +148,7 @@ class PenaltyController:
         """
 
         tp = OptimizationVariableList(self._nlp.cx, self._nlp.phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE)
-        n_val = self.ocp.dt_parameter.mx.shape[0]
+        n_val = self.ocp.dt_parameter.cx.shape[0]
         tp.append(
             "phases_dt",
             mx=self.ocp.dt_parameter.mx,

@@ -416,7 +416,7 @@ class OptimizationVariableList:
         -------
         The MX of all variable concatenated together
         """
-
+        # todo Charbie remove
         return vertcat(*[elt.mx for elt in self.elements])
 
     def __contains__(self, item: str):
@@ -562,6 +562,7 @@ class OptimizationVariableContainer:
 
     @property
     def mx(self):
+        # todo Charbie remove
         return self.unscaled.mx
 
     # @property
