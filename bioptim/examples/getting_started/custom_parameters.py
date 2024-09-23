@@ -49,7 +49,7 @@ def my_parameter_function(bio_model: BiorbdModel, value: MX, extra_value: Any):
     """
 
     value[2] *= extra_value
-    bio_model.model.setGravity(value)
+    bio_model.set_gravity(value)
 
 
 def set_mass(bio_model: BiorbdModel, value: MX):
@@ -65,7 +65,7 @@ def set_mass(bio_model: BiorbdModel, value: MX):
         The CasADi variables to modify the model
     """
 
-    bio_model.model.segments()[0].characteristics().setMass(value)
+    bio_model.segments[0].characteristics().setMass(value)
 
 
 def my_target_function(controller: PenaltyController, key: str) -> MX:

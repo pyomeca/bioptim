@@ -1353,7 +1353,7 @@ class ConfigureProblem:
 
         q = nlp.states["q"].mapping.to_second.map(nlp.states["q"].cx)
         qdot = nlp.states["qdot"].mapping.to_second.map(nlp.states["qdot"].cx)
-        global_soft_contact_force_func = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters_except_time.cx)
+        global_soft_contact_force_func = nlp.model.soft_contact_forces()(q, qdot, nlp.parameters.cx)
         nlp.soft_contact_forces_func = global_soft_contact_force_func
 
         for i_sc in range(nlp.model.nb_soft_contacts):

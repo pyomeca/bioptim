@@ -209,12 +209,6 @@ def get_cov_mat(nlp, node_index):
         with_noise=True,
     )
 
-    # dx.dxdt = cas.Function(
-    #     "tp",
-    #     [nlp.states.mx, nlp.controls.mx, nlp.parameters.mx, nlp.algebraic_states.mx, nlp.numerical_timeseries.mx],
-    #     [dx.dxdt],
-    # )(nlp.states.cx, nlp.controls.cx, nlp.parameters.cx, nlp.algebraic_states.cx, nlp.numerical_timeseries.cx)
-
     ddx_dwm = cas.jacobian(dx.dxdt, cas.vertcat(sensory_noise, motor_noise))
     dg_dw = -ddx_dwm * dt
     ddx_dx = cas.jacobian(dx.dxdt, nlp.states.cx)
@@ -222,7 +216,7 @@ def get_cov_mat(nlp, node_index):
 
     p_next = m_matrix @ (dg_dx @ cov_matrix @ dg_dx.T + dg_dw @ sigma_w @ dg_dw.T) @ m_matrix.T
 
-    parameters = nlp.parameters_except_time.cx
+    parameters = nlp.parameters.cx
     parameters[nlp.parameters["sensory_noise"].index] = nlp.model.sensory_noise_magnitude
     parameters[nlp.parameters["motor_noise"].index] = nlp.model.motor_noise_magnitude
 

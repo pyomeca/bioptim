@@ -268,13 +268,13 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             MultinodePenaltyFunctions.Functions._prepare_controller_cx(penalty, controllers)
 
             com_0 = controllers[0].model.center_of_mass()(
-                controllers[0].states["q"].cx, controllers[0].parameters_except_time.cx
+                controllers[0].states["q"].cx, controllers[0].parameters.cx
             )
 
             out = controllers[0].cx.zeros((3, 1))
             for i in range(1, len(controllers)):
                 com_i = controllers[i].model.center_of_mass()(
-                    controllers[i].states["q"].cx, controllers[i].parameters_except_time.cx
+                    controllers[i].states["q"].cx, controllers[i].parameters.cx
                 )
                 out += com_0 - com_i
 
@@ -302,7 +302,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
             com_dot_0 = controllers[0].model.center_of_mass_velocity()(
                 controllers[0].states["q"].cx,
                 controllers[0].states["qdot"].cx,
-                controllers[0].parameters_except_time.cx,
+                controllers[0].parameters.cx,
             )
 
             out = controllers[0].cx.zeros((3, 1))
@@ -310,7 +310,7 @@ class MultinodePenaltyFunctions(PenaltyFunctionAbstract):
                 com_dot_i = controllers[i].model.center_of_mass_velocity()(
                     controllers[i].states["q"].cx,
                     controllers[i].states["qdot"].cx,
-                    controllers[i].parameters_except_time.cx,
+                    controllers[i].parameters.cx,
                 )
                 out += com_dot_0 - com_dot_i
 

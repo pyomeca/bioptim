@@ -75,8 +75,6 @@ class NonLinearProgram:
         The mapping for the plots
     tf: float
         The time stamp of the end of the phase
-    tf_mx:
-        The time stamp of the end of the phase
     variable_mappings: BiMappingList
         The list of mapping for all the variables
     u_bounds = Bounds()
@@ -122,10 +120,6 @@ class NonLinearProgram:
         Add a new element to the nlp of the format 'nlp.param_name = param' or 'nlp.name["param_name"] = param'
     add_path_condition(ocp: OptimalControlProgram, var: Any, path_name: str, type_option: Any, type_list: Any)
         Interface to add for PathCondition classes
-    add_casadi_func(self, name: str, function: Callable, *all_param: Any) -> casadi.Function:
-        Add to the pool of declared casadi function. If the function already exists, it is skipped
-    to_casadi_func
-        Converts a symbolic expression into a casadi function
     node_time(self, node_idx: int)
         Gives the time for a specific index
     """
@@ -182,22 +176,18 @@ class NonLinearProgram:
         self.phase_dynamics = phase_dynamics
         self.time_index = None
         self.time_cx = None
-        self.time_mx = None
         self.dt = None
-        self.dt_mx = None
         self.tf = None
-        self.tf_mx = None
         self.states = OptimizationVariableContainer(self.phase_dynamics)
         self.states_dot = OptimizationVariableContainer(self.phase_dynamics)
         self.controls = OptimizationVariableContainer(self.phase_dynamics)
+        self.numerical_data_timeseries = OptimizationVariableContainer(self.phase_dynamics)
         # parameters is currently a clone of ocp.parameters, but should hold phase parameters
         from ..optimization.parameters import ParameterContainer
 
         self.parameters = ParameterContainer(use_sx=use_sx)
-        self.parameters_except_time = ParameterContainer(use_sx=use_sx)
         self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
-        self.numerical_timeseries = OptimizationVariableContainer(self.phase_dynamics)
 
     def initialize(self, cx: MX | SX | Callable = None):
         """
@@ -397,80 +387,6 @@ class NonLinearProgram:
             setattr(nlp, param_name, param)
         else:
             getattr(nlp, name)[param_name] = param
-
-    def add_casadi_func(self, name: str, function: Callable | SX | MX, *all_param: Any) -> casadi.Function:
-        """
-        Add to the pool of declared casadi function. If the function already exists, it is skipped
-
-        Parameters
-        ----------
-        name: str
-            The unique name of the function to add to the casadi functions pool
-        function: Callable | SX | MX
-            The biorbd function to add
-        all_param: dict
-            Any parameters to pass to the biorbd function
-        """
-
-        if name in self.casadi_func:
-            return self.casadi_func[name]
-        else:
-            mx = [var.mx if isinstance(var, OptimizationVariable) else var for var in all_param]
-            self.casadi_func[name] = self.to_casadi_func(name, function, *mx)
-        return self.casadi_func[name]
-
-    @staticmethod
-    def to_casadi_func(name, symbolic_expression: MX | SX | Callable, *all_param, expand=True) -> Function:
-        """
-        Converts a symbolic expression into a casadi function
-
-        Parameters
-        ----------
-        name: str
-            The name of the function
-        symbolic_expression: MX | SX | Callable
-            The symbolic expression to be converted, also support Callables
-        all_param: Any
-            Any parameters to pass to the biorbd function
-        expand: bool
-            If the function should be expanded
-
-        Returns
-        -------
-        The converted function
-
-        """
-        cx_param = []
-        for p in all_param:
-            if isinstance(p, (MX, SX)):
-                cx_param.append(p)
-
-        if isinstance(symbolic_expression, (MX, SX, Function)):
-            func_evaluated = symbolic_expression
-        else:
-            func_evaluated = symbolic_expression(*all_param)
-            if isinstance(func_evaluated, (list, tuple)):
-                func_evaluated = horzcat(*[val if isinstance(val, MX) else val.to_mx() for val in func_evaluated])
-            elif not isinstance(func_evaluated, MX):
-                func_evaluated = func_evaluated.to_mx()
-        func = Function(name, cx_param, [func_evaluated])
-
-        if expand:
-            try:
-                func = func.expand()
-            except Exception as me:
-                raise RuntimeError(
-                    f"An error occurred while executing the 'expand()' function for {name}. Please review the following "
-                    "casadi error message for more details.\n"
-                    "Several factors could be causing this issue. If you are creating your own casadi function, "
-                    "it is possible that you have free variables. Another possibility, if you are using a predefined "
-                    "function, the error might be due to the inability to use expand=True at all. In that case, try "
-                    "adding expand=False to the dynamics or the penalty.\n"
-                    "Original casadi error message:\n"
-                    f"{me}"
-                )
-
-        return func.expand() if expand else func
 
     def node_time(self, node_idx: int):
         """

@@ -236,7 +236,17 @@ class MultiBiorbdModel:
 
     @property
     def gravity(self) -> Function:
-        biorbd_return = vertcat(*(model.gravity()(self.parameters)["o0"] for model in self.models))
+        for i, model in enumerate(self.models):
+            if i == 0:
+                if self.parameters.shape[0] == 0:
+                    biorbd_return = model.gravity()["o0"]
+                else:
+                    biorbd_return = model.gravity()(self.parameters)["o0"]
+            else:
+                if self.parameters.shape[0] == 0:
+                    biorbd_return = vertcat(biorbd_return, model.gravity()["o0"])
+                else:
+                    biorbd_return = vertcat(biorbd_return, model.gravity()(self.parameters)["o0"])
         casadi_fun = Function(
             "gravity",
             [self.parameters],
@@ -309,7 +319,17 @@ class MultiBiorbdModel:
 
     @property
     def mass(self) -> Function:
-        biorbd_return = vertcat(*(model.mass()(self.parameters)["o0"] for model in self.models))
+        for i, model in enumerate(self.models):
+            if i == 0:
+                if self.parameters.shape[0] == 0:
+                    biorbd_return = model.mass()["o0"]
+                else:
+                    biorbd_return = model.mass()(self.parameters)["o0"]
+            else:
+                if self.parameters.shape[0] == 0:
+                    biorbd_return = vertcat(biorbd_return, model.mass()["o0"])
+                else:
+                    biorbd_return = vertcat(biorbd_return, model.mass()(self.parameters)["o0"])
         casadi_fun = Function(
             "mass",
             [self.parameters],
@@ -473,7 +493,8 @@ class MultiBiorbdModel:
     def torque(self) -> Function:
         biorbd_return = MX()
         for i, model in enumerate(self.models):
-            tau_activations_model = self.muscle[self.variable_index("tau", i)]
+            model.model.closeActuator()
+            tau_activations_model = self.tau[self.variable_index("tau", i)]
             q_model = self.q[self.variable_index("q", i)]
             qdot_model = self.qdot[self.variable_index("qdot", i)]
             biorbd_return = vertcat(
@@ -487,7 +508,7 @@ class MultiBiorbdModel:
             )
         casadi_fun = Function(
             "torque",
-            [self.muscle, self.q, self.qdot, self.parameters],
+            [self.tau, self.q, self.qdot, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -566,11 +587,11 @@ class MultiBiorbdModel:
             qddot_model = self.qddot[self.variable_index("qddot", i)]
             biorbd_return = vertcat(
                 biorbd_return,
-                model.inverse_dynamics()(q_model, qdot_model, qddot_model, self.parameters),
+                model.inverse_dynamics()(q_model, qdot_model, qddot_model, [], self.parameters),
             )
         casadi_fun = Function(
             "inverse_dynamics",
-            [self.q, self.qdot, self.qddot, self.parameters],
+            [self.q, self.qdot, self.qddot, [], self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -656,7 +677,6 @@ class MultiBiorbdModel:
         for i, model in enumerate(self.models):
             q_model = self.q[self.variable_index("q", i)]
             biorbd_return += [model.markers()(q_model, self.parameters)]
-        biorbd_return = [item for sublist in biorbd_return for item in sublist]
         casadi_fun = Function(
             "markers",
             [self.q, self.parameters],
@@ -838,11 +858,11 @@ class MultiBiorbdModel:
             qdot_model = self.qdot[self.variable_index("qdot", i)]
             tau_model = self.tau[self.variable_index("tau", i)]
 
-            contact_forces = model.contact_forces()(q_model, qdot_model, tau_model, self.parameters)
+            contact_forces = model.contact_forces()(q_model, qdot_model, tau_model, [], self.parameters)
             biorbd_return = vertcat(biorbd_return, contact_forces)
         casadi_fun = Function(
             "contact_forces",
-            [self.q, self.qdot, self.tau, self.parameters],
+            [self.q, self.qdot, self.tau, [], self.parameters],
             [biorbd_return],
         )
         return casadi_fun

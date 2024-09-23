@@ -66,6 +66,7 @@ class Parameter(OptimizationVariable):
 
     @property
     def mx(self):
+        # TODO: this should removed and placed in the BiorbdModel
         return self._mx
 
     @property

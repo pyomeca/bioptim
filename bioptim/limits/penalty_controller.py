@@ -97,10 +97,6 @@ class PenaltyController:
         return self._nlp.cx
 
     @property
-    def to_casadi_func(self) -> Callable:
-        return self._nlp.to_casadi_func
-
-    @property
     def control_type(self) -> ControlType:
         return self._nlp.control_type
 
@@ -371,17 +367,6 @@ class PenaltyController:
         return self._nlp.parameters
 
     @property
-    def parameters_except_time(self) -> OptimizationVariableList:
-        """
-        Return the parameters
-
-        Returns
-        -------
-        The parameters
-        """
-        return self._nlp.parameters_except_time
-
-    @property
     def parameters_scaled(self) -> OptimizationVariableList:
         """
         Return the scaled parameters
@@ -396,7 +381,7 @@ class PenaltyController:
         return MX() if type(self._nlp.parameters.scaled) == DM else self._nlp.parameters.scaled
 
     @property
-    def q(self) -> OptimizationVariable:
+    def q(self) -> MX | SX:
         if "q" in self.states:
             return self.states["q"].mapping.to_second.map(self.states["q"].cx)
         elif "q_roots" in self.states and "q_joints" in self.states:
@@ -421,7 +406,7 @@ class PenaltyController:
             raise RuntimeError("q is not defined in the states")
 
     @property
-    def qdot(self) -> OptimizationVariable:
+    def qdot(self) -> MX | SX:
         if "qdot" in self.states:
             return self.states["qdot"].mapping.to_second.map(self.states["qdot"].cx)
         elif "qdot_roots" in self.states and "qdot_joints" in self.states:
@@ -444,7 +429,7 @@ class PenaltyController:
             return qdot.cx
 
     @property
-    def tau(self) -> OptimizationVariable:
+    def tau(self) -> MX | SX:
         if "tau" in self.controls:
             return self.controls["tau"].mapping.to_second.map(self.controls["tau"].cx)
         elif "tau_joints" in self.controls:

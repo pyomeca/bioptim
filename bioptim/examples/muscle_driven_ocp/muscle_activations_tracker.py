@@ -12,7 +12,7 @@ import platform
 
 import biorbd_casadi as biorbd
 import numpy as np
-from casadi import MX, vertcat, horzcat
+from casadi import MX, vertcat, Function
 from matplotlib import pyplot as plt
 from scipy.integrate import solve_ivp
 
@@ -159,9 +159,12 @@ def generate_data(
     symbolic_states = vertcat(*(symbolic_q, symbolic_qdot))
     symbolic_controls = vertcat(*(symbolic_tau, symbolic_mus)) if use_residual_torque else vertcat(symbolic_mus)
 
-    dynamics_func = biorbd.to_casadi_func(
+    dynamics_func = Function(
         "ForwardDyn",
-        dyn_func(
+        [symbolic_states,
+        symbolic_controls,
+        symbolic_parameters],
+        [dyn_func(
             time=symbolic_time,
             states=symbolic_states,
             controls=symbolic_controls,
@@ -171,12 +174,7 @@ def generate_data(
             nlp=nlp,
             with_contact=False,
             rigidbody_dynamics=RigidBodyDynamics.ODE,
-        ).dxdt,
-        symbolic_states,
-        symbolic_controls,
-        symbolic_parameters,
-        nlp,
-        False,
+        ).dxdt]
     )
 
     def dyn_interface(t, x, u):
@@ -361,10 +359,9 @@ def main():
 
     markers = np.ndarray((3, n_mark, q.shape[1]))
     symbolic_states = MX.sym("x", n_q, 1)
-    markers_func = biorbd.to_casadi_func("ForwardKin", bio_model.markers, symbolic_states)
 
     for i in range(n_frames):
-        markers[:, :, i] = markers_func(q[:, i])
+        markers[:, :, i] = bio_model.markers()(q[:, i])
 
     plt.figure("Markers")
     n_steps_ode = ocp.nlp[0].ode_solver.steps + 1 if ocp.nlp[0].ode_solver.is_direct_collocation else 1

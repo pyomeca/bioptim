@@ -12,7 +12,7 @@ import platform
 
 import biorbd_casadi as biorbd
 import numpy as np
-from casadi import MX, SX, vertcat, horzcat
+from casadi import MX, SX, vertcat, horzcat, Function
 from matplotlib import pyplot as plt
 from scipy.integrate import solve_ivp
 
@@ -161,9 +161,13 @@ def generate_data(
             node_index=node_index,
         )
 
-    dynamics_func = biorbd.to_casadi_func(
+    dynamics_func = Function(
         "ForwardDyn",
-        DynamicsFunctions.muscles_driven(
+        [symbolic_time,
+        symbolic_states,
+        symbolic_controls,
+        symbolic_parameters],
+        [DynamicsFunctions.muscles_driven(
             time=symbolic_time,
             states=symbolic_states,
             controls=symbolic_controls,
@@ -173,13 +177,7 @@ def generate_data(
             nlp=nlp,
             with_contact=False,
             rigidbody_dynamics=RigidBodyDynamics.ODE,
-        ).dxdt,
-        symbolic_time,
-        symbolic_states,
-        symbolic_controls,
-        symbolic_parameters,
-        nlp,
-        False,
+        ).dxdt],
     )
 
     def dyn_interface(t, x, u):
