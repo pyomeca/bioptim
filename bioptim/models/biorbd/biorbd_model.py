@@ -608,8 +608,9 @@ class BiorbdModel:
 
         else:
             biorbd_return = []
-            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(segment_idx=reference_index,
-                inverse=True)(
+            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
+                segment_idx=reference_index, inverse=True
+            )(
                 GeneralizedCoordinates(self.q),
             )
             # TODO: Check and fix this portion of code
@@ -626,10 +627,10 @@ class BiorbdModel:
 
     def marker_velocity(self, marker_index: int) -> list[MX]:
         biorbd_return = self.model.markersVelocity(
-                GeneralizedCoordinates(self.q),
-                GeneralizedVelocity(self.qdot),
-                True,
-            )[marker_index].to_mx()
+            GeneralizedCoordinates(self.q),
+            GeneralizedVelocity(self.qdot),
+            True,
+        )[marker_index].to_mx()
         casadi_fun = Function(
             "marker_velocity",
             [self.q, self.qdot, self.parameters],
@@ -652,8 +653,10 @@ class BiorbdModel:
         else:
             # TODO: Check and fix this portion of code
             biorbd_return = []
-            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(segment_idx=reference_index,
-                inverse=True,)(
+            homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
+                segment_idx=reference_index,
+                inverse=True,
+            )(
                 GeneralizedCoordinates(self.q),
             )
             for m in self.model.markersAcceleration(
@@ -673,11 +676,11 @@ class BiorbdModel:
 
     def marker_acceleration(self, marker_index: int) -> list[MX]:
         biorbd_return = self.model.markerAcceleration(
-                GeneralizedCoordinates(self.q),
-                GeneralizedVelocity(self.qdot),
-                GeneralizedAcceleration(self.qddot),
-                True,
-            )[marker_index].to_mx()
+            GeneralizedCoordinates(self.q),
+            GeneralizedVelocity(self.qdot),
+            GeneralizedAcceleration(self.qddot),
+            True,
+        )[marker_index].to_mx()
         casadi_fun = Function(
             "marker_acceleration",
             [self.q, self.qdot, self.qddot, self.parameters],

@@ -729,7 +729,6 @@ class MultiBiorbdModel:
         )
         return casadi_fun
 
-
     def marker_velocity(self, marker_index: int) -> Function:
         biorbd_return = []
         for i, model in enumerate(self.models):
