@@ -53,7 +53,8 @@ class MultiBiorbdModel:
                 self.models.append(model)
                 if model.parameters is not None:
                     raise NotImplementedError(
-                        "MultiBiorbdModel does not handle parameters yet. Please use BiorbdModel instead.")
+                        "MultiBiorbdModel does not handle parameters yet. Please use BiorbdModel instead."
+                    )
             else:
                 raise ValueError("The models should be of type 'str', 'biorbd.Model' or 'bioptim.BiorbdModel'")
 
@@ -291,7 +292,9 @@ class MultiBiorbdModel:
     def homogeneous_matrices_in_global(self, segment_idx, inverse=False) -> Function:
         local_segment_id, model_id = self.local_variable_id("segment", segment_idx)
         q_model = self.models[model_id].q
-        biorbd_return = self.models[model_id].homogeneous_matrices_in_global(local_segment_id, inverse)(q_model, self.parameters)
+        biorbd_return = self.models[model_id].homogeneous_matrices_in_global(local_segment_id, inverse)(
+            q_model, self.parameters
+        )
         casadi_fun = Function(
             "homogeneous_matrices_in_global",
             [self.models[model_id].q, self.parameters],

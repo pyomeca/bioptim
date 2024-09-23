@@ -689,7 +689,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qdot_joints = controller.cx.sym("qdot_joints", nu, 1)
             tau_joints = controller.cx.sym("tau_joints", nu, 1)
             algebraic_states_sym = controller.cx.sym("algebraic_states_sym", controller.algebraic_states.shape, 1)
-            numerical_timeseries_sym = controller.cx.sym("numerical_timeseries_sym", controller.numerical_timeseries.shape, 1)
+            numerical_timeseries_sym = controller.cx.sym(
+                "numerical_timeseries_sym", controller.numerical_timeseries.shape, 1
+            )
 
             dx = controller.extra_dynamics(0)(
                 controller.t_span.cx,
