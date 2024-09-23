@@ -194,7 +194,7 @@ class NonLinearProgram:
         from ..optimization.parameters import ParameterContainer
 
         self.parameters = ParameterContainer(use_sx=use_sx)
-        parameters_except_time = ParameterContainer(use_sx=use_sx)
+        self.parameters_except_time = ParameterContainer(use_sx=use_sx)
         self.algebraic_states = OptimizationVariableContainer(self.phase_dynamics)
         self.integrated_values = OptimizationVariableContainer(self.phase_dynamics)
         self.numerical_timeseries = OptimizationVariableContainer(self.phase_dynamics)
