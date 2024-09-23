@@ -1496,14 +1496,17 @@ class ConfigureProblem:
         initial_vector = StochasticBioModel.reshape_to_vector(initial_matrix)
         cx_scaled_next_formatted = [initial_vector for _ in range(n_cx)]
         nlp.integrated_values.append(
-            name, cx_scaled_next_formatted, cx_scaled_next_formatted, initial_matrix, dummy_mapping, 0
+            name=name,
+            cx=cx_scaled_next_formatted,
+            cx_scaled=[initial_matrix for i in range(n_cx)],  # Only the first value is used
+            mapping=dummy_mapping,
+            node_index=0
         )
         for node_index in range(1, nlp.ns + 1):  # cannot use phase_dynamics == PhaseDynamics.SHARED_DURING_THE_PHASE
             cx_scaled_next = nlp.integrated_value_functions[name](nlp, node_index)
             cx_scaled_next_formatted = [cx_scaled_next for _ in range(n_cx)]
             nlp.integrated_values.append(
                 name,
-                cx_scaled_next_formatted,
                 cx_scaled_next_formatted,
                 cx_scaled_next,
                 dummy_mapping,
