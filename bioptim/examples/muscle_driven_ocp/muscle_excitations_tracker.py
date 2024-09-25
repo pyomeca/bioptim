@@ -10,7 +10,6 @@ The difference between muscle activation and excitation is that the latter is th
 
 import platform
 
-import biorbd_casadi as biorbd
 import numpy as np
 from casadi import MX, SX, vertcat, horzcat, Function
 from matplotlib import pyplot as plt

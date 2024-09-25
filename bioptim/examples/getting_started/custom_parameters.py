@@ -165,6 +165,14 @@ def prepare_ocp(
             scaling=g_scaling,  # The scaling of the parameter
             extra_value=1,  # You can define as many extra arguments as you want
         )
+        # TODO: Add the capability to send values to the parameter so instead of being a MX it is a float
+        # This would look more or less like the following (with the values the dispatch function similar to the one in Penalty).
+        # This would simultanously solve the dispatching of all forces and the phase parameters
+        # parameters.add(
+        #     "gravity_xyz",  # The name of the parameter
+        #     my_parameter_function,  # The function that modifies the biorbd model
+        #     values=lambda phase_idx, node_idx=...
+        # )
 
         # Give the parameter some min and max bounds
         parameter_bounds.add("gravity_xyz", min_bound=min_g, max_bound=max_g, interpolation=InterpolationType.CONSTANT)
