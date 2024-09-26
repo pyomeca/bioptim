@@ -169,7 +169,9 @@ class DynamicsFunctions:
             dxdt[nlp.states["qdot"].index, :] = qddot
             dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
         else:
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces, translational_forces)
+            ddq = DynamicsFunctions.forward_dynamics(
+                nlp, q, qdot, tau, with_contact, external_forces, translational_forces
+            )
             dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
             dxdt[nlp.states["qdot"].index, :] = ddq
@@ -184,7 +186,9 @@ class DynamicsFunctions:
         ):
             if not with_contact and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces, translational_forces)
+                tau_id = DynamicsFunctions.inverse_dynamics(
+                    nlp, q, qdot, qddot, with_contact, external_forces, translational_forces
+                )
                 defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
                 dq_defects = []
@@ -877,7 +881,9 @@ class DynamicsFunctions:
         ):
             if not with_contact and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.cx)
-                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces, translational_forces)
+                tau_id = DynamicsFunctions.inverse_dynamics(
+                    nlp, q, qdot, qddot, with_contact, external_forces, translational_forces
+                )
                 defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
                 dq_defects = []
@@ -1018,7 +1024,9 @@ class DynamicsFunctions:
             qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.cx)
             qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
 
-            floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered, [], [])[: nlp.model.nb_root]
+            floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered, [], [])[
+                : nlp.model.nb_root
+            ]
 
             defects = nlp.cx(qdot_mapped.shape[0] + qddot_root_mapped.shape[0] + qddot_joints_mapped.shape[0], 1)
 
@@ -1137,10 +1145,14 @@ class DynamicsFunctions:
         external_forces = [] if external_forces is None else external_forces
         translational_forces = [] if translational_forces is None else translational_forces
         qddot = nlp.model.forward_dynamics(with_contact=with_contact)(
-            q, qdot, tau, external_forces, translational_forces, nlp.parameters.cx,
+            q,
+            qdot,
+            tau,
+            external_forces,
+            translational_forces,
+            nlp.parameters.cx,
         )
         return qdot_var_mapping.map(qddot)
-
 
     @staticmethod
     def inverse_dynamics(
@@ -1301,6 +1313,8 @@ class DynamicsFunctions:
         q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
         qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-        qddot_u = nlp.model.partitioned_forward_dynamics(q_u, qdot_u, tau, external_forces, translational_forces, nlp.parameters.cx)
+        qddot_u = nlp.model.partitioned_forward_dynamics(
+            q_u, qdot_u, tau, external_forces, translational_forces, nlp.parameters.cx
+        )
 
         return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)

@@ -568,7 +568,9 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, fext)
                 # fext need to be a mx
 
-            tau_id = controller.model.inverse_dynamics()(controller.q, controller.qdot, qddot, [], [], controller.parameters.cx)
+            tau_id = controller.model.inverse_dynamics()(
+                controller.q, controller.qdot, qddot, [], [], controller.parameters.cx
+            )
 
             return tau_id - muscle_tau
 

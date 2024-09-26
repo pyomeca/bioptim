@@ -422,7 +422,8 @@ class BiorbdModel:
                 raise ValueError("translational_forces should be of shape 6 x nb_forces.")
             if translational_forces.shape[0] != 6:
                 raise ValueError(
-                    f"translational_forces has {translational_forces.shape[0]} rows, it should have 6 rows (Fx, Fy, Fz, Px, Py, Pz). You should provide the forces and points of application.")
+                    f"translational_forces has {translational_forces.shape[0]} rows, it should have 6 rows (Fx, Fy, Fz, Px, Py, Pz). You should provide the forces and points of application."
+                )
             if len(self._segments_to_apply_external_forces) != translational_forces.shape[1]:
                 raise ValueError(
                     f"translational_forces has {translational_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length."
