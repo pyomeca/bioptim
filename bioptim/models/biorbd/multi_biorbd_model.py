@@ -80,6 +80,7 @@ class MultiBiorbdModel:
         self.qddot_joints = MX.sym("qddot_joints_mx", self.nb_qddot - self.nb_root, 1)
         self.tau = MX.sym("tau_mx", self.nb_tau, 1)
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
+        self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
         # TODO: parameters should be handled model by model
         self.parameters = MX.sym("parameters_to_be_implemented", 0, 1)
 
@@ -642,14 +643,17 @@ class MultiBiorbdModel:
 
     def muscle_activation_dot(self) -> Function:
         biorbd_return = MX()
+        n_muscles = 0
         for model in self.models:
-            muscle_states = model.model.stateSet()  # still call from Biorbd
+            muscle_states = model.model.stateSet()
             for k in range(model.nb_muscles):
-                muscle_states[k].setExcitation(self.muscle[k])
+                muscle_states[k].setActivation(self.activations[k + n_muscles])
+                muscle_states[k].setExcitation(self.muscle[k + n_muscles])
             biorbd_return = vertcat(biorbd_return, model.model.activationDot(muscle_states).to_mx())
+            n_muscles += model.nb_muscles
         casadi_fun = Function(
             "muscle_activation_dot",
-            [self.muscle, self.parameters],
+            [self.muscle, self.activations, self.parameters],
             [biorbd_return],
         )
         return casadi_fun

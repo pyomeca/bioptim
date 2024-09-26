@@ -206,7 +206,7 @@ class BioModel(Protocol):
     def muscle_activation_dot(self) -> Function:
         """
         Get the activation derivative of the muscles states
-        args: muscle_excitations
+        args: muscle_excitations, muscle_activations
         """
 
     def muscle_joint_torque(self) -> Function:

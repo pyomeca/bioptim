@@ -468,12 +468,13 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             if controller.get_nlp.numerical_timeseries:
                 # TODO: deal with external forces
                 raise NotImplementedError(
-                    "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with external forces"
+                    "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with numerical_timeseries (external_forces or translational_forces)"
                 )
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, fext)
 
             if with_contact:
                 # todo: this should be done internally in BiorbdModel
+                # Charbie: todo
                 f_contact = (
                     controller.controls["fext"].cx if "fext" in controller.controls else controller.states["fext"].cx
                 )
@@ -567,7 +568,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 # Todo: add fext tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, fext)
                 # fext need to be a mx
 
-            tau_id = controller.model.inverse_dynamics()(controller.q, controller.qdot, qddot, controller.parameters.cx)
+            tau_id = controller.model.inverse_dynamics()(controller.q, controller.qdot, qddot, [], [], controller.parameters.cx)
 
             return tau_id - muscle_tau
 

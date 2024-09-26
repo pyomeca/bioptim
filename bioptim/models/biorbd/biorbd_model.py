@@ -28,6 +28,7 @@ class BiorbdModel:
         bio_model: str | biorbd.Model,
         friction_coefficients: np.ndarray = None,
         segments_to_apply_external_forces: list[str] = [],
+        segments_to_apply_translational_forces: list[str] = [],
         parameters: ParameterList = None,
     ):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
@@ -39,6 +40,9 @@ class BiorbdModel:
                 parameters[param_key].apply_parameter(self)
         self._friction_coefficients = friction_coefficients
         self._segments_to_apply_external_forces = segments_to_apply_external_forces
+        self._segments_to_apply_translational_forces = segments_to_apply_translational_forces
+        if len(segments_to_apply_external_forces) > 0 and len(segments_to_apply_translational_forces) > 0:
+            raise ValueError("You can't apply both external_forces and translational_forces at the same time")
 
         # Declaration of MX variables of the right shape for the creation of CasADi Functions
         self.q = MX.sym("q_mx", self.nb_q, 1)
@@ -47,7 +51,9 @@ class BiorbdModel:
         self.qddot_joints = MX.sym("qddot_joints_mx", self.nb_qddot - self.nb_root, 1)
         self.tau = MX.sym("tau_mx", self.nb_tau, 1)
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
+        self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
         self.external_forces = MX.sym("external_forces_mx", 9, len(segments_to_apply_external_forces))
+        self.translational_forces = MX.sym("translational_forces_mx", 6, len(segments_to_apply_translational_forces))
         # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
         self.parameters = parameters.mx if parameters else MX()
 
@@ -388,11 +394,13 @@ class BiorbdModel:
     def reorder_qddot_root_joints(qddot_root, qddot_joints) -> MX | SX:
         return vertcat(qddot_root, qddot_joints)
 
-    def _dispatch_forces(self, external_forces: MX):
+    def _dispatch_forces(self, external_forces: MX, translational_forces: MX):
 
-        if external_forces is not None:
+        external_forces_set = self.model.externalForceSet()
+
+        if external_forces.shape[1] > 0:
             if not isinstance(external_forces, MX):
-                raise ValueError("external_forces should be a numpy array of shape 9 x nb_forces.")
+                raise ValueError("external_forces should be of shape 9 x nb_forces.")
             if external_forces.shape[0] != 9:
                 raise ValueError(
                     f"external_forces has {external_forces.shape[0]} rows, it should have 9 rows (Mx, My, Mz, Fx, Fy, Fz, Px, Py, Pz). You should provide the moments, forces and points of application."
@@ -402,19 +410,35 @@ class BiorbdModel:
                     f"external_forces has {external_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length."
                 )
 
-        external_forces_set = self.model.externalForceSet()
-
-        if external_forces is not None:
+            # Add the external forces
             for i_element in range(external_forces.shape[1]):
                 name = self._segments_to_apply_external_forces[i_element]
                 values = external_forces[:6, i_element]
                 point_of_application = external_forces[6:9, i_element]
                 external_forces_set.add(name, values, point_of_application)
 
+        elif translational_forces.shape[1] > 0:
+            if not isinstance(translational_forces, MX):
+                raise ValueError("translational_forces should be of shape 6 x nb_forces.")
+            if translational_forces.shape[0] != 6:
+                raise ValueError(
+                    f"translational_forces has {translational_forces.shape[0]} rows, it should have 6 rows (Fx, Fy, Fz, Px, Py, Pz). You should provide the forces and points of application.")
+            if len(self._segments_to_apply_external_forces) != translational_forces.shape[1]:
+                raise ValueError(
+                    f"translational_forces has {translational_forces.shape[1]} columns and {len(self._segments_to_apply_external_forces)} segments to apply forces on, they should have the same length."
+                )
+
+            # Add the translational forces
+            for i_elements in range(translational_forces.shape[1]):
+                name = self._segments_to_apply_external_forces[i_elements]
+                values = translational_forces[:3, i_elements]
+                point_of_application = translational_forces[3:6, i_elements]
+                external_forces_set.addTranslationalForce(values, name, point_of_application)
+
         return external_forces_set
 
     def forward_dynamics(self, with_contact: bool = False) -> Function:
-        external_forces_set = self._dispatch_forces(self.external_forces)
+        external_forces_set = self._dispatch_forces(self.external_forces, self.translational_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -426,14 +450,14 @@ class BiorbdModel:
             ).to_mx()
             casadi_fun = Function(
                 "constrained_forward_dynamics",
-                [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
+                [self.q, self.qdot, self.tau, self.external_forces, self.translational_forces, self.parameters],
                 [biorbd_return],
             )
         else:
             biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
             casadi_fun = Function(
                 "forward_dynamics",
-                [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
+                [self.q, self.qdot, self.tau, self.external_forces, self.translational_forces, self.parameters],
                 [biorbd_return],
             )
         return casadi_fun
@@ -441,11 +465,11 @@ class BiorbdModel:
     def inverse_dynamics(self, with_contact: bool = False) -> Function:
         # @ipuch: I do not understand what is happening here? Do we have f_ext or it is just the contact forces?
         if with_contact:
-            f_ext = self.reshape_fext_to_fcontact(self.external_forces)
+            external_forces = self.reshape_fext_to_fcontact(self.external_forces)
         else:
-            f_ext = self.external_forces
+            external_forces = self.external_forces
 
-        external_forces_set = self._dispatch_forces(f_ext)
+        external_forces_set = self._dispatch_forces(external_forces, self.translational_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -453,13 +477,13 @@ class BiorbdModel:
         biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd, external_forces_set).to_mx()
         casadi_fun = Function(
             "inverse_dynamics",
-            [self.q, self.qdot, self.qddot, self.external_forces, self.parameters],
+            [self.q, self.qdot, self.qddot, self.external_forces, self.translational_forces, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
 
     def contact_forces_from_constrained_forward_dynamics(self) -> Function:
-        external_forces_set = self._dispatch_forces(self.external_forces)
+        external_forces_set = self._dispatch_forces(self.external_forces, self.translational_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -469,7 +493,7 @@ class BiorbdModel:
         ).to_mx()
         casadi_fun = Function(
             "contact_forces_from_constrained_forward_dynamics",
-            [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
+            [self.q, self.qdot, self.tau, self.external_forces, self.translational_forces, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -486,15 +510,14 @@ class BiorbdModel:
         return casadi_fun
 
     def muscle_activation_dot(self) -> Function:
-        # @Pariterre: there is a problem with the statesSet :/
-        muscle_excitation_biorbd = self.muscle
         muscle_states = self.model.stateSet()
         for k in range(self.model.nbMuscles()):
-            muscle_states[k].setExcitation(muscle_excitation_biorbd[k])
+            muscle_states[k].setActivation(self.activations[k])
+            muscle_states[k].setExcitation(self.muscle[k])
         biorbd_return = self.model.activationDot(muscle_states).to_mx()
         casadi_fun = Function(
             "muscle_activation_dot",
-            [self.muscle, self.parameters],
+            [self.muscle, self.activations, self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -814,11 +837,11 @@ class BiorbdModel:
 
     def contact_forces(self) -> Function:
         force = self.contact_forces_from_constrained_forward_dynamics()(
-            self.q, self.qdot, self.tau, self.external_forces, self.parameters
+            self.q, self.qdot, self.tau, self.external_forces, self.translational_forces, self.parameters
         )
         casadi_fun = Function(
             "contact_forces",
-            [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
+            [self.q, self.qdot, self.tau, self.external_forces, self.translational_forces, self.parameters],
             [force],
         )
         return casadi_fun

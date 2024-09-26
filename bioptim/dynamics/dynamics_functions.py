@@ -34,7 +34,7 @@ class DynamicsFunctions:
         Easy accessor to derivative of q
     forward_dynamics(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, tau: MX | SX, with_contact: bool):
         Easy accessor to derivative of qdot
-    compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: MX | SX):
+    compute_muscle_dot(nlp: NonLinearProgram, muscle_excitations: MX | SX, muscle_activations: MX | SX):
         Easy accessor to derivative of muscle activations
     compute_tau_from_muscle(nlp: NonLinearProgram, q: MX | SX, qdot: MX | SX, muscle_activations: MX | SX):
         Easy accessor to tau computed from muscles
@@ -98,6 +98,7 @@ class DynamicsFunctions:
         rigidbody_dynamics: RigidBodyDynamics,
         fatigue: FatigueList,
         external_forces: np.ndarray = None,
+        translational_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by joint torques, optional external forces can be declared.
@@ -132,6 +133,8 @@ class DynamicsFunctions:
             A list of fatigue elements
         external_forces: np.ndarray
             The external forces
+        translational_forces: np.ndarray
+            The translational forces
 
         Returns
         ----------
@@ -166,7 +169,7 @@ class DynamicsFunctions:
             dxdt[nlp.states["qdot"].index, :] = qddot
             dxdt[nlp.states["qddot"].index, :] = DynamicsFunctions.get(nlp.controls["qdddot"], controls)
         else:
-            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces)
+            ddq = DynamicsFunctions.forward_dynamics(nlp, q, qdot, tau, with_contact, external_forces, translational_forces)
             dxdt = nlp.cx(nlp.states.shape, ddq.shape[1])
             dxdt[nlp.states["q"].index, :] = horzcat(*[dq for _ in range(ddq.shape[1])])
             dxdt[nlp.states["qdot"].index, :] = ddq
@@ -181,7 +184,7 @@ class DynamicsFunctions:
         ):
             if not with_contact and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.scaled.cx)
-                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
+                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces, translational_forces)
                 defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
                 dq_defects = []
@@ -637,6 +640,7 @@ class DynamicsFunctions:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         external_forces: np.ndarray = None,
+        translational_forces: np.ndarray = None,
     ) -> MX | SX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -663,6 +667,8 @@ class DynamicsFunctions:
             If the dynamic with ligament should be used
         external_forces: np.ndarray
             The external forces
+        translational_forces: np.ndarray
+            The translational forces
 
         Returns
         ----------
@@ -677,7 +683,8 @@ class DynamicsFunctions:
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         external_forces = [] if external_forces is None else external_forces
-        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
+        translational_forces = [] if translational_forces is None else translational_forces
+        return nlp.model.contact_forces()(q, qdot, tau, external_forces, translational_forces, nlp.parameters.cx)
 
     @staticmethod
     def forces_from_torque_activation_driven(
@@ -691,6 +698,7 @@ class DynamicsFunctions:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         external_forces: np.ndarray = None,
+        translational_forces: np.ndarray = None,
     ) -> MX | SX:
         """
         Contact forces of a forward dynamics driven by joint torques with contact constraints.
@@ -717,6 +725,8 @@ class DynamicsFunctions:
             If the dynamic with ligament should be used
         external_forces: np.ndarray
             The external forces
+        translational_forces: np.ndarray
+            The translational forces
 
         Returns
         ----------
@@ -731,7 +741,8 @@ class DynamicsFunctions:
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         external_forces = [] if external_forces is None else external_forces
-        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
+        translational_forces = [] if translational_forces is None else translational_forces
+        return nlp.model.contact_forces()(q, qdot, tau, external_forces, translational_forces, nlp.parameters.cx)
 
     @staticmethod
     def muscles_driven(
@@ -749,6 +760,7 @@ class DynamicsFunctions:
         with_residual_torque: bool = False,
         fatigue=None,
         external_forces: np.ndarray = None,
+        translational_forces: np.ndarray = None,
     ) -> DynamicsEvaluation:
         """
         Forward dynamics driven by muscle.
@@ -783,6 +795,8 @@ class DynamicsFunctions:
             If the dynamic should be added with residual torques
         external_forces: np.ndarray
             The external forces
+        translational_forces: np.ndarray
+            The translational forces
 
         Returns
         ----------
@@ -850,7 +864,7 @@ class DynamicsFunctions:
         has_excitation = True if "muscles" in nlp.states else False
         if has_excitation:
             mus_excitations = DynamicsFunctions.get(nlp.controls["muscles"], controls)
-            dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations)
+            dmus = DynamicsFunctions.compute_muscle_dot(nlp, mus_excitations, mus_activations)
             dxdt[nlp.states["muscles"].index, :] = horzcat(*[dmus for _ in range(ddq.shape[1])])
 
         if fatigue is not None and "muscles" in fatigue:
@@ -863,7 +877,7 @@ class DynamicsFunctions:
         ):
             if not with_contact and fatigue is None:
                 qddot = DynamicsFunctions.get(nlp.states_dot["qddot"], nlp.states_dot.cx)
-                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces)
+                tau_id = DynamicsFunctions.inverse_dynamics(nlp, q, qdot, qddot, with_contact, external_forces, translational_forces)
                 defects = nlp.cx(dq.shape[0] + tau_id.shape[0], tau_id.shape[1])
 
                 dq_defects = []
@@ -893,6 +907,7 @@ class DynamicsFunctions:
         with_passive_torque: bool = False,
         with_ligament: bool = False,
         external_forces: list = None,
+        translational_forces: list = None,
     ) -> MX | SX:
         """
         Contact forces of a forward dynamics driven by muscles activations and joint torques with contact constraints.
@@ -919,6 +934,9 @@ class DynamicsFunctions:
             If the dynamic with ligament should be used
         external_forces: list[Any]
             The external forces
+        translational_forces: list[Any]
+            The translational forces
+
         Returns
         ----------
         MX.sym | SX.sym
@@ -936,7 +954,8 @@ class DynamicsFunctions:
         tau = tau + nlp.model.ligament_joint_torque()(q, qdot, nlp.parameters.cx) if with_ligament else tau
 
         external_forces = [] if external_forces is None else external_forces
-        return nlp.model.contact_forces()(q, qdot, tau, external_forces, nlp.parameters.cx)
+        translational_forces = [] if translational_forces is None else translational_forces
+        return nlp.model.contact_forces()(q, qdot, tau, external_forces, translational_forces, nlp.parameters.cx)
 
     @staticmethod
     def joints_acceleration_driven(
@@ -999,7 +1018,7 @@ class DynamicsFunctions:
             qddot_root_defects = DynamicsFunctions.get(nlp.states_dot["qddot_roots"], nlp.states_dot.cx)
             qddot_defects_reordered = nlp.model.reorder_qddot_root_joints(qddot_root_defects, qddot_joints)
 
-            floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered)[: nlp.model.nb_root]
+            floating_base_constraint = nlp.model.inverse_dynamics(q, qdot, qddot_defects_reordered, [], [])[: nlp.model.nb_root]
 
             defects = nlp.cx(qdot_mapped.shape[0] + qddot_root_mapped.shape[0] + qddot_joints_mapped.shape[0], 1)
 
@@ -1082,6 +1101,7 @@ class DynamicsFunctions:
         tau: MX | SX,
         with_contact: bool,
         external_forces: list = None,
+        translational_forces: list = None,
     ):
         """
         Easy accessor to derivative of qdot
@@ -1100,6 +1120,8 @@ class DynamicsFunctions:
             If the dynamics with contact should be used
         external_forces: list[]
             The external forces
+        translational_forces: list[]
+            The translational forces
         Returns
         -------
         The derivative of qdot
@@ -1112,14 +1134,13 @@ class DynamicsFunctions:
         else:
             qdot_var_mapping = BiMapping([i for i in range(qdot.shape[0])], [i for i in range(qdot.shape[0])]).to_first
 
-        if external_forces is None:
-            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(q, qdot, tau, [], nlp.parameters.cx)
-            return qdot_var_mapping.map(qddot)
-        else:
-            qddot = nlp.model.forward_dynamics(with_contact=with_contact)(
-                q, qdot, tau, external_forces, nlp.parameters.cx
-            )
-            return qdot_var_mapping.map(qddot)
+        external_forces = [] if external_forces is None else external_forces
+        translational_forces = [] if translational_forces is None else translational_forces
+        qddot = nlp.model.forward_dynamics(with_contact=with_contact)(
+            q, qdot, tau, external_forces, translational_forces, nlp.parameters.cx,
+        )
+        return qdot_var_mapping.map(qddot)
+
 
     @staticmethod
     def inverse_dynamics(
@@ -1129,6 +1150,7 @@ class DynamicsFunctions:
         qddot: MX | SX,
         with_contact: bool,
         external_forces: MX = None,
+        translational_forces: MX = None,
     ):
         """
         Easy accessor to torques from inverse dynamics
@@ -1147,14 +1169,15 @@ class DynamicsFunctions:
             If the dynamics with contact should be used
         external_forces: MX
             The external forces
+        translational_forces: MX
+            The translational forces
 
         Returns
         -------
         Torques in tau
         """
-
-        if external_forces is None:
-            tau = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, [], nlp.parameters.cx)
+        if external_forces is None and translational_forces is None:
+            tau = nlp.model.inverse_dynamics(with_contact=with_contact)(q, qdot, qddot, [], [], nlp.parameters.cx)
         else:
             if "tau" in nlp.states:
                 tau_shape = nlp.states["tau"].cx.shape[0]
@@ -1163,14 +1186,21 @@ class DynamicsFunctions:
             else:
                 tau_shape = nlp.model.nb_tau
             tau = nlp.cx(tau_shape, nlp.ns)
-            for i in range(external_forces.shape[1]):
-                tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(
-                    q, qdot, qddot, external_forces[:, i], nlp.parameters.cx
-                )
+
+            if external_forces is not None:
+                for i in range(external_forces.shape[1]):
+                    tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(
+                        q, qdot, qddot, external_forces[:, i], [], nlp.parameters.cx
+                    )
+            elif translational_forces is not None:
+                for i in range(translational_forces.shape[1]):
+                    tau[:, i] = nlp.model.inverse_dynamics(with_contact=with_contact)(
+                        q, qdot, qddot, [], translational_forces[:, i], nlp.parameters.cx
+                    )
         return tau  # We ignore on purpose the mapping to keep zeros in the defects of the dynamic.
 
     @staticmethod
-    def compute_muscle_dot(nlp, muscle_excitations: MX | SX):
+    def compute_muscle_dot(nlp, muscle_excitations: MX | SX, muscle_activations: MX | SX):
         """
         Easy accessor to derivative of muscle activations
 
@@ -1180,13 +1210,15 @@ class DynamicsFunctions:
             The phase of the program
         muscle_excitations: MX | SX
             The value of muscle_excitations from "get"
+        muscle_activations: MX | SX
+            The value of muscle_activations from "get"
 
         Returns
         -------
         The derivative of muscle activations
         """
 
-        return nlp.model.muscle_activation_dot()(muscle_excitations, nlp.parameters.cx)
+        return nlp.model.muscle_activation_dot()(muscle_excitations, muscle_activations, nlp.parameters.cx)
 
     @staticmethod
     def compute_tau_from_muscle(
@@ -1235,6 +1267,7 @@ class DynamicsFunctions:
         numerical_timeseries,
         nlp,
         external_forces: list = None,
+        translational_forces: list = None,
     ) -> DynamicsEvaluation:
         """
         The custom dynamics function that provides the derivative of the states: dxdt = f(t, x, u, p, a, d)
@@ -1257,6 +1290,8 @@ class DynamicsFunctions:
             A reference to the phase
         external_forces: list[Any]
             The external forces
+        translational_forces: list[Any]
+            The translational forces
 
         Returns
         -------
@@ -1266,6 +1301,6 @@ class DynamicsFunctions:
         q_u = DynamicsFunctions.get(nlp.states["q_u"], states)
         qdot_u = DynamicsFunctions.get(nlp.states["qdot_u"], states)
         tau = DynamicsFunctions.get(nlp.controls["tau"], controls)
-        qddot_u = nlp.model.partitioned_forward_dynamics(q_u, qdot_u, tau, external_forces, nlp.parameters.cx)
+        qddot_u = nlp.model.partitioned_forward_dynamics(q_u, qdot_u, tau, external_forces, translational_forces, nlp.parameters.cx)
 
         return DynamicsEvaluation(dxdt=vertcat(qdot_u, qddot_u), defects=None)

@@ -225,6 +225,7 @@ def test_biorbd_model():
             np.array([3.1, 1, 2, 9.1, 1, 2]),
             [],
             [],
+            [],
         ),
         np.array([4.844876e01, 2.121037e-01, 1.964626e00, 4.165226e02, 3.721585e01, 1.906986e00]).reshape(6, 1),
         decimal=5,
@@ -253,6 +254,7 @@ def test_biorbd_model():
     TestUtils.assert_equal(
         models.muscle_activation_dot()(
             [],  # There is no muscle in the models
+            [],
             [],
         ),
         np.array([], dtype=np.float64).reshape(0, 1),

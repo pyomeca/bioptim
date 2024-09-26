@@ -197,6 +197,7 @@ class ConfigureProblem:
             rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
         external_forces = None
+        translational_forces = None
         if numerical_data_timeseries is not None:
             for key in numerical_data_timeseries.keys():
                 if key == "external_forces":
@@ -204,6 +205,11 @@ class ConfigureProblem:
                     external_forces = nlp.numerical_timeseries[0].cx
                     for i in range(1, numerical_data_timeseries[key].shape[1]):
                         external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
+                elif key == "translational_forces":
+                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
+                    translational_forces = nlp.numerical_timeseries[0].cx
+                    for i in range(1, numerical_data_timeseries[key].shape[1]):
+                        translational_forces = horzcat(translational_forces, nlp.numerical_timeseries[i].cx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -291,6 +297,7 @@ class ConfigureProblem:
                 with_ligament=with_ligament,
                 with_friction=with_friction,
                 external_forces=external_forces,
+                translational_forces=translational_forces,
             )
 
         # Configure the contact forces
