@@ -287,10 +287,7 @@ class OptimizationVariableList:
             raise NotImplementedError("cx should be of dimension 2 (start, [mid], end)")
 
         index = range(self._cx_start.shape[0], self._cx_start.shape[0] + cx[0].shape[0])
-        if self._cx_start.shape[0] == 0:
-            self._cx_start = cx[0]
-        else:
-            self._cx_start = vertcat(self._cx_start, cx[0])
+        self._cx_start = vertcat(self._cx_start, cx[0])
         if len(cx) > 2:
             self._cx_mid = vertcat(self._cx_mid, cx[(len(cx) - 1) // 2])
         self._cx_end = vertcat(self._cx_end, cx[-1])

@@ -622,7 +622,8 @@ class BiorbdModel:
         marker = self.model.marker(q_biorbd, index)
         if reference_segment_index is not None:
             global_homogeneous_matrix = self.model.globalJCS(q_biorbd, reference_segment_index)
-            biorbd_return = global_homogeneous_matrix.transpose().to_mx() @ vertcat(marker.to_mx(), 1)
+            marker_rotated = global_homogeneous_matrix.transpose().to_mx() @ vertcat(marker.to_mx(), 1)
+            biorbd_return = marker_rotated[:3]
         else:
             biorbd_return = marker.to_mx()
         casadi_fun = Function(
@@ -944,6 +945,7 @@ class BiorbdModel:
     def ligament_joint_torque(self) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
+        # Charbie: Does the ligament torque depends on the muscle activation/excitation?
         biorbd_return = self.model.ligamentsJointTorque(q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "ligament_joint_torque",

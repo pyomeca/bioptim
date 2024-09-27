@@ -141,6 +141,7 @@ class DynamicsFunctions:
         DynamicsEvaluation
             The derivative of the states and the defects of the implicit dynamics
         """
+        # Charbie: Where are supposed to by applied soft_contacts ?
 
         q = DynamicsFunctions.get(nlp.states["q"], states)
         qdot = DynamicsFunctions.get(nlp.states["qdot"], states)

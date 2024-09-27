@@ -606,7 +606,7 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             """
 
-            g = controller.model.gravity()["o0"][2]
+            g = controller.model.gravity()["gravity"][2]
             com = controller.model.center_of_mass()(controller.q, controller.parameters.cx)
             com_dot = controller.model.center_of_mass_velocity()(
                 controller.q, controller.qdot, controller.parameters.cx
@@ -733,7 +733,7 @@ class PenaltyFunctionAbstract:
             com_velocity = controller.model.center_of_mass_velocity()(
                 controller.q, controller.qdot, controller.parameters.cx
             )
-            mass = controller.model.mass()["o0"]
+            mass = controller.model.mass()["mass"]
             linear_momentum_cx = com_velocity * mass
             return linear_momentum_cx
 

@@ -79,7 +79,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path)
+    bio_model = BiorbdModel(biorbd_model_path, segments_to_apply_external_forces=["Seg1", "Seg1"])
     tau_min, tau_max = (-1, 1) if use_actuators else (-500, 500)
 
     dof_mapping = BiMappingList()
