@@ -69,9 +69,7 @@ class MyModel:
         m = self.mass
         g = 9.81
         casadi_return = 1 / (I + m * L**2) * (-self.qdot * d - g * m * L * sin(self.q) + self.tau)
-        casadi_fun = Function("forward_dynamics",
-                              [self.q, self.qdot, self.tau, MX()],
-                              [casadi_return])
+        casadi_fun = Function("forward_dynamics", [self.q, self.qdot, self.tau, MX()], [casadi_return])
         return casadi_fun
 
     # def system_dynamics(self, *args):

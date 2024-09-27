@@ -144,9 +144,7 @@ class BiorbdModel:
         Returns the rotation matrix to euler angles function.
         """
         r = MX.sym("r_mx", 3, 3)
-        r_matrix = biorbd.Rotation(r[0, 0], r[0, 1], r[0, 2],
-                                   r[1, 0], r[1, 1], r[1, 2],
-                                   r[2, 0], r[2, 1], r[2, 2])
+        r_matrix = biorbd.Rotation(r[0, 0], r[0, 1], r[0, 2], r[1, 0], r[1, 1], r[1, 2], r[2, 0], r[2, 1], r[2, 2])
         biorbd_return = biorbd.Rotation.toEulerAngles(r_matrix, sequence).to_mx()
         casadi_fun = Function(
             "rotation_matrix_to_euler_angles",
