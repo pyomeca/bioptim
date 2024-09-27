@@ -93,6 +93,8 @@ class BiorbdModel:
             "gravity",
             [self.parameters],
             [biorbd_return],
+            ["parameters"],
+            ["gravity"],
         )
         return casadi_fun
 
@@ -150,6 +152,8 @@ class BiorbdModel:
             "rotation_matrix_to_euler_angles",
             [r],
             [biorbd_return],
+            ["Rotation matrix"],
+            ["Euler angles"],
         )
         return casadi_fun
 
@@ -164,6 +168,8 @@ class BiorbdModel:
             "homogeneous_matrices_in_global",
             [self.q, self.parameters],
             [biorbd_return],
+            ["q", "parameters"],
+            ["Joint coordinate system RT matrix in global"],
         )
         return casadi_fun
 
@@ -178,6 +184,8 @@ class BiorbdModel:
             "homogeneous_matrices_in_child",
             [self.parameters],
             [biorbd_return],
+            ["parameters"],
+            ["Joint coordinate system RT matrix in local"],
         )
         return casadi_fun
 
@@ -193,6 +201,8 @@ class BiorbdModel:
             "mass",
             [self.parameters],
             [biorbd_return],
+            ["parameters"],
+            ["mass"],
         )
         return casadi_fun
 
@@ -203,6 +213,8 @@ class BiorbdModel:
             "rt",
             [self.q, self.parameters],
             [biorbd_return],
+            ["q", "parameters"],
+            ["RT matrix"],
         )
         return casadi_fun
 
@@ -213,6 +225,8 @@ class BiorbdModel:
             "center_of_mass",
             [self.q, self.parameters],
             [biorbd_return],
+            ["q", "parameters"],
+            ["Center of mass"],
         )
         return casadi_fun
 
@@ -224,6 +238,8 @@ class BiorbdModel:
             "center_of_mass_velocity",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["Center of mass velocity"],
         )
         return casadi_fun
 
@@ -236,6 +252,8 @@ class BiorbdModel:
             "center_of_mass_acceleration",
             [self.q, self.qdot, self.qddot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "qddot", "parameters"],
+            ["Center of mass acceleration"],
         )
         return casadi_fun
 
@@ -247,6 +265,8 @@ class BiorbdModel:
             "body_rotation_rate",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["Body rotation rate"],
         )
         return casadi_fun
 
@@ -257,6 +277,8 @@ class BiorbdModel:
             "mass_matrix",
             [self.q, self.parameters],
             [biorbd_return],
+            ["q", "parameters"],
+            ["Mass matrix"],
         )
         return casadi_fun
 
@@ -268,6 +290,8 @@ class BiorbdModel:
             "non_linear_effects",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["Non linear effects"],
         )
         return casadi_fun
 
@@ -279,6 +303,8 @@ class BiorbdModel:
             "angular_momentum",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["Angular momentum"],
         )
         return casadi_fun
 
@@ -292,6 +318,8 @@ class BiorbdModel:
             "reshape_qdot",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["Reshaped qdot"],
         )
         return casadi_fun
 
@@ -306,6 +334,8 @@ class BiorbdModel:
             "segment_angular_velocity",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["Segment angular velocity"],
         )
         return casadi_fun
 
@@ -320,6 +350,8 @@ class BiorbdModel:
             "segment_orientation",
             [self.q, self.parameters],
             [biorbd_return],
+            ["q", "parameters"],
+            ["Segment orientation"],
         )
         return casadi_fun
 
@@ -363,6 +395,8 @@ class BiorbdModel:
             "torque_activation",
             [self.tau, self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["tau", "q", "qdot", "parameters"],
+            ["Torque from tau activations"],
         )
         return casadi_fun
 
@@ -375,6 +409,8 @@ class BiorbdModel:
             "forward_dynamics_free_floating_base",
             [self.q, self.qdot, self.qddot_joints, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "qddot_joints", "parameters"],
+            ["qddot_root and qddot_joints"],
         )
         return casadi_fun
 
@@ -441,6 +477,8 @@ class BiorbdModel:
                 "constrained_forward_dynamics",
                 [self.q, self.qdot, self.tau, self.external_forces, self.translational_forces, self.parameters],
                 [biorbd_return],
+                ["q", "qdot", "tau", "external_forces", "translational_forces", "parameters"],
+                ["qddot"],
             )
         else:
             biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
@@ -448,6 +486,8 @@ class BiorbdModel:
                 "forward_dynamics",
                 [self.q, self.qdot, self.tau, self.external_forces, self.translational_forces, self.parameters],
                 [biorbd_return],
+                ["q", "qdot", "tau", "external_forces", "translational_forces", "parameters"],
+                ["qddot"],
             )
         return casadi_fun
 
@@ -467,6 +507,8 @@ class BiorbdModel:
             "inverse_dynamics",
             [self.q, self.qdot, self.qddot, self.external_forces, self.translational_forces, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "qddot", "external_forces", "translational_forces", "parameters"],
+            ["tau"],
         )
         return casadi_fun
 
@@ -483,6 +525,8 @@ class BiorbdModel:
             "contact_forces_from_constrained_forward_dynamics",
             [self.q, self.qdot, self.tau, self.external_forces, self.translational_forces, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "tau", "external_forces", "translational_forces", "parameters"],
+            ["contact_forces"],
         )
         return casadi_fun
 
@@ -494,6 +538,8 @@ class BiorbdModel:
             "qdot_from_impact",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["qdot post impact"],
         )
         return casadi_fun
 
@@ -507,6 +553,8 @@ class BiorbdModel:
             "muscle_activation_dot",
             [self.muscle, self.activations, self.parameters],
             [biorbd_return],
+            ["muscle_excitation", "muscle_activation", "parameters"],
+            ["muscle_activation_dot"],
         )
         return casadi_fun
 
@@ -517,6 +565,8 @@ class BiorbdModel:
             "muscle_length_jacobian",
             [self.q, self.parameters],
             [biorbd_return],
+            ["q", "parameters"],
+            ["muscle_length_jacobian"],
         )
         return casadi_fun
 
@@ -527,6 +577,8 @@ class BiorbdModel:
             "muscle_velocity",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["muscle_velocity"],
         )
         return casadi_fun
 
@@ -542,6 +594,8 @@ class BiorbdModel:
             "muscle_joint_torque",
             [self.muscle, self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["muscle_activation", "q", "qdot", "parameters"],
+            ["muscle_joint_torque"],
         )
         return casadi_fun
 
@@ -551,6 +605,8 @@ class BiorbdModel:
             "markers",
             [self.q, self.parameters],
             [biorbd_return],
+            ["q", "parameters"],
+            ["markers"],
         )
         return casadi_fun
 
@@ -573,6 +629,8 @@ class BiorbdModel:
             "marker",
             [self.q, self.parameters],
             [biorbd_return],
+            ["q", "parameters"],
+            ["marker"],
         )
         return casadi_fun
 
@@ -636,6 +694,8 @@ class BiorbdModel:
             "markers_velocities",
             [self.q, self.qdot, self.parameters],
             biorbd_return,
+            ["q", "qdot", "parameters"],
+            ["markers_velocities"],
         )
         return casadi_fun
 
@@ -649,6 +709,8 @@ class BiorbdModel:
             "marker_velocity",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["marker_velocity"],
         )
         return casadi_fun
 
@@ -665,7 +727,6 @@ class BiorbdModel:
             ]
 
         else:
-            # TODO: Check and fix this portion of code
             biorbd_return = []
             homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
                 segment_index=reference_index,
@@ -687,6 +748,8 @@ class BiorbdModel:
             "markers_accelerations",
             [self.q, self.qdot, self.qddot, self.parameters],
             biorbd_return,
+            ["q", "qdot", "qddot", "parameters"],
+            ["markers_accelerations"],
         )
         return casadi_fun
 
@@ -701,6 +764,8 @@ class BiorbdModel:
             "marker_acceleration",
             [self.q, self.qdot, self.qddot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "qddot", "parameters"],
+            ["marker_acceleration"],
         )
         return casadi_fun
 
@@ -713,6 +778,8 @@ class BiorbdModel:
             "tau_max",
             [self.q, self.qdot, self.parameters],
             [torque_max.to_mx(), torque_min.to_mx()],
+            ["q", "qdot", "parameters"],
+            ["tau_max", "tau_min"],
         )
         return casadi_fun
 
@@ -727,6 +794,8 @@ class BiorbdModel:
             "rigid_contact_acceleration",
             [self.q, self.qdot, self.qddot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "qddot", "parameters"],
+            ["rigid_contact_acceleration"],
         )
         return casadi_fun
 
@@ -736,6 +805,8 @@ class BiorbdModel:
             "markers_jacobian",
             [self.q, self.parameters],
             biorbd_return,
+            ["q", "parameters"],
+            ["markers_jacobian"],
         )
         return casadi_fun
 
@@ -759,6 +830,8 @@ class BiorbdModel:
             "soft_contact_forces",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["soft_contact_forces"],
         )
         return casadi_fun
 
@@ -799,6 +872,8 @@ class BiorbdModel:
             "reshape_fext_to_fcontact",
             [fext_sym, self.parameters],
             [f_contact_vec],
+            ["external_forces", "parameters"],
+            ["contact_forces"],
         )(fext_reshaped, parameters)
         return casadi_fun_evaluated
 
@@ -824,6 +899,8 @@ class BiorbdModel:
             "normalize_state_quaternions",
             [self.q],
             [biorbd_return],
+            ["q"],
+            ["q_normalized"],
         )
         return casadi_fun
 
@@ -846,6 +923,8 @@ class BiorbdModel:
             "contact_forces",
             [self.q, self.qdot, self.tau, self.external_forces, self.translational_forces, self.parameters],
             [force],
+            ["q", "qdot", "tau", "external_forces", "translational_forces", "parameters"],
+            ["contact_forces"],
         )
         return casadi_fun
 
@@ -857,6 +936,8 @@ class BiorbdModel:
             "passive_joint_torque",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["passive_joint_torque"],
         )
         return casadi_fun
 
@@ -868,6 +949,8 @@ class BiorbdModel:
             "ligament_joint_torque",
             [self.q, self.qdot, self.parameters],
             [biorbd_return],
+            ["q", "qdot", "parameters"],
+            ["ligament_joint_torque"],
         )
         return casadi_fun
 
@@ -936,6 +1019,8 @@ class BiorbdModel:
             "lagrangian",
             [self.q, self.qdot],
             [biorbd_return],
+            ["q", "qdot"],
+            ["lagrangian"],
         )
         return casadi_fun
 
