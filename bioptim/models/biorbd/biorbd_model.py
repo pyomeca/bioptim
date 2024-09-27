@@ -139,12 +139,14 @@ class BiorbdModel:
     def segments(self) -> tuple[biorbd.Segment]:
         return self.model.segments()
 
-    def rotation_matrix_to_euler_angles(self, sequence) -> Function:
+    def rotation_matrix_to_euler_angles(self, sequence: str) -> Function:
         """
         Returns the rotation matrix to euler angles function.
         """
         r = MX.sym("r_mx", 3, 3)
-        r_matrix = biorbd.Rotation(r[0, 0], r[0, 1], r[0, 2], r[1, 0], r[1, 1], r[1, 2], r[2, 0], r[2, 1], r[2, 2])
+        r_matrix = biorbd.Rotation(r[0, 0], r[0, 1], r[0, 2],
+                                   r[1, 0], r[1, 1], r[1, 2],
+                                   r[2, 0], r[2, 1], r[2, 2])
         biorbd_return = biorbd.Rotation.toEulerAngles(r_matrix, sequence).to_mx()
         casadi_fun = Function(
             "rotation_matrix_to_euler_angles",
@@ -153,12 +155,13 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def homogeneous_matrices_in_global(self, segment_idx, inverse=False) -> Function:
+    def homogeneous_matrices_in_global(self, segment_index: int, inverse=False) -> Function:
         """
         Returns the roto-translation matrix of the segment in the global reference frame.
         """
-        jcs = self.model.globalJCS(GeneralizedCoordinates(self.q), segment_idx).to_mx()
-        biorbd_return = jcs.T if inverse else jcs
+        q_biorbd = GeneralizedCoordinates(self.q)
+        jcs = self.model.globalJCS(q_biorbd, segment_index)
+        biorbd_return = jcs.transpose().to_mx() if inverse else jcs.to_mx()
         casadi_fun = Function(
             "homogeneous_matrices_in_global",
             [self.q, self.parameters],
@@ -308,26 +311,13 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def segment_orientation(self, idx) -> Function:
+    def segment_orientation(self, idx: int, sequence: str = "xyz") -> Function:
         """
         Returns the angular position of the segment in the global reference frame.
         """
         q_biorbd = GeneralizedCoordinates(self.q)
-        rotation_matrix = self.homogeneous_matrices_in_global(q_biorbd, idx)[:3, :3]
-        biorbd_return = biorbd.Rotation.toEulerAngles(
-            biorbd.Rotation(
-                rotation_matrix[0, 0],
-                rotation_matrix[0, 1],
-                rotation_matrix[0, 2],
-                rotation_matrix[1, 0],
-                rotation_matrix[1, 1],
-                rotation_matrix[1, 2],
-                rotation_matrix[2, 0],
-                rotation_matrix[2, 1],
-                rotation_matrix[2, 2],
-            ),
-            "xyz",
-        ).to_mx()
+        rotation_matrix = self.homogeneous_matrices_in_global(idx)(q_biorbd, self.parameters)[:3, :3]
+        biorbd_return = self.rotation_matrix_to_euler_angles(sequence=sequence)(rotation_matrix)
         casadi_fun = Function(
             "segment_orientation",
             [self.q, self.parameters],
@@ -464,9 +454,8 @@ class BiorbdModel:
         return casadi_fun
 
     def inverse_dynamics(self, with_contact: bool = False) -> Function:
-        # @ipuch: I do not understand what is happening here? Do we have f_ext or it is just the contact forces?
         if with_contact:
-            external_forces = self.reshape_fext_to_fcontact(self.external_forces)
+            external_forces = self.reshape_fext_to_fcontact(self.external_forces, self.parameters)
         else:
             external_forces = self.external_forces
 
@@ -574,12 +563,14 @@ class BiorbdModel:
     def marker_index(self, name):
         return biorbd.marker_index(self.model, name)
 
-    def marker(self, index, reference_segment_index=None) -> Function:
-        marker = self.model.marker(GeneralizedCoordinates(self.q), index)
+    def marker(self, index: int, reference_segment_index: int = None) -> Function:
+        q_biorbd = GeneralizedCoordinates(self.q)
+        marker = self.model.marker(q_biorbd, index)
         if reference_segment_index is not None:
-            global_homogeneous_matrix = self.model.globalJCS(GeneralizedCoordinates(self.q), reference_segment_index)
-            marker.applyRT(global_homogeneous_matrix.transpose())
-        biorbd_return = marker.to_mx()
+            global_homogeneous_matrix = self.model.globalJCS(q_biorbd, reference_segment_index)
+            biorbd_return = global_homogeneous_matrix.transpose().to_mx() @ vertcat(marker.to_mx(), 1)
+        else:
+            biorbd_return = marker.to_mx()
         casadi_fun = Function(
             "marker",
             [self.q, self.parameters],
@@ -633,14 +624,15 @@ class BiorbdModel:
         else:
             biorbd_return = []
             homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
-                segment_idx=reference_index, inverse=True
+                segment_index=reference_index, inverse=True
             )(
                 GeneralizedCoordinates(self.q),
             )
-            # TODO: Check and fix this portion of code
             for m in self.model.markersVelocity(GeneralizedCoordinates(self.q), GeneralizedVelocity(self.qdot)):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     biorbd_return.append(m.to_mx())
+                else:
+                    biorbd_return.append(m.applyRT(homogeneous_matrix_transposed).to_mx())
 
         casadi_fun = Function(
             "markers_velocities",
@@ -678,7 +670,7 @@ class BiorbdModel:
             # TODO: Check and fix this portion of code
             biorbd_return = []
             homogeneous_matrix_transposed = self.homogeneous_matrices_in_global(
-                segment_idx=reference_index,
+                segment_index=reference_index,
                 inverse=True,
             )(
                 GeneralizedCoordinates(self.q),
@@ -690,6 +682,8 @@ class BiorbdModel:
             ):
                 if m.applyRT(homogeneous_matrix_transposed) is None:
                     biorbd_return.append(m.to_mx())
+                else:
+                    biorbd_return.append(m.applyRT(homogeneous_matrix_transposed).to_mx())
 
         casadi_fun = Function(
             "markers_accelerations",
@@ -770,7 +764,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def reshape_fext_to_fcontact(self, fext: MX | SX) -> list:
+    def reshape_fext_to_fcontact(self, fext: MX | SX, parameters: MX | SX) -> list:
         if len(self._segments_to_apply_external_forces) == 0:
             parent_name = []
             for i in range(self.nb_rigid_contacts):
@@ -780,24 +774,34 @@ class BiorbdModel:
                 ]
             self._segments_to_apply_external_forces = parent_name
 
-        fext_sym = MX.sym("Fext", fext.shape[0], fext.shape[1])
+        fext_sym = MX.sym("Fext", 9, fext.shape[1])
         count = 0
         f_contact_vec = MX()
         for i in range(self.nb_rigid_contacts):
             contact = self.model.rigidContact(i)
-            tp = MX.zeros(6)
+            tp = MX.zeros(9)
             used_axes = [i for i, val in enumerate(contact.axes()) if val]
             n_contacts = len(used_axes)
             tp[used_axes] = fext_sym[count : count + n_contacts]
-            tp[3:] = contact.to_mx()
+            tp[3:6] = contact.to_mx()
             f_contact_vec = horzcat(f_contact_vec, tp)
             count += n_contacts
+
+        fext_reshaped = type(fext).zeros(9, fext.shape[1])
+        if fext.shape[0] == 6:
+            fext_reshaped[:6, :] = fext
+        elif fext.shape[0] == 3:
+            fext_reshaped[3:6, :] = fext
+        elif fext.shape[0] == 9:
+            fext_reshaped = fext[:, :]
+        else:
+            raise ValueError("fext must be of size 3, 6 or 9")
 
         casadi_fun_evaluated = Function(
             "reshape_fext_to_fcontact",
             [fext_sym, self.parameters],
             [f_contact_vec],
-        )(fext)
+        )(fext_reshaped, parameters)
         return casadi_fun_evaluated
 
     def normalize_state_quaternions(self) -> Function:
@@ -819,7 +823,7 @@ class BiorbdModel:
             biorbd_return[quat_idx[j][3]] = quaternion[0]
 
         casadi_fun = Function(
-            "soft_contact_forces",
+            "normalize_state_quaternions",
             [self.q],
             [biorbd_return],
         )

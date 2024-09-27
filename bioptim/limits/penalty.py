@@ -867,9 +867,8 @@ class PenaltyFunctionAbstract:
                 force_idx.append(4 + (6 * i_sc))
                 force_idx.append(5 + (6 * i_sc))
             soft_contact_force = controller.get_nlp.soft_contact_forces_func(
-                controller.time.cx,
-                controller.states.cx_start,
-                controller.controls.cx_start,
+                controller.q,
+                controller.qdot,
                 controller.parameters.cx,
             )
             return soft_contact_force[force_idx]
@@ -879,7 +878,7 @@ class PenaltyFunctionAbstract:
             penalty: PenaltyOption,
             controller: PenaltyController,
             segment: int | str,
-            rt_idx: int,
+            rt_index: int,
             sequence: str = "zyx",
         ):
             """
@@ -894,28 +893,24 @@ class PenaltyFunctionAbstract:
                 The penalty node elements
             segment: int | str
                 The name or index of the segment
-            rt_idx: int
+            rt_index: int
                 The index of the RT in the bioMod
             sequence: str
                 The sequence of the euler angles (default="zyx")
             """
-            from ..models.biorbd.biorbd_model import BiorbdModel
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             segment_index = controller.model.segment_index(segment) if isinstance(segment, str) else segment
 
-            if not isinstance(controller.model, BiorbdModel):
-                raise NotImplementedError(
-                    "The track_segment_with_custom_rt penalty can only be called with a BiorbdModel"
-                )
-            r_seg_transposed = controller.model.homogeneous_matrices_in_global(segment_index)(
+            r_seg = controller.model.homogeneous_matrices_in_global(segment_index=segment_index)(
                 controller.q, controller.parameters.cx
-            )[:3, :3].T
-            r_rt = controller.model.rt(rt_idx)(controller.q, controller.parameters.cx)[:3, :3]
-            # @Pariterre: why was this sequence is fixed?
+            )[:3, :3]
+            r_seg_transposed = r_seg.T
+            r_rt = controller.model.rt(rt_index=rt_index)(controller.q, controller.parameters.cx)[:3, :3]
+
             # @Pariterre: this is suspicious and it breaks the tests!
-            angles_diff = controller.model.rotation_matrix_to_euler_angles(sequence)(r_seg_transposed * r_rt)
+            angles_diff = controller.model.rotation_matrix_to_euler_angles(sequence=sequence)(r_seg_transposed * r_rt)
 
             return angles_diff
 
@@ -951,10 +946,10 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             marker_idx = controller.model.marker_index(marker) if isinstance(marker, str) else marker
-            segment_idx = controller.model.segment_index(segment) if isinstance(segment, str) else segment
+            segment_index = controller.model.segment_index(segment) if isinstance(segment, str) else segment
 
-            # Get the marker in rt reference frame
-            marker = controller.model.marker(marker_idx, segment_idx)(controller.q, controller.parameters.cx)
+            # Get the marker in segment_index reference frame
+            marker = controller.model.marker(marker_idx, segment_index)(controller.q, controller.parameters.cx)
 
             # To align an axis, the other must be equal to 0
             if not penalty.rows_is_set:
@@ -999,12 +994,12 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            segment_idx = controller.model.segment_index(segment) if isinstance(segment, str) else segment
+            segment_index = controller.model.segment_index(segment) if isinstance(segment, str) else segment
 
             if not isinstance(controller.model, BiorbdModel):
                 raise NotImplementedError("The minimize_segment_rotation penalty can only be called with a BiorbdModel")
 
-            jcs_segment = controller.model.homogeneous_matrices_in_global(segment_idx)(
+            jcs_segment = controller.model.homogeneous_matrices_in_global(segment_index)(
                 controller.q, controller.parameters.cx
             )[:3, :3]
             angles_segment = controller.model.rotation_matrix_to_euler_angles(sequence)(jcs_segment)
@@ -1044,14 +1039,14 @@ class PenaltyFunctionAbstract:
 
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
-            segment_idx = controller.model.segment_index(segment) if isinstance(segment, str) else segment
+            segment_index = controller.model.segment_index(segment) if isinstance(segment, str) else segment
 
             if not isinstance(controller.model, BiorbdModel):
                 raise NotImplementedError(
                     "The minimize_segments_velocity penalty can only be called with a BiorbdModel"
                 )
             model: BiorbdModel = controller.model
-            segment_angular_velocity = model.segment_angular_velocity(segment_idx)(
+            segment_angular_velocity = model.segment_angular_velocity(segment_index)(
                 controller.q, controller.qdot, controller.parameters.cx
             )
 
@@ -1120,16 +1115,16 @@ class PenaltyFunctionAbstract:
                 else vector_1_marker_1
             )
 
-            vector_0_marker_0_position = controller.model.marker(vector_0_marker_0_idx)(
+            vector_0_marker_0_position = controller.model.marker(index=vector_0_marker_0_idx)(
                 controller.q, controller.parameters.cx
             )
-            vector_0_marker_1_position = controller.model.marker(vector_0_marker_1_idx)(
+            vector_0_marker_1_position = controller.model.marker(index=vector_0_marker_1_idx)(
                 controller.q, controller.parameters.cx
             )
-            vector_1_marker_0_position = controller.model.marker(vector_1_marker_0_idx)(
+            vector_1_marker_0_position = controller.model.marker(index=vector_1_marker_0_idx)(
                 controller.q, controller.parameters.cx
             )
-            vector_1_marker_1_position = controller.model.marker(vector_1_marker_1_idx)(
+            vector_1_marker_1_position = controller.model.marker(index=vector_1_marker_1_idx)(
                 controller.q, controller.parameters.cx
             )
 

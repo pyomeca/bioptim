@@ -73,7 +73,7 @@ def prepare_ocp(
 
     # Constraints
     constraints = ConstraintList()
-    constraints.add(ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment="seg_rt", rt_idx=0)
+    constraints.add(ConstraintFcn.TRACK_SEGMENT_WITH_CUSTOM_RT, node=Node.ALL, segment="seg_rt", rt_index=0)
 
     # Path constraint
     x_bounds = BoundsList()

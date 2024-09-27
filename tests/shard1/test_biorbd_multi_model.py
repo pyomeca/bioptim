@@ -106,7 +106,7 @@ def test_biorbd_model():
     assert isinstance(models.segments[0], biorbd.biorbd.Segment)
 
     TestUtils.assert_equal(
-        models.homogeneous_matrices_in_global(segment_idx=0, inverse=False)(np.array([1, 2, 3]), []),
+        models.homogeneous_matrices_in_global(segment_index=0, inverse=False)(np.array([1, 2, 3]), []),
         np.array(
             [
                 [1.0, 0.0, 0.0, 0.0],

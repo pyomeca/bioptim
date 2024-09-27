@@ -54,7 +54,7 @@ def custom_func_track_markers(controller: PenaltyController, first_marker: str, 
 
     # compute the position of the markers using the markers function from the BioModel (here a BiorbdModel)
     markers = controller.model.markers()(controller.states["q"].cx, controller.parameters.cx)
-    markers_diff = markers[marker_1_idx] - markers[marker_0_idx]
+    markers_diff = markers[:, marker_1_idx] - markers[:, marker_0_idx]
 
     return markers_diff
 

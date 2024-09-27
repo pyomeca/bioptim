@@ -420,7 +420,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qddot = controller.controls["qddot"].cx if "qddot" in controller.controls else controller.states["qddot"].cx
             # TODO: add external_forces
             qddot_fd = controller.model.forward_dynamics(with_contact=with_contact)(
-                controller.q, controller.qdot, tau, [], controller.parameters.cx
+                controller.q, controller.qdot, tau, [], [], controller.parameters.cx
             )
             return qddot - qddot_fd
 
@@ -474,15 +474,14 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             if with_contact:
                 # todo: this should be done internally in BiorbdModel
-                # Charbie: todo
                 f_contact = (
                     controller.controls["fext"].cx if "fext" in controller.controls else controller.states["fext"].cx
                 )
-                f_contact_vec = controller.model.reshape_fext_to_fcontact(f_contact)
+                f_contact_vec = controller.model.reshape_fext_to_fcontact(f_contact, controller.parameters.cx)
             else:
                 f_contact_vec = []
             tau_id = controller.model.inverse_dynamics(with_contact=with_contact)(
-                controller.q, controller.qdot, qddot, f_contact_vec, controller.parameters.cx
+                controller.q, controller.qdot, qddot, f_contact_vec, [], controller.parameters.cx
             )
 
             var = []
@@ -515,7 +514,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             # TODO get the index of the marker
             contact_acceleration = controller.model.rigid_contact_acceleration(contact_index, contact_axis)(
-                controller.q, controller.qdot, qddot
+                controller.q, controller.qdot, qddot, controller.parameters.cx
             )
 
             return contact_acceleration

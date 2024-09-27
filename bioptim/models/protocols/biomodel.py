@@ -85,13 +85,10 @@ class BioModel(Protocol):
         """Get all segments"""
         return ()
 
-    def homogeneous_matrices_in_child(self, segment_id) -> Function:
+    def rotation_matrix_to_euler_angles(self, sequence: str) -> tuple:
         """
-        Get the homogeneous matrices of one segment in its parent frame,
-        such as: P_R1 = T_R1_R2 * P_R2
-        with P_R1 the position of any point P in the segment R1 frame,
-        with P_R2 the position of any point P in the segment R2 frame,
-        T_R1_R2 the homogeneous matrix that transform any point in R2 frame to R1 frame.
+        Get the Euler angles from a rotation matrix, in the sequence specified
+        args: rotation matrix
         """
 
     @property
@@ -99,7 +96,7 @@ class BioModel(Protocol):
         """Get the mass of the model"""
         return Function("F", [], [])
 
-    def rt(self, rt_idx) -> Function:
+    def rt(self, rt_index) -> Function:
         """
         Get the rototrans matrix of an object (e.g., an IMU) that is placed on the model
         args: q

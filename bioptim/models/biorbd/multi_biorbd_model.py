@@ -300,8 +300,8 @@ class MultiBiorbdModel:
                 out += (seg,)
         return out
 
-    def homogeneous_matrices_in_global(self, segment_idx, inverse=False) -> Function:
-        local_segment_id, model_id = self.local_variable_id("segment", segment_idx)
+    def homogeneous_matrices_in_global(self, segment_index, inverse=False) -> Function:
+        local_segment_id, model_id = self.local_variable_id("segment", segment_index)
         q_model = self.models[model_id].q
         biorbd_return = self.models[model_id].homogeneous_matrices_in_global(local_segment_id, inverse)(
             q_model, self.parameters
@@ -568,12 +568,13 @@ class MultiBiorbdModel:
                     qdot_model,
                     tau_model,
                     [],
+                    [],
                     self.parameters,
                 ),
             )
         casadi_fun = Function(
             "forward_dynamics",
-            [self.q, self.qdot, self.tau, [], self.parameters],
+            [self.q, self.qdot, self.tau, [], [], self.parameters],
             [biorbd_return],
         )
         return casadi_fun
@@ -588,11 +589,11 @@ class MultiBiorbdModel:
             qddot_model = self.qddot[self.variable_index("qddot", i)]
             biorbd_return = vertcat(
                 biorbd_return,
-                model.inverse_dynamics()(q_model, qdot_model, qddot_model, [], self.parameters),
+                model.inverse_dynamics()(q_model, qdot_model, qddot_model, [], [], self.parameters),
             )
         casadi_fun = Function(
             "inverse_dynamics",
-            [self.q, self.qdot, self.qddot, [], self.parameters],
+            [self.q, self.qdot, self.qddot, [], [], self.parameters],
             [biorbd_return],
         )
         return casadi_fun
