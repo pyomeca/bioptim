@@ -79,7 +79,7 @@ def prepare_ocp(
     The OptimalControlProgram ready to be solved
     """
 
-    bio_model = BiorbdModel(biorbd_model_path, segments_to_apply_external_forces=["Seg1", "Seg1"])
+    bio_model = BiorbdModel(biorbd_model_path, segments_to_apply_translational_forces=["Seg1", "Seg1"])
     tau_min, tau_max = (-1, 1) if use_actuators else (-500, 500)
 
     dof_mapping = BiMappingList()
@@ -152,7 +152,12 @@ def prepare_ocp(
         u_bounds["qddot"] = [tau_min] * bio_model.nb_qddot, [tau_max] * bio_model.nb_qddot
     elif rigidbody_dynamics == RigidBodyDynamics.DAE_INVERSE_DYNAMICS:
         u_bounds["qddot"] = [tau_min] * bio_model.nb_qddot, [tau_max] * bio_model.nb_qddot
-        u_bounds["fext"] = [tau_min] * bio_model.nb_contacts, [tau_max] * bio_model.nb_contacts
+
+        min_forces_seg1 = [0, -tau_min, -tau_min, 0, 0, 0]
+        min_forces_seg2 = [0, 0, -tau_min, 0, 0, 0]
+        max_forces_seg1 = [0, tau_max, tau_max, 0, 0, 0]
+        max_forces_seg2 = [0, 0, tau_max, 0, 0, 0]
+        u_bounds["translational_forces"] = min_forces_seg1 + min_forces_seg2, max_forces_seg1 + max_forces_seg2
 
     return OptimalControlProgram(
         bio_model,

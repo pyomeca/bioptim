@@ -450,3 +450,44 @@ class NonLinearProgram:
         else:
             raise RuntimeError(f"{key} not found in states or controls")
         return out
+
+    def get_external_forces(
+        self, states: MX.sym, controls: MX.sym, algebraic_states: MX.sym, numerical_timeseries: MX.sym
+    ):
+        external_forces = self.cx(0, 1)
+
+        if "forces_in_global" in self.states:
+            external_forces = vertcat(external_forces, DynamicsFunctions.get(self.states["forces_in_global"], states))
+        if "forces_in_global" in self.algebraic_states:
+            external_forces = vertcat(
+                external_forces, DynamicsFunctions.get(self.algebraic_states["forces_in_global"], algebraic_states)
+            )
+        if "forces_in_global" in self.controls:
+            external_forces = vertcat(
+                external_forces, DynamicsFunctions.get(self.controls["forces_in_global"], controls)
+            )
+        if "forces_in_global" in self.numerical_timeseries:
+            external_forces = vertcat(
+                external_forces,
+                DynamicsFunctions.get(self.numerical_timeseries["forces_in_global"], numerical_timeseries),
+            )
+
+        if "translational_forces" in self.states:
+            external_forces = vertcat(
+                external_forces, DynamicsFunctions.get(self.states["translational_forces"], states)
+            )
+        if "translational_forces" in self.algebraic_states:
+            external_forces = vertcat(
+                external_forces, DynamicsFunctions.get(self.algebraic_states["translational_forces"], algebraic_states)
+            )
+        if "translational_forces" in self.controls:
+            external_forces = vertcat(
+                external_forces, DynamicsFunctions.get(self.controls["translational_forces"], controls)
+            )
+        if "translational_forces" in self.numerical_timeseries:
+            external_forces = vertcat(
+                external_forces,
+                DynamicsFunctions.get(self.numerical_timeseries["translational_forces"], numerical_timeseries),
+            )
+
+        return external_forces

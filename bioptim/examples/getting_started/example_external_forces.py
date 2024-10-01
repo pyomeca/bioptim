@@ -104,7 +104,7 @@ def prepare_ocp(
         DynamicsFcn.TORQUE_DRIVEN,
         expand_dynamics=expand_dynamics,
         phase_dynamics=phase_dynamics,
-        numerical_data_timeseries={"external_forces": external_forces},  # the key word "external_forces" must be used
+        numerical_data_timeseries={"forces_in_global": external_forces},  # the key word "forces_in_global" must be used
     )
 
     # Constraints

@@ -420,7 +420,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             qddot = controller.controls["qddot"].cx if "qddot" in controller.controls else controller.states["qddot"].cx
             # TODO: add external_forces
             qddot_fd = controller.model.forward_dynamics(with_contact=with_contact)(
-                controller.q, controller.qdot, tau, [], [], controller.parameters.cx
+                controller.q, controller.qdot, tau, [], controller.parameters.cx
             )
             return qddot - qddot_fd
 
@@ -456,9 +456,7 @@ class ConstraintFunction(PenaltyFunctionAbstract):
             tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
             qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
             if with_passive_torque:
-                tau += controller.model.passive_joint_torque()(
-                controller.q, controller.qdot, controller.parameters.cx
-            )
+                tau += controller.model.passive_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
             if with_ligament:
                 tau += controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
 
@@ -467,18 +465,19 @@ class ConstraintFunction(PenaltyFunctionAbstract):
                 raise NotImplementedError(
                     "This implicit constraint tau_equals_inverse_dynamics is not implemented yet with numerical_timeseries (external_forces or translational_forces)"
                 )
-                # Todo: add fext tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, fext)
+                # Todo: add forces_in_global tau_id = nlp.model.inverse_dynamics()(q, qdot, qddot, forces_in_global)
 
             if with_contact:
                 # todo: this should be done internally in BiorbdModel
-                f_contact = (
-                    controller.controls["fext"].cx if "fext" in controller.controls else controller.states["fext"].cx
+                f_contact_vec = (
+                    controller.controls["translational_forces"].cx
+                    if "translational_forces" in controller.controls
+                    else controller.states["translational_forces"].cx
                 )
-                f_contact_vec = controller.model.reshape_fext_to_fcontact(f_contact, controller.parameters.cx)
             else:
                 f_contact_vec = []
             tau_id = controller.model.inverse_dynamics(with_contact=with_contact)(
-                controller.q, controller.qdot, qddot, f_contact_vec, [], controller.parameters.cx
+                controller.q, controller.qdot, qddot, f_contact_vec, controller.parameters.cx
             )
 
             var = []

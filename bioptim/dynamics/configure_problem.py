@@ -196,20 +196,6 @@ class ConfigureProblem:
         _check_soft_contacts_dynamics(
             rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
-        external_forces = None
-        translational_forces = None
-        if numerical_data_timeseries is not None:
-            for key in numerical_data_timeseries.keys():
-                if key == "external_forces":
-                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
-                    external_forces = nlp.numerical_timeseries[0].cx
-                    for i in range(1, numerical_data_timeseries[key].shape[1]):
-                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
-                elif key == "translational_forces":
-                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
-                    translational_forces = nlp.numerical_timeseries[0].cx
-                    for i in range(1, numerical_data_timeseries[key].shape[1]):
-                        translational_forces = horzcat(translational_forces, nlp.numerical_timeseries[i].cx)
 
         # Declared rigidbody states and controls
         ConfigureProblem.configure_q(ocp, nlp, as_states=True, as_controls=False)
@@ -296,15 +282,11 @@ class ConfigureProblem:
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
                 with_friction=with_friction,
-                external_forces=external_forces,
-                translational_forces=translational_forces,
             )
 
         # Configure the contact forces
         if with_contact:
-            ConfigureProblem.configure_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_torque_driven, external_forces=external_forces
-            )
+            ConfigureProblem.configure_contact_function(ocp, nlp, DynamicsFunctions.forces_from_torque_driven)
         # Configure the soft contact forces
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
         # Algebraic constraints of soft contact forces if needed
@@ -642,14 +624,15 @@ class ConfigureProblem:
         _check_soft_contacts_dynamics(
             rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
-        external_forces = None
-        if numerical_data_timeseries is not None:
-            for key in numerical_data_timeseries.keys():
-                if key == "external_forces":
-                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
-                    external_forces = nlp.numerical_timeseries[0].cx
-                    for i in range(1, numerical_data_timeseries[key].shape[1]):
-                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
+        # TODO REMOVE THIS?
+        # external_forces = None
+        # if numerical_data_timeseries is not None:
+        #     for key in numerical_data_timeseries.keys():
+        #         if key == "forces_in_global":
+        #             _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
+        #             external_forces = nlp.numerical_timeseries[0].cx
+        #             for i in range(1, numerical_data_timeseries[key].shape[1]):
+        #                 external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -1937,8 +1920,14 @@ class ConfigureProblem:
             If the generalized force derivatives should be a control
         """
 
-        name_contact_forces = [name for name in nlp.model.contact_names]
-        ConfigureProblem.configure_new_variable("fext", name_contact_forces, ocp, nlp, as_states, as_controls)
+        name_contact_forces = []
+        for i in range(nlp.model.nb_rigid_contacts):
+            name_contact_forces.extend(
+                [f"Seg{i}_FX", f"Seg{i}_FY", f"Seg{i}_FZ", f"Seg{i}_CX", f"Seg{i}_CY", f"Seg{i}_CZ"]
+            )
+        ConfigureProblem.configure_new_variable(
+            "translational_forces", name_contact_forces, ocp, nlp, as_states, as_controls
+        )
 
     @staticmethod
     def configure_soft_contact_forces(ocp, nlp, as_states: bool, as_controls: bool):
@@ -1964,7 +1953,9 @@ class ConfigureProblem:
                     if nlp.model.soft_contact_name(ii) not in name_soft_contact_forces
                 ]
             )
-        ConfigureProblem.configure_new_variable("fext", name_soft_contact_forces, ocp, nlp, as_states, as_controls)
+        ConfigureProblem.configure_new_variable(
+            "forces_in_global", name_soft_contact_forces, ocp, nlp, as_states, as_controls
+        )
 
     @staticmethod
     def configure_muscles(ocp, nlp, as_states: bool, as_controls: bool, fatigue: FatigueList = None):
