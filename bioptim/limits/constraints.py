@@ -455,15 +455,12 @@ class ConstraintFunction(PenaltyFunctionAbstract):
 
             tau = controller.states["tau"].cx if "tau" in controller.states else controller.tau
             qddot = controller.states["qddot"].cx if "qddot" in controller.states else controller.controls["qddot"].cx
-            passive_torque = controller.model.passive_joint_torque()(
+            if with_passive_torque:
+                tau += controller.model.passive_joint_torque()(
                 controller.q, controller.qdot, controller.parameters.cx
             )
-            tau = tau + passive_torque if with_passive_torque else tau
-            tau = (
-                tau + controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
-                if with_ligament
-                else tau
-            )
+            if with_ligament:
+                tau += controller.model.ligament_joint_torque()(controller.q, controller.qdot, controller.parameters.cx)
 
             if controller.get_nlp.numerical_timeseries:
                 # TODO: deal with external forces

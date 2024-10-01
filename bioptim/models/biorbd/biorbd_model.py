@@ -27,8 +27,8 @@ class BiorbdModel:
         self,
         bio_model: str | biorbd.Model,
         friction_coefficients: np.ndarray = None,
-        segments_to_apply_external_forces: list[str] = [],
-        segments_to_apply_translational_forces: list[str] = [],
+        segments_to_apply_external_forces: list[str] = None,
+        segments_to_apply_translational_forces: list[str] = None,
         parameters: ParameterList = None,
     ):
         if not isinstance(bio_model, str) and not isinstance(bio_model, biorbd.Model):
@@ -39,7 +39,11 @@ class BiorbdModel:
             for param_key in parameters:
                 parameters[param_key].apply_parameter(self)
         self._friction_coefficients = friction_coefficients
+        if segments_to_apply_external_forces is None:
+            segments_to_apply_external_forces = []
         self._segments_to_apply_external_forces = segments_to_apply_external_forces
+        if segments_to_apply_translational_forces is None:
+            segments_to_apply_translational_forces = []
         self._segments_to_apply_translational_forces = segments_to_apply_translational_forces
         if len(segments_to_apply_external_forces) > 0 and len(segments_to_apply_translational_forces) > 0:
             raise ValueError("You can't apply both external_forces and translational_forces at the same time")
@@ -418,7 +422,7 @@ class BiorbdModel:
     def reorder_qddot_root_joints(qddot_root, qddot_joints) -> MX | SX:
         return vertcat(qddot_root, qddot_joints)
 
-    def _dispatch_forces(self, external_forces: MX, translational_forces: MX):
+    def _dispatch_forces(self, external_forces, translational_forces):
 
         external_forces_set = self.model.externalForceSet()
 
@@ -493,11 +497,11 @@ class BiorbdModel:
 
     def inverse_dynamics(self, with_contact: bool = False) -> Function:
         if with_contact:
-            external_forces = self.reshape_fext_to_fcontact(self.external_forces, self.parameters)
+            external_forces_set = self.reshape_fext_to_fcontact(self.external_forces, self.parameters)
         else:
-            external_forces = self.external_forces
+            external_forces_set = self.external_forces
 
-        external_forces_set = self._dispatch_forces(external_forces, self.translational_forces)
+        # external_forces_set = self._dispatch_forces(external_forces, self.translational_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -694,7 +698,7 @@ class BiorbdModel:
         casadi_fun = Function(
             "markers_velocities",
             [self.q, self.qdot, self.parameters],
-            biorbd_return,
+            [horzcat(*biorbd_return)],
             ["q", "qdot", "parameters"],
             ["markers_velocities"],
         )
@@ -836,7 +840,7 @@ class BiorbdModel:
         )
         return casadi_fun
 
-    def reshape_fext_to_fcontact(self, fext: MX | SX, parameters: MX | SX) -> list:
+    def reshape_fext_to_fcontact(self, fext: MX | SX, parameters: MX | SX):
         if len(self._segments_to_apply_external_forces) == 0:
             parent_name = []
             for i in range(self.nb_rigid_contacts):
@@ -846,37 +850,24 @@ class BiorbdModel:
                 ]
             self._segments_to_apply_external_forces = parent_name
 
-        fext_sym = MX.sym("Fext", 9, fext.shape[1])
+        if self.nb_soft_contacts > 0:
+            raise NotImplementedError("Soft contact not implemented yet with external forces.")
+
         count = 0
-        f_contact_vec = MX()
+        fext_force_set = biorbd.ExternalForceSet(self.model, True, False)
         for i in range(self.nb_rigid_contacts):
             contact = self.model.rigidContact(i)
-            tp = MX.zeros(9)
+            tp = MX.zeros(3)
             used_axes = [i for i, val in enumerate(contact.axes()) if val]
             n_contacts = len(used_axes)
-            tp[used_axes] = fext_sym[count : count + n_contacts]
-            tp[3:6] = contact.to_mx()
-            f_contact_vec = horzcat(f_contact_vec, tp)
+            tp[used_axes] = fext[count : count + n_contacts]
+            fext_force_set.addTranslationalForce(
+                tp,  # Translational force
+                self._segments_to_apply_external_forces[i],  # Segment name
+                contact.to_mx()  # Point of application
+            )
             count += n_contacts
-
-        fext_reshaped = type(fext).zeros(9, fext.shape[1])
-        if fext.shape[0] == 6:
-            fext_reshaped[:6, :] = fext
-        elif fext.shape[0] == 3:
-            fext_reshaped[3:6, :] = fext
-        elif fext.shape[0] == 9:
-            fext_reshaped = fext[:, :]
-        else:
-            raise ValueError("fext must be of size 3, 6 or 9")
-
-        casadi_fun_evaluated = Function(
-            "reshape_fext_to_fcontact",
-            [fext_sym, self.parameters],
-            [f_contact_vec],
-            ["external_forces", "parameters"],
-            ["contact_forces"],
-        )(fext_reshaped, parameters)
-        return casadi_fun_evaluated
+        return fext_force_set
 
     def normalize_state_quaternions(self) -> Function:
 
@@ -945,7 +936,6 @@ class BiorbdModel:
     def ligament_joint_torque(self) -> Function:
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
-        # Charbie: Does the ligament torque depends on the muscle activation/excitation?
         biorbd_return = self.model.ligamentsJointTorque(q_biorbd, qdot_biorbd).to_mx()
         casadi_fun = Function(
             "ligament_joint_torque",

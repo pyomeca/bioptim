@@ -344,11 +344,9 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             # Add the penalty in the requested reference frame. None for global
-            markers = horzcat(
-                *controller.model.markers_velocities(reference_index=reference_jcs)(
+            markers =controller.model.markers_velocities(reference_index=reference_jcs)(
                     controller.q, controller.qdot, controller.parameters.cx
                 )
-            )
 
             return markers
 
@@ -909,8 +907,7 @@ class PenaltyFunctionAbstract:
             r_seg_transposed = r_seg.T
             r_rt = controller.model.rt(rt_index=rt_index)(controller.q, controller.parameters.cx)[:3, :3]
 
-            # @Pariterre: this is suspicious and it breaks the tests!
-            angles_diff = controller.model.rotation_matrix_to_euler_angles(sequence=sequence)(r_seg_transposed * r_rt)
+            angles_diff = controller.model.rotation_matrix_to_euler_angles(sequence=sequence)(r_seg_transposed @ r_rt)
 
             return angles_diff
 
