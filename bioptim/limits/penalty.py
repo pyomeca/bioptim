@@ -344,9 +344,9 @@ class PenaltyFunctionAbstract:
             penalty.quadratic = True if penalty.quadratic is None else penalty.quadratic
 
             # Add the penalty in the requested reference frame. None for global
-            markers =controller.model.markers_velocities(reference_index=reference_jcs)(
-                    controller.q, controller.qdot, controller.parameters.cx
-                )
+            markers = controller.model.markers_velocities(reference_index=reference_jcs)(
+                controller.q, controller.qdot, controller.parameters.cx
+            )
 
             return markers
 

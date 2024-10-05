@@ -55,7 +55,9 @@ class BiorbdModel:
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
         self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
 
-        self.external_forces = MX.sym("external_forces_mx", 9*self.nb_forces_in_global + 6*self.nb_translational_forces, 1)
+        self.external_forces = MX.sym(
+            "external_forces_mx", 9 * self.nb_forces_in_global + 6 * self.nb_translational_forces, 1
+        )
         self.external_forces_set = self._dispatch_forces()
 
         # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
@@ -436,8 +438,12 @@ class BiorbdModel:
             return None
         else:
             external_forces_set = self.model.externalForceSet()
-            forces_in_global = reshape(self.external_forces[:9*self.nb_forces_in_global], (9, self.nb_forces_in_global))
-            translational_forces = reshape(self.external_forces[9*self.nb_forces_in_global:], (6, self.nb_translational_forces))
+            forces_in_global = reshape(
+                self.external_forces[: 9 * self.nb_forces_in_global], (9, self.nb_forces_in_global)
+            )
+            translational_forces = reshape(
+                self.external_forces[9 * self.nb_forces_in_global :], (6, self.nb_translational_forces)
+            )
 
             if forces_in_global.shape[1] > 0:
                 # Add the external forces
@@ -465,9 +471,7 @@ class BiorbdModel:
 
         if with_contact:
             if self.external_forces_set is None:
-                biorbd_return = self.model.ForwardDynamicsConstraintsDirect(
-                    q_biorbd, qdot_biorbd, tau_biorbd
-                ).to_mx()
+                biorbd_return = self.model.ForwardDynamicsConstraintsDirect(q_biorbd, qdot_biorbd, tau_biorbd).to_mx()
             else:
                 biorbd_return = self.model.ForwardDynamicsConstraintsDirect(
                     q_biorbd, qdot_biorbd, tau_biorbd, self.external_forces_set
@@ -483,7 +487,9 @@ class BiorbdModel:
             if self.external_forces_set is None:
                 biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd).to_mx()
             else:
-                biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, self.external_forces_set).to_mx()
+                biorbd_return = self.model.ForwardDynamics(
+                    q_biorbd, qdot_biorbd, tau_biorbd, self.external_forces_set
+                ).to_mx()
             casadi_fun = Function(
                 "forward_dynamics",
                 [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
@@ -501,7 +507,9 @@ class BiorbdModel:
         if self.external_forces_set is None:
             biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd).to_mx()
         else:
-            biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd, self.external_forces_set).to_mx()
+            biorbd_return = self.model.InverseDynamics(
+                q_biorbd, qdot_biorbd, qddot_biorbd, self.external_forces_set
+            ).to_mx()
         casadi_fun = Function(
             "inverse_dynamics",
             [self.q, self.qdot, self.qddot, self.external_forces, self.parameters],

@@ -286,7 +286,7 @@ def test_torque_driven_implicit(with_contact, cx, phase_dynamics):
     nlp = NonLinearProgram(phase_dynamics=phase_dynamics, use_sx=(cx == SX))
     nlp.model = BiorbdModel(
         TestUtils.bioptim_folder() + "/examples/getting_started/models/2segments_4dof_2contacts.bioMod",
-        segments_to_apply_translational_forces=["Seg0", "Seg1"] if with_contact else None
+        segments_to_apply_translational_forces=["Seg0", "Seg1"] if with_contact else None,
     )
 
     nlp.ns = 5

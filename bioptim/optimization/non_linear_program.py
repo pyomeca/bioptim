@@ -475,7 +475,9 @@ class NonLinearProgram:
             for i_component in range(component_numerical_timeseries):
                 external_forces = vertcat(
                     external_forces,
-                    DynamicsFunctions.get(self.numerical_timeseries[f"forces_in_global_{i_component}"], numerical_timeseries),
+                    DynamicsFunctions.get(
+                        self.numerical_timeseries[f"forces_in_global_{i_component}"], numerical_timeseries
+                    ),
                 )
 
         if "translational_forces" in self.states:
@@ -488,8 +490,7 @@ class NonLinearProgram:
             )
         if "translational_forces" in self.algebraic_states:
             external_forces = vertcat(
-                external_forces,
-                DynamicsFunctions.get(self.algebraic_states["translational_forces"], algebraic_states)
+                external_forces, DynamicsFunctions.get(self.algebraic_states["translational_forces"], algebraic_states)
             )
 
         component_numerical_timeseries = 0
@@ -500,7 +501,9 @@ class NonLinearProgram:
             for i_component in range(component_numerical_timeseries):
                 external_forces = vertcat(
                     external_forces,
-                    DynamicsFunctions.get(self.numerical_timeseries[f"translational_forces{i_component}"], numerical_timeseries),
+                    DynamicsFunctions.get(
+                        self.numerical_timeseries[f"translational_forces{i_component}"], numerical_timeseries
+                    ),
                 )
 
         return external_forces
