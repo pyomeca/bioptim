@@ -151,7 +151,7 @@ def custom_dynamic(
     stiffness = 100
     force_vector[5] = -sign(q[0]) * stiffness * q[0] ** 2  # traction-compression spring
 
-    qddot = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, force_vector, [], [])
+    qddot = nlp.model.forward_dynamics(with_contact=False)(q, qdot, tau, force_vector, [])
 
     return DynamicsEvaluation(dxdt=vertcat(qdot, qddot), defects=None)
 

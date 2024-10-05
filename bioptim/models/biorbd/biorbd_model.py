@@ -55,14 +55,19 @@ class BiorbdModel:
         self.muscle = MX.sym("muscle_mx", self.nb_muscles, 1)
         self.activations = MX.sym("activations_mx", self.nb_muscles, 1)
 
-        self.forces_in_global = MX.sym("forces_in_global", 9, len(segments_to_apply_forces_in_global))
-        self.translational_forces = MX.sym("translational_forces_mx", 6, len(segments_to_apply_translational_forces))
-        self.external_forces = vertcat(
-            self.forces_in_global.reshape((-1, 1)), self.translational_forces.reshape((-1, 1))
-        )
+        self.external_forces = MX.sym("external_forces_mx", 9*self.nb_forces_in_global + 6*self.nb_translational_forces, 1)
+        self.external_forces_set = self._dispatch_forces()
 
         # TODO: remove mx (the MX parameters should be created inside the BiorbdModel)
         self.parameters = parameters.mx if parameters else MX()
+
+    @property
+    def nb_forces_in_global(self) -> int:
+        return len(self._segments_to_apply_forces_in_global)
+
+    @property
+    def nb_translational_forces(self) -> int:
+        return len(self._segments_to_apply_translational_forces)
 
     @property
     def name(self) -> str:
@@ -425,52 +430,56 @@ class BiorbdModel:
     def reorder_qddot_root_joints(qddot_root, qddot_joints) -> MX | SX:
         return vertcat(qddot_root, qddot_joints)
 
-    def _dispatch_forces(self, forces_in_global, translational_forces):
+    def _dispatch_forces(self):
 
-        external_forces_set = self.model.externalForceSet()
+        if self.nb_forces_in_global == 0 and self.nb_translational_forces == 0:
+            return None
+        else:
+            external_forces_set = self.model.externalForceSet()
+            forces_in_global = self.external_forces[:9*self.nb_forces_in_global].reshape(9, self.nb_forces_in_global)
+            translational_forces = self.external_forces[9*self.nb_forces_in_global:].reshape(6, self.nb_translational_forces)
 
-        if forces_in_global.shape[1] > 0:
-            if not isinstance(forces_in_global, MX):
-                raise ValueError("forces_in_global should be of shape 9 x nb_forces.")
-            if forces_in_global.shape[0] != 9:
-                raise ValueError(
-                    f"forces_in_global has {forces_in_global.shape[0]} rows, it should have 9 rows (Mx, My, Mz, Fx, Fy, Fz, Px, Py, Pz). You should provide the moments, forces and points of application."
-                )
-            if len(self._segments_to_apply_forces_in_global) != forces_in_global.shape[1]:
-                raise ValueError(
-                    f"forces_in_global has {forces_in_global.shape[1]} columns and {len(self._segments_to_apply_forces_in_global)} segments to apply forces_in_global on, they should have the same length."
-                )
+            if forces_in_global.shape[1] > 0:
+                if not isinstance(forces_in_global, MX):
+                    raise ValueError("forces_in_global should be of shape 9 x nb_forces.")
+                if forces_in_global.shape[0] != 9:
+                    raise ValueError(
+                        f"forces_in_global has {forces_in_global.shape[0]} rows, it should have 9 rows (Mx, My, Mz, Fx, Fy, Fz, Px, Py, Pz). You should provide the moments, forces and points of application."
+                    )
+                if len(self._segments_to_apply_forces_in_global) != forces_in_global.shape[1]:
+                    raise ValueError(
+                        f"forces_in_global has {forces_in_global.shape[1]} columns and {len(self._segments_to_apply_forces_in_global)} segments to apply forces_in_global on, they should have the same length."
+                    )
 
-            # Add the external forces
-            for i_element in range(forces_in_global.shape[1]):
-                name = self._segments_to_apply_forces_in_global[i_element]
-                values = forces_in_global[:6, i_element]
-                point_of_application = forces_in_global[6:9, i_element]
-                external_forces_set.add(name, values, point_of_application)
+                # Add the external forces
+                for i_element in range(forces_in_global.shape[1]):
+                    name = self._segments_to_apply_forces_in_global[i_element]
+                    values = forces_in_global[:6, i_element]
+                    point_of_application = forces_in_global[6:9, i_element]
+                    external_forces_set.add(name, values, point_of_application)
 
-        elif translational_forces.shape[1] > 0:
-            if not isinstance(translational_forces, MX):
-                raise ValueError("translational_forces should be of shape 6 x nb_forces.")
-            if translational_forces.shape[0] != 6:
-                raise ValueError(
-                    f"translational_forces has {translational_forces.shape[0]} rows, it should have 6 rows (Fx, Fy, Fz, Px, Py, Pz). You should provide the forces and points of application."
-                )
-            if len(self._segments_to_apply_translational_forces) != translational_forces.shape[1]:
-                raise ValueError(
-                    f"translational_forces has {translational_forces.shape[1]} columns and {len(self._segments_to_apply_translational_forces)} segments to apply forces on, they should have the same length."
-                )
+            elif translational_forces.shape[1] > 0:
+                if not isinstance(translational_forces, MX):
+                    raise ValueError("translational_forces should be of shape 6 x nb_forces.")
+                if translational_forces.shape[0] != 6:
+                    raise ValueError(
+                        f"translational_forces has {translational_forces.shape[0]} rows, it should have 6 rows (Fx, Fy, Fz, Px, Py, Pz). You should provide the forces and points of application."
+                    )
+                if len(self._segments_to_apply_translational_forces) != translational_forces.shape[1]:
+                    raise ValueError(
+                        f"translational_forces has {translational_forces.shape[1]} columns and {len(self._segments_to_apply_translational_forces)} segments to apply forces on, they should have the same length."
+                    )
 
-            # Add the translational forces
-            for i_elements in range(translational_forces.shape[1]):
-                name = self._segments_to_apply_translational_forces[i_elements]
-                values = translational_forces[:3, i_elements]
-                point_of_application = translational_forces[3:6, i_elements]
-                external_forces_set.addTranslationalForce(values, name, point_of_application)
+                # Add the translational forces
+                for i_elements in range(translational_forces.shape[1]):
+                    name = self._segments_to_apply_translational_forces[i_elements]
+                    values = translational_forces[:3, i_elements]
+                    point_of_application = translational_forces[3:6, i_elements]
+                    external_forces_set.addTranslationalForce(values, name, point_of_application)
 
-        return external_forces_set
+            return external_forces_set
 
     def forward_dynamics(self, with_contact: bool = False) -> Function:
-        external_forces_set = self._dispatch_forces(self.forces_in_global, self.translational_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
@@ -478,7 +487,7 @@ class BiorbdModel:
 
         if with_contact:
             biorbd_return = self.model.ForwardDynamicsConstraintsDirect(
-                q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set
+                q_biorbd, qdot_biorbd, tau_biorbd, self.external_forces_set
             ).to_mx()
             casadi_fun = Function(
                 "constrained_forward_dynamics",
@@ -488,7 +497,7 @@ class BiorbdModel:
                 ["qddot"],
             )
         else:
-            biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set).to_mx()
+            biorbd_return = self.model.ForwardDynamics(q_biorbd, qdot_biorbd, tau_biorbd, self.external_forces_set).to_mx()
             casadi_fun = Function(
                 "forward_dynamics",
                 [self.q, self.qdot, self.tau, self.external_forces, self.parameters],
@@ -499,12 +508,11 @@ class BiorbdModel:
         return casadi_fun
 
     def inverse_dynamics(self, with_contact: bool = False) -> Function:
-        external_forces_set = self._dispatch_forces(self.forces_in_global, self.translational_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
         qddot_biorbd = GeneralizedAcceleration(self.qddot)
-        biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd, external_forces_set).to_mx()
+        biorbd_return = self.model.InverseDynamics(q_biorbd, qdot_biorbd, qddot_biorbd, self.external_forces_set).to_mx()
         casadi_fun = Function(
             "inverse_dynamics",
             [self.q, self.qdot, self.qddot, self.external_forces, self.parameters],
@@ -515,13 +523,12 @@ class BiorbdModel:
         return casadi_fun
 
     def contact_forces_from_constrained_forward_dynamics(self) -> Function:
-        external_forces_set = self._dispatch_forces(self.forces_in_global, self.translational_forces)
 
         q_biorbd = GeneralizedCoordinates(self.q)
         qdot_biorbd = GeneralizedVelocity(self.qdot)
         tau_biorbd = GeneralizedTorque(self.tau)
         biorbd_return = self.model.ContactForcesFromForwardDynamicsConstraintsDirect(
-            q_biorbd, qdot_biorbd, tau_biorbd, external_forces_set
+            q_biorbd, qdot_biorbd, tau_biorbd, self.external_forces_set
         ).to_mx()
         casadi_fun = Function(
             "contact_forces_from_constrained_forward_dynamics",

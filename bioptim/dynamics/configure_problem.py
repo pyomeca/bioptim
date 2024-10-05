@@ -624,15 +624,6 @@ class ConfigureProblem:
         _check_soft_contacts_dynamics(
             rigidbody_dynamics, soft_contacts_dynamics, nlp.model.nb_soft_contacts, nlp.phase_idx
         )
-        # TODO REMOVE THIS?
-        # external_forces = None
-        # if numerical_data_timeseries is not None:
-        #     for key in numerical_data_timeseries.keys():
-        #         if key == "forces_in_global":
-        #             _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
-        #             external_forces = nlp.numerical_timeseries[0].cx
-        #             for i in range(1, numerical_data_timeseries[key].shape[1]):
-        #                 external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -662,7 +653,6 @@ class ConfigureProblem:
                 rigidbody_dynamics=rigidbody_dynamics,
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
-                external_forces=external_forces,
             )
 
         if with_contact:
@@ -670,7 +660,6 @@ class ConfigureProblem:
                 ocp,
                 nlp,
                 DynamicsFunctions.forces_from_torque_driven,
-                external_forces=external_forces,
             )
 
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
@@ -716,14 +705,6 @@ class ConfigureProblem:
         """
 
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        external_forces = None
-        if numerical_data_timeseries is not None:
-            for key in numerical_data_timeseries.keys():
-                if key == "external_forces":
-                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
-                    external_forces = nlp.numerical_timeseries[0].cx
-                    for i in range(1, numerical_data_timeseries[key].shape[1]):
-                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
 
         ConfigureProblem.configure_q(ocp, nlp, True, False)
         ConfigureProblem.configure_qdot(ocp, nlp, True, False)
@@ -743,12 +724,11 @@ class ConfigureProblem:
                 with_passive_torque=with_passive_torque,
                 with_residual_torque=with_residual_torque,
                 with_ligament=with_ligament,
-                external_forces=external_forces,
             )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven, external_forces=external_forces
+                ocp, nlp, DynamicsFunctions.forces_from_torque_activation_driven
             )
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
@@ -852,14 +832,7 @@ class ConfigureProblem:
             A list of values to pass to the dynamics at each node. Experimental external forces should be included here.
         """
         _check_contacts_in_biorbd_model(with_contact, nlp.model.nb_contacts, nlp.phase_idx)
-        external_forces = None
-        if numerical_data_timeseries is not None:
-            for key in numerical_data_timeseries.keys():
-                if key == "external_forces":
-                    _check_numerical_timeseries_format(numerical_data_timeseries[key], nlp.ns, nlp.phase_idx)
-                    external_forces = nlp.numerical_timeseries[0].cx
-                    for i in range(1, numerical_data_timeseries[key].shape[1]):
-                        external_forces = horzcat(external_forces, nlp.numerical_timeseries[i].cx)
+
         if fatigue is not None and "tau" in fatigue and not with_residual_torque:
             raise RuntimeError("Residual torques need to be used to apply fatigue on torques")
 
@@ -898,12 +871,11 @@ class ConfigureProblem:
                 with_passive_torque=with_passive_torque,
                 with_ligament=with_ligament,
                 rigidbody_dynamics=rigidbody_dynamics,
-                external_forces=external_forces,
             )
 
         if with_contact:
             ConfigureProblem.configure_contact_function(
-                ocp, nlp, DynamicsFunctions.forces_from_muscle_driven, external_forces=external_forces
+                ocp, nlp, DynamicsFunctions.forces_from_muscle_driven,
             )
         ConfigureProblem.configure_soft_contact_function(ocp, nlp)
 
